@@ -66,14 +66,37 @@ Check if the responses have to be updated.
 
 Check if the NLU model has to be updated.
 
+#### get\_local\_model
+
+```python
+get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text
+```
+
+Returns verified path to local model archive.
+
+**Arguments**:
+
+- `model_path` - Path to the zipped model. If it&#x27;s a directory, the latest
+  trained model is returned.
+  
+
+**Returns**:
+
+  Path to the zipped model. If it&#x27;s a directory, the latest
+  trained model is returned.
+  
+
+**Raises**:
+
+  ModelNotFound Exception: When no model could be found at the provided path.
+
 #### get\_model
 
 ```python
 get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath
 ```
 
-Get a model and unpack it. Raises a `ModelNotFound` exception if
-no model could be found at the provided path.
+Gets a model and unpacks it.
 
 **Arguments**:
 
@@ -84,6 +107,11 @@ no model could be found at the provided path.
 **Returns**:
 
   Path to the unpacked model.
+  
+
+**Raises**:
+
+  ModelNotFound Exception: When no model could be found at the provided path.
 
 #### get\_latest\_model
 
