@@ -14,6 +14,7 @@ from rasa.utils.endpoints import EndpointConfig
 if typing.TYPE_CHECKING:
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.nlu.persistor import Persistor
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ async def load_data_from_endpoint(
         logger.warning(f"Could not retrieve training data from URL:\n{e}")
 
 
-def create_persistor(persistor: Optional[Text]):
+def create_persistor(persistor: Optional[Text]) -> Optional["Persistor"]:
     """Create a remote persistor to store the model if configured."""
 
     if persistor is not None:

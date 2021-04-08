@@ -421,7 +421,7 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
         return {}
 
 
-def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
+def persist_fingerprint(output_path: Text, fingerprint: Fingerprint) -> None:
     """Persist a model fingerprint.
 
     Args:

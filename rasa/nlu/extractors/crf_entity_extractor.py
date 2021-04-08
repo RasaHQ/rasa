@@ -184,7 +184,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         self._train_model(dataset)
 
-    def _update_crf_order(self, training_data: TrainingData):
+    def _update_crf_order(self, training_data: TrainingData) -> None:
         """Train only CRFs we actually have training data for."""
         _crf_order = []
 
@@ -233,7 +233,7 @@ class CRFEntityExtractor(EntityExtractor):
         self,
         crf_tokens: List[CRFToken],
         predictions: Dict[Text, List[Dict[Text, float]]],
-    ):
+    ) -> None:
         """Add predicted entity tags to CRF tokens."""
         if ENTITY_ATTRIBUTE_TYPE in predictions:
             _tags, _ = self._most_likely_tag(predictions[ENTITY_ATTRIBUTE_TYPE])
@@ -389,7 +389,7 @@ class CRFEntityExtractor(EntityExtractor):
         half_window_size: int,
         window_range: range,
         include_tag_features: bool,
-    ):
+    ) -> Dict[Text, Any]:
         """Convert a token into discrete features including word before and word
         after."""
 

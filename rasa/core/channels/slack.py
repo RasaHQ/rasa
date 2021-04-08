@@ -45,7 +45,7 @@ class SlackBot(OutputChannel):
     def _get_text_from_slack_buttons(buttons: List[Dict]) -> Text:
         return "".join([b.get("title", "") for b in buttons])
 
-    async def _post_message(self, channel, **kwargs: Any):
+    async def _post_message(self, channel: Text, **kwargs: Any) -> None:
         if self.thread_id:
             await self.client.chat_postMessage(
                 channel=channel, **kwargs, thread_ts=self.thread_id
@@ -336,7 +336,7 @@ class SlackInput(InputChannel):
         self,
         request: Request,
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
-        text,
+        text: Text,
         sender_id: Optional[Text],
         metadata: Optional[Dict],
     ) -> Any:
