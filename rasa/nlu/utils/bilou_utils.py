@@ -1,4 +1,5 @@
 import logging
+import operator
 from collections import defaultdict, Counter
 from typing import List, Tuple, Text, Optional, Dict, Any, TYPE_CHECKING
 
@@ -244,7 +245,7 @@ def _add_bilou_tags_to_entities(
     entities: List[Tuple[int, int, Text]],
     end_pos_to_token_idx: Dict[int, int],
     start_pos_to_token_idx: Dict[int, int],
-):
+) -> None:
     for start_pos, end_pos, label in entities:
         start_token_idx = start_pos_to_token_idx.get(start_pos)
         end_token_idx = end_pos_to_token_idx.get(end_pos)
@@ -364,8 +365,7 @@ def _tag_to_use(
         )
 
     # Take the tag with the highest score as the tag for the entity
-    tag = max(score_per_tag, key=score_per_tag.get)
-    score = score_per_tag[tag]
+    tag, score = max(score_per_tag.items(), key=operator.itemgetter(1))
 
     return tag, score
 
@@ -377,7 +377,7 @@ def _update_confidences(
     score: float,
     idx: int,
     last_idx: int,
-):
+) -> List[float]:
     """Update the confidence values.
 
     Set the confidence value of a tag to score value if the predicated

@@ -79,8 +79,8 @@ class EndpointConfig:
         basic_auth: Dict[Text, Text] = None,
         token: Optional[Text] = None,
         token_name: Text = "token",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         self.url = url
         self.params = params if params else {}
         self.headers = headers if headers else {}
@@ -160,7 +160,7 @@ class EndpointConfig:
                     return None
 
     @classmethod
-    def from_dict(cls, data) -> "EndpointConfig":
+    def from_dict(cls, data: Dict[Text, Any]) -> "EndpointConfig":
         return EndpointConfig(**data)
 
     def copy(self) -> "EndpointConfig":
@@ -174,7 +174,7 @@ class EndpointConfig:
             **self.kwargs,
         )
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if isinstance(self, type(other)):
             return (
                 other.url == self.url
@@ -187,7 +187,7 @@ class EndpointConfig:
         else:
             return False
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
 

@@ -184,7 +184,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         self._train_model(dataset)
 
-    def _update_crf_order(self, training_data: TrainingData):
+    def _update_crf_order(self, training_data: TrainingData) -> None:
         """Train only CRFs we actually have training data for."""
         _crf_order = []
 
@@ -233,7 +233,7 @@ class CRFEntityExtractor(EntityExtractor):
         self,
         crf_tokens: List[CRFToken],
         predictions: Dict[Text, List[Dict[Text, float]]],
-    ):
+    ) -> None:
         """Add predicted entity tags to CRF tokens."""
         if ENTITY_ATTRIBUTE_TYPE in predictions:
             _tags, _ = self._most_likely_tag(predictions[ENTITY_ATTRIBUTE_TYPE])
@@ -303,11 +303,12 @@ class CRFEntityExtractor(EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["CRFEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "CRFEntityExtractor":
+        """Loads trained component (see parent class for full docstring)."""
         import joblib
 
         file_names = meta.get("files")
@@ -388,7 +389,7 @@ class CRFEntityExtractor(EntityExtractor):
         half_window_size: int,
         window_range: range,
         include_tag_features: bool,
-    ):
+    ) -> Dict[Text, Any]:
         """Convert a token into discrete features including word before and word
         after."""
 

@@ -1127,7 +1127,9 @@ class Domain:
 
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
-        active_loop = tracker.active_loop.get(rasa.shared.core.constants.LOOP_NAME)
+        active_loop: Optional[Text] = tracker.active_loop.get(
+            rasa.shared.core.constants.LOOP_NAME
+        )
         if active_loop:
             return {rasa.shared.core.constants.LOOP_NAME: active_loop}
         else:
@@ -1670,7 +1672,7 @@ class Domain:
         def get_exception_message(
             duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
             mappings: List[Tuple[Text, Text]] = None,
-        ):
+        ) -> Text:
             """Return a message given a list of error locations."""
 
             message = ""
@@ -1682,7 +1684,7 @@ class Domain:
                 message += get_mapping_exception_message(mappings)
             return message
 
-        def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
+        def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]) -> Text:
             """Return a message given a list of duplicates."""
 
             message = ""
@@ -1787,7 +1789,7 @@ class Domain:
 
         try:
             content = rasa.shared.utils.io.read_yaml_file(filename)
-        except (ValueError, YamlSyntaxException):
+        except (RasaException, YamlSyntaxException):
             return False
 
         return any(key in content for key in ALL_DOMAIN_KEYS)

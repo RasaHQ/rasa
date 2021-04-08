@@ -723,7 +723,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_attribute: Text,
         label_id_dict: Dict[Text, int],
         training: bool = True,
-    ):
+    ) -> None:
         label_ids = []
         if training and self.component_config[INTENT_CLASSIFICATION]:
             for example in training_data:
@@ -1020,14 +1020,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
-        if not model_dir or not meta.get("file"):
+        if not meta.get("file"):
             logger.debug(
                 f"Failed to load model for '{cls.__name__}'. "
                 f"Maybe you did not provide enough training data and no model was "
@@ -1066,7 +1066,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
     @classmethod
-    def _load_from_files(cls, meta: Dict[Text, Any], model_dir: Text):
+    def _load_from_files(
+        cls, meta: Dict[Text, Any], model_dir: Text
+    ) -> Tuple[
+        Dict[int, Text],
+        List[EntityTagSpec],
+        RasaModelData,
+        Dict[Text, Any],
+        Dict[Text, Dict[Text, List[FeatureArray]]],
+    ]:
         file_name = meta.get("file")
 
         model_dir = Path(model_dir)
@@ -1576,7 +1584,9 @@ class DIET(TransformerRasaModel):
 
         return losses
 
-    def _update_entity_metrics(self, loss: tf.Tensor, f1: tf.Tensor, tag_name: Text):
+    def _update_entity_metrics(
+        self, loss: tf.Tensor, f1: tf.Tensor, tag_name: Text
+    ) -> None:
         if tag_name == ENTITY_ATTRIBUTE_TYPE:
             self.entity_loss.update_state(loss)
             self.entity_f1.update_state(f1)
