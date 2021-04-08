@@ -73,8 +73,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Test Documentation
-          ref: ${{ github.pull_request.head.sha || github.sha }}
-          # owner: ${{ github.event.pull_request.head.repo.owner.login || github.repository_owner }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
           
