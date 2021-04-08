@@ -1,4 +1,3 @@
-import inspect
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
