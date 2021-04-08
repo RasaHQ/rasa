@@ -597,7 +597,7 @@ def test_handles_mixed_steps_for_test_and_e2e_stories(is_conversation_test):
     assert events[2].text == "Well..."
 
 
-def test_read_string_skip_validation(domain: Domain, monkeypatch: MonkeyPatch):
+def test_read_from_file_skip_validation(monkeypatch: MonkeyPatch):
     yaml_file = "data/test_wrong_yaml_stories/wrong_yaml.yml"
     reader = YAMLStoryReader()
 
