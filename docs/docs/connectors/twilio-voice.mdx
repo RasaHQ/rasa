@@ -9,7 +9,7 @@ You can use the Twilio Voice connector to answer phone calls made to your Twilio
 
 ## Running on Twilio
 
-To forward calls from Twilio to your Rasa bot the webhook for your phone number needs to be updated. Go to the [Phone
+To forward calls from Twilio to your Rasa assistant the webhook for your phone number needs to be updated. Go to the [Phone
 Numbers](https://www.twilio.com/console/phone-numbers/incoming) section of your Twilio account and select the phone
 number you want to connect to Rasa. Find the `Voice & Fax` section on the screen. Under the `A CALL COMES IN` section
 add the webhook URL (e.g. `https://<host>:<port>/webhooks/twilio_voice/webhook`) for your Rasa bot replacing the host
@@ -34,9 +34,19 @@ twilio_voice:
 
 ### Call Answering
 
-When a new call is received there is no user message provided. For voice calls a greeting `Hello` will be sent to Rasa
-when the call is answered. Rasa will then respond with the the model's predicted intent. Since how you greet a user
-on a voice channel may differ from a text channel you should consider creating channel specific responses where appropriate.
+When Twilio receives a new call and forwards this to Rasa Open Source, Twilio does not provide a user message. In this
+ case Rasa Open Source will act as if the user sent the message "Hello". This behavior can be configured in your
+ `credentials.yml` file by setting the `initial_prompt` parameter to the desired input. The `initial_prompt` value will
+ be sent to Rasa Open Source and the response will be spoken to the user to start the voice conversation. How you greet
+ a user via a voice channel may differ from a text channel. You should review your responses and consider creating
+ [channel-specific variations](https://rasa.com/docs/rasa/responses/#channel-specific-response-variations) where
+ necessary.
+
+```
+twilio_voice:
+  initial_prompt: "hello"
+  assistant_voice: "woman"
+```
 
 ### Handling Conversation Pauses
 
