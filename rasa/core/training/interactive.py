@@ -6,7 +6,19 @@ import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
-from typing import Any, Callable, Deque, Dict, List, Optional, Text, Tuple, Union, Set, Coroutine
+from typing import (
+    Any,
+    Callable,
+    Deque,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+    Set,
+    Coroutine,
+)
 
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
@@ -1613,7 +1625,9 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png(request: Any) -> Union[Coroutine[Any, Any, HTTPResponse], HTTPResponse]:
+    def visualisation_png(
+        request: Any,
+    ) -> Union[Coroutine[Any, Any, HTTPResponse], HTTPResponse]:
         try:
             headers = {"Cache-Control": "no-cache"}
             return response.file(os.path.abspath(image_path), headers=headers)

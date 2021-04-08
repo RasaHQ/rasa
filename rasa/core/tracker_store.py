@@ -17,7 +17,8 @@ from typing import (
     Optional,
     Text,
     Union,
-    TYPE_CHECKING, Generator,
+    TYPE_CHECKING,
+    Generator,
 )
 
 from boto3.dynamodb.conditions import Key
@@ -51,7 +52,7 @@ if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm.session import Session
+    from sqlalchemy.orm.session import Session, sessionmaker
     from sqlalchemy import Sequence
     from sqlalchemy.orm.query import Query
 
@@ -992,7 +993,7 @@ class SQLTrackerStore(TrackerStore):
         conn.close()
 
     @contextlib.contextmanager
-    def session_scope(self) -> Generator[Session, None, None]:
+    def session_scope(self) -> Generator[sessionmaker, None, None]:
         """Provide a transactional scope around a series of operations."""
         session = self.sessionmaker()
         try:

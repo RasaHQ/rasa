@@ -12,7 +12,8 @@ from typing import (
     Callable,
     Iterable,
     Awaitable,
-    NoReturn, Coroutine,
+    NoReturn,
+    Coroutine,
 )
 
 from rasa.cli import utils as cli_utils
