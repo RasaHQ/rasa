@@ -1,6 +1,8 @@
 .PHONY: clean test lint init docs build-docker build-docker-full build-docker-mitie-en build-docker-spacy-en build-docker-spacy-de
 
 JOBS ?= 1
+INTEGRATION_TEST_FOLDER = tests/integration_tests/
+INTEGRATION_TEST_PYTEST_MARKERS ?= "sequential or not sequential"
 
 help:
 	@echo "make"
@@ -32,10 +34,13 @@ help:
 	@echo "        Download all additional resources needed to use spacy as part of Rasa."
 	@echo "    prepare-mitie"
 	@echo "        Download all additional resources needed to use mitie as part of Rasa."
-	@echo "    prepare-transformers:"
+	@echo "    prepare-transformers"
 	@echo "        Download all models needed for testing LanguageModelFeaturizer."
 	@echo "    test"
 	@echo "        Run pytest on tests/."
+	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
+	@echo "    test-integration"
+	@echo "        Run integration tests using pytest."
 	@echo "        Use the JOBS environment variable to configure number of workers (default: 1)."
 	@echo "    livedocs"
 	@echo "        Build the docs locally."
@@ -43,6 +48,10 @@ help:
 	@echo "        Prepare a release."
 	@echo "    build-docker"
 	@echo "        Build Rasa Open Source Docker image."
+	@echo "    run-integration-containers"
+	@echo "        Run the integration test containers."
+	@echo "    stop-integration-containers"
+	@echo "        Stop the integration test containers."
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -93,28 +102,7 @@ lint-security:
 	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
 
 types:
-	# FIXME: working our way towards removing these
-	# see https://github.com/RasaHQ/rasa/pull/6470
-	# the list below is sorted by the number of errors for each error code, in decreasing order
-	poetry run mypy rasa --disable-error-code arg-type \
-	--disable-error-code assignment \
-	--disable-error-code var-annotated \
-	--disable-error-code return-value \
-	--disable-error-code union-attr \
-	--disable-error-code override \
-	--disable-error-code operator \
-	--disable-error-code attr-defined \
-	--disable-error-code index \
-	--disable-error-code misc \
-	--disable-error-code return \
-	--disable-error-code call-arg \
-	--disable-error-code type-var \
-	--disable-error-code list-item \
-	--disable-error-code has-type \
-	--disable-error-code valid-type \
-	--disable-error-code dict-item \
-	--disable-error-code no-redef \
-	--disable-error-code func-returns-value
+	poetry run mypy rasa
 
 static-checks: lint lint-security types
 
@@ -122,8 +110,6 @@ prepare-spacy:
 	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md
 	poetry run python -m spacy download de_core_news_sm
-	poetry run python -m spacy link en_core_web_md en --force
-	poetry run python -m spacy link de_core_news_sm de --force
 
 prepare-mitie:
 	wget --progress=dot:giga -N -P data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
@@ -163,7 +149,43 @@ prepare-tests-windows: prepare-wget-windows prepare-tests-files
 
 test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa
+	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
+
+test-integration:
+	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+ifeq (,$(wildcard tests_deployment/.env))
+	OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS)
+else
+	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
+endif
+
+test-cli: PYTEST_MARKER=category_cli
+test-cli: test-marker
+
+test-core-featurizers: PYTEST_MARKER=category_core_featurizers
+test-core-featurizers: test-marker
+
+test-policies: PYTEST_MARKER=category_policies
+test-policies: test-marker
+
+test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers
+test-nlu-featurizers: test-marker
+
+test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors
+test-nlu-predictors: test-marker
+
+test-full-model-training: PYTEST_MARKER=category_full_model_training
+test-full-model-training: test-marker
+
+test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests
+test-other-unit-tests: test-marker
+
+test-performance: PYTEST_MARKER=category_performance
+test-performance: test-marker
+
+test-marker: clean
+    # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "$(PYTEST_MARKER)" --ignore $(INTEGRATION_TEST_FOLDER)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"
@@ -229,3 +251,15 @@ build-docker-spacy-de:
 	docker buildx bake -f docker/docker-bake.hcl base-poetry && \
 	docker buildx bake -f docker/docker-bake.hcl base-builder && \
 	docker buildx bake -f docker/docker-bake.hcl spacy-de
+
+build-tests-deployment-env: ## Create environment files (.env) for docker-compose.
+	cd tests_deployment && \
+	test -f .env || cat .env.example >> .env
+
+run-integration-containers: build-tests-deployment-env ## Run the integration test containers.
+	cd tests_deployment && \
+	docker-compose -f docker-compose.integration.yml up &
+
+stop-integration-containers: ## Stop the integration test containers.
+	cd tests_deployment && \
+	docker-compose -f docker-compose.integration.yml down

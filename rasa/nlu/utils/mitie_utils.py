@@ -20,10 +20,11 @@ class MitieNLP(Component):
     }
 
     def __init__(
-        self, component_config: Optional[Dict[Text, Any]] = None, extractor=None
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        extractor: Optional["mitie.total_word_feature_extractor"] = None,
     ) -> None:
         """Construct a new language model from the MITIE framework."""
-
         super().__init__(component_config)
 
         self.extractor = extractor
@@ -90,11 +91,12 @@ class MitieNLP(Component):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["MitieNLP"] = None,
         **kwargs: Any,
     ) -> "MitieNLP":
+        """Loads trained component (see parent class for full docstring)."""
         import mitie
 
         if cached_component:

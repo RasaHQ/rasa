@@ -208,7 +208,9 @@ def validate_pipeline(pipeline: List["Component"]) -> None:
     validate_required_components(pipeline)
 
 
-def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]):
+def any_components_in_pipeline(
+    components: Iterable[Text], pipeline: List["Component"]
+) -> bool:
     """Check if any of the provided components are listed in the pipeline.
 
     Args:
@@ -483,7 +485,7 @@ class Component(metaclass=ComponentMetaclass):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["Component"] = None,
         **kwargs: Any,
@@ -570,7 +572,8 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            training_data: The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
+            training_data: The
+                :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
             config: The model configuration parameters.
         """
         pass
@@ -588,7 +591,8 @@ class Component(metaclass=ComponentMetaclass):
         of components previous to this one.
 
         Args:
-            message: The :class:`rasa.shared.nlu.training_data.message.Message` to process.
+            message: The :class:`rasa.shared.nlu.training_data.message.Message` to
+                process.
         """
         pass
 
@@ -634,7 +638,7 @@ class Component(metaclass=ComponentMetaclass):
             del d["partial_processing_pipeline"]
         return d
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return self.__dict__ == other.__dict__
 
     def prepare_partial_processing(
@@ -693,7 +697,8 @@ class Component(metaclass=ComponentMetaclass):
             `True` if component can handle specific language, `False` otherwise.
         """
 
-        # If both `supported_language_list` and `not_supported_language_list` are set to `None`,
+        # If both `supported_language_list` and `not_supported_language_list` are set
+        # to `None`,
         # it means: support all languages
         if language is None or (
             cls.supported_language_list is None
@@ -703,9 +708,11 @@ class Component(metaclass=ComponentMetaclass):
 
         # check language supporting settings
         if cls.supported_language_list and cls.not_supported_language_list:
-            # When user set both language supporting settings to not None, it will lead to ambiguity.
+            # When user set both language supporting settings to not None, it will lead
+            # to ambiguity.
             raise RasaException(
-                "Only one of `supported_language_list` and `not_supported_language_list` can be set to not None"
+                "Only one of `supported_language_list` and"
+                "`not_supported_language_list` can be set to not None"
             )
 
         # convert to `list` for membership test
@@ -723,7 +730,8 @@ class Component(metaclass=ComponentMetaclass):
         # check if user provided a valid setting
         if not supported_language_list and not not_supported_language_list:
             # One of language settings must be valid (not None and not a empty list),
-            # There are three combinations of settings are not valid: (None, []), ([], None) and ([], [])
+            # There are three combinations of settings are not valid:
+            # (None, []), ([], None) and ([], [])
             raise RasaException(
                 "Empty lists for both "
                 "`supported_language_list` and `not_supported language_list` "
@@ -849,7 +857,7 @@ class ComponentBuilder:
 
         try:
             component, cache_key = self.__get_cached_component(
-                component_config, Metadata(cfg.as_dict(), None)
+                component_config, Metadata(cfg.as_dict())
             )
             if component is None:
                 component = registry.create_component_by_config(component_config, cfg)

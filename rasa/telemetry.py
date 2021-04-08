@@ -93,6 +93,9 @@ TELEMETRY_VISUALIZATION_STARTED_EVENT = "Story Visualization Started"
 TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
 TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
 
+# used to calculate the context on the first call and cache it afterwards
+TELEMETRY_CONTEXT = None
+
 
 def print_telemetry_reporting_info() -> None:
     """Print telemetry information to std out."""
@@ -217,12 +220,12 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     if asyncio.iscoroutinefunction(f):
 
         @wraps(f)
-        async def decorated(*args, **kwargs):
+        async def decorated_coroutine(*args, **kwargs):
             if is_telemetry_enabled():
                 return await f(*args, **kwargs)
             return None
 
-        return decorated
+        return decorated_coroutine
 
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -461,26 +464,33 @@ def with_default_context_fields(
     return {**_default_context_fields(), **context}
 
 
-@functools.lru_cache()
 def _default_context_fields() -> Dict[Text, Any]:
     """Return a dictionary that contains the default context values.
 
     Return:
         A new context containing information about the runtime environment.
     """
-    import tensorflow as tf
 
-    return {
-        "os": {"name": platform.system(), "version": platform.release()},
-        "ci": in_continuous_integration(),
-        "project": model.project_fingerprint(),
-        "directory": _hash_directory_path(os.getcwd()),
-        "python": sys.version.split(" ")[0],
-        "rasa_open_source": rasa.__version__,
-        "gpu": len(tf.config.list_physical_devices("GPU")),
-        "cpu": multiprocessing.cpu_count(),
-        "docker": _is_docker(),
-    }
+    global TELEMETRY_CONTEXT
+
+    if not TELEMETRY_CONTEXT:
+        # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+        # if you change / add context
+        TELEMETRY_CONTEXT = {
+            "os": {"name": platform.system(), "version": platform.release()},
+            "ci": in_continuous_integration(),
+            "project": model.project_fingerprint(),
+            "directory": _hash_directory_path(os.getcwd()),
+            "python": sys.version.split(" ")[0],
+            "rasa_open_source": rasa.__version__,
+            "cpu": multiprocessing.cpu_count(),
+            "docker": _is_docker(),
+        }
+
+    # avoid returning the cached dict --> caller could modify the dictionary...
+    # usually we would use `lru_cache`, but that doesn't return a dict copy and
+    # doesn't work on inner functions, so we need to roll our own caching...
+    return TELEMETRY_CONTEXT.copy()
 
 
 def _track(
@@ -692,6 +702,8 @@ async def track_model_training(
 
     training_id = uuid.uuid4().hex
 
+    # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+    # if you change / add any properties
     _track(
         TRAINING_STARTED_EVENT,
         {
@@ -705,7 +717,7 @@ async def track_model_training(
             "num_actions": len(domain.action_names_or_texts),
             # Old nomenclature from when 'responses' were still called
             # 'templates' in the domain
-            "num_templates": len(domain.templates),
+            "num_templates": len(domain.responses),
             "num_slots": len(domain.slots),
             "num_forms": len(domain.forms),
             "num_intents": len(domain.intents),

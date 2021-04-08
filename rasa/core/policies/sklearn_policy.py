@@ -60,9 +60,9 @@ class SklearnPolicy(Policy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: int = DEFAULT_MAX_HISTORY,
         model: Optional["sklearn.base.BaseEstimator"] = None,
-        param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
+        param_grid: Optional[Union[Dict[Text, List], List[Dict]]] = None,
         cv: Optional[int] = None,
-        scoring: Optional[Text or List or Dict or Callable] = "accuracy",
+        scoring: Optional[Union[Text, List, Dict, Callable]] = "accuracy",
         label_encoder: LabelEncoder = LabelEncoder(),
         shuffle: bool = True,
         zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
@@ -133,7 +133,7 @@ class SklearnPolicy(Policy):
     def _state(self):
         return {attr: getattr(self, attr) for attr in self._pickle_params}
 
-    def model_architecture(self, **kwargs) -> Any:
+    def model_architecture(self, **kwargs: Any) -> Any:
         # filter out kwargs that cannot be passed to model
         train_params = self._get_valid_params(self.model.__init__, **kwargs)
         return self.model.set_params(**train_params)
@@ -164,7 +164,7 @@ class SklearnPolicy(Policy):
 
     def _get_features_for_attribute(
         self, attribute_data: Dict[Text, List[FeatureArray]]
-    ):
+    ) -> np.ndarray:
         """Given a list of all features for one attribute, turn it into a numpy array.
 
         shape_attribute = features[SENTENCE][0][0].shape[-1]
@@ -219,7 +219,13 @@ class SklearnPolicy(Policy):
         attribute_data = OrderedDict(attribute_data)
         return np.concatenate(list(attribute_data.values()), axis=-1)
 
-    def _search_and_score(self, model, X, y, param_grid) -> Tuple[Any, Any]:
+    def _search_and_score(
+        self,
+        model: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        param_grid: Union[Dict[Text, List], List[Dict]],
+    ) -> Tuple[Any, Any]:
         search = GridSearchCV(
             model, param_grid=param_grid, cv=self.cv, scoring="accuracy", verbose=1
         )
@@ -234,7 +240,7 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
-        tracker_state_features, label_ids, _ = self.featurize_for_training(
+        tracker_state_features, label_ids, _ = self._featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
         training_data, zero_state_features = model_data_utils.convert_to_data_format(
@@ -264,7 +270,9 @@ class SklearnPolicy(Policy):
         if score is not None:
             logger.info(f"Cross validation score: {score:.5f}")
 
-    def _postprocess_prediction(self, y_proba, domain) -> List[float]:
+    def _postprocess_prediction(
+        self, y_proba: np.ndarray, domain: Domain
+    ) -> List[float]:
         yp = y_proba[0].tolist()
 
         # Some classes might not be part of the training labels. Since
@@ -284,7 +292,18 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
-        X = self.featurizer.create_state_features([tracker], domain, interpreter)
+        """Predicts the next action the bot should take after seeing the tracker.
+
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
+
+        Returns:
+             The policy's prediction (e.g. the probabilities for the actions).
+        """
+        X = self._featurize_for_prediction(tracker, domain, interpreter)
         training_data, _ = model_data_utils.convert_to_data_format(
             X, self.zero_state_features
         )

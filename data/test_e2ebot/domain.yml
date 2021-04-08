@@ -1,0 +1,13 @@
+version: "2.0"
+
+intents:
+ - tell_name
+ - tell_mood
+
+entities:
+ - name
+ - mood
+
+responses:
+  utter_greet:
+  - text: "hi!"
