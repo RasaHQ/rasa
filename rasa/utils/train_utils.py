@@ -585,7 +585,7 @@ def _check_similarity_loss_setting(component_config: Dict[Text, Any]) -> None:
 
 
 def init_split_entities(
-    split_entities_config, default_split_entity
+    split_entities_config: Union[bool, Dict[Text, Any]], default_split_entity: bool
 ) -> Dict[Text, bool]:
     """Initialise the behaviour for splitting entities by comma (or not).
 
