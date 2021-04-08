@@ -39,9 +39,7 @@ logger = logging.getLogger(__name__)
 
 # URL to the new remote location of the model which
 # users might use. The model is no longer hosted here.
-ORIGINAL_TF_HUB_MODULE_URL = (
-    "https://github.com/davidalami/ConveRT/releases/download/1.0/nocontext_tf_model.tar.gz"
-)
+ORIGINAL_TF_HUB_MODULE_URL = "https://github.com/davidalami/ConveRT/releases/download/1.0/nocontext_tf_model.tar.gz"
 
 # Warning: This URL is only intended for running pytests on ConveRT
 # related components. This URL should not be allowed to be used by the user.
