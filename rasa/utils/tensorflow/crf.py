@@ -1,8 +1,9 @@
 import tensorflow as tf
+from tensorflow import TensorShape
 
 from tensorflow_addons.utils.types import TensorLike
 from typeguard import typechecked
-from typing import Tuple, Any
+from typing import Tuple, Any, List, Union
 
 
 # original code taken from
@@ -35,7 +36,7 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
     def output_size(self) -> int:
         return self._num_tags
 
-    def build(self, input_shape):
+    def build(self, input_shape: Union[TensorShape, List[TensorShape]]) -> None:
         super().build(input_shape)
 
     def call(

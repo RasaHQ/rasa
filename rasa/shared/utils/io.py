@@ -7,12 +7,12 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional, Text, Type, Union, FrozenSet
+from typing import Any, Dict, List, Optional, Text, Type, Union, FrozenSet, AnyStr
 import warnings
 
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
-from ruamel.yaml.constructor import DuplicateKeyError
+from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor
 
 from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
@@ -290,7 +290,7 @@ def json_to_string(obj: Any, **kwargs: Any) -> Text:
 def fix_yaml_loader() -> None:
     """Ensure that any string read by yaml is represented as unicode."""
 
-    def construct_yaml_str(self, node):
+    def construct_yaml_str(self: Any, node: Any) -> Any:
         # Override the default string handling function
         # to always return unicode objects
         return self.construct_scalar(node)
@@ -306,7 +306,7 @@ def replace_environment_variables() -> None:
     env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
     yaml.Resolver.add_implicit_resolver("!env_var", env_var_pattern, None)
 
-    def env_var_constructor(loader, node):
+    def env_var_constructor(loader: BaseConstructor, node: Any) -> AnyStr:
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
         expanded_vars = os.path.expandvars(value)

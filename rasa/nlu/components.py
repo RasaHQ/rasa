@@ -363,7 +363,7 @@ class ComponentMetaclass(type):
     """Metaclass with `name` class property."""
 
     @property
-    def name(cls):
+    def name(cls) -> Text:
         """The name property is a function of the class - its __name__."""
 
         return cls.__name__

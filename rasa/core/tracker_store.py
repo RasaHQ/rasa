@@ -17,10 +17,11 @@ from typing import (
     Optional,
     Text,
     Union,
-    TYPE_CHECKING,
+    TYPE_CHECKING, Generator,
 )
 
 from boto3.dynamodb.conditions import Key
+from pymongo.collection import Collection
 
 import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
@@ -364,7 +365,7 @@ class RedisTrackerStore(TrackerStore):
     def _get_key_prefix(self) -> Text:
         return self.key_prefix
 
-    def save(self, tracker, timeout=None):
+    def save(self, tracker: DialogueStateTracker, timeout: Any = None) -> None:
         """Saves the current conversation state"""
         if self.event_broker:
             self.stream_events(tracker)
@@ -466,7 +467,7 @@ class DynamoTrackerStore(TrackerStore):
 
         return table
 
-    def save(self, tracker):
+    def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
         from botocore.exceptions import ClientError
 
@@ -577,7 +578,7 @@ class MongoTrackerStore(TrackerStore):
         self._ensure_indices()
 
     @property
-    def conversations(self):
+    def conversations(self) -> Collection:
         """Returns the current conversation."""
         return self.db[self.collection]
 
@@ -991,7 +992,7 @@ class SQLTrackerStore(TrackerStore):
         conn.close()
 
     @contextlib.contextmanager
-    def session_scope(self):
+    def session_scope(self) -> Generator[Session, None, None]:
         """Provide a transactional scope around a series of operations."""
         session = self.sessionmaker()
         try:

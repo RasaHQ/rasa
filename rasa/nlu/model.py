@@ -93,14 +93,14 @@ class Metadata:
         return self.metadata.get(property_name, default)
 
     @property
-    def component_classes(self):
+    def component_classes(self) -> List[Optional[Any]]:
         if self.get("pipeline"):
             return [c.get("class") for c in self.get("pipeline", [])]
         else:
             return []
 
     @property
-    def number_of_components(self):
+    def number_of_components(self) -> int:
         return len(self.get("pipeline", []))
 
     def for_component(self, index: int, defaults: Any = None) -> Dict[Text, Any]:

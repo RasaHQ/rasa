@@ -264,7 +264,7 @@ class RepeatedLogFilter(logging.Filter):
 
     last_log = None
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         current_log = (
             record.levelno,
             record.pathname,

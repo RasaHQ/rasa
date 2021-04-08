@@ -6,11 +6,11 @@ import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
-from typing import Any, Callable, Deque, Dict, List, Optional, Text, Tuple, Union, Set
-
+from typing import Any, Callable, Deque, Dict, List, Optional, Text, Tuple, Union, Set, Coroutine
 
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
+from sanic.response import HTTPResponse
 from terminaltables import AsciiTable, SingleTable
 import numpy as np
 from aiohttp import ClientError
@@ -1603,17 +1603,17 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     # noinspection PyUnusedLocal
     @app.exception(NotFound)
-    async def ignore_404s(request, exception):
+    async def ignore_404s(request: Any, exception: Any) -> HTTPResponse:
         return response.text("Not found", status=404)
 
     # noinspection PyUnusedLocal
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
-    def visualisation_html(request):
+    def visualisation_html(request: Any) -> Coroutine[Any, Any, HTTPResponse]:
         return response.file(visualization.visualization_html_path())
 
     # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png(request):
+    def visualisation_png(request: Any) -> Union[Coroutine[Any, Any, HTTPResponse], HTTPResponse]:
         try:
             headers = {"Cache-Control": "no-cache"}
             return response.file(os.path.abspath(image_path), headers=headers)

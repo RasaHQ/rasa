@@ -3,6 +3,7 @@ import logging
 import os
 import re
 from pathlib import Path
+from re import Match
 from typing import Dict, Text, List, Any, Union, Tuple, Optional
 
 import rasa.shared.data
@@ -160,7 +161,7 @@ class MarkdownStoryReader(StoryReader):
             )
 
     def _replace_template_variables(self, line: Text) -> Text:
-        def process_match(matchobject):
+        def process_match(matchobject: Match) -> Any:
             varname = matchobject.group(1)
             if varname in self.template_variables:
                 return self.template_variables[varname]

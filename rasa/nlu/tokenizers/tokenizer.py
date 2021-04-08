@@ -40,7 +40,7 @@ class Token:
     def get(self, prop: Text, default: Optional[Any] = None) -> Any:
         return self.data.get(prop, default)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> Any:
         if not isinstance(other, Token):
             return NotImplemented
         return (self.start, self.end, self.text, self.lemma) == (
@@ -50,7 +50,7 @@ class Token:
             other.lemma,
         )
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any) -> Any:
         if not isinstance(other, Token):
             return NotImplemented
         return (self.start, self.end, self.text, self.lemma) < (

@@ -708,7 +708,7 @@ class Domain:
         return rasa.shared.utils.io.get_dictionary_fingerprint(self_as_dict)
 
     @rasa.shared.utils.common.lazy_property
-    def user_actions_and_forms(self):
+    def user_actions_and_forms(self) -> List[Text]:
         """Returns combination of user actions and forms."""
 
         return self.user_actions + self.form_names
@@ -735,7 +735,7 @@ class Domain:
         return len(self.action_names_or_texts)
 
     @rasa.shared.utils.common.lazy_property
-    def num_states(self):
+    def num_states(self) -> int:
         """Number of used input states for the action prediction."""
 
         return len(self.input_states)
@@ -1537,7 +1537,7 @@ class Domain:
         return self.intent_properties.get(intent_name, {})
 
     @rasa.shared.utils.common.lazy_property
-    def intents(self):
+    def intents(self) -> Text:
         return sorted(self.intent_properties.keys())
 
     @property

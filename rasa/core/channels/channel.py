@@ -12,7 +12,7 @@ from typing import (
     Callable,
     Iterable,
     Awaitable,
-    NoReturn,
+    NoReturn, Coroutine,
 )
 
 from rasa.cli import utils as cli_utils
@@ -81,7 +81,7 @@ class UserMessage:
 def register(
     input_channels: List["InputChannel"], app: Sanic, route: Optional[Text]
 ) -> None:
-    async def handler(*args, **kwargs):
+    async def handler(*args: Any, **kwargs: Any) -> None:
         await app.agent.handle_message(*args, **kwargs)
 
     for channel in input_channels:
