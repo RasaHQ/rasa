@@ -61,7 +61,6 @@ jobs:
     name: Wait for docs tests
     runs-on: ubuntu-latest
     needs: [ changes ]
-    # if: needs.changes.outputs.docs == 'true' || github.event_name == 'push' && (startsWith(github.event.ref, 'refs/tags') || github.ref == 'refs/heads/main')
 
     steps:
       - name: Checkout git repository 🕝
