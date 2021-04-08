@@ -1,6 +1,6 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
-from typing import Text, List, Dict, Any, Union, Optional, Tuple
+from typing import Text, List, Dict, Any, Union, Optional, Tuple, Callable
 
 from rasa.core.constants import DIALOGUE
 from rasa.shared.nlu.constants import TEXT
@@ -898,7 +898,13 @@ def prepare_transformer_layer(
     units: int,
     drop_rate: float,
     unidirectional: bool,
-):
+) -> Union[
+    TransformerEncoder,
+    Callable[
+        [tf.Tensor, Optional[tf.Tensor], Optional[Union[tf.Tensor, bool]]],
+        Tuple[tf.Tensor, Optional[tf.Tensor]],
+    ],
+]:
     """Creates & returns a transformer encoder, potentially with 0 layers."""
     if num_layers > 0:
         return TransformerEncoder(
