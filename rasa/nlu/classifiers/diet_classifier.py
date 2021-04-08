@@ -724,7 +724,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_attribute: Text,
         label_id_dict: Dict[Text, int],
         training: bool = True,
-    ):
+    ) -> None:
         label_ids = []
         if training and self.component_config[INTENT_CLASSIFICATION]:
             for example in training_data:
@@ -1067,7 +1067,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
     @classmethod
-    def _load_from_files(cls, meta: Dict[Text, Any], model_dir: Text):
+    def _load_from_files(
+        cls, meta: Dict[Text, Any], model_dir: Text
+    ) -> Tuple[
+        Dict[int, Text],
+        List[EntityTagSpec],
+        RasaModelData,
+        Dict[Text, Any],
+        Dict[Text, Dict[Text, List[FeatureArray]]],
+    ]:
         file_name = meta.get("file")
 
         model_dir = Path(model_dir)
@@ -1611,7 +1619,9 @@ class DIET(TransformerRasaModel):
 
         return losses
 
-    def _update_entity_metrics(self, loss: tf.Tensor, f1: tf.Tensor, tag_name: Text):
+    def _update_entity_metrics(
+        self, loss: tf.Tensor, f1: tf.Tensor, tag_name: Text
+    ) -> None:
         if tag_name == ENTITY_ATTRIBUTE_TYPE:
             self.entity_loss.update_state(loss)
             self.entity_f1.update_state(f1)

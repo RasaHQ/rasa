@@ -75,7 +75,7 @@ class RasaModel(TmpKerasModel):
     Cannot be used as tf.keras.Model.
     """
 
-    def __init__(self, random_seed: Optional[int] = None, **kwargs,) -> None:
+    def __init__(self, random_seed: Optional[int] = None, **kwargs: Any) -> None:
         """Initialize the RasaModel.
 
         Args:
@@ -322,8 +322,8 @@ class RasaModel(TmpKerasModel):
         model_data_example: RasaModelData,
         predict_data_example: Optional[RasaModelData] = None,
         finetune_mode: bool = False,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> "RasaModel":
         """Loads a model from the given weights.
 
@@ -407,7 +407,7 @@ class RasaModel(TmpKerasModel):
         feature_dimension: int,
         idx: int,
         number_of_dimensions: int,
-    ):
+    ) -> Tuple[tf.Tensor, int]:
         if isinstance(batch[idx], tf.Tensor):
             # explicitly substitute last dimension in shape with known
             # static value
@@ -432,7 +432,7 @@ class RasaModel(TmpKerasModel):
         feature_dimension: int,
         idx: int,
         number_of_dimensions: int,
-    ):
+    ) -> Tuple[tf.SparseTensor, int]:
         # explicitly substitute last dimension in shape with known
         # static value
         shape = [batch[idx + 2][i] for i in range(number_of_dimensions - 1)] + [
