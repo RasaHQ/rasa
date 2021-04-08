@@ -71,7 +71,7 @@ class RasaModel(TmpKerasModel):
     Cannot be used as tf.keras.Model.
     """
 
-    def __init__(self, random_seed: Optional[int] = None, **kwargs,) -> None:
+    def __init__(self, random_seed: Optional[int] = None, **kwargs: Any) -> None:
         """Initialize the RasaModel.
 
         Args:
@@ -293,8 +293,8 @@ class RasaModel(TmpKerasModel):
         model_data_example: RasaModelData,
         predict_data_example: Optional[RasaModelData] = None,
         finetune_mode: bool = False,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> "RasaModel":
         """Loads a model from the given weights.
 
@@ -378,7 +378,7 @@ class RasaModel(TmpKerasModel):
         feature_dimension: int,
         idx: int,
         number_of_dimensions: int,
-    ):
+    ) -> Tuple[tf.Tensor, int]:
         if isinstance(batch[idx], tf.Tensor):
             # explicitly substitute last dimension in shape with known
             # static value
@@ -403,7 +403,7 @@ class RasaModel(TmpKerasModel):
         feature_dimension: int,
         idx: int,
         number_of_dimensions: int,
-    ):
+    ) -> Tuple[tf.SparseTensor, int]:
         # explicitly substitute last dimension in shape with known
         # static value
         shape = [batch[idx + 2][i] for i in range(number_of_dimensions - 1)] + [
@@ -500,7 +500,7 @@ class TransformerRasaModel(RasaModel):
         drop_rate_attention: float,
         unidirectional: bool,
         prefix: Text = "transformer",
-    ):
+    ) -> None:
         if num_layers > 0:
             self._tf_layers[f"{prefix}.{name}"] = TransformerEncoder(
                 num_layers,
@@ -716,7 +716,7 @@ class TransformerRasaModel(RasaModel):
         sentence_x: tf.Tensor,
         name: Text,
         mask_text: tf.Tensor,
-    ):
+    ) -> tf.Tensor:
         if sequence_x.shape[-1] != sentence_x.shape[-1]:
             sequence_x = self._tf_layers[f"concat_layer.{name}_{SEQUENCE}"](
                 sequence_x, self._training

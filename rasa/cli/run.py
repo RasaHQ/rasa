@@ -51,7 +51,7 @@ def add_subparser(
     arguments.set_run_action_arguments(sdk_subparser)
 
 
-def run_actions(args: argparse.Namespace):
+def run_actions(args: argparse.Namespace) -> None:
     import rasa_sdk.__main__ as sdk
 
     args.actions = args.actions or DEFAULT_ACTIONS_PATH
@@ -59,7 +59,7 @@ def run_actions(args: argparse.Namespace):
     sdk.main_from_args(args)
 
 
-def _validate_model_path(model_path: Text, parameter: Text, default: Text):
+def _validate_model_path(model_path: Text, parameter: Text, default: Text) -> Text:
 
     if model_path is not None and not os.path.exists(model_path):
         reason_str = f"'{model_path}' not found."
