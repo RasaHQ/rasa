@@ -31,7 +31,7 @@ from rasa.shared.constants import (
     UTTER_PREFIX,
     DOCS_URL_RESPONSES,
     REQUIRED_SLOTS_KEY,
-    GLOBAL_NOT_INTENT,
+    IGNORED_INTENTS,
 )
 import rasa.shared.core.constants
 from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
@@ -1898,9 +1898,9 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
             )
             slots = form_data
 
-        if GLOBAL_NOT_INTENT in form_data and REQUIRED_SLOTS_KEY not in form_data:
+        if IGNORED_INTENTS in form_data and REQUIRED_SLOTS_KEY not in form_data:
             raise InvalidDomain(
-                f"If you use the {GLOBAL_NOT_INTENT} parameter in your form, then"
+                f"If you use the {IGNORED_INTENTS} parameter in your form, then"
                 f" the keyword {REQUIRED_SLOTS_KEY} should precede the definition"
                 f" of your slot mappings. Please see"
                 f" {DOCS_URL_FORMS} for more information."

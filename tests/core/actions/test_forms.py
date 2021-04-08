@@ -12,7 +12,7 @@ from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
-from rasa.shared.constants import REQUIRED_SLOTS_KEY, GLOBAL_NOT_INTENT
+from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
@@ -1362,120 +1362,120 @@ async def test_ask_for_slot_if_not_utter_ask(
 
 
 @pytest.mark.parametrize(
-    "global_not_intent, slot_not_intent, type",
+    "ignored_intents, slot_not_intent, type",
     [
         # for entity_type -> from_entity
         (
-            # `global_not_intent` as a string and slot's not_intent as an empty list.
+            # `ignored_intents` as a string and slot's not_intent as an empty list.
             "greet",
             [],
             "from_entity",
         ),
         (
-            # `global_not_intent` as an empty list and slot's not_intent has a value.
+            # `ignored_intents` as an empty list and slot's not_intent has a value.
             [],
             ["greet"],
             "from_entity",
         ),
         (
-            # `global_not_intent` as a list of 2 values and slot's not_intent has one
-            # value different than the ones in `global_not_intent`.
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `ignored_intents`.
             ["chitchat", "greet"],
             ["inform"],
             "from_entity",
         ),
         (
-            # `global_not_intent` as a list of 2 values and slot's not_intent has one
-            # value that is included also in `global_not_intent`.
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `ignored_intents`.
             ["chitchat", "greet"],
             ["chitchat"],
             "from_entity",
         ),
         # same examples for entity_type -> from_text
         (
-            # `global_not_intent` as a string and slot's not_intent as an empty list.
+            # `ignored_intents` as a string and slot's not_intent as an empty list.
             "greet",
             [],
             "from_text",
         ),
         (
-            # `global_not_intent` as an empty list and slot's not_intent has a value.
+            # `ignored_intents` as an empty list and slot's not_intent has a value.
             [],
             ["greet"],
             "from_text",
         ),
         (
-            # `global_not_intent` as a list of 2 values and slot's not_intent has one
-            # value different than the ones in `global_not_intent`.
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `ignored_intents`.
             ["chitchat", "greet"],
             ["inform"],
             "from_text",
         ),
         (
-            # `global_not_intent` as a list of 2 values and slot's not_intent has one
-            # value that is included also in `global_not_intent`.
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `ignored_intents`.
             ["chitchat", "greet"],
             ["chitchat"],
             "from_text",
         ),
         # same examples for entity_type -> from_intent
         (
-            # `global_not_intent` as a string and slot's not_intent as an empty list.
+            # `ignored_intents` as a string and slot's not_intent as an empty list.
             "greet",
             [],
             "from_intent",
         ),
         (
-            # `global_not_intent` as an empty list and slot's not_intent has a value.
+            # `ignored_intents` as an empty list and slot's not_intent has a value.
             [],
             ["greet"],
             "from_intent",
         ),
         (
-            # `global_not_intent` as a list of 2 values and slot's not_intent has one
-            # value different than the ones in `global_not_intent`.
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `ignored_intents`.
             ["chitchat", "greet"],
             ["inform"],
             "from_intent",
         ),
         (
-            # `global_not_intent` as a list of 2 values and slot's not_intent has one
-            # value that is included also in `global_not_intent`.
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `ignored_intents`.
             ["chitchat", "greet"],
             ["chitchat"],
             "from_intent",
         ),
         # same examples for entity_type -> from_trigger_intent
         (
-            # `global_not_intent` as a string and slot's not_intent as an empty list.
+            # `ignored_intents` as a string and slot's not_intent as an empty list.
             "greet",
             [],
             "from_trigger_intent",
         ),
         (
-            # `global_not_intent` as an empty list and slot's not_intent has a value.
+            # `ignored_intents` as an empty list and slot's not_intent has a value.
             [],
             ["greet"],
             "from_trigger_intent",
         ),
         (
-            # `global_not_intent` as a list of 2 values and slot's not_intent has one
-            # value different than the ones in `global_not_intent`.
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `ignored_intents`.
             ["chitchat", "greet"],
             ["inform"],
             "from_trigger_intent",
         ),
         (
-            # `global_not_intent` as a list of 2 values and slot's not_intent has one
-            # value that is included also in `global_not_intent`.
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `ignored_intents`.
             ["chitchat", "greet"],
             ["chitchat"],
             "from_trigger_intent",
         ),
     ],
 )
-def test_global_not_intent(
-    global_not_intent: Union[Text, List[Text]],
+def test_ignored_intents(
+    ignored_intents: Union[Text, List[Text]],
     slot_not_intent: Union[Text, List[Text]],
     type: Text,
 ):
@@ -1488,7 +1488,7 @@ def test_global_not_intent(
             {
                 "forms": {
                     form_name: {
-                        GLOBAL_NOT_INTENT: global_not_intent,
+                        IGNORED_INTENTS: ignored_intents,
                         REQUIRED_SLOTS_KEY: {
                             entity_name: [
                                 {
@@ -1507,7 +1507,7 @@ def test_global_not_intent(
             {
                 "forms": {
                     form_name: {
-                        GLOBAL_NOT_INTENT: global_not_intent,
+                        IGNORED_INTENTS: ignored_intents,
                         REQUIRED_SLOTS_KEY: {
                             entity_name: [
                                 {
@@ -1526,7 +1526,7 @@ def test_global_not_intent(
             {
                 "forms": {
                     form_name: {
-                        GLOBAL_NOT_INTENT: global_not_intent,
+                        IGNORED_INTENTS: ignored_intents,
                         REQUIRED_SLOTS_KEY: {
                             entity_name: [
                                 {

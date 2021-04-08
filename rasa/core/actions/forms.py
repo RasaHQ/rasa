@@ -15,7 +15,7 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.constants import (
     UTTER_PREFIX,
-    GLOBAL_NOT_INTENT,
+    IGNORED_INTENTS,
 )
 from rasa.shared.core.events import (
     Event,
@@ -166,27 +166,25 @@ class FormAction(LoopAction):
         mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
         return mapping_as_string in self._unique_entity_mappings
 
-    def get_global_not_intents(self, domain: Domain) -> List[Text]:
-        """Returns a list of ignored intents as retrieved from `global_not_intent`.
+    def get_ignored_intents(self, domain: Domain) -> List[Text]:
+        """Returns a list of ignored intents as retrieved from `ignored_intents`.
 
         Args:
             domain: The current model domain.
 
         Returns:
-            The value/s found in `global_not_intent` parameter in the `domain.yml`
+            The value/s found in `ignored_intents` parameter in the `domain.yml`
             (under forms).
         """
         if domain.__dict__["forms"]:
-            if GLOBAL_NOT_INTENT in domain.__dict__["forms"][self.name()]:
-                global_not_intents = domain.__dict__["forms"][self.name()][
-                    GLOBAL_NOT_INTENT
-                ]
+            if IGNORED_INTENTS in domain.__dict__["forms"][self.name()]:
+                ignored_intents = domain.__dict__["forms"][self.name()][IGNORED_INTENTS]
             else:
-                global_not_intents = []
-            if not isinstance(global_not_intents, list):
-                global_not_intents = [global_not_intents]
+                ignored_intents = []
+            if not isinstance(ignored_intents, list):
+                ignored_intents = [ignored_intents]
 
-            return global_not_intents
+            return ignored_intents
         else:
             return []
 
@@ -203,7 +201,7 @@ class FormAction(LoopAction):
         )
 
         mapping_not_intents = set(
-            mapping_not_intents + self.get_global_not_intents(domain)
+            mapping_not_intents + self.get_ignored_intents(domain)
         )
 
         intent = tracker.latest_message.intent.get("name")

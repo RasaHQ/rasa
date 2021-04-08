@@ -10,7 +10,7 @@ import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
-    GLOBAL_NOT_INTENT,
+    IGNORED_INTENTS,
 )
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -1336,11 +1336,11 @@ def test_domain_with_empty_entity_mapping():
         Domain.from_yaml(test_yaml).as_dict()
 
 
-def test_global_not_intent_slot_mappings_invalid_domain():
+def test_ignored_intents_slot_mappings_invalid_domain():
     domain_as_dict = {
         KEY_FORMS: {
             "my_form": {
-                GLOBAL_NOT_INTENT: "some_not_intent",
+                IGNORED_INTENTS: "some_not_intent",
                 "slot_x": [
                     {
                         "type": "from_entity",
@@ -1352,4 +1352,4 @@ def test_global_not_intent_slot_mappings_invalid_domain():
         },
     }
     with pytest.raises(InvalidDomain):
-        Domain.from_dict(domain_as_dict)        
+        Domain.from_dict(domain_as_dict)
