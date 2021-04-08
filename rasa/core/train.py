@@ -81,7 +81,7 @@ async def train_comparison_models(
     policy_configs: Optional[List] = None,
     runs: int = 1,
     additional_arguments: Optional[Dict] = None,
-):
+) -> None:
     """Train multiple models for comparison of policies"""
     from rasa import model
 
@@ -143,7 +143,7 @@ async def do_compare_training(
     args: argparse.Namespace,
     story_file: Text,
     additional_arguments: Optional[Dict] = None,
-):
+) -> None:
     _, no_stories = await asyncio.gather(
         train_comparison_models(
             story_file=story_file,
@@ -173,7 +173,7 @@ async def do_compare_training(
 
 def do_interactive_learning(
     args: argparse.Namespace, file_importer: TrainingDataImporter
-):
+) -> None:
     from rasa.core.training import interactive
 
     interactive.run_interactive_learning(

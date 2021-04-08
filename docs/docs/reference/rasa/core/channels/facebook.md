@@ -136,7 +136,7 @@ https://github.com/rehabstudio/fbmessenger#facebook-app-setup
 
 ```python
  | @staticmethod
- | validate_hub_signature(app_secret, request_payload, hub_signature_header) -> bool
+ | validate_hub_signature(app_secret: Text, request_payload: bytes, hub_signature_header: Text) -> bool
 ```
 
 Make sure the incoming webhook requests are properly signed.

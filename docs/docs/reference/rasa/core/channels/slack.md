@@ -60,7 +60,7 @@ https://github.com/slackapi/python-slackclient
 #### process\_message
 
 ```python
- | async process_message(request: Request, on_new_message: Callable[[UserMessage], Awaitable[Any]], text, sender_id: Optional[Text], metadata: Optional[Dict]) -> Any
+ | async process_message(request: Request, on_new_message: Callable[[UserMessage], Awaitable[Any]], text: Text, sender_id: Optional[Text], metadata: Optional[Dict]) -> Any
 ```
 
 Slack retries to post messages up to 3 times based on

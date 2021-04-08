@@ -15,7 +15,7 @@ Computes the forward decoding in a linear-chain CRF.
 
 ```python
  | @typechecked
- | __init__(transition_params: TensorLike, **kwargs) -> None
+ | __init__(transition_params: TensorLike, **kwargs: Any) -> None
 ```
 
 Initialize the CrfDecodeForwardRnnCell.

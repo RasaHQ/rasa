@@ -45,7 +45,7 @@ class TrainingDataWriter()
 #### dump
 
 ```python
- | dump(filename: Text, training_data) -> None
+ | dump(filename: Text, training_data: "TrainingData") -> None
 ```
 
 Writes a TrainingData object in markdown format to a file.

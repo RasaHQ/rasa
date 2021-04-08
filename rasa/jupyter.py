@@ -61,7 +61,7 @@ def chat(
             _display_bot_response(response)
 
 
-def _display_bot_response(response: Dict):
+def _display_bot_response(response: Dict) -> None:
     from IPython.display import Image, display
 
     for response_type, value in response.items():

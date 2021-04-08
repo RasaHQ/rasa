@@ -61,7 +61,7 @@ class MitieFeaturizer(DenseFeaturizer):
 
     def process_training_example(
         self, example: Message, attribute: Text, mitie_feature_extractor: Any
-    ):
+    ) -> None:
         tokens = example.get(TOKENS_NAMES[attribute])
 
         if tokens is not None:
@@ -90,7 +90,7 @@ class MitieFeaturizer(DenseFeaturizer):
         sequence_features: np.ndarray,
         sentence_features: np.ndarray,
         attribute: Text,
-    ):
+    ) -> None:
         final_sequence_features = Features(
             sequence_features,
             FEATURE_TYPE_SEQUENCE,
@@ -107,7 +107,7 @@ class MitieFeaturizer(DenseFeaturizer):
         )
         message.add_features(final_sentence_features)
 
-    def _mitie_feature_extractor(self, **kwargs) -> Any:
+    def _mitie_feature_extractor(self, **kwargs: Any) -> Any:
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
             raise Exception(

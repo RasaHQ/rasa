@@ -22,7 +22,7 @@ Cannot be used as tf.keras.Model.
 #### \_\_init\_\_
 
 ```python
- | __init__(random_seed: Optional[int] = None, **kwargs, ,) -> None
+ | __init__(random_seed: Optional[int] = None, **kwargs: Any) -> None
 ```
 
 Initialize the RasaModel.
@@ -165,7 +165,7 @@ Save the model to the given file.
 
 ```python
  | @classmethod
- | load(cls, model_file_name: Text, model_data_example: RasaModelData, predict_data_example: Optional[RasaModelData] = None, finetune_mode: bool = False, *args, **kwargs, *, ,) -> "RasaModel"
+ | load(cls, model_file_name: Text, model_data_example: RasaModelData, predict_data_example: Optional[RasaModelData] = None, finetune_mode: bool = False, *args: Any, **kwargs: Any, *, ,) -> "RasaModel"
 ```
 
 Loads a model from the given weights.

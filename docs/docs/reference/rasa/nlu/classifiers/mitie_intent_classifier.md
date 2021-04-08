@@ -12,7 +12,7 @@ class MitieIntentClassifier(IntentClassifier)
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None, clf=None) -> None
+ | __init__(component_config: Optional[Dict[Text, Any]] = None, clf: Optional["mitie.text_categorizer"] = None) -> None
 ```
 
 Construct a new intent classifier using the MITIE framework.

@@ -248,7 +248,7 @@ Validates that combination of parameters in the configuration are correctly set.
 #### init\_split\_entities
 
 ```python
-init_split_entities(split_entities_config, default_split_entity) -> Dict[Text, bool]
+init_split_entities(split_entities_config: Union[bool, Dict[Text, Any]], default_split_entity: bool) -> Dict[Text, bool]
 ```
 
 Initialise the behaviour for splitting entities by comma (or not).

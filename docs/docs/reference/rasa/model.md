@@ -209,7 +209,7 @@ Load a persisted fingerprint.
 #### persist\_fingerprint
 
 ```python
-persist_fingerprint(output_path: Text, fingerprint: Fingerprint)
+persist_fingerprint(output_path: Text, fingerprint: Fingerprint) -> None
 ```
 
 Persist a model fingerprint.

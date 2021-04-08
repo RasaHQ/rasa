@@ -116,7 +116,7 @@ Indicates if the slot&#x27;s value has been set.
 
 ```python
  | @staticmethod
- | resolve_by_type(type_name) -> Type["Slot"]
+ | resolve_by_type(type_name: Text) -> Type["Slot"]
 ```
 
 Returns a slots class by its type name.

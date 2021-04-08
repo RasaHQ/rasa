@@ -104,7 +104,7 @@ Validates the pipeline.
 #### any\_components\_in\_pipeline
 
 ```python
-any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"])
+any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]) -> bool
 ```
 
 Check if any of the provided components are listed in the pipeline.

@@ -39,7 +39,7 @@ Captures all information about a model to load and prepare it.
 
 ```python
  | @staticmethod
- | load(model_dir: Text)
+ | load(model_dir: Text) -> "Metadata"
 ```
 
 Loads the metadata from a models directory.
@@ -55,7 +55,7 @@ Loads the metadata from a models directory.
 #### \_\_init\_\_
 
 ```python
- | __init__(metadata: Dict[Text, Any])
+ | __init__(metadata: Dict[Text, Any]) -> None
 ```
 
 Set `metadata` attribute.
@@ -80,7 +80,7 @@ Language of the underlying model
 #### persist
 
 ```python
- | persist(model_dir: Text)
+ | persist(model_dir: Text) -> None
 ```
 
 Persists the metadata of a model to a given directory.

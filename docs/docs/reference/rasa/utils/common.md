@@ -31,7 +31,7 @@ Read global Rasa configuration.
 #### set\_log\_level
 
 ```python
-set_log_level(log_level: Optional[int] = None)
+set_log_level(log_level: Optional[int] = None) -> None
 ```
 
 Set log level of Rasa and Tensorflow either to the provided log level or
@@ -49,7 +49,7 @@ Sets Tensorflow log level based on env variable &#x27;LOG_LEVEL_LIBRARIES&#x27;.
 #### update\_sanic\_log\_level
 
 ```python
-update_sanic_log_level(log_file: Optional[Text] = None)
+update_sanic_log_level(log_file: Optional[Text] = None) -> None
 ```
 
 Set the log level of sanic loggers to the log level specified in the environment

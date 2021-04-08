@@ -12,7 +12,7 @@ class MitieNLP(Component)
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None, extractor=None) -> None
+ | __init__(component_config: Optional[Dict[Text, Any]] = None, extractor: Optional["mitie.total_word_feature_extractor"] = None) -> None
 ```
 
 Construct a new language model from the MITIE framework.

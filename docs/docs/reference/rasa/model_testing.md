@@ -59,7 +59,7 @@ Tests a trained Core model against a set of test stories.
 #### test\_nlu
 
 ```python
-async test_nlu(model: Optional[Text], nlu_data: Optional[Text], output_directory: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None)
+async test_nlu(model: Optional[Text], nlu_data: Optional[Text], output_directory: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None) -> None
 ```
 
 Tests the NLU Model.
@@ -67,7 +67,7 @@ Tests the NLU Model.
 #### compare\_nlu\_models
 
 ```python
-async compare_nlu_models(configs: List[Text], test_data: TrainingData, output: Text, runs: int, exclusion_percentages: List[int])
+async compare_nlu_models(configs: List[Text], test_data: TrainingData, output: Text, runs: int, exclusion_percentages: List[int]) -> None
 ```
 
 Trains multiple models, compares them and saves the results.

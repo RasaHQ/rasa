@@ -401,7 +401,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
 
 
 class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__()
         # it is hard to fully mimic old behavior, but SingleStateFeaturizer
         # does the same thing if nlu pipeline is configured correctly

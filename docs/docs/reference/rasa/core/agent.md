@@ -125,7 +125,7 @@ The return value of this function is parsed_data.
 #### handle\_message
 
 ```python
- | async handle_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs, ,) -> Optional[List[Dict[Text, Any]]]
+ | async handle_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> Optional[List[Dict[Text, Any]]]
 ```
 
 Handle a single message.

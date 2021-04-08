@@ -47,7 +47,7 @@ Trains a Rasa model (Core and NLU).
 #### handle\_domain\_if\_not\_exists
 
 ```python
-async handle_domain_if_not_exists(file_importer: TrainingDataImporter, output_path, fixed_model_name)
+async handle_domain_if_not_exists(file_importer: TrainingDataImporter, output_path: Text, fixed_model_name: Optional[Text]) -> Text
 ```
 
 Trains only the nlu model and prints a warning about missing domain.
