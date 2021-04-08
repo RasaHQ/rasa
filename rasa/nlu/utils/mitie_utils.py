@@ -20,10 +20,11 @@ class MitieNLP(Component):
     }
 
     def __init__(
-        self, component_config: Optional[Dict[Text, Any]] = None, extractor=None
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        extractor: Optional["mitie.total_word_feature_extractor"] = None,
     ) -> None:
         """Construct a new language model from the MITIE framework."""
-
         super().__init__(component_config)
 
         self.extractor = extractor
