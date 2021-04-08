@@ -32,7 +32,7 @@ Uses NLU parser information to generate a message with inline entity annotations
 **Returns**:
 
   Message with entities annotated inline, e.g.
-  `I am from [Berlin]{&quot;entity&quot;: &quot;city&quot;}`.
+  `I am from [Berlin]{"entity": "city"}`.
 
 ## Event Objects
 
