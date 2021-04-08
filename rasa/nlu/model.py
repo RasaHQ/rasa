@@ -93,7 +93,7 @@ class Metadata:
         return self.metadata.get(property_name, default)
 
     @property
-    def component_classes(self) -> List[Optional[Any]]:
+    def component_classes(self) -> List[Optional[Text]]:
         if self.get("pipeline"):
             return [c.get("class") for c in self.get("pipeline", [])]
         else:

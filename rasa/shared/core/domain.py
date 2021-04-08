@@ -1537,7 +1537,7 @@ class Domain:
         return self.intent_properties.get(intent_name, {})
 
     @rasa.shared.utils.common.lazy_property
-    def intents(self) -> Text:
+    def intents(self) -> List[Text]:
         return sorted(self.intent_properties.keys())
 
     @property

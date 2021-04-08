@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm.session import Session, sessionmaker
+    from sqlalchemy.orm.session import Session
     from sqlalchemy import Sequence
     from sqlalchemy.orm.query import Query
 
@@ -993,7 +993,7 @@ class SQLTrackerStore(TrackerStore):
         conn.close()
 
     @contextlib.contextmanager
-    def session_scope(self) -> Generator["sessionmaker", None, None]:
+    def session_scope(self) -> Generator["Session", None, None]:
         """Provide a transactional scope around a series of operations."""
         session = self.sessionmaker()
         try:

@@ -120,7 +120,6 @@ def configure_app(
     if logger.isEnabledFor(logging.DEBUG):
         rasa.core.utils.list_routes(app)
 
-    # configure async loop logging
     async def configure_async_logging() -> None:
         if logger.isEnabledFor(logging.DEBUG):
             rasa.utils.io.enable_async_loop_debugging(asyncio.get_event_loop())

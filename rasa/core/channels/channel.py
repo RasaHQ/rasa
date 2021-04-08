@@ -13,7 +13,6 @@ from typing import (
     Iterable,
     Awaitable,
     NoReturn,
-    Coroutine,
 )
 
 from rasa.cli import utils as cli_utils
