@@ -10,8 +10,10 @@ import kafka
 import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
+from aiormq import ChannelNotFoundEntity
 
 from rasa.core.brokers import pika
+from tests.conftest import AsyncMock
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -93,6 +95,18 @@ def test_pika_queues_from_args(
         )
 
     assert pika_processor.queues == expected
+
+
+async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
+
+    monkeypatch.setattr(
+        PikaEventBroker, "connect", AsyncMock(side_effect=ChannelNotFoundEntity())
+    )
+
+    with pytest.raises(ConnectionException):
+        await EventBroker.create(
+            EndpointConfig(username="username", password="password", type="pika")
+        )
 
 
 async def test_no_broker_in_config(endpoints_path: Text):

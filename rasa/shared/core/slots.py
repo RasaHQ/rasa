@@ -126,7 +126,7 @@ class Slot:
         return f"<{self.__class__.__name__}({self.name}: {self.value})>"
 
     @staticmethod
-    def resolve_by_type(type_name) -> Type["Slot"]:
+    def resolve_by_type(type_name: Text) -> Type["Slot"]:
         """Returns a slots class by its type name."""
         for cls in rasa.shared.utils.common.all_subclasses(Slot):
             if cls.type_name == type_name:

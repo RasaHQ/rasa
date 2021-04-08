@@ -230,7 +230,7 @@ def run_nlu_test(args: argparse.Namespace) -> None:
     )
 
 
-def test(args: argparse.Namespace):
+def test(args: argparse.Namespace) -> None:
     """Run end-to-end tests."""
     setattr(args, "e2e", True)
     run_core_test(args)
