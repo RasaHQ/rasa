@@ -114,7 +114,7 @@ async def test_training_script_with_restart_stories(tmp_path: Path, domain_path:
     assert True
 
 
-@pytest.mark.timeout(120)
+@pytest.mark.timeout(120, func_only=True)
 async def test_random_seed(
     tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
