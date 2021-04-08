@@ -564,7 +564,7 @@ def test_current_state_after_restart(default_agent):
     assert state.get("events") == events_after_restart
 
 
-def test_current_state_all_events(default_agent):
+def test_current_state_all_events(empty_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
 
@@ -573,7 +573,7 @@ def test_current_state_all_events(default_agent):
     tracker = DialogueStateTracker.from_dict(
         tracker_json.get("sender_id"),
         tracker_json.get("events", []),
-        default_agent.domain.slots,
+        empty_agent.domain.slots,
     )
 
     evts = [e.as_dict() for e in tracker.events]
@@ -582,21 +582,21 @@ def test_current_state_all_events(default_agent):
     assert state.get("events") == evts
 
 
-def test_current_state_no_events(default_agent):
+def test_current_state_no_events(empty_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
 
     tracker = DialogueStateTracker.from_dict(
         tracker_json.get("sender_id"),
         tracker_json.get("events", []),
-        default_agent.domain.slots,
+        empty_agent.domain.slots,
     )
 
     state = tracker.current_state(EventVerbosity.NONE)
     assert state.get("events") is None
 
 
-def test_current_state_applied_events(default_agent):
+def test_current_state_applied_events(empty_agent: Agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
 
@@ -608,7 +608,7 @@ def test_current_state_applied_events(default_agent):
     tracker = DialogueStateTracker.from_dict(
         tracker_json.get("sender_id"),
         tracker_json.get("events", []),
-        default_agent.domain.slots,
+        empty_agent.domain.slots,
     )
 
     evts = [e.as_dict() for e in tracker.events]
@@ -618,7 +618,7 @@ def test_current_state_applied_events(default_agent):
     assert state.get("events") == applied_events
 
 
-def test_session_started_not_part_of_applied_events(default_agent: Agent):
+def test_session_started_not_part_of_applied_events(empty_agent: Agent):
     # take tracker dump and insert a SessionStarted event sequence
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
@@ -631,7 +631,7 @@ def test_session_started_not_part_of_applied_events(default_agent: Agent):
     tracker = DialogueStateTracker.from_dict(
         tracker_json.get("sender_id"),
         tracker_json.get("events", []),
-        default_agent.domain.slots,
+        empty_agent.domain.slots,
     )
 
     # the SessionStart event was at index 5, the tracker's `applied_events()` should

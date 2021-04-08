@@ -494,7 +494,7 @@ class MessageProcessor:
         self._save_tracker(tracker)
 
     @staticmethod
-    def _log_slots(tracker) -> None:
+    def _log_slots(tracker: DialogueStateTracker) -> None:
         # Log currently set slots
         slot_values = "\n".join(
             [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
@@ -536,7 +536,9 @@ class MessageProcessor:
                     docs=DOCS_URL_DOMAINS,
                 )
 
-    def _get_action(self, action_name) -> Optional[rasa.core.actions.action.Action]:
+    def _get_action(
+        self, action_name: Text
+    ) -> Optional[rasa.core.actions.action.Action]:
         return rasa.core.actions.action.action_for_name_or_text(
             action_name, self.domain, self.action_endpoint
         )
@@ -614,7 +616,7 @@ class MessageProcessor:
         )
 
     @staticmethod
-    def _should_handle_message(tracker: DialogueStateTracker):
+    def _should_handle_message(tracker: DialogueStateTracker) -> bool:
         return (
             not tracker.is_paused()
             or tracker.latest_message.intent.get(INTENT_NAME_KEY) == USER_INTENT_RESTART
@@ -640,7 +642,7 @@ class MessageProcessor:
 
     async def _predict_and_execute_next_action(
         self, output_channel: OutputChannel, tracker: DialogueStateTracker
-    ):
+    ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
         num_predicted_actions = 0
