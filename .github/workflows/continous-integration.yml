@@ -76,8 +76,8 @@ jobs:
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
           
-      - name: fail the step if the doc tests run could not be found
-        if: ${{ steps.wait-for-doc-tests.conclusion == 'cancelled' || steps.wait-for-doc-tests.conclusion == 'failure' }}
+      - name: Fail the step if the doc tests run could not be found
+        if: ${{ steps.wait-for-doc-tests.conclusion == 'timed_out' }}
         run: |
           echo "Could not find the doc tests run."
           exit 1
