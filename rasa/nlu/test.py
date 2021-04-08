@@ -16,6 +16,7 @@ from typing import (
     Dict,
     Any,
     NamedTuple,
+    TYPE_CHECKING,
 )
 
 from rasa import telemetry
@@ -34,6 +35,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+    ENTITY_ATTRIBUTE_TEXT,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -58,6 +60,17 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 from rasa.shared.importers.importer import TrainingDataImporter
 
+if TYPE_CHECKING:
+    from typing_extensions import TypedDict
+
+    EntityPrediction = TypedDict(
+        "EntityPrediction",
+        {
+            ENTITY_ATTRIBUTE_TEXT: Text,
+            "entities": List[Dict[Text, Any]],
+            "predicted_entities": List[Dict[Text, Any]],
+        },
+    )
 logger = logging.getLogger(__name__)
 
 # Exclude 'EntitySynonymMapper' and 'ResponseSelector' as their super class
@@ -169,7 +182,7 @@ def drop_intents_below_freq(
 
     examples_per_intent = training_data.number_of_examples_per_intent
     return training_data.filter_training_examples(
-        lambda ex: examples_per_intent[ex.get(INTENT)] >= cutoff
+        lambda ex: examples_per_intent.get(ex.get(INTENT), 0) >= cutoff
     )
 
 
@@ -730,7 +743,7 @@ def collect_incorrect_entity_predictions(
     entity_results: List[EntityEvaluationResult],
     merged_predictions: List[Text],
     merged_targets: List[Text],
-):
+) -> List["EntityPrediction"]:
     """Get incorrect entity predictions.
 
     Args:
@@ -789,7 +802,7 @@ def collect_successful_entity_predictions(
     entity_results: List[EntityEvaluationResult],
     merged_predictions: List[Text],
     merged_targets: List[Text],
-):
+) -> List["EntityPrediction"]:
     """Get correct entity predictions.
 
     Args:

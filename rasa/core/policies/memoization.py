@@ -287,7 +287,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
     @staticmethod
     def _back_to_the_future(
-        tracker, again: bool = False
+        tracker: DialogueStateTracker, again: bool = False
     ) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
         the new featurization for the future"""
