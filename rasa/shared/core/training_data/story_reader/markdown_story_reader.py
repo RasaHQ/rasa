@@ -161,7 +161,7 @@ class MarkdownStoryReader(StoryReader):
             )
 
     def _replace_template_variables(self, line: Text) -> Text:
-        def process_match(matchobject: Match) -> Any:
+        def process_match(matchobject: "Match") -> Any:
             varname = matchobject.group(1)
             if varname in self.template_variables:
                 return self.template_variables[varname]
