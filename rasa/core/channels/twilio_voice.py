@@ -5,6 +5,7 @@ from sanic.response import HTTPResponse
 from twilio.twiml.voice_response import VoiceResponse, Gather
 from typing import Text, Callable, Awaitable, List, Any, Dict, Optional, NoReturn
 
+from rasa.shared.utils.io import raise_warning
 from rasa.shared.core.events import BotUttered
 from rasa.shared.exceptions import RasaException
 from rasa.core.channels.channel import (
@@ -95,23 +96,29 @@ class TwilioVoiceInput(InputChannel):
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         """Load custom configurations."""
         if not credentials:
-            cls.raise_missing_credentials_exception()
+            return cls(initial_prompt="hello", assistant_voice="woman")
 
-        return cls(credentials.get("assistant_voice", "woman"),)
+        return cls(
+            credentials.get("initial_prompt", "hello"),
+            credentials.get("assistant_voice", "woman"),
+        )
 
-    def __init__(self, assistant_voice: Optional[Text],) -> None:
+    def __init__(
+        self, initial_prompt: Optional[Text], assistant_voice: Optional[Text],
+    ) -> None:
         """Creates a connection to Twilio voice.
 
         Args:
             assistant_voice: name of the assistant voice to use.
         """
+        self.initial_prompt = initial_prompt
         self.assistant_voice = assistant_voice
 
         if assistant_voice not in self.SUPPORTED_VOICES:
             self.raise_invalid_voice_exception()
 
-    def raise_invalid_voice_exception(self) -> NoReturn:
-        """Raise an error if an invalid voice is provided."""
+    def raise_invalid_voice_exception(self) -> None:
+        """Raises an error if an invalid voice is provided."""
         raise RasaException(
             f"{self.assistant_voice} is an invalid as an assistant voice. Please refer to the documentation for a list "
             f"of valid voices you can use for your voice assistant."
@@ -120,7 +127,7 @@ class TwilioVoiceInput(InputChannel):
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
     ) -> Blueprint:
-        """Define endpoints for Twilio voice channel."""
+        """Defines endpoints for Twilio voice channel."""
         twilio_voice_webhook = Blueprint("Twilio_voice_webhook", __name__)
 
         @twilio_voice_webhook.route("/", methods=["GET"])
@@ -138,7 +145,7 @@ class TwilioVoiceInput(InputChannel):
 
             # Provide an initial greeting to answer the user's call.
             if (text is None) and (call_status == "ringing"):
-                text = "hello"
+                text = self.initial_prompt
 
             # determine the response.
             if text is not None:
@@ -148,7 +155,6 @@ class TwilioVoiceInput(InputChannel):
                     )
                 )
 
-                # Build the Twilio VoiceResponse.
                 twilio_response = self.build_twilio_voice_response(collector.messages)
             # If the user doesn't respond resend the last message.
             else:
@@ -176,10 +182,10 @@ class TwilioVoiceInput(InputChannel):
         self, messages: List[Dict[Text, Any]]
     ) -> VoiceResponse:
         """Builds the Twilio Voice Response object."""
-        vr = VoiceResponse()
+        voice_response = VoiceResponse()
         gather = Gather(
             input="speech",
-            action="/webhooks/twilio_voice/webhook",
+            action=f"/webhooks/{self.name()}/webhook",
             actionOnEmptyResult=True,
             speechTimeout="auto",
         )
@@ -189,12 +195,12 @@ class TwilioVoiceInput(InputChannel):
         for i, message in enumerate(messages):
             if i + 1 == len(messages):
                 gather.say(message["text"], voice=self.assistant_voice)
-                vr.append(gather)
+                voice_response.append(gather)
             else:
-                vr.say(message["text"], voice=self.assistant_voice)
-                vr.pause(length=1)
+                voice_response.say(message["text"], voice=self.assistant_voice)
+                voice_response.pause(length=1)
 
-        return vr
+        return voice_response
 
 
 class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
@@ -225,4 +231,6 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
         """For voice channel do not send images."""
-        pass
+        raise_warning(
+            "Image removed from voice message. Only text of message is sent."
+        )
