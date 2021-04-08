@@ -3,7 +3,12 @@ import logging
 import os
 import re
 from pathlib import Path
-from re import Match
+import sys
+
+if sys.version_info >= (3, 7):
+    from re import Match
+else:
+    from typing import Match
 from typing import Dict, Text, List, Any, Union, Tuple, Optional
 
 import rasa.shared.data
