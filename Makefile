@@ -105,7 +105,7 @@ types:
 	# FIXME: working our way towards removing these
 	# see https://github.com/RasaHQ/rasa/pull/6470
 	# the list below is sorted by the number of errors for each error code, in decreasing order
-	poetry run mypy rasa --disable-error-code arg-type \
+	MYPYPATH=./stubs poetry run mypy rasa --disable-error-code arg-type \
 	--disable-error-code assignment \
 	--disable-error-code var-annotated \
 	--disable-error-code return-value \
@@ -116,14 +116,9 @@ types:
 	--disable-error-code index \
 	--disable-error-code misc \
 	--disable-error-code return \
-	--disable-error-code call-arg \
-	--disable-error-code type-var \
-	--disable-error-code list-item \
 	--disable-error-code has-type \
-	--disable-error-code valid-type \
-	--disable-error-code dict-item \
-	--disable-error-code no-redef \
-	--disable-error-code func-returns-value
+	--disable-error-code func-returns-value \
+	--disallow-untyped-calls
 
 static-checks: lint lint-security types
 
@@ -131,8 +126,6 @@ prepare-spacy:
 	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md
 	poetry run python -m spacy download de_core_news_sm
-	poetry run python -m spacy link en_core_web_md en --force
-	poetry run python -m spacy link de_core_news_sm de --force
 
 prepare-mitie:
 	wget --progress=dot:giga -N -P data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
@@ -202,6 +195,9 @@ test-full-model-training: test-marker
 
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests
 test-other-unit-tests: test-marker
+
+test-performance: PYTEST_MARKER=category_performance
+test-performance: test-marker
 
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload

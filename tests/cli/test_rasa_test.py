@@ -154,7 +154,6 @@ def test_test_core_comparison_after_train(
     trained_rasa_model: str,
     tmp_path: Path,
 ):
-
     path = Path(tmp_path / "comparison_models")
     path.mkdir()
 

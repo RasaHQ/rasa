@@ -11,7 +11,7 @@ import rasa.shared.utils.io
 from rasa import model
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data import training_data
-from rasa.train import (
+from rasa.model_training import (
     CODE_CORE_NEEDS_TO_BE_RETRAINED,
     CODE_NLU_NEEDS_TO_BE_RETRAINED,
     CODE_NLG_NEEDS_TO_BE_RETRAINED,
@@ -98,50 +98,6 @@ def test_train_persist_nlu_data(run_in_simple_project: Callable[..., RunResult])
     assert os.path.exists(
         os.path.join(model_dir, "nlu", training_data.DEFAULT_TRAINING_DATA_OUTPUT_PATH)
     )
-
-
-def test_train_core_compare(run_in_simple_project: Callable[..., RunResult]):
-    temp_dir = os.getcwd()
-
-    rasa.shared.utils.io.write_yaml(
-        {"language": "en", "policies": [{"name": "MemoizationPolicy"}],},
-        "config_1.yml",
-    )
-
-    rasa.shared.utils.io.write_yaml(
-        {"language": "en", "policies": [{"name": "MemoizationPolicy"}],},
-        "config_2.yml",
-    )
-
-    run_in_simple_project(
-        "train",
-        "core",
-        "-c",
-        "config_1.yml",
-        "config_2.yml",
-        "--stories",
-        "data/stories.yml",
-        "--out",
-        "core_comparison_results",
-        "--runs",
-        "2",
-        "--percentages",
-        "25",
-        "75",
-        "--augmentation",
-        "5",
-    )
-
-    assert os.path.exists(os.path.join(temp_dir, "core_comparison_results"))
-    run_directories = rasa.shared.utils.io.list_subdirectories(
-        os.path.join(temp_dir, "core_comparison_results")
-    )
-    assert len(run_directories) == 2
-    model_files = rasa.shared.utils.io.list_files(
-        os.path.join(temp_dir, "core_comparison_results", run_directories[0])
-    )
-    assert len(model_files) == 4
-    assert model_files[0].endswith("tar.gz")
 
 
 def test_train_no_domain_exists(

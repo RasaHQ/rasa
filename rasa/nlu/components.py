@@ -483,7 +483,7 @@ class Component(metaclass=ComponentMetaclass):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["Component"] = None,
         **kwargs: Any,
@@ -855,7 +855,7 @@ class ComponentBuilder:
 
         try:
             component, cache_key = self.__get_cached_component(
-                component_config, Metadata(cfg.as_dict(), None)
+                component_config, Metadata(cfg.as_dict())
             )
             if component is None:
                 component = registry.create_component_by_config(component_config, cfg)
