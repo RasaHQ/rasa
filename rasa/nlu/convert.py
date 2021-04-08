@@ -9,7 +9,7 @@ from rasa.nlu.utils import write_to_file
 
 def convert_training_data(
     data_file: Text, out_file: Text, output_format: Text, language: Text
-):
+) -> None:
     if not os.path.exists(data_file):
         print_error(
             "Data file '{}' does not exist. Provide a valid NLU data file using "
@@ -33,5 +33,5 @@ def convert_training_data(
     write_to_file(out_file, output)
 
 
-def main(args: argparse.Namespace):
+def main(args: argparse.Namespace) -> None:
     convert_training_data(args.data, args.out, args.format, args.language)
