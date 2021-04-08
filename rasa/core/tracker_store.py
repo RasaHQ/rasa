@@ -993,7 +993,7 @@ class SQLTrackerStore(TrackerStore):
         conn.close()
 
     @contextlib.contextmanager
-    def session_scope(self) -> Generator[sessionmaker, None, None]:
+    def session_scope(self) -> Generator["sessionmaker", None, None]:
         """Provide a transactional scope around a series of operations."""
         session = self.sessionmaker()
         try:
