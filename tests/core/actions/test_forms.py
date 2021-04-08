@@ -99,7 +99,7 @@ async def test_activate_with_prefilled_slot():
     ]
 
 
-async def test_switch_forms_with_same_slot(default_agent: Agent):
+async def test_switch_forms_with_same_slot(empty_agent: Agent):
     """Tests switching of forms, where the first slot is the same in both forms.
 
     Tests the fix for issue 7710"""
@@ -146,8 +146,8 @@ responses:
 
     # Driving it like rasa/core/processor
     processor = MessageProcessor(
-        default_agent.interpreter,
-        default_agent.policy_ensemble,
+        empty_agent.interpreter,
+        empty_agent.policy_ensemble,
         domain,
         InMemoryTrackerStore(domain),
         InMemoryLockStore(),

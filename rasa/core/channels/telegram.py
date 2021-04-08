@@ -10,6 +10,7 @@ from telebot.types import (
     InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
+    Message,
 )
 from typing import Dict, Text, Any, List, Optional, Callable, Awaitable
 
@@ -169,15 +170,15 @@ class TelegramInput(InputChannel):
         self.debug_mode = debug_mode
 
     @staticmethod
-    def _is_location(message) -> bool:
+    def _is_location(message: Message) -> bool:
         return message.location is not None
 
     @staticmethod
-    def _is_user_message(message) -> bool:
+    def _is_user_message(message: Message) -> bool:
         return message.text is not None
 
     @staticmethod
-    def _is_button(message) -> bool:
+    def _is_button(message: Update) -> bool:
         return message.callback_query is not None
 
     def blueprint(

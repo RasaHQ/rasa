@@ -5,7 +5,7 @@ from rasa.constants import DEFAULT_RASA_X_PORT
 from rasa.shared.constants import DEFAULT_DATA_PATH
 
 
-def set_x_arguments(parser: argparse.ArgumentParser):
+def set_x_arguments(parser: argparse.ArgumentParser) -> None:
     default_arguments.add_model_param(parser, add_positional_arg=False)
 
     default_arguments.add_data_param(

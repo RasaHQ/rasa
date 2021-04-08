@@ -1668,7 +1668,7 @@ class Domain:
         def get_exception_message(
             duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
             mappings: List[Tuple[Text, Text]] = None,
-        ):
+        ) -> Text:
             """Return a message given a list of error locations."""
 
             message = ""
@@ -1680,7 +1680,7 @@ class Domain:
                 message += get_mapping_exception_message(mappings)
             return message
 
-        def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
+        def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]) -> Text:
             """Return a message given a list of duplicates."""
 
             message = ""
@@ -1783,7 +1783,7 @@ class Domain:
 
         try:
             content = rasa.shared.utils.io.read_yaml_file(filename)
-        except (ValueError, YamlSyntaxException):
+        except (RasaException, YamlSyntaxException):
             return False
 
         return any(key in content for key in ALL_DOMAIN_KEYS)

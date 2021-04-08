@@ -17,7 +17,7 @@ async def visualize(
     nlu_data_path: Text,
     output_path: Text,
     max_history: int,
-):
+) -> None:
     from rasa.core.agent import Agent
     from rasa.core import config
 
