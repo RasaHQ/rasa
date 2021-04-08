@@ -54,4 +54,4 @@ async def test_twilio_voice_twiml_response_buttons():
 async def test_twilio_invalid_assistant_voice():
 
     with pytest.raises(RasaException):
-        tv = TwilioVoiceInput(initial_prompt="hello", assistant_voice="alien")
+        TwilioVoiceInput(initial_prompt="hello", assistant_voice="alien")
