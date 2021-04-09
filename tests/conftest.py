@@ -29,6 +29,7 @@ from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
 from rasa.core.policies.rule_policy import RulePolicy
+from rasa.nlu.model import Interpreter
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import UserUttered
 from rasa.core.exporter import Exporter
@@ -526,6 +527,11 @@ async def response_selector_agent(
     trained_response_selector_bot: Optional[Path],
 ) -> Agent:
     return Agent.load_local_model(trained_response_selector_bot)
+
+
+@pytest.fixture(scope="session")
+async def response_selector_interpreter(response_selector_agent: Agent,) -> Interpreter:
+    return response_selector_agent.interpreter.interpreter
 
 
 @pytest.fixture(scope="session")
