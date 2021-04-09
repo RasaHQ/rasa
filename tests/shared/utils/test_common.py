@@ -100,7 +100,7 @@ async def test_cached_method_with_different_arguments():
 
     class Test:
         @rasa.shared.utils.common.cached_method
-        async def f(self, _: bool, __: bool):
+        async def f(self, _: bool, arg2: bool):
             return mock()
 
     test_instance = Test()

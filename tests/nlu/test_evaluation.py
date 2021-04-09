@@ -1169,7 +1169,10 @@ class ConstantInterpreter(Interpreter):
         self.prediction = prediction_to_return
 
     def parse(
-        self, text: Text, time: Optional[datetime.datetime] = None, _: bool = True,
+        self,
+        text: Text,
+        time: Optional[datetime.datetime] = None,
+        only_output_properties: bool = True,
     ) -> Dict[Text, Any]:
         return self.prediction
 
