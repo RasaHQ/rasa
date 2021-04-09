@@ -161,7 +161,7 @@ def test_list_models_method_raise_exeception_in_Azure_persistor():
         self.blob_client = Object()
 
         # noinspection PyUnusedLocal
-        def mocked_list_blobs(container_name, prefix=None):
+        def mocked_list_blobs(_, __=None):
             raise ValueError
 
         self.blob_client.list_blobs = mocked_list_blobs

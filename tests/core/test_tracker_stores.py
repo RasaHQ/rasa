@@ -207,19 +207,6 @@ def test_exception_tracker_store_from_endpoint_config(
     assert "test exception" in str(e.value)
 
 
-class URLExampleTrackerStore(RedisTrackerStore):
-    def __init__(self, domain, url, port, db, password, record_exp, event_broker=None):
-        super().__init__(
-            domain,
-            event_broker=event_broker,
-            host=url,
-            port=port,
-            db=db,
-            password=password,
-            record_exp=record_exp,
-        )
-
-
 class HostExampleTrackerStore(RedisTrackerStore):
     pass
 

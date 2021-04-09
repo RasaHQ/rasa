@@ -178,10 +178,6 @@ def test_get_continuation_command(
     )
 
 
-def _add_conversation_id_to_event(event: Dict, conversation_id: Text):
-    event["sender_id"] = conversation_id
-
-
 def prepare_namespace_and_mocked_tracker_store_with_events(
     temporary_path: Path, monkeypatch: MonkeyPatch
 ) -> Tuple[List[UserUttered], argparse.Namespace]:

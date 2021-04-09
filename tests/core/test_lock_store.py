@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -10,7 +9,6 @@ import time
 
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
-from _pytest.tmpdir import TempdirFactory
 from unittest.mock import patch, Mock
 
 from rasa.core.agent import Agent

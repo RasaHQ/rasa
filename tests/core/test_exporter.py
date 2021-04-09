@@ -24,14 +24,6 @@ from rasa.exceptions import (
 from tests.conftest import MockExporter, random_user_uttered_event
 
 
-def _write_endpoint_config_to_yaml(path: Path, data: Dict[Text, Any]) -> Path:
-    endpoints_path = path / "endpoints.yml"
-
-    # write endpoints config to file
-    rasa.shared.utils.io.write_yaml(data, endpoints_path)
-    return endpoints_path
-
-
 @pytest.mark.parametrize(
     "requested_ids,available_ids,expected",
     [(["1"], ["1"], ["1"]), (["1", "2"], ["2"], ["2"]), (None, ["2"], ["2"])],

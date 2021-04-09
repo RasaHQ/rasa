@@ -1,15 +1,13 @@
-import asyncio
 import datetime
 import json
 import os
 import sys
 
 from pathlib import Path
-from typing import Text, Iterator, List, Dict, Any, Set, Optional
+from typing import Text, List, Dict, Any, Set, Optional
 from tests.conftest import AsyncMock
 
 import pytest
-from sanic.request import Request
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
 
@@ -80,22 +78,6 @@ from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
 from tests.nlu.utilities import write_file_config
-
-
-@pytest.fixture(scope="session")
-def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="session")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop = rasa.utils.io.enable_async_loop_debugging(loop)
-    yield loop
-    loop.close()
 
 
 # Chinese Example
@@ -1187,10 +1169,7 @@ class ConstantInterpreter(Interpreter):
         self.prediction = prediction_to_return
 
     def parse(
-        self,
-        text: Text,
-        time: Optional[datetime.datetime] = None,
-        only_output_properties: bool = True,
+        self, text: Text, time: Optional[datetime.datetime] = None, _: bool = True,
     ) -> Dict[Text, Any]:
         return self.prediction
 
