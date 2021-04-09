@@ -49,10 +49,9 @@ import sqlalchemy as sa
 if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
     from sqlalchemy.engine.url import URL
-    from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm.session import Session
+    from sqlalchemy.engine.base import Engine  # noqa: F401
+    from sqlalchemy.orm import Session, Query  # noqa: F401
     from sqlalchemy import Sequence
-    from sqlalchemy.orm.query import Query
 
 logger = logging.getLogger(__name__)
 

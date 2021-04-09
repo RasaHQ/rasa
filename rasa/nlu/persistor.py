@@ -1,3 +1,4 @@
+import abc
 import logging
 import os
 import shutil
@@ -8,7 +9,7 @@ import rasa.shared.utils.common
 import rasa.utils.common
 
 if TYPE_CHECKING:
-    from azure.storage.blob import ContainerClient
+    from azure.storage.blob import ContainerClient  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
     return None
 
 
-class Persistor:
+class Persistor(abc.ABC):
     """Store models in cloud and fetch them when needed"""
 
     def persist(self, model_directory: Text, model_name: Text) -> None:
@@ -60,7 +61,6 @@ class Persistor:
 
     def retrieve(self, model_name: Text, target_path: Text) -> None:
         """Downloads a model that has been persisted to cloud storage."""
-
         tar_name = model_name
 
         if not model_name.endswith("tar.gz"):
@@ -70,20 +70,20 @@ class Persistor:
         self._retrieve_tar(tar_name)
         self._decompress(os.path.basename(tar_name), target_path)
 
+    @abc.abstractmethod
     def list_models(self) -> List[Text]:
         """Lists all the trained models."""
-
         raise NotImplementedError
 
+    @abc.abstractmethod
     def _retrieve_tar(self, filename: Text) -> Text:
         """Downloads a model previously persisted to cloud storage."""
+        raise NotImplementedError
 
-        raise NotImplementedError("")
-
-    def _persist_tar(self, filekey: Text, tarname: Text) -> None:
+    @abc.abstractmethod
+    def _persist_tar(self, filekey: Text, tarname: Text) -> None:  # noqa: F841
         """Uploads a model persisted in the `target_dir` to cloud storage."""
-
-        raise NotImplementedError("")
+        raise NotImplementedError
 
     def _compress(self, model_directory: Text, model_name: Text) -> Tuple[Text, Text]:
         """Creates a compressed archive and returns key and tar."""

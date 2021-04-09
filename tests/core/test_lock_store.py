@@ -339,7 +339,7 @@ async def test_redis_lock_store_with_invalid_prefix(monkeypatch: MonkeyPatch):
 
     prefix = "!asdf234 34#"
     lock_store._set_key_prefix(prefix)
-    assert lock_store._get_key_prefix() == DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
+    assert lock_store.key_prefix == DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
 
     monkeypatch.setattr(
         lock_store,
@@ -359,10 +359,7 @@ async def test_redis_lock_store_with_valid_prefix(monkeypatch: MonkeyPatch):
 
     prefix = "chatbot42"
     lock_store._set_key_prefix(prefix)
-    assert (
-        lock_store._get_key_prefix()
-        == prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
-    )
+    assert lock_store.key_prefix == prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
 
     monkeypatch.setattr(
         lock_store,

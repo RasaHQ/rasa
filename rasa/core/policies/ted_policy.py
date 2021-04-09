@@ -18,7 +18,6 @@ from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
-    FullDialogueTrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer

@@ -353,11 +353,6 @@ class ActionRetrieveResponse(ActionBotResponse):
         """Resolve the name of the intent from the action name."""
         return action_name.split(UTTER_PREFIX)[1]
 
-    @staticmethod
-    def action_name_from_intent(intent_name: Text) -> Text:
-        """Resolve the action name from the name of the intent."""
-        return f"{UTTER_PREFIX}{intent_name}"
-
     async def run(
         self,
         output_channel: "OutputChannel",

@@ -9,9 +9,7 @@ from typing import Any, List, Dict, Text
 from pykwalify.errors import SchemaError
 
 
-def require_response_keys(
-    responses: List[Dict[Text, Any]], rule_obj: Dict, path: Text
-) -> bool:
+def require_response_keys(responses: List[Dict[Text, Any]], _: Dict, __: Text) -> bool:
     """
     Validate that response dicts have either the "text" key or the "custom" key.
     """

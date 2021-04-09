@@ -263,7 +263,7 @@ def _get_commented_out_autoconfig_lines(
     autoconfig_lines = {}
 
     for key in auto_configured_keys:
-        stream = yaml.compat.StringIO()
+        stream = ruamel.yaml.compat.StringIO()
         yaml_parser.dump(config.get(key), stream)
         dump = stream.getvalue()
 

@@ -663,26 +663,6 @@ class Agent:
 
         return await self.handle_message(msg, message_preprocessor)
 
-    def toggle_memoization(self, activate: bool) -> None:
-        """Toggles the memoization on and off.
-
-        If a memoization policy is present in the ensemble, this will toggle
-        the prediction of that policy. When set to ``False`` the Memoization
-        policies present in the policy ensemble will not make any predictions.
-        Hence, the prediction result from the ensemble always needs to come
-        from a different policy (e.g. ``TEDPolicy``). Useful to test
-        prediction
-        capabilities of an ensemble when ignoring memorized turns from the
-        training data."""
-
-        if not self.policy_ensemble:
-            return
-
-        for p in self.policy_ensemble.policies:
-            # explicitly ignore inheritance (e.g. augmented memoization policy)
-            if type(p) is MemoizationPolicy:
-                p.toggle(activate)
-
     def _max_history(self) -> int:
         """Find maximum max_history."""
 

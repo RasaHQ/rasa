@@ -74,7 +74,7 @@ from rasa.nlu.test import CVEvaluationResult
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
-    from ssl import SSLContext
+    from ssl import SSLContext  # noqa: F401
     from rasa.core.processor import MessageProcessor
     from mypy_extensions import VarArg, KwArg
 

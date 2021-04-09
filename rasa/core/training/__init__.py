@@ -8,24 +8,6 @@ if TYPE_CHECKING:
     from rasa.shared.importers.importer import TrainingDataImporter
 
 
-async def extract_rule_data(
-    resource_name: Text,
-    domain: "Domain",
-    use_e2e: bool = False,
-    exclusion_percentage: int = None,
-) -> "StoryGraph":
-    from rasa.shared.core.training_data import loading
-    from rasa.shared.core.training_data.structures import StoryGraph
-
-    story_steps = await loading.load_data_from_resource(
-        resource_name,
-        domain,
-        use_e2e=use_e2e,
-        exclusion_percentage=exclusion_percentage,
-    )
-    return StoryGraph(story_steps)
-
-
 async def extract_story_graph(
     resource_name: Text,
     domain: "Domain",
@@ -104,10 +86,3 @@ async def load_data(
         return g.generate()
     else:
         return []
-
-
-def persist_data(trackers: List["DialogueStateTracker"], path: Text) -> None:
-    """Dump a list of dialogue trackers in the story format to disk."""
-
-    for t in trackers:
-        t.export_stories_to_file(path)

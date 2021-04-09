@@ -74,8 +74,6 @@ import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
 
-MAX_VISUAL_HISTORY = 3
-
 PATHS = {
     "stories": "data/stories.yml",
     "nlu": "data/nlu.yml",
@@ -290,17 +288,6 @@ def latest_user_message(events: List[Dict[Text, Any]]) -> Optional[Dict[Text, An
         if e.get("event") == UserUttered.type_name:
             return e
     return None
-
-
-def all_events_before_latest_user_msg(
-    events: List[Dict[Text, Any]]
-) -> List[Dict[Text, Any]]:
-    """Return all events that happened before the most recent user message."""
-
-    for i, e in enumerate(reversed(events)):
-        if e.get("event") == UserUttered.type_name:
-            return events[: -(i + 1)]
-    return events
 
 
 async def _ask_questions(
@@ -1705,8 +1692,8 @@ def run_interactive_learning(
         p = Process(
             target=start_visualization,
             args=(DEFAULT_STORY_GRAPH_FILE, visualisation_port),
+            daemon=True,
         )
-        p.daemon = True
         p.start()
     else:
         p = None

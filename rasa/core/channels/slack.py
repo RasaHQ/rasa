@@ -41,10 +41,6 @@ class SlackBot(OutputChannel):
         self.client = WebClient(token, run_async=True, proxy=proxy)
         super().__init__()
 
-    @staticmethod
-    def _get_text_from_slack_buttons(buttons: List[Dict]) -> Text:
-        return "".join([b.get("title", "") for b in buttons])
-
     async def _post_message(self, channel: Text, **kwargs: Any) -> None:
         if self.thread_id:
             await self.client.chat_postMessage(
