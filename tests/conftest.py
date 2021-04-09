@@ -255,15 +255,6 @@ async def trained_spacybot_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_nlu_spacybot_path(trained_nlu_async: Callable) -> Text:
-    return await trained_nlu_async(
-        domain="data/test_spacybot/domain.yml",
-        config="data/test_spacybot/config.yml",
-        nlu_data="data/test_spacybot/data/nlu.yml",
-    )
-
-
-@pytest.fixture(scope="session")
 async def unpacked_trained_spacybot_path(
     trained_spacybot_path: Text,
 ) -> TempDirectoryPath:
