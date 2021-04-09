@@ -24,6 +24,7 @@ class KafkaEventBroker(EventBroker):
         ssl_check_hostname=False,
         topic="rasa_core_events",
         client_id=None,
+        partition_by_sender=False,
         security_protocol="SASL_PLAINTEXT",
         loglevel=logging.ERROR,
         group_id=None,
@@ -33,6 +34,7 @@ class KafkaEventBroker(EventBroker):
         self.host = host
         self.topic = topic
         self.client_id = client_id
+        self.partition_by_sender = partition_by_sender
         self.security_protocol = security_protocol
         self.sasl_username = sasl_username
         self.sasl_password = sasl_password
@@ -51,7 +53,9 @@ class KafkaEventBroker(EventBroker):
 
     @classmethod
     async def from_endpoint_config(
-        cls, broker_config, event_loop: Optional[AbstractEventLoop] = None,
+        cls,
+        broker_config,
+        event_loop: Optional[AbstractEventLoop] = None,
     ) -> Optional["KafkaEventBroker"]:
         if broker_config is None:
             return None
@@ -143,8 +147,15 @@ class KafkaEventBroker(EventBroker):
             logger.error("Kafka security_protocol invalid or not set")
 
     def _publish(self, event) -> None:
-        logger.debug(f"Calling kafka send({self.topic}, {event})")
-        self.producer.send(self.topic, event)
+        if self.partition_by_sender:
+            partition_key = bytes(event.get("sender_id"), encoding=DEFAULT_ENCODING)
+        else:
+            partition_key = None
+
+        logger.debug(
+            f"Calling kafka send({self.topic}, value={event}, key={partition_key!s})"
+        )
+        self.producer.send(self.topic, value=event, key=partition_key)
 
     def _close(self) -> None:
         self.producer.close()

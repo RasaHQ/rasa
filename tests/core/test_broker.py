@@ -225,6 +225,7 @@ async def test_kafka_broker_from_config():
         "username",
         "password",
         topic="topic",
+        partition_by_sender=True,
         security_protocol="SASL_PLAINTEXT",
     )
 
@@ -232,6 +233,7 @@ async def test_kafka_broker_from_config():
     assert actual.sasl_username == expected.sasl_username
     assert actual.sasl_password == expected.sasl_password
     assert actual.topic == expected.topic
+    assert actual.partition_by_sender == expected.partition_by_sender
 
 
 async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
