@@ -4,6 +4,7 @@ sidebar_label: Twilio Voice
 title: Twilio Voice
 description: Deploy a Rasa Open Source IVR assistant via the Twilio Voice connector
 ---
+import twilioWebhook from './img/twilio-set-webhook.png';
 
 You can use the Twilio Voice connector to answer phone calls made to your Twilio phone number.
 
@@ -14,6 +15,8 @@ Numbers](https://www.twilio.com/console/phone-numbers/incoming) section of your 
 number you want to connect to Rasa. Find the `Voice & Fax` section on the screen. Under the `A CALL COMES IN` section
 add the webhook URL (e.g. `https://<host>:<port>/webhooks/twilio_voice/webhook`) for your Rasa bot replacing the host
 and port with the appropriate values for your deployment. Click `Save` at the bottom of the page.
+
+<Image img={twilioWebhook} caption="Set Twilio Webhook" alt="Screenshot of Twilio Console to Set Webhook" max-width="500px"/>
 
 In your `credentials.yml` file make sure the `twilio_voice` channel is added.
 
