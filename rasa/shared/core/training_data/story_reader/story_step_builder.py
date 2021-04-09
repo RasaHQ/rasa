@@ -106,7 +106,7 @@ class StoryStepBuilder:
     def add_event_as_condition(self, event: Event) -> None:
         self.add_event(event, True)
 
-    def add_event(self, event, is_condition: bool = False) -> None:
+    def add_event(self, event: Event, is_condition: bool = False) -> None:
         self.ensure_current_steps()
         for t in self.current_steps:
             # conditions are supported only for the RuleSteps

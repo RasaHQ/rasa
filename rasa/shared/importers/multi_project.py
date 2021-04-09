@@ -91,7 +91,7 @@ class MultiProjectImporter(TrainingDataImporter):
     def _is_explicitly_imported(self, path: Text) -> bool:
         return not self.no_skills_selected() and self.is_imported(path)
 
-    def _init_from_directory(self, path: Text):
+    def _init_from_directory(self, path: Text) -> None:
         for parent, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(parent, file)
@@ -163,7 +163,7 @@ class MultiProjectImporter(TrainingDataImporter):
 
         return included
 
-    def _is_in_imported_paths(self, path) -> bool:
+    def _is_in_imported_paths(self, path: Text) -> bool:
         return any(
             [rasa.shared.utils.io.is_subdirectory(path, i) for i in self._imports]
         )
