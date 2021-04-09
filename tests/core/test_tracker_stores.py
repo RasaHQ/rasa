@@ -211,15 +211,6 @@ class HostExampleTrackerStore(RedisTrackerStore):
     pass
 
 
-def test_tracker_store_deprecated_url_argument_from_string(domain: Domain):
-    endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
-    store_config = read_endpoint_config(endpoints_path, "tracker_store")
-    store_config.type = "tests.core.test_tracker_stores.URLExampleTrackerStore"
-
-    with pytest.raises(Exception):
-        TrackerStore.create(store_config, domain)
-
-
 def test_tracker_store_with_host_argument_from_string(domain: Domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = read_endpoint_config(endpoints_path, "tracker_store")
