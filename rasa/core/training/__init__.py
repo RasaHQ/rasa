@@ -2,7 +2,6 @@ from typing import Text, List, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
-    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.shared.core.generator import TrackerWithCachedStates
     from rasa.shared.core.training_data.structures import StoryGraph
     from rasa.shared.importers.importer import TrainingDataImporter
@@ -14,6 +13,18 @@ async def extract_story_graph(
     use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
 ) -> "StoryGraph":
+    """Loads training stories / rules from file or directory.
+
+    Args:
+        resource_name: Path to file or directory.
+        domain: The model domain.
+        use_e2e: `True` if Markdown files should be parsed as conversation test files.
+        exclusion_percentage: Percentage of stories which should be dropped. `None`
+            if all training data should be used.
+
+    Returns:
+        The loaded training data as graph.
+    """
     from rasa.shared.core.training_data.structures import StoryGraph
     import rasa.shared.core.training_data.loading as core_loading
 

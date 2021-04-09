@@ -48,11 +48,10 @@ def get_persistor(name: Text) -> Optional["Persistor"]:
 
 
 class Persistor(abc.ABC):
-    """Store models in cloud and fetch them when needed"""
+    """Store models in cloud and fetch them when needed."""
 
     def persist(self, model_directory: Text, model_name: Text) -> None:
         """Uploads a model persisted in the `target_dir` to cloud storage."""
-
         if not os.path.isdir(model_directory):
             raise ValueError(f"Target directory '{model_directory}' not found.")
 
@@ -230,13 +229,11 @@ class AzurePersistor(Persistor):
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to Azure."""
-
         with open(tar_path, "rb") as data:
             self._container_client().upload_blob(name=file_key, data=data)
 
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to Azure."""
-
         blob_client = self._container_client().get_blob_client(target_filename)
 
         with open(target_filename, "wb") as blob:

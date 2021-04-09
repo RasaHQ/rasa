@@ -197,6 +197,7 @@ def payload_from_button_question(button_question: "Question") -> Text:
     return response
 
 
-def signal_handler(_: int, __: FrameType) -> NoReturn:
+def signal_handler(_: int, __: FrameType) -> None:
+    """Kills Rasa when OS signal is received."""
     print("Goodbye 👋")
     sys.exit(0)

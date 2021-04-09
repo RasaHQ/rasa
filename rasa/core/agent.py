@@ -29,7 +29,6 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpr
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
@@ -665,7 +664,6 @@ class Agent:
 
     def _max_history(self) -> int:
         """Find maximum max_history."""
-
         max_histories = [
             policy.featurizer.max_history
             for policy in self.policy_ensemble.policies
