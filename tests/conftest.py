@@ -489,12 +489,12 @@ def blank_config() -> RasaNLUModelConfig:
 @pytest.fixture(scope="session")
 async def trained_response_selector_bot(trained_async: Callable) -> Path:
     zipped_model = await trained_async(
-        domain="examples/responseselectorbot/domain.yml",
-        config="examples/responseselectorbot/config.yml",
+        domain="data/test_response_selector_bot/domain.yml",
+        config="data/test_response_selector_bot/config.yml",
         training_files=[
-            "examples/responseselectorbot/data/rules.yml",
-            "examples/responseselectorbot/data/stories.yml",
-            "examples/responseselectorbot/data/nlu.yml",
+            "data/test_response_selector_bot/data/rules.yml",
+            "data/test_response_selector_bot/data/stories.yml",
+            "data/test_response_selector_bot/data/nlu.yml",
         ],
     )
 
