@@ -1,4 +1,6 @@
 import os
+from typing import Text
+
 import pytest
 from unittest.mock import patch
 
@@ -7,6 +9,7 @@ from moto import mock_s3
 from rasa.nlu import persistor
 import rasa.nlu.train
 from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.persistor import Persistor
 
 
 class Object:
@@ -42,9 +45,17 @@ def test_s3_private_retrieve_tar():
         assert retrieveArgs[1].name == "model.tar.gz"
 
 
+class TestPersistor(Persistor):
+    def _retrieve_tar(self, filename: Text) -> Text:
+        pass
+
+    def _persist_tar(self, filekey: Text, tarname: Text) -> None:
+        pass
+
+
 def test_get_external_persistor():
-    p = persistor.get_persistor("rasa.nlu.persistor.Persistor")
-    assert isinstance(p, persistor.Persistor)
+    p = persistor.get_persistor("tests.nlu.test_persistor.TestPersistor")
+    assert isinstance(p, TestPersistor)
 
 
 def test_raise_exception_in_get_external_persistor():
@@ -56,8 +67,8 @@ def test_raise_exception_in_get_external_persistor():
 @pytest.mark.parametrize(
     "model, archive", [("model.tar.gz", "model.tar.gz"), ("model", "model.tar.gz")]
 )
-def test_retrieve_tar_archive(model, archive):
-    with patch.object(persistor.Persistor, "_decompress") as f:
-        with patch.object(persistor.Persistor, "_retrieve_tar") as f:
-            persistor.Persistor().retrieve(model, "dst")
+def test_retrieve_tar_archive(model: Text, archive: Text):
+    with patch.object(TestPersistor, "_decompress") as f:
+        with patch.object(TestPersistor, "_retrieve_tar") as f:
+            TestPersistor().retrieve(model, "dst")
         f.assert_called_once_with(archive)
