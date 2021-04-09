@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 import sys
 
+# check Python version for type imports in line with PEP 563 and 585
 if sys.version_info >= (3, 7):
     from re import Match
 else:
