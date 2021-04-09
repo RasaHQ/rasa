@@ -71,11 +71,6 @@ class Persistor(abc.ABC):
         self._decompress(os.path.basename(tar_name), target_path)
 
     @abc.abstractmethod
-    def list_models(self) -> List[Text]:
-        """Lists all the trained models."""
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def _retrieve_tar(self, filename: Text) -> Text:
         """Downloads a model previously persisted to cloud storage."""
         raise NotImplementedError
@@ -99,16 +94,6 @@ class Persistor(abc.ABC):
         )
         file_key = os.path.basename(tar_name)
         return file_key, tar_name
-
-    @staticmethod
-    def _model_dir_and_model_from_filename(filename: Text) -> Tuple[Text, Text]:
-
-        split = filename.split("___")
-        if len(split) > 1:
-            model_name = split[1].replace(".tar.gz", "")
-            return split[0], model_name
-        else:
-            return split[0], ""
 
     @staticmethod
     def _tar_name(model_name: Text, include_extension: bool = True) -> Text:
@@ -143,16 +128,6 @@ class AWSPersistor(Persistor):
         self._ensure_bucket_exists(bucket_name, region_name)
         self.bucket_name = bucket_name
         self.bucket = self.s3.Bucket(bucket_name)
-
-    def list_models(self) -> List[Text]:
-        try:
-            return [
-                self._model_dir_and_model_from_filename(obj.key)[1]
-                for obj in self.bucket.objects.filter()
-            ]
-        except Exception as e:
-            logger.warning(f"Failed to list models in AWS. {e}")
-            return []
 
     def _ensure_bucket_exists(
         self, bucket_name: Text, region_name: Optional[Text] = None
@@ -200,18 +175,6 @@ class GCSPersistor(Persistor):
 
         self.bucket_name = bucket_name
         self.bucket = self.storage_client.bucket(bucket_name)
-
-    def list_models(self) -> List[Text]:
-
-        try:
-            blob_iterator = self.bucket.list_blobs()
-            return [
-                self._model_dir_and_model_from_filename(b.name)[1]
-                for b in blob_iterator
-            ]
-        except Exception as e:
-            logger.warning(f"Failed to list models in google cloud storage. {e}")
-            return []
 
     def _ensure_bucket_exists(self, bucket_name: Text) -> None:
         from google.cloud import exceptions
@@ -264,22 +227,6 @@ class AzurePersistor(Persistor):
 
     def _container_client(self) -> "ContainerClient":
         return self.blob_service.get_container_client(self.container_name)
-
-    def list_models(self) -> List[Text]:
-        """Lists models on remote storage.
-
-        Returns:
-            Paths to found models.
-        """
-        try:
-            blob_iterator = self._container_client().list_blobs()
-            return [
-                self._model_dir_and_model_from_filename(b.name)[1]
-                for b in blob_iterator
-            ]
-        except Exception as e:
-            logger.warning(f"Failed to list models azure blob storage. {e}")
-            return []
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
         """Uploads a model persisted in the `target_dir` to Azure."""
