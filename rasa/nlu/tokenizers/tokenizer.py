@@ -38,6 +38,7 @@ class Token:
         self.data[prop] = info
 
     def get(self, prop: Text, default: Optional[Any] = None) -> Any:
+        """Returns token value."""
         return self.data.get(prop, default)
 
     def __eq__(self, other: Any) -> bool:

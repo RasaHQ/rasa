@@ -710,7 +710,6 @@ class Domain:
     @rasa.shared.utils.common.lazy_property
     def user_actions_and_forms(self) -> List[Text]:
         """Returns combination of user actions and forms."""
-
         return self.user_actions + self.form_names
 
     @rasa.shared.utils.common.lazy_property
@@ -737,7 +736,6 @@ class Domain:
     @rasa.shared.utils.common.lazy_property
     def num_states(self) -> int:
         """Number of used input states for the action prediction."""
-
         return len(self.input_states)
 
     @rasa.shared.utils.common.lazy_property
@@ -1538,6 +1536,7 @@ class Domain:
 
     @rasa.shared.utils.common.lazy_property
     def intents(self) -> List[Text]:
+        """Returns sorted list of intents."""
         return sorted(self.intent_properties.keys())
 
     @property

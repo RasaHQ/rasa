@@ -134,6 +134,7 @@ class SklearnPolicy(Policy):
         return {attr: getattr(self, attr) for attr in self._pickle_params}
 
     def model_architecture(self, **kwargs: Any) -> Any:
+        """Sets valid parameters to the model."""
         # filter out kwargs that cannot be passed to model
         train_params = self._get_valid_params(self.model.__init__, **kwargs)
         return self.model.set_params(**train_params)

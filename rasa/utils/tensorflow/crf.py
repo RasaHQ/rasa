@@ -34,9 +34,11 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
 
     @property
     def output_size(self) -> int:
+        """Returns count of tags."""
         return self._num_tags
 
     def build(self, input_shape: Union[TensorShape, List[TensorShape]]) -> None:
+        """Creates the variables of the layer."""
         super().build(input_shape)
 
     def call(

@@ -367,7 +367,7 @@ class RedisTrackerStore(TrackerStore):
         return self.key_prefix
 
     def save(self, tracker: DialogueStateTracker, timeout: Any = None) -> None:
-        """Saves the current conversation state"""
+        """Saves the current conversation state."""
         if self.event_broker:
             self.stream_events(tracker)
 
