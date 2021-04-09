@@ -711,7 +711,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         if mask is not None:
             sim *= tf.expand_dims(mask, 2)
 
-        return sim
+        # return sim
+        return tf.maximum(tf.minimum(sim, 5), -5)
 
     def similarity_confidence_from_embeddings(
         self,
