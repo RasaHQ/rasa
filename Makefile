@@ -84,6 +84,7 @@ lint:
 	poetry run flake8 rasa tests --extend-ignore D
 	poetry run black --check rasa tests
 	make lint-docstrings
+	poetry run vulture rasa
 
 # Compare against `main` if no branch was provided
 BRANCH ?= main

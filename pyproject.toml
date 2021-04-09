@@ -151,6 +151,7 @@ mypy = "^0.812"
 bandit = "^1.6.3"
 typing-extensions = "^3.7.4"
 memory-profiler = "^0.58.0"
+vulture = "^2.3"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
@@ -193,3 +194,8 @@ optional = true
 [tool.poetry.dependencies.pymongo]
 version = ">=3.8,<3.11"
 extras = [ "tls", "srv",]
+
+[tool.vulture]
+exclude = ["conftest.py", "registry.py"]
+ignore_names = ["health", "webhook"]
+min_confidence = 70
