@@ -10,7 +10,8 @@ abstract: Stories are a type of training data used to train your assistant's dia
 
 A story is a representation of a conversation between a user and an AI assistant,
 converted into a specific format where user inputs are expressed as intents
-(and entities when necessary), while the assistant's responses and actions are expressed as action names.
+(and entities when necessary),
+while the assistant's responses and actions are expressed as action names.
 
 Here's an example of a dialogue in the Rasa story format:
 
@@ -20,7 +21,7 @@ stories:
   steps:
   - intent: greet                         # user message with no entities
   - action: utter_ask_howcanhelp
-  - intent: inform                        # user message with no entities
+  - intent: inform                        # user message with entities
     entities:
     - location: "rome"
     - price: "cheap"
@@ -31,6 +32,7 @@ stories:
     - cuisine: "spanish"
   - action: utter_ask_num_people
 ```
+
 
 ### User Messages
 
@@ -185,3 +187,56 @@ into a single file for evaluation. Read more about this format in [Testing Your 
 This format is only used for testing and cannot be used for training.
 
 :::
+
+
+## End-to-end Training
+
+:::caution experimental feature
+End-to-end training is an experimental feature.
+We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+However, the functionality might be changed or removed in the future.
+If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
+
+:::
+
+With end-to-end training, you do not have to deal with the specific
+intents of the messages that are extracted by the NLU pipeline
+or with separate `utter_` responses in the domain file.
+Instead, you can include the text of the user messages and/or bot responses directly in your stories.
+See the [training data format](./training-data-format.mdx#end-to-end-training)
+for detailed description of how to write end-to-end stories.
+
+You can mix training data in the end-to-end format with labeled training data which has 
+`intent`s and `action`s specified: Stories can have some steps defined by intents/actions
+and other steps defined directly by user or bot utterances.
+
+We call it end-to-end training because policies can consume and predict actual text.
+For end-to-end user inputs, intents classified by the NLU pipeline
+and extracted entities are ignored.
+
+
+Only [Rule Policy](./policies.mdx#rule-policy)
+and [TED Policy](./policies.mdx#ted-policy) allow end-to-end training.
+
+- `RulePolicy` uses simple string matching during prediction. Namely,
+  rules based on user text will only match if the user
+  text strings inside your rules and input during prediction are identical.
+
+- `TEDPolicy` passes user text through an additional Neural Network to create
+  hidden representations of the text. In order to obtain robust performance you
+  need to provide enough training stories to capture a variety of user texts for any 
+  end-to-end dialogue turn.
+
+Rasa policies are trained for next utterance selection.
+The only difference to creating `utter_` response is how `TEDPolicy` featurizes
+bot utterances.
+In case of an `utter_` action, `TEDPolicy` sees only the name of the action, while
+if you provide actual utterance using `bot` key,
+`TEDPolicy` will featurize it as textual input depending on the NLU configuration.
+This can help in case of similar utterances in slightly different situations.
+However, this can also make things harder to learn because the fact that different
+utterances have similar texts make it easier for `TEDPolicy` to confuse these utterances.
+
+End-to-end training requires significantly more parameters in `TEDPolicy`.
+Therefore, training an end-to-end model might require significant computational
+resources depending on how many end-to-end turns you have in your stories.

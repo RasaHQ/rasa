@@ -108,7 +108,8 @@ def test_data_validate_help(run: Callable[..., RunResult]):
     output = run("data", "validate", "--help")
 
     help_text = """usage: rasa data validate [-h] [-v] [-vv] [--quiet]
-                          [--max-history MAX_HISTORY] [--fail-on-warnings]"""
+                          [--max-history MAX_HISTORY] [-c CONFIG]
+                          [--fail-on-warnings] [-d DOMAIN] [--data DATA]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -136,7 +137,7 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
             "validate",
             "stories",
             "--data",
-            "examples/moodbot/data",
+            "data/test_moodbot/data",
             "--max-history",
             0,
         ]
@@ -157,6 +158,7 @@ def test_validate_files_exit_early():
             "domain": "data/test_domains/duplicate_intents.yml",
             "data": None,
             "max_history": None,
+            "config": None,
         }
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
@@ -466,7 +468,7 @@ def test_rasa_data_convert_nlu_lookup_tables_to_yaml(
 
 
 def test_convert_config(
-    run: Callable[..., RunResult], tmp_path: Path, default_domain_path: Text
+    run: Callable[..., RunResult], tmp_path: Path, domain_path: Text
 ):
     deprecated_config = {
         "policies": [{"name": "MappingPolicy"}, {"name": "FallbackPolicy"}],

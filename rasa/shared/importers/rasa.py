@@ -33,10 +33,14 @@ class RasaFileImporter(TrainingDataImporter):
         self._story_files = rasa.shared.data.get_data_files(
             training_data_paths, rasa.shared.data.is_story_file
         )
+        self._conversation_test_files = rasa.shared.data.get_data_files(
+            training_data_paths, rasa.shared.data.is_test_stories_file
+        )
 
         self.config = autoconfig.get_configuration(config_file, training_type)
 
     async def get_config(self) -> Dict:
+        """Retrieves model config (see parent class for full docstring)."""
         return self.config
 
     async def get_stories(
@@ -45,7 +49,7 @@ class RasaFileImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-
+        """Retrieves training stories / rules (see parent class for full docstring)."""
         return await utils.story_graph_from_paths(
             self._story_files,
             await self.get_domain(),
@@ -54,10 +58,18 @@ class RasaFileImporter(TrainingDataImporter):
             exclusion_percentage,
         )
 
+    async def get_conversation_tests(self) -> StoryGraph:
+        """Retrieves conversation test stories (see parent class for full docstring)."""
+        return await utils.story_graph_from_paths(
+            self._conversation_test_files, await self.get_domain(), use_e2e=True,
+        )
+
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        """Retrieves NLU training data (see parent class for full docstring)."""
         return utils.training_data_from_paths(self._nlu_files, language)
 
     async def get_domain(self) -> Domain:
+        """Retrieves model domain (see parent class for full docstring)."""
         domain = Domain.empty()
 
         # If domain path is None, return an empty domain
@@ -65,7 +77,6 @@ class RasaFileImporter(TrainingDataImporter):
             return domain
         try:
             domain = Domain.load(self._domain_path)
-            domain.check_missing_templates()
         except InvalidDomain as e:
             rasa.shared.utils.io.raise_warning(
                 f"Loading domain from '{self._domain_path}' failed. Using "

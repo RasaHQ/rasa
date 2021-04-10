@@ -288,5 +288,32 @@ async def test_publishing_error():
 
     # run the export function
     with pytest.raises(PublishingError):
-        # noinspection PyProtectedMember
+        await exporter.publish_events()
+
+
+async def test_closing_broker():
+    exporter = MockExporter(event_broker=SQLEventBroker())
+
+    # noinspection PyProtectedMember
+    exporter._fetch_events_within_time_range = Mock(return_value=[])
+
+    # run the export function
+    with pytest.warns(None) as warnings:
+        await exporter.publish_events()
+
+    assert len(warnings) == 0
+
+
+async def test_closing_broker_sync():
+    class TestBroker(SQLEventBroker):
+        def close(self) -> None:
+            pass
+
+    exporter = MockExporter(event_broker=TestBroker())
+
+    # noinspection PyProtectedMember
+    exporter._fetch_events_within_time_range = Mock(return_value=[])
+
+    # run the export function
+    with pytest.warns(FutureWarning):
         await exporter.publish_events()

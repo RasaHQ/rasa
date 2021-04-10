@@ -5,10 +5,12 @@
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_listen",
+      "action_text": null,
       "confidence":null,
       "policy":null,
       "timestamp":1551884035.892855,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.UserUttered",
@@ -32,15 +34,18 @@
         "text":"Hi I'm desperate to talk to you"
       },
       "text":"Hi I'm desperate to talk to you",
-      "timestamp":1551884050.259948
+      "timestamp":1551884050.259948,
+      "use_text_for_featurization": false
     },
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"utter_greet",
+      "action_text": null,
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551884060.466681,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.BotUttered",
@@ -55,10 +60,12 @@
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_listen",
+      "action_text": null,
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551884061.9350882,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.UserUttered",
@@ -104,23 +111,28 @@
         "text":"I'm looking for an indian restaurant...in Bombay"
       },
       "text":"I'm looking for an indian restaurant...in Bombay",
-      "timestamp":1551884090.9653602
+      "timestamp":1551884090.9653602,
+      "use_text_for_featurization": false
     },
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"restaurant_form",
+      "action_text": null,
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551884095.542748,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"utter_slots_values",
+      "action_text": null,
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551884097.570883,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.BotUttered",
@@ -135,10 +147,12 @@
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_listen",
+      "action_text": null,
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
       "timestamp":1551884098.8006358,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.UserUttered",
@@ -162,15 +176,18 @@
         "text":"Let's just pretend everything went correctly"
       },
       "text":"Let's just pretend everything went correctly",
-      "timestamp":1551884208.092693
+      "timestamp":1551884208.092693,
+      "use_text_for_featurization": false
     },
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_deactivate_loop",
+      "action_text": null,
       "confidence":null,
       "policy":null,
       "timestamp":1551884214.951055,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     },
     {
       "py/object":"rasa.shared.core.events.ActiveLoop",
@@ -186,10 +203,12 @@
     {
       "py/object":"rasa.shared.core.events.ActionExecuted",
       "action_name":"action_listen",
+      "action_text": null,
       "confidence":0.7680902069097734,
       "policy":"policy_0_TEDPolicy",
       "timestamp":1551884216.705635,
-      "unpredictable":false
+      "unpredictable":false,
+      "hide_rule_turn": false
     }
   ]
 }

@@ -5,7 +5,11 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Any, Text, Optional, Tuple, Dict, Union
 
-from rasa.shared.constants import LEGACY_DOCS_BASE_URL
+from rasa.shared.constants import (
+    LEGACY_DOCS_BASE_URL,
+    DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
+)
+from rasa.shared.exceptions import MarkdownException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -38,7 +42,8 @@ logger = logging.getLogger(__name__)
 class MarkdownReader(TrainingDataReader):
     """Reads markdown training data and creates a TrainingData object."""
 
-    def __init__(self) -> None:
+    def __init__(self, ignore_deprecation_warning: bool = False,) -> None:
+        """Creates reader. See parent class docstring for more information."""
         super().__init__()
         self.current_title = None
         self.current_section = None
@@ -47,8 +52,16 @@ class MarkdownReader(TrainingDataReader):
         self.regex_features = []
         self.lookup_tables = []
 
+        if not ignore_deprecation_warning:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "NLU data in Markdown format is deprecated and will be removed in Rasa "
+                "Open Source 3.0.0. Please convert your Markdown NLU data to the "
+                "new YAML training data format.",
+                docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
+            )
+
     def reads(self, s: Text, **kwargs: Any) -> "TrainingData":
-        """Read markdown string and create TrainingData object"""
+        """Read markdown string and create TrainingData object."""
         s = self._strip_comments(s)
         for line in s.splitlines():
             line = decode_string(line.strip())
@@ -123,47 +136,10 @@ class MarkdownReader(TrainingDataReader):
                     self.current_title, item, self.lookup_tables
                 )
 
-    @staticmethod
-    def _get_validated_dict(json_str: Text) -> Dict[Text, Text]:
-        """Converts the provided json_str to a valid dict containing the entity
-        attributes.
-
-        Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
-        [LA]{"entity": "city", "role": "to", "value": "Los Angeles"}
-
-        Args:
-            json_str: the entity dict as string without "{}"
-
-        Raises:
-            ValidationError if validation of entity dict fails.
-            JSONDecodeError if provided entity dict is not valid json.
-
-        Returns:
-            a proper python dict
-        """
-        import json
-        import rasa.shared.utils.validation as validation_utils
-        import rasa.shared.nlu.training_data.schemas.data_schema as schema
-
-        # add {} as they are not part of the regex
-        try:
-            data = json.loads(f"{{{json_str}}}")
-        except JSONDecodeError as e:
-            rasa.shared.utils.io.raise_warning(
-                f"Incorrect training data format ('{{{json_str}}}'), make sure your "
-                f"data is valid. For more information about the format visit "
-                f"{LEGACY_DOCS_BASE_URL}/nlu/training-data-format/."
-            )
-            raise e
-
-        validation_utils.validate_training_data(data, schema.entity_dict_schema())
-
-        return data
-
     def _set_current_section(self, section: Text, title: Text) -> None:
         """Update parsing mode."""
         if section not in AVAILABLE_SECTIONS:
-            raise ValueError(
+            raise MarkdownException(
                 "Found markdown section '{}' which is not "
                 "in the allowed sections '{}'."
                 "".format(section, "', '".join(AVAILABLE_SECTIONS))
@@ -179,9 +155,25 @@ class MarkdownReader(TrainingDataReader):
 
 
 class MarkdownWriter(TrainingDataWriter):
+    """Converts NLU data to Markdown."""
+
+    def __init__(self, ignore_deprecation_warning: bool = False,) -> None:
+        """Creates writer.
+
+        Args:
+            ignore_deprecation_warning: `True` if deprecation warning for Markdown
+                format should be suppressed.
+        """
+        if not ignore_deprecation_warning:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "NLU data in Markdown format is deprecated and will be removed in Rasa "
+                "Open Source 3.0.0. Please convert your Markdown NLU data to the "
+                "new YAML training data format.",
+                docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
+            )
+
     def dumps(self, training_data: "TrainingData") -> Text:
         """Transforms a TrainingData object into a markdown string."""
-
         md = ""
         md += self._generate_training_examples_md(training_data)
         md += self._generate_synonyms_md(training_data)

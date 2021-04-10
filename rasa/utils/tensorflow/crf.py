@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from tensorflow_addons.utils.types import TensorLike
 from typeguard import typechecked
-from typing import Tuple
+from typing import Tuple, Any
 
 
 # original code taken from
@@ -14,7 +14,7 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
     """Computes the forward decoding in a linear-chain CRF."""
 
     @typechecked
-    def __init__(self, transition_params: TensorLike, **kwargs) -> None:
+    def __init__(self, transition_params: TensorLike, **kwargs: Any) -> None:
         """Initialize the CrfDecodeForwardRnnCell.
 
         Args:
@@ -152,13 +152,13 @@ def crf_decode(
 
     # If max_seq_len is 1, we skip the algorithm and simply return the
     # argmax tag and the max activation.
-    def _single_seq_fn():
+    def _single_seq_fn() -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         decode_tags = tf.cast(tf.argmax(potentials, axis=2), dtype=tf.int32)
         decode_scores = tf.reduce_max(tf.nn.softmax(potentials, axis=2), axis=2)
         best_score = tf.reshape(tf.reduce_max(potentials, axis=2), shape=[-1])
         return decode_tags, decode_scores, best_score
 
-    def _multi_seq_fn():
+    def _multi_seq_fn() -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         # Computes forward decoding. Get last score and backpointers.
         initial_state = tf.slice(potentials, [0, 0, 0], [-1, 1, -1])
         initial_state = tf.squeeze(initial_state, axis=[1])

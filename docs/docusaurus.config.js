@@ -152,7 +152,7 @@ module.exports = {
     ['@docusaurus/plugin-content-docs/', {
       routeBasePath,
       sidebarPath: require.resolve('./sidebars.js'),
-      editUrl: 'https://github.com/rasahq/rasa/edit/master/docs/',
+      editUrl: 'https://github.com/rasahq/rasa/edit/main/docs/',
       showLastUpdateTime: true,
       showLastUpdateAuthor: true,
       rehypePlugins: [

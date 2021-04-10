@@ -11,6 +11,7 @@ import aiohttp
 from aiohttp import ClientError
 
 import rasa
+import rasa.utils
 from rasa.core import jobs, training
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -21,8 +22,9 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
+    DOCS_URL_MIGRATION_GUIDE,
 )
-from rasa.shared.exceptions import InvalidParameterException, RasaException
+from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
@@ -257,7 +259,7 @@ async def _run_model_pulling_worker(
 
 async def schedule_model_pulling(
     model_server: EndpointConfig, wait_time_between_pulls: int, agent: "Agent"
-):
+) -> None:
     (await jobs.scheduler()).add_job(
         _run_model_pulling_worker,
         "interval",
@@ -265,6 +267,33 @@ async def schedule_model_pulling(
         args=[model_server, agent],
         id="pull-model-from-server",
         replace_existing=True,
+    )
+
+
+def create_agent(model: Text, endpoints: Text = None) -> "Agent":
+    """Create an agent instance based on a stored model.
+
+    Args:
+        model: file path to the stored model
+        endpoints: file path to the used endpoint configuration
+    """
+    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.utils import AvailableEndpoints
+    from rasa.core.brokers.broker import EventBroker
+    import rasa.utils.common
+
+    _endpoints = AvailableEndpoints.read_endpoints(endpoints)
+
+    _broker = rasa.utils.common.run_in_loop(EventBroker.create(_endpoints.event_broker))
+    _tracker_store = TrackerStore.create(_endpoints.tracker_store, event_broker=_broker)
+    _lock_store = LockStore.create(_endpoints.lock_store)
+
+    return Agent.load(
+        model,
+        generator=_endpoints.nlg,
+        tracker_store=_tracker_store,
+        lock_store=_lock_store,
+        action_endpoint=_endpoints.action,
     )
 
 
@@ -277,7 +306,23 @@ async def load_agent(
     tracker_store: Optional[TrackerStore] = None,
     lock_store: Optional[LockStore] = None,
     action_endpoint: Optional[EndpointConfig] = None,
-):
+) -> Optional["Agent"]:
+    """Loads agent from server, remote storage or disk.
+
+    Args:
+        model_path: Path to the model if it's on disk.
+        model_server: Configuration for a potential server which serves the model.
+        remote_storage: URL of remote storage for model.
+        interpreter: NLU interpreter to parse incoming messages.
+        generator: Optional response generator.
+        tracker_store: TrackerStore for persisting the conversation history.
+        lock_store: LockStore to avoid that a conversation is modified by concurrent
+            actors.
+        action_endpoint: Action server configuration for executing custom actions.
+
+    Returns:
+        The instantiated `Agent` or `None`.
+    """
     try:
         if model_server is not None:
             return await load_from_server(
@@ -354,11 +399,6 @@ class Agent:
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
 
-        if self.domain is not None:
-            self.domain.add_requested_slot()
-            self.domain.add_knowledge_base_slots()
-            self.domain.add_categorical_slot_default_value()
-
         PolicyEnsemble.check_domain_ensemble_compatibility(
             self.policy_ensemble, self.domain
         )
@@ -394,8 +434,15 @@ class Agent:
 
         # update domain on all instances
         self.tracker_store.domain = domain
+        if hasattr(self.nlg, "responses"):
+            self.nlg.responses = domain.responses if domain else {}
+
         if hasattr(self.nlg, "templates"):
-            self.nlg.templates = domain.templates if domain else {}
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "Please use the `responses` attribute instead of the `templates` attribute to manage responses.",
+                docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+            )
+            self.nlg.templates = domain.responses if domain else {}
 
         self.model_directory = model_directory
 
@@ -411,6 +458,8 @@ class Agent:
         model_server: Optional[EndpointConfig] = None,
         remote_storage: Optional[Text] = None,
         path_to_model_archive: Optional[Text] = None,
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
     ) -> "Agent":
         """Load a persisted model from the passed path."""
         try:
@@ -441,7 +490,15 @@ class Agent:
 
         if core_model:
             domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
-            ensemble = PolicyEnsemble.load(core_model) if core_model else None
+            ensemble = (
+                PolicyEnsemble.load(
+                    core_model,
+                    new_config=new_config,
+                    finetuning_epoch_fraction=finetuning_epoch_fraction,
+                )
+                if core_model
+                else None
+            )
 
             # ensures the domain hasn't changed between test and train
             domain.compare_with_specification(core_model)
@@ -507,15 +564,12 @@ class Agent:
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
-
-        def noop(_: Any) -> None:
-            logger.info("Ignoring message as there is no agent to handle it.")
-
         if not self.is_ready():
-            return noop(message)
+            logger.info("Ignoring message as there is no agent to handle it.")
+            return None
 
         processor = self.create_processor(message_preprocessor)
 
@@ -819,6 +873,7 @@ class Agent:
             self.policy_ensemble,
             self.domain,
             self.tracker_store,
+            self.lock_store,
             self.nlg,
             action_endpoint=self.action_endpoint,
             message_preprocessor=preprocessor,
@@ -829,7 +884,7 @@ class Agent:
 
         if isinstance(domain, str):
             domain = Domain.load(domain)
-            domain.check_missing_templates()
+            domain.check_missing_responses()
             return domain
         elif isinstance(domain, Domain):
             return domain

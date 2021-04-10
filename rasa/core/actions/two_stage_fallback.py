@@ -54,7 +54,7 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        affirm_action = action.action_from_name(
+        affirm_action = action.action_for_name_or_text(
             ACTION_DEFAULT_ASK_AFFIRMATION_NAME, domain, self._action_endpoint
         )
 
@@ -67,7 +67,7 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        rephrase = action.action_from_name(
+        rephrase = action.action_for_name_or_text(
             ACTION_DEFAULT_ASK_REPHRASE_NAME, domain, self._action_endpoint
         )
 
@@ -112,7 +112,7 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        fallback = action.action_from_name(
+        fallback = action.action_for_name_or_text(
             ACTION_DEFAULT_FALLBACK_NAME, domain, self._action_endpoint
         )
 
@@ -171,7 +171,14 @@ def _second_affirmation_failed(tracker: DialogueStateTracker) -> bool:
 
 
 def _message_clarification(tracker: DialogueStateTracker) -> List[Event]:
-    clarification = copy.deepcopy(tracker.latest_message)
+    latest_message = tracker.latest_message
+    if not latest_message:
+        raise TypeError(
+            "Cannot issue message clarification because "
+            "latest message is not on tracker."
+        )
+
+    clarification = copy.deepcopy(latest_message)
     clarification.parse_data["intent"]["confidence"] = 1.0
     clarification.timestamp = time.time()
     return [ActionExecuted(ACTION_LISTEN_NAME), clarification]

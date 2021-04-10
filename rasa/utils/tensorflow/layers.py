@@ -5,7 +5,15 @@ import tensorflow_addons as tfa
 import rasa.utils.tensorflow.crf
 from tensorflow.python.keras.utils import tf_utils
 from tensorflow.python.keras import backend as K
-from rasa.utils.tensorflow.constants import SOFTMAX, MARGIN, COSINE, INNER
+from rasa.utils.tensorflow.constants import (
+    SOFTMAX,
+    MARGIN,
+    COSINE,
+    INNER,
+    LINEAR_NORM,
+    CROSS_ENTROPY,
+)
+from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +144,7 @@ class DenseForSparse(tf.keras.layers.Dense):
         if len(inputs.shape) == 3:
             # reshape back
             outputs = tf.reshape(
-                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], -1)
+                outputs, (tf.shape(inputs)[0], tf.shape(inputs)[1], self.units)
             )
 
         if self.use_bias:
@@ -269,13 +277,6 @@ class Ffnn(tf.keras.layers.Layer):
 class Embed(tf.keras.layers.Layer):
     """Dense embedding layer.
 
-    Arguments:
-        embed_dim: Positive integer, dimensionality of the output space.
-        reg_lambda: Float; regularization factor.
-        layer_name_suffix: Text added to the name of the layers.
-        similarity_type: Optional type of similarity measure to use,
-            either 'cosine' or 'inner'.
-
     Input shape:
         N-D tensor with shape: `(batch_size, ..., input_dim)`.
         The most common situation would be
@@ -288,20 +289,16 @@ class Embed(tf.keras.layers.Layer):
     """
 
     def __init__(
-        self,
-        embed_dim: int,
-        reg_lambda: float,
-        layer_name_suffix: Text,
-        similarity_type: Optional[Text] = None,
+        self, embed_dim: int, reg_lambda: float, layer_name_suffix: Text
     ) -> None:
-        super().__init__(name=f"embed_{layer_name_suffix}")
+        """Initialize layer.
 
-        self.similarity_type = similarity_type
-        if self.similarity_type and self.similarity_type not in {COSINE, INNER}:
-            raise ValueError(
-                f"Wrong similarity type '{self.similarity_type}', "
-                f"should be '{COSINE}' or '{INNER}'."
-            )
+        Args:
+            embed_dim: Dimensionality of the output space.
+            reg_lambda: Regularization factor.
+            layer_name_suffix: Text added to the name of the layers.
+        """
+        super().__init__(name=f"embed_{layer_name_suffix}")
 
         regularizer = tf.keras.regularizers.l2(reg_lambda)
         self._dense = tf.keras.layers.Dense(
@@ -313,10 +310,8 @@ class Embed(tf.keras.layers.Layer):
 
     # noinspection PyMethodOverriding
     def call(self, x: tf.Tensor) -> tf.Tensor:
+        """Apply dense layer."""
         x = self._dense(x)
-        if self.similarity_type == COSINE:
-            x = tf.nn.l2_normalize(x, axis=-1)
-
         return x
 
 
@@ -542,31 +537,7 @@ class CRF(tf.keras.layers.Layer):
 
 
 class DotProductLoss(tf.keras.layers.Layer):
-    """Dot-product loss layer.
-
-    Arguments:
-        num_neg: Positive integer, the number of incorrect labels;
-            the algorithm will minimize their similarity to the input.
-        loss_type: The type of the loss function, either 'softmax' or 'margin'.
-        mu_pos: Float, indicates how similar the algorithm should
-            try to make embedding vectors for correct labels;
-            should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-        mu_neg: Float, maximum negative similarity for incorrect labels,
-            should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-        use_max_sim_neg: Boolean, if 'True' the algorithm only minimizes
-            maximum similarity over incorrect intent labels,
-            used only if 'loss_type' is set to 'margin'.
-        neg_lambda: Float, the scale of how important is to minimize
-            the maximum similarity between embeddings of different labels,
-            used only if 'loss_type' is set to 'margin'.
-        scale_loss: Boolean, if 'True' scale loss inverse proportionally to
-            the confidence of the correct prediction.
-        name: Optional name of the layer.
-        parallel_iterations: Positive integer, the number of iterations allowed
-            to run in parallel.
-        same_sampling: Boolean, if 'True' sample same negative labels
-            for the whole batch.
-    """
+    """Dot-product loss layer."""
 
     def __init__(
         self,
@@ -577,10 +548,47 @@ class DotProductLoss(tf.keras.layers.Layer):
         use_max_sim_neg: bool,
         neg_lambda: float,
         scale_loss: bool,
+        similarity_type: Text,
         name: Optional[Text] = None,
-        parallel_iterations: int = 1000,
         same_sampling: bool = False,
+        constrain_similarities: bool = True,
+        model_confidence: Text = SOFTMAX,
     ) -> None:
+        """Declare instance variables with default values.
+
+        Args:
+            num_neg: Positive integer, the number of incorrect labels;
+                the algorithm will minimize their similarity to the input.
+            loss_type: The type of the loss function, either 'cross_entropy' or
+                'margin'.
+            mu_pos: Float, indicates how similar the algorithm should
+                try to make embedding vectors for correct labels;
+                should be 0.0 < ... < 1.0 for 'cosine' similarity type.
+            mu_neg: Float, maximum negative similarity for incorrect labels,
+                should be -1.0 < ... < 1.0 for 'cosine' similarity type.
+            use_max_sim_neg: Boolean, if 'True' the algorithm only minimizes
+                maximum similarity over incorrect intent labels,
+                used only if 'loss_type' is set to 'margin'.
+            neg_lambda: Float, the scale of how important is to minimize
+                the maximum similarity between embeddings of different labels,
+                used only if 'loss_type' is set to 'margin'.
+            scale_loss: Boolean, if 'True' scale loss inverse proportionally to
+                the confidence of the correct prediction.
+            similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
+            name: Optional name of the layer.
+            same_sampling: Boolean, if 'True' sample same negative labels
+                for the whole batch.
+            constrain_similarities: Boolean, if 'True' applies sigmoid on all
+                similarity terms and adds to the loss function to
+                ensure that similarity values are approximately bounded.
+                Used inside _loss_cross_entropy() only.
+            model_confidence: Model confidence to be returned during inference.
+                Possible values - 'softmax' and 'linear_norm'.
+
+        Raises:
+            LayerConfigException: When `similarity_type` is not one of 'cosine' or
+                'inner'.
+        """
         super().__init__(name=name)
         self.num_neg = num_neg
         self.loss_type = loss_type
@@ -589,8 +597,15 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.use_max_sim_neg = use_max_sim_neg
         self.neg_lambda = neg_lambda
         self.scale_loss = scale_loss
-        self.parallel_iterations = parallel_iterations
         self.same_sampling = same_sampling
+        self.constrain_similarities = constrain_similarities
+        self.model_confidence = model_confidence
+        self.similarity_type = similarity_type
+        if self.similarity_type not in {COSINE, INNER}:
+            raise TFLayerConfigException(
+                f"Wrong similarity type '{self.similarity_type}', "
+                f"should be '{COSINE}' or '{INNER}'."
+            )
 
     @staticmethod
     def _make_flat(x: tf.Tensor) -> tf.Tensor:
@@ -601,43 +616,9 @@ class DotProductLoss(tf.keras.layers.Layer):
     def _random_indices(
         self, batch_size: tf.Tensor, total_candidates: tf.Tensor
     ) -> tf.Tensor:
-        def rand_idxs() -> tf.Tensor:
-            """Create random tensor of indices"""
-
-            # (1, num_neg)
-            return tf.expand_dims(
-                tf.random.shuffle(tf.range(total_candidates))[: self.num_neg], 0
-            )
-
-        if self.same_sampling:
-            return tf.tile(rand_idxs(), (batch_size, 1))
-
-        def cond(idx: tf.Tensor, out: tf.Tensor) -> tf.Tensor:
-            """Condition for while loop"""
-            return idx < batch_size
-
-        def body(idx: tf.Tensor, out: tf.Tensor) -> List[tf.Tensor]:
-            """Body of the while loop"""
-            return [
-                # increment counter
-                idx + 1,
-                # add random indices
-                tf.concat([out, rand_idxs()], 0),
-            ]
-
-        # first tensor already created
-        idx1 = tf.constant(1)
-        # create first random array of indices
-        out1 = rand_idxs()  # (1, num_neg)
-
-        return tf.while_loop(
-            cond,
-            body,
-            loop_vars=[idx1, out1],
-            shape_invariants=[idx1.shape, tf.TensorShape([None, self.num_neg])],
-            parallel_iterations=self.parallel_iterations,
-            back_prop=False,
-        )[1]
+        return tf.random.uniform(
+            shape=(batch_size, self.num_neg), maxval=total_candidates, dtype=tf.int32
+        )
 
     @staticmethod
     def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:
@@ -719,24 +700,53 @@ class DotProductLoss(tf.keras.layers.Layer):
             labels_bad_negs,
         )
 
-    @staticmethod
-    def sim(a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor:
+    def sim(
+        self, a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None
+    ) -> tf.Tensor:
         """Calculate similarity between given tensors."""
-
+        if self.similarity_type == COSINE:
+            a = tf.nn.l2_normalize(a, axis=-1)
+            b = tf.nn.l2_normalize(b, axis=-1)
         sim = tf.reduce_sum(a * b, axis=-1)
         if mask is not None:
             sim *= tf.expand_dims(mask, 2)
 
         return sim
 
-    @staticmethod
-    def confidence_from_sim(sim: tf.Tensor, similarity_type: Text) -> tf.Tensor:
-        if similarity_type == COSINE:
-            # clip negative values to zero
-            return tf.nn.relu(sim)
-        else:
-            # normalize result to [0, 1] with softmax
-            return tf.nn.softmax(sim)
+    def similarity_confidence_from_embeddings(
+        self,
+        input_embeddings: tf.Tensor,
+        label_embeddings: tf.Tensor,
+        mask: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Computes similarity.
+
+        Calculates similary between input and label embeddings and model's confidence.
+
+        First compute the similarity from embeddings and then apply an activation
+        function if needed to get the confidence.
+
+        Args:
+            input_embeddings: Embeddings of input.
+            label_embeddings: Embeddings of labels.
+            mask: Mask over input and output sequence.
+
+        Returns:
+            similarity between input and label embeddings and model's prediction
+            confidence for each label.
+        """
+        similarities = self.sim(input_embeddings, label_embeddings, mask)
+        confidences = similarities
+        if self.model_confidence == SOFTMAX:
+            confidences = tf.nn.softmax(similarities)
+        if self.model_confidence == LINEAR_NORM:
+            # Clip negative values to 0 and linearly normalize to bring the predictions
+            # in the range [0,1].
+            clipped_similarities = tf.nn.relu(similarities)
+            confidences = clipped_similarities / tf.reduce_sum(
+                clipped_similarities, axis=-1
+            )
+        return similarities, confidences
 
     def _train_sim(
         self,
@@ -840,7 +850,7 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         return loss
 
-    def _loss_softmax(
+    def _loss_cross_entropy(
         self,
         sim_pos: tf.Tensor,
         sim_neg_il: tf.Tensor,
@@ -849,18 +859,15 @@ class DotProductLoss(tf.keras.layers.Layer):
         sim_neg_li: tf.Tensor,
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
-        """Define softmax loss."""
-
-        logits = tf.concat(
-            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
+        """Defines cross entropy loss."""
+        loss = self._compute_softmax_loss(
+            sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li
         )
 
-        # create label_ids for softmax
-        label_ids = tf.zeros_like(logits[..., 0], tf.int32)
-
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-            labels=label_ids, logits=logits
-        )
+        if self.constrain_similarities:
+            loss += self._compute_sigmoid_loss(
+                sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li
+            )
 
         if self.scale_loss:
             # in case of cross entropy log_likelihood = -loss
@@ -879,18 +886,68 @@ class DotProductLoss(tf.keras.layers.Layer):
         # average the loss over the batch
         return tf.reduce_mean(loss)
 
+    @staticmethod
+    def _compute_sigmoid_loss(
+        sim_pos: tf.Tensor,
+        sim_neg_il: tf.Tensor,
+        sim_neg_ll: tf.Tensor,
+        sim_neg_ii: tf.Tensor,
+        sim_neg_li: tf.Tensor,
+    ) -> tf.Tensor:
+        # Constrain similarity values in a range by applying sigmoid
+        # on them individually so that they saturate at extreme values.
+        sigmoid_logits = tf.concat(
+            [sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li], axis=-1
+        )
+        sigmoid_labels = tf.concat(
+            [
+                tf.ones_like(sigmoid_logits[..., :1]),
+                tf.zeros_like(sigmoid_logits[..., 1:]),
+            ],
+            axis=-1,
+        )
+        sigmoid_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+            labels=sigmoid_labels, logits=sigmoid_logits
+        )
+        # average over logits axis
+        return tf.reduce_mean(sigmoid_loss, axis=-1)
+
+    def _compute_softmax_loss(
+        self,
+        sim_pos: tf.Tensor,
+        sim_neg_il: tf.Tensor,
+        sim_neg_ll: tf.Tensor,
+        sim_neg_ii: tf.Tensor,
+        sim_neg_li: tf.Tensor,
+    ) -> tf.Tensor:
+        # Similarity terms between input and label should be optimized relative
+        # to each other and hence use them as logits for softmax term
+        softmax_logits = tf.concat([sim_pos, sim_neg_il, sim_neg_li], axis=-1)
+        if not self.constrain_similarities:
+            # Concatenate other similarity terms as well. Due to this,
+            # similarity values between input and label may not be
+            # approximately bounded in a defined range.
+            softmax_logits = tf.concat(
+                [softmax_logits, sim_neg_ii, sim_neg_ll], axis=-1
+            )
+        # create label_ids for softmax
+        softmax_label_ids = tf.zeros_like(softmax_logits[..., 0], tf.int32)
+        softmax_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=softmax_label_ids, logits=softmax_logits
+        )
+        return softmax_loss
+
     @property
     def _chosen_loss(self) -> Callable:
         """Use loss depending on given option."""
-
         if self.loss_type == MARGIN:
             return self._loss_margin
-        elif self.loss_type == SOFTMAX:
-            return self._loss_softmax
+        elif self.loss_type == CROSS_ENTROPY:
+            return self._loss_cross_entropy
         else:
-            raise ValueError(
+            raise TFLayerConfigException(
                 f"Wrong loss type '{self.loss_type}', "
-                f"should be '{MARGIN}' or '{SOFTMAX}'"
+                f"should be '{MARGIN}' or '{CROSS_ENTROPY}'"
             )
 
     # noinspection PyMethodOverriding

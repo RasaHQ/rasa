@@ -9,7 +9,8 @@
       "confidence": null,
       "policy": null,
       "timestamp": 1551952977.4850519,
-      "unpredictable": false
+      "unpredictable": false,
+      "hide_rule_turn": false
     },
     {
       "py/object": "rasa.shared.core.events.UserUttered",
@@ -45,7 +46,8 @@
         "text": "Hi my name is Peter"
       },
       "text": "Hi my name is Peter",
-      "timestamp": 1551953035.076376
+      "timestamp": 1551953035.076376,
+      "use_text_for_featurization": false
     },
     {
       "py/object": "rasa.shared.core.events.SlotSet",
@@ -60,7 +62,8 @@
       "confidence": null,
       "policy": null,
       "timestamp": 1551953040.607782,
-      "unpredictable": false
+      "unpredictable": false,
+      "hide_rule_turn": false
     },
     {
       "py/object": "rasa.shared.core.events.BotUttered",

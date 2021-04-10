@@ -36,7 +36,8 @@ class TrainingType(Enum):
 
 
 def get_configuration(
-    config_file_path: Text, training_type: Optional[TrainingType] = TrainingType.BOTH
+    config_file_path: Optional[Text],
+    training_type: Optional[TrainingType] = TrainingType.BOTH,
 ) -> Dict[Text, Any]:
     """Determine configuration from a configuration file.
 
@@ -51,7 +52,7 @@ def get_configuration(
         logger.debug("No configuration file was provided to the TrainingDataImporter.")
         return {}
 
-    config = rasa.shared.utils.io.read_config_file(config_file_path)
+    config = rasa.shared.utils.io.read_model_configuration(config_file_path)
 
     missing_keys = _get_missing_config_keys(config, training_type)
     keys_to_configure = _get_unspecified_autoconfigurable_keys(config, training_type)

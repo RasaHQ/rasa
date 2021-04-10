@@ -453,7 +453,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         x: tf.Tensor,
         pad_mask: Optional[tf.Tensor] = None,
         training: Optional[Union[tf.Tensor, bool]] = None,
-    ) -> tf.Tensor:
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Apply transformer encoder layer.
 
         Arguments:
@@ -469,7 +469,9 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
             training = K.learning_phase()
 
         x_norm = self._layer_norm(x)  # (batch_size, length, units)
-        attn_out, _ = self._mha(x_norm, x_norm, pad_mask=pad_mask, training=training)
+        attn_out, attn_weights = self._mha(
+            x_norm, x_norm, pad_mask=pad_mask, training=training
+        )
         attn_out = self._dropout(attn_out, training=training)
         x += attn_out
 
@@ -478,7 +480,8 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
             ffn_out = layer(ffn_out, training=training)
         x += ffn_out
 
-        return x  # (batch_size, length, units)
+        # (batch_size, length, units), (batch_size, num_heads, length, length)
+        return x, attn_weights
 
 
 class TransformerEncoder(tf.keras.layers.Layer):
@@ -591,7 +594,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         x: tf.Tensor,
         pad_mask: Optional[tf.Tensor] = None,
         training: Optional[Union[tf.Tensor, bool]] = None,
-    ) -> tf.Tensor:
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Apply transformer encoder.
 
         Arguments:
@@ -603,7 +606,6 @@ class TransformerEncoder(tf.keras.layers.Layer):
         Returns:
             Transformer encoder output with shape [batch_size, length, units]
         """
-
         # adding embedding and position encoding.
         x = self._embedding(x)  # (batch_size, length, units)
         x *= tf.math.sqrt(tf.cast(self.units, tf.float32))
@@ -620,10 +622,17 @@ class TransformerEncoder(tf.keras.layers.Layer):
                     1.0, pad_mask + self._look_ahead_pad_mask(tf.shape(pad_mask)[-1])
                 )  # (batch_size, 1, length, length)
 
+        layer_attention_weights = []
+
         for layer in self._enc_layers:
-            x = layer(x, pad_mask=pad_mask, training=training)
+            x, attn_weights = layer(x, pad_mask=pad_mask, training=training)
+            layer_attention_weights.append(attn_weights)
 
         # if normalization is done in encoding layers, then it should also be done
         # on the output, since the output can grow very large, being the sum of
         # a whole stack of unnormalized layer outputs.
-        return self._layer_norm(x)  # (batch_size, length, units)
+        x = self._layer_norm(x)  # (batch_size, length, units)
+
+        # (batch_size, length, units),
+        # (num_layers, batch_size, num_heads, length, length)
+        return x, tf.stack(layer_attention_weights)

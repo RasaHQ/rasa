@@ -6,13 +6,18 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 def _convert_lookup_tables_to_regex(
-    training_data: TrainingData, use_only_entities: bool = False
+    training_data: TrainingData,
+    use_only_entities: bool = False,
+    use_word_boundaries: bool = True,
 ) -> List[Dict[Text, Text]]:
-    """Convert the lookup tables from the training data to regex patterns.
+    r"""Convert the lookup tables from the training data to regex patterns.
+
     Args:
         training_data: The training data.
         use_only_entities: If True only regex features with a name equal to a entity
           are considered.
+        use_word_boundaries: If True add `\b` around the regex expression
+          for each lookup table expressions.
 
     Returns:
         A list of regex patterns.
@@ -21,19 +26,23 @@ def _convert_lookup_tables_to_regex(
     for table in training_data.lookup_tables:
         if use_only_entities and table["name"] not in training_data.entities:
             continue
-        regex_pattern = _generate_lookup_regex(table)
+        regex_pattern = _generate_lookup_regex(table, use_word_boundaries)
         lookup_regex = {"name": table["name"], "pattern": regex_pattern}
         patterns.append(lookup_regex)
     return patterns
 
 
-def _generate_lookup_regex(lookup_table: Dict[Text, Union[Text, List[Text]]]) -> Text:
-    """Creates a regex pattern from the given lookup table.
+def _generate_lookup_regex(
+    lookup_table: Dict[Text, Union[Text, List[Text]]], use_word_boundaries: bool = True
+) -> Text:
+    r"""Creates a regex pattern from the given lookup table.
 
     The lookup table is either a file or a list of entries.
 
     Args:
         lookup_table: The lookup table.
+        use_word_boundaries: If True add `\b` around the regex expression
+          for each lookup table expressions.
 
     Returns:
         The regex pattern.
@@ -50,8 +59,11 @@ def _generate_lookup_regex(lookup_table: Dict[Text, Union[Text, List[Text]]]) ->
     # sanitize the regex, escape special characters
     elements_sanitized = [re.escape(e) for e in elements_to_regex]
 
-    # regex matching elements with word boundaries on either side
-    return "(\\b" + "\\b|\\b".join(elements_sanitized) + "\\b)"
+    if use_word_boundaries:
+        # regex matching elements with word boundaries on either side
+        return "(\\b" + "\\b|\\b".join(elements_sanitized) + "\\b)"
+    else:
+        return "(" + "|".join(elements_sanitized) + ")"
 
 
 def read_lookup_table_file(lookup_table_file: Text) -> List[Text]:
@@ -108,8 +120,9 @@ def extract_patterns(
     use_lookup_tables: bool = True,
     use_regexes: bool = True,
     use_only_entities: bool = False,
+    use_word_boundaries: bool = True,
 ) -> List[Dict[Text, Text]]:
-    """Extract a list of patterns from the training data.
+    r"""Extract a list of patterns from the training data.
 
     The patterns are constructed using the regex features and lookup tables defined
     in the training data.
@@ -120,6 +133,8 @@ def extract_patterns(
           equal to a entity are considered.
         use_regexes: Boolean indicating whether to use regex features or not.
         use_lookup_tables: Boolean indicating whether to use lookup tables or not.
+        use_word_boundaries: Boolean indicating whether to use `\b` around the lookup
+            table regex expressions
 
     Returns:
         The list of regex patterns.
@@ -133,7 +148,9 @@ def extract_patterns(
         patterns.extend(_collect_regex_features(training_data, use_only_entities))
     if use_lookup_tables:
         patterns.extend(
-            _convert_lookup_tables_to_regex(training_data, use_only_entities)
+            _convert_lookup_tables_to_regex(
+                training_data, use_only_entities, use_word_boundaries
+            )
         )
 
     return patterns

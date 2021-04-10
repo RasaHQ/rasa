@@ -39,10 +39,14 @@ By default, the HTTP server runs as a single process. You can change the number
 of worker processes using the `SANIC_WORKERS` environment variable. It is
 recommended that you set the number of workers to the number of available CPU cores
 (check out the
-[Sanic docs](https://sanic.readthedocs.io/en/latest/sanic/deploying.html#workers)
+[Sanic docs](https://sanicframework.org/en/guide/deployment/running.html#workers)
 for more details). This will only work in combination with the
 `RedisLockStore` (see [Lock Stores](./lock-stores.mdx).
 
+:::caution
+The [SocketIO channel](./connectors/your-own-website.mdx#websocket-channel) does not support multiple worker processes. 
+
+:::
 
 ## Security Considerations
 
@@ -114,3 +118,4 @@ The following is an example payload for a JWT token:
 ```
 
 To create and encode the token, you can use tools such as the [JWT Debugger](https://jwt.io/), or a Python module such as [PyJWT](https://pyjwt.readthedocs.io/en/latest/).
+

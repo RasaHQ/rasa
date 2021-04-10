@@ -2,6 +2,7 @@ import logging
 from typing import Optional, Union, Text, Any, Dict
 
 import rasa.shared.utils.common
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.domain import Domain
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -14,16 +15,17 @@ class NaturalLanguageGenerator:
 
     async def generate(
         self,
-        template_name: Text,
+        utter_action: Text,
         tracker: "DialogueStateTracker",
         output_channel: Text,
         **kwargs: Any,
     ) -> Optional[Dict[Text, Any]]:
-        """Generate a response for the requested template.
+        """Generate a response for the requested utter action.
 
         There are a lot of different methods to implement this, e.g. the
-        generation can be based on templates or be fully ML based by feeding
-        the dialogue state into a machine learning NLG model."""
+        generation can be based on responses or be fully ML based by feeding
+        the dialogue state into a machine learning NLG model.
+        """
         raise NotImplementedError
 
     @staticmethod
@@ -50,16 +52,24 @@ def _create_from_endpoint_config(
         from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
         # this is the default type if no endpoint config is set
-        nlg = TemplatedNaturalLanguageGenerator(domain.templates)
+        nlg = TemplatedNaturalLanguageGenerator(domain.responses)
     elif endpoint_config.type is None or endpoint_config.type.lower() == "callback":
         from rasa.core.nlg import CallbackNaturalLanguageGenerator
 
         # this is the default type if no nlg type is set
         nlg = CallbackNaturalLanguageGenerator(endpoint_config=endpoint_config)
-    elif endpoint_config.type.lower() == "template":
+    elif endpoint_config.type.lower() == "response":
         from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 
-        nlg = TemplatedNaturalLanguageGenerator(domain.templates)
+        nlg = TemplatedNaturalLanguageGenerator(domain.responses)
+    elif endpoint_config.type.lower() == "template":
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "Please change the NLG endpoint config type from `template` to `response`.",
+            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+        )
+        from rasa.core.nlg import TemplatedNaturalLanguageGenerator
+
+        nlg = TemplatedNaturalLanguageGenerator(domain.responses)
     else:
         nlg = _load_from_module_name_in_endpoint_config(endpoint_config, domain)
 

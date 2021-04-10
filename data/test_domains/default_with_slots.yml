@@ -30,3 +30,9 @@ responses:
     - text: "bye bye 😢"
   utter_default:   # utterance sent by action_default_fallback
     - text: "sorry, I didn't get that, can you rephrase it?"
+
+forms:
+  some_form:
+    name:
+    - type: from_entity
+      entity: name

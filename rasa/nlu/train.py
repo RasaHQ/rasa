@@ -3,7 +3,6 @@ import typing
 from typing import Any, Optional, Text, Tuple, Union, Dict
 
 import rasa.shared.utils.common
-import rasa.utils.common as common_utils
 from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
@@ -12,10 +11,10 @@ from rasa.shared.nlu.training_data.loading import load_data
 from rasa.utils import io as io_utils
 from rasa.utils.endpoints import EndpointConfig
 
-
 if typing.TYPE_CHECKING:
     from rasa.shared.importers.importer import TrainingDataImporter
     from rasa.shared.nlu.training_data.training_data import TrainingData
+    from rasa.nlu.persistor import Persistor
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +62,7 @@ async def load_data_from_endpoint(
         logger.warning(f"Could not retrieve training data from URL:\n{e}")
 
 
-def create_persistor(persistor: Optional[Text]):
+def create_persistor(persistor: Optional[Text]) -> Optional["Persistor"]:
     """Create a remote persistor to store the model if configured."""
 
     if persistor is not None:
@@ -83,6 +82,7 @@ async def train(
     component_builder: Optional[ComponentBuilder] = None,
     training_data_endpoint: Optional[EndpointConfig] = None,
     persist_nlu_training_data: bool = False,
+    model_to_finetune: Optional[Interpreter] = None,
     **kwargs: Any,
 ) -> Tuple[Trainer, Interpreter, Optional[Text]]:
     """Loads the trainer and the data and runs the training of the model."""
@@ -94,7 +94,9 @@ async def train(
     # Ensure we are training a model that we can save in the end
     # WARN: there is still a race condition if a model with the same name is
     # trained in another subprocess
-    trainer = Trainer(nlu_config, component_builder)
+    trainer = Trainer(
+        nlu_config, component_builder, model_to_finetune=model_to_finetune
+    )
     persistor = create_persistor(storage)
     if training_data_endpoint is not None:
         training_data = await load_data_from_endpoint(

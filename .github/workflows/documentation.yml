@@ -3,7 +3,7 @@ name: Publish Documentation
 on:
   push:
     branches:
-    - 'master'
+    - 'main'
     tags:
     - '**'
 
@@ -20,7 +20,7 @@ jobs:
   docs:
     name: Build Docs
     runs-on: ubuntu-latest
-    if: github.repository == 'RasaHQ/rasa'  # don't run this for master branches of forks, would fail anyways
+    if: github.repository == 'RasaHQ/rasa'  # don't run this for main branches of forks, would fail anyways
 
     steps:
     - name: Checkout git repository 🕝
@@ -50,7 +50,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-3.6-non-full-${{ hashFiles('**/poetry.lock') }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.6-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
         restore-keys: ${{ runner.os }}-poetry-3.6-non-full
 
     - name: Load Yarn Cached Packages ⬇
@@ -64,7 +64,7 @@ jobs:
       run: make install install-docs
 
     - name: Pre-build Docs 🧶
-      run: cd $DOCS_FOLDER && poetry run yarn pre-build
+      run: make prepare-docs
 
     - name: Build & Publish Docs 🏃‍♀️
       env:

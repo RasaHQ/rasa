@@ -1,9 +1,11 @@
 import asyncio
-from typing import Collection, List, Text
+from typing import Any, Collection, List, Optional, Text
 from unittest.mock import Mock
 
 import pytest
+from _pytest.recwarn import WarningsRecorder
 
+import rasa.shared.core.domain
 import rasa.shared.utils.common
 
 
@@ -140,3 +142,50 @@ async def test_cached_method_with_async_function():
             await asyncio.sleep(0)
 
         await my_function()
+
+
+@pytest.mark.parametrize(
+    "module_path, lookup_path, outcome",
+    [
+        ("rasa.shared.core.domain.Domain", None, "Domain"),
+        # lookup_path
+        ("Event", "rasa.shared.core.events", "Event"),
+    ],
+)
+def test_class_from_module_path(
+    module_path: Text, lookup_path: Optional[Text], outcome: Text
+):
+    klass = rasa.shared.utils.common.class_from_module_path(module_path, lookup_path)
+    assert isinstance(klass, object)
+    assert klass.__name__ == outcome
+
+
+@pytest.mark.parametrize(
+    "module_path, lookup_path",
+    [
+        ("rasa.shared.core.domain.FunkyDomain", None),
+        ("FunkyDomain", None),
+        ("FunkyDomain", "rasa.shared.core.domain"),
+    ],
+)
+def test_class_from_module_path_not_found(
+    module_path: Text, lookup_path: Optional[Text]
+):
+    with pytest.raises(ImportError):
+        rasa.shared.utils.common.class_from_module_path(module_path, lookup_path)
+
+
+@pytest.mark.parametrize(
+    "module_path, result, outcome",
+    [
+        ("rasa.shared.core.domain.Domain", rasa.shared.core.domain.Domain, True),
+        ("rasa.shared.core.domain.logger", rasa.shared.core.domain.logger, False),
+    ],
+)
+def test_class_from_module_path_ensure_class(
+    module_path: Text, outcome: bool, result: Any, recwarn: WarningsRecorder
+):
+    klass = rasa.shared.utils.common.class_from_module_path(module_path)
+    assert klass is result
+
+    assert bool(len(recwarn)) is not outcome

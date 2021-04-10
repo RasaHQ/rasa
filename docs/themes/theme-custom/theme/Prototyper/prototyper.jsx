@@ -81,7 +81,16 @@ const Prototyper = ({
         }),
       });
     }
-  }, [setTrainingData, chatState, setChatState]);
+  }, [
+    clearPollingInterval,
+    hasStarted,
+    setHasStarted,
+    trackingId,
+    chatState,
+    setChatState,
+    setTrainingData,
+    jsonHeaders
+  ]);
 
   const trainModel = (trainingData) => {
     setChatState("training");

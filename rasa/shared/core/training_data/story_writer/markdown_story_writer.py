@@ -1,10 +1,12 @@
 from pathlib import Path
 from typing import List, Text, Union
 
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION
 from ruamel import yaml
 
 from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
 from rasa.shared.core.training_data.structures import StoryStep
+import rasa.shared.utils.io
 
 
 class MarkdownStoryWriter(StoryWriter):
@@ -35,6 +37,7 @@ class MarkdownStoryWriter(StoryWriter):
         story_steps: List[StoryStep],
         is_appendable: bool = False,
         is_test_story: bool = False,
+        ignore_deprecation_warning: bool = False,
     ) -> Text:
         """Turns Story steps into a markdown string.
 
@@ -45,10 +48,19 @@ class MarkdownStoryWriter(StoryWriter):
                            the existing story file.
             is_test_story: Identifies if the stories should be exported in test stories
                            format.
+            ignore_deprecation_warning: `True` if printing the deprecation warning
+                should be suppressed.
 
         Returns:
-            String with story steps in the markdown format.
+            Story steps in the markdown format.
         """
+        if not ignore_deprecation_warning:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                "Stories in Markdown format are deprecated and will be removed in Rasa "
+                "Open Source 3.0.0. Please convert your Markdown stories to the "
+                "new YAML format.",
+                docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
+            )
         return MarkdownStoryWriter._stories_to_md(
             story_steps, is_appendable, is_test_story
         )

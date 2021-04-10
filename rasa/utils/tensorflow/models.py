@@ -1,12 +1,9 @@
-import datetime
-
 import tensorflow as tf
+import tensorflow_addons as tfa
 import numpy as np
 import logging
-import os
-import shutil
+import random
 from collections import defaultdict
-from pathlib import Path
 from typing import (
     List,
     Text,
@@ -14,22 +11,14 @@ from typing import (
     Tuple,
     Union,
     Optional,
-    Callable,
-    TYPE_CHECKING,
     Any,
 )
 
-from tqdm import tqdm
-from rasa.constants import CHECKPOINT_MODEL_NAME
-from rasa.shared.utils.io import is_logging_disabled
-import rasa.utils.io
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     SEQUENCE,
-    TENSORBOARD_LOG_LEVEL,
+    SENTENCE,
     RANDOM_SEED,
-    TENSORBOARD_LOG_DIR,
-    CHECKPOINT_MODEL,
     EMBEDDING_DIMENSION,
     REGULARIZATION_CONSTANT,
     SIMILARITY_TYPE,
@@ -47,39 +36,49 @@ from rasa.utils.tensorflow.constants import (
     MAX_NEG_SIM,
     USE_MAX_NEG_SIM,
     NEGATIVE_MARGIN_SCALE,
+    HIDDEN_LAYERS_SIZES,
+    DROP_RATE,
+    DENSE_DIMENSION,
+    CONCAT_DIMENSION,
+    DROP_RATE_ATTENTION,
+    SCALE_LOSS,
+    LEARNING_RATE,
+    CONSTRAIN_SIMILARITIES,
+    MODEL_CONFIDENCE,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.transformer import TransformerEncoder
-
-if TYPE_CHECKING:
-    from tensorflow.python.ops.summary_ops_v2 import ResourceSummaryWriter
+from rasa.utils.tensorflow.temp_keras_modules import TmpKerasModel
+from rasa.utils.tensorflow.data_generator import (
+    RasaDataGenerator,
+    RasaBatchDataGenerator,
+)
+from tensorflow.python.keras.utils import tf_utils
 
 logger = logging.getLogger(__name__)
 
 
-TENSORBOARD_LOG_LEVELS = ["epoch", "minibatch"]
-
-
 # noinspection PyMethodOverriding
-class RasaModel(tf.keras.models.Model):
-    """Completely override all public methods of keras Model.
+class RasaModel(TmpKerasModel):
+    """Abstract custom Keras model.
 
-    Cannot be used as tf.keras.Model
+     This model overwrites the following methods:
+    - train_step
+    - test_step
+    - predict_step
+    - save
+    - load
+    Cannot be used as tf.keras.Model.
     """
 
-    def __init__(
-        self,
-        random_seed: Optional[int] = None,
-        tensorboard_log_dir: Optional[Text] = None,
-        tensorboard_log_level: Optional[Text] = "epoch",
-        checkpoint_model: Optional[bool] = False,
-        **kwargs,
-    ) -> None:
+    def __init__(self, random_seed: Optional[int] = None, **kwargs: Any) -> None:
         """Initialize the RasaModel.
 
         Args:
             random_seed: set the random seed to get reproducible results
         """
+        # make sure that keras releases resources from previously trained model
+        tf.keras.backend.clear_session()
         super().__init__(**kwargs)
 
         self.total_loss = tf.keras.metrics.Mean(name="t_loss")
@@ -87,170 +86,64 @@ class RasaModel(tf.keras.models.Model):
 
         self._training = None  # training phase should be defined when building a graph
 
-        self._predict_function = None
-
         self.random_seed = random_seed
+        self._set_random_seed()
 
-        self.tensorboard_log_dir = tensorboard_log_dir
-        self.tensorboard_log_level = tensorboard_log_level
+        self._tf_predict_step = None
+        self.prepared_for_prediction = False
 
-        self.train_summary_writer = None
-        self.test_summary_writer = None
-        self.model_summary_file = None
-        self.tensorboard_log_on_epochs = True
-
-        self.best_metrics_so_far = {}
-        self.checkpoint_model = checkpoint_model
-        self.best_model_file = None
-        self.best_model_epoch = -1
-        if self.checkpoint_model:
-            model_checkpoint_dir = rasa.utils.io.create_temporary_directory()
-            self.best_model_file = os.path.join(
-                model_checkpoint_dir, f"{CHECKPOINT_MODEL_NAME}.tf_model"
-            )
-
-    def _set_up_tensorboard_writer(self) -> None:
-        if self.tensorboard_log_dir is not None:
-            if self.tensorboard_log_level not in TENSORBOARD_LOG_LEVELS:
-                raise ValueError(
-                    f"Provided '{TENSORBOARD_LOG_LEVEL}' ('{self.tensorboard_log_level}') "
-                    f"is invalid! Valid values are: {TENSORBOARD_LOG_LEVELS}"
-                )
-            self.tensorboard_log_on_epochs = self.tensorboard_log_level == "epoch"
-
-            current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-            class_name = self.__class__.__name__
-
-            train_log_dir = (
-                f"{self.tensorboard_log_dir}/{class_name}/{current_time}/train"
-            )
-            test_log_dir = (
-                f"{self.tensorboard_log_dir}/{class_name}/{current_time}/test"
-            )
-
-            self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
-            self.test_summary_writer = tf.summary.create_file_writer(test_log_dir)
-
-            self.model_summary_file = f"{self.tensorboard_log_dir}/{class_name}/{current_time}/model_summary.txt"
+    def _set_random_seed(self) -> None:
+        random.seed(self.random_seed)
+        tf.random.set_seed(self.random_seed)
+        np.random.seed(self.random_seed)
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
+        """Calculates the loss for the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The loss of the given batch.
+        """
         raise NotImplementedError
+
+    def prepare_for_predict(self) -> None:
+        """Prepares tf graph fpr prediction.
+
+        This method should contain necessary tf calculations
+        and set self variables that are used in `batch_predict`.
+        For example, pre calculation of `self.all_labels_embed`.
+        """
+        pass
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
-    ) -> Dict[Text, tf.Tensor]:
+    ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
+        """Predicts the output of the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The output to predict.
+        """
         raise NotImplementedError
 
-    def fit(
-        self,
-        model_data: RasaModelData,
-        epochs: int,
-        batch_size: Union[List[int], int],
-        evaluate_on_num_examples: int,
-        evaluate_every_num_epochs: int,
-        batch_strategy: Text,
-        silent: bool = False,
-        loading: bool = False,
-        eager: bool = False,
-    ) -> None:
-        """Fit model data"""
-
-        # don't setup tensorboard writers when training during loading
-        if not loading:
-            self._set_up_tensorboard_writer()
-
-        tf.random.set_seed(self.random_seed)
-        np.random.seed(self.random_seed)
-
-        disable = silent or is_logging_disabled()
-
-        evaluation_model_data = None
-        if evaluate_on_num_examples > 0:
-            if not disable:
-                logger.info(
-                    f"Validation accuracy is calculated every "
-                    f"{evaluate_every_num_epochs} epochs."
-                )
-
-            model_data, evaluation_model_data = model_data.split(
-                evaluate_on_num_examples, self.random_seed
-            )
-
-        (
-            train_dataset_function,
-            tf_train_on_batch_function,
-        ) = self._get_tf_train_functions(eager, model_data, batch_strategy)
-        (
-            evaluation_dataset_function,
-            tf_evaluation_on_batch_function,
-        ) = self._get_tf_evaluation_functions(eager, evaluation_model_data)
-
-        val_results = {}  # validation is not performed every epoch
-        progress_bar = tqdm(range(epochs), desc="Epochs", disable=disable)
-
-        training_steps = 0
-
-        for epoch in progress_bar:
-            epoch_batch_size = self.linearly_increasing_batch_size(
-                epoch, batch_size, epochs
-            )
-
-            training_steps = self._batch_loop(
-                train_dataset_function,
-                tf_train_on_batch_function,
-                epoch_batch_size,
-                True,
-                training_steps,
-                self.train_summary_writer,
-            )
-
-            if self.tensorboard_log_on_epochs:
-                self._log_metrics_for_tensorboard(epoch, self.train_summary_writer)
-
-            postfix_dict = self._get_metric_results()
-
-            if evaluate_on_num_examples > 0:
-                if self._should_evaluate(evaluate_every_num_epochs, epochs, epoch):
-                    self._batch_loop(
-                        evaluation_dataset_function,
-                        tf_evaluation_on_batch_function,
-                        epoch_batch_size,
-                        False,
-                        training_steps,
-                        self.test_summary_writer,
-                    )
-
-                    if self.tensorboard_log_on_epochs:
-                        self._log_metrics_for_tensorboard(
-                            epoch, self.test_summary_writer
-                        )
-
-                    val_results = self._get_metric_results(prefix="val_")
-                    self._save_model_checkpoint(
-                        current_results=val_results, epoch=epoch
-                    )
-
-                postfix_dict.update(val_results)
-
-            progress_bar.set_postfix(postfix_dict)
-
-        if self.checkpoint_model:
-            logger.info(
-                f"The model of epoch {self.best_model_epoch} (out of {epochs} in total) will be stored!"
-            )
-        if self.model_summary_file is not None:
-            self._write_model_summary()
-
-        self._training = None  # training phase should be defined when building a graph
-        if not disable:
-            logger.info("Finished training.")
-
-    def train_on_batch(
+    def train_step(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
-    ) -> None:
-        """Train on batch"""
+    ) -> Dict[Text, float]:
+        """Performs a train step using the given batch.
+
+        Args:
+            batch_in: The batch input.
+
+        Returns:
+            Training metrics.
+        """
+        self._training = True
 
         # calculate supervision and regularization losses separately
         with tf.GradientTape(persistent=True) as tape:
@@ -284,228 +177,160 @@ class RasaModel(tf.keras.models.Model):
 
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-    def build_for_predict(
-        self, predict_data: RasaModelData, eager: bool = False
-    ) -> None:
-        self._training = False  # needed for tf graph mode
-        self._predict_function = self._get_tf_call_model_function(
-            predict_data.as_tf_dataset, self.batch_predict, eager, "prediction"
-        )
+        self._training = None
 
-    def predict(self, predict_data: RasaModelData) -> Dict[Text, tf.Tensor]:
-        if self._predict_function is None:
-            logger.debug("There is no tensorflow prediction graph.")
-            self.build_for_predict(predict_data)
+        return self._get_metric_results()
 
-        # Prepare a single batch of size 1
-        batch_in = predict_data.prepare_batch(start=0, end=1)
-
-        self._training = False  # needed for eager mode
-        return self._predict_function(batch_in)
-
-    def save(self, model_file_name: Text, overwrite: bool = True) -> None:
-        self.save_weights(model_file_name, overwrite=overwrite, save_format="tf")
-
-    def copy_best(self, model_file_name: Text) -> None:
-        checkpoint_directory, checkpoint_file = os.path.split(self.best_model_file)
-        checkpoint_path = Path(checkpoint_directory)
-
-        # Copy all tf2 model files from the temp location to the final destination
-        for f in checkpoint_path.glob(f"{checkpoint_file}*"):
-            shutil.move(str(f.absolute()), model_file_name + f.suffix)
-
-        # Generate the tf2 checkpoint file, copy+replace to ensure consistency
-        destination_path, destination_file = os.path.split(model_file_name)
-        with open(os.path.join(checkpoint_directory, "checkpoint")) as in_file, open(
-            os.path.join(destination_path, "checkpoint"), "w"
-        ) as out_file:
-            for line in in_file:
-                out_file.write(line.replace(checkpoint_file, destination_file))
-
-        # Remove the old file
-        checkpoint_path.joinpath("checkpoint").unlink()
-
-    @classmethod
-    def load(
-        cls, model_file_name: Text, model_data_example: RasaModelData, *args, **kwargs
-    ) -> "RasaModel":
-        logger.debug("Loading the model ...")
-        # create empty model
-        model = cls(*args, **kwargs)
-        # need to train on 1 example to build weights of the correct size
-        model.fit(
-            model_data_example,
-            epochs=1,
-            batch_size=1,
-            evaluate_every_num_epochs=0,
-            evaluate_on_num_examples=0,
-            batch_strategy=SEQUENCE,
-            silent=True,  # don't confuse users with training output
-            loading=True,  # don't use tensorboard while loading
-            eager=True,  # no need to build tf graph, eager is faster here
-        )
-        # load trained weights
-        model.load_weights(model_file_name)
-
-        logger.debug("Finished loading the model.")
-        return model
-
-    def _total_batch_loss(
+    def test_step(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
-    ) -> tf.Tensor:
-        """Calculate total loss"""
+    ) -> Dict[Text, float]:
+        """Tests the model using the given batch.
+
+        This method is used during validation.
+
+        Args:
+            batch_in: The batch input.
+
+        Returns:
+            Testing metrics.
+        """
+        self._training = False
 
         prediction_loss = self.batch_loss(batch_in)
         regularization_loss = tf.math.add_n(self.losses)
         total_loss = prediction_loss + regularization_loss
         self.total_loss.update_state(total_loss)
 
-        return total_loss
+        self._training = None
 
-    def _batch_loop(
-        self,
-        dataset_function: Callable,
-        call_model_function: Callable,
-        batch_size: int,
-        training: bool,
-        offset: int,
-        writer: Optional["ResourceSummaryWriter"] = None,
-    ) -> int:
-        """Run on batches"""
-        self.reset_metrics()
+        return self._get_metric_results()
 
-        step = offset
+    def predict_step(
+        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> Dict[Text, tf.Tensor]:
+        """Predicts the output for the given batch.
 
-        self._training = training  # needed for eager mode
-        for batch_in in dataset_function(batch_size):
-            call_model_function(batch_in)
+        Args:
+            batch_in: The batch to predict.
 
-            if not self.tensorboard_log_on_epochs:
-                self._log_metrics_for_tensorboard(step, writer)
+        Returns:
+            Prediction output.
+        """
+        self._training = False
 
-            step += 1
+        if not self.prepared_for_prediction:
+            # in case the model is used for prediction without loading, e.g. directly
+            # after training, we need to prepare the model for prediction once
+            self.prepare_for_predict()
+            self.prepared_for_prediction = True
 
-        return step
+        return self.batch_predict(batch_in)
 
     @staticmethod
-    def _get_tf_call_model_function(
-        dataset_function: Callable,
-        call_model_function: Callable,
-        eager: bool,
-        phase: Text,
-    ) -> Callable:
-        """Convert functions to tensorflow functions"""
+    def _dynamic_signature(
+        batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+    ) -> List[List[tf.TensorSpec]]:
+        element_spec = []
+        for tensor in batch_in:
+            if len(tensor.shape) > 1:
+                shape = [None] * (len(tensor.shape) - 1) + [tensor.shape[-1]]
+            else:
+                shape = [None]
+            element_spec.append(tf.TensorSpec(shape, tensor.dtype))
+        # batch_in is a list of tensors, therefore we need to wrap element_spec into
+        # the list
+        return [element_spec]
 
-        if eager:
-            return call_model_function
+    def rasa_predict(self, model_data: RasaModelData) -> Dict[Text, tf.Tensor]:
+        """Custom prediction method that builds tf graph on the first call.
 
-        logger.debug(f"Building tensorflow {phase} graph...")
+        Args:
+            model_data: The model data to use for prediction.
 
-        init_dataset = dataset_function(1)
-        tf_call_model_function = tf.function(
-            call_model_function, input_signature=[init_dataset.element_spec]
-        )
-        tf_call_model_function(next(iter(init_dataset)))
+        Return:
+            Prediction output.
+        """
+        self._training = False
+        if not self.prepared_for_prediction:
+            # in case the model is used for prediction without loading, e.g. directly
+            # after training, we need to prepare the model for prediction once
+            self.prepare_for_predict()
+            self.prepared_for_prediction = True
 
-        logger.debug(f"Finished building tensorflow {phase} graph.")
+        batch_in = RasaBatchDataGenerator.prepare_batch(model_data.data)
 
-        return tf_call_model_function
+        if self._run_eagerly:
+            return tf_utils.to_numpy_or_python_type(self.predict_step(batch_in))
 
-    def _get_tf_train_functions(
-        self, eager: bool, model_data: RasaModelData, batch_strategy: Text
-    ) -> Tuple[Callable, Callable]:
-        """Create train tensorflow functions"""
-
-        def train_dataset_function(_batch_size: int) -> tf.data.Dataset:
-            return model_data.as_tf_dataset(_batch_size, batch_strategy, shuffle=True)
-
-        self._training = True  # needed for tf graph mode
-        return (
-            train_dataset_function,
-            self._get_tf_call_model_function(
-                train_dataset_function, self.train_on_batch, eager, "train"
-            ),
-        )
-
-    def _get_tf_evaluation_functions(
-        self, eager: bool, evaluation_model_data: Optional[RasaModelData]
-    ) -> Tuple[Optional[Callable], Optional[Callable]]:
-        """Create evaluation tensorflow functions"""
-
-        if evaluation_model_data is None:
-            return None, None
-
-        def evaluation_dataset_function(_batch_size: int) -> tf.data.Dataset:
-            return evaluation_model_data.as_tf_dataset(
-                _batch_size, SEQUENCE, shuffle=False
+        if self._tf_predict_step is None:
+            self._tf_predict_step = tf.function(
+                self.predict_step, input_signature=self._dynamic_signature(batch_in)
             )
 
-        self._training = False  # needed for tf graph mode
-        return (
-            evaluation_dataset_function,
-            self._get_tf_call_model_function(
-                evaluation_dataset_function, self._total_batch_loss, eager, "evaluation"
-            ),
-        )
+        return tf_utils.to_numpy_or_python_type(self._tf_predict_step(batch_in))
 
-    def _get_metric_results(self, prefix: Optional[Text] = None) -> Dict[Text, Text]:
-        """Get the metrics results"""
-        prefix = prefix or ""
-
+    def _get_metric_results(self, prefix: Optional[Text] = "") -> Dict[Text, float]:
         return {
-            f"{prefix}{metric.name}": f"{metric.result().numpy():.3f}"
+            f"{prefix}{metric.name}": metric.result()
             for metric in self.metrics
             if metric.name in self.metrics_to_log
         }
 
-    def _log_metrics_for_tensorboard(
-        self, step: int, writer: Optional["ResourceSummaryWriter"] = None
-    ) -> None:
-        if writer is not None:
-            with writer.as_default():
-                for metric in self.metrics:
-                    if metric.name in self.metrics_to_log:
-                        tf.summary.scalar(metric.name, metric.result(), step=step)
+    def save(self, model_file_name: Text, overwrite: bool = True) -> None:
+        """Save the model to the given file.
 
-    def _does_model_improve(self, current_results: Dict[Text, Text]) -> bool:
-        # Initialize best_metrics_so_far with the first results
-        if not self.best_metrics_so_far:
-            keys = filter(
-                lambda k: True if (k.endswith("_acc") or k.endswith("_f1")) else False,
-                current_results.keys(),
-            )
-            for key in keys:
-                self.best_metrics_so_far[key] = float(current_results[key])
-            return True
+        Args:
+            model_file_name: The file name to save the model to.
+            overwrite: If 'True' an already existing model with the same file name will
+                       be overwritten.
+        """
+        self.save_weights(model_file_name, overwrite=overwrite, save_format="tf")
 
-        all_improved = all(
-            [
-                float(current_results[key]) > self.best_metrics_so_far[key]
-                for key in self.best_metrics_so_far.keys()
-            ]
+    @classmethod
+    def load(
+        cls,
+        model_file_name: Text,
+        model_data_example: RasaModelData,
+        predict_data_example: Optional[RasaModelData] = None,
+        finetune_mode: bool = False,
+        *args: Any,
+        **kwargs: Any,
+    ) -> "RasaModel":
+        """Loads a model from the given weights.
+
+        Args:
+            model_file_name: Path to file containing model weights.
+            model_data_example: Example data point to construct the model architecture.
+            predict_data_example: Example data point to speed up prediction during
+              inference.
+            finetune_mode: Indicates whether to load the model for further finetuning.
+            *args: Any other non key-worded arguments.
+            **kwargs: Any other key-worded arguments.
+
+        Returns:
+            Loaded model with weights appropriately set.
+        """
+        logger.debug(
+            f"Loading the model from {model_file_name} "
+            f"with finetune_mode={finetune_mode}..."
         )
-        if all_improved:
-            for key in self.best_metrics_so_far.keys():
-                self.best_metrics_so_far[key] = float(current_results[key])
-        return all_improved
+        # create empty model
+        model = cls(*args, **kwargs)
+        learning_rate = kwargs.get("config", {}).get(LEARNING_RATE, 0.001)
+        # need to train on 1 example to build weights of the correct size
+        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate))
+        data_generator = RasaBatchDataGenerator(model_data_example, batch_size=1)
+        model.fit(data_generator, verbose=False)
+        # load trained weights
+        model.load_weights(model_file_name)
 
-    def _save_model_checkpoint(
-        self, current_results: Dict[Text, Text], epoch: int
-    ) -> None:
-        if self.checkpoint_model and self._does_model_improve(current_results):
-            logger.debug(f"Creating model checkpoint at epoch={epoch + 1}...")
-            self.best_model_epoch = epoch + 1
-            self.save(self.best_model_file, overwrite=True)
+        # predict on one data example to speed up prediction during inference
+        # the first prediction always takes a bit longer to trace tf function
+        if not finetune_mode and predict_data_example:
+            model.rasa_predict(predict_data_example)
 
-    @staticmethod
-    def _should_evaluate(
-        evaluate_every_num_epochs: int, epochs: int, current_epoch: int
-    ) -> bool:
-        return (
-            current_epoch == 0
-            or (current_epoch + 1) % evaluate_every_num_epochs == 0
-            or (current_epoch + 1) == epochs
-        )
+        logger.debug("Finished loading the model.")
+        return model
 
     @staticmethod
     def batch_to_model_data_format(
@@ -515,126 +340,100 @@ class RasaModel(tf.keras.models.Model):
         """Convert input batch tensors into batch data format.
 
         Batch contains any number of batch data. The order is equal to the
-        key-value pairs in session data. As sparse data were converted into indices,
-        data, shape before, this methods converts them into sparse tensors. Dense data
-        is kept.
+        key-value pairs in session data. As sparse data were converted into (indices,
+        data, shape) before, this method converts them into sparse tensors. Dense
+        data is kept.
         """
+        # during training batch is a tuple of input and target data
+        # as our target data is inside the input data, we are just interested in the
+        # input data
+        if isinstance(batch[0], Tuple):
+            batch = batch[0]
 
         batch_data = defaultdict(lambda: defaultdict(list))
 
         idx = 0
         for key, values in data_signature.items():
             for sub_key, signature in values.items():
-                for is_sparse, feature_dimension in signature:
+                for is_sparse, feature_dimension, number_of_dimensions in signature:
+                    # we converted all 4D features to 3D features before
+                    number_of_dimensions = (
+                        number_of_dimensions if number_of_dimensions != 4 else 3
+                    )
                     if is_sparse:
-                        # explicitly substitute last dimension in shape with known
-                        # static value
-                        batch_data[key][sub_key].append(
-                            tf.SparseTensor(
-                                batch[idx],
-                                batch[idx + 1],
-                                [
-                                    batch[idx + 2][0],
-                                    batch[idx + 2][1],
-                                    feature_dimension,
-                                ],
-                            )
+                        tensor, idx = RasaModel._convert_sparse_features(
+                            batch, feature_dimension, idx, number_of_dimensions
                         )
-                        idx += 3
                     else:
-                        if isinstance(batch[idx], tf.Tensor):
-                            batch_data[key][sub_key].append(batch[idx])
-                        else:
-                            # convert to Tensor
-                            batch_data[key][sub_key].append(
-                                tf.constant(batch[idx], dtype=tf.float32)
-                            )
-                        idx += 1
+                        tensor, idx = RasaModel._convert_dense_features(
+                            batch, feature_dimension, idx, number_of_dimensions
+                        )
+                    batch_data[key][sub_key].append(tensor)
 
         return batch_data
 
     @staticmethod
-    def linearly_increasing_batch_size(
-        epoch: int, batch_size: Union[List[int], int], epochs: int
-    ) -> int:
-        """Linearly increase batch size with every epoch.
+    def _convert_dense_features(
+        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
+        feature_dimension: int,
+        idx: int,
+        number_of_dimensions: int,
+    ) -> Tuple[tf.Tensor, int]:
+        if isinstance(batch[idx], tf.Tensor):
+            # explicitly substitute last dimension in shape with known
+            # static value
+            if number_of_dimensions > 1 and (
+                batch[idx].shape is None or batch[idx].shape[-1] is None
+            ):
+                shape: List[Optional[int]] = [None] * (number_of_dimensions - 1)
+                shape.append(feature_dimension)
+                batch[idx].set_shape(shape)
 
-        The idea comes from https://arxiv.org/abs/1711.00489.
-        """
+            return batch[idx], idx + 1
 
-        if not isinstance(batch_size, list):
-            return int(batch_size)
-
-        if epochs > 1:
-            return int(
-                batch_size[0] + epoch * (batch_size[1] - batch_size[0]) / (epochs - 1)
-            )
-        else:
-            return int(batch_size[0])
-
-    def _write_model_summary(self):
-        total_number_of_variables = np.sum(
-            [np.prod(v.shape) for v in self.trainable_variables]
+        # convert to Tensor
+        return (
+            tf.constant(batch[idx], dtype=tf.float32, shape=batch[idx].shape),
+            idx + 1,
         )
-        layers = [
-            f"{layer.name} ({layer.dtype.name}) "
-            f"[{'x'.join(str(s) for s in layer.shape)}]"
-            for layer in self.trainable_variables
+
+    @staticmethod
+    def _convert_sparse_features(
+        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
+        feature_dimension: int,
+        idx: int,
+        number_of_dimensions: int,
+    ) -> Tuple[tf.SparseTensor, int]:
+        # explicitly substitute last dimension in shape with known
+        # static value
+        shape = [batch[idx + 2][i] for i in range(number_of_dimensions - 1)] + [
+            feature_dimension
         ]
-        layers.reverse()
+        return tf.SparseTensor(batch[idx], batch[idx + 1], shape), idx + 3
 
-        with open(self.model_summary_file, "w") as file:
-            file.write("Variables: name (type) [shape]\n\n")
-            for layer in layers:
-                file.write(layer)
-                file.write("\n")
-            file.write("\n")
-            file.write(f"Total size of variables: {total_number_of_variables}")
+    def call(
+        self,
+        inputs: Union[tf.Tensor, List[tf.Tensor]],
+        training: Optional[tf.Tensor] = None,
+        mask: Optional[tf.Tensor] = None,
+    ) -> Union[tf.Tensor, List[tf.Tensor]]:
+        """Calls the model on new inputs.
 
-    def compile(self, *args, **kwargs) -> None:
-        raise Exception(
-            "This method should neither be called nor implemented in our code."
-        )
+        Arguments:
+            inputs: A tensor or list of tensors.
+            training: Boolean or boolean scalar tensor, indicating whether to run
+              the `Network` in training mode or inference mode.
+            mask: A mask or list of masks. A mask can be
+                either a tensor or None (no mask).
 
-    def evaluate(self, *args, **kwargs) -> None:
-        raise Exception(
-            "This method should neither be called nor implemented in our code."
-        )
-
-    def test_on_batch(self, *args, **kwargs) -> None:
-        raise Exception(
-            "This method should neither be called nor implemented in our code."
-        )
-
-    def predict_on_batch(self, *args, **kwargs) -> None:
-        raise Exception(
-            "This method should neither be called nor implemented in our code."
-        )
-
-    def fit_generator(self, *args, **kwargs) -> None:
-        raise Exception(
-            "This method should neither be called nor implemented in our code."
-        )
-
-    def evaluate_generator(self, *args, **kwargs) -> None:
-        raise Exception(
-            "This method should neither be called nor implemented in our code."
-        )
-
-    def predict_generator(self, *args, **kwargs) -> None:
-        raise Exception(
-            "This method should neither be called nor implemented in our code."
-        )
-
-    def call(self, *args, **kwargs) -> None:
-        raise Exception(
-            "This method should neither be called nor implemented in our code."
-        )
-
-    def get_config(self) -> None:
-        raise Exception(
-            "This method should neither be called nor implemented in our code."
-        )
+        Returns:
+            A tensor if there is a single output, or
+            a list of tensors if there are more than one outputs.
+        """
+        # This method needs to be implemented, otherwise the super class is raising a
+        # NotImplementedError('When subclassing the `Model` class, you should
+        #   implement a `call` method.')
+        pass
 
 
 # noinspection PyMethodOverriding
@@ -647,11 +446,7 @@ class TransformerRasaModel(RasaModel):
         label_data: RasaModelData,
     ) -> None:
         super().__init__(
-            name=name,
-            random_seed=config[RANDOM_SEED],
-            tensorboard_log_dir=config[TENSORBOARD_LOG_DIR],
-            tensorboard_log_level=config[TENSORBOARD_LOG_LEVEL],
-            checkpoint_model=config[CHECKPOINT_MODEL],
+            name=name, random_seed=config[RANDOM_SEED],
         )
 
         self.config = config
@@ -660,7 +455,7 @@ class TransformerRasaModel(RasaModel):
 
         self._check_data()
 
-        label_batch = label_data.prepare_batch()
+        label_batch = RasaDataGenerator.prepare_batch(label_data.data)
         self.tf_label_data = self.batch_to_model_data_format(
             label_batch, self.label_signature
         )
@@ -679,7 +474,6 @@ class TransformerRasaModel(RasaModel):
             self.config[EMBEDDING_DIMENSION],
             self.config[REGULARIZATION_CONSTANT],
             name,
-            self.config[SIMILARITY_TYPE],
         )
 
     def _prepare_ffnn_layer(
@@ -700,21 +494,24 @@ class TransformerRasaModel(RasaModel):
     def _prepare_transformer_layer(
         self,
         name: Text,
+        num_layers: int,
+        units: int,
         drop_rate: float,
         drop_rate_attention: float,
+        unidirectional: bool,
         prefix: Text = "transformer",
-    ):
-        if self.config[NUM_TRANSFORMER_LAYERS] > 0:
+    ) -> None:
+        if num_layers > 0:
             self._tf_layers[f"{prefix}.{name}"] = TransformerEncoder(
-                self.config[NUM_TRANSFORMER_LAYERS],
-                self.config[TRANSFORMER_SIZE],
+                num_layers,
+                units,
                 self.config[NUM_HEADS],
-                self.config[TRANSFORMER_SIZE] * 4,
+                units * 4,
                 self.config[REGULARIZATION_CONSTANT],
                 dropout_rate=drop_rate,
                 attention_dropout_rate=drop_rate_attention,
                 sparsity=self.config[WEIGHT_SPARSITY],
-                unidirectional=self.config[UNIDIRECTIONAL_ENCODER],
+                unidirectional=unidirectional,
                 use_key_relative_position=self.config[KEY_RELATIVE_ATTENTION],
                 use_value_relative_position=self.config[VALUE_RELATIVE_ATTENTION],
                 max_relative_position=self.config[MAX_RELATIVE_POSITION],
@@ -722,7 +519,7 @@ class TransformerRasaModel(RasaModel):
             )
         else:
             # create lambda so that it can be used later without the check
-            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: x
+            self._tf_layers[f"{prefix}.{name}"] = lambda x, mask, training: (x, None)
 
     def _prepare_dot_product_loss(
         self, name: Text, scale_loss: bool, prefix: Text = "loss"
@@ -735,8 +532,9 @@ class TransformerRasaModel(RasaModel):
             self.config[USE_MAX_NEG_SIM],
             self.config[NEGATIVE_MARGIN_SCALE],
             scale_loss,
-            # set to 1 to get deterministic behaviour
-            parallel_iterations=1 if self.random_seed is not None else 1000,
+            similarity_type=self.config[SIMILARITY_TYPE],
+            constrain_similarities=self.config[CONSTRAIN_SIMILARITIES],
+            model_confidence=self.config[MODEL_CONFIDENCE],
         )
 
     def _prepare_sparse_dense_dropout_layers(
@@ -754,7 +552,7 @@ class TransformerRasaModel(RasaModel):
     ) -> None:
         sparse = False
         dense = False
-        for is_sparse, _ in data_signature:
+        for is_sparse, _, _ in data_signature:
             if is_sparse:
                 sparse = True
             else:
@@ -769,8 +567,74 @@ class TransformerRasaModel(RasaModel):
             if not dense:
                 # create dense labels for the input to use in negative sampling
                 self._tf_layers[f"sparse_to_dense_ids.{name}"] = layers.DenseForSparse(
-                    units=2, trainable=False, name=f"sparse_to_dense_ids.{name}"
+                    units=2,
+                    use_bias=False,
+                    trainable=False,
+                    name=f"sparse_to_dense_ids.{name}",
                 )
+
+    def _prepare_input_layers(self, name: Text) -> None:
+        self._prepare_ffnn_layer(
+            name, self.config[HIDDEN_LAYERS_SIZES][name], self.config[DROP_RATE]
+        )
+
+        for feature_type in [SENTENCE, SEQUENCE]:
+            if (
+                name not in self.data_signature
+                or feature_type not in self.data_signature[name]
+            ):
+                continue
+
+            self._prepare_sparse_dense_dropout_layers(
+                f"{name}_{feature_type}", self.config[DROP_RATE]
+            )
+            self._prepare_sparse_dense_layers(
+                self.data_signature[name][feature_type],
+                f"{name}_{feature_type}",
+                self.config[DENSE_DIMENSION][name],
+            )
+            self._prepare_ffnn_layer(
+                f"{name}_{feature_type}",
+                [self.config[CONCAT_DIMENSION][name]],
+                self.config[DROP_RATE],
+                prefix="concat_layer",
+            )
+
+    def _prepare_sequence_layers(self, name: Text) -> None:
+        self._prepare_input_layers(name)
+
+        size = self.config[TRANSFORMER_SIZE]
+        if isinstance(size, dict):
+            size = size[name]
+
+        num_layers = self.config[NUM_TRANSFORMER_LAYERS]
+        if isinstance(num_layers, dict):
+            num_layers = num_layers[name]
+
+        self._prepare_transformer_layer(
+            name,
+            num_layers,
+            size,
+            self.config[DROP_RATE],
+            self.config[DROP_RATE_ATTENTION],
+            self.config[UNIDIRECTIONAL_ENCODER],
+        )
+
+    def _prepare_entity_recognition_layers(self) -> None:
+        for tag_spec in self._entity_tag_specs:
+            name = tag_spec.tag_name
+            num_tags = tag_spec.num_tags
+            self._tf_layers[f"embed.{name}.logits"] = layers.Embed(
+                num_tags, self.config[REGULARIZATION_CONSTANT], f"logits.{name}"
+            )
+            self._tf_layers[f"crf.{name}"] = layers.CRF(
+                num_tags, self.config[REGULARIZATION_CONSTANT], self.config[SCALE_LOSS]
+            )
+            self._tf_layers[f"embed.{name}.tags"] = layers.Embed(
+                self.config[EMBEDDING_DIMENSION],
+                self.config[REGULARIZATION_CONSTANT],
+                f"tags.{name}",
+            )
 
     def _combine_sparse_dense_features(
         self,
@@ -780,7 +644,6 @@ class TransformerRasaModel(RasaModel):
         sparse_dropout: bool = False,
         dense_dropout: bool = False,
     ) -> Optional[tf.Tensor]:
-
         if not features:
             return None
 
@@ -811,6 +674,156 @@ class TransformerRasaModel(RasaModel):
 
         return tf.concat(dense_features, axis=-1) * mask
 
+    def _combine_sequence_sentence_features(
+        self,
+        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        mask_sequence: tf.Tensor,
+        mask_text: tf.Tensor,
+        name: Text,
+        sparse_dropout: bool = False,
+        dense_dropout: bool = False,
+    ) -> tf.Tensor:
+        sequence_x = self._combine_sparse_dense_features(
+            sequence_features,
+            f"{name}_{SEQUENCE}",
+            mask_sequence,
+            sparse_dropout,
+            dense_dropout,
+        )
+        sentence_x = self._combine_sparse_dense_features(
+            sentence_features, f"{name}_{SENTENCE}", None, sparse_dropout, dense_dropout
+        )
+
+        if sequence_x is not None and sentence_x is None:
+            return sequence_x
+
+        if sequence_x is None and sentence_x is not None:
+            return sentence_x
+
+        if sequence_x is not None and sentence_x is not None:
+            return self._concat_sequence_sentence_features(
+                sequence_x, sentence_x, name, mask_text
+            )
+
+        raise ValueError(
+            "No features are present. Please check your configuration file."
+        )
+
+    def _concat_sequence_sentence_features(
+        self,
+        sequence_x: tf.Tensor,
+        sentence_x: tf.Tensor,
+        name: Text,
+        mask_text: tf.Tensor,
+    ) -> tf.Tensor:
+        if sequence_x.shape[-1] != sentence_x.shape[-1]:
+            sequence_x = self._tf_layers[f"concat_layer.{name}_{SEQUENCE}"](
+                sequence_x, self._training
+            )
+            sentence_x = self._tf_layers[f"concat_layer.{name}_{SENTENCE}"](
+                sentence_x, self._training
+            )
+
+        # we need to concatenate the sequence features with the sentence features
+        # we cannot use tf.concat as the sequence features are padded
+
+        # (1) get position of sentence features in mask
+        last = mask_text * tf.math.cumprod(
+            1 - mask_text, axis=1, exclusive=True, reverse=True
+        )
+        # (2) multiply by sentence features so that we get a matrix of
+        #     batch-dim x seq-dim x feature-dim with zeros everywhere except for
+        #     for the sentence features
+        sentence_x = last * sentence_x
+
+        # (3) add a zero to the end of sequence matrix to match the final shape
+        sequence_x = tf.pad(sequence_x, [[0, 0], [0, 1], [0, 0]])
+
+        # (4) sum up sequence features and sentence features
+        return sequence_x + sentence_x
+
+    def _features_as_seq_ids(
+        self, features: List[Union[np.ndarray, tf.Tensor, tf.SparseTensor]], name: Text
+    ) -> Optional[tf.Tensor]:
+        """Creates dense labels for negative sampling."""
+        # if there are dense features - we can use them
+        for f in features:
+            if not isinstance(f, tf.SparseTensor):
+                seq_ids = tf.stop_gradient(f)
+                # add a zero to the seq dimension for the sentence features
+                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
+                return seq_ids
+
+        # use additional sparse to dense layer
+        for f in features:
+            if isinstance(f, tf.SparseTensor):
+                seq_ids = tf.stop_gradient(
+                    self._tf_layers[f"sparse_to_dense_ids.{name}"](f)
+                )
+                # add a zero to the seq dimension for the sentence features
+                seq_ids = tf.pad(seq_ids, [[0, 0], [0, 1], [0, 0]])
+                return seq_ids
+
+        return None
+
+    def _create_sequence(
+        self,
+        sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        sentence_features: List[Union[tf.Tensor, tf.SparseTensor]],
+        mask_sequence: tf.Tensor,
+        mask: tf.Tensor,
+        name: Text,
+        sparse_dropout: bool = False,
+        dense_dropout: bool = False,
+        masked_lm_loss: bool = False,
+        sequence_ids: bool = False,
+    ) -> Tuple[
+        tf.Tensor,
+        tf.Tensor,
+        Optional[tf.Tensor],
+        Optional[tf.Tensor],
+        Optional[tf.Tensor],
+    ]:
+        if sequence_ids:
+            seq_ids = self._features_as_seq_ids(sequence_features, f"{name}_{SEQUENCE}")
+        else:
+            seq_ids = None
+
+        inputs = self._combine_sequence_sentence_features(
+            sequence_features,
+            sentence_features,
+            mask_sequence,
+            mask,
+            name,
+            sparse_dropout,
+            dense_dropout,
+        )
+        inputs = self._tf_layers[f"ffnn.{name}"](inputs, self._training)
+
+        if masked_lm_loss:
+            transformer_inputs, lm_mask_bool = self._tf_layers[f"{name}_input_mask"](
+                inputs, mask, self._training
+            )
+        else:
+            transformer_inputs = inputs
+            lm_mask_bool = None
+
+        outputs, attention_weights = self._tf_layers[f"transformer.{name}"](
+            transformer_inputs, 1 - mask, self._training
+        )
+
+        if isinstance(self.config[NUM_TRANSFORMER_LAYERS], int):
+            num_layers = self.config[NUM_TRANSFORMER_LAYERS]
+        else:
+            num_layers = self.config[NUM_TRANSFORMER_LAYERS][name]
+
+        if num_layers > 0:
+            # apply activation
+            outputs = tfa.activations.gelu(outputs)
+
+        return outputs, inputs, seq_ids, lm_mask_bool, attention_weights
+
     @staticmethod
     def _compute_mask(sequence_lengths: tf.Tensor) -> tf.Tensor:
         mask = tf.sequence_mask(sequence_lengths, dtype=tf.float32)
@@ -838,12 +851,78 @@ class TransformerRasaModel(RasaModel):
         sequence_lengths = tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
         return self._compute_mask(sequence_lengths)
 
+    @staticmethod
+    def _get_sequence_lengths(
+        tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]],
+        key: Text,
+        sub_key: Text,
+        batch_dim: int = 1,
+    ) -> tf.Tensor:
+        # sentence features have a sequence lengths of 1
+        # if sequence features are present we add the sequence lengths of those
+
+        sequence_lengths = tf.ones([batch_dim], dtype=tf.int32)
+        if key in tf_batch_data and sub_key in tf_batch_data[key]:
+            sequence_lengths += tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
+
+        return tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32) + 1
+
+    @staticmethod
+    def _get_batch_dim(attribute_data: Dict[Text, List[tf.Tensor]]) -> int:
+        if SEQUENCE in attribute_data:
+            return tf.shape(attribute_data[SEQUENCE][0])[0]
+
+        return tf.shape(attribute_data[SENTENCE][0])[0]
+
+    def _calculate_entity_loss(
+        self,
+        inputs: tf.Tensor,
+        tag_ids: tf.Tensor,
+        mask: tf.Tensor,
+        sequence_lengths: tf.Tensor,
+        tag_name: Text,
+        entity_tags: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+
+        tag_ids = tf.cast(tag_ids[:, :, 0], tf.int32)
+
+        if entity_tags is not None:
+            _tags = self._tf_layers[f"embed.{tag_name}.tags"](entity_tags)
+            inputs = tf.concat([inputs, _tags], axis=-1)
+
+        logits = self._tf_layers[f"embed.{tag_name}.logits"](inputs)
+
+        # should call first to build weights
+        pred_ids, _ = self._tf_layers[f"crf.{tag_name}"](logits, sequence_lengths)
+        loss = self._tf_layers[f"crf.{tag_name}"].loss(
+            logits, tag_ids, sequence_lengths
+        )
+        f1 = self._tf_layers[f"crf.{tag_name}"].f1_score(tag_ids, pred_ids, mask)
+
+        return loss, f1, logits
+
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
+        """Calculates the loss for the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The loss of the given batch.
+        """
         raise NotImplementedError
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
-    ) -> Dict[Text, tf.Tensor]:
+    ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
+        """Predicts the output of the given batch.
+
+        Args:
+            batch_in: The batch.
+
+        Returns:
+            The output to predict.
+        """
         raise NotImplementedError

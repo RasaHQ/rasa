@@ -111,7 +111,7 @@ class HashableNDArray:
     or the original object (which requires the user to be careful enough
     not to modify it)."""
 
-    def __init__(self, wrapped, tight=False) -> None:
+    def __init__(self, wrapped: np.ndarray, tight: bool = False) -> None:
         """Creates a new hashable object encapsulating an ndarray.
 
         wrapped
@@ -124,12 +124,14 @@ class HashableNDArray:
 
         self.__tight = tight
         self.__wrapped = np.array(wrapped) if tight else wrapped
-        self.__hash = int(sha1(wrapped.view()).hexdigest(), 16)
+        self.__hash = int(sha1(wrapped.view()).hexdigest(), 16)  # nosec
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
+        """Performs equality of the underlying array."""
         return np.all(self.__wrapped == other.__wrapped)
 
     def __hash__(self) -> int:
+        """Return the hash of the array."""
         return self.__hash
 
     def unwrap(self) -> np.ndarray:
@@ -159,7 +161,7 @@ def dump_obj_as_yaml_to_file(
     )
 
 
-def list_routes(app: Sanic):
+def list_routes(app: Sanic) -> Text:
     """List all the routes of a sanic application.
 
     Mainly used for debugging."""
@@ -167,7 +169,7 @@ def list_routes(app: Sanic):
 
     output = {}
 
-    def find_route(suffix, path):
+    def find_route(suffix: Text, path: Text) -> Optional[Text]:
         for name, (uri, _) in app.router.routes_names.items():
             if name.split(".")[-1] == suffix and uri == path:
                 return name
@@ -217,7 +219,7 @@ def extract_args(
     return extracted, remaining
 
 
-def is_limit_reached(num_messages: int, limit: int) -> bool:
+def is_limit_reached(num_messages: int, limit: Optional[int]) -> bool:
     """Determine whether the number of messages has reached a limit.
 
     Args:
@@ -231,10 +233,11 @@ def is_limit_reached(num_messages: int, limit: int) -> bool:
 
 
 def read_lines(
-    filename, max_line_limit=None, line_pattern=".*"
+    filename: Union[Path, Text],
+    max_line_limit: Optional[int] = None,
+    line_pattern: Text = ".*",
 ) -> Generator[Text, Any, None]:
     """Read messages from the command line and print bot responses."""
-
     line_filter = re.compile(line_pattern)
 
     with open(filename, "r", encoding=rasa.shared.utils.io.DEFAULT_ENCODING) as f:
@@ -266,7 +269,7 @@ def convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text:
 
 def get_file_hash(path: Text) -> Text:
     """Calculate the md5 hash of a file."""
-    return md5(file_as_bytes(path)).hexdigest()
+    return md5(file_as_bytes(path)).hexdigest()  # nosec
 
 
 async def download_file_from_url(url: Text) -> Text:
@@ -361,28 +364,6 @@ def read_endpoints_from_path(
     return AvailableEndpoints.read_endpoints(endpoints_config_path)
 
 
-# noinspection PyProtectedMember
-def set_default_subparser(parser, default_subparser) -> None:
-    """default subparser selection. Call after setup, just before parse_args()
-
-    parser: the name of the parser you're making changes to
-    default_subparser: the name of the subparser to call by default"""
-    subparser_found = False
-    for arg in sys.argv[1:]:
-        if arg in ["-h", "--help"]:  # global help if no subparser
-            break
-    else:
-        for x in parser._subparsers._actions:
-            if not isinstance(x, argparse._SubParsersAction):
-                continue
-            for sp_name in x._name_parser_map.keys():
-                if sp_name in sys.argv[1:]:
-                    subparser_found = True
-        if not subparser_found:
-            # insert default in first position before all other arguments
-            sys.argv.insert(1, default_subparser)
-
-
 def create_task_error_logger(error_message: Text = "") -> Callable[[Future], None]:
     """Error logger to be attached to a task.
 
@@ -474,7 +455,7 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
     `InMemoryLockStore`.
     """
 
-    def _log_and_get_default_number_of_workers():
+    def _log_and_get_default_number_of_workers() -> int:
         logger.debug(
             f"Using the default number of Sanic workers ({DEFAULT_SANIC_WORKERS})."
         )

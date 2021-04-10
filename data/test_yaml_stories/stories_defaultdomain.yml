@@ -23,3 +23,8 @@ stories:
   - action: utter_default
   - intent: goodbye
   - action: utter_goodbye
+
+- story: simple_story_for_goodbye
+  steps:
+  - intent: goodbye
+  - action: utter_goodbye

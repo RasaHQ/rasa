@@ -17,8 +17,9 @@ if typing.TYPE_CHECKING:
 
 
 class JiebaTokenizer(Tokenizer):
+    """This tokenizer is a wrapper for Jieba (https://github.com/fxsjy/jieba)."""
 
-    language_list = ["zh"]
+    supported_language_list = ["zh"]
 
     defaults = {
         "dictionary_path": None,
@@ -75,12 +76,12 @@ class JiebaTokenizer(Tokenizer):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional[Component] = None,
         **kwargs: Any,
     ) -> "JiebaTokenizer":
-
+        """Loads trained component (see parent class for full docstring)."""
         relative_dictionary_path = meta.get("dictionary_path")
 
         # get real path of dictionary path, if any

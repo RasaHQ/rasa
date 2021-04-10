@@ -108,7 +108,8 @@ class HangoutsOutput(OutputChannel):
             msg_new = "cards"
         else:
             raise Exception(
-                "Your message to Hangouts channel must either contain 'text' or 'cards'!"
+                "Your message to Hangouts channel must either contain 'text' or "
+                "'cards'!"
             )
 
         # depending on above outcome, convert messages into same type and combine
@@ -132,7 +133,7 @@ class HangoutsOutput(OutputChannel):
             new_messages = self._combine_cards(text_card, message)
 
         elif msg_new == "text":
-            new_messages = {"text": message.get("text")}
+            new_messages = {"text": message["text"]}
         else:
             new_messages = message
 
@@ -141,23 +142,21 @@ class HangoutsOutput(OutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
-
         await self._persist_message({"text": text})
 
-    async def send_image_url(self, recipient_id: Text, image: Text, **kwargs) -> None:
-
+    async def send_image_url(
+        self, recipient_id: Text, image: Text, **kwargs: Any
+    ) -> None:
         await self._persist_message(self._image_card(image))
 
     async def send_text_with_buttons(
-        self, recipient_id: Text, text: Text, buttons: List, **kwargs
+        self, recipient_id: Text, text: Text, buttons: List, **kwargs: Any
     ) -> None:
-
         await self._persist_message(self._text_button_card(text, buttons))
 
     async def send_attachment(
         self, recipient_id: Text, attachment: Text, **kwargs: Any
-    ):
-
+    ) -> None:
         await self.send_text_message(recipient_id, attachment)
 
     async def send_elements(
@@ -166,7 +165,7 @@ class HangoutsOutput(OutputChannel):
         raise NotImplementedError
 
     async def send_custom_json(
-        self, recipient_id: Text, json_message: Dict, **kwargs
+        self, recipient_id: Text, json_message: Dict, **kwargs: Any
     ) -> None:
         """Custom json payload is simply forwarded to Google Hangouts without
         any modifications. Use this for more complex cards, which can be created
@@ -248,7 +247,7 @@ class HangoutsInput(InputChannel):
         return self.name()
 
     def _check_token(self, bot_token: Text) -> None:
-        # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity
+        # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: W505
         try:
             token = client.verify_id_token(
                 bot_token, self.project_id, cert_uri=CERT_URI
@@ -301,7 +300,8 @@ class HangoutsInput(InputChannel):
                 )
             except Exception as e:
                 logger.exception(
-                    f"An exception occurred while handling user message: {e}, text: {text}"
+                    f"An exception occurred while handling user message: {e}, "
+                    f"text: {text}"
                 )
 
             return response.json(collector.messages)

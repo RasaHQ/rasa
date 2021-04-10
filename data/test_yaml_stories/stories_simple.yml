@@ -1,0 +1,8 @@
+- story: simple_story
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: default
+  - action: utter_default
+  - intent: goodbye
+  - action: utter_goodbye

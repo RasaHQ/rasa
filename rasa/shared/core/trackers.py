@@ -30,6 +30,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ACTION_TEXT,
     ACTION_NAME,
+    ENTITIES,
 )
 from rasa.shared.core import events
 from rasa.shared.core.constants import (
@@ -57,13 +58,29 @@ from rasa.shared.core.events import (
     ActiveLoop,
     SessionStarted,
     ActionExecutionRejected,
+    EntitiesAdded,
+    DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
 if TYPE_CHECKING:
+    from typing_extensions import TypedDict
+
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
+
+    # precise type definition for `DialogueStateTracker.active_loop`
+    TrackerActiveLoop = TypedDict(
+        "TrackerActiveLoop",
+        {
+            LOOP_NAME: Optional[Text],
+            LOOP_INTERRUPTED: bool,
+            LOOP_REJECTED: bool,
+            TRIGGER_MESSAGE: Dict,
+        },
+        total=False,
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -97,11 +114,11 @@ class AnySlotDict(dict):
     This only uses the generic slot type! This means certain functionality wont work,
     e.g. properly featurizing the slot."""
 
-    def __missing__(self, key) -> Slot:
+    def __missing__(self, key: Text) -> Slot:
         value = self[key] = Slot(key)
         return value
 
-    def __contains__(self, key) -> bool:
+    def __contains__(self, key: Text) -> bool:
         return True
 
 
@@ -135,11 +152,26 @@ class DialogueStateTracker:
         slots: Optional[Iterable[Slot]] = None,
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
-    ):
+        domain: Optional[Domain] = None,
+    ) -> "DialogueStateTracker":
+        """Creates tracker from existing events.
+
+        Args:
+            sender_id: The ID of the conversation.
+            evts: Existing events which should be applied to the new tracker.
+            slots: Slots which can be set.
+            max_event_history: Maximum number of events which should be stored.
+            sender_source: File source of the messages.
+            domain: The current model domain.
+
+        Returns:
+            Instantiated tracker with its state updated according to the given
+            events.
+        """
         tracker = cls(sender_id, slots, max_event_history, sender_source)
 
         for e in evts:
-            tracker.update(e)
+            tracker.update(e, domain)
 
         return tracker
 
@@ -184,10 +216,10 @@ class DialogueStateTracker:
         self.followup_action = ACTION_LISTEN_NAME
         self.latest_action = None
         # Stores the most recent message sent by the user
-        self.latest_message = None
+        self.latest_message: Optional[UserUttered] = None
         self.latest_bot_utterance = None
         self._reset()
-        self.active_loop: Dict[Text, Union[Text, bool, Dict, None]] = {}
+        self.active_loop: "TrackerActiveLoop" = {}
 
     ###
     # Public tracker interface
@@ -195,8 +227,7 @@ class DialogueStateTracker:
     def current_state(
         self, event_verbosity: EventVerbosity = EventVerbosity.NONE
     ) -> Dict[Text, Any]:
-        """Return the current tracker state as an object."""
-
+        """Returns the current tracker state as an object."""
         _events = self._events_for_verbosity(event_verbosity)
         if _events:
             _events = [e.as_dict() for e in _events]
@@ -207,7 +238,7 @@ class DialogueStateTracker:
         return {
             "sender_id": self.sender_id,
             "slots": self.current_slot_values(),
-            "latest_message": self.latest_message.parse_data,
+            "latest_message": self._latest_message_data(),
             "latest_event_time": latest_event_time,
             FOLLOWUP_ACTION: self.followup_action,
             "paused": self.is_paused(),
@@ -230,9 +261,25 @@ class DialogueStateTracker:
 
         return None
 
+    def _latest_message_data(self) -> Dict[Text, Any]:
+        parse_data_with_nlu_state = self.latest_message.parse_data.copy()
+        # Combine entities predicted by NLU with entities predicted by policies so that
+        # users can access them together via `latest_message` (e.g. in custom actions)
+        parse_data_with_nlu_state["entities"] = self.latest_message.entities
+
+        return parse_data_with_nlu_state
+
     @staticmethod
     def freeze_current_state(state: State) -> FrozenState:
-        frozen_state = frozenset(
+        """Convert State dict into a hashable format FrozenState.
+
+        Args:
+            state: The state which should be converted
+
+        Return:
+            hashable form of the state of type `FrozenState`
+        """
+        return frozenset(
             {
                 key: frozenset(values.items())
                 if isinstance(values, Dict)
@@ -240,20 +287,35 @@ class DialogueStateTracker:
                 for key, values in state.items()
             }.items()
         )
-        return frozen_state
 
-    def past_states(self, domain: Domain) -> List[State]:
-        """Generate the past states of this tracker based on the history.
+    def past_states(
+        self,
+        domain: Domain,
+        omit_unset_slots: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+    ) -> List[State]:
+        """Generates the past states of this tracker based on the history.
 
         Args:
-            domain: a :class:`rasa.shared.core.domain.Domain`
+            domain: The Domain.
+            omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
         Returns:
-            a list of states
+            A list of states
         """
-        return domain.states_for_tracker_history(self)
+        return domain.states_for_tracker_history(
+            self,
+            omit_unset_slots=omit_unset_slots,
+            ignore_rule_only_turns=ignore_rule_only_turns,
+            rule_only_data=rule_only_data,
+        )
 
-    def change_loop_to(self, loop_name: Text) -> None:
+    def change_loop_to(self, loop_name: Optional[Text]) -> None:
         """Set the currently active loop.
 
         Args:
@@ -301,8 +363,12 @@ class DialogueStateTracker:
             self.active_loop[LOOP_REJECTED] = True
 
     def set_latest_action(self, action: Dict[Text, Text]) -> None:
-        """Set latest action name
-        and reset form validation and rejection parameters
+        """Sets latest action name or text.
+
+        Resets loop validation and rejection parameters.
+
+        Args:
+            action: Serialized action event.
         """
         self.latest_action = action
         if self.active_loop_name:
@@ -394,21 +460,24 @@ class DialogueStateTracker:
 
     def generate_all_prior_trackers(
         self,
-    ) -> Generator["DialogueStateTracker", None, None]:
+    ) -> Generator[Tuple["DialogueStateTracker", bool], None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
-        The resulting array is representing the trackers before each action."""
-
+        Returns:
+            The tuple with the tracker before each action,
+            and the boolean flag representing whether this action should be hidden
+            in the dialogue history created for ML-based policies.
+        """
         tracker = self.init_copy()
 
         for event in self.applied_events():
 
             if isinstance(event, ActionExecuted):
-                yield tracker
+                yield tracker, event.hide_rule_turn
 
             tracker.update(event)
 
-        yield tracker
+        yield tracker, False
 
     def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events.
@@ -453,8 +522,11 @@ class DialogueStateTracker:
 
     @staticmethod
     def _undo_till_previous(event_type: Type[Event], done_events: List[Event]) -> None:
-        """Removes events from `done_events` until the first occurrence `event_type`
-        is found which is also removed."""
+        """Removes events from `done_events`.
+
+        Removes events from `done_events` until the first occurrence `event_type`
+        is found which is also removed.
+        """
         # list gets modified - hence we need to copy events!
         for e in reversed(done_events[:]):
             del done_events[-1]
@@ -518,7 +590,9 @@ class DialogueStateTracker:
             if isinstance(e, ActionExecuted) and e.action_name == loop_action_name:
                 break
 
-            if isinstance(e, (ActionExecuted, UserUttered)):
+            if isinstance(
+                e, (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization),
+            ):
                 del done_events[-1 - offset]
             else:
                 # Remember events which aren't unfeaturized to get the index right
@@ -585,9 +659,17 @@ class DialogueStateTracker:
         self.events.append(event)
         event.apply_to(self)
 
-        if domain and isinstance(event, UserUttered):
-            # store all entities as slots
-            for e in domain.slots_for_entities(event.parse_data["entities"]):
+        if domain and isinstance(event, (UserUttered, EntitiesAdded)):
+            if isinstance(event, UserUttered):
+                # Rather get entities from `parse_data` as
+                # `DefinePrevUserUtteredEntities` might have already affected the
+                # `UserUttered.entities` attribute (this might e.g. happen when the
+                # `InMemoryTrackerStore` is used).
+                entities = event.parse_data[ENTITIES]
+            else:
+                entities = event.entities
+
+            for e in domain.slots_for_entities(entities):
                 self.update(e)
 
     def update_with_events(
@@ -683,7 +765,7 @@ class DialogueStateTracker:
 
         to_exclude = action_names_to_exclude or []
 
-        def filter_function(e: Event):
+        def filter_function(e: Event) -> bool:
             has_instance = isinstance(e, event_type)
             excluded = isinstance(e, ActionExecuted) and e.action_name in to_exclude
             return has_instance and not excluded
@@ -736,10 +818,10 @@ class DialogueStateTracker:
             slot.reset()
 
     def _set_slot(self, key: Text, value: Any) -> None:
-        """Set the value of a slot if that slot exists."""
-
+        """Sets the value of a slot if that slot exists."""
         if key in self.slots:
-            self.slots[key].value = value
+            slot = self.slots[key]
+            slot.value = value
         else:
             logger.error(
                 f"Tried to set non existent slot '{key}'. Make sure you "
@@ -752,13 +834,13 @@ class DialogueStateTracker:
             raise ValueError("events, if given, must be a list of events")
         return deque(evts, self._max_event_history)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if isinstance(self, type(other)):
             return other.events == self.events and self.sender_id == other.sender_id
         else:
             return False
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     def trigger_followup_action(self, action: Text) -> None:
@@ -861,7 +943,10 @@ def get_trackers_for_conversation_sessions(
 
     return [
         DialogueStateTracker.from_events(
-            tracker.sender_id, evts, tracker.slots, sender_source=tracker.sender_source
+            tracker.sender_id,
+            evts,
+            tracker.slots.values(),
+            sender_source=tracker.sender_source,
         )
         for evts in split_conversations
     ]

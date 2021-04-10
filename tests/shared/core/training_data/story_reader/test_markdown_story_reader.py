@@ -27,25 +27,21 @@ from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
 from rasa.shared.core.training_data.structures import Story, RuleStep
 
 
-async def test_persist_and_read_test_story_graph(
-    tmp_path: Path, default_domain: Domain
-):
-    graph = await training.extract_story_graph(
-        "data/test_stories/stories.md", default_domain
-    )
+async def test_persist_and_read_test_story_graph(tmp_path: Path, domain: Domain):
+    graph = await training.extract_story_graph("data/test_stories/stories.md", domain)
     out_path = tmp_path / "persisted_story.md"
     rasa.shared.utils.io.write_text_file(graph.as_story_string(), str(out_path))
 
     recovered_trackers = await training.load_data(
         str(out_path),
-        default_domain,
+        domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
     )
     existing_trackers = await training.load_data(
         "data/test_stories/stories.md",
-        default_domain,
+        domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
@@ -60,23 +56,21 @@ async def test_persist_and_read_test_story_graph(
         existing_stories.discard(story_str)
 
 
-async def test_persist_and_read_test_story(tmp_path: Path, default_domain: Domain):
-    graph = await training.extract_story_graph(
-        "data/test_stories/stories.md", default_domain
-    )
+async def test_persist_and_read_test_story(tmp_path: Path, domain: Domain):
+    graph = await training.extract_story_graph("data/test_stories/stories.md", domain)
     out_path = tmp_path / "persisted_story.md"
     Story(graph.story_steps).dump_to_file(str(out_path))
 
     recovered_trackers = await training.load_data(
         str(out_path),
-        default_domain,
+        domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
     )
     existing_trackers = await training.load_data(
         "data/test_stories/stories.md",
-        default_domain,
+        domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
@@ -240,8 +234,8 @@ async def test_persist_form_story():
     assert story in tracker.export_stories(MarkdownStoryWriter())
 
 
-async def test_read_stories_with_multiline_comments(tmpdir, default_domain: Domain):
-    reader = MarkdownStoryReader(default_domain)
+async def test_read_stories_with_multiline_comments(tmpdir, domain: Domain):
+    reader = MarkdownStoryReader(domain)
 
     story_steps = reader.read_from_file(
         "data/test_stories/stories_with_multiline_comments.md"
@@ -258,9 +252,9 @@ async def test_read_stories_with_multiline_comments(tmpdir, default_domain: Doma
     assert len(story_steps[3].events) == 2
 
 
-async def test_read_stories_with_rules(default_domain: Domain):
+async def test_read_stories_with_rules(domain: Domain):
     story_steps = await loading.load_data_from_files(
-        ["data/test_stories/stories_with_rules.md"], default_domain
+        ["data/test_stories/stories_with_rules.md"], domain
     )
 
     # this file contains three rules and two ML stories
@@ -279,9 +273,9 @@ async def test_read_stories_with_rules(default_domain: Domain):
     assert story_steps[4].block_name == "ML story 2"
 
 
-async def test_read_rules_without_stories(default_domain: Domain):
+async def test_read_rules_without_stories(domain: Domain):
     story_steps = await loading.load_data_from_files(
-        ["data/test_stories/rules_without_stories.md"], default_domain
+        ["data/test_stories/rules_without_stories.md"], domain
     )
 
     # this file contains three rules and two ML stories
@@ -360,7 +354,7 @@ async def test_read_rules_without_stories(default_domain: Domain):
     ],
 )
 def test_e2e_parsing(line: Text, expected: Dict):
-    actual = MarkdownStoryReader.parse_e2e_message(line)
+    actual = MarkdownStoryReader().parse_e2e_message(line)
 
     assert actual.as_dict() == expected
 
@@ -418,3 +412,27 @@ def test_invalid_end_to_end_format(line: Text):
     with pytest.raises(ValueError):
         # noinspection PyProtectedMember
         _ = reader.parse_e2e_message(line)
+
+
+def test_markdown_reading_deprecation():
+    with pytest.warns(FutureWarning):
+        MarkdownStoryReader()
+
+
+def test_skip_markdown_reading_deprecation():
+    with pytest.warns(None) as warnings:
+        MarkdownStoryReader(ignore_deprecation_warning=True)
+
+    assert not warnings
+
+
+def test_markdown_writing_deprecation():
+    with pytest.warns(FutureWarning):
+        MarkdownStoryWriter().dumps([])
+
+
+def test_skip_markdown_writing_deprecation():
+    with pytest.warns(None) as warnings:
+        MarkdownStoryWriter.dumps([], ignore_deprecation_warning=True)
+
+    assert not warnings

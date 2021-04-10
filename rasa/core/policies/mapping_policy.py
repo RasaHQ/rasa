@@ -6,7 +6,6 @@ import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_POLICIES, DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.utils import common as common_utils
 from rasa.shared.core.constants import (
     USER_INTENT_BACK,
     USER_INTENT_RESTART,
@@ -43,10 +42,9 @@ class MappingPolicy(Policy):
     def _standard_featurizer() -> None:
         return None
 
-    def __init__(self, priority: int = MAPPING_POLICY_PRIORITY) -> None:
+    def __init__(self, priority: int = MAPPING_POLICY_PRIORITY, **kwargs: Any) -> None:
         """Create a new Mapping policy."""
-
-        super().__init__(priority=priority)
+        super().__init__(priority=priority, **kwargs)
 
         rasa.shared.utils.io.raise_deprecation_warning(
             f"'{MappingPolicy.__name__}' is deprecated and will be removed in "

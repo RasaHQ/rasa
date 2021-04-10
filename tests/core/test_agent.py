@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 from typing import Any, Dict, Text, List, Callable, Optional
 from unittest.mock import Mock
 
@@ -15,7 +16,6 @@ from rasa.exceptions import ModelNotFound
 import rasa.shared.utils.common
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.ted_policy import TEDPolicy
 import rasa.utils.io
 from rasa.core import jobs
 from rasa.core.agent import Agent, load_agent
@@ -25,7 +25,6 @@ from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
@@ -52,16 +51,16 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash") -> Sanic:
 
 @pytest.fixture()
 def model_server(
-    loop: asyncio.AbstractEventLoop, sanic_client: Callable, trained_moodbot_path: Text
+    loop: asyncio.AbstractEventLoop, sanic_client: Callable, trained_rasa_model: Text
 ) -> TestClient:
-    app = model_server_app(trained_moodbot_path, model_hash="somehash")
+    app = model_server_app(trained_rasa_model, model_hash="somehash")
     return loop.run_until_complete(sanic_client(app))
 
 
 async def test_training_data_is_reproducible():
-    training_data_file = "examples/moodbot/data/stories.yml"
+    training_data_file = "data/test_moodbot/data/stories.yml"
     agent = Agent(
-        "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
+        "data/test_moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
     )
 
     training_data = await agent.load_data(training_data_file)
@@ -73,23 +72,20 @@ async def test_training_data_is_reproducible():
         assert str(x.as_dialogue()) == str(same_training_data[i].as_dialogue())
 
 
-async def test_agent_train(trained_moodbot_path: Text):
-    moodbot_domain = Domain.load("examples/moodbot/domain.yml")
-    loaded = Agent.load(trained_moodbot_path)
+async def test_agent_train(trained_rasa_model: Text):
+    domain = Domain.load("data/test_domains/default_with_slots.yml")
+    loaded = Agent.load(trained_rasa_model)
 
     # test domain
-    assert loaded.domain.action_names == moodbot_domain.action_names
-    assert loaded.domain.intents == moodbot_domain.intents
-    assert loaded.domain.entities == moodbot_domain.entities
-    assert loaded.domain.templates == moodbot_domain.templates
-    assert [s.name for s in loaded.domain.slots] == [
-        s.name for s in moodbot_domain.slots
-    ]
+    assert loaded.domain.action_names_or_texts == domain.action_names_or_texts
+    assert loaded.domain.intents == domain.intents
+    assert loaded.domain.entities == domain.entities
+    assert loaded.domain.templates == domain.templates
+    assert [s.name for s in loaded.domain.slots] == [s.name for s in domain.slots]
 
     # test policies
     assert isinstance(loaded.policy_ensemble, SimplePolicyEnsemble)
     assert [type(p) for p in loaded.policy_ensemble.policies] == [
-        TEDPolicy,
         MemoizationPolicy,
         RulePolicy,
     ]
@@ -145,9 +141,9 @@ async def test_agent_handle_message(default_agent: Agent):
 
 
 def test_agent_wrong_use_of_load():
-    training_data_file = "examples/moodbot/data/stories.yml"
+    training_data_file = "data/test_moodbot/data/stories.yml"
     agent = Agent(
-        "examples/moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
+        "data/test_moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
     )
 
     with pytest.raises(ModelNotFound):
@@ -157,7 +153,7 @@ def test_agent_wrong_use_of_load():
 
 
 async def test_agent_with_model_server_in_thread(
-    model_server: TestClient, moodbot_domain: Domain, moodbot_metadata: Any
+    model_server: TestClient, domain: Domain, unpacked_trained_rasa_model: Text
 ):
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": model_server.make_url("/model"), "wait_time_between_pulls": 2}
@@ -171,14 +167,17 @@ async def test_agent_with_model_server_in_thread(
     await asyncio.sleep(5)
 
     assert agent.fingerprint == "somehash"
-    assert hash(agent.domain) == hash(moodbot_domain)
+    assert agent.domain.as_dict() == domain.as_dict()
+
+    expected_policies = PolicyEnsemble.load_metadata(
+        str(Path(unpacked_trained_rasa_model, "core"))
+    )["policy_names"]
 
     agent_policies = {
         rasa.shared.utils.common.module_path_from_instance(p)
         for p in agent.policy_ensemble.policies
     }
-    moodbot_policies = set(moodbot_metadata["policy_names"])
-    assert agent_policies == moodbot_policies
+    assert agent_policies == set(expected_policies)
     assert model_server.app.number_of_model_requests == 1
     jobs.kill_scheduler()
 
@@ -238,7 +237,7 @@ def test_form_without_form_policy(policy_config: Dict[Text, List[Text]]):
             domain=Domain.from_dict({"forms": ["restaurant_form"]}),
             policies=PolicyEnsemble.from_dict(policy_config),
         )
-    assert "haven't added the FormPolicy" in str(execinfo.value)
+    assert "neither added the 'RulePolicy' nor the 'FormPolicy'" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(
@@ -391,7 +390,7 @@ async def test_load_agent_on_not_existing_path():
     "model_path",
     [
         "non-existing-path",
-        DEFAULT_DOMAIN_PATH_WITH_SLOTS,
+        "data/test_domains/default_with_slots.yml",
         "not-existing-model.tar.gz",
         None,
     ],

@@ -9,6 +9,7 @@ from typing import Type, Optional, Text, List, Any, Dict
 
 import rasa.shared.utils.common
 import rasa.shared.core.events
+from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
 from rasa.shared.core.events import (
     Event,
@@ -28,8 +29,9 @@ from rasa.shared.core.events import (
     UserUtteranceReverted,
     AgentUttered,
     SessionStarted,
-    md_format_message,
+    format_message,
 )
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
 
 
@@ -319,17 +321,15 @@ def test_user_uttered_intent_name(event: UserUttered, intent_name: Optional[Text
 
 
 def test_md_format_message():
-    assert (
-        md_format_message("Hello there!", intent="greet", entities=[]) == "Hello there!"
-    )
+    assert format_message("Hello there!", intent="greet", entities=[]) == "Hello there!"
 
 
 def test_md_format_message_empty():
-    assert md_format_message("", intent=None, entities=[]) == ""
+    assert format_message("", intent=None, entities=[]) == ""
 
 
 def test_md_format_message_using_short_entity_syntax():
-    formatted = md_format_message(
+    formatted = format_message(
         "I am from Berlin.",
         intent="location",
         entities=[{"start": 10, "end": 16, "entity": "city", "value": "Berlin"}],
@@ -337,8 +337,27 @@ def test_md_format_message_using_short_entity_syntax():
     assert formatted == """I am from [Berlin](city)."""
 
 
+def test_md_format_message_using_short_entity_syntax_no_start_end():
+    formatted = format_message(
+        "hello", intent="location", entities=[{"entity": "city", "value": "Berlin"}],
+    )
+    assert formatted == "hello"
+
+
+def test_md_format_message_no_text():
+    formatted = format_message("", intent="location", entities=[],)
+    assert formatted == ""
+
+
+def test_md_format_message_using_short_entity_syntax_no_start_end_or_text():
+    formatted = format_message(
+        "", intent="location", entities=[{"entity": "city", "value": "Berlin"}],
+    )
+    assert formatted == ""
+
+
 def test_md_format_message_using_long_entity_syntax():
-    formatted = md_format_message(
+    formatted = format_message(
         "I am from Berlin in Germany.",
         intent="location",
         entities=[
@@ -356,6 +375,18 @@ def test_md_format_message_using_long_entity_syntax():
         formatted
         == """I am from [Berlin](city) in [Germany]{"entity": "country", "role": "destination"}."""
     )
+
+
+def test_md_format_message_using_long_entity_syntax_no_start_end():
+    formatted = format_message(
+        "I am from Berlin.",
+        intent="location",
+        entities=[
+            {"start": 10, "end": 16, "entity": "city", "value": "Berlin"},
+            {"entity": "country", "value": "Germany", "role": "destination",},
+        ],
+    )
+    assert formatted == "I am from [Berlin](city)."
 
 
 @pytest.mark.parametrize(
@@ -507,3 +538,20 @@ def test_events_begin_with_session_start(
         rasa.shared.core.events.do_events_begin_with_session_start(test_events)
         == begin_with_session_start
     )
+
+
+@pytest.mark.parametrize(
+    "end_to_end_event",
+    [
+        ActionExecuted(action_text="I insist on using Markdown"),
+        UserUttered(text="Markdown is much more readable"),
+        UserUttered(
+            text="but YAML ❤️",
+            intent={INTENT_NAME_KEY: "use_yaml"},
+            use_text_for_featurization=True,
+        ),
+    ],
+)
+def test_print_end_to_end_events_in_markdown(end_to_end_event: Event):
+    with pytest.raises(UnsupportedFeatureException):
+        end_to_end_event.as_story_string()
