@@ -297,6 +297,7 @@ class SlackInput(InputChannel):
             "channels_select",
             "overflow",
             "datepicker",
+            "multi_static_select",
         ]
         if payload.get("actions"):
             action_type = payload["actions"][0].get("type")
@@ -308,6 +309,13 @@ class SlackInput(InputChannel):
                     f"'{payload['actions'][0]['type']}', for which payload parsing is not yet supported."
                 )
         return False
+
+    @staticmethod
+    def _get_text_from_multi_select(action: Dict) -> Optional[Text]:
+        values = []
+        for val in action.get("selected_options"):
+            values.append(val.get("value"))
+        return ",".join(values)
 
     @staticmethod
     def _get_interactive_response(action: Dict) -> Optional[Text]:
@@ -331,6 +339,8 @@ class SlackInput(InputChannel):
             return action.get("selected_option", {}).get("value")
         elif action["type"] == "datepicker":
             return action.get("selected_date")
+        elif action["type"] == "multi_static_select":
+            return SlackInput._get_text_from_multi_select(action)
 
     async def process_message(
         self,
