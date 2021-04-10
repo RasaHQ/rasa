@@ -1612,58 +1612,6 @@ def start_visualization(image_path: Text, port: int) -> None:
     app.run(host="0.0.0.0", port=port, access_log=False)
 
 
-# noinspection PyUnusedLocal
-async def train_agent_on_start(
-    args: Dict[Text, Any],
-    endpoints: AvailableEndpoints,
-    additional_arguments: Optional[Dict],
-    app: Sanic,
-    loop: asyncio.AbstractEventLoop,
-) -> None:
-    _interpreter = rasa.core.interpreter.create_interpreter(
-        endpoints.nlu or args.get("nlu")
-    )
-
-    model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
-
-    _agent = await rasa.core.train.train(
-        args.get("domain"),
-        args.get("stories"),
-        model_directory,
-        _interpreter,
-        endpoints,
-        args.get("config")[0],
-        None,
-        additional_arguments,
-    )
-    app.agent = _agent
-
-
-async def wait_til_server_is_running(
-    endpoint: EndpointConfig, max_retries: int = 30, sleep_between_retries: float = 1.0
-) -> bool:
-    """Try to reach the server, retry a couple of times and sleep in between."""
-    while max_retries:
-        try:
-            r = await retrieve_status(endpoint)
-            logger.info(f"Reached core: {r}")
-            if not r.get("is_ready"):
-                # server did not finish loading the agent yet
-                # in this case, we need to wait till the model trained
-                # so we might be sleeping for a while...
-                await asyncio.sleep(sleep_between_retries)
-                continue
-            else:
-                # server is ready to go
-                return True
-        except ClientError:
-            max_retries -= 1
-            if max_retries:
-                await asyncio.sleep(sleep_between_retries)
-
-    return False
-
-
 def run_interactive_learning(
     file_importer: TrainingDataImporter,
     skip_visualization: bool = False,
