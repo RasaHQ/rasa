@@ -198,7 +198,7 @@ async def test_nlu(
     nlu_data: Optional[Text],
     output_directory: Text = DEFAULT_RESULTS_PATH,
     additional_arguments: Optional[Dict] = None,
-):
+) -> None:
     """Tests the NLU Model."""
     from rasa.nlu.test import run_evaluation
     from rasa.model import get_model
@@ -236,7 +236,7 @@ async def compare_nlu_models(
     output: Text,
     runs: int,
     exclusion_percentages: List[int],
-):
+) -> None:
     """Trains multiple models, compares them and saves the results."""
 
     from rasa.nlu.test import drop_intents_below_freq

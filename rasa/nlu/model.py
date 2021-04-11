@@ -67,7 +67,7 @@ class Metadata:
     """Captures all information about a model to load and prepare it."""
 
     @staticmethod
-    def load(model_dir: Text):
+    def load(model_dir: Text) -> "Metadata":
         """Loads the metadata from a models directory.
 
         Args:
@@ -85,7 +85,7 @@ class Metadata:
                 f"Failed to load model metadata from '{abspath}'. {e}"
             )
 
-    def __init__(self, metadata: Dict[Text, Any]):
+    def __init__(self, metadata: Dict[Text, Any]) -> None:
         """Set `metadata` attribute."""
         self.metadata = metadata
 
@@ -113,7 +113,7 @@ class Metadata:
 
         return self.get("language")
 
-    def persist(self, model_dir: Text):
+    def persist(self, model_dir: Text) -> None:
         """Persists the metadata of a model to a given directory."""
 
         metadata = self.metadata.copy()
