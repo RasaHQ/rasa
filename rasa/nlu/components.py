@@ -347,6 +347,9 @@ def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
     Competing extractors are e.g. `CRFEntityExtractor` and `DIETClassifier`.
     Both of these look for the same entities based on the same training data
     leading to ambiguity in the results.
+
+    Args:
+        pipeline: The list of the :class:`rasa.nlu.components.Component`s.
     """
     general_purpose_entity_extractors = [
         "DIETClassifier",
@@ -376,6 +379,10 @@ def warn_of_competition_with_regex_extractor(
     * You are using a general entity extractor and the `RegexEntityExtractor`
     * AND you have regex patterns for entity type A
     * AND you have annotated text examples for entity type A
+
+    Args:
+        pipeline: The list of the :class:`rasa.nlu.components.Component`s.
+        data: The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
     """
     general_entity_extractors = [
         "DIETClassifier",
