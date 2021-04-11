@@ -488,6 +488,9 @@ class Interpreter:
         """Issues a warning when there are overlapping entity annotations.
 
         This warning is only issued once per Interpreter life time.
+
+        Args:
+            message: user message with all processing metadata such as entities
         """
         overlapping_entity_pairs = message.find_overlapping_entities()
         if len(overlapping_entity_pairs) > 0:
