@@ -327,20 +327,22 @@ def test_warn_of_competition_with_regex_extractor(
         assert len(records) == 0
 
 
-async def test_warn_for_overlapping_entities(tmp_path: Path):
-    _config = RasaNLUModelConfig(
-        {
-            "pipeline": [
-                {"name": "WhitespaceTokenizer"},
-                {"name": "RegexEntityExtractor", "use_lookup_tables": False},
-                {"name": "RegexEntityExtractor", "use_regexes": False},
-            ]
-        }
-    )
-    data = "data/test/overlapping_regex_entities.yml"
+OVERLAP_TESTS_CONFIG = RasaNLUModelConfig(
+    {
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "RegexEntityExtractor", "use_lookup_tables": False},
+            {"name": "RegexEntityExtractor", "use_regexes": False},
+        ]
+    }
+)
 
+OVERLAP_TESTS_DATA = "data/test/overlapping_regex_entities.yml"
+
+
+async def test_do_not_warn_for_non_overlapping_entities(tmp_path: Path):
     _, interpreter, _ = await rasa.nlu.train.train(
-        _config, data=data, path=str(tmp_path)
+        OVERLAP_TESTS_CONFIG, data=OVERLAP_TESTS_DATA, path=str(tmp_path)
     )
 
     msg = "I am looking for some pasta"
@@ -350,18 +352,39 @@ async def test_warn_for_overlapping_entities(tmp_path: Path):
     assert len(parsed_msg.get("entities", [])) == 1
     assert len(records) == 0
 
-    problem_msg = "I am looking for some pizza"
-    with pytest.warns(None, match="overlapping") as records:
-        parsed_problem_msg = interpreter.parse(problem_msg)
 
-    assert len(parsed_problem_msg.get("entities", [])) == 2
+async def test_warn_for_overlapping_entities(tmp_path: Path):
+    _, interpreter, _ = await rasa.nlu.train.train(
+        OVERLAP_TESTS_CONFIG, data=OVERLAP_TESTS_DATA, path=str(tmp_path)
+    )
+
+    msg = "I am looking for some pizza"
+    with pytest.warns(None, match="overlapping") as records:
+        parsed_msg = interpreter.parse(msg)
+
+    assert len(parsed_msg.get("entities", [])) == 2
+    assert len(records) == 1
+    for word in ["pizza", "meal", "zz-words", "RegexEntityExtractor"]:
+        assert word in records[0].message.args[0]
+
+
+async def test_warn_only_once_for_overlapping_entities(tmp_path: Path):
+    _, interpreter, _ = await rasa.nlu.train.train(
+        OVERLAP_TESTS_CONFIG, data=OVERLAP_TESTS_DATA, path=str(tmp_path)
+    )
+
+    msg = "I am looking for some pizza"
+    with pytest.warns(None, match="overlapping") as records:
+        parsed_msg = interpreter.parse(msg)
+
+    assert len(parsed_msg.get("entities", [])) == 2
     assert len(records) == 1
     for word in ["pizza", "meal", "zz-words", "RegexEntityExtractor"]:
         assert word in records[0].message.args[0]
 
     # parse again but this time without warning again
     with pytest.warns(None, match="overlapping") as records:
-        parsed_again_problem_msg = interpreter.parse(problem_msg)
+        parsed_again_msg = interpreter.parse(msg)
 
-    assert len(parsed_again_problem_msg.get("entities", [])) == 2
+    assert len(parsed_again_msg.get("entities", [])) == 2
     assert len(records) == 0
