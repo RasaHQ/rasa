@@ -130,7 +130,9 @@ def _docs(sub_url: Text) -> Text:
     return DOCS_BASE_URL + sub_url
 
 
-def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
+def ensure_loaded_agent(
+    app: Sanic, require_core_is_ready: bool = False
+) -> Callable[[Callable], Callable[..., Any]]:
     """Wraps a request handler ensuring there is a loaded and usable agent.
 
     Require the agent to have a loaded Core model if `require_core_is_ready` is
@@ -139,7 +141,7 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
 
     def decorator(f):
         @wraps(f)
-        def decorated(*args, **kwargs):
+        def decorated(*args: Any, **kwargs: Any) -> Any:
             # noinspection PyUnresolvedReferences
             if not app.agent or not (
                 app.agent.is_core_ready()
@@ -200,7 +202,7 @@ def requires_auth(
                 return None
 
         async def sufficient_scope(
-            request, *args: Any, **kwargs: Any
+            request: Request, *args: Any, **kwargs: Any
         ) -> Optional[bool]:
             # This is a coroutine since `sanic-jwt==1.6`
             jwt_data = await rasa.utils.common.call_potential_coroutine(
@@ -511,11 +513,11 @@ def configure_cors(
     )
 
 
-def add_root_route(app: Sanic):
+def add_root_route(app: Sanic) -> None:
     """Add '/' route to return hello."""
 
     @app.get("/")
-    async def hello(request: Request):
+    async def hello(request: Request) -> HTTPResponse:
         """Check if the server is running and responds with the version."""
         return response.text("Hello from Rasa: " + rasa.__version__)
 
@@ -646,9 +648,8 @@ def create_app(
     jwt_secret: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
-):
+) -> Sanic:
     """Class representing a Rasa HTTP server."""
-
     app = Sanic(__name__)
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
@@ -673,13 +674,15 @@ def create_app(
     app.active_training_processes = multiprocessing.Value("I", 0)
 
     @app.exception(ErrorResponse)
-    async def handle_error_response(request: Request, exception: ErrorResponse):
+    async def handle_error_response(
+        request: Request, exception: ErrorResponse
+    ) -> HTTPResponse:
         return response.json(exception.error_info, status=exception.status)
 
     add_root_route(app)
 
     @app.get("/version")
-    async def version(request: Request):
+    async def version(request: Request) -> HTTPResponse:
         """Respond with the version number of the installed Rasa."""
 
         return response.json(
@@ -692,7 +695,7 @@ def create_app(
     @app.get("/status")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def status(request: Request):
+    async def status(request: Request) -> HTTPResponse:
         """Respond with the model name and the fingerprint of that model."""
 
         return response.json(
@@ -707,7 +710,7 @@ def create_app(
     @app.get("/conversations/<conversation_id:path>/tracker")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def retrieve_tracker(request: Request, conversation_id: Text):
+    async def retrieve_tracker(request: Request, conversation_id: Text) -> HTTPResponse:
         """Get a dump of a conversation's tracker including its events."""
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
@@ -733,7 +736,7 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def append_events(request: Request, conversation_id: Text):
+    async def append_events(request: Request, conversation_id: Text) -> HTTPResponse:
         """Append a list of events to the state of a conversation"""
         validate_request_body(
             request,
@@ -798,7 +801,7 @@ def create_app(
     @app.put("/conversations/<conversation_id:path>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def replace_events(request: Request, conversation_id: Text):
+    async def replace_events(request: Request, conversation_id: Text) -> HTTPResponse:
         """Use a list of events to set a conversations tracker to a state."""
         validate_request_body(
             request,
@@ -830,7 +833,7 @@ def create_app(
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     @ensure_conversation_exists()
-    async def retrieve_story(request: Request, conversation_id: Text):
+    async def retrieve_story(request: Request, conversation_id: Text) -> HTTPResponse:
         """Get an end-to-end story corresponding to this conversation."""
         until_time = rasa.utils.endpoints.float_arg(request, "until")
         fetch_all_sessions = rasa.utils.endpoints.bool_arg(
@@ -857,7 +860,7 @@ def create_app(
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     @ensure_conversation_exists()
-    async def execute_action(request: Request, conversation_id: Text):
+    async def execute_action(request: Request, conversation_id: Text) -> HTTPResponse:
         request_params = request.json
 
         action_to_execute = request_params.get("name", None)
@@ -985,7 +988,7 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/messages")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def add_message(request: Request, conversation_id: Text):
+    async def add_message(request: Request, conversation_id: Text) -> HTTPResponse:
         validate_request_body(
             request,
             "No message defined in request body. Add a message to the request body in "
@@ -1506,7 +1509,7 @@ def _training_payload_from_json(request: Request, temp_dir: Path) -> Dict[Text, 
     )
 
 
-def _validate_json_training_payload(rjs: Dict):
+def _validate_json_training_payload(rjs: Dict) -> None:
     if "config" not in rjs:
         raise ErrorResponse(
             HTTPStatus.BAD_REQUEST,
