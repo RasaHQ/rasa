@@ -227,7 +227,7 @@ def any_components_in_pipeline(
 
 def find_components_in_pipeline(
     components: Iterable[Text], pipeline: List["Component"]
-) -> List[Text]:
+) -> Set[Text]:
     """Finds those of the given components that are present in the pipeline.
 
     Args:
@@ -238,7 +238,7 @@ def find_components_in_pipeline(
         A list of str of component class names that are present in the pipeline.
     """
     pipeline_component_names = {c.name for c in pipeline}
-    return list(pipeline_component_names.intersection(components))
+    return pipeline_component_names.intersection(components)
 
 
 def validate_required_components_from_data(
