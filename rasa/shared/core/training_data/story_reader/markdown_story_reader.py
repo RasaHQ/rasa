@@ -3,6 +3,13 @@ import logging
 import os
 import re
 from pathlib import Path
+import sys
+
+# check Python version for type imports in line with PEP 563 and 585
+if sys.version_info >= (3, 7):
+    from re import Match
+else:
+    from typing import Match
 from typing import Dict, Text, List, Any, Union, Tuple, Optional
 
 import rasa.shared.data
@@ -162,7 +169,7 @@ class MarkdownStoryReader(StoryReader):
             )
 
     def _replace_template_variables(self, line: Text) -> Text:
-        def process_match(matchobject):
+        def process_match(matchobject: "Match") -> Any:
             varname = matchobject.group(1)
             if varname in self.template_variables:
                 return self.template_variables[varname]
