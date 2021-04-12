@@ -26,6 +26,7 @@ from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
 from rasa.core.policies.rule_policy import RulePolicy
+from rasa.nlu.model import Interpreter
 from rasa.shared.core.domain import SessionConfig, Domain
 from rasa.shared.core.events import UserUttered
 from rasa.core.exporter import Exporter
@@ -248,15 +249,6 @@ async def trained_spacybot_path(trained_async: Callable) -> Text:
         domain="data/test_spacybot/domain.yml",
         config="data/test_spacybot/config.yml",
         training_files="data/test_spacybot/data/",
-    )
-
-
-@pytest.fixture(scope="session")
-async def trained_nlu_spacybot_path(trained_nlu_async: Callable) -> Text:
-    return await trained_nlu_async(
-        domain="data/test_spacybot/domain.yml",
-        config="data/test_spacybot/config.yml",
-        nlu_data="data/test_spacybot/data/nlu.yml",
     )
 
 
@@ -494,12 +486,12 @@ def blank_config() -> RasaNLUModelConfig:
 @pytest.fixture(scope="session")
 async def trained_response_selector_bot(trained_async: Callable) -> Path:
     zipped_model = await trained_async(
-        domain="examples/responseselectorbot/domain.yml",
-        config="examples/responseselectorbot/config.yml",
+        domain="data/test_response_selector_bot/domain.yml",
+        config="data/test_response_selector_bot/config.yml",
         training_files=[
-            "examples/responseselectorbot/data/rules.yml",
-            "examples/responseselectorbot/data/stories.yml",
-            "examples/responseselectorbot/data/nlu.yml",
+            "data/test_response_selector_bot/data/rules.yml",
+            "data/test_response_selector_bot/data/stories.yml",
+            "data/test_response_selector_bot/data/nlu.yml",
         ],
     )
 
@@ -532,6 +524,11 @@ async def response_selector_agent(
     trained_response_selector_bot: Optional[Path],
 ) -> Agent:
     return Agent.load_local_model(trained_response_selector_bot)
+
+
+@pytest.fixture(scope="session")
+async def response_selector_interpreter(response_selector_agent: Agent,) -> Interpreter:
+    return response_selector_agent.interpreter.interpreter
 
 
 @pytest.fixture(scope="session")
