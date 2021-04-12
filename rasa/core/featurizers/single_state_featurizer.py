@@ -374,7 +374,10 @@ class SingleStateFeaturizer:
 
 
 class BinarySingleStateFeaturizer(SingleStateFeaturizer):
+    """Dialogue State featurizer which features the state as binaries."""
+
     def __init__(self) -> None:
+        """Creates featurizer."""
         super().__init__()
         rasa.shared.utils.io.raise_deprecation_warning(
             f"'{self.__class__.__name__}' is deprecated and "
