@@ -1,7 +1,13 @@
 import dask
 
 from rasa.architecture_prototype import graph
-from rasa.architecture_prototype.graph import TrainingDataReader, RasaComponent
+from rasa.architecture_prototype.graph import (
+    TrainingDataReader,
+    RasaComponent,
+    DomainReader,
+    StoryReader,
+)
+from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
@@ -112,3 +118,33 @@ def test_train_nlu():
     assert isinstance(trained_components[0], DIETClassifier)
     assert isinstance(trained_components[1], ResponseSelector)
     assert isinstance(trained_components[2], EntitySynonymMapper)
+
+
+full_model_train_graph = {
+    "load_domain": {
+        "uses": DomainReader,
+        "fn": "read",
+        "config": {"project": "examples/moodbot/data"},
+        "needs": [],
+    },
+    "load_stories": {
+        "uses": StoryReader,
+        "fn": "read",
+        "config": {"project": "examples/moodbot/data"},
+        "needs": [],
+    },
+    "train_memoization_policy": {
+        "uses": MemoizationPolicy,
+        "fn": "read",
+        "config": {},
+        "needs": ["load_stories"],
+    },
+}
+
+
+def test_train_model():
+    trained_components = graph.run_as_dask_graph(
+        full_model_train_graph, ["load_domain", "load_stories"],
+    )
+
+    print(trained_components)

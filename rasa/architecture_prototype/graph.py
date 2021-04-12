@@ -1,17 +1,52 @@
+from pathlib import Path
 from typing import Any, Text, Dict, List, Union
 
 import dask
 
-from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+import rasa.core.training
+from rasa.shared.constants import DEFAULT_DOMAIN_PATH
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
+import rasa.utils.common
 
 
-class TrainingDataReader:
-    def __init__(self, filename: Text) -> None:
-        self._filename = filename
+class ProjectReader:
+    def __init__(self, project: Text) -> None:
+        self._project = project
 
+    def load_importer(self) -> TrainingDataImporter:
+        return TrainingDataImporter.load_from_dict(
+            domain_path=Path(self._project, DEFAULT_DOMAIN_PATH),
+            training_data_paths=[self._project],
+        )
+
+    def read(self) -> Any:
+        raise NotImplementedError()
+
+
+class TrainingDataReader(ProjectReader):
     def read(self) -> TrainingData:
-        return RasaYAMLReader().read(self._filename)
+        importer = self.load_importer()
+        return rasa.utils.common.run_in_loop(importer.get_nlu_data())
+
+
+class DomainReader(ProjectReader):
+    def read(self) -> Domain:
+        importer = self.load_importer()
+        return rasa.utils.common.run_in_loop(importer.get_domain())
+
+
+class StoryReader(ProjectReader):
+    def read(self) -> List[TrackerWithCachedStates]:
+        importer = self.load_importer()
+        domain = rasa.utils.common.run_in_loop(importer.get_domain())
+
+        generated_coroutine = rasa.core.training.load_data(importer, domain,)
+        return rasa.utils.common.run_in_loop(generated_coroutine)
 
 
 class RasaComponent:
