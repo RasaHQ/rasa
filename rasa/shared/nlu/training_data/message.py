@@ -180,7 +180,7 @@ class Message:
 
     def get_combined_intent_response_key(self) -> Text:
         """Get intent as it appears in training data."""
-        rasa.shared.utils.io.raise_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             "`get_combined_intent_response_key` is deprecated and "
             "will be removed in Rasa 3.0.0. "
             "Please use `get_full_intent` instead.",

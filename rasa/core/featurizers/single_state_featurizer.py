@@ -376,11 +376,10 @@ class SingleStateFeaturizer:
 class BinarySingleStateFeaturizer(SingleStateFeaturizer):
     def __init__(self) -> None:
         super().__init__()
-        rasa.shared.utils.io.raise_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"'{self.__class__.__name__}' is deprecated and "
             f"will be removed in Rasa Open Source 3.0.0. "
             f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
-            category=DeprecationWarning,
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
 
@@ -405,10 +404,9 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         super().__init__()
         # it is hard to fully mimic old behavior, but SingleStateFeaturizer
         # does the same thing if nlu pipeline is configured correctly
-        rasa.shared.utils.io.raise_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"'{self.__class__.__name__}' is deprecated and "
             f"will be removed in Rasa Open Source 3.0.0. "
             f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
-            category=DeprecationWarning,
             docs=DOCS_URL_MIGRATION_GUIDE,
         )

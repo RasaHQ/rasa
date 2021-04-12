@@ -70,7 +70,7 @@ def get_test_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     Returns:
         Path to temporary directory containing all found Core training files.
     """
-    rasa.shared.utils.io.raise_warning(
+    rasa.shared.utils.io.raise_deprecation_warning(
         "`get_test_directory` is deprecated and will be removed in Rasa 3.0.0. ",
         category=DeprecationWarning,
     )
@@ -116,7 +116,7 @@ def get_core_nlu_directories(
         Path to directory containing the Core files and path to directory
         containing the NLU training files.
     """
-    rasa.shared.utils.io.raise_warning(
+    rasa.shared.utils.io.raise_deprecation_warning(
         "`get_core_nlu_directories` is deprecated and will be removed in Rasa 3.0.0. ",
         category=DeprecationWarning,
     )
