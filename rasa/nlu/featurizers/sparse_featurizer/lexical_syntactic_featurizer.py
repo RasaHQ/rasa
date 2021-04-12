@@ -97,8 +97,18 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         self.feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
         self.number_of_features = self._calculate_number_of_features()
 
+        return self
+
+    def process_training_data(
+        self,
+        trained_featurizer: "LexicalSyntacticFeaturizer",
+        training_data: TrainingData,
+    ) -> TrainingData:
+
         for example in training_data.training_examples:
-            self._create_sparse_features(example)
+            trained_featurizer._create_sparse_features(example)
+
+        return training_data
 
     def process(self, message: Message, **kwargs: Any) -> None:
         self._create_sparse_features(message)

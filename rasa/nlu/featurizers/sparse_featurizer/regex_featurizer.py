@@ -189,9 +189,17 @@ class RegexFeaturizer(SparseFeaturizer):
         else:
             self.known_patterns = patterns_from_data
 
+        return self
+
+    def process_training_data(
+        self, trained_featurizer: "RegexFeaturizer", training_data: TrainingData
+    ) -> TrainingData:
+
         for example in training_data.training_examples:
             for attribute in [TEXT, RESPONSE, ACTION_TEXT]:
-                self._text_features_with_regex(example, attribute)
+                trained_featurizer._text_features_with_regex(example, attribute)
+
+        return training_data
 
     def process(self, message: Message, **kwargs: Any) -> None:
         self._text_features_with_regex(message, TEXT)
