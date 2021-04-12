@@ -309,6 +309,7 @@ def run_in_loop(
     result = loop.run_until_complete(f)
 
     # Let's also finish all running tasks:
+    # fallback for python 3.6, which doesn't have asyncio.all_tasks
     try:
         pending = asyncio.all_tasks(loop)
     except AttributeError:

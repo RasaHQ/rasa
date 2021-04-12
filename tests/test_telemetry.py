@@ -47,6 +47,7 @@ async def test_events_schema(
 
     with open(TELEMETRY_EVENTS_JSON) as f:
         schemas = json.load(f)["events"]
+    # fallback for python 3.6, which doesn't have asyncio.all_tasks
     try:
         initial = asyncio.all_tasks()
     except AttributeError:
@@ -83,6 +84,7 @@ async def test_events_schema(
 
     telemetry.track_nlu_model_test(TrainingData())
 
+    # fallback for python 3.6, which doesn't have asyncio.all_tasks
     try:
         pending = asyncio.all_tasks() - initial
     except AttributeError:
