@@ -93,17 +93,20 @@ class Metadata:
         return self.metadata.get(property_name, default)
 
     @property
-    def component_classes(self):
+    def component_classes(self) -> List[Optional[Text]]:
+        """Returns a list of component class names."""
         if self.get("pipeline"):
             return [c.get("class") for c in self.get("pipeline", [])]
         else:
             return []
 
     @property
-    def number_of_components(self):
+    def number_of_components(self) -> int:
+        """Returns count of components."""
         return len(self.get("pipeline", []))
 
     def for_component(self, index: int, defaults: Any = None) -> Dict[Text, Any]:
+        """Returns the configuration of the component based on index."""
         return component_config_from_pipeline(index, self.get("pipeline", []), defaults)
 
     @property
