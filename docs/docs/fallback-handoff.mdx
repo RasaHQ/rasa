@@ -296,8 +296,7 @@ responses:
 ```
 
 Or, you can customize `action_default_fallback` for more complex behavior by writing a [Custom Action](./actions.mdx#custom-actions). 
-For example, the following snippet is an implementation of a custom action which does the same as `action_default_fallback` but 
-dispatches a different template `utter_fallback_template`:
+For example, if you want the bot to call a human and stop interacting with the user:
 
 ```python title="actions.py"
 from typing import Any, Dict, List, Text
@@ -317,10 +316,16 @@ class ActionDefaultFallback(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
 
-        dispatcher.utter_message(template="my_custom_fallback_template")
-
-        # Revert user message which led to fallback.
-        return [UserUtteranceReverted()]
+        # tell the user they are being passed to a customer service agent
+        dispatcher.utter_message(text="I am passing you to a human...")
+        
+        # assume there's a function to call customer service
+        # pass the tracker so that the agent has a record of the converstation between the user
+        # and the bot for context
+        call_customer_service(tracker)
+     
+        # pause the tracker so that the bot stops responding to user input
+        return [ConversationPaused()]
 ```
 
 
