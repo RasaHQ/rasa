@@ -176,6 +176,24 @@ list of strings. e.g.:
                                           'kafka_broker_3:9092'],
                                     topic='rasa_events')
 
+
+Partition Key
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Rasa Open Source's Kafka producer can optionally be configured to partition messages by conversation ID.
+This can be configured by setting `partition_by_sender` in the `endpoints.yml` file to True.
+By default, this parameter is set to `False` and the producer will randomly assign a partition to each message.  
+
+.. code-block:: yaml
+
+    event_broker:
+      type: kafka
+      partition_by_sender: True
+      security_protocol: PLAINTEXT
+      topic: topic
+      url: localhost
+      client_id: kafka-python-rasa
+
 Authentication and Authorization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
