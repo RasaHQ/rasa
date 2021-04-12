@@ -64,7 +64,7 @@ class CallbackInput(RestInput):
         callback_webhook = Blueprint("callback_webhook", __name__)
 
         @callback_webhook.route("/", methods=["GET"])
-        async def health(_: Request):
+        async def health(_: Request) -> HTTPResponse:
             return response.json({"status": "ok"})
 
         @callback_webhook.route("/webhook", methods=["POST"])

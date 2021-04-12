@@ -72,9 +72,15 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Test Documentation
-          ref: ${{ github.head_ref || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
+
+      - name: Fail the step if the doc tests run could not be found
+        if: ${{ steps.wait-for-doc-tests.outputs.conclusion == 'timed_out' }}
+        run: |
+          echo "Could not find the doc tests run."
+          exit 1
 
 
   quality:
@@ -168,6 +174,7 @@ jobs:
         - test-nlu-predictors
         - test-full-model-training
         - test-other-unit-tests
+        - test-performance
         os: [ ubuntu-latest, windows-latest ]
         python-version: [ 3.6, 3.7, 3.8 ]
 

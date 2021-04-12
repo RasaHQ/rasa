@@ -62,7 +62,7 @@ def read_global_config(path: Text) -> Dict[Text, Any]:
         return {}
 
 
-def set_log_level(log_level: Optional[int] = None):
+def set_log_level(log_level: Optional[int] = None) -> None:
     """Set log level of Rasa and Tensorflow either to the provided log level or
     to the log level specified in the environment variable 'LOG_LEVEL'. If none is set
     a default log level will be used."""
@@ -123,7 +123,7 @@ def update_tensorflow_log_level() -> None:
     logging.getLogger("tensorflow").propagate = False
 
 
-def update_sanic_log_level(log_file: Optional[Text] = None):
+def update_sanic_log_level(log_file: Optional[Text] = None) -> None:
     """Set the log level of sanic loggers to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     from sanic.log import logger, error_logger, access_logger
@@ -223,7 +223,7 @@ def write_global_config_value(name: Text, value: Any) -> bool:
 def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
     """Read a value from the global Rasa configuration."""
 
-    def not_found() -> Union[None, NoReturn]:
+    def not_found() -> None:
         if unavailable_ok:
             return None
         else:

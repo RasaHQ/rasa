@@ -23,12 +23,12 @@ class MitieIntentClassifier(IntentClassifier):
         return [MitieNLP, Tokenizer]
 
     def __init__(
-        self, component_config: Optional[Dict[Text, Any]] = None, clf=None
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        clf: Optional["mitie.text_categorizer"] = None,
     ) -> None:
         """Construct a new intent classifier using the MITIE framework."""
-
         super().__init__(component_config)
-
         self.clf = clf
 
     @classmethod
@@ -85,18 +85,19 @@ class MitieIntentClassifier(IntentClassifier):
         )
 
     @staticmethod
-    def _tokens_of_message(message) -> List[Text]:
+    def _tokens_of_message(message: Message) -> List[Text]:
         return [token.text for token in message.get(TOKENS_NAMES[TEXT], [])]
 
     @classmethod
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["MitieIntentClassifier"] = None,
         **kwargs: Any,
     ) -> "MitieIntentClassifier":
+        """Loads trained component (see parent class for full docstring)."""
         import mitie
 
         file_name = meta.get("file")

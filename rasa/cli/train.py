@@ -245,7 +245,7 @@ def _get_valid_config(
     """
     config = rasa.cli.utils.get_validated_path(config, "config", default_config)
 
-    if not os.path.exists(config):
+    if not config or not os.path.exists(config):
         print_error(
             "The config file '{}' does not exist. Use '--config' to specify a "
             "valid config file."

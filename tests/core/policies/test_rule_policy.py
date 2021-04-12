@@ -40,7 +40,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-from rasa.core.policies.rule_policy import RulePolicy, InvalidRule
+from rasa.core.policies.rule_policy import RulePolicy, InvalidRule, RULES
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 
@@ -2624,3 +2624,232 @@ def test_hide_rule_turn_with_loops_as_followup_action():
             ACTIVE_LOOP: {LOOP_NAME: form_name},
         },
     ]
+
+
+def test_remove_action_listen_prediction_if_contradicts_with_story():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {intent_1}
+        actions:
+        - {utter_1}
+        - {utter_2}
+        """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "conditioned on action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_2),
+        ],
+        is_rule_tracker=True,
+    )
+    story = TrackerWithCachedStates.from_events(
+        "intent after action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_1),
+            ActionExecuted(utter_2),
+        ],
+    )
+    policy = RulePolicy()
+    policy.train(
+        [rule, story], domain, RegexInterpreter(),
+    )
+    prediction_source = [{PREVIOUS_ACTION: {ACTION_NAME: utter_1}}]
+    key = policy._create_feature_key(prediction_source)
+    assert key not in policy.lookup[RULES]
+    assert len(policy.lookup[RULES]) == 1
+
+
+def test_keep_action_listen_prediction_after_predictable_action():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    utter_3 = "utter_3"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {intent_1}
+        actions:
+        - {utter_1}
+        - {utter_2}
+        - {utter_3}
+        """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "action_listen after predictable action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(utter_2),
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_2),
+        ],
+        is_rule_tracker=True,
+    )
+    story = TrackerWithCachedStates.from_events(
+        "intent after action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_2),
+            ActionExecuted(utter_1),
+            ActionExecuted(utter_3),
+        ],
+    )
+    policy = RulePolicy()
+    # prediction of action_listen should only be removed if it occurs after the first
+    # action (unpredictable)
+    with pytest.raises(InvalidRule):
+        policy.train(
+            [rule, story], domain, RegexInterpreter(),
+        )
+
+
+def test_keep_action_listen_prediction_if_last_prediction():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {intent_1}
+        actions:
+        - {utter_1}
+        - {utter_2}
+        """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "last prediction is action_listen",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1}),
+        ],
+        is_rule_tracker=True,
+    )
+    story = TrackerWithCachedStates.from_events(
+        "intent after action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_1),
+            ActionExecuted(utter_2),
+        ],
+    )
+    policy = RulePolicy()
+    # prediction of action_listen should only be removed if it's not the last prediction
+    with pytest.raises(InvalidRule):
+        policy.train(
+            [rule, story], domain, RegexInterpreter(),
+        )
+
+
+def test_keep_action_listen_prediction_if_contradicts_with_rule():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {intent_1}
+        actions:
+        - {utter_1}
+        - {utter_2}
+        """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "conditioned on action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_2),
+        ],
+        is_rule_tracker=True,
+    )
+    other_rule = TrackerWithCachedStates.from_events(
+        "intent after action",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(utter_1),
+            ActionExecuted(utter_2),
+        ],
+        is_rule_tracker=True,
+    )
+    policy = RulePolicy()
+    with pytest.raises(InvalidRule):
+        policy.train(
+            [rule, other_rule], domain, RegexInterpreter(),
+        )
+
+
+def test_raise_contradiction_if_rule_contradicts_with_story():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {intent_1}
+        actions:
+        - {utter_1}
+        - {utter_2}
+        """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "rule without action_listen",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(utter_1),
+            ActionExecuted(utter_2),
+        ],
+        is_rule_tracker=True,
+    )
+    story = TrackerWithCachedStates.from_events(
+        "contradicts with rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1}),
+            ActionExecuted(utter_2),
+        ],
+    )
+    policy = RulePolicy()
+    with pytest.raises(InvalidRule):
+        policy.train(
+            [rule, story], domain, RegexInterpreter(),
+        )

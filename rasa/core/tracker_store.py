@@ -328,10 +328,10 @@ class RedisTrackerStore(TrackerStore):
 
     def __init__(
         self,
-        domain,
-        host="localhost",
-        port=6379,
-        db=0,
+        domain: Domain,
+        host: Text = "localhost",
+        port: int = 6379,
+        db: int = 0,
         password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
@@ -813,12 +813,12 @@ def ensure_schema_exists(session: "Session") -> None:
 class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database."""
 
-    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
-    Base = declarative_base()
+    Base: DeclarativeMeta = declarative_base()
 
     class SQLEvent(Base):
-        """Represents an event in the SQL Tracker Store"""
+        """Represents an event in the SQL Tracker Store."""
 
         __tablename__ = "events"
 
@@ -945,7 +945,7 @@ class SQLTrackerStore(TrackerStore):
             query=query,
         )
 
-    def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
+    def _create_database_and_update_engine(self, db: Text, engine_url: "URL") -> None:
         """Creates database `db` and updates engine accordingly."""
         from sqlalchemy import create_engine
 

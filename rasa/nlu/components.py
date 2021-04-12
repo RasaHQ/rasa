@@ -208,7 +208,9 @@ def validate_pipeline(pipeline: List["Component"]) -> None:
     validate_required_components(pipeline)
 
 
-def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]):
+def any_components_in_pipeline(
+    components: Iterable[Text], pipeline: List["Component"]
+) -> bool:
     """Check if any of the provided components are listed in the pipeline.
 
     Args:
@@ -483,7 +485,7 @@ class Component(metaclass=ComponentMetaclass):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["Component"] = None,
         **kwargs: Any,
@@ -636,7 +638,7 @@ class Component(metaclass=ComponentMetaclass):
             del d["partial_processing_pipeline"]
         return d
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return self.__dict__ == other.__dict__
 
     def prepare_partial_processing(
