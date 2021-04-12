@@ -1847,7 +1847,6 @@ class TED(TransformerRasaModel):
         batch_labels_embed = self._compute_embedding_for_label_ids(
             tf.squeeze(batch_label_ids, axis=-2)
         )
-
         # Add back the sequence dimension
         batch_labels_embed = tf.expand_dims(batch_labels_embed, axis=1)
 
