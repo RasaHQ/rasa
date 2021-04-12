@@ -27,6 +27,23 @@ Initialize the CrfDecodeForwardRnnCell.
   [1, num_tags, num_tags] in preparation for the broadcast
   summation occurring within the cell.
 
+#### output\_size
+
+```python
+ | @property
+ | output_size() -> int
+```
+
+Returns count of tags.
+
+#### build
+
+```python
+ | build(input_shape: Union[TensorShape, List[TensorShape]]) -> None
+```
+
+Creates the variables of the layer.
+
 #### call
 
 ```python

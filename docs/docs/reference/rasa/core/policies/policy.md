@@ -64,7 +64,7 @@ Constructs a new Policy object.
 
 ```python
  | @property
- | featurizer()
+ | featurizer() -> TrackerFeaturizer
 ```
 
 Returns the policy&#x27;s featurizer.

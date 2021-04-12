@@ -187,7 +187,7 @@ Returns a unique hash for the domain which is stable across python runs.
 
 ```python
  | @rasa.shared.utils.common.lazy_property
- | user_actions_and_forms()
+ | user_actions_and_forms() -> List[Text]
 ```
 
 Returns combination of user actions and forms.
@@ -214,7 +214,7 @@ Returns the number of available actions.
 
 ```python
  | @rasa.shared.utils.common.lazy_property
- | num_states()
+ | num_states() -> int
 ```
 
 Number of used input states for the action prediction.
@@ -562,6 +562,15 @@ This function preserves the orders of the keys in the domain.
 ```
 
 Return the configuration for an intent.
+
+#### intents
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | intents() -> List[Text]
+```
+
+Returns sorted list of intents.
 
 #### domain\_warnings
 

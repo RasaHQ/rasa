@@ -38,6 +38,14 @@ Create a new sklearn policy.
 - `shuffle` - Whether to shuffle training data.
 - `zero_state_features` - Contains default feature values for attributes
 
+#### model\_architecture
+
+```python
+ | model_architecture(**kwargs: Any) -> Any
+```
+
+Sets model parameters for training.
+
 #### predict\_action\_probabilities
 
 ```python

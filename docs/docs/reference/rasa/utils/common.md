@@ -144,6 +144,14 @@ class RepeatedLogFilter(logging.Filter)
 
 Filter repeated log records.
 
+#### filter
+
+```python
+ | filter(record: logging.LogRecord) -> bool
+```
+
+Determines whether current log is different to last log.
+
 #### run\_in\_loop
 
 ```python

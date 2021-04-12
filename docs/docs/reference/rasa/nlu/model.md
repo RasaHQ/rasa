@@ -68,6 +68,32 @@ Set `metadata` attribute.
 
 Proxy function to get property on `metadata` attribute.
 
+#### component\_classes
+
+```python
+ | @property
+ | component_classes() -> List[Optional[Text]]
+```
+
+Returns a list of component class names.
+
+#### number\_of\_components
+
+```python
+ | @property
+ | number_of_components() -> int
+```
+
+Returns count of components.
+
+#### for\_component
+
+```python
+ | for_component(index: int, defaults: Any = None) -> Dict[Text, Any]
+```
+
+Returns the configuration of the component based on index.
+
 #### language
 
 ```python

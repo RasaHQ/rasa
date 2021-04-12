@@ -169,7 +169,7 @@ Metaclass with `name` class property.
 
 ```python
  | @property
- | name(cls)
+ | name(cls) -> Text
 ```
 
 The name property is a function of the class - its __name__.

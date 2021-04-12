@@ -32,6 +32,14 @@ Creates a ``UserMessage`` object.
 - `message_id` - ID of the message.
 - `metadata` - additional metadata for this message.
 
+#### register
+
+```python
+register(input_channels: List["InputChannel"], app: Sanic, route: Optional[Text]) -> None
+```
+
+Registers input channel blueprints with Sanic.
+
 ## InputChannel Objects
 
 ```python

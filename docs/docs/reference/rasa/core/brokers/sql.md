@@ -34,7 +34,7 @@ Creates broker. See the parent class for more information.
 
 ```python
  | @contextlib.contextmanager
- | session_scope()
+ | session_scope() -> Generator[Session, None, None]
 ```
 
 Provide a transactional scope around a series of operations.
