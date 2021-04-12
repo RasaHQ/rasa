@@ -127,7 +127,7 @@ class Policy:
         self._rule_only_data = {}
 
     @property
-    def featurizer(self):
+    def featurizer(self) -> TrackerFeaturizer:
         """Returns the policy's featurizer."""
         return self.__featurizer
 
