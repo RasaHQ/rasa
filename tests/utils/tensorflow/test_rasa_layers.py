@@ -468,11 +468,9 @@ def test_correct_output_shape(
     layer_class: Callable[..., Any],
     model_config: Dict[Text, Any],
     layer_args: Dict[Text, Any],
-    layer_inputs: List[  # TODO really use List? Should be Tuple of variable length...
-        List[Union[tf.SparseTensor, tf.Tensor]]
-    ],
+    layer_inputs: List[List[Union[tf.SparseTensor, tf.Tensor]]],
     expected_output_shapes_train: List[List[int]],
-    expected_output_shapes_test: Union[Text, List[Union[int, List[int]]]],
+    expected_output_shapes_test: Union[Text, List[List[int]]],
 ) -> None:
     layer = layer_class(**layer_args, attribute=attribute_name, config=model_config,)
 

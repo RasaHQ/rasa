@@ -1014,6 +1014,7 @@ class TED(TransformerRasaModel):
         attribute_name: Text,
         attribute_signature: Dict[Text, List[FeatureSignature]],
     ) -> None:
+        """Prepares feature processing layers for sentence/sequence-level features."""
         # Attributes with sequence-level features also have sentence-level features,
         # all these need to be combined and further processed.
         if attribute_name in SEQUENCE_FEATURES_TO_ENCODE:
@@ -1190,6 +1191,24 @@ class TED(TransformerRasaModel):
     def _encode_fake_features_per_attribute(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        """Returns dummy outputs for fake features of a given attribute.
+        Needs to match the outputs of `_encode_real_features_per_attribute` in shape
+        but these outputs will be filled with zeros.
+
+        Args:
+            tf_batch_data: Maps each attribute to its features and masks.
+            attribute: The attribute whose fake features will be "processed", e.g.
+                `ACTION_NAME`, `INTENT`.
+
+        Returns:
+            attribute_features: A tensor of shape `(batch_size, dialogue_length, units)`
+                filled with zeros.
+            text_output: Only for `TEXT` attribute (otherwise an empty tensor): A tensor
+                of shape `(combined batch_size & dialogue_length, max seq length,
+                units)` filled with zeros.
+            text_sequence_lengths: Only for `TEXT` attribute, otherwise an empty tensor:
+                Of hape `(combined batch_size & dialogue_length, 1)`, filled with zeros.
+        """
         # we need to create real zero tensors with appropriate batch and dialogue dim
         # because they are passed to dialogue transformer
         attribute_mask = tf_batch_data[attribute][MASK][0]
@@ -1280,12 +1299,25 @@ class TED(TransformerRasaModel):
         """Encodes features for a given attribute.
 
         Args:
-            tf_batch_data: dictionary mapping every attribute to its features and masks
+            tf_batch_data: Maps each attribute to its features and masks.
             attribute: the attribute we will encode features for
                 (e.g., ACTION_NAME, INTENT)
 
         Returns:
-            A tensor combining  all features for `attribute`
+            attribute_features: A tensor of shape `(batch_size, dialogue_length, units)`
+                with all features for `attribute` processed and combined. If sequence-
+                level features are present, the sequence dimension is eliminated using
+                a transformer.
+            text_output: Only for `TEXT` attribute (otherwise an empty tensor): A tensor
+                of shape `(combined batch_size & dialogue_length, max seq length,
+                units)` containing token-level embeddings further used for entity
+                extraction from user text. Similar to `attribute_features` but returned
+                for all tokens, not just for the last one.
+            text_sequence_lengths: Only for `TEXT` attribute, otherwise an empty tensor:
+                Shape `(combined batch_size & dialogue_length, 1)`, containing the
+                sequence length for user text examples in `text_output`. The sequence
+                length is effectively the number of tokens + 1 (to account also for
+                sentence-level features). Needed for entity extraction from user text.
         """
         # simulate None with empty tensor of zeros
         text_output = tf.zeros((0,))

@@ -287,14 +287,12 @@ class RasaModel(TmpKerasModel):
     def _empty_lists_to_none_in_dict(input_dict: Dict[Text, Any]) -> Dict[Text, Any]:
         """Recursively replaces empty list or np array with None in a dictionary."""
 
-        def _recurse(x):
-            if not isinstance(x, dict):
-                if (isinstance(x, list) or isinstance(x, np.ndarray)) and np.size(
-                    x
-                ) == 0:
-                    return None
-                return x
-            return {k: _recurse(v) for k, v in x.items()}
+        def _recurse(x: Union[Dict[Text, Any], List[Any], np.ndarray]) -> Optional[Any]:
+            if isinstance(x, dict):
+                return {k: _recurse(v) for k, v in x.items()}
+            elif (isinstance(x, list) or isinstance(x, np.ndarray)) and np.size(x) == 0:
+                return None
+            return x
 
         return _recurse(input_dict)
 
