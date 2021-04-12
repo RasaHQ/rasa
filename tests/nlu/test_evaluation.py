@@ -367,7 +367,9 @@ def test_drop_intents_below_freq():
     assert clean_td.lookup_tables == td.lookup_tables
 
 
-@pytest.mark.timeout(300)  # these can take a longer time than the default timeout
+@pytest.mark.timeout(
+    300, func_only=True
+)  # these can take a longer time than the default timeout
 async def test_run_evaluation(
     unpacked_trained_moodbot_path: Text, nlu_as_json_path: Text
 ):
@@ -412,7 +414,9 @@ async def test_eval_data(
     assert len(entity_results) == 46
 
 
-@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
+@pytest.mark.timeout(
+    240, func_only=True
+)  # these can take a longer time than the default timeout
 def test_run_cv_evaluation(
     pretrained_embeddings_spacy_config: RasaNLUModelConfig, monkeypatch: MonkeyPatch
 ):
