@@ -10,7 +10,7 @@ from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
 
 if TYPE_CHECKING:
-    from twilio.rest.api.v2010.account.message import MessageInstance  # noqa: F401
+    from twilio.rest.api.v2010.account.message import MessageInstance
 
 logger = logging.getLogger(__name__)
 
