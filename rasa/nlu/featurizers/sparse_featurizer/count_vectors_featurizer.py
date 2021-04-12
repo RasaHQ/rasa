@@ -784,7 +784,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         return attribute_vocabularies
 
     @staticmethod
-    def _is_any_model_trained(attribute_vocabularies) -> bool:
+    def _is_any_model_trained(
+        attribute_vocabularies: Dict[Text, Optional[Dict[Text, int]]]
+    ) -> bool:
         """Check if any model got trained"""
 
         return any(value is not None for value in attribute_vocabularies.values())

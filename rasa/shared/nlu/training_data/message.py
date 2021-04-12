@@ -80,7 +80,7 @@ class Message:
         if add_to_output:
             self.output_properties.add(prop)
 
-    def get(self, prop, default=None) -> Any:
+    def get(self, prop: Text, default: Optional[Any] = None) -> Any:
         return self.data.get(prop, default)
 
     def as_dict_nlu(self) -> dict:
@@ -93,7 +93,7 @@ class Message:
         d.pop(INTENT_RESPONSE_KEY, None)
         return d
 
-    def as_dict(self, only_output_properties=False) -> dict:
+    def as_dict(self, only_output_properties: bool = False) -> Dict:
         if only_output_properties:
             d = {
                 key: value
@@ -107,7 +107,7 @@ class Message:
         # Message object in markdown format
         return {key: value for key, value in d.items() if value is not None}
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Message):
             return False
         else:

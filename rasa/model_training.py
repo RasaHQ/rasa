@@ -121,8 +121,10 @@ async def train_async(
 
 
 async def handle_domain_if_not_exists(
-    file_importer: TrainingDataImporter, output_path, fixed_model_name
-):
+    file_importer: TrainingDataImporter,
+    output_path: Text,
+    fixed_model_name: Optional[Text],
+) -> Text:
     """Trains only the nlu model and prints a warning about missing domain."""
     nlu_model_only = await _train_nlu_with_validated_data(
         file_importer, output=output_path, fixed_model_name=fixed_model_name
@@ -324,7 +326,7 @@ async def _do_training(
     old_model_zip_path: Optional[Text] = None,
     model_to_finetune: Optional["Text"] = None,
     finetuning_epoch_fraction: float = 1.0,
-):
+) -> None:
     if not fingerprint_comparison_result:
         fingerprint_comparison_result = FingerprintComparisonResult()
 
@@ -713,7 +715,7 @@ async def _train_nlu_with_validated_data(
     additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional["Text"] = None,
     finetuning_epoch_fraction: float = 1.0,
-) -> Optional[Text]:
+) -> Text:
     """Train NLU with validated training and config data."""
     import rasa.nlu.train
 
