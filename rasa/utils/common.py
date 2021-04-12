@@ -14,7 +14,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    NoReturn,
 )
 
 import rasa.utils.io

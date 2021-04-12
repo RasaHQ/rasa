@@ -1,8 +1,5 @@
-import os
-from typing import Any, Optional, Text
-from pathlib import Path
+from typing import Any, Text
 
-from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 
 

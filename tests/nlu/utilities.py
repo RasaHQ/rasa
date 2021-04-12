@@ -1,9 +1,6 @@
 import tempfile
 import ruamel.yaml as yaml
 
-from rasa.nlu.model import Interpreter
-from rasa.nlu.train import train
-
 
 def write_file_config(file_config):
     with tempfile.NamedTemporaryFile(

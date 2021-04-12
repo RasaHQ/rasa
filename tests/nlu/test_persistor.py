@@ -1,4 +1,3 @@
-import os
 from typing import Text
 
 import pytest
@@ -7,8 +6,6 @@ from unittest.mock import patch
 from moto import mock_s3
 
 from rasa.nlu import persistor
-import rasa.nlu.train
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.persistor import Persistor
 
 

@@ -24,7 +24,7 @@ from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
 from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
     MarkdownStoryWriter,
 )
-from rasa.shared.core.training_data.structures import Story, RuleStep
+from rasa.shared.core.training_data.structures import RuleStep
 
 
 async def test_persist_and_read_test_story_graph(tmp_path: Path, domain: Domain):

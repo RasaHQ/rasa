@@ -39,8 +39,6 @@ from rasa.shared.core.constants import (
     SLOTS,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
-    RULE_ONLY_SLOTS,
-    RULE_ONLY_LOOPS,
 )
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
 

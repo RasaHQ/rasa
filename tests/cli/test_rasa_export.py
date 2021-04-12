@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-from typing import Callable, Optional, Dict, Text, List, Tuple
+from typing import Callable, Optional, Text, List, Tuple
 from unittest.mock import Mock
 
 import pytest

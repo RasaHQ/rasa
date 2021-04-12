@@ -21,7 +21,7 @@ import rasa.shared.utils.io
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa import server
-from rasa.core import config
+from rasa.core import config as core_config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
@@ -294,7 +294,7 @@ def domain(_domain: Domain) -> Domain:
 
 @pytest.fixture(scope="session")
 def config(config_path: Text) -> List[Policy]:
-    return config.load(config_path)
+    return core_config.load(config_path)
 
 
 @pytest.fixture(scope="session")

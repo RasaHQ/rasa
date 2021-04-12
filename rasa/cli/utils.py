@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from types import FrameType
-from typing import Any, Dict, List, NoReturn, Optional, TYPE_CHECKING, Text
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
 
 from rasa.shared.constants import DEFAULT_MODELS_PATH
 import rasa.shared.utils.cli

@@ -50,7 +50,6 @@ from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     Event,
-    SlotSet,
     Restarted,
     ActionReverted,
     UserUtteranceReverted,

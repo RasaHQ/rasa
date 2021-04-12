@@ -1,7 +1,5 @@
-import asyncio
 import logging
 import os
-import tempfile
 import textwrap
 import uuid
 from functools import partial
@@ -781,9 +779,6 @@ def _write_stories_to_file(
     export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
 ) -> None:
     """Write the conversation of the conversation_id to the file paths."""
-    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-        YAMLStoryReader,
-    )
     from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
         YAMLStoryWriter,
     )

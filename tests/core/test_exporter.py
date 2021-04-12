@@ -1,11 +1,10 @@
 import uuid
 from pathlib import Path
-from typing import Optional, Dict, Any, Text, List
+from typing import Optional, Text, List
 from unittest.mock import Mock
 
 import pytest
 
-import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
 

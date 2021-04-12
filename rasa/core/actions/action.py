@@ -1,7 +1,7 @@
 import copy
 import json
 import logging
-from typing import List, Text, Optional, Dict, Any, Set, TYPE_CHECKING
+from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING
 
 import aiohttp
 

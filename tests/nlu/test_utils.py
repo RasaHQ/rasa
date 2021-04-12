@@ -1,4 +1,3 @@
-import io
 import os
 import pickle
 import pytest
@@ -6,12 +5,9 @@ import tempfile
 import shutil
 from typing import Text
 
-from rasa.shared.exceptions import RasaException
 import rasa.shared.nlu.training_data.message
 import rasa.shared.utils.io
-import rasa.utils.io as io_utils
 from rasa.nlu import utils
-from pathlib import Path
 
 
 @pytest.fixture(scope="function")

@@ -3,13 +3,13 @@ import logging
 import os
 import shutil
 import tarfile
-from typing import List, Optional, Text, Tuple, TYPE_CHECKING
+from typing import Optional, Text, Tuple, TYPE_CHECKING
 
 import rasa.shared.utils.common
 import rasa.utils.common
 
 if TYPE_CHECKING:
-    from azure.storage.blob import ContainerClient  # noqa: F401
+    from azure.storage.blob import ContainerClient
 
 logger = logging.getLogger(__name__)
 

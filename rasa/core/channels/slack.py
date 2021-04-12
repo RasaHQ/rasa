@@ -3,14 +3,13 @@ import hmac
 from http import HTTPStatus
 import json
 import logging
-import math
 import re
 import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.shared.constants import DOCS_URL_CONNECTORS_SLACK
-from rasa.shared.exceptions import InvalidConfigException, RasaException
+from rasa.shared.exceptions import InvalidConfigException
 import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
