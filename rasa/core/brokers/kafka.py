@@ -1,8 +1,7 @@
 import json
 import logging
-import time
 from asyncio import AbstractEventLoop
-from typing import Any, Text, List, Optional, Union
+from typing import Any, Text, List, Optional, Union, Dict
 import time
 
 from rasa.core.brokers.broker import EventBroker
@@ -88,7 +87,12 @@ class KafkaEventBroker(EventBroker):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def publish(self, event, retries=60, retry_delay_in_seconds=5) -> None:
+    def publish(
+        self,
+        event: Dict[Text, Any],
+        retries: int = 60,
+        retry_delay_in_seconds: float = 5,
+    ) -> None:
         """Publishes events."""
         if self.producer is None:
             self._create_producer()
@@ -173,8 +177,7 @@ class KafkaEventBroker(EventBroker):
                 f"Invalid `security_protocol` ('{self.security_protocol}')."
             )
 
-    def _publish(self, event) -> None:
-
+    def _publish(self, event: Dict[Text, Any]) -> None:
         if self.partition_by_sender:
             partition_key = bytes(event.get("sender_id"), encoding=DEFAULT_ENCODING)
         else:

@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict, Optional, Text, Match
+from typing import Any, Dict, Optional, Text, Match, List
 
 from rasa.shared.nlu.constants import (
     ENTITIES,
@@ -30,7 +30,7 @@ GROUP_COMPLETE_MATCH = 0
 
 
 def transform_entity_synonyms(
-    synonyms, known_synonyms: Optional[Dict[Text, Any]] = None
+    synonyms: List[Dict[Text, Any]], known_synonyms: Optional[Dict[Text, Any]] = None
 ) -> Dict[Text, Any]:
     """Transforms the entity synonyms into a text->value dictionary"""
     entity_synonyms = known_synonyms if known_synonyms else {}
