@@ -143,7 +143,9 @@ def _assert_max_timestamp_is_greater_than_min_timestamp(
 
 
 def _prepare_event_broker(event_broker: EventBroker) -> None:
-    """Sets `should_keep_unpublished_messages` flag to `False` if
+    """Prepares event broker to export tracker events.
+
+    Sets `should_keep_unpublished_messages` flag to `False` if
     `self.event_broker` is a `PikaEventBroker`.
 
     If publishing of events fails, the `PikaEventBroker` instance should not keep a
