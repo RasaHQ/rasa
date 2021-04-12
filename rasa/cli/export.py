@@ -13,6 +13,8 @@ from rasa.shared.constants import DOCS_URL_EVENT_BROKERS, DOCS_URL_TRACKER_STORE
 from rasa.exceptions import PublishingError
 from rasa.shared.exceptions import RasaException
 
+from rasa.core.policies.ted_policy import TEDPolicy
+
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
     from rasa.core.brokers.pika import PikaEventBroker
