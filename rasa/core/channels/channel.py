@@ -83,8 +83,8 @@ def register(
 ) -> None:
     """Registers input channel blueprints with Sanic."""
 
-    async def handler(*args: Any, **kwargs: Any) -> None:
-        await app.agent.handle_message(*args, **kwargs)
+    async def handler(message: UserMessage) -> None:
+        await app.agent.handle_message(message)
 
     for channel in input_channels:
         if route:
