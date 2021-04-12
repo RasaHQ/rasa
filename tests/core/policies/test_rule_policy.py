@@ -2883,6 +2883,7 @@ def test_rule_with_multiple_entities():
     policy = RulePolicy()
     policy.train([rule], domain, RegexInterpreter())
 
+    # the order of entities in the entities list doesn't matter for prediction
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered(
