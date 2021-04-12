@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import scipy.sparse
-from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set
+from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set, Union
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -704,7 +704,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         training_data: TrainingData,
         cfg: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> "CountVectorsFeaturizer":
         """Train the featurizer.
 
         Take parameters from config and
@@ -748,7 +748,18 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     training_data.training_examples,
                 )
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+        return self
+
+    def process_training_data(
+        self, trained_featurizer: "CountVectorsFeaturizer", training_data: TrainingData
+    ) -> TrainingData:
+
+        for message in training_data.training_examples:
+            trained_featurizer.process(message)
+
+        return training_data
+
+    def process(self, message: Message, **kwargs: Any,) -> None:
         """Process incoming message and compute and set features"""
 
         if self.vectorizers is None:
@@ -758,6 +769,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 "didn't receive enough training data"
             )
             return
+
         for attribute in self._attributes:
 
             message_tokens = self._get_processed_message_tokens_by_attribute(

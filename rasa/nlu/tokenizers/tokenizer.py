@@ -90,7 +90,7 @@ class Tokenizer(Component):
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> TrainingData:
         """Tokenize all training data."""
 
         for example in training_data.training_examples:
@@ -104,6 +104,8 @@ class Tokenizer(Component):
                     else:
                         tokens = self.tokenize(example, attribute)
                     example.set(TOKENS_NAMES[attribute], tokens)
+
+        return training_data
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Tokenize the incoming message."""

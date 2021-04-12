@@ -29,7 +29,7 @@ rasa_nlu_train_graph = {
     },
     "featurize": {
         "uses": CountVectorsFeaturizer,
-        "fn": "process",
+        "fn": "process_training_data",
         "config": {},
         "needs": ["train_featurizer", "tokenize"],
     },
@@ -65,7 +65,12 @@ def test_create_graph_with_rasa_syntax():
             "tokenize",
         ),
         "featurize": (
-            RasaComponent(CountVectorsFeaturizer, {}, "process", node_name="featurize"),
+            RasaComponent(
+                CountVectorsFeaturizer,
+                {},
+                "process_training_data",
+                node_name="featurize",
+            ),
             "train_featurizer",
             "tokenize",
         ),
@@ -81,3 +86,11 @@ def test_create_graph_with_rasa_syntax():
     }
 
     dask.visualize(dask_graph, filename="graph.png")
+
+
+def test_train_nlu():
+    trained_classifier = graph.run_as_dask_graph(
+        rasa_nlu_train_graph, "train_classifier"
+    )
+
+    assert isinstance(trained_classifier, DIETClassifier)

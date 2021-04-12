@@ -861,6 +861,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             shuffle=False,  # we use custom shuffle inside data generator
         )
 
+        return self
+
     # process helpers
     def _predict(
         self, message: Message

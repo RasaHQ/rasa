@@ -1,4 +1,6 @@
-from typing import Any, Text, Dict
+from typing import Any, Text, Dict, List, Union
+
+import dask
 
 from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -23,7 +25,7 @@ class RasaComponent:
         self._node_name = node_name
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        return self._run(*args, **kwargs)
+        return self._run(self._component, *args, **kwargs)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, RasaComponent):
@@ -38,6 +40,13 @@ class RasaComponent:
 
     def __repr__(self) -> Text:
         return f"{type(self._component)}.{self._fn_name}"
+
+
+def run_as_dask_graph(
+    rasa_graph: Dict[Text, Any], target_names: Union[Text, List[Text]]
+):
+    dask_graph = convert_to_dask_graph(rasa_graph)
+    return dask.get(dask_graph, target_names)
 
 
 def convert_to_dask_graph(rasa_graph: Dict[Text, Any]):
