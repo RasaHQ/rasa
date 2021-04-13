@@ -18,6 +18,7 @@ from rasa.core.constants import (
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, DEFAULT_DATA_PATH
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
+import rasa.utils.io
 from rasa.validator import Validator
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
@@ -155,7 +156,8 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
 
 def test_rasa_data_augment_nlu(run: Callable[..., RunResult],):
 
-    out_path = "data/augmentation_results"
+    tmp_path = rasa.utils.io.create_temporary_directory()
+    out_path = os.path.join(tmp_path, "augmentation_results")
     os.makedirs(out_path)
 
     data_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
