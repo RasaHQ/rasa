@@ -7,7 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional, Text, Type, Union, AnyStr
+from typing import Any, Dict, List, Optional, Text, Type, Union
 import warnings
 
 from ruamel import yaml as yaml
