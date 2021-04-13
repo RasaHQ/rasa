@@ -55,11 +55,13 @@ class RasaComponent:
     def validate_params_in_inputs(self, input_names, func):
         params = inspect.signature(func).parameters
         for param_name, param in params.items():
-            if param_name in ['self', 'args', 'kwargs']:
+            if param_name in ["self", "args", "kwargs"]:
                 continue
             if param.default is inspect._empty:
                 if param_name not in input_names:
-                    raise ValueError(f"{param_name} for function {func} is missing from inputs")
+                    raise ValueError(
+                        f"{param_name} for function {func} is missing from inputs"
+                    )
 
     def __call__(self, *args: Any) -> Dict[Text, Any]:
         received_inputs = dict(ChainMap(*args))
@@ -68,7 +70,9 @@ class RasaComponent:
             kwargs[input] = received_inputs[input_node]
 
         if not self._eager:
-            const_kwargs = rasa.shared.utils.common.minimal_kwargs(kwargs,self._constructor_fn)
+            const_kwargs = rasa.shared.utils.common.minimal_kwargs(
+                kwargs, self._constructor_fn
+            )
             self._component = self._constructor_fn(**const_kwargs)
 
         run_kwargs = rasa.shared.utils.common.minimal_kwargs(kwargs, self._run_fn)

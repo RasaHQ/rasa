@@ -1,3 +1,4 @@
+import os.path
 import logging
 import re
 from typing import Any, Dict, List, Optional, Text, Type, Tuple
@@ -16,6 +17,7 @@ from rasa.nlu.constants import (
     FEATURIZER_CLASS_ALIAS,
     MIN_ADDITIONAL_REGEX_PATTERNS,
 )
+import rasa.utils.train_utils
 from rasa.shared.nlu.constants import (
     TEXT,
     RESPONSE,
@@ -189,15 +191,13 @@ class RegexFeaturizer(SparseFeaturizer):
         else:
             self.known_patterns = patterns_from_data
 
-        return self
+        return self.persist(self._filename, self._model_dir)
 
-    def process_training_data(
-        self, trained_featurizer: "RegexFeaturizer", training_data: TrainingData
-    ) -> TrainingData:
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
 
         for example in training_data.training_examples:
             for attribute in [TEXT, RESPONSE, ACTION_TEXT]:
-                trained_featurizer._text_features_with_regex(example, attribute)
+                self._text_features_with_regex(example, attribute)
 
         return training_data
 
@@ -300,8 +300,8 @@ class RegexFeaturizer(SparseFeaturizer):
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
-        model_dir: Text,
+        filename: Text,
+        component_config: Dict[Text, Any] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["RegexFeaturizer"] = None,
         should_finetune: bool = False,
@@ -318,13 +318,17 @@ class RegexFeaturizer(SparseFeaturizer):
                 finetuning.
             **kwargs: Any other arguments.
         """
-        file_name = meta.get("file")
 
-        patterns_file_name = Path(model_dir) / (file_name + ".patterns.pkl")
+        if not component_config:
+            component_config = {}
 
-        vocabulary_stats_file_name = Path(model_dir) / (
-            file_name + ".vocabulary_stats.pkl"
+        component_config = rasa.utils.train_utils.override_defaults(
+            cls.defaults, component_config
         )
+
+        patterns_file_name = Path(filename + ".patterns.pkl")
+
+        vocabulary_stats_file_name = Path(filename + ".vocabulary_stats.pkl")
 
         known_patterns = None
         vocabulary_stats = None
@@ -336,13 +340,13 @@ class RegexFeaturizer(SparseFeaturizer):
             )
 
         return RegexFeaturizer(
-            meta,
+            component_config,
             known_patterns=known_patterns,
             pattern_vocabulary_stats=vocabulary_stats,
             finetune_mode=should_finetune,
         )
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self, file_name: Text, model_dir: Text) -> Text:
         """Persist this model into the passed directory.
 
         Args:
@@ -359,4 +363,4 @@ class RegexFeaturizer(SparseFeaturizer):
         vocabulary_file = Path(model_dir) / vocabulary_stats_file_name
         utils.write_json_to_file(vocabulary_file, self.vocabulary_stats, indent=4)
 
-        return {"file": file_name}
+        return os.path.join(model_dir, file_name)

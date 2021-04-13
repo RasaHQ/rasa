@@ -44,8 +44,6 @@ class EntitySynonymMapper(EntityExtractor):
                 entity_val = example.get(TEXT)[entity["start"] : entity["end"]]
                 self.add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
-        return self
-
     def process(self, message: Message, **kwargs: Any) -> None:
 
         updated_entities = message.get(ENTITIES, [])[:]

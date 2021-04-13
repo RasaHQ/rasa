@@ -448,7 +448,7 @@ class Component(metaclass=ComponentMetaclass):
     # This is an important feature for backwards compatibility of components.
     not_supported_language_list = None
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None,) -> None:
 
         if not component_config:
             component_config = {}
@@ -460,6 +460,9 @@ class Component(metaclass=ComponentMetaclass):
         self.component_config = rasa.utils.train_utils.override_defaults(
             self.defaults, component_config
         )
+
+        self._model_dir = component_config.get("model_dir")
+        self._filename = component_config.get("filename")
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None

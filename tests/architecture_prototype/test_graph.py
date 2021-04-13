@@ -28,34 +28,45 @@ rasa_nlu_train_graph = {
         "config": {},
         "needs": {"training_data": "load_data"},
     },
-    # "train_regex_featurizer": {
-    #     "uses": RegexFeaturizer,
-    #     "fn": "train",
-    #     "config": {},
-    #     "needs": ["tokenize"],
-    # },
-    # "add_regex_features": {
-    #     "uses": RegexFeaturizer,
-    #     "fn": "process_training_data",
-    #     "config": {},
-    #     "needs": ["train_regex_featurizer", "tokenize"],
-    # },
-    # "train_lexical_featurizer": {
-    #     "uses": LexicalSyntacticFeaturizer,
-    #     "fn": "train",
-    #     "config": {"component_config": {}},
-    #     "needs": ["tokenize"],
-    # },
-    # "add_lexical_features": {
-    #     "uses": LexicalSyntacticFeaturizer,
-    #     "fn": "process_training_data",
-    #     "config": {"component_config": {}},
-    #     "needs": ["train_lexical_featurizer", "add_regex_features"],
-    # },
+    "train_regex_featurizer": {
+        "uses": RegexFeaturizer,
+        "fn": "train",
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "regex_featurizer"}
+        },
+        "needs": {"training_data": "tokenize"},
+    },
+    "add_regex_features": {
+        "uses": RegexFeaturizer,
+        "fn": "process_training_data",
+        "config": {},
+        "needs": {"filename": "train_regex_featurizer", "training_data": "tokenize",},
+    },
+    "train_lexical_featurizer": {
+        "uses": LexicalSyntacticFeaturizer,
+        "fn": "train",
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "lexical_featurizer"}
+        },
+        "needs": {"training_data": "tokenize"},
+    },
+    "add_lexical_features": {
+        "uses": LexicalSyntacticFeaturizer,
+        "fn": "process_training_data",
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "lexical_featurizer"}
+        },
+        "needs": {
+            "training_data": "add_regex_features",
+            "filename": "train_lexical_featurizer",
+        },
+    },
     "train_count_featurizer1": {
         "uses": CountVectorsFeaturizer,
         "fn": "train",
-        "config": {"model_dir": "model", "filename": "count_featurizer1"},
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "count_featurizer1"}
+        },
         "needs": {"training_data": "tokenize"},
     },
     "add_count_features1": {
@@ -63,13 +74,20 @@ rasa_nlu_train_graph = {
         "constructor_name": "load",
         "eager": False,
         "fn": "process_training_data",
-        "config": {"model_dir": "model", "filename": "count_featurizer1"},
-        "needs": {"training_data": "tokenize", "filename": "train_count_featurizer1"},
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "count_featurizer1"}
+        },
+        "needs": {
+            "training_data": "add_lexical_features",
+            "filename": "train_count_featurizer1",
+        },
     },
     "train_count_featurizer2": {
         "uses": CountVectorsFeaturizer,
         "fn": "train",
-        "config": {"model_dir": "model", "filename": "count_featurizer2"},
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "count_featurizer2"}
+        },
         "needs": {"training_data": "tokenize"},
     },
     "add_count_features2": {
@@ -77,7 +95,9 @@ rasa_nlu_train_graph = {
         "constructor_name": "load",
         "eager": False,
         "fn": "process_training_data",
-        "config": {"model_dir": "model", "filename": "count_featurizer2"},
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "count_featurizer2"}
+        },
         "needs": {
             "filename": "train_count_featurizer2",
             "training_data": "add_count_features1",
@@ -116,6 +136,6 @@ def test_train_nlu():
         ["train_classifier", "train_response_selector", "train_synonym_mapper"],
     )
 
-    assert isinstance(trained_components['train_classifier'], DIETClassifier)
-    assert isinstance(trained_components['train_response_selector'], ResponseSelector)
-    assert isinstance(trained_components['train_synonym_mapper'], EntitySynonymMapper)
+    assert isinstance(trained_components["train_classifier"], DIETClassifier)
+    assert isinstance(trained_components["train_response_selector"], ResponseSelector)
+    assert isinstance(trained_components["train_synonym_mapper"], EntitySynonymMapper)

@@ -93,20 +93,16 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> Text:
         self.feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
         self.number_of_features = self._calculate_number_of_features()
 
-        return self
+        return self.persist(self._filename, self._model_dir)
 
-    def process_training_data(
-        self,
-        trained_featurizer: "LexicalSyntacticFeaturizer",
-        training_data: TrainingData,
-    ) -> TrainingData:
+    def process_training_data(self, training_data: TrainingData,) -> TrainingData:
 
         for example in training_data.training_examples:
-            trained_featurizer._create_sparse_features(example)
+            self._create_sparse_features(example)
 
         return training_data
 
@@ -302,11 +298,11 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
         return LexicalSyntacticFeaturizer(meta, feature_to_idx_dict=feature_to_idx_dict)
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self, file_name: Text, model_dir: Text) -> Text:
         """Persist this model into the passed directory.
         Return the metadata necessary to load the model again."""
 
         feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
         io_utils.json_pickle(feature_to_idx_file, self.feature_to_idx_dict)
 
-        return {"file": file_name}
+        return str(feature_to_idx_file)

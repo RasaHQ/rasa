@@ -213,14 +213,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         component_config: Optional[Dict[Text, Any]] = None,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
         finetune_mode: bool = False,
-        model_dir: Text = "",
-        filename: Text = "",
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
         super().__init__(component_config)
-
-        self._model_dir = model_dir
-        self._filename = filename
 
         # parameters for sklearn's CountVectorizer
         self._load_count_vect_params()
@@ -905,7 +900,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         if not component_config:
             component_config = {}
 
-        component_config = rasa.utils.train_utils.override_defaults(cls.defaults, component_config)
+        component_config = rasa.utils.train_utils.override_defaults(
+            cls.defaults, component_config
+        )
 
         if not os.path.exists(filename):
             return cls(component_config)
