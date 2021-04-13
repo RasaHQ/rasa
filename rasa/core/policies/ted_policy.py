@@ -1183,14 +1183,31 @@ class TED(TransformerRasaModel):
         ]
 
     def _create_all_labels_embed_for_training(
-        self, number_of_random_labels: int
+        self, sampled_candidate_label_ids: tf.Tensor, batch_label_ids: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor]:
 
-        all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
+        # Concatenate sampled candidate label ids and batch label ids and
+        # extract a unique and sorted set of label ids for which embeddings have to be computed.
+        concatenated_ids = tf.concat(
+            [
+                tf.reshape(sampled_candidate_label_ids, (-1,)),
+                tf.reshape(batch_label_ids, (-1,)),
+            ],
+            axis=0,
+        )
+        all_unique_label_ids = tf.sort(tf.unique(concatenated_ids)[0], axis=0)
 
-        if number_of_random_labels != -1:
+        # Compute embeddings for sampled labels
+        all_labels_embed = self._compute_embedding_for_label_ids(all_unique_label_ids)
+
+        return all_unique_label_ids, all_labels_embed
+
+    def _sample_candidate_label_ids(self, label_batch_size: int) -> tf.Tensor:
+        all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
+        if label_batch_size != -1:
 
             # First, sample a fixed number of random labels ids
+            # We use uniform candidate sampler because it has the ability to sample unique values
             total_num_label_ids = all_label_ids.shape[0]
             sampled_label_ids, _, _ = tf.random.uniform_candidate_sampler(
                 tf.reshape(
@@ -1198,31 +1215,97 @@ class TED(TransformerRasaModel):
                     shape=(1, -1),
                 ),
                 total_num_label_ids,
-                number_of_random_labels,
+                label_batch_size,
                 True,
                 total_num_label_ids,
             )
-            sampled_label_ids = tf.reshape(sampled_label_ids, (-1, 1))
+            sampled_label_ids = tf.cast(
+                tf.reshape(sampled_label_ids, (-1, 1)), dtype=tf.float32
+            )
 
         else:
             sampled_label_ids = all_label_ids
 
-        # Compute embeddings for sampled labels
-        sampled_labels_embed = self._compute_embedding_for_label_ids(sampled_label_ids)
+        return sampled_label_ids
 
-        return sampled_label_ids, sampled_labels_embed
+    @staticmethod
+    def _slice_sparse_tensor(input_tensor, selection_indices, axis=0):
+        """
+        Assume input_tensor is:
+            indices = [[0, 0], [2, 2], [2, 3], [3, 1]]
+            values = [1, 2, 2, 3]
+            original_shape = [4, 5]
+        Assume selection_indices is: [3,2]
+        Assume axis is 0
+
+        Note: Entries in selection_indices should be unique and sorted. If not, this implementation will fail.
+
+        Args:
+            input_tensor:
+            selection_indices:
+            axis:
+
+        Returns:
+
+        """
+        n_indices = tf.size(selection_indices)  # (2)
+
+        # Get indices for the axis
+        selection_axis_indices = input_tensor.indices[:, axis]  # [0, 2, 2, 3]
+
+        # Find where indices match the selection
+        eq = tf.equal(
+            tf.expand_dims(selection_axis_indices, 1),
+            tf.cast(selection_indices, tf.int64),
+        )  # [[0, 0], [1, 0], [1, 0], [0, 1]]
+
+        # Mask for selected values
+        sel = tf.reduce_any(eq, axis=1)  # [0, 1, 1 ,1]
+
+        # Selected values
+        selected_values = tf.boolean_mask(input_tensor.values, sel, axis=0)  # [2, 2, 3]
+
+        # Construct the new index values for axis on which selection has been made.
+        n_indices = tf.cast(n_indices, tf.int64)
+        selection_axis_indices_new = tf.reduce_sum(
+            tf.cast(eq, tf.int64) * tf.range(n_indices), axis=1
+        )  # [0, 0, 0, 1]
+        selection_axis_indices_new = tf.boolean_mask(
+            selection_axis_indices_new, sel, axis=0
+        )  # [0, 0, 1]
+
+        # New full indices tensor
+        indices_new = tf.boolean_mask(
+            input_tensor.indices, sel, axis=0
+        )  # [[2,2], [2,3], [3,1]]
+        indices_new = tf.concat(
+            [
+                indices_new[:, :axis],
+                tf.expand_dims(selection_axis_indices_new, 1),
+                indices_new[:, axis + 1 :],
+            ],
+            axis=1,
+        )  # [[0,2], [0,3], [0,1]]
+        # New shape
+        shape_new = tf.concat(
+            [
+                input_tensor.dense_shape[:axis],
+                [n_indices],
+                input_tensor.dense_shape[axis + 1 :],
+            ],
+            axis=0,
+        )  # [2, 5]
+        return tf.SparseTensor(indices_new, selected_values, shape_new)
 
     def _slice_tensor(
         self, tensor: Union[tf.Tensor, tf.SparseTensor], indices: tf.Tensor
     ) -> Union[tf.Tensor, tf.SparseTensor]:
         if isinstance(tensor, tf.Tensor):
-            return tf.gather_nd(tensor, tf.cast(indices, dtype=tf.int32))
+            return tf.gather(tensor, tf.cast(indices, dtype=tf.int32))
         elif isinstance(tensor, tf.SparseTensor):
-            dense_tensor = tf.sparse.to_dense(tensor)
-            sliced_tensor = tf.gather_nd(dense_tensor, tf.cast(indices, dtype=tf.int32))
-            return tf.sparse.from_dense(sliced_tensor)
+            return self._slice_sparse_tensor(tensor, indices)
 
-    def _compute_embedding_for_label_ids(self, label_ids):
+    def _compute_embedding_for_label_ids(self, label_ids: tf.Tensor):
 
         filtered_label_data = {}
 
@@ -1811,15 +1894,20 @@ class TED(TransformerRasaModel):
 
     @staticmethod
     def _get_labels_embed(
-        label_ids: tf.Tensor, all_labels_embed: tf.Tensor
+        selection_ids, all_label_ids: tf.Tensor, all_labels_embed: tf.Tensor
     ) -> tf.Tensor:
         # instead of processing labels again, gather embeddings from
         # all_labels_embed using label ids
 
-        indices = tf.cast(label_ids[:, :, 0], tf.int32)
-        labels_embed = tf.gather(all_labels_embed, indices)
+        selection_ids = tf.reshape(selection_ids, (-1,))
 
-        return labels_embed
+        # Find indices inside all_label_ids where selection_ids is equal to all_label_ids
+        indices = tf.where(
+            tf.transpose(
+                tf.equal(tf.expand_dims(all_label_ids, 1), selection_ids), (1, 0)
+            )
+        )[:, 1]
+        return tf.gather(all_labels_embed, indices)
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -1837,16 +1925,25 @@ class TED(TransformerRasaModel):
 
         batch_label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
+        sampled_label_ids = self._sample_candidate_label_ids(
+            label_batch_size=self.config[LABEL_BATCH_SIZE]
+        )  # [label_bs, 1]
+
         (
-            sampled_label_ids,
-            sampled_labels_embed,
+            all_unique_label_ids,
+            all_labels_embed,
         ) = self._create_all_labels_embed_for_training(
-            number_of_random_labels=self.config[LABEL_BATCH_SIZE]
+            sampled_label_ids, batch_label_ids
         )
 
-        batch_labels_embed = self._compute_embedding_for_label_ids(
-            tf.squeeze(batch_label_ids, axis=-2)
+        # Collect embeddings for sampled label ids and batch label ids from embeddings for all labels
+        batch_labels_embed = self._get_labels_embed(
+            batch_label_ids, all_unique_label_ids, all_labels_embed
         )
+        sampled_labels_embed = self._get_labels_embed(
+            sampled_label_ids, all_unique_label_ids, all_labels_embed
+        )
+
         # Add back the sequence dimension
         batch_labels_embed = tf.expand_dims(batch_labels_embed, axis=1)
 
@@ -1909,6 +2006,7 @@ class TED(TransformerRasaModel):
                 batch_label_ids = all_label_ids[
                     index : index + self.config[LABEL_BATCH_SIZE]
                 ]
+                batch_label_ids = tf.reshape(batch_label_ids, (-1,))
                 batch_label_embeds = self._compute_embedding_for_label_ids(
                     batch_label_ids
                 )

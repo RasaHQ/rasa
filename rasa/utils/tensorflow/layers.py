@@ -647,11 +647,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
     def _get_negs(
-        self,
-        embeds: tf.Tensor,
-        labels: tf.Tensor,
-        target_labels: tf.Tensor,
-        use_label_ids_for_sampling=False,
+        self, embeds: tf.Tensor, labels: tf.Tensor, target_labels: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Get negative examples from given tensor."""
 
@@ -659,12 +655,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         labels_flat = self._make_flat(labels)
         target_labels_flat = self._make_flat(target_labels)
 
-        # Todo: We can just use labels_flat here I think
-        total_candidates = (
-            tf.shape(labels_flat)[0]
-            if use_label_ids_for_sampling
-            else tf.shape(embeds_flat)[0]
-        )
+        total_candidates = tf.shape(embeds_flat)[0]
         target_size = tf.shape(target_labels_flat)[0]
 
         neg_ids = self._random_indices(target_size, total_candidates)
@@ -701,7 +692,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         neg_inputs_embed, inputs_bad_negs = self._get_negs(inputs_embed, labels, labels)
         # sample negative labels
         neg_labels_embed, labels_bad_negs = self._get_negs(
-            all_labels_embed, all_labels, labels, use_label_ids_for_sampling=True
+            all_labels_embed, all_labels, labels
         )
         return (
             pos_inputs_embed,
