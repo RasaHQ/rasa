@@ -16,7 +16,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -173,7 +173,7 @@ class MemoizationPolicy(Policy):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> None:
         # only considers original trackers (no augmented ones)

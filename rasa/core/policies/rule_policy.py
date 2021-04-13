@@ -16,7 +16,7 @@ from rasa.shared.core.events import (
     Event,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData, PolicyPrediction
 from rasa.shared.core.trackers import (
@@ -764,7 +764,7 @@ class RulePolicy(MemoizationPolicy):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers.

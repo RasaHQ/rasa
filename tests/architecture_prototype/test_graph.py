@@ -1,7 +1,15 @@
 import dask
 
 from rasa.architecture_prototype import graph
-from rasa.architecture_prototype.graph import TrainingDataReader, RasaComponent
+from rasa.architecture_prototype.graph import (
+    DomainReader,
+    StoryReader,
+    TrainingDataReader,
+    RasaComponent,
+)
+from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
@@ -19,7 +27,7 @@ rasa_nlu_train_graph = {
     "load_data": {
         "uses": TrainingDataReader,
         "fn": "read",
-        "config": {"filename": "examples/moodbot/data/nlu.yml"},
+        "config": {"project": "examples/moodbot"},
         "needs": {},
     },
     "tokenize": {
@@ -131,11 +139,50 @@ def test_create_graph_with_rasa_syntax():
 
 
 def test_train_nlu():
-    trained_components = graph.run_as_dask_graph(
+    graph.run_as_dask_graph(
         rasa_nlu_train_graph,
         ["train_classifier", "train_response_selector", "train_synonym_mapper"],
     )
 
-    assert isinstance(trained_components["train_classifier"], DIETClassifier)
-    assert isinstance(trained_components["train_response_selector"], ResponseSelector)
-    assert isinstance(trained_components["train_synonym_mapper"], EntitySynonymMapper)
+
+full_model_train_graph = {
+    "load_domain": {
+        "uses": DomainReader,
+        "fn": "read",
+        "config": {"project": "examples/moodbot"},
+        "needs": {},
+    },
+    "load_stories": {
+        "uses": StoryReader,
+        "fn": "read",
+        "config": {"project": "examples/moodbot"},
+        "needs": {"domain": "load_domain"},
+    },
+    "train_memoization_policy": {
+        "uses": MemoizationPolicy,
+        "fn": "train",
+        "config": {},
+        "needs": {"training_trackers": "load_stories", "domain": "load_domain"},
+    },
+    "train_rule_policy": {
+        "uses": RulePolicy,
+        "fn": "train",
+        "config": {},
+        "needs": {"training_trackers": "load_stories", "domain": "load_domain"},
+    },
+    "train_ted_policy": {
+        "uses": TEDPolicy,
+        "fn": "train",
+        "config": {},
+        "needs": {"training_trackers": "load_stories", "domain": "load_domain"},
+    },
+}
+
+
+def test_train_full_model():
+    trained_components = graph.run_as_dask_graph(
+        full_model_train_graph,
+        ["train_memoization_policy", "train_ted_policy", "train_rule_policy"],
+    )
+
+    print(trained_components)

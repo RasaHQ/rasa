@@ -36,7 +36,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.constants import DIAGNOSTIC_DATA
@@ -499,7 +499,7 @@ class TEDPolicy(Policy):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
