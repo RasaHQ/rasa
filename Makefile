@@ -102,26 +102,7 @@ lint-security:
 	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
 
 types:
-	# FIXME: working our way towards removing these
-	# see https://github.com/RasaHQ/rasa/pull/6470
-	# the list below is sorted by the number of errors for each error code, in decreasing order
-	MYPYPATH=./stubs poetry run mypy rasa --disable-error-code arg-type \
-	--disable-error-code assignment \
-	--disable-error-code var-annotated \
-	--disable-error-code return-value \
-	--disable-error-code union-attr \
-	--disable-error-code override \
-	--disable-error-code operator \
-	--disable-error-code attr-defined \
-	--disable-error-code index \
-	--disable-error-code misc \
-	--disable-error-code return \
-	--disable-error-code type-var \
-	--disable-error-code has-type \
-	--disable-error-code valid-type \
-	--disable-error-code no-redef \
-	--disable-error-code func-returns-value \
-	--disallow-untyped-calls
+	poetry run mypy rasa
 
 static-checks: lint lint-security types
 
@@ -198,6 +179,9 @@ test-full-model-training: test-marker
 
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests
 test-other-unit-tests: test-marker
+
+test-performance: PYTEST_MARKER=category_performance
+test-performance: test-marker
 
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload

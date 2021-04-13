@@ -94,7 +94,7 @@ class SpacyNLP(Component):
     @staticmethod
     def _check_model_fallback(
         spacy_model_name: Union[str, None], language_name: str, warn: bool = False
-    ):
+    ) -> Text:
         """This method checks if the `spacy_model_name` is missing.
 
         If it is missing, we will attempt a fallback. This feature is a measure
@@ -293,12 +293,12 @@ class SpacyNLP(Component):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: "Metadata" = None,
         cached_component: Optional["SpacyNLP"] = None,
         **kwargs: Any,
     ) -> "SpacyNLP":
-
+        """Loads trained component (see parent class for full docstring)."""
         if cached_component:
             return cached_component
 

@@ -66,7 +66,7 @@ class Metadata:
     """Captures all information about a model to load and prepare it."""
 
     @staticmethod
-    def load(model_dir: Text):
+    def load(model_dir: Text) -> "Metadata":
         """Loads the metadata from a models directory.
 
         Args:
@@ -84,7 +84,7 @@ class Metadata:
                 f"Failed to load model metadata from '{abspath}'. {e}"
             )
 
-    def __init__(self, metadata: Dict[Text, Any]):
+    def __init__(self, metadata: Dict[Text, Any]) -> None:
         """Set `metadata` attribute."""
         self.metadata = metadata
 
@@ -93,17 +93,20 @@ class Metadata:
         return self.metadata.get(property_name, default)
 
     @property
-    def component_classes(self):
+    def component_classes(self) -> List[Optional[Text]]:
+        """Returns a list of component class names."""
         if self.get("pipeline"):
             return [c.get("class") for c in self.get("pipeline", [])]
         else:
             return []
 
     @property
-    def number_of_components(self):
+    def number_of_components(self) -> int:
+        """Returns count of components."""
         return len(self.get("pipeline", []))
 
     def for_component(self, index: int, defaults: Any = None) -> Dict[Text, Any]:
+        """Returns the configuration of the component based on index."""
         return component_config_from_pipeline(index, self.get("pipeline", []), defaults)
 
     @property
@@ -112,7 +115,7 @@ class Metadata:
 
         return self.get("language")
 
-    def persist(self, model_dir: Text):
+    def persist(self, model_dir: Text) -> None:
         """Persists the metadata of a model to a given directory."""
 
         metadata = self.metadata.copy()

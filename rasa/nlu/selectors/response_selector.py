@@ -539,7 +539,7 @@ class ResponseSelector(DIETClassifier):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["ResponseSelector"] = None,
         **kwargs: Any,

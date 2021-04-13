@@ -47,12 +47,12 @@ class MattermostBot(OutputChannel):
 
         super(MattermostBot, self).__init__()
 
-    def _post_message_to_channel(self, channel_id: Text, message: Text):
+    def _post_message_to_channel(self, channel_id: Text, message: Text) -> Response:
         return self._post_data_to_channel(
             {"channel_id": channel_id, "message": message}
         )
 
-    def _post_data_to_channel(self, data) -> Response:
+    def _post_data_to_channel(self, data: Dict[Text, Any]) -> Response:
         """Send a message to a mattermost channel."""
 
         headers = {"Authorization": "Bearer " + self.token}
@@ -202,7 +202,7 @@ class MattermostInput(InputChannel):
         bot_channel: Text,
         metadata: Optional[Dict],
         on_new_message: Callable[[UserMessage], Awaitable[None]],
-    ):
+    ) -> None:
         try:
             out_channel = MattermostBot(
                 self.url, self.token, bot_channel, self.webhook_url

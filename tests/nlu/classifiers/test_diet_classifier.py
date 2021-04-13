@@ -28,6 +28,7 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_DIR,
     EVAL_NUM_EPOCHS,
     EVAL_NUM_EXAMPLES,
+    CONSTRAIN_SIMILARITIES,
     CHECKPOINT_MODEL,
     BILOU_FLAG,
     ENTITY_RECOGNITION,
@@ -195,6 +196,7 @@ async def _train_persist_load_with_different_settings(
 
 
 @pytest.mark.skip_on_windows
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_different_settings_non_windows(
     component_builder: ComponentBuilder, tmp_path: Path
 ):
@@ -215,6 +217,7 @@ async def test_train_persist_load_with_different_settings_non_windows(
     )
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_different_settings(component_builder, tmpdir):
     pipeline = [
         {"name": "WhitespaceTokenizer"},
@@ -229,6 +232,7 @@ async def test_train_persist_load_with_different_settings(component_builder, tmp
     )
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_only_entity_recognition(
     component_builder, tmpdir
 ):
@@ -250,6 +254,7 @@ async def test_train_persist_load_with_only_entity_recognition(
     )
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_only_intent_classification(
     component_builder, tmpdir
 ):
@@ -465,6 +470,7 @@ async def test_margin_loss_is_not_normalized(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_set_random_seed(component_builder, tmpdir, nlu_as_json_path: Text):
     """test if train result is the same for two runs of tf embedding"""
 
@@ -503,9 +509,12 @@ async def test_set_random_seed(component_builder, tmpdir, nlu_as_json_path: Text
     assert result_a == result_b
 
 
-@pytest.mark.parametrize("log_level", ["epoch", "batch", "minibatch"])
+@pytest.mark.parametrize("log_level", ["epoch", "batch"])
 async def test_train_tensorboard_logging(
-    log_level: Text, component_builder: ComponentBuilder, tmpdir: Path
+    log_level: Text,
+    component_builder: ComponentBuilder,
+    tmpdir: Path,
+    nlu_data_path: Text,
 ):
     tensorboard_log_dir = Path(tmpdir / "tensorboard")
 
@@ -515,12 +524,21 @@ async def test_train_tensorboard_logging(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "CountVectorsFeaturizer",
+                    "analyzer": "char_wb",
+                    "min_ngram": 3,
+                    "max_ngram": 17,
+                    "max_features": 10,
+                    "min_df": 5,
+                },
                 {
                     "name": "DIETClassifier",
                     EPOCHS: 1,
                     TENSORBOARD_LOG_LEVEL: log_level,
                     TENSORBOARD_LOG_DIR: str(tensorboard_log_dir),
+                    MODEL_CONFIDENCE: "linear_norm",
+                    CONSTRAIN_SIMILARITIES: True,
                     EVAL_NUM_EXAMPLES: 15,
                     EVAL_NUM_EPOCHS: 1,
                 },
@@ -532,7 +550,7 @@ async def test_train_tensorboard_logging(
     await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
-        data="data/examples/rasa/demo-rasa-multi-intent.yml",
+        data=nlu_data_path,
         component_builder=component_builder,
     )
 
@@ -543,7 +561,7 @@ async def test_train_tensorboard_logging(
 
 
 async def test_train_model_checkpointing(
-    component_builder: ComponentBuilder, tmpdir: Path
+    component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-checkpointed-model"
     best_model_file = Path(str(tmpdir), model_name)
@@ -553,12 +571,19 @@ async def test_train_model_checkpointing(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "CountVectorsFeaturizer",
+                    "analyzer": "char_wb",
+                    "min_ngram": 3,
+                    "max_ngram": 17,
+                    "max_features": 10,
+                    "min_df": 5,
+                },
                 {
                     "name": "DIETClassifier",
                     EPOCHS: 5,
-                    EVAL_NUM_EXAMPLES: 10,
-                    EVAL_NUM_EPOCHS: 1,
+                    CONSTRAIN_SIMILARITIES: True,
+                    MODEL_CONFIDENCE: "linear_norm",
                     CHECKPOINT_MODEL: True,
                 },
             ],
@@ -569,7 +594,7 @@ async def test_train_model_checkpointing(
     await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
-        data="data/examples/rasa/demo-rasa.yml",
+        data=nlu_data_path,
         component_builder=component_builder,
         fixed_model_name=model_name,
     )
@@ -595,6 +620,7 @@ async def test_train_model_checkpointing(
         {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
     ],
 )
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_composite_entities(
     classifier_params, component_builder, tmpdir
 ):
@@ -623,14 +649,11 @@ async def test_train_persist_load_with_composite_entities(
     assert loaded.parse(text) == trained.parse(text)
 
 
-async def test_process_gives_diagnostic_data(trained_nlu_moodbot_path: Text,):
+async def test_process_gives_diagnostic_data(
+    response_selector_interpreter: Interpreter,
+):
     """Tests if processing a message returns attention weights as numpy array."""
-    with rasa.model.unpack_model(trained_nlu_moodbot_path) as unpacked_model_directory:
-        _, nlu_model_directory = rasa.model.get_model_subdirectories(
-            unpacked_model_directory
-        )
-        interpreter = Interpreter.load(nlu_model_directory)
-
+    interpreter = response_selector_interpreter
     message = Message(data={TEXT: "hello"})
     for component in interpreter.pipeline:
         component.process(message)
@@ -638,7 +661,7 @@ async def test_process_gives_diagnostic_data(trained_nlu_moodbot_path: Text,):
     diagnostic_data = message.get(DIAGNOSTIC_DATA)
 
     # The last component is DIETClassifier, which should add attention weights
-    name = f"component_{len(interpreter.pipeline) - 1}_DIETClassifier"
+    name = f"component_{len(interpreter.pipeline) - 2}_DIETClassifier"
     assert isinstance(diagnostic_data, dict)
     assert name in diagnostic_data
     assert "attention_weights" in diagnostic_data[name]

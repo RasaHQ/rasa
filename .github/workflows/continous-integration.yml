@@ -72,9 +72,15 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Test Documentation
-          ref: ${{ github.head_ref || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
+
+      - name: Fail the step if the doc tests run could not be found
+        if: ${{ steps.wait-for-doc-tests.outputs.conclusion == 'timed_out' }}
+        run: |
+          echo "Could not find the doc tests run."
+          exit 1
 
 
   quality:
@@ -129,6 +135,11 @@ jobs:
         # can calculate the proper diff between the branches
         git fetch --unshallow origin "${{ github.ref }}"
 
+    - name: Add github workflow problem matchers
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        echo "::add-matcher::.github/matchers/flake8-error-matcher.json"
+
     - name: Lint Code 🎎
       if: needs.changes.outputs.backend == 'true'
       run: |
@@ -163,6 +174,7 @@ jobs:
         - test-nlu-predictors
         - test-full-model-training
         - test-other-unit-tests
+        - test-performance
         os: [ ubuntu-latest, windows-latest ]
         python-version: [ 3.6, 3.7, 3.8 ]
 
@@ -241,6 +253,14 @@ jobs:
         }
         make install-full
         make prepare-tests-windows
+
+    - name: Add github workflow problem matchers
+      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os == 'ubuntu-latest'
+      # only annotate based on test runs on ubuntu: otherwise
+      # all errors will be duplicated for each python / os combination
+      # therefore, we only enable for the one where most tests are run
+      # (tests will still run in other envs, they will just not create annotations)
+      run: pip install pytest-github-actions-annotate-failures
 
     - name: Test Code 🔍
       if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')

@@ -17,19 +17,19 @@ def print_color(*args: Any, color: Text) -> None:
         print(output)
 
 
-def print_success(*args: Any):
+def print_success(*args: Any) -> None:
     print_color(*args, color=rasa.shared.utils.io.bcolors.OKGREEN)
 
 
-def print_info(*args: Any):
+def print_info(*args: Any) -> None:
     print_color(*args, color=rasa.shared.utils.io.bcolors.OKBLUE)
 
 
-def print_warning(*args: Any):
+def print_warning(*args: Any) -> None:
     print_color(*args, color=rasa.shared.utils.io.bcolors.WARNING)
 
 
-def print_error(*args: Any):
+def print_error(*args: Any) -> None:
     print_color(*args, color=rasa.shared.utils.io.bcolors.FAIL)
 
 
