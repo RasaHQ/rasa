@@ -25,7 +25,7 @@ spec:
       terminationGracePeriodSeconds: 180
       containers:
       - name: github-runner
-        image: {{getenv "GH_RUNNER_IMAGE"}}:latest
+        image: {{getenv "GH_RUNNER_IMAGE"}}:ubuntu20.04
         imagePullPolicy: Always
         livenessProbe:
           initialDelaySeconds: 30
