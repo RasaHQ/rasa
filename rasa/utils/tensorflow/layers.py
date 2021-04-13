@@ -801,7 +801,10 @@ class DotProductLoss(tf.keras.layers.Layer):
         sim_neg_li: tf.Tensor,
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
-        """Define max margin loss."""
+        """Define max margin loss.
+
+        Can be interpreted as Triplet loss from https://arxiv.org/abs/1503.03832
+        """
 
         # loss for maximizing similarity with correct label
         # we have 4 negative losses, so this serves as 4 anchors in triplet loss
