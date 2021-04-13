@@ -805,7 +805,6 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         Can be interpreted as Triplet loss from https://arxiv.org/abs/1503.03832
         """
-
         # loss for maximizing similarity with correct label
         # we have 4 negative losses, so this serves as 4 anchors in triplet loss
         loss = 4 * tf.maximum(0.0, self.mu_pos - tf.squeeze(sim_pos, axis=-1))
