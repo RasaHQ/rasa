@@ -284,6 +284,12 @@ full_model_train_graph = {
 }
 
 
+def test_visualize_e2e_graph():
+    dask_graph = graph.convert_to_dask_graph(full_model_train_graph)
+
+    dask.visualize(dask_graph, filename="e2e_graph.png")
+
+
 def test_train_full_model():
     trained_components = graph.run_as_dask_graph(
         full_model_train_graph,
