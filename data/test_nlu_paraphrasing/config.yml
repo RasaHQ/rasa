@@ -1,13 +1,8 @@
 language: "en"
 pipeline:
   - name: WhitespaceTokenizer
-  - name: LexicalSyntacticFeaturizer
   - name: CountVectorsFeaturizer
-  - name: CountVectorsFeaturizer
-    analyzer: char_wb
-    min_ngram: 1
-    max_ngram: 4
   - name: DIETClassifier
-    epochs: 3
+    epochs: 1
     entity_recognition: False
     intent_classification: True
