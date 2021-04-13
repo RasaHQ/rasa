@@ -73,7 +73,6 @@ from rasa.utils.tensorflow.constants import (
     DROP_RATE,
     DROP_RATE_ATTENTION,
     WEIGHT_SPARSITY,
-    NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
     USE_MAX_NEG_SIM,
@@ -200,10 +199,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # ## Regularization parameters
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.002,
-        # The scale of how important is to minimize the maximum similarity
-        # between embeddings of different labels,
-        # used only if 'loss_type' is set to 'margin'.
-        NEGATIVE_MARGIN_SCALE: 0.8,
         # Dropout rate for encoder
         DROP_RATE: 0.2,
         # Dropout rate for attention

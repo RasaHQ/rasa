@@ -546,7 +546,6 @@ class DotProductLoss(tf.keras.layers.Layer):
         mu_pos: float,
         mu_neg: float,
         use_max_sim_neg: bool,
-        neg_lambda: float,
         scale_loss: bool,
         similarity_type: Text,
         name: Optional[Text] = None,
@@ -568,9 +567,6 @@ class DotProductLoss(tf.keras.layers.Layer):
                 should be -1.0 < ... < 1.0 for 'cosine' similarity type.
             use_max_sim_neg: Boolean, if 'True' the algorithm only minimizes
                 maximum similarity over incorrect intent labels,
-                used only if 'loss_type' is set to 'margin'.
-            neg_lambda: Float, the scale of how important is to minimize
-                the maximum similarity between embeddings of different labels,
                 used only if 'loss_type' is set to 'margin'.
             scale_loss: Boolean, if 'True' scale loss inverse proportionally to
                 the confidence of the correct prediction.
@@ -595,7 +591,6 @@ class DotProductLoss(tf.keras.layers.Layer):
         self.mu_pos = mu_pos
         self.mu_neg = mu_neg
         self.use_max_sim_neg = use_max_sim_neg
-        self.neg_lambda = neg_lambda
         self.scale_loss = scale_loss
         self.same_sampling = same_sampling
         self.constrain_similarities = constrain_similarities
@@ -808,36 +803,28 @@ class DotProductLoss(tf.keras.layers.Layer):
     ) -> tf.Tensor:
         """Define max margin loss."""
 
-        # loss for maximizing similarity with correct action
-        loss = tf.maximum(0.0, self.mu_pos - tf.squeeze(sim_pos, axis=-1))
+        # loss for maximizing similarity with correct label
+        # we have 4 negative losses, so this serves as 4 anchors in triplet loss
+        loss = 4 * tf.maximum(0.0, self.mu_pos - tf.squeeze(sim_pos, axis=-1))
 
-        # loss for minimizing similarity with `num_neg` incorrect actions
+        # loss for minimizing similarity with `num_neg` incorrect labels
         if self.use_max_sim_neg:
-            # minimize only maximum similarity over incorrect actions
+            # minimize only maximum similarity over incorrect labels
             max_sim_neg_il = tf.reduce_max(sim_neg_il, axis=-1)
             loss += tf.maximum(0.0, self.mu_neg + max_sim_neg_il)
         else:
-            # minimize all similarities with incorrect actions
+            # minimize all similarities with incorrect labels
             max_margin = tf.maximum(0.0, self.mu_neg + sim_neg_il)
             loss += tf.reduce_sum(max_margin, axis=-1)
 
-        # penalize max similarity between pos bot and neg bot embeddings
-        max_sim_neg_ll = tf.maximum(
-            0.0, self.mu_neg + tf.reduce_max(sim_neg_ll, axis=-1)
-        )
-        loss += max_sim_neg_ll * self.neg_lambda
+        # penalize max similarity between pos label and neg label embeddings
+        loss += tf.maximum(0.0, self.mu_neg + tf.reduce_max(sim_neg_ll, axis=-1))
 
-        # penalize max similarity between pos dial and neg dial embeddings
-        max_sim_neg_ii = tf.maximum(
-            0.0, self.mu_neg + tf.reduce_max(sim_neg_ii, axis=-1)
-        )
-        loss += max_sim_neg_ii * self.neg_lambda
+        # penalize max similarity between pos example and neg example embeddings
+        loss += tf.maximum(0.0, self.mu_neg + tf.reduce_max(sim_neg_ii, axis=-1))
 
-        # penalize max similarity between pos bot and neg dial embeddings
-        max_sim_neg_li = tf.maximum(
-            0.0, self.mu_neg + tf.reduce_max(sim_neg_li, axis=-1)
-        )
-        loss += max_sim_neg_li * self.neg_lambda
+        # penalize max similarity between pos label and neg example embeddings
+        loss += tf.maximum(0.0, self.mu_neg + tf.reduce_max(sim_neg_li, axis=-1))
 
         if mask is not None:
             # mask loss for different length sequences
