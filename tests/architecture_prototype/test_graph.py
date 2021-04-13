@@ -3,9 +3,11 @@ import dask
 from rasa.architecture_prototype import graph
 from rasa.architecture_prototype.graph import (
     DomainReader,
-    StoryReader,
+    GeneratedStoryReader,
     TrainingDataReader,
-    RasaComponent,
+    StoryToTrainingDataConverter,
+    StoryGraphReader,
+    MessageToE2EFeatureConverter,
 )
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
@@ -153,10 +155,109 @@ full_model_train_graph = {
         "needs": {},
     },
     "load_stories": {
-        "uses": StoryReader,
+        "uses": GeneratedStoryReader,
         "fn": "read",
         "config": {"project": "examples/moodbot"},
         "needs": {"domain": "load_domain"},
+    },
+    "load_stories_simple": {
+        "uses": StoryGraphReader,
+        "fn": "read",
+        "config": {"project": "examples/moodbot"},
+        "needs": {"domain": "load_domain",},
+    },
+    "convert_stories_for_nlu": {
+        "uses": StoryToTrainingDataConverter,
+        "fn": "convert",
+        "config": {},
+        "needs": {"story_graph": "load_stories_simple"},
+    },
+    "tokenize": {
+        "uses": WhitespaceTokenizer,
+        "fn": "train",
+        "config": {},
+        "needs": {"training_data": "convert_stories_for_nlu"},
+    },
+    "train_regex_featurizer": {
+        "uses": RegexFeaturizer,
+        "fn": "train",
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "regex_featurizer"}
+        },
+        "needs": {"training_data": "tokenize"},
+    },
+    "add_regex_features": {
+        "uses": RegexFeaturizer,
+        "fn": "process_training_data",
+        "config": {},
+        "needs": {"filename": "train_regex_featurizer", "training_data": "tokenize",},
+    },
+    "train_lexical_featurizer": {
+        "uses": LexicalSyntacticFeaturizer,
+        "fn": "train",
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "lexical_featurizer"}
+        },
+        "needs": {"training_data": "tokenize"},
+    },
+    "add_lexical_features": {
+        "uses": LexicalSyntacticFeaturizer,
+        "fn": "process_training_data",
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "lexical_featurizer"}
+        },
+        "needs": {
+            "training_data": "add_regex_features",
+            "filename": "train_lexical_featurizer",
+        },
+    },
+    "train_count_featurizer1": {
+        "uses": CountVectorsFeaturizer,
+        "fn": "train",
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "count_featurizer1"}
+        },
+        "needs": {"training_data": "tokenize"},
+    },
+    "add_count_features1": {
+        "uses": CountVectorsFeaturizer,
+        "constructor_name": "load",
+        "eager": False,
+        "fn": "process_training_data",
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "count_featurizer1"}
+        },
+        "needs": {
+            "training_data": "add_lexical_features",
+            "filename": "train_count_featurizer1",
+        },
+    },
+    "train_count_featurizer2": {
+        "uses": CountVectorsFeaturizer,
+        "fn": "train",
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "count_featurizer2"}
+        },
+        "needs": {"training_data": "tokenize"},
+    },
+    "add_count_features2": {
+        "uses": CountVectorsFeaturizer,
+        "constructor_name": "load",
+        "eager": False,
+        "fn": "process_training_data",
+        "config": {
+            "component_config": {"model_dir": "model", "filename": "count_featurizer2"}
+        },
+        "needs": {
+            "filename": "train_count_featurizer2",
+            "training_data": "add_count_features1",
+        },
+    },
+    "merge_nlu_features": {
+        "uses": MessageToE2EFeatureConverter,
+        "fn": "convert",
+        "config": {},
+        "needs": {"training_data": "add_count_features2",},
     },
     "train_memoization_policy": {
         "uses": MemoizationPolicy,
@@ -174,7 +275,11 @@ full_model_train_graph = {
         "uses": TEDPolicy,
         "fn": "train",
         "config": {},
-        "needs": {"training_trackers": "load_stories", "domain": "load_domain"},
+        "needs": {
+            "e2e_features": "merge_nlu_features",
+            "training_trackers": "load_stories",
+            "domain": "load_domain",
+        },
     },
 }
 

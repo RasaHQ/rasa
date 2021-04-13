@@ -39,10 +39,9 @@ from rasa.shared.core.constants import (
     SLOTS,
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
-    RULE_ONLY_SLOTS,
-    RULE_ONLY_LOOPS,
 )
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
+from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -162,6 +161,7 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
+        e2e_features: Optional[Dict[Text, Message]] = None,
         **kwargs: Any,
     ) -> Tuple[
         List[List[Dict[Text, List["Features"]]]],
@@ -191,7 +191,7 @@ class Policy:
               for all dialogue turns in all training trackers
         """
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
-            training_trackers, domain, interpreter, bilou_tagging
+            training_trackers, domain, interpreter, bilou_tagging, e2e_features
         )
 
         max_training_samples = kwargs.get("max_training_samples")

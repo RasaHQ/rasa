@@ -20,6 +20,7 @@ from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.message import Message
 
 FEATURIZER_FILE = "featurizer.json"
 
@@ -83,10 +84,11 @@ class TrackerFeaturizer:
         self,
         trackers_as_states: List[List[State]],
         interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         return [
             [
-                self.state_featurizer.encode_state(state, interpreter)
+                self.state_featurizer.encode_state(state, interpreter, e2e_features)
                 for state in tracker_states
             ]
             for tracker_states in trackers_as_states
@@ -193,6 +195,7 @@ class TrackerFeaturizer:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
+        e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Tuple[
         List[List[Dict[Text, List["Features"]]]],
         np.ndarray,
@@ -232,7 +235,9 @@ class TrackerFeaturizer:
             trackers_as_entities,
         ) = self.training_states_actions_and_entities(trackers, domain)
 
-        tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
+        tracker_state_features = self._featurize_states(
+            trackers_as_states, interpreter, e2e_features
+        )
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
         entity_tags = self._create_entity_tags(
             trackers_as_entities, interpreter, bilou_tagging

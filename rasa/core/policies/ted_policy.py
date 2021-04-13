@@ -18,7 +18,6 @@ from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
-    FullDialogueTrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -365,11 +364,16 @@ class TEDPolicy(Policy):
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
     def _create_label_data(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+        self,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_actions(domain, interpreter)
+        encoded_all_labels = state_featurizer.encode_all_actions(
+            domain, interpreter, e2e_features
+        )
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
@@ -498,6 +502,7 @@ class TEDPolicy(Policy):
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
+        e2e_features: Dict[Text, Message],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
@@ -511,17 +516,19 @@ class TEDPolicy(Policy):
             )
             return
 
+        training_trackers = [t for t in training_trackers if not t.is_rule_tracker]
         # dealing with training data
         tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
             training_trackers,
             domain,
             interpreter,
             bilou_tagging=self.config[BILOU_FLAG],
+            e2e_features=e2e_features,
             **kwargs,
         )
 
         self._label_data, encoded_all_labels = self._create_label_data(
-            domain, interpreter
+            domain, interpreter, e2e_features
         )
 
         # extract actual training data to feed to model

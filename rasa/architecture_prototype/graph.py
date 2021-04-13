@@ -8,8 +8,12 @@ import dask
 
 from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT, INTENT, TEXT
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.common
 import rasa.utils.common
@@ -39,12 +43,48 @@ class DomainReader(ProjectReader):
         return rasa.utils.common.run_in_loop(importer.get_domain())
 
 
-class StoryReader(ProjectReader):
-    def read(self, domain) -> List[TrackerWithCachedStates]:
+class GeneratedStoryReader(ProjectReader):
+    def read(self, domain: Domain) -> List[TrackerWithCachedStates]:
         importer = self.load_importer()
 
         generated_coroutine = rasa.core.training.load_data(importer, domain,)
         return rasa.utils.common.run_in_loop(generated_coroutine)
+
+
+class StoryGraphReader(ProjectReader):
+    def read(self, domain: Domain) -> StoryGraph:
+        importer = self.load_importer()
+
+        graph = rasa.utils.common.run_in_loop(importer.get_stories())
+        for step in graph.story_steps:
+            step.events = step.explicit_events(domain)
+
+        return graph
+
+
+class StoryToTrainingDataConverter:
+    def convert(self, story_graph: StoryGraph) -> TrainingData:
+        messages = []
+        for tracker in story_graph.story_steps:
+            for event in tracker.events:
+                if isinstance(event, (ActionExecuted, UserUttered)):
+                    messages.append(Message(data=event.as_sub_state()))
+
+        return TrainingData(training_examples=messages)
+
+
+class MessageToE2EFeatureConverter:
+    def convert(self, training_data: TrainingData) -> Dict[Text, Message]:
+        additional_features = {}
+        for message in training_data.training_examples:
+            key = next(
+                k
+                for k in message.data.keys()
+                if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
+            )
+            additional_features[key] = message
+
+        return additional_features
 
 
 class RasaComponent:
