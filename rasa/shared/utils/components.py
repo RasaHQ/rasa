@@ -28,7 +28,7 @@ def get_tokenizer_from_nlu_config(
             if tokenizer:
                 rasa.shared.utils.io.raise_warning(
                     "The pipeline contains more than one tokenizer. "
-                    "Only the first tokenizer will be used for story validation.",
+                    "Only the first tokenizer will be used.",
                 )
             tokenizer = component
 
