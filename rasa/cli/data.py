@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
+from rasa.shared.exceptions import InvalidParameterException
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
@@ -296,7 +297,7 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     classification_report = rasa.shared.utils.io.read_json_file(report_file)
 
     if args.augmentation_factor <= 0.0:
-        raise ValueError("The argument 'augmentation_factor' must be greater than 0!")
+        raise InvalidParameterException("The argument 'augmentation_factor' must be greater than 0!")
 
     # Run augmentation
     nlu_data_augmentation(
