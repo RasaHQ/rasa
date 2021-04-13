@@ -13,7 +13,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import COMPONENT_INDEX
+from rasa.nlu.constants import COMPONENT_INDEX, TRAINABLE_EXTRACTORS
 import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
@@ -351,14 +351,7 @@ def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
     Args:
         pipeline: The list of the :class:`rasa.nlu.components.Component`s.
     """
-    general_purpose_entity_extractors = [
-        "DIETClassifier",
-        "CRFEntityExtractor",
-        "MitieEntityExtractor",
-    ]
-    extractors_in_pipeline = find_components_in_pipeline(
-        general_purpose_entity_extractors, pipeline
-    )
+    extractors_in_pipeline = find_components_in_pipeline(TRAINABLE_EXTRACTORS, pipeline)
     if len(extractors_in_pipeline) > 1:
         rasa.shared.utils.io.raise_warning(
             f"You have defined multiple entity extractors that do the same job "
@@ -384,13 +377,8 @@ def warn_of_competition_with_regex_extractor(
         pipeline: The list of the :class:`rasa.nlu.components.Component`s.
         data: The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
     """
-    general_entity_extractors = [
-        "DIETClassifier",
-        "CRFEntityExtractor",
-        "MitieEntityExtractor",
-    ]
     present_general_extractors = find_components_in_pipeline(
-        general_entity_extractors, pipeline
+        TRAINABLE_EXTRACTORS, pipeline
     )
     has_general_extractors = len(present_general_extractors) > 0
     has_regex_extractor = any_components_in_pipeline(["RegexEntityExtractor"], pipeline)
