@@ -130,10 +130,11 @@ class SklearnPolicy(Policy):
         return LogisticRegression(solver="liblinear", multi_class="auto")
 
     @property
-    def _state(self):
+    def _state(self) -> Dict[Text, Any]:
         return {attr: getattr(self, attr) for attr in self._pickle_params}
 
     def model_architecture(self, **kwargs: Any) -> Any:
+        """Sets model parameters for training."""
         # filter out kwargs that cannot be passed to model
         train_params = self._get_valid_params(self.model.__init__, **kwargs)
         return self.model.set_params(**train_params)
