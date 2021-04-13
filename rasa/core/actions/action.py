@@ -33,6 +33,7 @@ from rasa.shared.core.constants import (
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
 )
@@ -778,6 +779,20 @@ class ActionRevertFallbackEvents(Action):
             return _revert_affirmation_events(tracker)
         else:
             return []
+
+
+class ActionUnlikelyIntent(Action):
+    def name(self) -> Text:
+        return ACTION_UNLIKELY_INTENT_NAME
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        pass
 
 
 def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
