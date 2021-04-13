@@ -328,6 +328,9 @@ class TEDPolicy(Policy):
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
+        else:
+            if isinstance(featurizer, MaxHistoryTrackerFeaturizer) and max_history:
+                featurizer.max_history = max_history
 
         super().__init__(
             featurizer, priority, should_finetune=should_finetune, **kwargs
