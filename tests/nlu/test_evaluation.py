@@ -58,8 +58,10 @@ from rasa.nlu.test import (
     align_entity_predictions,
     determine_intersection,
     determine_token_labels,
+    is_entity_extractor_present,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import (
@@ -349,6 +351,8 @@ def test_drop_intents_below_freq():
     td = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa.json"
     )
+    # include some lookup tables and make sure new td has them
+    td = td.merge(TrainingData(lookup_tables=[{"lookup_table": "lookup_entry"}]))
     clean_td = drop_intents_below_freq(td, 0)
     assert clean_td.intents == {
         "affirm",
@@ -360,9 +364,12 @@ def test_drop_intents_below_freq():
 
     clean_td = drop_intents_below_freq(td, 10)
     assert clean_td.intents == {"affirm", "restaurant_search"}
+    assert clean_td.lookup_tables == td.lookup_tables
 
 
-@pytest.mark.timeout(300)  # these can take a longer time than the default timeout
+@pytest.mark.timeout(
+    300, func_only=True
+)  # these can take a longer time than the default timeout
 async def test_run_evaluation(
     unpacked_trained_moodbot_path: Text, nlu_as_json_path: Text
 ):
@@ -407,7 +414,9 @@ async def test_eval_data(
     assert len(entity_results) == 46
 
 
-@pytest.mark.timeout(240)  # these can take a longer time than the default timeout
+@pytest.mark.timeout(
+    240, func_only=True
+)  # these can take a longer time than the default timeout
 def test_run_cv_evaluation(
     pretrained_embeddings_spacy_config: RasaNLUModelConfig, monkeypatch: MonkeyPatch
 ):
@@ -1219,3 +1228,12 @@ def test_replacing_fallback_intent():
         and prediction.confidence == expected_confidence
         for prediction in intent_evaluations
     )
+
+
+@pytest.mark.parametrize(
+    "components, expected_result",
+    [([CRFEntityExtractor()], True), ([WhitespaceTokenizer()], False)],
+)
+def test_is_entity_extractor_present(components, expected_result):
+    interpreter = Interpreter(components, context=None)
+    assert is_entity_extractor_present(interpreter) == expected_result

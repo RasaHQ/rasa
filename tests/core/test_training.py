@@ -3,6 +3,8 @@ from unittest.mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
 from typing import Text
 
+import pytest
+
 from rasa.core.policies.memoization import MemoizationPolicy, OLD_DEFAULT_MAX_HISTORY
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import Domain
@@ -112,6 +114,7 @@ async def test_training_script_with_restart_stories(tmp_path: Path, domain_path:
     assert True
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_random_seed(
     tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):

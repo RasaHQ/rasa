@@ -65,7 +65,7 @@ from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
 if TYPE_CHECKING:
-    from typing_extension import TypedDict
+    from typing_extensions import TypedDict
 
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
@@ -114,11 +114,11 @@ class AnySlotDict(dict):
     This only uses the generic slot type! This means certain functionality wont work,
     e.g. properly featurizing the slot."""
 
-    def __missing__(self, key) -> Slot:
+    def __missing__(self, key: Text) -> Slot:
         value = self[key] = Slot(key)
         return value
 
-    def __contains__(self, key) -> bool:
+    def __contains__(self, key: Text) -> bool:
         return True
 
 
@@ -765,7 +765,7 @@ class DialogueStateTracker:
 
         to_exclude = action_names_to_exclude or []
 
-        def filter_function(e: Event):
+        def filter_function(e: Event) -> bool:
             has_instance = isinstance(e, event_type)
             excluded = isinstance(e, ActionExecuted) and e.action_name in to_exclude
             return has_instance and not excluded
@@ -834,13 +834,13 @@ class DialogueStateTracker:
             raise ValueError("events, if given, must be a list of events")
         return deque(evts, self._max_event_history)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if isinstance(self, type(other)):
             return other.events == self.events and self.sender_id == other.sender_id
         else:
             return False
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     def trigger_followup_action(self, action: Text) -> None:

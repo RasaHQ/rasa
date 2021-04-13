@@ -6,11 +6,24 @@ import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
-from typing import Any, Callable, Deque, Dict, List, Optional, Text, Tuple, Union, Set
-
+from typing import (
+    Any,
+    Callable,
+    Deque,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+    Set,
+    Coroutine,
+)
 
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
+from sanic.request import Request
+from sanic.response import HTTPResponse
 from terminaltables import AsciiTable, SingleTable
 import numpy as np
 from aiohttp import ClientError
@@ -394,7 +407,7 @@ async def _request_fork_point_from_list(
 
 
 async def _request_fork_from_user(
-    conversation_id, endpoint
+    conversation_id: Text, endpoint: EndpointConfig
 ) -> Optional[List[Dict[Text, Any]]]:
     """Take in a conversation and ask at which point to fork the conversation.
 
@@ -421,7 +434,10 @@ async def _request_fork_from_user(
 
 
 async def _request_intent_from_user(
-    latest_message, intents, conversation_id, endpoint
+    latest_message: Dict[Text, Any],
+    intents: List[Text],
+    conversation_id: Text,
+    endpoint: EndpointConfig,
 ) -> Dict[Text, Any]:
     """Take in latest message and ask which intent it should have been.
 
@@ -596,7 +612,7 @@ def _retry_on_error(
                 raise e
 
 
-async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
+async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig) -> None:
     """Write stories and nlu data to file."""
 
     story_path, nlu_path, domain_path = _request_export_info()
@@ -1062,7 +1078,10 @@ def _form_is_restored(action_name: Text, tracker: Dict[Text, Any]) -> bool:
 
 
 async def _confirm_form_validation(
-    action_name, tracker, endpoint, conversation_id
+    action_name: Text,
+    tracker: Dict[Text, Any],
+    endpoint: EndpointConfig,
+    conversation_id: Text,
 ) -> None:
     """Ask a user whether an input for a form should be validated.
 
@@ -1597,17 +1616,17 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     # noinspection PyUnusedLocal
     @app.exception(NotFound)
-    async def ignore_404s(request, exception):
+    async def ignore_404s(request: Request, exception: Exception) -> HTTPResponse:
         return response.text("Not found", status=404)
 
     # noinspection PyUnusedLocal
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
-    def visualisation_html(request):
+    def visualisation_html(request: Request) -> HTTPResponse:
         return response.file(visualization.visualization_html_path())
 
     # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png(request):
+    def visualisation_png(request: Request,) -> HTTPResponse:
         try:
             headers = {"Cache-Control": "no-cache"}
             return response.file(os.path.abspath(image_path), headers=headers)
@@ -1621,7 +1640,11 @@ def start_visualization(image_path: Text, port: int) -> None:
 
 # noinspection PyUnusedLocal
 async def train_agent_on_start(
-    args, endpoints, additional_arguments, app, loop
+    args: Dict[Text, Any],
+    endpoints: AvailableEndpoints,
+    additional_arguments: Optional[Dict],
+    app: Sanic,
+    loop: asyncio.AbstractEventLoop,
 ) -> None:
     _interpreter = rasa.core.interpreter.create_interpreter(
         endpoints.nlu or args.get("nlu")
@@ -1643,10 +1666,9 @@ async def train_agent_on_start(
 
 
 async def wait_til_server_is_running(
-    endpoint, max_retries=30, sleep_between_retries=1
+    endpoint: EndpointConfig, max_retries: int = 30, sleep_between_retries: float = 1.0
 ) -> bool:
     """Try to reach the server, retry a couple of times and sleep in between."""
-
     while max_retries:
         try:
             r = await retrieve_status(endpoint)

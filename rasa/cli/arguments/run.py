@@ -5,13 +5,13 @@ from rasa.cli.arguments.default_arguments import add_model_param, add_endpoint_p
 from rasa.core import constants
 
 
-def set_run_arguments(parser: argparse.ArgumentParser):
+def set_run_arguments(parser: argparse.ArgumentParser) -> None:
     """Arguments for running Rasa directly using `rasa run`."""
     add_model_param(parser)
     add_server_arguments(parser)
 
 
-def set_run_action_arguments(parser: argparse.ArgumentParser):
+def set_run_action_arguments(parser: argparse.ArgumentParser) -> None:
     """Set arguments for running Rasa SDK."""
     import rasa_sdk.cli.arguments as sdk
 
@@ -19,7 +19,9 @@ def set_run_action_arguments(parser: argparse.ArgumentParser):
 
 
 # noinspection PyProtectedMember
-def add_port_argument(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]):
+def add_port_argument(
+    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]
+) -> None:
     """Add an argument for port."""
     parser.add_argument(
         "-p",
@@ -30,7 +32,7 @@ def add_port_argument(parser: Union[argparse.ArgumentParser, argparse._ArgumentG
     )
 
 
-def add_server_arguments(parser: argparse.ArgumentParser):
+def add_server_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for running API endpoint."""
     parser.add_argument(
         "--log-file",
