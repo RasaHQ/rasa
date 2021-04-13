@@ -2,7 +2,9 @@ import contextlib
 import json
 import logging
 from asyncio import AbstractEventLoop
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional, Text, Generator
+
+from sqlalchemy.orm import Session
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.utils.endpoints import EndpointConfig
@@ -63,7 +65,7 @@ class SQLEventBroker(EventBroker):
         return cls(host=broker_config.url, **broker_config.kwargs)
 
     @contextlib.contextmanager
-    def session_scope(self):
+    def session_scope(self) -> Generator[Session, None, None]:
         """Provide a transactional scope around a series of operations."""
         session = self.sessionmaker()
         try:
