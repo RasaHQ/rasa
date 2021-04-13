@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set, Union
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
+import rasa.utils.train_utils
 from sklearn.feature_extraction.text import CountVectorizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
@@ -212,9 +213,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         component_config: Optional[Dict[Text, Any]] = None,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
         finetune_mode: bool = False,
+        model_dir: Text = '',
+        filename: Text = '',
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
         super().__init__(component_config)
+
+        self._model_dir = model_dir
+        self._filename = filename
 
         # parameters for sklearn's CountVectorizer
         self._load_count_vect_params()
@@ -232,6 +238,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self.vectorizers = vectorizers
 
         self.finetune_mode = finetune_mode
+
+
 
     def _get_message_tokens_by_attribute(
         self, message: "Message", attribute: Text
@@ -704,7 +712,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         training_data: TrainingData,
         cfg: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
-    ) -> "CountVectorsFeaturizer":
+    ) -> None:
         """Train the featurizer.
 
         Take parameters from config and
@@ -748,14 +756,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     training_data.training_examples,
                 )
 
-        return self
+        self.persist(self._filename, self._model_dir)
 
     def process_training_data(
-        self, trained_featurizer: "CountVectorsFeaturizer", training_data: TrainingData
+        self, sdf, training_data: TrainingData
     ) -> TrainingData:
 
         for message in training_data.training_examples:
-            trained_featurizer.process(message)
+            self.process(message)
 
         return training_data
 
@@ -803,7 +811,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         return any(value is not None for value in attribute_vocabularies.values())
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self, file_name: Text, model_dir: Text) -> Optional[Text]:
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again.
@@ -827,7 +835,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
                 io_utils.json_pickle(featurizer_file, vocab)
 
-        return {"file": file_name}
+                return featurizer_file
+
+        return None
 
     @classmethod
     def _create_shared_vocab_vectorizers(
@@ -888,34 +898,41 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
         model_dir: Text,
+        component_config: Dict[Text, Any] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         should_finetune: bool = False,
+        filename: Text = '',
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
         """Loads trained component (see parent class for full docstring)."""
-        file_name = meta.get("file")
-        featurizer_file = os.path.join(model_dir, file_name)
+        if not component_config:
+            component_config = {}
+
+        rasa.utils.train_utils.override_defaults(
+            cls.defaults, component_config
+        )
+
+        featurizer_file = os.path.join(model_dir, filename)
 
         if not os.path.exists(featurizer_file):
-            return cls(meta)
+            return cls(component_config)
 
         vocabulary = io_utils.json_unpickle(featurizer_file)
 
-        share_vocabulary = meta["use_shared_vocab"]
+        share_vocabulary = component_config["use_shared_vocab"]
 
         if share_vocabulary:
             vectorizers = cls._create_shared_vocab_vectorizers(
-                meta, vocabulary=vocabulary
+                component_config, vocabulary=vocabulary
             )
         else:
             vectorizers = cls._create_independent_vocab_vectorizers(
-                meta, vocabulary=vocabulary
+                component_config, vocabulary=vocabulary
             )
 
-        ftr = cls(meta, vectorizers, should_finetune)
+        ftr = cls(component_config, vectorizers, should_finetune)
 
         # make sure the vocabulary has been loaded correctly
         for attribute in vectorizers:
