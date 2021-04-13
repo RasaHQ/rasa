@@ -620,7 +620,7 @@ def _run_data_augmentation(
     )
 
 
-def augment_nlu_data(
+def nlu_data_augmentation(
     nlu_training_data: TrainingData,
     nlu_evaluation_data: TrainingData,
     paraphrases: TrainingData,
