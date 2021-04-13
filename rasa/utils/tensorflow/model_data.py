@@ -399,11 +399,11 @@ class RasaModelData:
             return 0
 
         # check if number of examples is the same for all values
-        # if not all(length == example_lengths[0] for length in example_lengths):
-        #     raise ValueError(
-        #         f"Number of examples differs for keys '{data.keys()}'. Number of "
-        #         f"examples should be the same for all data."
-        #     )
+        if not all(length == example_lengths[0] for length in example_lengths):
+            raise ValueError(
+                f"Number of examples differs for keys '{data.keys()}'. Number of "
+                f"examples should be the same for all data."
+            )
 
         return example_lengths[0]
 

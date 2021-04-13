@@ -396,17 +396,17 @@ class TEDPolicy(Policy):
 
         label_ids = np.arange(domain.num_actions)
 
-        # Segregate label ids for action texts from action names
-        num_action_texts = len(domain.action_texts)
-
-        action_text_ids = label_ids[domain.num_actions - num_action_texts :]
-
-        # Explicitly add all label ids, action name label ids and action text label ids
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
             [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2),],
         )
+
+        # If any action texts are present, explicitly add the first label id
+        # belonging to action text. This is necessary to distinguish between
+        # action name label ids and action text label ids inside TF graph code.
+        num_action_texts = len(domain.action_texts)
+        action_text_ids = label_ids[domain.num_actions - num_action_texts :]
 
         if np.size(action_text_ids):
             label_data.add_features(
@@ -1248,8 +1248,8 @@ class TED(TransformerRasaModel):
 
             sampled_label_ids = tf.cast(sampled_label_ids, dtype=tf.float32)
 
-            # # Always add an action text label id if it is present
-            # # in label data. Reduces complexity inside TF graph code.
+            # Always add an action text label id if it is present
+            # in label data. Reduces complexity inside TF graph code.
             if SAMPLE_ACTION_TEXT_ID in self.tf_label_data[LABEL_KEY]:
                 sample_action_text_label_id = self.tf_label_data[LABEL_KEY][
                     SAMPLE_ACTION_TEXT_ID

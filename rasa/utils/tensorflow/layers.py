@@ -986,16 +986,6 @@ class DotProductLoss(tf.keras.layers.Layer):
             inputs_embed, labels_embed, labels, all_labels_embed, all_labels
         )
 
-        tf.print(
-            "negs",
-            pos_inputs_embed.shape,
-            pos_labels_embed.shape,
-            neg_inputs_embed.shape,
-            neg_labels_embed.shape,
-            inputs_bad_negs.shape,
-            labels_bad_negs.shape,
-        )
-
         # calculate similarities
         sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li = self._train_sim(
             pos_inputs_embed,
