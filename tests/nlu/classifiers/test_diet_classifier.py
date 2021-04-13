@@ -470,6 +470,7 @@ async def test_margin_loss_is_not_normalized(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_set_random_seed(component_builder, tmpdir, nlu_as_json_path: Text):
     """test if train result is the same for two runs of tf embedding"""
 
@@ -619,6 +620,7 @@ async def test_train_model_checkpointing(
         {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
     ],
 )
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_composite_entities(
     classifier_params, component_builder, tmpdir
 ):
