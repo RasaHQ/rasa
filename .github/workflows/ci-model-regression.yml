@@ -26,6 +26,7 @@ jobs:
         with:
           access_token: "${{ secrets.GITHUB_TOKEN }}"
           all_but_latest: true
+          ignore_sha: true
 
   read_test_configuration:
     name: Reads tests configuration
@@ -179,6 +180,8 @@ jobs:
     - deploy_runner_gpu
     - read_test_configuration
     env:
+      # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
+      LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
       ACCELERATOR_TYPE: "GPU"
     runs-on: [self-hosted, gpu]
     strategy:
