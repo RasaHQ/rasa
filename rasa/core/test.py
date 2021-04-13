@@ -23,6 +23,7 @@ from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     TOKENS_NAMES,
+    ENTITY_ATTRIBUTE_CONFIDENCE,
 )
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -38,6 +39,8 @@ from rasa.shared.nlu.constants import (
     RESPONSE_SELECTOR,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
     TEXT,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import (
@@ -55,6 +58,23 @@ if typing.TYPE_CHECKING:
     from rasa.core.processor import MessageProcessor
     from rasa.shared.core.generator import TrainingDataGenerator
 
+    from typing_extensions import TypedDict
+
+    EntityPrediction = TypedDict(
+        "EntityPrediction",
+        {
+            ENTITY_ATTRIBUTE_TEXT: Text,
+            ENTITY_ATTRIBUTE_START: Optional[float],
+            ENTITY_ATTRIBUTE_END: Optional[float],
+            ENTITY_ATTRIBUTE_VALUE: Text,
+            ENTITY_ATTRIBUTE_CONFIDENCE: float,
+            ENTITY_ATTRIBUTE_TYPE: Text,
+            ENTITY_ATTRIBUTE_GROUP: Optional[Text],
+            ENTITY_ATTRIBUTE_ROLE: Optional[Text],
+            "additional_info": Any,
+        },
+        total=False,
+    )
 
 CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
 REPORT_STORIES_FILE = "story_report.json"
@@ -76,7 +96,6 @@ StoryEvaluation = namedtuple(
 )
 
 PredictionList = List[Optional[Text]]
-EntityPredictionList = List[Dict[Text, Any]]
 
 
 class WrongPredictionException(RasaException, ValueError):
@@ -92,16 +111,16 @@ class EvaluationStore:
         action_targets: Optional[PredictionList] = None,
         intent_predictions: Optional[PredictionList] = None,
         intent_targets: Optional[PredictionList] = None,
-        entity_predictions: Optional[EntityPredictionList] = None,
-        entity_targets: Optional[EntityPredictionList] = None,
+        entity_predictions: Optional[List["EntityPrediction"]] = None,
+        entity_targets: Optional[List["EntityPrediction"]] = None,
     ) -> None:
         """Initialize store attributes."""
         self.action_predictions = action_predictions or []
         self.action_targets = action_targets or []
         self.intent_predictions = intent_predictions or []
         self.intent_targets = intent_targets or []
-        self.entity_predictions = entity_predictions or []
-        self.entity_targets = entity_targets or []
+        self.entity_predictions: List["EntityPrediction"] = entity_predictions or []
+        self.entity_targets: List["EntityPrediction"] = entity_targets or []
 
     def add_to_store(
         self,
@@ -109,8 +128,8 @@ class EvaluationStore:
         action_targets: Optional[PredictionList] = None,
         intent_predictions: Optional[PredictionList] = None,
         intent_targets: Optional[PredictionList] = None,
-        entity_predictions: Optional[EntityPredictionList] = None,
-        entity_targets: Optional[EntityPredictionList] = None,
+        entity_predictions: Optional[List["EntityPrediction"]] = None,
+        entity_targets: Optional[List["EntityPrediction"]] = None,
     ) -> None:
         """Add items or lists of items to the store."""
         self.action_predictions.extend(action_predictions or [])
@@ -140,8 +159,8 @@ class EvaluationStore:
 
     @staticmethod
     def _compare_entities(
-        entity_predictions: EntityPredictionList,
-        entity_targets: EntityPredictionList,
+        entity_predictions: List["EntityPrediction"],
+        entity_targets: List["EntityPrediction"],
         i_pred: int,
         i_target: int,
     ) -> int:
@@ -159,16 +178,16 @@ class EvaluationStore:
             target = entity_targets[i_target]
         if target and pred:
             # Check which entity has the lower "start" value
-            if pred.get("start") < target.get("start"):
+            if pred.get(ENTITY_ATTRIBUTE_START) < target.get(ENTITY_ATTRIBUTE_START):
                 return -1
-            elif target.get("start") < pred.get("start"):
+            elif target.get(ENTITY_ATTRIBUTE_START) < pred.get(ENTITY_ATTRIBUTE_START):
                 return 1
             else:
                 # Since both have the same "start" values,
                 # check which one has the lower "end" value
-                if pred.get("end") < target.get("end"):
+                if pred.get(ENTITY_ATTRIBUTE_END) < target.get(ENTITY_ATTRIBUTE_END):
                     return -1
-                elif target.get("end") < pred.get("end"):
+                elif target.get(ENTITY_ATTRIBUTE_END) < pred.get(ENTITY_ATTRIBUTE_END):
                     return 1
                 else:
                     # The entities have the same "start" and "end" values
@@ -184,8 +203,8 @@ class EvaluationStore:
         texts = sorted(
             list(
                 set(
-                    [e.get("text") for e in self.entity_targets]
-                    + [e.get("text") for e in self.entity_predictions]
+                    [e.get("text", "") for e in self.entity_targets]
+                    + [e.get("text", "") for e in self.entity_predictions]
                 )
             )
         )
@@ -196,12 +215,17 @@ class EvaluationStore:
         for text in texts:
             # sort the entities of this sentence to compare them directly
             entity_targets = sorted(
-                filter(lambda x: x.get("text") == text, self.entity_targets),
-                key=lambda x: x.get("start"),
+                filter(
+                    lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text, self.entity_targets
+                ),
+                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
             )
             entity_predictions = sorted(
-                filter(lambda x: x.get("text") == text, self.entity_predictions),
-                key=lambda x: x.get("start"),
+                filter(
+                    lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text,
+                    self.entity_predictions,
+                ),
+                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
             )
 
             i_pred, i_target = 0, 0
@@ -346,14 +370,18 @@ async def _create_data_generator(
     resource_name: Text,
     agent: "Agent",
     max_stories: Optional[int] = None,
-    use_e2e: bool = False,
+    use_conversation_test_files: bool = False,
 ) -> "TrainingDataGenerator":
     from rasa.shared.core.generator import TrainingDataGenerator
 
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[resource_name]
     )
-    story_graph = await test_data_importer.get_stories(use_e2e=use_e2e)
+    if use_conversation_test_files:
+        story_graph = await test_data_importer.get_conversation_tests()
+    else:
+        story_graph = await test_data_importer.get_stories()
+
     return TrainingDataGenerator(
         story_graph,
         agent.domain,
@@ -365,7 +393,7 @@ async def _create_data_generator(
 
 def _clean_entity_results(
     text: Text, entity_results: List[Dict[Text, Any]]
-) -> EntityPredictionList:
+) -> List["EntityPrediction"]:
     """Extract only the token variables from an entity dict."""
     cleaned_entities = []
 
@@ -977,14 +1005,19 @@ def _plot_story_evaluation(
 
 
 async def compare_models_in_dir(
-    model_dir: Text, stories_file: Text, output: Text
+    model_dir: Text,
+    stories_file: Text,
+    output: Text,
+    use_conversation_test_files: bool = False,
 ) -> None:
-    """Evaluate multiple trained models in a directory on a test set.
+    """Evaluates multiple trained models in a directory on a test set.
 
     Args:
         model_dir: path to directory that contains the models to evaluate
         stories_file: path to the story file
         output: output directory to store results to
+        use_conversation_test_files: `True` if conversation test files should be used
+            for testing instead of regular Core story files.
     """
     number_correct = defaultdict(list)
 
@@ -998,7 +1031,11 @@ async def compare_models_in_dir(
             # The model files are named like <config-name>PERCENTAGE_KEY<number>.tar.gz
             # Remove the percentage key and number from the name to get the config name
             config_name = os.path.basename(model).split(PERCENTAGE_KEY)[0]
-            number_of_correct_stories = await _evaluate_core_model(model, stories_file)
+            number_of_correct_stories = await _evaluate_core_model(
+                model,
+                stories_file,
+                use_conversation_test_files=use_conversation_test_files,
+            )
             number_correct_in_run[config_name].append(number_of_correct_stories)
 
         for k, v in number_correct_in_run.items():
@@ -1009,18 +1046,27 @@ async def compare_models_in_dir(
     )
 
 
-async def compare_models(models: List[Text], stories_file: Text, output: Text) -> None:
-    """Evaluate provided trained models on a test set.
+async def compare_models(
+    models: List[Text],
+    stories_file: Text,
+    output: Text,
+    use_conversation_test_files: bool = False,
+) -> None:
+    """Evaluates multiple trained models on a test set.
 
     Args:
-        models: list of trained model paths
+        models: Paths to model files.
         stories_file: path to the story file
         output: output directory to store results to
+        use_conversation_test_files: `True` if conversation test files should be used
+            for testing instead of regular Core story files.
     """
     number_correct = defaultdict(list)
 
     for model in models:
-        number_of_correct_stories = await _evaluate_core_model(model, stories_file)
+        number_of_correct_stories = await _evaluate_core_model(
+            model, stories_file, use_conversation_test_files=use_conversation_test_files
+        )
         number_correct[os.path.basename(model)].append(number_of_correct_stories)
 
     rasa.shared.utils.io.dump_obj_as_json_to_file(
@@ -1028,13 +1074,17 @@ async def compare_models(models: List[Text], stories_file: Text, output: Text) -
     )
 
 
-async def _evaluate_core_model(model: Text, stories_file: Text) -> int:
+async def _evaluate_core_model(
+    model: Text, stories_file: Text, use_conversation_test_files: bool = False
+) -> int:
     from rasa.core.agent import Agent
 
     logger.info(f"Evaluating model '{model}'")
 
     agent = Agent.load(model)
-    generator = await _create_data_generator(stories_file, agent)
+    generator = await _create_data_generator(
+        stories_file, agent, use_conversation_test_files=use_conversation_test_files
+    )
     completed_trackers = generator.generate_story_trackers()
 
     # Entities are ignored here as we only compare number of correct stories.

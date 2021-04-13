@@ -66,12 +66,12 @@ class EntitySynonymMapper(EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["EntitySynonymMapper"] = None,
         **kwargs: Any,
     ) -> "EntitySynonymMapper":
-
+        """Loads trained component (see parent class for full docstring)."""
         file_name = meta.get("file")
         if not file_name:
             synonyms = None
@@ -88,7 +88,7 @@ class EntitySynonymMapper(EntityExtractor):
             )
         return cls(meta, synonyms)
 
-    def replace_synonyms(self, entities) -> None:
+    def replace_synonyms(self, entities: List[Dict[Text, Any]]) -> None:
         for entity in entities:
             # need to wrap in `str` to handle e.g. entity values of type int
             entity_value = str(entity["value"])
@@ -96,7 +96,9 @@ class EntitySynonymMapper(EntityExtractor):
                 entity["value"] = self.synonyms[entity_value.lower()]
                 self.add_processor_name(entity)
 
-    def add_entities_if_synonyms(self, entity_a, entity_b) -> None:
+    def add_entities_if_synonyms(
+        self, entity_a: Text, entity_b: Optional[Text]
+    ) -> None:
         if entity_b is not None:
             original = str(entity_a)
             replacement = str(entity_b)

@@ -312,23 +312,44 @@ class Domain:
         roles: Dict[Text, List[Text]],
         groups: Dict[Text, List[Text]],
     ) -> Dict[Text, Any]:
-        """Transform intent properties coming from a domain file for internal use.
+        """Transforms the intent's parameters in a format suitable for internal use.
 
-        In domain files, `use_entities` or `ignore_entities` is used. Internally, there
-        is a property `used_entities` instead that lists all entities to be used.
+        When an intent is retrieved from the `domain.yml` file, it contains two
+        parameters, the `use_entities` and the `ignore_entities` parameter. With
+        the values of these two parameters the Domain class is updated, a new
+        parameter is added to the intent called `used_entities` and the two
+        previous parameters are deleted. This happens because internally only the
+        parameter `used_entities` is needed to list all the entities that should be
+        used for this intent.
 
         Args:
-            intent: The intents as provided by a domain file.
+            intent: The intent as retrieved from the `domain.yml` file thus having two
+                parameters, the `use_entities` and the `ignore_entities` parameter.
             entities: All entities as provided by a domain file.
             roles: All roles for entities as provided by a domain file.
             groups: All groups for entities as provided by a domain file.
 
         Returns:
-            The intents as they should be used internally.
+            The intent with the new format thus having only one parameter called
+            `used_entities` since this is the expected format of the intent
+            when used internally.
         """
         name, properties = list(intent.items())[0]
 
-        properties.setdefault(USE_ENTITIES_KEY, True)
+        if properties:
+            properties.setdefault(USE_ENTITIES_KEY, True)
+        else:
+            raise InvalidDomain(
+                f"In the `domain.yml` file, the intent '{name}' cannot have value of"
+                f" `{type(properties)}`. If you have placed a ':' character after the"
+                f" intent's name without adding any additional parameters to this"
+                f" intent then you would need to remove the ':' character. Please see"
+                f" {rasa.shared.constants.DOCS_URL_DOMAINS} for more information on how"
+                f" to correctly add `intents` in the `domain` and"
+                f" {rasa.shared.constants.DOCS_URL_INTENTS} for examples on"
+                f" when to use the ':' character after an intent's name."
+            )
+
         properties.setdefault(IGNORE_ENTITIES_KEY, [])
         if not properties[USE_ENTITIES_KEY]:  # this covers False, None and []
             properties[USE_ENTITIES_KEY] = []
@@ -403,17 +424,30 @@ class Domain:
         entities: List[Text] = []
         roles: Dict[Text, List[Text]] = {}
         groups: Dict[Text, List[Text]] = {}
-
         for entity in domain_entities:
             if isinstance(entity, str):
                 entities.append(entity)
             elif isinstance(entity, dict):
                 for _entity, sub_labels in entity.items():
                     entities.append(_entity)
-                    if ENTITY_ROLES_KEY in sub_labels:
-                        roles[_entity] = sub_labels[ENTITY_ROLES_KEY]
-                    if ENTITY_GROUPS_KEY in sub_labels:
-                        groups[_entity] = sub_labels[ENTITY_GROUPS_KEY]
+                    if sub_labels:
+                        if ENTITY_ROLES_KEY in sub_labels:
+                            roles[_entity] = sub_labels[ENTITY_ROLES_KEY]
+                        if ENTITY_GROUPS_KEY in sub_labels:
+                            groups[_entity] = sub_labels[ENTITY_GROUPS_KEY]
+                    else:
+                        raise InvalidDomain(
+                            f"In the `domain.yml` file, the entity '{_entity}' cannot"
+                            f" have value of `{type(sub_labels)}`. If you have placed a"
+                            f" ':' character after the entity `{_entity}` without"
+                            f" adding any additional parameters to this entity then you"
+                            f" would need to remove the ':' character. Please see"
+                            f" {rasa.shared.constants.DOCS_URL_DOMAINS} for more"
+                            f" information on how to correctly add `entities` in the"
+                            f" `domain` and {rasa.shared.constants.DOCS_URL_ENTITIES}"
+                            f" for examples on when to use the ':' character after an"
+                            f" entity's name."
+                        )
             else:
                 raise InvalidDomain(
                     f"Invalid domain. Entity is invalid, type of entity '{entity}' "
@@ -674,9 +708,8 @@ class Domain:
         return rasa.shared.utils.io.get_dictionary_fingerprint(self_as_dict)
 
     @rasa.shared.utils.common.lazy_property
-    def user_actions_and_forms(self):
+    def user_actions_and_forms(self) -> List[Text]:
         """Returns combination of user actions and forms."""
-
         return self.user_actions + self.form_names
 
     @rasa.shared.utils.common.lazy_property
@@ -701,9 +734,8 @@ class Domain:
         return len(self.action_names_or_texts)
 
     @rasa.shared.utils.common.lazy_property
-    def num_states(self):
+    def num_states(self) -> int:
         """Number of used input states for the action prediction."""
-
         return len(self.input_states)
 
     @rasa.shared.utils.common.lazy_property
@@ -1093,7 +1125,9 @@ class Domain:
 
         # we don't use tracker.active_loop_name
         # because we need to keep should_not_be_set
-        active_loop = tracker.active_loop.get(rasa.shared.core.constants.LOOP_NAME)
+        active_loop: Optional[Text] = tracker.active_loop.get(
+            rasa.shared.core.constants.LOOP_NAME
+        )
         if active_loop:
             return {rasa.shared.core.constants.LOOP_NAME: active_loop}
         else:
@@ -1501,7 +1535,8 @@ class Domain:
         return self.intent_properties.get(intent_name, {})
 
     @rasa.shared.utils.common.lazy_property
-    def intents(self):
+    def intents(self) -> List[Text]:
+        """Returns sorted list of intents."""
         return sorted(self.intent_properties.keys())
 
     @property
@@ -1636,7 +1671,7 @@ class Domain:
         def get_exception_message(
             duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
             mappings: List[Tuple[Text, Text]] = None,
-        ):
+        ) -> Text:
             """Return a message given a list of error locations."""
 
             message = ""
@@ -1648,7 +1683,7 @@ class Domain:
                 message += get_mapping_exception_message(mappings)
             return message
 
-        def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
+        def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]) -> Text:
             """Return a message given a list of duplicates."""
 
             message = ""
@@ -1753,7 +1788,7 @@ class Domain:
 
         try:
             content = rasa.shared.utils.io.read_yaml_file(filename)
-        except (ValueError, YamlSyntaxException):
+        except (RasaException, YamlSyntaxException):
             return False
 
         return any(key in content for key in ALL_DOMAIN_KEYS)

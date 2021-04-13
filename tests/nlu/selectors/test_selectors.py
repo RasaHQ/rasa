@@ -18,8 +18,7 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     NUM_TRANSFORMER_LAYERS,
     TRANSFORMER_SIZE,
-    EVAL_NUM_EPOCHS,
-    EVAL_NUM_EXAMPLES,
+    CONSTRAIN_SIMILARITIES,
     CHECKPOINT_MODEL,
     MODEL_CONFIDENCE,
     RANDOM_SEED,
@@ -215,12 +214,19 @@ async def test_train_model_checkpointing(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "CountVectorsFeaturizer",
+                    "analyzer": "char_wb",
+                    "min_ngram": 3,
+                    "max_ngram": 17,
+                    "max_features": 10,
+                    "min_df": 5,
+                },
                 {
                     "name": "ResponseSelector",
                     EPOCHS: 5,
-                    EVAL_NUM_EXAMPLES: 10,
-                    EVAL_NUM_EPOCHS: 1,
+                    MODEL_CONFIDENCE: "linear_norm",
+                    CONSTRAIN_SIMILARITIES: True,
                     CHECKPOINT_MODEL: True,
                 },
             ],
@@ -293,16 +299,11 @@ async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: P
     )
 
 
-async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path):
+async def test_process_gives_diagnostic_data(
+    response_selector_interpreter: Interpreter,
+):
     """Tests if processing a message returns attention weights as numpy array."""
-
-    with rasa.model.unpack_model(
-        trained_response_selector_bot
-    ) as unpacked_model_directory:
-        _, nlu_model_directory = rasa.model.get_model_subdirectories(
-            unpacked_model_directory
-        )
-        interpreter = Interpreter.load(nlu_model_directory)
+    interpreter = response_selector_interpreter
 
     message = Message(data={TEXT: "hello"})
     for component in interpreter.pipeline:

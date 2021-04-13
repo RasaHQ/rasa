@@ -4,7 +4,7 @@ from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Tex
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 import rasa.shared.utils.io
-from sanic import Blueprint, response
+from sanic import Blueprint, response, Sanic
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from socketio import AsyncServer
@@ -13,12 +13,14 @@ logger = logging.getLogger(__name__)
 
 
 class SocketBlueprint(Blueprint):
-    def __init__(self, sio: AsyncServer, socketio_path, *args, **kwargs):
+    def __init__(
+        self, sio: AsyncServer, socketio_path: Text, *args: Any, **kwargs: Any
+    ) -> None:
         self.sio = sio
         self.socketio_path = socketio_path
         super().__init__(*args, **kwargs)
 
-    def register(self, app, options) -> None:
+    def register(self, app: Sanic, options: Dict[Text, Any]) -> None:
         self.sio.attach(app, self.socketio_path)
         super().register(app, options)
 
@@ -175,7 +177,7 @@ class SocketIOInput(InputChannel):
             return response.json({"status": "ok"})
 
         @sio.on("connect", namespace=self.namespace)
-        async def connect(sid: Text, _) -> None:
+        async def connect(sid: Text, _: Any) -> None:
             logger.debug(f"User {sid} connected to socketIO endpoint.")
 
         @sio.on("disconnect", namespace=self.namespace)
@@ -183,7 +185,7 @@ class SocketIOInput(InputChannel):
             logger.debug(f"User {sid} disconnected from socketIO endpoint.")
 
         @sio.on("session_request", namespace=self.namespace)
-        async def session_request(sid: Text, data: Optional[Dict]):
+        async def session_request(sid: Text, data: Optional[Dict]) -> None:
             if data is None:
                 data = {}
             if "session_id" not in data or data["session_id"] is None:
@@ -194,7 +196,7 @@ class SocketIOInput(InputChannel):
             logger.debug(f"User {sid} connected to socketIO endpoint.")
 
         @sio.on(self.user_message_evt, namespace=self.namespace)
-        async def handle_message(sid: Text, data: Dict) -> Any:
+        async def handle_message(sid: Text, data: Dict) -> None:
             output_channel = SocketIOOutput(sio, self.bot_message_evt)
 
             if self.session_persistence:
