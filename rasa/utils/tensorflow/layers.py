@@ -637,17 +637,14 @@ class DotProductLoss(tf.keras.layers.Layer):
         """
 
         pos_labels = tf.expand_dims(target_labels, axis=-2)
-        neg_labels = tf.cast(
-            self._sample_idxs(tf.shape(target_labels)[0], labels, idxs),
-            dtype=tf.float32,
-        )
+        neg_labels = self._sample_idxs(tf.shape(target_labels)[0], labels, idxs)
 
         return tf.cast(
             tf.reduce_all(tf.equal(neg_labels, pos_labels), axis=-1), pos_labels.dtype
         )
 
     def _get_negs(
-        self, embeds: tf.Tensor, labels: tf.Tensor, target_labels: tf.Tensor,
+        self, embeds: tf.Tensor, labels: tf.Tensor, target_labels: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Get negative examples from given tensor."""
 
@@ -659,9 +656,9 @@ class DotProductLoss(tf.keras.layers.Layer):
         target_size = tf.shape(target_labels_flat)[0]
 
         neg_ids = self._random_indices(target_size, total_candidates)
-        bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
 
         neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
+        bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
 
         # check if inputs have sequence dimension
         if len(target_labels.shape) == 3:

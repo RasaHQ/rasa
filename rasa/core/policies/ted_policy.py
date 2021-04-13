@@ -116,6 +116,7 @@ from rasa.utils.tensorflow.data_generator import (
     RasaDataChunkFileGenerator,
     RasaDataGenerator,
 )
+from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -1209,6 +1210,16 @@ class TED(TransformerRasaModel):
             # First, sample a fixed number of random labels ids
             # We use uniform candidate sampler because it has the ability to sample unique values
             total_num_label_ids = all_label_ids.shape[0]
+
+            if label_batch_size > total_num_label_ids:
+                raise TFLayerConfigException(
+                    f"{LABEL_BATCH_SIZE} is set to {label_batch_size} which is "
+                    f"greater that total number of unique label ids "
+                    f"({total_num_label_ids}). Please make "
+                    f"sure that {LABEL_BATCH_SIZE} is set to a value smaller than "
+                    f"or equal to the number of unique label ids."
+                )
+
             sampled_label_ids, _, _ = tf.random.uniform_candidate_sampler(
                 tf.reshape(
                     tf.cast(tf.range(0, total_num_label_ids), dtype=tf.int64),
@@ -1229,7 +1240,9 @@ class TED(TransformerRasaModel):
         return sampled_label_ids
 
     @staticmethod
-    def _slice_sparse_tensor(input_tensor, selection_indices, axis=0):
+    def _slice_sparse_tensor(
+        input_tensor: tf.SparseTensor, selection_indices: tf.Tensor, axis=0
+    ) -> tf.SparseTensor:
         """
         Assume input_tensor is:
             indices = [[0, 0], [2, 2], [2, 3], [3, 1]]
@@ -1241,9 +1254,9 @@ class TED(TransformerRasaModel):
         Note: Entries in selection_indices should be unique and sorted. If not, this implementation will fail.
 
         Args:
-            input_tensor:
-            selection_indices:
-            axis:
+            input_tensor: Input sparse tensor to be sliced
+            selection_indices: Indices inside the sparse tensor that should be picked
+            axis: Axis over which selection_indices should operate
 
         Returns:
 
@@ -1305,7 +1318,7 @@ class TED(TransformerRasaModel):
         elif isinstance(tensor, tf.SparseTensor):
             return self._slice_sparse_tensor(tensor, indices)
 
-    def _compute_embedding_for_label_ids(self, label_ids: tf.Tensor):
+    def _compute_embedding_for_label_ids(self, label_ids: tf.Tensor) -> tf.Tensor:
 
         filtered_label_data = {}
 
@@ -1894,7 +1907,7 @@ class TED(TransformerRasaModel):
 
     @staticmethod
     def _get_labels_embed(
-        selection_ids, all_label_ids: tf.Tensor, all_labels_embed: tf.Tensor
+        selection_ids: tf.Tensor, all_label_ids: tf.Tensor, all_labels_embed: tf.Tensor
     ) -> tf.Tensor:
         # instead of processing labels again, gather embeddings from
         # all_labels_embed using label ids
