@@ -213,8 +213,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         component_config: Optional[Dict[Text, Any]] = None,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
         finetune_mode: bool = False,
-        model_dir: Text = '',
-        filename: Text = '',
+        model_dir: Text = "",
+        filename: Text = "",
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
         super().__init__(component_config)
@@ -238,8 +238,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self.vectorizers = vectorizers
 
         self.finetune_mode = finetune_mode
-
-
 
     def _get_message_tokens_by_attribute(
         self, message: "Message", attribute: Text
@@ -712,7 +710,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         training_data: TrainingData,
         cfg: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> Optional[Text]:
         """Train the featurizer.
 
         Take parameters from config and
@@ -756,11 +754,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     training_data.training_examples,
                 )
 
-        self.persist(self._filename, self._model_dir)
+        return self.persist(self._filename, self._model_dir)
 
-    def process_training_data(
-        self, sdf, training_data: TrainingData
-    ) -> TrainingData:
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
 
         for message in training_data.training_examples:
             self.process(message)
@@ -898,28 +894,23 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     @classmethod
     def load(
         cls,
-        model_dir: Text,
+        filename: Text,
         component_config: Dict[Text, Any] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         should_finetune: bool = False,
-        filename: Text = '',
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
         """Loads trained component (see parent class for full docstring)."""
         if not component_config:
             component_config = {}
 
-        rasa.utils.train_utils.override_defaults(
-            cls.defaults, component_config
-        )
+        component_config = rasa.utils.train_utils.override_defaults(cls.defaults, component_config)
 
-        featurizer_file = os.path.join(model_dir, filename)
-
-        if not os.path.exists(featurizer_file):
+        if not os.path.exists(filename):
             return cls(component_config)
 
-        vocabulary = io_utils.json_unpickle(featurizer_file)
+        vocabulary = io_utils.json_unpickle(filename)
 
         share_vocabulary = component_config["use_shared_vocab"]
 

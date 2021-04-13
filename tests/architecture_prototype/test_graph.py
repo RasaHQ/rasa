@@ -93,13 +93,13 @@ rasa_nlu_train_graph = {
         "uses": ResponseSelector,
         "fn": "train",
         "config": {"component_config": {"epochs": 1}},
-        "needs": {"training_data": "tokenize"},
+        "needs": {"training_data": "add_count_features2"},
     },
     "train_synonym_mapper": {
         "uses": EntitySynonymMapper,
         "config": {},
         "fn": "train",
-        "needs": {"training_data": "tokenize"},
+        "needs": {"training_data": "add_count_features2"},
     },
 }
 
@@ -116,6 +116,6 @@ def test_train_nlu():
         ["train_classifier", "train_response_selector", "train_synonym_mapper"],
     )
 
-    assert isinstance(trained_components[0], DIETClassifier)
-    assert isinstance(trained_components[1], ResponseSelector)
-    assert isinstance(trained_components[2], EntitySynonymMapper)
+    assert isinstance(trained_components['train_classifier'], DIETClassifier)
+    assert isinstance(trained_components['train_response_selector'], ResponseSelector)
+    assert isinstance(trained_components['train_synonym_mapper'], EntitySynonymMapper)
