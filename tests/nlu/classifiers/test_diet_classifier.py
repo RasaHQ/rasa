@@ -470,6 +470,7 @@ async def test_margin_loss_is_not_normalized(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_set_random_seed(component_builder, tmpdir, nlu_as_json_path: Text):
     """test if train result is the same for two runs of tf embedding"""
 
@@ -619,6 +620,7 @@ async def test_train_model_checkpointing(
         {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
     ],
 )
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_composite_entities(
     classifier_params, component_builder, tmpdir
 ):
@@ -647,14 +649,11 @@ async def test_train_persist_load_with_composite_entities(
     assert loaded.parse(text) == trained.parse(text)
 
 
-async def test_process_gives_diagnostic_data(trained_nlu_moodbot_path: Text,):
+async def test_process_gives_diagnostic_data(
+    response_selector_interpreter: Interpreter,
+):
     """Tests if processing a message returns attention weights as numpy array."""
-    with rasa.model.unpack_model(trained_nlu_moodbot_path) as unpacked_model_directory:
-        _, nlu_model_directory = rasa.model.get_model_subdirectories(
-            unpacked_model_directory
-        )
-        interpreter = Interpreter.load(nlu_model_directory)
-
+    interpreter = response_selector_interpreter
     message = Message(data={TEXT: "hello"})
     for component in interpreter.pipeline:
         component.process(message)
@@ -662,7 +661,7 @@ async def test_process_gives_diagnostic_data(trained_nlu_moodbot_path: Text,):
     diagnostic_data = message.get(DIAGNOSTIC_DATA)
 
     # The last component is DIETClassifier, which should add attention weights
-    name = f"component_{len(interpreter.pipeline) - 1}_DIETClassifier"
+    name = f"component_{len(interpreter.pipeline) - 2}_DIETClassifier"
     assert isinstance(diagnostic_data, dict)
     assert name in diagnostic_data
     assert "attention_weights" in diagnostic_data[name]
