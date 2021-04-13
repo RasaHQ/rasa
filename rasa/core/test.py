@@ -12,7 +12,6 @@ from rasa.shared.core.constants import POLICIES_THAT_EXTRACT_ENTITIES
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
-import rasa.shared.utils.cli
 from rasa.core.channels import UserMessage
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
