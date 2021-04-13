@@ -213,3 +213,11 @@ Checks whether the message came from an e2e story.
 
   `True`, if message is a from an e2e story, `False` otherwise.
 
+#### find\_overlapping\_entities
+
+```python
+ | find_overlapping_entities() -> List[Tuple[Dict[Text, Any], Dict[Text, Any]]]
+```
+
+Finds any overlapping entity annotations.
+
