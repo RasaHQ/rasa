@@ -75,6 +75,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionRevertFallbackEvents(),
         ActionDefaultAskAffirmation(),
         ActionDefaultAskRephrase(),
+        ActionUnlikelyIntent(),
         TwoStageFallbackAction(action_endpoint),
         ActionBack(),
     ]
