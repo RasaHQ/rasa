@@ -467,7 +467,7 @@ def _create_summary_report(
     intent_report_with_augmentation: Dict[Text, Any],
     classification_report_no_augmentation: Dict[Text, Any],
     training_intents: List[Text],
-    pooled_intents: Set[Text],
+    intents_to_augment: Set[Text],
     output_directory: Text,
 ) -> Dict[Text, Dict[Text, float]]:
     """Creates a summary of the effect of data augmentation.
@@ -478,7 +478,7 @@ def _create_summary_report(
         classification_report_no_augmentation: Classification report of the model run
             *without* data augmentation.
         training_intents: All intents in the training data (non-augmented).
-        pooled_intents: The intents that have been selected for data augmentation.
+        intents_to_augment: The intents that have been selected for data augmentation.
         output_directory: Directory to store the output reports in.
 
     Returns:
@@ -487,17 +487,17 @@ def _create_summary_report(
     """
     # Retrieve intents for which performance has changed
     changed_intents = (
-        _get_intents_with_performance_changes(
+            _get_intents_with_performance_changes(
             classification_report_no_augmentation,
             intent_report_with_augmentation,
             training_intents,
         )
-        - pooled_intents
+            - intents_to_augment
     )
 
     # Create and update result reports
     report_tuple = _create_augmentation_summary(
-        pooled_intents,
+        intents_to_augment,
         changed_intents,
         classification_report_no_augmentation,
         intent_report_with_augmentation,
@@ -610,7 +610,7 @@ def _run_data_augmentation(
         intent_report_with_augmentation=intent_report,
         classification_report_no_augmentation=classification_report_no_augmentation,
         training_intents=nlu_training_data.intents,
-        pooled_intents=intents_to_augment,
+        intents_to_augment=intents_to_augment,
         output_directory=output_directory,
     )
 
