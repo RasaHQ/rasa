@@ -5,6 +5,7 @@ import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
 import rasa.utils.train_utils
+from rasa.architecture_prototype.graph import Persistor
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
@@ -448,7 +449,11 @@ class Component(metaclass=ComponentMetaclass):
     # This is an important feature for backwards compatibility of components.
     not_supported_language_list = None
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None,) -> None:
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        persistor: Optional[Persistor] = None,
+    ) -> None:
 
         if not component_config:
             component_config = {}
@@ -461,8 +466,7 @@ class Component(metaclass=ComponentMetaclass):
             self.defaults, component_config
         )
 
-        self._model_dir = component_config.get("model_dir")
-        self._filename = component_config.get("filename")
+        self._persistor = persistor
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
@@ -598,12 +602,8 @@ class Component(metaclass=ComponentMetaclass):
         """
         pass
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self) -> Optional[Dict[Text, Any]]:
         """Persists this component to disk for future loading.
-
-        Args:
-            file_name: The file name of the model.
-            model_dir: The directory to store the model to.
 
         Returns:
             An optional dictionary with any information about the stored model.

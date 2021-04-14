@@ -1,3 +1,6 @@
+import shutil
+from pathlib import Path
+
 import dask
 
 from rasa.architecture_prototype import graph
@@ -24,59 +27,58 @@ from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturi
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
+project = "/Users/tobias/Workspace/rasa-demo"
+
 # We can omit `FallbackClassifier` as this doesn't train
 rasa_nlu_train_graph = {
     "load_data": {
         "uses": TrainingDataReader,
         "fn": "read",
-        "config": {"project": "examples/moodbot"},
+        "config": {"project": project},
         "needs": {},
+        "persist": False,
     },
     "tokenize": {
         "uses": WhitespaceTokenizer,
         "fn": "train",
         "config": {},
         "needs": {"training_data": "load_data"},
+        "persist": False,
     },
     "train_regex_featurizer": {
         "uses": RegexFeaturizer,
         "fn": "train",
-        "config": {
-            "component_config": {"model_dir": "model", "filename": "regex_featurizer"}
-        },
+        "config": {},
         "needs": {"training_data": "tokenize"},
     },
     "add_regex_features": {
         "uses": RegexFeaturizer,
         "fn": "process_training_data",
         "config": {},
-        "needs": {"filename": "train_regex_featurizer", "training_data": "tokenize",},
+        "needs": {
+            "resource_name": "train_regex_featurizer",
+            "training_data": "tokenize",
+        },
     },
     "train_lexical_featurizer": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "train",
-        "config": {
-            "component_config": {"model_dir": "model", "filename": "lexical_featurizer"}
-        },
+        "config": {"component_config": {}},
         "needs": {"training_data": "tokenize"},
     },
     "add_lexical_features": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "process_training_data",
-        "config": {
-            "component_config": {"model_dir": "model", "filename": "lexical_featurizer"}
-        },
+        "config": {"component_config": {}},
         "needs": {
             "training_data": "add_regex_features",
-            "filename": "train_lexical_featurizer",
+            "resource_name": "train_lexical_featurizer",
         },
     },
     "train_count_featurizer1": {
         "uses": CountVectorsFeaturizer,
         "fn": "train",
-        "config": {
-            "component_config": {"model_dir": "model", "filename": "count_featurizer1"}
-        },
+        "config": {},
         "needs": {"training_data": "tokenize"},
     },
     "add_count_features1": {
@@ -84,20 +86,16 @@ rasa_nlu_train_graph = {
         "constructor_name": "load",
         "eager": False,
         "fn": "process_training_data",
-        "config": {
-            "component_config": {"model_dir": "model", "filename": "count_featurizer1"}
-        },
+        "config": {},
         "needs": {
             "training_data": "add_lexical_features",
-            "filename": "train_count_featurizer1",
+            "resource_name": "train_count_featurizer1",
         },
     },
     "train_count_featurizer2": {
         "uses": CountVectorsFeaturizer,
         "fn": "train",
-        "config": {
-            "component_config": {"model_dir": "model", "filename": "count_featurizer2"}
-        },
+        "config": {},
         "needs": {"training_data": "tokenize"},
     },
     "add_count_features2": {
@@ -105,31 +103,29 @@ rasa_nlu_train_graph = {
         "constructor_name": "load",
         "eager": False,
         "fn": "process_training_data",
-        "config": {
-            "component_config": {"model_dir": "model", "filename": "count_featurizer2"}
-        },
+        "config": {},
         "needs": {
-            "filename": "train_count_featurizer2",
+            "resource_name": "train_count_featurizer2",
             "training_data": "add_count_features1",
         },
     },
     "train_classifier": {
         "uses": DIETClassifier,
         "fn": "train",
-        "config": {"component_config": {"epochs": 1}},
+        "config": {"component_config": {"epochs": 1,},},
         "needs": {"training_data": "add_count_features2"},
     },
     "train_response_selector": {
         "uses": ResponseSelector,
         "fn": "train",
-        "config": {"component_config": {"epochs": 1}},
+        "config": {"component_config": {"epochs": 1,},},
         "needs": {"training_data": "add_count_features2"},
     },
     "train_synonym_mapper": {
         "uses": EntitySynonymMapper,
         "config": {},
         "fn": "train",
-        "needs": {"training_data": "add_count_features2"},
+        "needs": {"training_data": "add_count_features2",},
     },
 }
 
@@ -147,17 +143,29 @@ def test_train_nlu():
     )
 
 
+def test_persist_nlu():
+    # clean up before testing persistence
+    cache_dir = Path("model")
+    shutil.rmtree(cache_dir, ignore_errors=True)
+    cache_dir.mkdir()
+
+    graph.run_as_dask_graph(
+        rasa_nlu_train_graph,
+        ["train_classifier", "train_response_selector", "train_synonym_mapper"],
+    )
+
+
 full_model_train_graph = {
     "load_domain": {
         "uses": DomainReader,
         "fn": "read",
-        "config": {"project": "examples/moodbot"},
+        "config": {"project": project},
         "needs": {},
     },
     "load_stories": {
         "uses": StoryGraphReader,
         "fn": "read",
-        "config": {"project": "examples/moodbot"},
+        "config": {"project": project},
         "needs": {},
     },
     "generate_trackers": {
@@ -298,7 +306,7 @@ full_model_train_graph = {
     "train_ted_policy": {
         "uses": TEDPolicy,
         "fn": "train",
-        "config": {},
+        "config": {"max_history": 5},
         "needs": {
             "e2e_features": "create_e2e_lookup",
             "training_trackers": "generate_trackers",

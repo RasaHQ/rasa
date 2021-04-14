@@ -1,6 +1,7 @@
 import os
 from typing import Any, Dict, List, Optional, Text, Type
 
+from rasa.architecture_prototype.graph import Persistor
 from rasa.nlu.components import Component
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA
 from rasa.shared.nlu.constants import ENTITIES, TEXT
@@ -23,9 +24,10 @@ class EntitySynonymMapper(EntityExtractor):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         synonyms: Optional[Dict[Text, Any]] = None,
+        persistor: Optional[Persistor] = None,
     ) -> None:
 
-        super().__init__(component_config)
+        super().__init__(component_config, persistor=persistor)
 
         self.synonyms = synonyms if synonyms else {}
 
@@ -34,7 +36,7 @@ class EntitySynonymMapper(EntityExtractor):
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> Optional[Text]:
 
         for key, value in list(training_data.entity_synonyms.items()):
             self.add_entities_if_synonyms(key, value)
@@ -44,40 +46,36 @@ class EntitySynonymMapper(EntityExtractor):
                 entity_val = example.get(TEXT)[entity["start"] : entity["end"]]
                 self.add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
+        return self.persist()
+
     def process(self, message: Message, **kwargs: Any) -> None:
 
         updated_entities = message.get(ENTITIES, [])[:]
         self.replace_synonyms(updated_entities)
         message.set(ENTITIES, updated_entities, add_to_output=True)
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,) -> Optional[Text]:
 
         if self.synonyms:
-            file_name = file_name + ".json"
-            entity_synonyms_file = os.path.join(model_dir, file_name)
+            entity_synonyms_file = self._persistor.file_for("synonyms.json")
             write_json_to_file(
                 entity_synonyms_file, self.synonyms, separators=(",", ": ")
             )
-            return {"file": file_name}
-        else:
-            return {"file": None}
+
+        return self._persistor.resource_name()
 
     @classmethod
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text,
+        persistor: Persistor,
+        resource_name: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["EntitySynonymMapper"] = None,
         **kwargs: Any,
     ) -> "EntitySynonymMapper":
         """Loads trained component (see parent class for full docstring)."""
-        file_name = meta.get("file")
-        if not file_name:
-            synonyms = None
-            return cls(meta, synonyms)
-
-        entity_synonyms_file = os.path.join(model_dir, file_name)
+        entity_synonyms_file = persistor.get_resource(resource_name, "synonyms.json")
         if os.path.isfile(entity_synonyms_file):
             synonyms = rasa.shared.utils.io.read_json_file(entity_synonyms_file)
         else:
@@ -86,7 +84,7 @@ class EntitySynonymMapper(EntityExtractor):
                 f"Failed to load synonyms file from '{entity_synonyms_file}'.",
                 docs=DOCS_URL_TRAINING_DATA + "#synonyms",
             )
-        return cls(meta, synonyms)
+        return cls(meta, synonyms, persistor=persistor)
 
     def replace_synonyms(self, entities: List[Dict[Text, Any]]) -> None:
         for entity in entities:

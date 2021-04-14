@@ -5,6 +5,7 @@ import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set, Union
 
 import rasa.shared.utils.io
+from rasa.architecture_prototype.graph import Persistor
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
 import rasa.utils.train_utils
@@ -213,9 +214,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         component_config: Optional[Dict[Text, Any]] = None,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
         finetune_mode: bool = False,
+        persistor: Optional[Persistor] = None,
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
-        super().__init__(component_config)
+        super().__init__(component_config, persistor=persistor)
 
         # parameters for sklearn's CountVectorizer
         self._load_count_vect_params()
@@ -749,7 +751,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     training_data.training_examples,
                 )
 
-        return self.persist(self._filename, self._model_dir)
+        return self.persist()
 
     def process_training_data(self, training_data: TrainingData) -> TrainingData:
 
@@ -802,21 +804,19 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         return any(value is not None for value in attribute_vocabularies.values())
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Text]:
+    def persist(self) -> Optional[Text]:
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again.
         """
-
-        file_name = file_name + ".pkl"
 
         if self.vectorizers:
             # vectorizer instance was not None, some models could have been trained
             attribute_vocabularies = self._collect_vectorizer_vocabularies()
             if self._is_any_model_trained(attribute_vocabularies):
                 # Definitely need to persist some vocabularies
-                featurizer_file = os.path.join(model_dir, file_name)
 
+                featurizer_file = self._persistor.file_for("count_features.pkl")
                 if self.use_shared_vocab:
                     # Only persist vocabulary from one attribute. Can be loaded and
                     # distributed to all attributes.
@@ -826,9 +826,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
                 io_utils.json_pickle(featurizer_file, vocab)
 
-                return featurizer_file
-
-        return None
+        return self._persistor.resource_name()
 
     @classmethod
     def _create_shared_vocab_vectorizers(
@@ -889,7 +887,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     @classmethod
     def load(
         cls,
-        filename: Text,
+        persistor: Persistor,
+        resource_name: Text,
         component_config: Dict[Text, Any] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
@@ -904,8 +903,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             cls.defaults, component_config
         )
 
+        filename = persistor.get_resource(resource_name, "count_features.pkl")
         if not os.path.exists(filename):
-            return cls(component_config)
+            return cls(component_config, persistor=persistor)
 
         vocabulary = io_utils.json_unpickle(filename)
 
@@ -917,10 +917,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             )
         else:
             vectorizers = cls._create_independent_vocab_vectorizers(
-                component_config, vocabulary=vocabulary
+                component_config, vocabulary=vocabulary,
             )
 
-        ftr = cls(component_config, vectorizers, should_finetune)
+        ftr = cls(component_config, vectorizers, should_finetune, persistor=persistor)
 
         # make sure the vocabulary has been loaded correctly
         for attribute in vectorizers:

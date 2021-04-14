@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 from typing import Any, Dict, Optional, Text, List, Type, Union, Callable
 
+from rasa.architecture_prototype.graph import Persistor
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import Component
@@ -74,8 +75,9 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         self,
         component_config: Dict[Text, Any],
         feature_to_idx_dict: Optional[Dict[Text, Any]] = None,
+        persistor: Optional[Persistor] = None,
     ):
-        super().__init__(component_config)
+        super().__init__(component_config, persistor=persistor)
 
         self.feature_to_idx_dict = feature_to_idx_dict or {}
         self.number_of_features = self._calculate_number_of_features()
@@ -97,7 +99,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         self.feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
         self.number_of_features = self._calculate_number_of_features()
 
-        return self.persist(self._filename, self._model_dir)
+        return self.persist()
 
     def process_training_data(self, training_data: TrainingData,) -> TrainingData:
 
@@ -298,11 +300,11 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
         return LexicalSyntacticFeaturizer(meta, feature_to_idx_dict=feature_to_idx_dict)
 
-    def persist(self, file_name: Text, model_dir: Text) -> Text:
+    def persist(self,) -> Text:
         """Persist this model into the passed directory.
         Return the metadata necessary to load the model again."""
 
-        feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
+        feature_to_idx_file = self._persistor.file_for("feature_to_idx_dict.pkl")
         io_utils.json_pickle(feature_to_idx_file, self.feature_to_idx_dict)
 
-        return str(feature_to_idx_file)
+        return self._persistor.resource_name()

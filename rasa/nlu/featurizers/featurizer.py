@@ -1,13 +1,18 @@
 import numpy as np
 from typing import Text, Optional, Dict, Any
 
+from rasa.architecture_prototype.graph import Persistor
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.components import Component
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
 
 class Featurizer(Component):
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        persistor: Optional[Persistor] = None,
+    ) -> None:
         if not component_config:
             component_config = {}
 
@@ -16,7 +21,7 @@ class Featurizer(Component):
         self.component_config = component_config
         component_config.setdefault(FEATURIZER_CLASS_ALIAS, self.unique_name)
 
-        super().__init__(component_config)
+        super().__init__(component_config, persistor=persistor)
 
 
 class DenseFeaturizer(Featurizer):

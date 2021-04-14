@@ -6,6 +6,7 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
+from rasa.architecture_prototype.graph import Persistor
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
@@ -255,6 +256,7 @@ class ResponseSelector(DIETClassifier):
         all_retrieval_intents: Optional[List[Text]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
         finetune_mode: bool = False,
+        persistor: Optional[Persistor] = None,
     ) -> None:
         """Declare instance variables with default values.
 
@@ -287,6 +289,7 @@ class ResponseSelector(DIETClassifier):
             entity_tag_specs,
             model,
             finetune_mode=finetune_mode,
+            persistor=persistor,
         )
 
     @property
@@ -480,21 +483,18 @@ class ResponseSelector(DIETClassifier):
         if out and DIAGNOSTIC_DATA in out:
             message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
 
-    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+    def persist(self) -> Text:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
         """
-        if self.model is None:
-            return {"file": None}
+        return super().persist()
 
-        super().persist(file_name, model_dir)
-
-        return {
-            "file": file_name,
-            "responses": self.responses,
-            "all_retrieval_intents": self.all_retrieval_intents,
-        }
+        # return {
+        #     "file": file_name,
+        #     "responses": self.responses,
+        #     "all_retrieval_intents": self.all_retrieval_intents,
+        # }
 
     @classmethod
     def _load_model_class(

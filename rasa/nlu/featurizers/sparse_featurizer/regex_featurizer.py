@@ -9,6 +9,7 @@ import scipy.sparse
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
+from rasa.architecture_prototype.graph import Persistor
 from rasa.nlu import utils
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
@@ -61,6 +62,7 @@ class RegexFeaturizer(SparseFeaturizer):
         known_patterns: Optional[List[Dict[Text, Text]]] = None,
         pattern_vocabulary_stats: Optional[Dict[Text, int]] = None,
         finetune_mode: bool = False,
+        persistor: Optional[Persistor] = None,
     ) -> None:
         """Constructs new features for regexes and lookup table using regex expressions.
 
@@ -71,7 +73,7 @@ class RegexFeaturizer(SparseFeaturizer):
                 and total number available.
             finetune_mode: Load component in finetune mode.
         """
-        super().__init__(component_config)
+        super().__init__(component_config, persistor=persistor)
 
         self.known_patterns = known_patterns if known_patterns else []
         self.case_sensitive = self.component_config["case_sensitive"]
@@ -191,7 +193,7 @@ class RegexFeaturizer(SparseFeaturizer):
         else:
             self.known_patterns = patterns_from_data
 
-        return self.persist(self._filename, self._model_dir)
+        return self.persist()
 
     def process_training_data(self, training_data: TrainingData) -> TrainingData:
 
@@ -346,21 +348,16 @@ class RegexFeaturizer(SparseFeaturizer):
             finetune_mode=should_finetune,
         )
 
-    def persist(self, file_name: Text, model_dir: Text) -> Text:
+    def persist(self) -> Text:
         """Persist this model into the passed directory.
-
-        Args:
-            file_name: Prefix to add to all files stored as part of this component.
-            model_dir: Path where files should be stored.
 
         Returns:
             Metadata necessary to load the model again.
         """
-        patterns_file_name = file_name + ".patterns.pkl"
-        regex_file = Path(model_dir) / patterns_file_name
+        regex_file = self._persistor.file_for("patterns.pkl")
         utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
-        vocabulary_stats_file_name = file_name + ".vocabulary_stats.pkl"
-        vocabulary_file = Path(model_dir) / vocabulary_stats_file_name
+
+        vocabulary_file = self._persistor.file_for("vocabulary_stats.pkl")
         utils.write_json_to_file(vocabulary_file, self.vocabulary_stats, indent=4)
 
-        return os.path.join(model_dir, file_name)
+        return self._persistor.resource_name()

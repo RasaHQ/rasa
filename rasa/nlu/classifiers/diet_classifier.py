@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
+from rasa.architecture_prototype.graph import Persistor
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
@@ -324,6 +325,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         finetune_mode: bool = False,
+        persistor: Optional[Persistor] = None,
     ) -> None:
         """Declare instance variables with default values."""
         if component_config is not None and EPOCHS not in component_config:
@@ -332,7 +334,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 f" We will change the default value of '{EPOCHS}' in the future to 1. "
             )
 
-        super().__init__(component_config)
+        super().__init__(component_config, persistor=persistor)
 
         self._check_config_parameters()
 
@@ -805,7 +807,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> Optional[Text]:
         """Train the embedding intent classifier on a data set."""
         model_data = self.preprocess_train_data(training_data)
         if model_data.is_empty():
@@ -860,6 +862,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             verbose=False,
             shuffle=False,  # we use custom shuffle inside data generator
         )
+
+        return self.persist()
 
     # process helpers
     def _predict(
@@ -975,7 +979,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if out and DIAGNOSTIC_DATA in out:
             message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
 
-    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
+    def persist(self) -> Optional[Text]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
@@ -983,25 +987,25 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         import shutil
 
         if self.model is None:
-            return {"file": None}
+            return None
 
-        model_dir = Path(model_dir)
-        tf_model_file = model_dir / f"{file_name}.tf_model"
+        tf_model_file = self._persistor.file_for("tf_model")
 
         rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
         if self.component_config[CHECKPOINT_MODEL]:
-            shutil.move(self.tmp_checkpoint_dir, model_dir / "checkpoints")
+            checkpoint_directory = self._persistor.directory_for("checkpoints")
+            shutil.move(self.tmp_checkpoint_dir, checkpoint_directory)
         self.model.save(str(tf_model_file))
 
         io_utils.pickle_dump(
-            model_dir / f"{file_name}.data_example.pkl", self._data_example
+            self._persistor.file_for("data_example.pkl"), self._data_example
         )
         io_utils.pickle_dump(
-            model_dir / f"{file_name}.label_data.pkl", dict(self._label_data.data)
+            self._persistor.file_for("label_data.pkl"), dict(self._label_data.data)
         )
         io_utils.json_pickle(
-            model_dir / f"{file_name}.index_label_id_mapping.json",
+            self._persistor.file_for("index_label_id_mapping.json"),
             self.index_label_id_mapping,
         )
 
@@ -1011,37 +1015,30 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             else []
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(
-            model_dir / f"{file_name}.entity_tag_specs.json", entity_tag_specs
+            self._persistor.file_for("entity_tag_specs.json"), entity_tag_specs
         )
 
-        return {"file": file_name}
+        return self._persistor.resource_name()
 
     @classmethod
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text,
+        resource_name: Text,
+        persistor: Persistor,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
-        if not meta.get("file"):
-            logger.debug(
-                f"Failed to load model for '{cls.__name__}'. "
-                f"Maybe you did not provide enough training data and no model was "
-                f"trained or the path '{os.path.abspath(model_dir)}' doesn't exist?"
-            )
-            return cls(component_config=meta)
-
         (
             index_label_id_mapping,
             entity_tag_specs,
             label_data,
             meta,
             data_example,
-        ) = cls._load_from_files(meta, model_dir)
+        ) = cls._load_from_files(meta, persistor=persistor, resource_name=resource_name)
 
         meta = train_utils.override_defaults(cls.defaults, meta)
         meta = train_utils.update_confidence_type(meta)
@@ -1053,7 +1050,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_data,
             meta,
             data_example,
-            model_dir,
+            persistor=persistor,
+            resource_name=resource_name,
             finetune_mode=should_finetune,
         )
 
@@ -1063,11 +1061,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             entity_tag_specs=entity_tag_specs,
             model=model,
             finetune_mode=should_finetune,
+            persistor=persistor,
         )
 
     @classmethod
     def _load_from_files(
-        cls, meta: Dict[Text, Any], model_dir: Text
+        cls, meta: Dict[Text, Any], persistor: Persistor, resource_name: Text
     ) -> Tuple[
         Dict[int, Text],
         List[EntityTagSpec],
@@ -1075,18 +1074,18 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         Dict[Text, Any],
         Dict[Text, Dict[Text, List[FeatureArray]]],
     ]:
-        file_name = meta.get("file")
-
-        model_dir = Path(model_dir)
-
-        data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
-        label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
+        data_example = io_utils.pickle_load(
+            persistor.get_resource(resource_name, "data_example.pkl")
+        )
+        label_data = io_utils.pickle_load(
+            persistor.get_resource(resource_name, "label_data.pkl")
+        )
         label_data = RasaModelData(data=label_data)
         index_label_id_mapping = io_utils.json_unpickle(
-            model_dir / f"{file_name}.index_label_id_mapping.json"
+            persistor.get_resource(resource_name, "index_label_id_mapping.json")
         )
         entity_tag_specs = rasa.shared.utils.io.read_json_file(
-            model_dir / f"{file_name}.entity_tag_specs.json"
+            persistor.get_resource(resource_name, "entity_tag_specs.json")
         )
         entity_tag_specs = [
             EntityTagSpec(
@@ -1122,12 +1121,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_data: RasaModelData,
         meta: Dict[Text, Any],
         data_example: Dict[Text, Dict[Text, List[FeatureArray]]],
-        model_dir: Text,
+        persistor: Persistor,
+        resource_name: Text,
         finetune_mode: bool = False,
     ) -> "RasaModel":
-        file_name = meta.get("file")
-        tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
-
         label_key = LABEL_KEY if meta[INTENT_CLASSIFICATION] else None
         label_sub_key = LABEL_SUB_KEY if meta[INTENT_CLASSIFICATION] else None
 
@@ -1136,7 +1133,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         model = cls._load_model_class(
-            tf_model_file,
+            persistor.get_resource(resource_name, "tf_model"),
             model_data_example,
             label_data,
             entity_tag_specs,
