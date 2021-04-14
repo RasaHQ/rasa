@@ -207,30 +207,8 @@ def test_exception_tracker_store_from_endpoint_config(
     assert "test exception" in str(e.value)
 
 
-class URLExampleTrackerStore(RedisTrackerStore):
-    def __init__(self, domain, url, port, db, password, record_exp, event_broker=None):
-        super().__init__(
-            domain,
-            event_broker=event_broker,
-            host=url,
-            port=port,
-            db=db,
-            password=password,
-            record_exp=record_exp,
-        )
-
-
 class HostExampleTrackerStore(RedisTrackerStore):
     pass
-
-
-def test_tracker_store_deprecated_url_argument_from_string(domain: Domain):
-    endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
-    store_config = read_endpoint_config(endpoints_path, "tracker_store")
-    store_config.type = "tests.core.test_tracker_stores.URLExampleTrackerStore"
-
-    with pytest.raises(Exception):
-        TrackerStore.create(store_config, domain)
 
 
 def test_tracker_store_with_host_argument_from_string(domain: Domain):

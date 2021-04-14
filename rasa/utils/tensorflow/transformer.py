@@ -1,4 +1,4 @@
-from typing import List, Optional, Text, Tuple, Union
+from typing import Optional, Text, Tuple, Union
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.python.keras.utils import tf_utils

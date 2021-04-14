@@ -904,10 +904,8 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
 @pytest.mark.parametrize(
     "predict_function",
     [
-        lambda tracker, domain, something_else: PolicyPrediction(
-            [1, 0, 2, 3], "some-policy"
-        ),
-        lambda tracker, domain, some_bool=True: PolicyPrediction([1, 0], "some-policy"),
+        lambda tracker, domain, _: PolicyPrediction([1, 0, 2, 3], "some-policy"),
+        lambda tracker, domain, _=True: PolicyPrediction([1, 0], "some-policy"),
     ],
 )
 def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(

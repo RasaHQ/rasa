@@ -14,7 +14,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    NoReturn,
 )
 
 import rasa.utils.io
@@ -175,19 +174,6 @@ def set_log_and_warnings_filters() -> None:
         handler.addFilter(RepeatedLogFilter())
 
     warnings.filterwarnings("once", category=UserWarning)
-
-
-def obtain_verbosity() -> int:
-    """Returns a verbosity level according to the set log level."""
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-
-    verbosity = 0
-    if log_level == "DEBUG":
-        verbosity = 2
-    if log_level == "INFO":
-        verbosity = 1
-
-    return verbosity
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:

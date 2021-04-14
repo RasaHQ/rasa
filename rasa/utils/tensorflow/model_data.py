@@ -16,7 +16,6 @@ from typing import (
     ItemsView,
 )
 from collections import defaultdict, OrderedDict
-from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
 
 logger = logging.getLogger(__name__)
 

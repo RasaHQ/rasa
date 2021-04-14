@@ -180,7 +180,7 @@ def load_tf_hub_model(model_url: Text) -> Any:
 
     # needed to load the ConveRT model
     # noinspection PyUnresolvedReferences
-    import tensorflow_text
+    import tensorflow_text  # noqa: F401
     import os
 
     # required to take care of cases when other files are already
