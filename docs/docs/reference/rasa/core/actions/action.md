@@ -268,15 +268,6 @@ Creates action. See docstring of parent class.
 
 Resolve the name of the intent from the action name.
 
-#### action\_name\_from\_intent
-
-```python
- | @staticmethod
- | action_name_from_intent(intent_name: Text) -> Text
-```
-
-Resolve the action name from the name of the intent.
-
 #### run
 
 ```python

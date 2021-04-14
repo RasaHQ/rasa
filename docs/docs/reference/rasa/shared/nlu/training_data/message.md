@@ -104,7 +104,7 @@ Get intent as it appears in training data
  | get_combined_intent_response_key() -> Text
 ```
 
-Get intent as it appears in training data
+Get intent as it appears in training data.
 
 #### get\_sparse\_features
 

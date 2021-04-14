@@ -17,10 +17,10 @@ storages.
 ## Persistor Objects
 
 ```python
-class Persistor()
+class Persistor(abc.ABC)
 ```
 
-Store models in cloud and fetch them when needed
+Store models in cloud and fetch them when needed.
 
 #### persist
 
@@ -37,14 +37,6 @@ Uploads a model persisted in the `target_dir` to cloud storage.
 ```
 
 Downloads a model that has been persisted to cloud storage.
-
-#### list\_models
-
-```python
- | list_models() -> List[Text]
-```
-
-Lists all the trained models.
 
 ## AWSPersistor Objects
 
@@ -73,16 +65,4 @@ class AzurePersistor(Persistor)
 ```
 
 Store models on Azure
-
-#### list\_models
-
-```python
- | list_models() -> List[Text]
-```
-
-Lists models on remote storage.
-
-**Returns**:
-
-  Paths to found models.
 

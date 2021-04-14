@@ -83,14 +83,6 @@ Set log filters on the root logger, and duplicate filters for warnings.
 
 Filters only propagate on handlers, not loggers.
 
-#### obtain\_verbosity
-
-```python
-obtain_verbosity() -> int
-```
-
-Returns a verbosity level according to the set log level.
-
 #### sort\_list\_of\_dicts\_by\_first\_key
 
 ```python

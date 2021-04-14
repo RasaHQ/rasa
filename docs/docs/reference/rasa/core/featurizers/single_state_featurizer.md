@@ -96,3 +96,19 @@ Encode all action from the domain using the given interpreter.
 
   A list of encoded actions.
 
+## BinarySingleStateFeaturizer Objects
+
+```python
+class BinarySingleStateFeaturizer(SingleStateFeaturizer)
+```
+
+Dialogue State featurizer which features the state as binaries.
+
+#### \_\_init\_\_
+
+```python
+ | __init__() -> None
+```
+
+Creates featurizer.
+

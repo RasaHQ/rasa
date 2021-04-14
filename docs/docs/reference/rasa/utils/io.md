@@ -93,14 +93,6 @@ create_validator(function: Callable[[Text], bool], error_message: Text) -> Type[
 Helper method to create `Validator` classes from callable functions. Should be
 removed when questionary supports `Validator` objects.
 
-#### zip\_folder
-
-```python
-zip_folder(folder: Text) -> Text
-```
-
-Create an archive from a folder.
-
 #### json\_unpickle
 
 ```python

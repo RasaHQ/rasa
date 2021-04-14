@@ -160,6 +160,14 @@ Create a lock store which uses Redis for persistence.
 - `socket_timeout` - Timeout in seconds after which an exception will be raised
   in case Redis doesn&#x27;t respond within `socket_timeout` seconds.
 
+#### get\_lock
+
+```python
+ | get_lock(conversation_id: Text) -> Optional[TicketLock]
+```
+
+Retrieves lock (see parent docstring for more information).
+
 ## InMemoryLockStore Objects
 
 ```python

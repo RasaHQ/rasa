@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Dict, Text, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, List, Dict, Text, Optional, Set, Tuple, TYPE_CHECKING
 
 from tqdm import tqdm
 import numpy as np
@@ -13,7 +13,6 @@ from rasa.shared.core.events import (
     LoopInterrupted,
     UserUttered,
     ActionExecuted,
-    Event,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter

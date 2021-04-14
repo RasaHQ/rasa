@@ -3,14 +3,6 @@ sidebar_label: utils
 title: rasa.nlu.utils
 ---
 
-#### relative\_normpath
-
-```python
-relative_normpath(f: Optional[Text], path: Text) -> Optional[Path]
-```
-
-Return the path of file relative to `path`.
-
 #### module\_path\_from\_object
 
 ```python
@@ -35,17 +27,6 @@ write_to_file(filename: Text, text: Any) -> None
 
 Write a text to a file.
 
-#### is\_model\_dir
-
-```python
-is_model_dir(model_dir: Text) -> bool
-```
-
-Checks if the given directory contains a model and can be safely removed.
-
-specifically checks if the directory has no subdirectories and
-if all files have an appropriate ending.
-
 #### is\_url
 
 ```python
@@ -62,12 +43,4 @@ Check whether the url specified is a well formed one.
 **Returns**:
 
   `True` if valid, otherwise `False`.
-
-#### remove\_model
-
-```python
-remove_model(model_dir: Text) -> bool
-```
-
-Removes a model directory and all its content.
 

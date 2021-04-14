@@ -113,14 +113,6 @@ latest_user_message(events: List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]
 
 Return most recent user message.
 
-#### all\_events\_before\_latest\_user\_msg
-
-```python
-all_events_before_latest_user_msg(events: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
-```
-
-Return all events that happened before the most recent user message.
-
 #### is\_listening\_for\_message
 
 ```python
@@ -144,14 +136,6 @@ start_visualization(image_path: Text, port: int) -> None
 ```
 
 Add routes to serve the conversation visualization files.
-
-#### wait\_til\_server\_is\_running
-
-```python
-async wait_til_server_is_running(endpoint: EndpointConfig, max_retries: int = 30, sleep_between_retries: float = 1.0) -> bool
-```
-
-Try to reach the server, retry a couple of times and sleep in between.
 
 #### run\_interactive\_learning
 

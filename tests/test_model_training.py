@@ -1,6 +1,5 @@
 import logging
 import secrets
-import sys
 import tempfile
 import os
 from pathlib import Path
