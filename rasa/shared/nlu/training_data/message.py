@@ -14,6 +14,8 @@ from rasa.shared.nlu.constants import (
     METADATA_INTENT,
     METADATA_EXAMPLE,
     ENTITIES,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
     RESPONSE_IDENTIFIER_DELIMITER,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
@@ -396,3 +398,23 @@ class Message:
             (self.get(ACTION_TEXT) and not self.get(ACTION_NAME))
             or (self.get(TEXT) and not self.get(INTENT))
         )
+
+    def find_overlapping_entities(
+        self,
+    ) -> List[Tuple[Dict[Text, Any], Dict[Text, Any]]]:
+        """Finds any overlapping entity annotations."""
+        entities = self.get("entities", [])[:]
+        entities_with_location = [
+            e
+            for e in entities
+            if (ENTITY_ATTRIBUTE_START in e.keys() and ENTITY_ATTRIBUTE_END in e.keys())
+        ]
+        entities_with_location.sort(key=lambda e: e[ENTITY_ATTRIBUTE_START])
+        overlapping_pairs: List[Tuple[Dict[Text, Any], Dict[Text, Any]]] = []
+        for i, entity in enumerate(entities_with_location):
+            for other_entity in entities_with_location[i + 1 :]:
+                if other_entity[ENTITY_ATTRIBUTE_START] < entity[ENTITY_ATTRIBUTE_END]:
+                    overlapping_pairs.append((entity, other_entity))
+                else:
+                    break
+        return overlapping_pairs

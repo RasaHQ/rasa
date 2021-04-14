@@ -8,11 +8,12 @@ import rasa.utils.train_utils
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import COMPONENT_INDEX
+from rasa.nlu.constants import COMPONENT_INDEX, TRAINABLE_EXTRACTORS
 import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
@@ -214,14 +215,30 @@ def any_components_in_pipeline(
     """Check if any of the provided components are listed in the pipeline.
 
     Args:
-        components: A list of :class:`rasa.nlu.components.Component`s to check.
+        components: Component class names to check.
         pipeline: A list of :class:`rasa.nlu.components.Component`s.
 
     Returns:
         `True` if any of the `components` are in the `pipeline`, else `False`.
 
     """
-    return any(any(component.name == c for component in pipeline) for c in components)
+    return len(find_components_in_pipeline(components, pipeline)) > 0
+
+
+def find_components_in_pipeline(
+    components: Iterable[Text], pipeline: List["Component"]
+) -> Set[Text]:
+    """Finds those of the given components that are present in the pipeline.
+
+    Args:
+        components: A list of str of component class names to check.
+        pipeline: A list of :class:`rasa.nlu.components.Component`s.
+
+    Returns:
+        A list of str of component class names that are present in the pipeline.
+    """
+    pipeline_component_names = {c.name for c in pipeline}
+    return pipeline_component_names.intersection(components)
 
 
 def validate_required_components_from_data(
@@ -321,6 +338,65 @@ def validate_required_components_from_data(
             "You have defined synonyms in your training data, but "
             "your NLU pipeline does not include an 'EntitySynonymMapper'. "
             "To map synonyms, add an 'EntitySynonymMapper' to your pipeline."
+        )
+
+
+def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
+    """Warns the user when using competing extractors.
+
+    Competing extractors are e.g. `CRFEntityExtractor` and `DIETClassifier`.
+    Both of these look for the same entities based on the same training data
+    leading to ambiguity in the results.
+
+    Args:
+        pipeline: The list of the :class:`rasa.nlu.components.Component`s.
+    """
+    extractors_in_pipeline = find_components_in_pipeline(TRAINABLE_EXTRACTORS, pipeline)
+    if len(extractors_in_pipeline) > 1:
+        rasa.shared.utils.io.raise_warning(
+            f"You have defined multiple entity extractors that do the same job "
+            f"in your pipeline: "
+            f"{', '.join(extractors_in_pipeline)}. This can lead to the same entity getting "
+            f"extracted multiple times. Please read the documentation section "
+            f"on entity extractors to make sure you understand the implications: "
+            f"{DOCS_URL_COMPONENTS}#entity-extractors"
+        )
+
+
+def warn_of_competition_with_regex_extractor(
+    pipeline: List["Component"], data: TrainingData
+) -> None:
+    """Warns when regex entity extractor is competing with a general one.
+
+    This might be the case when the following conditions are all met:
+    * You are using a general entity extractor and the `RegexEntityExtractor`
+    * AND you have regex patterns for entity type A
+    * AND you have annotated text examples for entity type A
+
+    Args:
+        pipeline: The list of the :class:`rasa.nlu.components.Component`s.
+        data: The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
+    """
+    present_general_extractors = find_components_in_pipeline(
+        TRAINABLE_EXTRACTORS, pipeline
+    )
+    has_general_extractors = len(present_general_extractors) > 0
+    has_regex_extractor = any_components_in_pipeline(["RegexEntityExtractor"], pipeline)
+
+    regex_entity_types = {rf["name"] for rf in data.regex_features}
+    overlap_between_types = data.entities.intersection(regex_entity_types)
+    has_overlap = len(overlap_between_types) > 0
+
+    if has_general_extractors and has_regex_extractor and has_overlap:
+        rasa.shared.utils.io.raise_warning(
+            f"You have an overlap between the RegexEntityExtractor and the "
+            f"statistical entity extractors {', '.join(present_general_extractors)} "
+            f"in your pipeline. Specifically both types of extractors will "
+            f"attempt to extract entities of the types "
+            f"{', '.join(overlap_between_types)}. This can lead to multiple "
+            f"extraction of entities. Please read RegexEntityExtractor's "
+            f"documentation section to make sure you understand the "
+            f"implications: {DOCS_URL_COMPONENTS}#regexentityextractor"
         )
 
 
