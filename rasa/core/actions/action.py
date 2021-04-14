@@ -252,6 +252,7 @@ class Action:
             prediction.policy_name,
             prediction.max_confidence,
             hide_rule_turn=prediction.hide_rule_turn,
+            metadata=prediction.action_metadata,
         )
 
 
@@ -338,6 +339,7 @@ class ActionEndToEndResponse(Action):
             confidence=prediction.max_confidence,
             action_text=self.action_text,
             hide_rule_turn=prediction.hide_rule_turn,
+            metadata=prediction.action_metadata,
         )
 
 

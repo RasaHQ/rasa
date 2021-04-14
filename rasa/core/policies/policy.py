@@ -478,6 +478,7 @@ class PolicyPrediction:
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
         hide_rule_turn: bool = False,
+        action_metadata: Optional[Dict] = None,
     ) -> None:
         """Creates a `PolicyPrediction`.
 
@@ -513,6 +514,7 @@ class PolicyPrediction:
         self.is_no_user_prediction = is_no_user_prediction
         self.diagnostic_data = diagnostic_data or {}
         self.hide_rule_turn = hide_rule_turn
+        self.action_metadata = action_metadata
 
     @staticmethod
     def for_action_name(
@@ -557,6 +559,7 @@ class PolicyPrediction:
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
             and self.is_no_user_prediction == other.is_no_user_prediction
             and self.hide_rule_turn == other.hide_rule_turn
+            and self.action_metadata == other.action_metadata
             # We do not compare `diagnostic_data`, because it has no effect on the
             # action prediction.
         )
