@@ -130,7 +130,7 @@ def _collect_intents_for_data_augmentation(
         reverse=True,
     )[:num_intents_to_augment]
 
-    pooled_intents = {
+    intents_to_augment = {
         intent_score_tuple[0]
         for intent_score_tuple in low_data_intents
         + low_precision_intents
@@ -139,7 +139,7 @@ def _collect_intents_for_data_augmentation(
         + freq_confused_intents
     }
 
-    return pooled_intents
+    return intents_to_augment
 
 
 def _create_paraphrase_pool(
