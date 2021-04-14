@@ -502,15 +502,40 @@ async def trained_response_selector_bot(trained_async: Callable) -> Path:
 
 
 @pytest.fixture(scope="session")
-async def e2e_bot(trained_async: Callable) -> Path:
+async def e2e_bot_domain_file() -> Path:
+    return Path("data/test_e2ebot/domain.yml")
+
+
+@pytest.fixture(scope="session")
+async def e2e_bot_config_file() -> Path:
+    return Path("data/test_e2ebot/config.yml")
+
+
+@pytest.fixture(scope="session")
+async def e2e_bot_training_files() -> List[Path]:
+    return [
+        Path("data/test_e2ebot/data/rules.yml"),
+        Path("data/test_e2ebot/data/stories.yml"),
+        Path("data/test_e2ebot/data/nlu.yml"),
+    ]
+
+
+@pytest.fixture(scope="session")
+async def e2e_bot_test_stories_with_unknown_bot_utterances() -> Path:
+    return Path("data/test_e2ebot/tests/test_stories_with_unknown_bot_utterances.yml")
+
+
+@pytest.fixture(scope="session")
+async def e2e_bot(
+    trained_async: Callable,
+    e2e_bot_domain_file: Path,
+    e2e_bot_config_file: Path,
+    e2e_bot_training_files: List[Path],
+) -> Path:
     zipped_model = await trained_async(
-        domain="data/test_e2ebot/domain.yml",
-        config="data/test_e2ebot/config.yml",
-        training_files=[
-            "data/test_e2ebot/data/rules.yml",
-            "data/test_e2ebot/data/stories.yml",
-            "data/test_e2ebot/data/nlu.yml",
-        ],
+        domain=e2e_bot_domain_file,
+        config=e2e_bot_config_file,
+        training_files=e2e_bot_training_files,
     )
 
     if not zipped_model:
