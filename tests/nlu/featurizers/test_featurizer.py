@@ -68,20 +68,28 @@ def test_flexible_nlu_pipeline():
     featurizer = LexicalSyntacticFeaturizer({})
     featurizer.train(training_data)
 
-    assert len(message.features) == 6
-    assert message.features[0].origin == "cvf_word"
-    assert message.features[0].type == FEATURE_TYPE_SEQUENCE
-    assert message.features[1].origin == "cvf_word"
-    assert message.features[1].type == FEATURE_TYPE_SENTENCE
     # cvf word is also extracted for the intent
-    assert message.features[2].origin == "cvf_word"
-    assert message.features[2].type == FEATURE_TYPE_SEQUENCE
-    assert message.features[3].origin == "cvf_char"
-    assert message.features[3].type == FEATURE_TYPE_SEQUENCE
-    assert message.features[4].origin == "cvf_char"
-    assert message.features[4].type == FEATURE_TYPE_SENTENCE
-    assert message.features[5].origin == "LexicalSyntacticFeaturizer"
-    assert message.features[5].type == FEATURE_TYPE_SEQUENCE
+    origin_test_array = [
+        "cvf_word",
+        "cvf_word",
+        "cvf_word",
+        "cvf_char",
+        "cvf_char",
+        "LexicalSyntacticFeaturizer",
+    ]
+    type_test_array = [
+        FEATURE_TYPE_SEQUENCE,
+        FEATURE_TYPE_SENTENCE,
+        FEATURE_TYPE_SEQUENCE,
+        FEATURE_TYPE_SEQUENCE,
+        FEATURE_TYPE_SENTENCE,
+        FEATURE_TYPE_SEQUENCE,
+    ]
+    message_features_len = len(message.features)
+    assert message_features_len == 6
+    for i in range(message_features_len):
+        assert message.features[i].origin == origin_test_array[i]
+        assert message.features[i].type == type_test_array[i]
 
     sequence_feature_dim = (
         message.features[0].features.shape[1] + message.features[5].features.shape[1]
@@ -93,10 +101,13 @@ def test_flexible_nlu_pipeline():
     )
     model_data = classifier.preprocess_train_data(training_data)
 
-    assert len(model_data.get(TEXT).get(SENTENCE)) == 1
-    assert len(model_data.get(TEXT).get(SEQUENCE)) == 1
-    assert len(model_data.get(LABEL).get(SEQUENCE)) == 1
+    model_data_tests = [
+        model_data.get(TEXT).get(SEQUENCE),
+        model_data.get(TEXT).get(SENTENCE),
+        model_data.get(LABEL).get(SEQUENCE),
+    ]
+    shape_tests_results = [(5, sequence_feature_dim), (1, sentence_feature_dim), (1, 1)]
+    for i in range(3):
+        assert len(model_data_tests[i]) == 1
+        assert model_data_tests[i][0][0].shape == shape_tests_results[i]
     assert model_data.get(LABEL).get(SENTENCE) is None
-    assert model_data.get(TEXT).get(SEQUENCE)[0][0].shape == (5, sequence_feature_dim)
-    assert model_data.get(TEXT).get(SENTENCE)[0][0].shape == (1, sentence_feature_dim)
-    assert model_data.get(LABEL).get(SEQUENCE)[0][0].shape == (1, 1)
