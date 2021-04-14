@@ -708,9 +708,8 @@ class Domain:
         return rasa.shared.utils.io.get_dictionary_fingerprint(self_as_dict)
 
     @rasa.shared.utils.common.lazy_property
-    def user_actions_and_forms(self):
+    def user_actions_and_forms(self) -> List[Text]:
         """Returns combination of user actions and forms."""
-
         return self.user_actions + self.form_names
 
     @rasa.shared.utils.common.lazy_property
@@ -735,9 +734,8 @@ class Domain:
         return len(self.action_names_or_texts)
 
     @rasa.shared.utils.common.lazy_property
-    def num_states(self):
+    def num_states(self) -> int:
         """Number of used input states for the action prediction."""
-
         return len(self.input_states)
 
     @rasa.shared.utils.common.lazy_property
@@ -1537,7 +1535,8 @@ class Domain:
         return self.intent_properties.get(intent_name, {})
 
     @rasa.shared.utils.common.lazy_property
-    def intents(self):
+    def intents(self) -> List[Text]:
+        """Returns sorted list of intents."""
         return sorted(self.intent_properties.keys())
 
     @property
@@ -1672,7 +1671,7 @@ class Domain:
         def get_exception_message(
             duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
             mappings: List[Tuple[Text, Text]] = None,
-        ):
+        ) -> Text:
             """Return a message given a list of error locations."""
 
             message = ""
@@ -1684,7 +1683,7 @@ class Domain:
                 message += get_mapping_exception_message(mappings)
             return message
 
-        def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
+        def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]) -> Text:
             """Return a message given a list of duplicates."""
 
             message = ""
@@ -1789,7 +1788,7 @@ class Domain:
 
         try:
             content = rasa.shared.utils.io.read_yaml_file(filename)
-        except (ValueError, YamlSyntaxException):
+        except (RasaException, YamlSyntaxException):
             return False
 
         return any(key in content for key in ALL_DOMAIN_KEYS)
