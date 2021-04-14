@@ -76,7 +76,7 @@ def run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[T
         args.domain, "domain", DEFAULT_DOMAIN_PATH, none_is_valid=True
     )
 
-    config = rasa.cli.utils.get_valid_config(args.config, CONFIG_MANDATORY_KEYS)
+    config = rasa.cli.utils.get_valid_config_or_exit(args.config, CONFIG_MANDATORY_KEYS)
 
     training_files = [
         rasa.cli.utils.get_validated_path(
@@ -145,7 +145,7 @@ def run_core_training(
         if isinstance(args.config, list):
             args.config = args.config[0]
 
-        config = rasa.cli.utils.get_valid_config(
+        config = rasa.cli.utils.get_valid_config_or_exit(
             args.config, CONFIG_MANDATORY_KEYS_CORE
         )
 
@@ -182,7 +182,7 @@ def run_nlu_training(
 
     output = train_path or args.out
 
-    config = rasa.cli.utils.get_valid_config(args.config, CONFIG_MANDATORY_KEYS_NLU)
+    config = rasa.cli.utils.get_valid_config_or_exit(args.config, CONFIG_MANDATORY_KEYS_NLU)
     nlu_data = rasa.cli.utils.get_validated_path(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
