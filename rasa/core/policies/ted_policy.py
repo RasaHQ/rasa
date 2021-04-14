@@ -18,7 +18,6 @@ from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
-    FullDialogueTrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -328,6 +327,9 @@ class TEDPolicy(Policy):
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
+        else:
+            if isinstance(featurizer, MaxHistoryTrackerFeaturizer) and max_history:
+                featurizer.max_history = max_history
 
         super().__init__(
             featurizer, priority, should_finetune=should_finetune, **kwargs
