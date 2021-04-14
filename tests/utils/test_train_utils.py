@@ -22,6 +22,9 @@ from rasa.utils.tensorflow.constants import (
     MARGIN,
     AUTO,
     LINEAR_NORM,
+    CHECKPOINT_MODEL,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
 )
 from rasa.shared.exceptions import InvalidConfigException
 
@@ -151,3 +154,34 @@ def test_update_confidence_type(
 ):
     component_config = train_utils.update_confidence_type(component_config)
     assert component_config[MODEL_CONFIDENCE] == model_confidence
+
+
+@pytest.mark.parametrize(
+    "component_config",
+    [
+        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: -1, EVAL_NUM_EXAMPLES: 0}),
+        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: -1, EVAL_NUM_EXAMPLES: 10}),
+        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: 10, EVAL_NUM_EXAMPLES: 0}),
+    ],
+)
+def test_warning_incorrect_checkpoint_setting(component_config: Dict[Text, Text]):
+    with pytest.warns(UserWarning) as record:
+        train_utils._check_checkpoint_setting(component_config)
+        assert len(record) == 1
+        assert (
+            f"{EVAL_NUM_EXAMPLES} or {EVAL_NUM_EPOCHS} is not greater than 0"
+            in record[0].message.args[0]
+        )
+
+
+@pytest.mark.parametrize(
+    "component_config",
+    [
+        ({CHECKPOINT_MODEL: False, EVAL_NUM_EPOCHS: -1, EVAL_NUM_EXAMPLES: 0}),
+        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: 10, EVAL_NUM_EXAMPLES: 10}),
+    ],
+)
+def test_no_warning_correct_checkpoint_setting(component_config: Dict[Text, Text]):
+    with pytest.warns(None) as record:
+        train_utils._check_checkpoint_setting(component_config)
+        assert len(record) == 0
