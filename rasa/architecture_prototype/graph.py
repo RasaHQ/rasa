@@ -43,23 +43,19 @@ class DomainReader(ProjectReader):
         return rasa.utils.common.run_in_loop(importer.get_domain())
 
 
-class GeneratedStoryReader(ProjectReader):
-    def read(self, domain: Domain) -> List[TrackerWithCachedStates]:
-        importer = self.load_importer()
-
-        generated_coroutine = rasa.core.training.load_data(importer, domain,)
-        return rasa.utils.common.run_in_loop(generated_coroutine)
-
-
 class StoryGraphReader(ProjectReader):
-    def read(self, domain: Domain) -> StoryGraph:
+    def read(self) -> StoryGraph:
         importer = self.load_importer()
 
-        graph = rasa.utils.common.run_in_loop(importer.get_stories())
-        for step in graph.story_steps:
-            step.events = step.explicit_events(domain)
+        return rasa.utils.common.run_in_loop(importer.get_stories())
 
-        return graph
+
+class TrackerGenerator:
+    def generate(
+        self, domain: Domain, story_graph: StoryGraph
+    ) -> List[TrackerWithCachedStates]:
+        generated_coroutine = rasa.core.training.load_data(story_graph, domain,)
+        return rasa.utils.common.run_in_loop(generated_coroutine)
 
 
 class StoryToTrainingDataConverter:

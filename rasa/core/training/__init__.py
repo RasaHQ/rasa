@@ -1,10 +1,10 @@
 from typing import Text, List, Optional, Union, TYPE_CHECKING
+from rasa.shared.core.training_data.structures import StoryGraph
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
     from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.shared.core.generator import TrackerWithCachedStates
-    from rasa.shared.core.training_data.structures import StoryGraph
     from rasa.shared.importers.importer import TrainingDataImporter
 
 
@@ -45,7 +45,7 @@ async def extract_story_graph(
 
 
 async def load_data(
-    resource_name: Union[Text, "TrainingDataImporter"],
+    resource_name: Union[Text, "TrainingDataImporter", StoryGraph],
     domain: "Domain",
     remove_duplicates: bool = True,
     unique_last_num_states: Optional[int] = None,
@@ -86,6 +86,8 @@ async def load_data(
             graph = await resource_name.get_stories(
                 exclusion_percentage=exclusion_percentage
             )
+        elif isinstance(resource_name, StoryGraph):
+            graph = resource_name
         else:
             graph = await extract_story_graph(
                 resource_name, domain, exclusion_percentage=exclusion_percentage

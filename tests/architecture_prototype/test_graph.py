@@ -3,11 +3,11 @@ import dask
 from rasa.architecture_prototype import graph
 from rasa.architecture_prototype.graph import (
     DomainReader,
-    GeneratedStoryReader,
     TrainingDataReader,
     StoryToTrainingDataConverter,
     StoryGraphReader,
     MessageToE2EFeatureConverter,
+    TrackerGenerator,
 )
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
@@ -24,7 +24,7 @@ from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturi
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
-# We can omit `FallbackerClassifier` as this doesn't train
+# We can omit `FallbackClassifier` as this doesn't train
 rasa_nlu_train_graph = {
     "load_data": {
         "uses": TrainingDataReader,
@@ -155,132 +155,157 @@ full_model_train_graph = {
         "needs": {},
     },
     "load_stories": {
-        "uses": GeneratedStoryReader,
-        "fn": "read",
-        "config": {"project": "examples/moodbot"},
-        "needs": {"domain": "load_domain"},
-    },
-    "load_stories_simple": {
         "uses": StoryGraphReader,
         "fn": "read",
         "config": {"project": "examples/moodbot"},
-        "needs": {"domain": "load_domain",},
+        "needs": {},
+    },
+    "generate_trackers": {
+        "uses": TrackerGenerator,
+        "fn": "generate",
+        "config": {},
+        "needs": {"domain": "load_domain", "story_graph": "load_stories"},
     },
     "convert_stories_for_nlu": {
         "uses": StoryToTrainingDataConverter,
         "fn": "convert",
         "config": {},
-        "needs": {"story_graph": "load_stories_simple"},
+        "needs": {"story_graph": "load_stories"},
     },
-    "tokenize": {
+    "core_tokenize": {
         "uses": WhitespaceTokenizer,
         "fn": "train",
         "config": {},
         "needs": {"training_data": "convert_stories_for_nlu"},
     },
-    "train_regex_featurizer": {
+    "core_train_regex_featurizer": {
         "uses": RegexFeaturizer,
         "fn": "train",
         "config": {
-            "component_config": {"model_dir": "model", "filename": "regex_featurizer"}
+            "component_config": {
+                "model_dir": "model",
+                "filename": "core_regex_featurizer",
+            }
         },
-        "needs": {"training_data": "tokenize"},
+        "needs": {"training_data": "core_tokenize"},
     },
-    "add_regex_features": {
+    "core_add_regex_features": {
         "uses": RegexFeaturizer,
         "fn": "process_training_data",
         "config": {},
-        "needs": {"filename": "train_regex_featurizer", "training_data": "tokenize",},
+        "needs": {
+            "filename": "core_train_regex_featurizer",
+            "training_data": "core_tokenize",
+        },
     },
-    "train_lexical_featurizer": {
+    "core_train_lexical_featurizer": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "train",
         "config": {
-            "component_config": {"model_dir": "model", "filename": "lexical_featurizer"}
+            "component_config": {
+                "model_dir": "model",
+                "filename": "core_lexical_featurizer",
+            }
         },
-        "needs": {"training_data": "tokenize"},
+        "needs": {"training_data": "core_tokenize"},
     },
-    "add_lexical_features": {
+    "core_add_lexical_features": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "process_training_data",
         "config": {
-            "component_config": {"model_dir": "model", "filename": "lexical_featurizer"}
+            "component_config": {
+                "model_dir": "model",
+                "filename": "core_lexical_featurizer",
+            }
         },
         "needs": {
-            "training_data": "add_regex_features",
-            "filename": "train_lexical_featurizer",
+            "training_data": "core_add_regex_features",
+            "filename": "core_train_lexical_featurizer",
         },
     },
-    "train_count_featurizer1": {
+    "core_train_count_featurizer1": {
         "uses": CountVectorsFeaturizer,
         "fn": "train",
         "config": {
-            "component_config": {"model_dir": "model", "filename": "count_featurizer1"}
+            "component_config": {
+                "model_dir": "model",
+                "filename": "core_count_featurizer1",
+            }
         },
-        "needs": {"training_data": "tokenize"},
+        "needs": {"training_data": "core_tokenize"},
     },
-    "add_count_features1": {
+    "core_add_count_features1": {
         "uses": CountVectorsFeaturizer,
         "constructor_name": "load",
         "eager": False,
         "fn": "process_training_data",
         "config": {
-            "component_config": {"model_dir": "model", "filename": "count_featurizer1"}
+            "component_config": {
+                "model_dir": "model",
+                "filename": "core_count_featurizer1",
+            }
         },
         "needs": {
-            "training_data": "add_lexical_features",
-            "filename": "train_count_featurizer1",
+            "training_data": "core_add_lexical_features",
+            "filename": "core_train_count_featurizer1",
         },
     },
-    "train_count_featurizer2": {
+    "core_train_count_featurizer2": {
         "uses": CountVectorsFeaturizer,
         "fn": "train",
         "config": {
-            "component_config": {"model_dir": "model", "filename": "count_featurizer2"}
+            "component_config": {
+                "model_dir": "model",
+                "filename": "core_count_featurizer2",
+            }
         },
-        "needs": {"training_data": "tokenize"},
+        "needs": {"training_data": "core_tokenize"},
     },
-    "add_count_features2": {
+    "core_add_count_features2": {
         "uses": CountVectorsFeaturizer,
         "constructor_name": "load",
         "eager": False,
         "fn": "process_training_data",
         "config": {
-            "component_config": {"model_dir": "model", "filename": "count_featurizer2"}
+            "component_config": {
+                "model_dir": "model",
+                "filename": "core_count_featurizer2",
+            }
         },
         "needs": {
-            "filename": "train_count_featurizer2",
-            "training_data": "add_count_features1",
+            "filename": "core_train_count_featurizer2",
+            "training_data": "core_add_count_features1",
         },
     },
-    "merge_nlu_features": {
+    "create_e2e_lookup": {
         "uses": MessageToE2EFeatureConverter,
         "fn": "convert",
         "config": {},
-        "needs": {"training_data": "add_count_features2",},
+        "needs": {"training_data": "core_add_count_features2",},
     },
     "train_memoization_policy": {
         "uses": MemoizationPolicy,
         "fn": "train",
         "config": {},
-        "needs": {"training_trackers": "load_stories", "domain": "load_domain"},
+        "needs": {"training_trackers": "generate_trackers", "domain": "load_domain"},
     },
     "train_rule_policy": {
         "uses": RulePolicy,
         "fn": "train",
         "config": {},
-        "needs": {"training_trackers": "load_stories", "domain": "load_domain"},
+        "needs": {"training_trackers": "generate_trackers", "domain": "load_domain"},
     },
     "train_ted_policy": {
         "uses": TEDPolicy,
         "fn": "train",
         "config": {},
         "needs": {
-            "e2e_features": "merge_nlu_features",
-            "training_trackers": "load_stories",
+            "e2e_features": "create_e2e_lookup",
+            "training_trackers": "generate_trackers",
             "domain": "load_domain",
         },
     },
+    **rasa_nlu_train_graph,
 }
 
 
@@ -291,9 +316,14 @@ def test_visualize_e2e_graph():
 
 
 def test_train_full_model():
+    core_targets = ["train_memoization_policy", "train_ted_policy", "train_rule_policy"]
+    nlu_targets = [
+        "train_classifier",
+        "train_response_selector",
+        "train_synonym_mapper",
+    ]
     trained_components = graph.run_as_dask_graph(
-        full_model_train_graph,
-        ["train_memoization_policy", "train_ted_policy", "train_rule_policy"],
+        full_model_train_graph, core_targets + nlu_targets
     )
 
     print(trained_components)
