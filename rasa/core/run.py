@@ -190,9 +190,10 @@ def serve_application(
         ssl_certificate, ssl_keyfile, ssl_ca_file, ssl_password
     )
     protocol = "https" if ssl_context else "http"
-
+    host = os.environ.get(ENV_SANIC_HOST, "0.0.0.0")
+    
     logger.info(
-        f"Starting Rasa server on {constants.DEFAULT_SERVER_FORMAT.format(protocol, port)}"
+        f"Starting Rasa server on {protocol}://{host}:{port}"
     )
 
     app.register_listener(
@@ -218,7 +219,7 @@ def serve_application(
 
     rasa.utils.common.update_sanic_log_level(log_file)
     app.run(
-        host=os.environ.get(ENV_SANIC_HOST, "0.0.0.0"),
+        host=host,
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
