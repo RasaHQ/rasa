@@ -487,12 +487,12 @@ def _create_summary_report(
     """
     # Retrieve intents for which performance has changed
     changed_intents = (
-            _get_intents_with_performance_changes(
+        _get_intents_with_performance_changes(
             classification_report_no_augmentation,
             intent_report_with_augmentation,
             training_intents,
         )
-            - intents_to_augment
+        - intents_to_augment
     )
 
     # Create and update result reports
