@@ -209,7 +209,7 @@ def signal_handler(sig, frame) -> NoReturn:
     sys.exit(0)
 
 
-def get_valid_config(
+def get_valid_config_or_exit(
     config: Optional[Text],
     mandatory_keys: List[Text],
     default_config: Text = DEFAULT_CONFIG_PATH,
