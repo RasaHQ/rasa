@@ -1,0 +1,25 @@
+{
+    "accuracy": {
+        "accuracy_change": 0.09999999999999998
+    },
+    "weighted avg": {
+        "precision_change": 0.33,
+        "recall_change": 0.32999999999999996,
+        "f1-score_change": 0.33
+    },
+    "macro avg": {
+        "precision_change": 0.21999999999999997,
+        "recall_change": 0.21999999999999997,
+        "f1-score_change": 0.22000000000000003
+    },
+    "check_recipients": {
+        "precision_change": 0.4,
+        "recall_change": 0.4,
+        "f1-score_change": 0.4
+    },
+    "goodbye": {
+        "precision_change": -0.2,
+        "recall_change": -0.2,
+        "f1-score_change": -0.2
+    }
+}

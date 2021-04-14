@@ -1,5 +1,6 @@
 import operator
-from typing import Callable, Set, Text
+import os
+from typing import Callable, List, Set, Text
 
 import pytest
 from rasa.nlu.constants import TOKENS_NAMES
@@ -11,11 +12,7 @@ import rasa.nlu.config
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.components
 import rasa.shared.utils.io
-from rasa.shared.nlu.constants import (
-    INTENT,
-    TEXT,
-    VOCABULARY,
-)
+from rasa.shared.nlu.constants import INTENT, TEXT, VOCABULARY, INTENT_REPORT_FILE_NAME
 
 
 def test_augmenter_create_tokenizer():
@@ -52,7 +49,9 @@ def test_augmenter_intent_collection(
         _collect_intents_for_data_augmentation,
     )
 
-    report_file = "data/test_nlu_paraphrasing/nlu_classification_report.json"
+    report_file = (
+        "data/test_nlu_paraphrasing/nlu_classification_report_no_augmentation.json"
+    )
     classification_report = rasa.shared.utils.io.read_json_file(report_file)
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         "data/test_nlu_paraphrasing/nlu_train.yml"
@@ -341,3 +340,279 @@ def test_augmenter_build_random_sampling_training_set():
 
     assert num_examples == should_have_num_examples_after_augmentation
     assert num_augmented_examples == augmentation_factor[intent_to_check]
+
+
+@pytest.mark.parametrize(
+    "all_intents, significant_figures, expected_changed_intents",
+    [
+        (
+            [
+                "goodbye",
+                "transfer_money",
+                "check_recipients",
+                "human_handoff",
+                "greet",
+                "check_balance",
+                "inform",
+                "search_transactions",
+                "ask_transfer_charge",
+                "thankyou",
+                "pay_cc",
+                "help",
+                "deny",
+                "affirm",
+                "check_earnings",
+            ],
+            1,
+            {"goodbye", "human_handoff", "check_recipients"},
+        ),
+        (
+            [
+                "goodbye",
+                "transfer_money",
+                "check_recipients",
+                "human_handoff",
+                "greet",
+                "check_balance",
+                "inform",
+                "search_transactions",
+                "ask_transfer_charge",
+                "thankyou",
+                "pay_cc",
+                "help",
+                "deny",
+                "affirm",
+                "check_earnings",
+            ],
+            0,
+            set(),
+        ),
+        (
+            [
+                "goodbye",
+                "transfer_money",
+                "check_recipients",
+                "human_handoff",
+                "greet",
+                "check_balance",
+                "inform",
+                "search_transactions",
+                "ask_transfer_charge",
+                "thankyou",
+                "pay_cc",
+                "help",
+                "deny",
+                "affirm",
+                "check_earnings",
+            ],
+            2,
+            {
+                "check_recipients",
+                "goodbye",
+                "ask_transfer_charge",
+                "human_handoff",
+                "inform",
+            },
+        ),
+        (
+            [
+                "goodbye",
+                "transfer_money",
+                "check_recipients",
+                "human_handoff",
+                "greet",
+                "check_balance",
+                "inform",
+                "search_transactions",
+                "ask_transfer_charge",
+                "thankyou",
+                "pay_cc",
+                "help",
+                "deny",
+                "affirm",
+                "check_earnings",
+            ],
+            3,
+            {
+                "check_recipients",
+                "goodbye",
+                "ask_transfer_charge",
+                "human_handoff",
+                "inform",
+                "search_transactions",
+            },
+        ),
+    ],
+)
+def test_get_intents_with_performance_changes(
+    all_intents: List[Text],
+    significant_figures: int,
+    expected_changed_intents: Set[Text],
+):
+    from rasa.nlu.data_augmentation.augmenter import (
+        _get_intents_with_performance_changes,
+    )
+
+    classification_report_no_augmentation = rasa.shared.utils.io.read_json_file(
+        "data/test_nlu_paraphrasing/nlu_classification_report_no_augmentation.json"
+    )
+    intent_report_with_augmentation = rasa.shared.utils.io.read_json_file(
+        "data/test_nlu_paraphrasing/intent_report_with_augmentation-01.json"
+    )
+
+    changed_intents = _get_intents_with_performance_changes(
+        classification_report_no_augmentation=classification_report_no_augmentation,
+        intent_report_with_augmentation=intent_report_with_augmentation,
+        all_intents=all_intents,
+        significant_figures=significant_figures,
+    )
+
+    assert expected_changed_intents == changed_intents
+
+
+def test_augmentation_summary_creation():
+    from rasa.nlu.data_augmentation.augmenter import _create_augmentation_summary
+
+    classification_report_no_augmentation = rasa.shared.utils.io.read_json_file(
+        "data/test_nlu_paraphrasing/nlu_classification_report_no_augmentation.json"
+    )
+    intent_report_with_augmentation = rasa.shared.utils.io.read_json_file(
+        "data/test_nlu_paraphrasing/intent_report_with_augmentation-02.json"
+    )
+
+    intents_to_augment = {"check_recipients"}
+    changed_intents = {"goodbye"}
+
+    (
+        changed_intent_summary,
+        augmented_classification_report,
+    ) = _create_augmentation_summary(
+        intents_to_augment,
+        changed_intents,
+        classification_report_no_augmentation,
+        intent_report_with_augmentation,
+    )
+
+    # Assess performance changes to augmented intents
+    performance_changes = {
+        f"{metric}_change": intent_report_with_augmentation["check_recipients"][metric]
+        - classification_report_no_augmentation["check_recipients"][metric]
+        for metric in ["precision", "recall", "f1-score"]
+    }
+    assert all(
+        changed_intent_summary["check_recipients"][metric]
+        == performance_changes[metric]
+        for metric in ["precision_change", "recall_change", "f1-score_change"]
+    )
+    assert all(
+        augmented_classification_report["check_recipients"][metric]
+        == performance_changes[metric]
+        for metric in ["precision_change", "recall_change", "f1-score_change"]
+    )
+
+    # Assess performance changes to affected intents
+    performance_changes = {
+        f"{metric}_change": intent_report_with_augmentation["goodbye"][metric]
+        - classification_report_no_augmentation["goodbye"][metric]
+        for metric in ["precision", "recall", "f1-score"]
+    }
+    assert all(
+        changed_intent_summary["goodbye"][metric] == performance_changes[metric]
+        for metric in ["precision_change", "recall_change", "f1-score_change"]
+    )
+    assert all(
+        augmented_classification_report["goodbye"][metric]
+        == performance_changes[metric]
+        for metric in ["precision_change", "recall_change", "f1-score_change"]
+    )
+
+    # Assess that all the totals keys are in the summary (with respective keys indicating performance changes)
+    assert "accuracy" in changed_intent_summary
+    assert "accuracy_change" in changed_intent_summary["accuracy"]
+    assert "accuracy" in augmented_classification_report
+    assert "accuracy_change" in augmented_classification_report["accuracy"]
+
+    assert "weighted avg" in changed_intent_summary
+    assert "precision_change" in changed_intent_summary["weighted avg"]
+    assert "recall_change" in changed_intent_summary["weighted avg"]
+    assert "f1-score_change" in changed_intent_summary["weighted avg"]
+    assert "weighted avg" in augmented_classification_report
+    assert "precision_change" in augmented_classification_report["weighted avg"]
+    assert "recall_change" in augmented_classification_report["weighted avg"]
+    assert "f1-score_change" in augmented_classification_report["weighted avg"]
+
+    assert "macro avg" in changed_intent_summary
+    assert "precision_change" in changed_intent_summary["macro avg"]
+    assert "recall_change" in changed_intent_summary["macro avg"]
+    assert "f1-score_change" in changed_intent_summary["macro avg"]
+    assert "macro avg" in augmented_classification_report
+    assert "precision_change" in augmented_classification_report["macro avg"]
+    assert "recall_change" in augmented_classification_report["macro avg"]
+    assert "f1-score_change" in augmented_classification_report["macro avg"]
+
+
+def test_summary_report_creation():
+    from rasa.nlu.data_augmentation.augmenter import _create_summary_report
+
+    classification_report_no_augmentation = rasa.shared.utils.io.read_json_file(
+        "data/test_nlu_paraphrasing/nlu_classification_report_no_augmentation.json"
+    )
+    intent_report_with_augmentation = rasa.shared.utils.io.read_json_file(
+        "data/test_nlu_paraphrasing/intent_report_with_augmentation-02.json"
+    )
+    training_intents = [
+        "goodbye",
+        "transfer_money",
+        "check_recipients",
+        "human_handoff",
+        "greet",
+        "check_balance",
+        "inform",
+        "search_transactions",
+        "ask_transfer_charge",
+        "thankyou",
+        "pay_cc",
+        "help",
+        "deny",
+        "affirm",
+        "check_earnings",
+    ]
+    intents_to_augment = {"check_recipients"}
+
+    tmp_path = rasa.utils.io.create_temporary_directory()
+    out_path = os.path.join(tmp_path, "augmentation_report")
+    os.makedirs(out_path)
+
+    # Contents of both reports tested by test_augmentation_summary_creation
+    _ = _create_summary_report(
+        intent_report_with_augmentation=intent_report_with_augmentation,
+        classification_report_no_augmentation=classification_report_no_augmentation,
+        intents_to_augment=intents_to_augment,
+        training_intents=training_intents,
+        output_directory=out_path,
+    )
+
+    assert os.path.exists(os.path.join(out_path, INTENT_REPORT_FILE_NAME))
+
+
+def test_summary_plot_creation():
+    from rasa.nlu.data_augmentation.augmenter import _plot_summary_report
+
+    intent_summary = rasa.shared.utils.io.read_json_file(
+        "data/test_nlu_paraphrasing/intent_summary.json"
+    )
+
+    tmp_path = rasa.utils.io.create_temporary_directory()
+    out_path = os.path.join(tmp_path, "augmentation_plot")
+    os.makedirs(out_path)
+
+    _plot_summary_report(intent_summary=intent_summary, output_directory=out_path)
+
+    assert all(
+        os.path.exists(os.path.join(out_path, output_file))
+        for output_file in [
+            "precision_changes.png",
+            "recall_changes.png",
+            "f1-score_changes.png",
+        ]
+    )

@@ -174,7 +174,8 @@ def test_rasa_data_augment_nlu(run: Callable[..., RunResult],):
         os.path.join(data_root, "data/test_nlu_paraphrasing/paraphrases.yml"),
         "--nlu-classification-report",
         os.path.join(
-            data_root, "data/test_nlu_paraphrasing/nlu_classification_report.json"
+            data_root,
+            "data/test_nlu_paraphrasing/nlu_classification_report_no_augmentation.json",
         ),
         "--out",
         out_path,
