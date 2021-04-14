@@ -69,6 +69,10 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         output_units: The last dimension size of the layer's output.
     """
 
+    SPARSE_DROPOUT = "sparse_dropout"
+    SPARSE_TO_DENSE = "sparse_to_dense"
+    DENSE_DROPOUT = "dense_dropout"
+
     def __init__(
         self,
         attribute: Text,
@@ -117,12 +121,12 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         """Sets up sparse tensor pre-processing before combining with dense ones."""
         # For optionally applying dropout to sparse tensors
         if config[SPARSE_INPUT_DROPOUT]:
-            self._tf_layers["sparse_dropout"] = layers.SparseDropout(
+            self._tf_layers[self.SPARSE_DROPOUT] = layers.SparseDropout(
                 rate=config[DROP_RATE]
             )
 
         # For converting sparse tensors to dense
-        self._tf_layers["sparse_to_dense"] = layers.DenseForSparse(
+        self._tf_layers[self.SPARSE_TO_DENSE] = layers.DenseForSparse(
             name=f"sparse_to_dense.{attribute}_{feature_type}",
             units=config[DENSE_DIMENSION][attribute],
             reg_lambda=config[REGULARIZATION_CONSTANT],
@@ -131,7 +135,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         # For optionally apply dropout to sparse tensors after they're converted to
         # dense tensors.
         if config[DENSE_INPUT_DROPOUT]:
-            self._tf_layers["dense_dropout"] = tf.keras.layers.Dropout(
+            self._tf_layers[self.DENSE_DROPOUT] = tf.keras.layers.Dropout(
                 rate=config[DROP_RATE]
             )
 
@@ -159,13 +163,13 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         self, feature: tf.SparseTensor, training: bool
     ) -> tf.Tensor:
         """Turns sparse tensor into dense, possibly adds dropout before and/or after."""
-        if "sparse_dropout" in self._tf_layers:
-            feature = self._tf_layers["sparse_dropout"](feature, training)
+        if self.SPARSE_DROPOUT in self._tf_layers:
+            feature = self._tf_layers[self.SPARSE_DROPOUT](feature, training)
 
-        feature = self._tf_layers["sparse_to_dense"](feature)
+        feature = self._tf_layers[self.SPARSE_TO_DENSE](feature)
 
-        if "dense_dropout" in self._tf_layers:
-            feature = self._tf_layers["dense_dropout"](feature, training)
+        if self.DENSE_DROPOUT in self._tf_layers:
+            feature = self._tf_layers[self.DENSE_DROPOUT](feature, training)
 
         return feature
 
@@ -592,6 +596,12 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         output_units: The last dimension size of the layer's first output (`outputs`).
     """
 
+    FEATURE_COMBINING = "feature_combining"
+    FFNN = "ffnn"
+    TRANSFORMER = "transformer"
+    MLM_INPUT_MASK = "mlm_input_mask"
+    SPARSE_TO_DENSE_FOR_TOKEN_IDS = "sparse_to_dense_for_token_ids"
+
     def __init__(
         self,
         attribute: Text,
@@ -607,10 +617,10 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         super().__init__(name=f"rasa_sequence_layer_{attribute}")
 
         self._tf_layers: Dict[Text, Any] = {
-            "feature_combining_layer": RasaFeatureCombiningLayer(
+            self.FEATURE_COMBINING: RasaFeatureCombiningLayer(
                 attribute, attribute_signature, config
             ),
-            "ffnn": layers.Ffnn(
+            self.FFNN: layers.Ffnn(
                 config[HIDDEN_LAYERS_SIZES][attribute],
                 config[DROP_RATE],
                 config[REGULARIZATION_CONSTANT],
@@ -658,7 +668,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         transformer_layers, transformer_units = self._get_transformer_dimensions(
             attribute, config
         )
-        self._tf_layers["transformer"] = prepare_transformer_layer(
+        self._tf_layers[self.TRANSFORMER] = prepare_transformer_layer(
             attribute_name=attribute,
             config=config,
             num_layers=transformer_layers,
@@ -681,7 +691,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         """
         if attribute == TEXT and SEQUENCE in attribute_signature and config[MASKED_LM]:
             self._enables_mlm = True
-            self._tf_layers["mlm_input_mask"] = layers.InputMask()
+            self._tf_layers[self.MLM_INPUT_MASK] = layers.InputMask()
 
             # Unique IDs of different token types are needed to construct the possible
             # label space for MLM. If dense features are present, they're used as such
@@ -691,11 +701,13 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 [not signature.is_sparse for signature in attribute_signature[SEQUENCE]]
             )
             if not expect_dense_seq_features:
-                self._tf_layers["sparse_to_dense_token_ids"] = layers.DenseForSparse(
+                self._tf_layers[
+                    self.SPARSE_TO_DENSE_FOR_TOKEN_IDS
+                ] = layers.DenseForSparse(
                     units=2,
                     use_bias=False,
                     trainable=False,
-                    name=f"sparse_to_dense_token_ids.{attribute}",
+                    name=f"{self.SPARSE_TO_DENSE_FOR_TOKEN_IDS}.{attribute}",
                 )
 
     def _calculate_output_units(
@@ -721,7 +733,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             return config[HIDDEN_LAYERS_SIZES][attribute][-1]
 
         # only the RasaFeatureCombiningLayer is present
-        return self._tf_layers["feature_combining_layer"].output_units
+        return self._tf_layers[self.FEATURE_COMBINING].output_units
 
     def _features_as_token_ids(
         self, features: List[Union[tf.Tensor, tf.SparseTensor]]
@@ -737,7 +749,9 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # a dense one first.
         for f in features:
             if isinstance(f, tf.SparseTensor):
-                return tf.stop_gradient(self._tf_layers["sparse_to_dense_token_ids"](f))
+                return tf.stop_gradient(
+                    self._tf_layers[self.SPARSE_TO_DENSE_FOR_TOKEN_IDS](f)
+                )
 
     def _create_mlm_tensors(
         self,
@@ -774,7 +788,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # False meaning tokens that aren't masked or that are fake (padded) tokens.
         # Note that only sequence-level features are masked, nothing happens to the
         # sentence-level features in the combined features tensor.
-        seq_sent_features, mlm_boolean_mask = self._tf_layers["mlm_input_mask"](
+        seq_sent_features, mlm_boolean_mask = self._tf_layers[self.MLM_INPUT_MASK](
             seq_sent_features, mask_sequence, training
         )
 
@@ -829,11 +843,11 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # also get a binary mask that has 1s at positions with real features and 0s at
         # padded positions.
         seq_sent_features, mask_combined_sequence_sentence = self._tf_layers[
-            "feature_combining_layer"
+            self.FEATURE_COMBINING
         ]((sequence_features, sentence_features, sequence_feature_lengths))
 
         # Apply one or more dense layers.
-        seq_sent_features = self._tf_layers["ffnn"](seq_sent_features, training)
+        seq_sent_features = self._tf_layers[self.FFNN](seq_sent_features, training)
 
         # If using masked language modeling, mask the transformer inputs and get labels
         # for the masked tokens and a boolean mask. Note that TED does not use MLM loss,
@@ -861,7 +875,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         # input example into a simple fixed-size embedding.
         if self._has_transformer:
             mask_padding = 1 - mask_combined_sequence_sentence
-            outputs, attention_weights = self._tf_layers["transformer"](
+            outputs, attention_weights = self._tf_layers[self.TRANSFORMER](
                 seq_sent_features_masked, mask_padding, training
             )
             outputs = tfa.activations.gelu(outputs)

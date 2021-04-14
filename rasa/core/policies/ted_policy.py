@@ -1192,6 +1192,7 @@ class TED(TransformerRasaModel):
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], attribute: Text
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         """Returns dummy outputs for fake features of a given attribute.
+
         Needs to match the outputs of `_encode_real_features_per_attribute` in shape
         but these outputs will be filled with zeros.
 
