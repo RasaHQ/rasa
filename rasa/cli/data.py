@@ -18,7 +18,7 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
-    DOCS_URL_MIGRATION_GUIDE
+    DOCS_URL_MIGRATION_GUIDE,
 )
 from rasa.shared.nlu.constants import INTENT_REPORT_FILE_NAME
 import rasa.shared.data
