@@ -303,7 +303,7 @@ class EntityExtractor(Component):
     @staticmethod
     def _update_confidence_values(
         entities: List[Dict[Text, Any]], confidences: Dict[Text, List[float]], idx: int
-    ):
+    ) -> None:
         # use the lower confidence value
         entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_TYPE] = min(
             entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_TYPE],
@@ -327,7 +327,7 @@ class EntityExtractor(Component):
         last_token_end: int,
         split_entities_config: Dict[Text, bool],
         current_entity_tag: Text,
-    ):
+    ) -> bool:
         # current token has the same entity tag as the token before and
         # the two tokens are only separated by at most one symbol (e.g. space,
         # dash, etc.)

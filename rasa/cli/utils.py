@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+from types import FrameType
 from typing import Any, Dict, List, NoReturn, Optional, TYPE_CHECKING, Text
 
 import rasa.cli
@@ -198,7 +199,7 @@ def payload_from_button_question(button_question: "Question") -> Text:
     return response
 
 
-def signal_handler(sig, frame) -> NoReturn:
+def signal_handler(sig: int, frame: FrameType) -> NoReturn:
     """Signal Handler from Rasa X.
 
     Args:

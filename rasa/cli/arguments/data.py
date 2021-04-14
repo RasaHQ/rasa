@@ -14,7 +14,7 @@ from rasa.constants import DEFAULT_RANDOM_SEED
 from rasa.shared.nlu.constants import INTENT_REPORT_FILE_NAME
 
 
-def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
+def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> None:
     """Adds arguments for data conversion.
 
     Args:
@@ -43,7 +43,7 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text):
     parser.add_argument("-l", "--language", default="en", help="Language of data.")
 
 
-def set_split_arguments(parser: argparse.ArgumentParser):
+def set_split_arguments(parser: argparse.ArgumentParser) -> None:
     """Adds arguments for data splitting.
 
     Args:
@@ -72,7 +72,7 @@ def set_split_arguments(parser: argparse.ArgumentParser):
     )
 
 
-def set_validator_arguments(parser: argparse.ArgumentParser):
+def set_validator_arguments(parser: argparse.ArgumentParser) -> None:
     """Adds arguments for data validation.
 
     Args:

@@ -519,6 +519,39 @@ class RulePolicy(MemoizationPolicy):
             )
         return loop_sources
 
+    def _should_delete(
+        self,
+        prediction_source: Text,
+        tracker: TrackerWithCachedStates,
+        predicted_action_name: Text,
+    ) -> bool:
+        """Checks whether this contradiction is due to action, intent pair.
+
+        Args:
+            prediction_source: the states that result in the prediction
+            tracker: the tracker that raises the contradiction
+
+        Returns:
+            true if the contradiction is a result of an action, intent pair in the rule.
+        """
+        if (
+            # only apply to contradicting story, not rule
+            tracker.is_rule_tracker
+            # only apply for prediction after unpredictable action
+            or prediction_source.count(PREVIOUS_ACTION) > 1
+            # only apply for prediction of action_listen
+            or predicted_action_name != ACTION_LISTEN_NAME
+        ):
+            return False
+        for source in self.lookup[RULES]:
+            # remove rule only if another action is predicted after action_listen
+            if (
+                source.startswith(prediction_source[:-2])
+                and not prediction_source == source
+            ):
+                return True
+        return False
+
     def _check_prediction(
         self,
         tracker: TrackerWithCachedStates,
@@ -527,6 +560,10 @@ class RulePolicy(MemoizationPolicy):
         prediction_source: Optional[Text],
     ) -> List[Text]:
         if not predicted_action_name or predicted_action_name == gold_action_name:
+            return []
+
+        if self._should_delete(prediction_source, tracker, predicted_action_name):
+            self.lookup[RULES].pop(prediction_source)
             return []
 
         tracker_type = "rule" if tracker.is_rule_tracker else "story"
@@ -915,8 +952,6 @@ class RulePolicy(MemoizationPolicy):
             )
 
         return None, None
-
-        return None
 
     def _find_action_from_rules(
         self,

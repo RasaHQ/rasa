@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class InvalidStory(RasaException):
     """Exception that can be raised if story cannot be featurized."""
 
-    def __init__(self, message) -> None:
+    def __init__(self, message: Text) -> None:
         self.message = message
         super(InvalidStory, self).__init__()
 

@@ -1,8 +1,9 @@
 import tensorflow as tf
+from tensorflow import TensorShape
 
 from tensorflow_addons.utils.types import TensorLike
 from typeguard import typechecked
-from typing import Tuple
+from typing import Tuple, Any, List, Union
 
 
 # original code taken from
@@ -14,7 +15,7 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
     """Computes the forward decoding in a linear-chain CRF."""
 
     @typechecked
-    def __init__(self, transition_params: TensorLike, **kwargs) -> None:
+    def __init__(self, transition_params: TensorLike, **kwargs: Any) -> None:
         """Initialize the CrfDecodeForwardRnnCell.
 
         Args:
@@ -33,9 +34,11 @@ class CrfDecodeForwardRnnCell(tf.keras.layers.AbstractRNNCell):
 
     @property
     def output_size(self) -> int:
+        """Returns count of tags."""
         return self._num_tags
 
-    def build(self, input_shape):
+    def build(self, input_shape: Union[TensorShape, List[TensorShape]]) -> None:
+        """Creates the variables of the layer."""
         super().build(input_shape)
 
     def call(

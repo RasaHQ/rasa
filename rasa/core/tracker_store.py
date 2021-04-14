@@ -18,9 +18,11 @@ from typing import (
     Text,
     Union,
     TYPE_CHECKING,
+    Generator,
 )
 
 from boto3.dynamodb.conditions import Key
+from pymongo.collection import Collection
 
 import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
@@ -328,10 +330,10 @@ class RedisTrackerStore(TrackerStore):
 
     def __init__(
         self,
-        domain,
-        host="localhost",
-        port=6379,
-        db=0,
+        domain: Domain,
+        host: Text = "localhost",
+        port: int = 6379,
+        db: int = 0,
         password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
@@ -364,8 +366,10 @@ class RedisTrackerStore(TrackerStore):
     def _get_key_prefix(self) -> Text:
         return self.key_prefix
 
-    def save(self, tracker, timeout=None):
-        """Saves the current conversation state"""
+    def save(
+        self, tracker: DialogueStateTracker, timeout: Optional[float] = None
+    ) -> None:
+        """Saves the current conversation state."""
         if self.event_broker:
             self.stream_events(tracker)
 
@@ -466,7 +470,7 @@ class DynamoTrackerStore(TrackerStore):
 
         return table
 
-    def save(self, tracker):
+    def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
         from botocore.exceptions import ClientError
 
@@ -577,7 +581,7 @@ class MongoTrackerStore(TrackerStore):
         self._ensure_indices()
 
     @property
-    def conversations(self):
+    def conversations(self) -> Collection:
         """Returns the current conversation."""
         return self.db[self.collection]
 
@@ -813,12 +817,12 @@ def ensure_schema_exists(session: "Session") -> None:
 class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database."""
 
-    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
-    Base = declarative_base()
+    Base: DeclarativeMeta = declarative_base()
 
     class SQLEvent(Base):
-        """Represents an event in the SQL Tracker Store"""
+        """Represents an event in the SQL Tracker Store."""
 
         __tablename__ = "events"
 
@@ -945,7 +949,7 @@ class SQLTrackerStore(TrackerStore):
             query=query,
         )
 
-    def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
+    def _create_database_and_update_engine(self, db: Text, engine_url: "URL") -> None:
         """Creates database `db` and updates engine accordingly."""
         from sqlalchemy import create_engine
 
@@ -991,7 +995,7 @@ class SQLTrackerStore(TrackerStore):
         conn.close()
 
     @contextlib.contextmanager
-    def session_scope(self):
+    def session_scope(self) -> Generator["Session", None, None]:
         """Provide a transactional scope around a series of operations."""
         session = self.sessionmaker()
         try:

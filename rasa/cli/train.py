@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 from typing import List, Optional, Text, Dict
 
@@ -12,9 +13,11 @@ from rasa.shared.constants import (
     CONFIG_MANDATORY_KEYS_CORE,
     CONFIG_MANDATORY_KEYS_NLU,
     CONFIG_MANDATORY_KEYS,
+    DEFAULT_CONFIG_PATH,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
 )
+from rasa.shared.utils.cli import print_error
 
 
 def add_subparser(
@@ -226,3 +229,39 @@ def extract_nlu_additional_arguments(args: argparse.Namespace) -> Dict:
         arguments["num_threads"] = args.num_threads
 
     return arguments
+
+
+def get_valid_config_or_exit(
+    config: Optional[Text],
+    mandatory_keys: List[Text],
+    default_config: Text = DEFAULT_CONFIG_PATH,
+) -> Text:
+    """Get a config from a config file and check if it is valid.
+
+    Exit if the config isn't valid.
+
+    Args:
+        config: Path to the config file.
+        mandatory_keys: The keys that have to be specified in the config file.
+        default_config: default config to use if the file at `config` doesn't exist.
+
+    Returns: The path to the config file if the config is valid.
+    """
+    config = rasa.cli.utils.get_validated_path(config, "config", default_config)
+
+    if not config or not os.path.exists(config):
+        print_error(
+            f"The config file '{config}' does not exist. Use '--config' to specify a valid config file."
+        )
+        sys.exit(1)
+
+    missing_keys = rasa.cli.utils.missing_config_keys(config, mandatory_keys)
+    if missing_keys:
+        missing_keys_str = "', '".join(missing_keys)
+        print_error(
+            f"The config file '{config}' is missing mandatory parameters: "
+            f"'{missing_keys_str}'. Add missing parameters to config file and try again."
+        )
+        sys.exit(1)
+
+    return config

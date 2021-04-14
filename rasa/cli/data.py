@@ -18,7 +18,7 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
-    DOCS_URL_MIGRATION_GUIDE,
+    DOCS_URL_MIGRATION_GUIDE
 )
 from rasa.shared.nlu.constants import INTENT_REPORT_FILE_NAME
 import rasa.shared.data
@@ -81,7 +81,7 @@ def add_subparser(
 
 
 def _add_data_convert_parsers(
-    data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     convert_parser = data_subparsers.add_parser(
         "convert",
@@ -158,7 +158,7 @@ def _add_data_convert_parsers(
 
 
 def _add_data_split_parsers(
-    data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     split_parser = data_subparsers.add_parser(
         "split",
@@ -182,7 +182,7 @@ def _add_data_split_parsers(
 
 
 def _add_data_validate_parsers(
-    data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     validate_parser = data_subparsers.add_parser(
         "validate",
