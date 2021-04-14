@@ -249,9 +249,10 @@ class Domain:
             dict1_copy, dict2_copy = d1.copy(), d2.copy()
             if override_existing_values:
                 dict1_copy.update(dict2_copy)
+                return dict1_copy
             else:
                 dict2_copy.update(dict1_copy)
-            return a
+                return dict2_copy
 
         def merge_lists(l1: List[Any], l2: List[Any]) -> List[Any]:
             return sorted(list(set(l1 + l2)))
