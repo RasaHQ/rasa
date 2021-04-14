@@ -13,7 +13,7 @@ import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
 from rasa import model, server, telemetry
-from rasa.constants import ENV_SANIC_BACKLOG
+from rasa.constants import ENV_SANIC_BACKLOG, ENV_SANIC_HOST
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
@@ -218,7 +218,7 @@ def serve_application(
 
     rasa.utils.common.update_sanic_log_level(log_file)
     app.run(
-        host="0.0.0.0",
+        host=os.environ.get(ENV_SANIC_HOST, "0.0.0.0"),
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
