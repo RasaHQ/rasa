@@ -526,7 +526,8 @@ def test_augmentation_summary_creation():
         for metric in ["precision_change", "recall_change", "f1-score_change"]
     )
 
-    # Assess that all the totals keys are in the summary (with respective keys indicating performance changes)
+    # Assess that all the totals keys are in the summary (with respective keys
+    # indicating performance changes)
     assert "accuracy" in changed_intent_summary
     assert "accuracy_change" in changed_intent_summary["accuracy"]
     assert "accuracy" in augmented_classification_report
