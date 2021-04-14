@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
-from rasa.shared.exceptions import InvalidParameterException
+from rasa.shared.exceptions import FileNotFoundException, InvalidParameterException
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
@@ -279,6 +279,9 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
         "Data augmentation by paraphrasing for NLU"
     )
 
+    # Input argument validation
+    _validate_augment_nlu_args(args)
+
     # Collect inputs
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         args.nlu_training_data
@@ -296,11 +299,6 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     )
     classification_report = rasa.shared.utils.io.read_json_file(report_file)
 
-    if args.augmentation_factor <= 0.0:
-        raise InvalidParameterException(
-            "The argument 'augmentation_factor' must be greater than 0!"
-        )
-
     # Run augmentation
     nlu_data_augmentation(
         nlu_training_data=nlu_training_data,
@@ -317,6 +315,48 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     )
 
     telemetry.track_data_augment()
+
+
+def _validate_augment_nlu_args(args: argparse.Namespace) -> None:
+    if args.augmentation_factor <= 0.0:
+        raise InvalidParameterException(
+            "The argument 'augmentation_factor' must be greater than 0!"
+        )
+
+    if args.min_paraphrase_sim_score >= args.max_paraphrase_sim_score:
+        raise InvalidParameterException(
+            "The argument 'min_paraphrase_sim_score' must be smaller than (<) 'max_paraphrase_sim_score'!"
+        )
+
+    if args.intent_proportion <= 0 or args.intent_proportion > 1:
+        raise InvalidParameterException(
+            "The argument 'intent_proportion' must be greater than 0 and smaller than 1!"
+        )
+
+    if not os.path.exists(args.nlu_training_data):
+        raise FileNotFoundException(
+            f"The NLU training data could not be found at: {args.nlu_training_data}!"
+        )
+
+    if not os.path.exists(args.nlu_evaluation_data):
+        raise FileNotFoundException(
+            f"The NLU evaluation data could not be found at: {args.nlu_evaluation_data}!"
+        )
+
+    if not os.path.exists(args.nlu_classification_report):
+        raise FileNotFoundException(
+            f"The NLU classification report could not be found at: {args.nlu_classification_report}!"
+        )
+
+    if not os.path.exists(args.paraphrases):
+        raise FileNotFoundException(
+            f"The Paraphrase data could not be found at: {args.paraphrases}!"
+        )
+    print("CONFIG:", args.config)
+    if not os.path.exists(args.config):
+        raise FileNotFoundException(
+            f"The NLU config file could not be found at: {args.config}!"
+        )
 
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
