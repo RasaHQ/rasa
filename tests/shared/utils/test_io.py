@@ -5,13 +5,11 @@ import uuid
 from collections import OrderedDict
 from pathlib import Path
 from typing import Callable, Text, List, Set, Any, Dict
-from _pytest.monkeypatch import MonkeyPatch
-from mock import Mock
 
 import pytest
 
 import rasa.shared
-from rasa.shared.exceptions import FileIOException, FileNotFoundException
+from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
@@ -147,13 +145,13 @@ def test_read_yaml_string_with_env_var_not_exist():
     user: ${USER_NAME}
     password: ${PASSWORD}
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(RasaException):
         rasa.shared.utils.io.read_yaml(config_with_env_var_not_exist)
 
 
 def test_environment_variable_not_existing():
     content = "model: \n  test: ${variable}"
-    with pytest.raises(ValueError):
+    with pytest.raises(RasaException):
         rasa.shared.utils.io.read_yaml(content)
 
 
@@ -552,3 +550,10 @@ def test_read_invalid_config_file(tmp_path: Path, content: Text):
 )
 async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: bool):
     assert rasa.shared.utils.io.is_key_in_yaml(file, *keys) == expected_result
+
+
+async def test_is_key_in_yaml_with_unicode_files():
+    # This shouldn't raise
+    assert rasa.shared.utils.io.is_key_in_yaml(
+        "./data/test_nlu_no_responses/nlu_with_unicode.yml", "nlu"
+    )

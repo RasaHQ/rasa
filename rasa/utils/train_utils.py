@@ -180,7 +180,7 @@ def load_tf_hub_model(model_url: Text) -> Any:
 
     # needed to load the ConveRT model
     # noinspection PyUnresolvedReferences
-    import tensorflow_text
+    import tensorflow_text  # noqa: F401
     import os
 
     # required to take care of cases when other files are already
@@ -585,7 +585,7 @@ def _check_similarity_loss_setting(component_config: Dict[Text, Any]) -> None:
 
 
 def init_split_entities(
-    split_entities_config, default_split_entity
+    split_entities_config: Union[bool, Dict[Text, Any]], default_split_entity: bool
 ) -> Dict[Text, bool]:
     """Initialise the behaviour for splitting entities by comma (or not).
 

@@ -1,14 +1,16 @@
 from pathlib import Path
-from typing import List, Optional, Text, Type
+from typing import List, Optional, Text, Type, Dict
 
 import pytest
 
 from rasa.nlu import registry
 import rasa.nlu.train
+import rasa.nlu.components
+import rasa.shared.nlu.training_data.loading
 from rasa.nlu.components import Component, ComponentBuilder, find_unavailable_packages
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.nlu.model import Interpreter, Metadata
+from rasa.nlu.model import Interpreter, Metadata, Trainer
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -220,3 +222,169 @@ async def test_validate_component_keys_raises_warning_on_invalid_key(
         )
 
     assert "You have provided an invalid key" in record[0].message.args[0]
+
+
+@pytest.mark.parametrize(
+    "pipeline_template,should_warn",
+    [
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "CRFEntityExtractor"},
+                {"name": "DIETClassifier"},
+            ],
+            True,
+        ),
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "DIETClassifier"},
+            ],
+            False,
+        ),
+    ],
+)
+def test_warn_of_competing_extractors(
+    pipeline_template: List[Dict[Text, Text]], should_warn: bool
+):
+    config = RasaNLUModelConfig({"pipeline": pipeline_template})
+    trainer = Trainer(config)
+
+    if should_warn:
+        with pytest.warns(UserWarning):
+            rasa.nlu.components.warn_of_competing_extractors(trainer.pipeline)
+    else:
+        with pytest.warns(None) as records:
+            rasa.nlu.components.warn_of_competing_extractors(trainer.pipeline)
+
+        assert len(records) == 0
+
+
+@pytest.mark.parametrize(
+    "pipeline_template,data_path,should_warn",
+    [
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "RegexEntityExtractor"},
+                {"name": "DIETClassifier"},
+            ],
+            "data/test/overlapping_regex_entities.yml",
+            True,
+        ),
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "RegexEntityExtractor"},
+            ],
+            "data/test/overlapping_regex_entities.yml",
+            False,
+        ),
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "DIETClassifier"},
+            ],
+            "data/test/overlapping_regex_entities.yml",
+            False,
+        ),
+        (
+            [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "LexicalSyntacticFeaturizer"},
+                {"name": "RegexEntityExtractor"},
+                {"name": "DIETClassifier"},
+            ],
+            "data/examples/rasa/demo-rasa.yml",
+            False,
+        ),
+    ],
+)
+def test_warn_of_competition_with_regex_extractor(
+    pipeline_template: List[Dict[Text, Text]], data_path: Text, should_warn: bool
+):
+    training_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
+
+    config = RasaNLUModelConfig({"pipeline": pipeline_template})
+    trainer = Trainer(config)
+
+    if should_warn:
+        with pytest.warns(UserWarning):
+            rasa.nlu.components.warn_of_competition_with_regex_extractor(
+                trainer.pipeline, training_data
+            )
+    else:
+        with pytest.warns(None) as records:
+            rasa.nlu.components.warn_of_competition_with_regex_extractor(
+                trainer.pipeline, training_data
+            )
+
+        assert len(records) == 0
+
+
+OVERLAP_TESTS_CONFIG = RasaNLUModelConfig(
+    {
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "RegexEntityExtractor", "use_lookup_tables": False},
+            {"name": "RegexEntityExtractor", "use_regexes": False},
+        ]
+    }
+)
+
+OVERLAP_TESTS_DATA = "data/test/overlapping_regex_entities.yml"
+
+
+async def test_do_not_warn_for_non_overlapping_entities(tmp_path: Path):
+    _, interpreter, _ = await rasa.nlu.train.train(
+        OVERLAP_TESTS_CONFIG, data=OVERLAP_TESTS_DATA, path=str(tmp_path)
+    )
+
+    msg = "I am looking for some pasta"
+    with pytest.warns(None, match="overlapping") as records:
+        parsed_msg = interpreter.parse(msg)
+
+    assert len(parsed_msg.get("entities", [])) == 1
+    assert len(records) == 0
+
+
+async def test_warn_for_overlapping_entities(tmp_path: Path):
+    _, interpreter, _ = await rasa.nlu.train.train(
+        OVERLAP_TESTS_CONFIG, data=OVERLAP_TESTS_DATA, path=str(tmp_path)
+    )
+
+    msg = "I am looking for some pizza"
+    with pytest.warns(None, match="overlapping") as records:
+        parsed_msg = interpreter.parse(msg)
+
+    assert len(parsed_msg.get("entities", [])) == 2
+    assert len(records) == 1
+    for word in ["pizza", "meal", "zz-words", "RegexEntityExtractor"]:
+        assert word in records[0].message.args[0]
+
+
+async def test_warn_only_once_for_overlapping_entities(tmp_path: Path):
+    _, interpreter, _ = await rasa.nlu.train.train(
+        OVERLAP_TESTS_CONFIG, data=OVERLAP_TESTS_DATA, path=str(tmp_path)
+    )
+
+    msg = "I am looking for some pizza"
+    with pytest.warns(None, match="overlapping") as records:
+        parsed_msg = interpreter.parse(msg)
+
+    assert len(parsed_msg.get("entities", [])) == 2
+    assert len(records) == 1
+    for word in ["pizza", "meal", "zz-words", "RegexEntityExtractor"]:
+        assert word in records[0].message.args[0]
+
+    # parse again but this time without warning again
+    with pytest.warns(None, match="overlapping") as records:
+        parsed_again_msg = interpreter.parse(msg)
+
+    assert len(parsed_again_msg.get("entities", [])) == 2
+    assert len(records) == 0

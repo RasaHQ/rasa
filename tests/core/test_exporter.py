@@ -1,11 +1,10 @@
 import uuid
 from pathlib import Path
-from typing import Optional, Dict, Any, Text, List
+from typing import Optional, Text, List
 from unittest.mock import Mock
 
 import pytest
 
-import rasa.shared.utils.io
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME
 from rasa.shared.core.domain import Domain
 
@@ -22,14 +21,6 @@ from rasa.exceptions import (
     PublishingError,
 )
 from tests.conftest import MockExporter, random_user_uttered_event
-
-
-def _write_endpoint_config_to_yaml(path: Path, data: Dict[Text, Any]) -> Path:
-    endpoints_path = path / "endpoints.yml"
-
-    # write endpoints config to file
-    rasa.shared.utils.io.write_yaml(data, endpoints_path)
-    return endpoints_path
 
 
 @pytest.mark.parametrize(

@@ -1,12 +1,11 @@
 import asyncio
-import os
 
 from rasa.utils.endpoints import EndpointConfig
 from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Text, Generator, Callable
+from typing import Generator, Callable
 
 import pytest
 
@@ -38,11 +37,18 @@ class ExamplePolicy(Policy):
 class MockedMongoTrackerStore(MongoTrackerStore):
     """In-memory mocked version of `MongoTrackerStore`."""
 
-    def __init__(self, _domain: Domain):
+    def __init__(
+        self,
+        _domain: Domain,
+        retrieve_events_from_previous_conversation_sessions: bool = False,
+    ) -> None:
         from mongomock import MongoClient
 
         self.db = MongoClient().rasa
         self.collection = "conversations"
+        self.retrieve_events_from_previous_conversation_sessions = (
+            retrieve_events_from_previous_conversation_sessions
+        )
 
         # skipcq: PYL-E1003
         # Skip `MongoTrackerStore` constructor to avoid that actual Mongo connection

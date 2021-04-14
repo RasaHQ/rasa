@@ -29,7 +29,6 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpr
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
@@ -259,7 +258,7 @@ async def _run_model_pulling_worker(
 
 async def schedule_model_pulling(
     model_server: EndpointConfig, wait_time_between_pulls: int, agent: "Agent"
-):
+) -> None:
     (await jobs.scheduler()).add_job(
         _run_model_pulling_worker,
         "interval",
@@ -564,7 +563,7 @@ class Agent:
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message."""
         if not self.is_ready():
@@ -663,29 +662,8 @@ class Agent:
 
         return await self.handle_message(msg, message_preprocessor)
 
-    def toggle_memoization(self, activate: bool) -> None:
-        """Toggles the memoization on and off.
-
-        If a memoization policy is present in the ensemble, this will toggle
-        the prediction of that policy. When set to ``False`` the Memoization
-        policies present in the policy ensemble will not make any predictions.
-        Hence, the prediction result from the ensemble always needs to come
-        from a different policy (e.g. ``TEDPolicy``). Useful to test
-        prediction
-        capabilities of an ensemble when ignoring memorized turns from the
-        training data."""
-
-        if not self.policy_ensemble:
-            return
-
-        for p in self.policy_ensemble.policies:
-            # explicitly ignore inheritance (e.g. augmented memoization policy)
-            if type(p) is MemoizationPolicy:
-                p.toggle(activate)
-
     def _max_history(self) -> int:
         """Find maximum max_history."""
-
         max_histories = [
             policy.featurizer.max_history
             for policy in self.policy_ensemble.policies
