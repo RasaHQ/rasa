@@ -182,7 +182,9 @@ def run_nlu_training(
 
     output = train_path or args.out
 
-    config = rasa.cli.utils.get_valid_config_or_exit(args.config, CONFIG_MANDATORY_KEYS_NLU)
+    config = rasa.cli.utils.get_valid_config_or_exit(
+        args.config, CONFIG_MANDATORY_KEYS_NLU
+    )
     nlu_data = rasa.cli.utils.get_validated_path(
         args.nlu, "nlu", DEFAULT_DATA_PATH, none_is_valid=True
     )
