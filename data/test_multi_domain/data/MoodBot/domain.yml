@@ -4,6 +4,13 @@ intents:
   - mood_great
   - mood_unhappy
 
+entities:
+- cuisine
+- number
+
+actions:
+- action_utter_mood
+
 responses:
   utter_cheer_up:
   - text: "Here is something to cheer you up:"

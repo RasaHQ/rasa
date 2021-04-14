@@ -13,3 +13,24 @@ responses:
 
   utter_goodbye:
     - text: "Bye"
+
+
+slots:
+  name:
+    type: float
+    influence_conversation: false
+
+entities:
+- cuisine
+- name
+
+actions:
+- action_custom_utter
+- action_ask_name
+
+forms:
+  name_form:
+    name:
+    - type: from_entity
+      entity: name
+      not_intent: chitchat
