@@ -246,11 +246,11 @@ class Domain:
             d2: Dict[Text, Any],
             override_existing_values: bool = False,
         ) -> Dict[Text, Any]:
+            dict1_copy, dict2_copy = d1.copy(), d2.copy()
             if override_existing_values:
-                a, b = d1.copy(), d2.copy()
+                dict1_copy.update(dict2_copy)
             else:
-                a, b = d2.copy(), d1.copy()
-            a.update(b)
+                dict2_copy.update(dict1_copy)
             return a
 
         def merge_lists(l1: List[Any], l2: List[Any]) -> List[Any]:
