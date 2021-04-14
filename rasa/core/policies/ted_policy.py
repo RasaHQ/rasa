@@ -399,21 +399,41 @@ class TEDPolicy(Policy):
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
-            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2),],
+            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
         )
 
-        # If any action texts are present, explicitly add the first label id
-        # belonging to action text. This is necessary to distinguish between
-        # action name label ids and action text label ids inside TF graph code.
-        num_action_texts = len(domain.action_texts)
-        action_text_ids = label_ids[domain.num_actions - num_action_texts :]
+        label_batch_size = self.config[LABEL_BATCH_SIZE]
 
-        if np.size(action_text_ids):
-            label_data.add_features(
-                LABEL_KEY,
-                SAMPLE_ACTION_TEXT_ID,
-                [FeatureArray(action_text_ids[:1], number_of_dimensions=1)],
-            )
+        # Get label ids for each key in attribute data by using the pre-computed mask.
+        for key, data in attribute_data.items():
+            if MASK in data:
+                mask = np.reshape(data[MASK][0], (-1,)).astype(dtype=np.bool)
+                key_ids = label_ids[mask].astype(np.int32)
+                label_data.add_features(
+                    f"{LABEL_KEY}_{key}",
+                    LABEL_SUB_KEY,
+                    [FeatureArray(np.expand_dims(key_ids, -1), number_of_dimensions=2)],
+                )
+                key_label_batch_size = (
+                    key_ids.shape[0]
+                    if label_batch_size == -1
+                    else max(
+                        1,
+                        int(
+                            (np.shape(key_ids)[0] / np.shape(label_ids)[0])
+                            * label_batch_size
+                        ),
+                    )
+                )
+                label_data.add_features(
+                    f"{LABEL_KEY}_{key}",
+                    LABEL_BATCH_SIZE,
+                    [
+                        FeatureArray(
+                            np.array([key_label_batch_size]), number_of_dimensions=1
+                        )
+                    ],
+                )
 
         return label_data, encoded_all_labels
 
@@ -1211,59 +1231,13 @@ class TED(TransformerRasaModel):
             ],
             axis=0,
         )
+
         all_unique_label_ids = tf.sort(tf.unique(concatenated_ids)[0], axis=0)
 
         # Compute embeddings for all unique label ids
         all_labels_embed = self._compute_embedding_for_label_ids(all_unique_label_ids)
 
         return all_unique_label_ids, all_labels_embed
-
-    def _sample_candidate_label_ids(self, label_batch_size: int) -> tf.Tensor:
-        all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
-        if label_batch_size != -1:
-
-            # First, sample a fixed number of random labels ids
-            # We use uniform candidate sampler because it has the ability to sample unique values
-            total_num_label_ids = all_label_ids.shape[0]
-
-            if label_batch_size > total_num_label_ids:
-                raise TFLayerConfigException(
-                    f"{LABEL_BATCH_SIZE} is set to {label_batch_size} which is "
-                    f"greater that total number of unique label ids "
-                    f"({total_num_label_ids}). Please make "
-                    f"sure that {LABEL_BATCH_SIZE} is set to a value smaller than "
-                    f"or equal to the number of unique label ids."
-                )
-
-            sampled_label_ids, _, _ = tf.random.uniform_candidate_sampler(
-                tf.reshape(
-                    tf.cast(tf.range(0, total_num_label_ids), dtype=tf.int64),
-                    shape=(1, -1),
-                ),
-                total_num_label_ids,
-                label_batch_size,
-                True,
-                total_num_label_ids,
-            )
-
-            sampled_label_ids = tf.cast(sampled_label_ids, dtype=tf.float32)
-
-            # Always add an action text label id if it is present
-            # in label data. Reduces complexity inside TF graph code.
-            if SAMPLE_ACTION_TEXT_ID in self.tf_label_data[LABEL_KEY]:
-                sample_action_text_label_id = self.tf_label_data[LABEL_KEY][
-                    SAMPLE_ACTION_TEXT_ID
-                ][0]
-                sampled_label_ids = tf.concat(
-                    [sampled_label_ids, sample_action_text_label_id], axis=0
-                )
-
-            sampled_label_ids = tf.reshape(sampled_label_ids, (-1, 1))
-
-        else:
-            sampled_label_ids = all_label_ids
-
-        return sampled_label_ids
 
     @staticmethod
     def _slice_sparse_tensor(
@@ -1344,76 +1318,89 @@ class TED(TransformerRasaModel):
         elif isinstance(tensor, tf.SparseTensor):
             return self._slice_sparse_tensor(tensor, indices)
 
-    def _compute_embedding_for_label_ids(self, label_ids: tf.Tensor) -> tf.Tensor:
+    def _filter_label_data(
+        self, selection_label_ids: tf.Tensor
+    ) -> Dict[Text, Dict[Text, List[Union[tf.Tensor, tf.SparseTensor]]]]:
 
-        if SAMPLE_ACTION_TEXT_ID in self.tf_label_data[LABEL_KEY]:
-            sample_action_text_label_id = self.tf_label_data[LABEL_KEY][
-                SAMPLE_ACTION_TEXT_ID
-            ][0]
-            starting_action_text_label_id = sample_action_text_label_id[0]
-        else:
-            starting_action_text_label_id = tf.reduce_max(label_ids) + 1
+        feature_key_selection_ids = {}
 
-        # Since label_ids are always sorted, we can partition label ids
-        # into two sets:
-        # 1. label ids for action names
-        # 2. label ids for action texts
+        for key in self.tf_label_data.keys():
+            if key != LABEL_KEY:
+                feature_key_selection_ids[key] = {}
+                key_label_ids = self.tf_label_data[key][LABEL_SUB_KEY][0]
+                for sub_key in self.tf_label_data[key]:
+                    if sub_key in [SEQUENCE, SENTENCE]:
+                        key_selection_mask = tf.equal(
+                            key_label_ids, selection_label_ids
+                        )
+                        key_selection_mask = tf.reduce_any(key_selection_mask, axis=1)
+                        key_selection_ids = tf.squeeze(tf.where(key_selection_mask), -1)
 
-        action_name_label_ids = tf.boolean_mask(
-            label_ids, tf.math.less(label_ids, starting_action_text_label_id)
-        )
+                        feature_key_selection_ids[key][sub_key] = key_selection_ids
 
-        action_text_label_ids = tf.boolean_mask(
-            label_ids, tf.math.greater_equal(label_ids, starting_action_text_label_id)
-        )
-
-        # Reindex action_text_label ids to start from 0
-        action_text_label_ids = (
-            tf.cast(action_text_label_ids, dtype=tf.float32)
-            - starting_action_text_label_id
-        )
-
-        tf.print("starting_action_text_label_id", starting_action_text_label_id)
-        tf.print("label_ids", label_ids)
-        tf.print("action_name_label_ids", action_name_label_ids)
-        tf.print("action_text_label_ids", action_text_label_ids)
+                    elif sub_key in [MASK, SEQUENCE_LENGTH]:
+                        key_selection_ids = selection_label_ids
+                        feature_key_selection_ids[key][sub_key] = key_selection_ids
 
         filtered_label_data = {}
+        max_sequence_length = {}
 
-        # Create a filtered version of self.tf_label_data which contains label data only for these sampled label ids
         for key in self.tf_label_data.keys():
             if key != LABEL_KEY:
                 filtered_label_data[key] = {}
-
                 for sub_key in self.tf_label_data[key]:
-                    tf.print(
-                        key,
-                        sub_key,
-                        [data.shape for data in self.tf_label_data[key][sub_key]],
-                    )
-                    if key == f"{LABEL}_{ACTION_NAME}" and sub_key == SENTENCE:
-                        # Use only the label ids sampled for action names
-                        filtered_attribute_data = [
-                            self._slice_tensor(data, action_name_label_ids)
-                            for data in self.tf_label_data[key][sub_key]
-                        ]
-                    elif key == f"{LABEL}_{ACTION_TEXT}" and sub_key in [
-                        SENTENCE,
-                        SEQUENCE,
-                    ]:
-                        # Use only the label ids sampled for action texts
-                        filtered_attribute_data = [
-                            self._slice_tensor(data, action_text_label_ids)
-                            for data in self.tf_label_data[key][sub_key]
-                        ]
-                    else:
-                        # use label ids in all other cases since they share the same index
-                        filtered_attribute_data = [
-                            self._slice_tensor(data, label_ids)
-                            for data in self.tf_label_data[key][sub_key]
-                        ]
+                    if sub_key in [LABEL_SUB_KEY, LABEL_BATCH_SIZE]:
+                        continue
+
+                    filtered_attribute_data = [
+                        self._slice_tensor(
+                            data, feature_key_selection_ids[key][sub_key]
+                        )
+                        for data in self.tf_label_data[key][sub_key]
+                    ]
+
+                    if sub_key == SEQUENCE_LENGTH:
+                        max_sequence_length[key] = tf.cast(
+                            tf.reduce_max(filtered_attribute_data[0]), dtype=tf.int64
+                        )
 
                     filtered_label_data[key][sub_key] = filtered_attribute_data
+
+        for key in filtered_label_data:
+            for sub_key in filtered_label_data[key]:
+                if sub_key == SEQUENCE:
+                    # Slice with correct max sequence length
+                    truncated_data = []
+                    for data in filtered_label_data[key][sub_key]:
+
+                        if isinstance(data, tf.SparseTensor):
+                            indices = data.indices
+                            values = data.values
+                            shape = data.dense_shape
+
+                            new_shape = (
+                                shape[0],
+                                max_sequence_length[key],
+                                data.shape[2],
+                            )
+
+                            truncated_data.append(
+                                tf.SparseTensor(indices, values, new_shape)
+                            )
+
+                        else:
+
+                            truncated_data.append(
+                                data[:, : max_sequence_length[key], :]
+                            )
+
+                    filtered_label_data[key][sub_key] = truncated_data
+
+        return filtered_label_data
+
+    def _compute_embedding_for_label_ids(self, label_ids: tf.Tensor) -> tf.Tensor:
+
+        filtered_label_data = self._filter_label_data(label_ids)
 
         labels_encoded = {}
         for key in filtered_label_data:
@@ -2004,6 +1991,60 @@ class TED(TransformerRasaModel):
         )[:, 1]
         return tf.gather(all_labels_embed, indices)
 
+    def _get_candidate_label_ids(self, label_batch_size):
+
+        all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
+
+        total_num_label_ids = all_label_ids.shape[0]
+
+        if label_batch_size > total_num_label_ids:
+            raise TFLayerConfigException(
+                f"{LABEL_BATCH_SIZE} is set to {label_batch_size} which is "
+                f"greater that total number of unique label ids "
+                f"({total_num_label_ids}). Please make "
+                f"sure that {LABEL_BATCH_SIZE} is set to a value smaller than "
+                f"or equal to the number of unique label ids."
+            )
+
+        # Sample for each key
+        all_sampled_label_ids = []
+        for key in self.tf_label_data:
+            if key != LABEL_KEY:
+                key_ids = self.tf_label_data[key][LABEL_SUB_KEY][0]
+                num_samples = self.tf_label_data[key][LABEL_BATCH_SIZE][0]
+                total_num_candidates = key_ids.shape[0]
+                sampled_label_ids = self._sample_label_batch_ids(
+                    key_ids, num_samples, total_num_candidates
+                )
+                all_sampled_label_ids.append(sampled_label_ids)
+
+        all_sampled_label_ids = tf.concat(all_sampled_label_ids, axis=0)
+
+        return all_sampled_label_ids
+
+    @staticmethod
+    def _sample_label_batch_ids(all_label_ids, num_samples, total_num_label_ids):
+
+        # Sample a fixed number of random label ids
+        # We use uniform candidate sampler because it has the ability to sample unique values
+
+        indices, _, _ = tf.random.uniform_candidate_sampler(
+            tf.cast(tf.reshape(all_label_ids, (1, -1)), dtype=tf.int64),
+            total_num_label_ids,
+            num_samples,
+            True,
+            total_num_label_ids,
+        )
+
+        # Extract the values at those indices to get the action label ids
+        sampled_label_ids = tf.gather(all_label_ids, indices)
+
+        sampled_label_ids = tf.cast(sampled_label_ids, dtype=tf.float32)
+
+        sampled_label_ids = tf.reshape(sampled_label_ids, (-1, 1))
+
+        return sampled_label_ids
+
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
     ) -> tf.Tensor:
@@ -2020,9 +2061,9 @@ class TED(TransformerRasaModel):
 
         batch_label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        sampled_label_ids = self._sample_candidate_label_ids(
+        sampled_label_ids = self._get_candidate_label_ids(
             label_batch_size=self.config[LABEL_BATCH_SIZE]
-        )  # [label_bs, 1]
+        )  # [label_bs, 1])
 
         (
             all_unique_label_ids,
