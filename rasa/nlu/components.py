@@ -13,7 +13,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import COMPONENT_INDEX, TRAINABLE_EXTRACTORS
 import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
