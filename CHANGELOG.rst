@@ -17,6 +17,19 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.25] - 2021-04-14
+^^^^^^^^^^^^^^^^^^^^^^
+
+Features
+--------
+- `#8429 <https://github.com/rasahq/rasa/issues/8429>`_: Added partition_by_sender flag to Kafka Producer to optionally associate events with Kafka partition based on sender_id.
+
+Improvements
+------------
+- `#8345 <https://github.com/rasahq/rasa/issues/8345>`_: Improved the [lock store](lock-stores.mdx) debug log message when the process has to
+  queue because other messages have to be processed before this item.
+
+
 [1.10.24] - 2021-03-29
 ^^^^^^^^^^^^^^^^^^^^^^
 
