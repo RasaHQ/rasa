@@ -245,15 +245,14 @@ class SingleStateFeaturizer:
         key = next(
             k for k in sub_state.keys() if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
         )
-        message = e2e_features[key]
-        assert message
+        parsed_message = e2e_features[key]
+        assert parsed_message
 
         # remove entities from possible attributes
         attributes = set(
             attribute for attribute in sub_state.keys() if attribute != ENTITIES
         )
 
-        parsed_message = interpreter.featurize_message(message)
         output = self._get_features_from_parsed_message(parsed_message, attributes)
 
         # check that name attributes have features
