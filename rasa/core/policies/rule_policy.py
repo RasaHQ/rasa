@@ -766,7 +766,7 @@ class RulePolicy(MemoizationPolicy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
-    ) -> None:
+    ) -> Text:
         """Trains the policy on given training trackers.
 
         Args:
@@ -799,6 +799,8 @@ class RulePolicy(MemoizationPolicy):
             )
 
         logger.debug(f"Memorized '{len(self.lookup[RULES])}' unique rules.")
+
+        return self.persist()
 
     @staticmethod
     def _does_rule_match_state(rule_state: State, conversation_state: State) -> bool:

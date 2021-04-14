@@ -99,7 +99,7 @@ class MemoizationPolicy(Policy):
         if not featurizer:
             featurizer = self._standard_featurizer(persistor, max_history)
 
-        super().__init__(featurizer, priority, **kwargs)
+        super().__init__(featurizer, priority, persistor=persistor, **kwargs)
 
         self.max_history = self.featurizer.max_history
         self.lookup = lookup if lookup is not None else {}
@@ -177,7 +177,7 @@ class MemoizationPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
-    ) -> None:
+    ) -> Text:
         # only considers original trackers (no augmented ones)
         training_trackers = [
             t
@@ -192,7 +192,7 @@ class MemoizationPolicy(Policy):
             trackers_as_states, trackers_as_actions
         )
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
-        self.persist()
+        return self.persist()
 
     def _recall_states(self, states: List[State]) -> Optional[Text]:
         return self.lookup.get(self._create_feature_key(states))

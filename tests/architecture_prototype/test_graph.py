@@ -269,7 +269,7 @@ full_model_train_graph = {
     "train_ted_policy": {
         "uses": TEDPolicy,
         "fn": "train",
-        "config": {"max_history": 5},
+        "config": {"max_history": 5, "checkpoint_model": True},
         "needs": {
             "e2e_features": "create_e2e_lookup",
             "training_trackers": "generate_trackers",

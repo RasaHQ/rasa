@@ -993,7 +993,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         if self.component_config[CHECKPOINT_MODEL]:
             checkpoint_directory = self._persistor.directory_for("checkpoints")
-            shutil.move(self.tmp_checkpoint_dir, checkpoint_directory)
+            shutil.move(str(self.tmp_checkpoint_dir), checkpoint_directory)
         self.model.save(str(tf_model_file))
 
         io_utils.pickle_dump(

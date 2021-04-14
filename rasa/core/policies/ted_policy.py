@@ -304,9 +304,9 @@ class TEDPolicy(Policy):
     }
 
     @staticmethod
-    def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
+    def _standard_featurizer(persistor: Persistor, max_history: Optional[int] = None) -> TrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
-            SingleStateFeaturizer(), max_history=max_history
+            SingleStateFeaturizer(), max_history=max_history, persistor=persistor
         )
 
     def __init__(
@@ -318,6 +318,7 @@ class TEDPolicy(Policy):
         fake_features: Optional[Dict[Text, List["Features"]]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         should_finetune: bool = False,
+        persistor: Optional[Persistor] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
@@ -327,10 +328,10 @@ class TEDPolicy(Policy):
         )
 
         if not featurizer:
-            featurizer = self._standard_featurizer(max_history)
+            featurizer = self._standard_featurizer(persistor, max_history)
 
         super().__init__(
-            featurizer, priority, should_finetune=should_finetune, **kwargs
+            featurizer, priority, should_finetune=should_finetune, persistor=persistor, **kwargs
         )
         self._load_params(**kwargs)
 
@@ -507,7 +508,7 @@ class TEDPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
-    ) -> None:
+    ) -> Text:
         """Train the policy on given training trackers."""
 
         if not training_trackers:
@@ -591,6 +592,8 @@ class TEDPolicy(Policy):
             verbose=False,
             shuffle=False,  # we use custom shuffle inside data generator
         )
+
+        return self.persist()
 
     def _featurize_tracker_for_e2e(
         self,
@@ -768,7 +771,7 @@ class TEDPolicy(Policy):
 
         return [EntitiesAdded(entities)]
 
-    def persist(self) -> None:
+    def persist(self) -> Text:
         """Persists the policy to a storage."""
         if self.model is None:
             logger.debug(
@@ -783,7 +786,7 @@ class TEDPolicy(Policy):
 
         if self.config[CHECKPOINT_MODEL]:
             checkpoint_directory = self._persistor.directory_for("checkpoints")
-            shutil.move(self.tmp_checkpoint_dir, checkpoint_directory)
+            shutil.move(str(self.tmp_checkpoint_dir), checkpoint_directory)
         self.model.save(str(tf_model_file))
 
         io_utils.json_pickle(self._persistor.file_for("priority.pkl"), self.priority)
@@ -806,6 +809,8 @@ class TEDPolicy(Policy):
         rasa.shared.utils.io.dump_obj_as_json_to_file(
             self._persistor.file_for("entity_tag_specs.json"), entity_tag_specs,
         )
+
+        return self._persistor.resource_name()
 
     @classmethod
     def load(
