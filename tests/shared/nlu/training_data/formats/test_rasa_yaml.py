@@ -2,7 +2,6 @@ import textwrap
 from typing import Text
 
 import pytest
-import tempfile
 import pathlib
 
 from rasa.shared.exceptions import YamlException, YamlSyntaxException
