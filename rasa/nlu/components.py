@@ -6,6 +6,7 @@ from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, 
 
 import rasa.utils.train_utils
 from rasa.exceptions import MissingDependencyException
+from rasa.nlu.constants import COMPONENT_INDEX
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.shared.constants import DOCS_URL_COMPONENTS
