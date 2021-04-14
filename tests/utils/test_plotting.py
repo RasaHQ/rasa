@@ -84,7 +84,35 @@ def test_paired_histogram_specification_x_ranges(
     x_pad_fraction: float,
     expected_ranges: List[float],
 ):
-    _, histograms, x_ranges, _, = rasa.utils.plotting._paired_histogram_specification(
-        data, num_bins=num_bins, density=density, x_pad_fraction=0, y_pad_fraction=0,
+    _, _, x_ranges, _ = rasa.utils.plotting._paired_histogram_specification(
+        data,
+        num_bins=num_bins,
+        density=density,
+        x_pad_fraction=x_pad_fraction,
+        y_pad_fraction=0,
     )
     assert np.all(x_ranges == expected_ranges)
+
+
+@pytest.mark.parametrize(
+    "data, num_bins, y_pad_fraction, expected_range",
+    [
+        ([[1, 3, 8], [2, 3, 3]], 7, 0.0, [0.5, 8.5]),
+        ([[1, 3, 8], [2, 3, 3, 3, 3]], 7, 0.0, [0.5, 8.5]),
+    ],
+)
+def test_paired_histogram_specification_y_range(
+    data: List[List[float]],
+    num_bins: int,
+    y_pad_fraction: float,
+    expected_range: List[float],
+):
+    for density in [False, True]:
+        _, histograms, _, y_range = rasa.utils.plotting._paired_histogram_specification(
+            data,
+            num_bins=num_bins,
+            density=density,
+            x_pad_fraction=0,
+            y_pad_fraction=y_pad_fraction,
+        )
+        assert np.all(list(y_range) == expected_range)
