@@ -7,6 +7,7 @@ import logging
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
+from rasa.architecture_prototype.graph import Persistor
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_POLICIES
@@ -57,12 +58,12 @@ class MemoizationPolicy(Policy):
 
     @staticmethod
     def _standard_featurizer(
-        max_history: Optional[int] = None,
+        persistor: Persistor, max_history: Optional[int] = None,
     ) -> MaxHistoryTrackerFeaturizer:
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(
-            state_featurizer=None, max_history=max_history
+            state_featurizer=None, max_history=max_history, persistor=persistor
         )
 
     def __init__(
@@ -71,6 +72,7 @@ class MemoizationPolicy(Policy):
         priority: int = MEMOIZATION_POLICY_PRIORITY,
         max_history: Optional[int] = MAX_HISTORY_NOT_SET,
         lookup: Optional[Dict] = None,
+        persistor: Optional[Persistor] = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the policy.
@@ -95,7 +97,7 @@ class MemoizationPolicy(Policy):
             )
 
         if not featurizer:
-            featurizer = self._standard_featurizer(max_history)
+            featurizer = self._standard_featurizer(persistor, max_history)
 
         super().__init__(featurizer, priority, **kwargs)
 
@@ -190,6 +192,7 @@ class MemoizationPolicy(Policy):
             trackers_as_states, trackers_as_actions
         )
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
+        self.persist()
 
     def _recall_states(self, states: List[State]) -> Optional[Text]:
         return self.lookup.get(self._create_feature_key(states))

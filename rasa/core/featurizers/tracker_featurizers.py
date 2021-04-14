@@ -7,6 +7,7 @@ from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Union, Any
 import numpy as np
 
+from rasa.architecture_prototype.graph import Persistor
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
@@ -42,7 +43,7 @@ class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
     def __init__(
-        self, state_featurizer: Optional[SingleStateFeaturizer] = None
+        self, state_featurizer: Optional[SingleStateFeaturizer] = None, persistor: Optional[Persistor] = None,
     ) -> None:
         """Initialize the tracker featurizer.
 
@@ -50,6 +51,7 @@ class TrackerFeaturizer:
             state_featurizer: The state featurizer used to encode the states.
         """
         self.state_featurizer = state_featurizer
+        self._persistor = persistor
 
     @staticmethod
     def _create_states(
@@ -334,14 +336,13 @@ class TrackerFeaturizer:
         )
         return self._featurize_states(trackers_as_states, interpreter)
 
-    def persist(self, path: Union[Text, Path]) -> None:
+    def persist(self) -> None:
         """Persist the tracker featurizer to the given path.
 
         Args:
             path: The path to persist the tracker featurizer to.
         """
-        featurizer_file = Path(path) / FEATURIZER_FILE
-        rasa.shared.utils.io.create_directory_for_file(featurizer_file)
+        featurizer_file = self._persistor.file_for(FEATURIZER_FILE)
 
         # entity tags are persisted in TED policy, they are not needed for prediction
         if self.state_featurizer is not None:
@@ -353,7 +354,7 @@ class TrackerFeaturizer:
         )
 
     @staticmethod
-    def load(path: Text) -> Optional["TrackerFeaturizer"]:
+    def load(persistor: Persistor, resource_name: Text) -> Optional["TrackerFeaturizer"]:
         """Load the featurizer from file.
 
         Args:
@@ -362,15 +363,8 @@ class TrackerFeaturizer:
         Returns:
             The loaded tracker featurizer.
         """
-        featurizer_file = Path(path) / FEATURIZER_FILE
-        if featurizer_file.is_file():
-            return jsonpickle.decode(rasa.shared.utils.io.read_file(featurizer_file))
-
-        logger.error(
-            f"Couldn't load featurizer for policy. "
-            f"File '{featurizer_file}' doesn't exist."
-        )
-        return None
+        featurizer_file = persistor.get_resource(resource_name, FEATURIZER_FILE)
+        return jsonpickle.decode(rasa.shared.utils.io.read_file(featurizer_file))
 
 
 class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
@@ -504,9 +498,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         state_featurizer: Optional[SingleStateFeaturizer] = None,
         max_history: Optional[int] = None,
         remove_duplicates: bool = True,
+        persistor: Optional[Persistor] = None,
     ) -> None:
 
-        super().__init__(state_featurizer)
+        super().__init__(state_featurizer, persistor=persistor)
         self.max_history = max_history
         self.remove_duplicates = remove_duplicates
 

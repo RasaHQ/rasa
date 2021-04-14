@@ -17,6 +17,7 @@ from typing import (
 )
 import numpy as np
 
+from rasa.architecture_prototype.graph import Persistor
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.shared.core.events import Event
 
@@ -102,30 +103,32 @@ class Policy:
         return SupportedData.ML_DATA
 
     @staticmethod
-    def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
+    def _standard_featurizer(persistor: Persistor) -> MaxHistoryTrackerFeaturizer:
+        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), persistor=persistor)
 
     @classmethod
     def _create_featurizer(
-        cls, featurizer: Optional[TrackerFeaturizer] = None
+        cls, persistor, featurizer: Optional[TrackerFeaturizer] = None
     ) -> TrackerFeaturizer:
         if featurizer:
             return copy.deepcopy(featurizer)
         else:
-            return cls._standard_featurizer()
+            return cls._standard_featurizer(persistor)
 
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
         should_finetune: bool = False,
+        persistor: Optional[Persistor] = None,
         **kwargs: Any,
     ) -> None:
         """Constructs a new Policy object."""
-        self.__featurizer = self._create_featurizer(featurizer)
+        self.__featurizer = self._create_featurizer(persistor, featurizer)
         self.priority = priority
         self.finetune_mode = should_finetune
         self._rule_only_data = {}
+        self._persistor = persistor
 
     @property
     def featurizer(self) -> TrackerFeaturizer:
@@ -346,7 +349,7 @@ class Policy:
         """
         pass
 
-    def persist(self, path: Union[Text, Path]) -> None:
+    def persist(self) -> Text:
         """Persists the policy to storage.
 
         Args:
@@ -354,15 +357,14 @@ class Policy:
         """
         # not all policies have a featurizer
         if self.featurizer is not None:
-            self.featurizer.persist(path)
+            self.featurizer.persist()
 
-        file = Path(path) / self._metadata_filename()
-
-        rasa.shared.utils.io.create_directory_for_file(file)
+        file = self._persistor.file_for(self._metadata_filename())
         rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
+        return self._persistor.resource_name()
 
     @classmethod
-    def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
+    def load(cls, persistor: Optional[Persistor], resource_name: Text, **kwargs: Any) -> "Policy":
         """Loads a policy from path.
 
         Args:
@@ -371,13 +373,13 @@ class Policy:
         Returns:
             An instance of `Policy`.
         """
-        metadata_file = Path(path) / cls._metadata_filename()
+        metadata_file = persistor.get_resource(resource_name, cls._metadata_filename())
 
-        if metadata_file.is_file():
+        if Path(metadata_file).is_file():
             data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
 
-            if (Path(path) / FEATURIZER_FILE).is_file():
-                featurizer = TrackerFeaturizer.load(path)
+            if Path(persistor.get_resource(resource_name, FEATURIZER_FILE)).is_file():
+                featurizer = TrackerFeaturizer.load(persistor, resource_name)
                 data["featurizer"] = featurizer
 
             data.update(kwargs)
@@ -399,13 +401,13 @@ class Policy:
                         f"Rasa Open Source 3.0.0."
                     )
 
-            return cls(**data)
+            return cls(persistor=persistor, **data)
 
         logger.info(
             f"Couldn't load metadata for policy '{cls.__name__}'. "
             f"File '{metadata_file}' doesn't exist."
         )
-        return cls()
+        return cls(persistor=persistor)
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         """Creates a list of zeros.

@@ -5,6 +5,7 @@ from collections import defaultdict
 
 import numpy as np
 
+from rasa.architecture_prototype.graph import Persistor
 import rasa.shared.utils.io
 import rasa.utils.train_utils
 import tensorflow as tf
@@ -767,7 +768,7 @@ class TEDPolicy(Policy):
 
         return [EntitiesAdded(entities)]
 
-    def persist(self, path: Union[Text, Path]) -> None:
+    def persist(self) -> None:
         """Persists the policy to a storage."""
         if self.model is None:
             logger.debug(
@@ -776,33 +777,25 @@ class TEDPolicy(Policy):
             )
             return
 
-        model_path = Path(path)
-        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
+        tf_model_file = self._persistor.file_for("tf_model")
 
-        rasa.shared.utils.io.create_directory_for_file(tf_model_file)
-
-        self.featurizer.persist(path)
+        self.featurizer.persist()
 
         if self.config[CHECKPOINT_MODEL]:
-            shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
+            checkpoint_directory = self._persistor.directory_for("checkpoints")
+            shutil.move(self.tmp_checkpoint_dir, checkpoint_directory)
         self.model.save(str(tf_model_file))
 
-        io_utils.json_pickle(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl", self.priority
+        io_utils.json_pickle(self._persistor.file_for("priority.pkl"), self.priority)
+        io_utils.pickle_dump(self._persistor.file_for("meta.pkl"), self.config)
+        io_utils.pickle_dump(
+            self._persistor.file_for("data_example.pkl"), self.data_example
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl", self.config
+            self._persistor.file_for("fake_features.pkl"), self.fake_features,
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
-        )
-        io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.fake_features.pkl",
-            self.fake_features,
-        )
-        io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
-            dict(self._label_data.data),
+            self._persistor.file_for("label_data.pkl"), dict(self._label_data.data),
         )
 
         entity_tag_specs = (
@@ -811,14 +804,14 @@ class TEDPolicy(Policy):
             else []
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.entity_tag_specs.json",
-            entity_tag_specs,
+            self._persistor.file_for("entity_tag_specs.json"), entity_tag_specs,
         )
 
     @classmethod
     def load(
         cls,
-        path: Union[Text, Path],
+        persistor: Persistor,
+        resource_name: Text,
         should_finetune: bool = False,
         epoch_override: int = defaults[EPOCHS],
         **kwargs: Any,
@@ -827,38 +820,32 @@ class TEDPolicy(Policy):
 
         **Needs to load its featurizer**
         """
-        model_path = Path(path)
 
-        if not model_path.exists():
-            logger.error(
-                f"Failed to load TED policy model. Path "
-                f"'{model_path.absolute()}' doesn't exist."
-            )
-            return
+        tf_model_file = persistor.get_resource(resource_name, "tf_model")
 
-        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
+        featurizer = TrackerFeaturizer.load(persistor, resource_name)
 
-        featurizer = TrackerFeaturizer.load(path)
-
-        if not (model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl").is_file():
-            return cls(featurizer=featurizer)
+        if not Path(
+            persistor.get_resource(resource_name, "data_example.pkl")
+        ).is_file():
+            return cls(featurizer=featurizer, persistor=persistor)
 
         loaded_data = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl"
+            persistor.get_resource(resource_name, "data_example.pkl")
         )
         label_data = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
+            persistor.get_resource(resource_name, "label_data.pkl")
         )
         fake_features = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.fake_features.pkl"
+            persistor.get_resource(resource_name, "fake_features.pkl")
         )
         label_data = RasaModelData(data=label_data)
-        meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
+        meta = io_utils.pickle_load(persistor.get_resource(resource_name, "meta.pkl"))
         priority = io_utils.json_unpickle(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
+            persistor.get_resource(resource_name, "priority.pkl")
         )
         entity_tag_specs = rasa.shared.utils.io.read_json_file(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.entity_tag_specs.json"
+            persistor.get_resource(resource_name, "entity_tag_specs.json")
         )
         entity_tag_specs = [
             EntityTagSpec(
@@ -917,6 +904,7 @@ class TEDPolicy(Policy):
             fake_features=fake_features,
             entity_tag_specs=entity_tag_specs,
             should_finetune=should_finetune,
+            persistor=persistor,
             **meta,
         )
 

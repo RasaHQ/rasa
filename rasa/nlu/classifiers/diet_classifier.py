@@ -991,8 +991,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         tf_model_file = self._persistor.file_for("tf_model")
 
-        rasa.shared.utils.io.create_directory_for_file(tf_model_file)
-
         if self.component_config[CHECKPOINT_MODEL]:
             checkpoint_directory = self._persistor.directory_for("checkpoints")
             shutil.move(self.tmp_checkpoint_dir, checkpoint_directory)

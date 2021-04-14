@@ -27,7 +27,7 @@ from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturi
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
-project = "/Users/tobias/Workspace/rasa-demo"
+project = "examples/moodbot"
 
 # We can omit `FallbackClassifier` as this doesn't train
 rasa_nlu_train_graph = {
@@ -137,13 +137,6 @@ def test_create_graph_with_rasa_syntax():
 
 
 def test_train_nlu():
-    graph.run_as_dask_graph(
-        rasa_nlu_train_graph,
-        ["train_classifier", "train_response_selector", "train_synonym_mapper"],
-    )
-
-
-def test_persist_nlu():
     # clean up before testing persistence
     cache_dir = Path("model")
     shutil.rmtree(cache_dir, ignore_errors=True)
@@ -154,47 +147,46 @@ def test_persist_nlu():
         ["train_classifier", "train_response_selector", "train_synonym_mapper"],
     )
 
-
 full_model_train_graph = {
     "load_domain": {
         "uses": DomainReader,
         "fn": "read",
         "config": {"project": project},
         "needs": {},
+        "persist": False,
     },
     "load_stories": {
         "uses": StoryGraphReader,
         "fn": "read",
         "config": {"project": project},
         "needs": {},
+        "persist": False,
     },
     "generate_trackers": {
         "uses": TrackerGenerator,
         "fn": "generate",
         "config": {},
         "needs": {"domain": "load_domain", "story_graph": "load_stories"},
+        "persist": False,
     },
     "convert_stories_for_nlu": {
         "uses": StoryToTrainingDataConverter,
         "fn": "convert",
         "config": {},
         "needs": {"story_graph": "load_stories"},
+        "persist": False,
     },
     "core_tokenize": {
         "uses": WhitespaceTokenizer,
         "fn": "train",
         "config": {},
         "needs": {"training_data": "convert_stories_for_nlu"},
+        "persist": False,
     },
     "core_train_regex_featurizer": {
         "uses": RegexFeaturizer,
         "fn": "train",
-        "config": {
-            "component_config": {
-                "model_dir": "model",
-                "filename": "core_regex_featurizer",
-            }
-        },
+        "config": {},
         "needs": {"training_data": "core_tokenize"},
     },
     "core_add_regex_features": {
@@ -202,44 +194,29 @@ full_model_train_graph = {
         "fn": "process_training_data",
         "config": {},
         "needs": {
-            "filename": "core_train_regex_featurizer",
+            "resource_name": "core_train_regex_featurizer",
             "training_data": "core_tokenize",
         },
     },
     "core_train_lexical_featurizer": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "train",
-        "config": {
-            "component_config": {
-                "model_dir": "model",
-                "filename": "core_lexical_featurizer",
-            }
-        },
+        "config": {"component_config": {}},
         "needs": {"training_data": "core_tokenize"},
     },
     "core_add_lexical_features": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "process_training_data",
-        "config": {
-            "component_config": {
-                "model_dir": "model",
-                "filename": "core_lexical_featurizer",
-            }
-        },
+        "config": {"component_config": {}},
         "needs": {
             "training_data": "core_add_regex_features",
-            "filename": "core_train_lexical_featurizer",
+            "resource_name": "core_train_lexical_featurizer",
         },
     },
     "core_train_count_featurizer1": {
         "uses": CountVectorsFeaturizer,
         "fn": "train",
-        "config": {
-            "component_config": {
-                "model_dir": "model",
-                "filename": "core_count_featurizer1",
-            }
-        },
+        "config": {},
         "needs": {"training_data": "core_tokenize"},
     },
     "core_add_count_features1": {
@@ -247,26 +224,16 @@ full_model_train_graph = {
         "constructor_name": "load",
         "eager": False,
         "fn": "process_training_data",
-        "config": {
-            "component_config": {
-                "model_dir": "model",
-                "filename": "core_count_featurizer1",
-            }
-        },
+        "config": {},
         "needs": {
             "training_data": "core_add_lexical_features",
-            "filename": "core_train_count_featurizer1",
+            "resource_name": "core_train_count_featurizer1",
         },
     },
     "core_train_count_featurizer2": {
         "uses": CountVectorsFeaturizer,
         "fn": "train",
-        "config": {
-            "component_config": {
-                "model_dir": "model",
-                "filename": "core_count_featurizer2",
-            }
-        },
+        "config": {},
         "needs": {"training_data": "core_tokenize"},
     },
     "core_add_count_features2": {
@@ -274,14 +241,9 @@ full_model_train_graph = {
         "constructor_name": "load",
         "eager": False,
         "fn": "process_training_data",
-        "config": {
-            "component_config": {
-                "model_dir": "model",
-                "filename": "core_count_featurizer2",
-            }
-        },
+        "config": {},
         "needs": {
-            "filename": "core_train_count_featurizer2",
+            "resource_name": "core_train_count_featurizer2",
             "training_data": "core_add_count_features1",
         },
     },
@@ -290,6 +252,7 @@ full_model_train_graph = {
         "fn": "convert",
         "config": {},
         "needs": {"training_data": "core_add_count_features2",},
+        "persist": False,
     },
     "train_memoization_policy": {
         "uses": MemoizationPolicy,
@@ -317,6 +280,7 @@ full_model_train_graph = {
 }
 
 
+
 def test_visualize_e2e_graph():
     dask_graph = graph.convert_to_dask_graph(full_model_train_graph)
 
@@ -324,6 +288,11 @@ def test_visualize_e2e_graph():
 
 
 def test_train_full_model():
+    # clean up before testing persistence
+    cache_dir = Path("model")
+    shutil.rmtree(cache_dir, ignore_errors=True)
+    cache_dir.mkdir()
+
     core_targets = ["train_memoization_policy", "train_ted_policy", "train_rule_policy"]
     nlu_targets = [
         "train_classifier",
