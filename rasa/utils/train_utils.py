@@ -33,6 +33,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     WEIGHT_SPARSITY,
     CONNECTION_DENSITY,
+    CHECKPOINT_MODEL,
 )
 from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
@@ -531,6 +532,18 @@ def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
     _check_loss_setting(component_config)
     _check_confidence_setting(component_config)
     _check_similarity_loss_setting(component_config)
+    _check_checkpoint_setting(component_config)
+
+
+def _check_checkpoint_setting(component_config: Dict[Text, Any]) -> None:
+    if component_config[CHECKPOINT_MODEL] and (
+        component_config[EVAL_NUM_EXAMPLES] <= 0
+        or component_config[EVAL_NUM_EPOCHS] <= 0
+    ):
+        rasa.shared.utils.io.raise_warning(
+            f"You have opted to save the best model, but one or both of"
+            f" {EVAL_NUM_EXAMPLES} or {EVAL_NUM_EPOCHS} is not greater than 0."
+        )
 
 
 def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
