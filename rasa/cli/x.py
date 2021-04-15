@@ -217,9 +217,10 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text) ->
 
     ctx = get_context("spawn")
     p = ctx.Process(
-        target=_rasa_service, args=(args, endpoints, rasa_x_url, credentials_path)
+        target=_rasa_service,
+        args=(args, endpoints, rasa_x_url, credentials_path),
+        daemon=True,
     )
-    p.daemon = True
     p.start()
     return p
 

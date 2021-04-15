@@ -13,8 +13,6 @@ from rasa.shared.constants import DOCS_URL_CONNECTORS
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
 
-from rasa.utils import common as common_utils
-
 logger = logging.getLogger(__name__)
 
 

@@ -2,7 +2,6 @@ import copy
 import os
 from typing import Optional, Text, List, Dict, Union, Tuple, Any, TYPE_CHECKING
 
-from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
 from rasa.core.constants import (

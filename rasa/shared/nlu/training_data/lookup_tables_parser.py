@@ -1,4 +1,4 @@
-from typing import Any, Text, List, Dict, Union
+from typing import Text, List, Dict, Union
 
 
 def add_item_to_lookup_tables(

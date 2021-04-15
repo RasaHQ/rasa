@@ -2,28 +2,9 @@ from typing import Text, List, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
-    from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.shared.core.generator import TrackerWithCachedStates
     from rasa.shared.core.training_data.structures import StoryGraph
     from rasa.shared.importers.importer import TrainingDataImporter
-
-
-async def extract_rule_data(
-    resource_name: Text,
-    domain: "Domain",
-    use_e2e: bool = False,
-    exclusion_percentage: int = None,
-) -> "StoryGraph":
-    from rasa.shared.core.training_data import loading
-    from rasa.shared.core.training_data.structures import StoryGraph
-
-    story_steps = await loading.load_data_from_resource(
-        resource_name,
-        domain,
-        use_e2e=use_e2e,
-        exclusion_percentage=exclusion_percentage,
-    )
-    return StoryGraph(story_steps)
 
 
 async def extract_story_graph(
@@ -32,6 +13,18 @@ async def extract_story_graph(
     use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
 ) -> "StoryGraph":
+    """Loads training stories / rules from file or directory.
+
+    Args:
+        resource_name: Path to file or directory.
+        domain: The model domain.
+        use_e2e: `True` if Markdown files should be parsed as conversation test files.
+        exclusion_percentage: Percentage of stories which should be dropped. `None`
+            if all training data should be used.
+
+    Returns:
+        The loaded training data as graph.
+    """
     from rasa.shared.core.training_data.structures import StoryGraph
     import rasa.shared.core.training_data.loading as core_loading
 
@@ -104,10 +97,3 @@ async def load_data(
         return g.generate()
     else:
         return []
-
-
-def persist_data(trackers: List["DialogueStateTracker"], path: Text) -> None:
-    """Dump a list of dialogue trackers in the story format to disk."""
-
-    for t in trackers:
-        t.export_stories_to_file(path)
