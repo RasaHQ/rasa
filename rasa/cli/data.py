@@ -207,7 +207,7 @@ def _add_data_validate_parsers(
 
 
 def _add_data_augment_parsers(
-    data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     augment_parser = data_subparsers.add_parser(
         "augment",

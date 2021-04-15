@@ -89,7 +89,7 @@ def set_validator_arguments(parser: argparse.ArgumentParser) -> None:
     add_data_param(parser)
 
 
-def set_augment_arguments(parser: argparse.ArgumentParser):
+def set_augment_arguments(parser: argparse.ArgumentParser) -> None:
     """Adds arguments for data augmentation.
 
     Args:
