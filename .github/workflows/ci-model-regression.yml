@@ -241,7 +241,6 @@ jobs:
             echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
           fi
 
-
           if [[ -z "${TEST_DIR}" ]]; then
             echo "TEST_DIR=test" >> $GITHUB_ENV
           else
@@ -438,7 +437,6 @@ jobs:
           else
             echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
           fi
-
 
           if [[ -z "${TEST_DIR}" ]]; then
             echo "TEST_DIR=test" >> $GITHUB_ENV
