@@ -325,15 +325,13 @@ async def test_process_gives_diagnostic_data(
 
 
 @pytest.mark.parametrize(
-    "classifier_params, prediction_min, prediction_max, output_length",
-    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 0, 1, 9)],
+    "classifier_params, output_length",
+    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 9)],
 )
 async def test_cross_entropy_with_linear_norm(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
-    prediction_min: float,
-    prediction_max: float,
     output_length: int,
     monkeypatch: MonkeyPatch,
 ):

@@ -3,8 +3,6 @@ from typing import Text, List, Any, Tuple
 import numpy as np
 import pytest
 from pathlib import Path
-from _pytest.logging import LogCaptureFixture
-import logging
 
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message

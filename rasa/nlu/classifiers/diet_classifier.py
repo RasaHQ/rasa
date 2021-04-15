@@ -100,7 +100,6 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
 )
-from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 
 logger = logging.getLogger(__name__)
 

@@ -105,18 +105,6 @@ def get_bilou_key_for_tag(tag_name: Text) -> Text:
     return BILOU_ENTITIES
 
 
-def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
-    """Removes the BILOU prefixes from the given list of tags.
-
-    Args:
-        tags: the list of tags
-
-    Returns:
-        list of tags without BILOU prefix
-    """
-    return [tag_without_prefix(t) for t in tags]
-
-
 def build_tag_id_dict(
     training_data: "TrainingData", tag_name: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> Optional[Dict[Text, int]]:

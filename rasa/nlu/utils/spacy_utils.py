@@ -15,7 +15,7 @@ from rasa.nlu.constants import SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from spacy.language import Language
+    from spacy.language import Language  # noqa: F401
     from spacy.tokens.doc import Doc
     from rasa.nlu.model import Metadata
 

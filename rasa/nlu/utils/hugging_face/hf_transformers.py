@@ -11,7 +11,6 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 from rasa.nlu.tokenizers.tokenizer import Token
-import rasa.shared.utils.io
 import rasa.utils.train_utils as train_utils
 import numpy as np
 
