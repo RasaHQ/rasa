@@ -5,7 +5,6 @@ import scipy.sparse
 import numpy as np
 import tensorflow as tf
 
-import rasa.shared.utils.io
 from rasa.utils.tensorflow.constants import SEQUENCE, BALANCED
 from rasa.utils.tensorflow.model_data import RasaModelData, Data, FeatureArray
 

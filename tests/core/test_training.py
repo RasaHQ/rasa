@@ -13,7 +13,7 @@ from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.train import train
 from rasa.core.agent import Agent
 from rasa.core.policies.form_policy import FormPolicy
-from rasa.core.policies.ted_policy import TEDPolicy, TED
+from rasa.core.policies.ted_policy import TEDPolicy
 
 from rasa.shared.core.training_data.visualization import visualize_stories
 

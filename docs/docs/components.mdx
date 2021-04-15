@@ -1740,7 +1740,28 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 Entity extractors extract entities, such as person names or locations, from the user message.
 
+:::note
+  If you use multiple entity extractors, we advise that each extractor targets an exclusive
+  set of entity types. For example, use [Duckling](components.mdx#ducklinghttpextractor) to extract dates and times, and
+  [DIETClassifier](components.mdx#dietclassifier-1) to extract person names. Otherwise, if multiple extractors
+  target the same entity types, it is very likely that entities will be extracted multiple times.
 
+  For example, if you use two or more general purpose extractors like [MitieEntityExtractor](components.mdx#mitieentityextractor),
+  [DIETClassifier](components.mdx#dietclassifier-1), or [CRFEntityExtractor](components.mdx#crfentityextractor),
+  the entity types in your training data will be found and
+  extracted by all of them. If the [slots](domain.mdx#slots) you are filling with your entity types are of type `text`,
+  then the last extractor in your pipeline will win. If the slot is of type `list`, then all results
+  will be added to the list, including duplicates.
+
+  Another, less obvious case of duplicate/overlapping extraction can happen even if extractors focus on different
+  entity types. Imagine a food delivery bot and a user message like `I would like to order the Monday special`.
+  Hypothetically, if your time extractor's performance isn't very good, it might extract `Monday` here as a time for the order,
+  and your other extractor might extract `Monday special` as the meal.
+  If you struggle with overlapping entities of this sort, it might make sense to add additional training data
+  to improve your extractor. If that does not suffice, you can add a
+  [custom component](components.mdx#custom-components) that resolves conflicts in entity
+  extraction according to your own logic.
+:::
 ### MitieEntityExtractor
 
 
@@ -2140,6 +2161,28 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   This component only uses those regex features that have a name equal to one of the entities defined in the
   training data. Make sure to annotate at least one example per entity.
+
+  :::note
+  When you use this extractor in combination with [MitieEntityExtractor](components.mdx#mitieentityextractor),
+  [CRFEntityExtractor](components.mdx#crfentityextractor), or [DIETClassifier](components.mdx#dietclassifier-1) it can
+  lead to multiple extraction of entities. Especially if many training sentences have entity annotations for
+  the entity types for which you also have defined regexes. See the big info box at the start of the
+  [entity extractor section](components.mdx#entity-extractors) for more info on multiple extraction.
+
+  In the case where you seem to need both this RegexEntityExtractor and another of the aforementioned
+  statistical extractors, we advise you to consider one of the following two options.
+
+  Option 1 is advisable when you have exclusive entity types for each type of extractor. To make the
+  sure the extractors don't interfere with one another annotate only one example sentence for each
+  regex/lookup entity type, but not more.
+
+  Option 2 is useful when you want to use regexes matches as additional signal for your statistical extractor,
+  but you don't have separate entity types. In this case you will want to 1) add the
+  [RegexFeaturizer](components.mdx#regexfeaturizer) before the extractors in your pipeline 2)
+  annotate all your entity examples in the training data and 3) remove the RegexEntityExtractor from your pipeline.
+  This way, your statistical extractors will receive additional signal about the presence of regex matches
+  and will be able to statistically determine when to rely on these matches and when not to.
+  :::
 
 
 * **Configuration**

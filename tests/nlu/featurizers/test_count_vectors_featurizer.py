@@ -3,8 +3,6 @@ import numpy as np
 import pytest
 import scipy.sparse
 from pathlib import Path
-from _pytest.logging import LogCaptureFixture
-import logging
 
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.config import RasaNLUModelConfig

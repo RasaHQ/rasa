@@ -1,11 +1,11 @@
 from collections import defaultdict
 import logging
 import json
-from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple, Any
+from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
-from rasa.shared.core.domain import Domain, PREV_PREFIX, State, SubState
+from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
 
@@ -134,21 +134,6 @@ class TrackerEventStateTuple(NamedTuple):
     def sliced_states_hash(self) -> int:
         """Returns the hash of the sliced states."""
         return hash(json.dumps(self.sliced_states, sort_keys=True))
-
-
-def _get_length_of_longest_story(
-    trackers: List[TrackerWithCachedStates], domain: Domain
-) -> int:
-    """Returns the longest story in the given trackers.
-
-    Args:
-        trackers: Trackers to get stories from.
-        domain: The domain.
-
-    Returns:
-        The maximal length of any story
-    """
-    return max([len(tracker.past_states(domain)) for tracker in trackers])
 
 
 def find_story_conflicts(
