@@ -42,6 +42,24 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Store logs in specified file.",
     )
+    parser.add_argument(
+        "--log-rotating",
+        type=str,
+        # Rasa should not rotaing log file by default
+        default=None,
+        help="""Handler for logging to a file, rotating the log file at certain timed intervals.
+            supported:
+            # S - Seconds
+            # M - Minutes
+            # H - Hours
+            # D - Days
+            # midnight - roll over at midnight
+            # W{0-6} - roll over on a certain day; 0 - Monday
+            #
+            # Case of the 'when' specifier is not important; lower or upper case
+            # will work.
+        """
+    )
     add_endpoint_param(
         parser,
         help_text="Configuration file for the model server and the connectors as a "

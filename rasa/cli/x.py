@@ -257,7 +257,7 @@ def _configure_logging(args: argparse.Namespace) -> None:
     rasa.utils.io.configure_colored_logging(args.loglevel)
 
     set_log_level(log_level)
-    configure_file_logging(logging.root, args.log_file)
+    configure_file_logging(logging.root, args.log_file, args.log_rotating)
 
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     logging.getLogger("engineio").setLevel(logging.WARNING)

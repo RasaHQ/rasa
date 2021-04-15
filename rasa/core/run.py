@@ -94,11 +94,12 @@ def configure_app(
     port: int = constants.DEFAULT_SERVER_PORT,
     endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
+    log_rotating: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
 ) -> Sanic:
     """Run the agent."""
 
-    rasa.core.utils.configure_file_logging(logger, log_file)
+    rasa.core.utils.configure_file_logging(logger, log_file, log_rotating)
 
     if enable_api:
         app = server.create_app(
@@ -159,6 +160,7 @@ def serve_application(
     endpoints: Optional[AvailableEndpoints] = None,
     remote_storage: Optional[Text] = None,
     log_file: Optional[Text] = None,
+    log_rotating: Optional[Text] = None,
     ssl_certificate: Optional[Text] = None,
     ssl_keyfile: Optional[Text] = None,
     ssl_ca_file: Optional[Text] = None,
@@ -183,6 +185,7 @@ def serve_application(
         port=port,
         endpoints=endpoints,
         log_file=log_file,
+        log_rotating=log_rotating,
         conversation_id=conversation_id,
     )
 

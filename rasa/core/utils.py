@@ -43,7 +43,9 @@ logger = logging.getLogger(__name__)
 
 
 def configure_file_logging(
-    logger_obj: logging.Logger, log_file: Optional[Text]
+    logger_obj: logging.Logger,
+    log_file: Optional[Text],
+    log_rotating: Optional[Text] = None,
 ) -> None:
     """Configure logging to a file.
 
@@ -55,9 +57,14 @@ def configure_file_logging(
         return
 
     formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-    file_handler = logging.FileHandler(
-        log_file, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
-    )
+    if log_rotating is None:
+        file_handler = logging.FileHandler(
+            log_file, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+        )
+    else:
+        file_handler = logging.handlers.TimedRotatingFileHandler(
+            log_file, when=log_rotating, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+        )
     file_handler.setLevel(logger_obj.level)
     file_handler.setFormatter(formatter)
     logger_obj.addHandler(file_handler)
