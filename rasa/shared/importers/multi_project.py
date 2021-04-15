@@ -168,9 +168,6 @@ class MultiProjectImporter(TrainingDataImporter):
             [rasa.shared.utils.io.is_subdirectory(path, i) for i in self._imports]
         )
 
-    def add_import(self, path: Text) -> None:
-        self._imports.append(path)
-
     async def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
         domains = [Domain.load(path) for path in self._domain_paths]

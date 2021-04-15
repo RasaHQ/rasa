@@ -381,14 +381,6 @@ class Story:
         else:
             return story_content
 
-    def dump_to_file(
-        self, filename: Text, flat: bool = False, e2e: bool = False
-    ) -> None:
-
-        rasa.shared.utils.io.write_text_file(
-            self.as_story_string(flat, e2e), filename, append=True
-        )
-
 
 class StoryGraph:
     """Graph of the story-steps pooled from all stories in the training data."""
