@@ -478,7 +478,7 @@ class PolicyPrediction:
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
         hide_rule_turn: bool = False,
-        action_metadata: Optional[Dict] = None,
+        action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Creates a `PolicyPrediction`.
 
@@ -504,6 +504,8 @@ class PolicyPrediction:
                 fine-tuning purposes.
             hide_rule_turn: `True` if the prediction was made by the rules which
                 do not appear in the stories
+            action_metadata: Specifies an additional metadata that can be passed
+                by policies.
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
