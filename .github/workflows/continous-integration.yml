@@ -63,9 +63,6 @@ jobs:
     needs: [ changes ]
 
     steps:
-      - name: Checkout git repository 🕝
-        uses: actions/checkout@v2
-
       - name: Wait for doc tests
         uses: fountainhead/action-wait-for-check@4699210ccc66e2a13260803fadbb77085421b891
         id: wait-for-doc-tests

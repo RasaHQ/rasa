@@ -19,7 +19,7 @@ from rasa.core.training import interactive
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import BotUttered, ActionExecuted
+from rasa.shared.core.events import BotUttered, ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,
@@ -166,14 +166,25 @@ def test_all_events_before_user_msg():
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
     evts = tracker_json.get("events")
 
-    m = interactive.all_events_before_latest_user_msg(evts)
+    m = all_events_before_latest_user_msg(evts)
 
     assert m is not None
     assert m == evts[:4]
 
 
+def all_events_before_latest_user_msg(
+    events: List[Dict[Text, Any]]
+) -> List[Dict[Text, Any]]:
+    """Return all events that happened before the most recent user message."""
+
+    for i, e in enumerate(reversed(events)):
+        if e.get("event") == UserUttered.type_name:
+            return events[: -(i + 1)]
+    return events
+
+
 def test_all_events_before_user_msg_on_no_events():
-    assert interactive.all_events_before_latest_user_msg([]) == []
+    assert all_events_before_latest_user_msg([]) == []
 
 
 async def test_print_history(mock_endpoint):

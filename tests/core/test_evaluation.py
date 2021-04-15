@@ -22,7 +22,7 @@ from rasa.core.policies.memoization import MemoizationPolicy
 
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
-from rasa.nlu.test import evaluate_entities, run_evaluation
+from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
 from rasa.core.agent import Agent
 
 
