@@ -808,6 +808,7 @@ class ActionUnlikelyIntent(Action):
 
 
 def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
+    """Indicates if the last executed action is `action_default_ask_affirmation`."""
     return tracker.last_executed_action_has(ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
 
 
