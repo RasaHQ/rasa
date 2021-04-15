@@ -158,8 +158,6 @@ def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
 
 
 def test_whitespace_does_not_throw_error():
-    import rasa.utils.io as io_utils
-
     texts = rasa.shared.utils.io.read_json_file(
         "data/test_tokenizers/naughty_strings.json"
     )

@@ -1,7 +1,7 @@
 import copy
 import json
 import logging
-from typing import List, Text, Optional, Dict, Any, Set, TYPE_CHECKING
+from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING
 
 import aiohttp
 
@@ -352,11 +352,6 @@ class ActionRetrieveResponse(ActionBotResponse):
     def intent_name_from_action(action_name: Text) -> Text:
         """Resolve the name of the intent from the action name."""
         return action_name.split(UTTER_PREFIX)[1]
-
-    @staticmethod
-    def action_name_from_intent(intent_name: Text) -> Text:
-        """Resolve the action name from the name of the intent."""
-        return f"{UTTER_PREFIX}{intent_name}"
 
     async def run(
         self,

@@ -9,12 +9,8 @@ from typing import Any, List, Dict, Text
 from pykwalify.errors import SchemaError
 
 
-def require_response_keys(
-    responses: List[Dict[Text, Any]], rule_obj: Dict, path: Text
-) -> bool:
-    """
-    Validate that response dicts have either the "text" key or the "custom" key.
-    """
+def require_response_keys(responses: List[Dict[Text, Any]], _: Dict, __: Text) -> bool:
+    """Validates that response dicts have either the "text" key or the "custom" key."""
     for response in responses:
         if not isinstance(response, dict):
             # this is handled by other validation rules

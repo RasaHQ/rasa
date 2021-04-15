@@ -29,7 +29,6 @@ MARKDOWN = "md"
 RASA_YAML = "rasa_yml"
 UNK = "unk"
 MARKDOWN_NLG = "nlg.md"
-JSON = "json"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
 _json_format_heuristics: Dict[Text, Callable[[Any, Text], bool]] = {

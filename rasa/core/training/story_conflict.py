@@ -134,21 +134,6 @@ class TrackerEventStateTuple(NamedTuple):
         return hash(json.dumps(self.sliced_states, sort_keys=True))
 
 
-def _get_length_of_longest_story(
-    trackers: List[TrackerWithCachedStates], domain: Domain
-) -> int:
-    """Returns the longest story in the given trackers.
-
-    Args:
-        trackers: Trackers to get stories from.
-        domain: The domain.
-
-    Returns:
-        The maximal length of any story
-    """
-    return max([len(tracker.past_states(domain)) for tracker in trackers])
-
-
 def find_story_conflicts(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,

@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from types import FrameType
-from typing import Any, Dict, List, NoReturn, Optional, TYPE_CHECKING, Text
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
 
 import rasa.cli
 from rasa.shared.constants import DEFAULT_MODELS_PATH, DEFAULT_CONFIG_PATH
@@ -199,13 +199,9 @@ def payload_from_button_question(button_question: "Question") -> Text:
     return response
 
 
-def signal_handler(sig: int, frame: FrameType) -> NoReturn:
-    """Signal Handler from Rasa X.
+def signal_handler(_: int, __: FrameType) -> None:
+    """Kills Rasa when OS signal is received."""
 
-    Args:
-        sig: The signal number.
-        frame: The interrupted stack frame.
-    """
     print("Goodbye 👋")
     sys.exit(0)
 
