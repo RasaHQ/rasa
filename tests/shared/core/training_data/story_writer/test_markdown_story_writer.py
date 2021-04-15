@@ -3,13 +3,8 @@ from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
     MarkdownStoryWriter,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.events import (
-    ActionExecuted,
-    UserUttered,
-)
-from rasa.shared.core.constants import (
-    ACTION_UNLIKELY_INTENT_NAME,
-)
+from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
 
 
 async def test_tracker_dump_e2e_story(default_agent: Agent):
