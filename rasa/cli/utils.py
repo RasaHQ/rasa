@@ -81,7 +81,6 @@ def cancel_cause_not_found(
         default: The default value of the parameter.
 
     """
-
     default_clause = ""
     if default:
         default_clause = f"use the default location ('{default}') or "
@@ -94,7 +93,6 @@ def cancel_cause_not_found(
 
 def parse_last_positional_argument_as_model_path() -> None:
     """Fixes the parsing of a potential positional model path argument."""
-
     if (
         len(sys.argv) >= 2
         # support relevant commands ...
@@ -140,7 +138,6 @@ def create_output_path(
 
 def button_to_string(button: Dict[Text, Any], idx: int = 0) -> Text:
     """Create a string representation of a button."""
-
     title = button.pop("title", "")
 
     if "payload" in button:
@@ -201,7 +198,6 @@ def payload_from_button_question(button_question: "Question") -> Text:
 
 def signal_handler(_: int, __: FrameType) -> None:
     """Kills Rasa when OS signal is received."""
-
     print("Goodbye 👋")
     sys.exit(0)
 
