@@ -2134,6 +2134,7 @@ class TED(TransformerRasaModel):
 
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
         if self.config[LABEL_BATCH_SIZE] == -1:
+            all_label_ids = tf.reshape(all_label_ids, (-1,))
             self.all_labels_embed = self._compute_embedding_for_label_ids(all_label_ids)
         else:
             # Compute in batches
