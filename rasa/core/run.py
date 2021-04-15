@@ -191,7 +191,7 @@ def serve_application(
     )
     protocol = "https" if ssl_context else "http"
     host = os.environ.get(ENV_SANIC_HOST, "0.0.0.0")
-    
+
     logger.info(
         f"Starting Rasa server on {protocol}://{host}:{port}"
     )
