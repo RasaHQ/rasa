@@ -24,7 +24,7 @@ def get_validated_path(
     parameter: Text,
     default: Optional[Text] = None,
     none_is_valid: bool = False,
-) -> Optional[Text]:
+) -> Text:
     """Check whether a file path or its default value is valid and returns it.
 
     Args:
@@ -221,7 +221,7 @@ def get_valid_config_or_exit(
     """
     config = rasa.cli.utils.get_validated_path(config, "config", default_config)
 
-    if not config and not os.path.exists(config):
+    if not os.path.exists(config):
         print_error(
             f"The config file '{config}' does not exist. Use '--config' to specify a "
             "valid config file."
