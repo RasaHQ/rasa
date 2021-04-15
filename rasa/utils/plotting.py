@@ -3,7 +3,7 @@ import itertools
 import os
 
 import numpy as np
-from typing import Dict, List, Set, Text, Optional, Union, Any
+from typing import Dict, List, Text, Optional, Union, Any
 
 from matplotlib.axes import Axes
 import matplotlib
