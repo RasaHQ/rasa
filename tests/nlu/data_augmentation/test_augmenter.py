@@ -5,7 +5,6 @@ from typing import Callable, List, Set, Text
 import pytest
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.constants import DEFAULT_RANDOM_SEED
 from rasa.shared.nlu.training_data.message import Message
 import rasa.nlu.config

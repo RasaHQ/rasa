@@ -6,13 +6,11 @@ from typing import Any, Dict, List, Set, Text, Tuple
 import logging
 
 from rasa.model import get_model
-from rasa.shared.core.domain import Domain
 import rasa.shared.utils.components
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.model_training import train_nlu
-from rasa.nlu.components import Component
 import rasa.nlu.config
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.model import Interpreter
