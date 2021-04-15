@@ -59,6 +59,7 @@ from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
     DEFAULT_INTENTS,
     ACTION_LISTEN_NAME,
     ACTION_SESSION_START_NAME,
@@ -899,6 +900,33 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
     processor._get_next_action_probabilities(
         DialogueStateTracker.from_events("lala", [ActionExecuted(ACTION_LISTEN_NAME)])
     )
+
+
+async def test_action_unlikely_intent_metadata(default_processor: MessageProcessor):
+    tracker = DialogueStateTracker.from_events(
+        "some-sender",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+        ],
+    )
+    domain = Domain.empty()
+    metadata = {"key1": 1, "key2": "2"}
+
+    await default_processor._run_action(
+        ActionListen(),
+        tracker,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        PolicyPrediction([], "some policy", action_metadata=metadata),
+    )
+
+    applied_events = tracker.applied_events()
+    assert applied_events == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME, metadata=metadata),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
 
 
 @pytest.mark.parametrize(

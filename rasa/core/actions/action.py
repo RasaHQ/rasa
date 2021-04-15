@@ -795,7 +795,10 @@ class ActionUnlikelyIntent(Action):
         tracker: "DialogueStateTracker",
         domain: "Domain",
     ) -> List[Event]:
-        pass
+        """Runs action. Please see parent class for the full docstring."""
+        evts = await super().run(output_channel, nlg, tracker, domain)
+
+        return evts
 
 
 def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
