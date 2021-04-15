@@ -94,8 +94,7 @@ class TwilioVoiceInput(InputChannel):
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         """Load custom configurations."""
-        if not credentials:
-            return cls(initial_prompt="hello", assistant_voice="woman")
+        credentials = credentials or {}
 
         return cls(
             credentials.get("initial_prompt", "hello"),
