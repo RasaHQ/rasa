@@ -126,7 +126,8 @@ def test_yaml_writer_doesnt_dump_action_unlikely_intent():
     events = [
         UserUttered("Hello", {"name": "greet"}),
         ActionExecuted("utter_hello"),
-        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME, metadata={"key1": "value1"}),
+        ActionExecuted("utter_bye"),
     ]
     tracker = DialogueStateTracker.from_events("default", events)
     dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps, is_test_story=True)
@@ -143,6 +144,7 @@ def test_yaml_writer_doesnt_dump_action_unlikely_intent():
         user: |-
           Hello
       - action: utter_hello
+      - action: utter_bye
 
 """
         ).strip()
