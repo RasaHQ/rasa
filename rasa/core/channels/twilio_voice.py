@@ -2,7 +2,7 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from twilio.twiml.voice_response import VoiceResponse, Gather
-from typing import Text, Callable, Awaitable, List, Any, Dict, Optional, NoReturn
+from typing import Text, Callable, Awaitable, List, Any, Dict, Optional
 
 from rasa.shared.utils.io import raise_warning
 from rasa.shared.core.events import BotUttered
