@@ -14,7 +14,6 @@ from rasa.shared.nlu.constants import (
     INTENT,
     RESPONSE,
 )
-import rasa.shared.nlu.training_data.message
 from rasa.shared.nlu.training_data.message import Message
 
 

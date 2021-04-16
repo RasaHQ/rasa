@@ -249,10 +249,8 @@ class RedisLockStore(LockStore):
                 f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
             )
 
-    def _get_key_prefix(self) -> Text:
-        return self.key_prefix
-
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
+        """Retrieves lock (see parent docstring for more information)."""
         serialised_lock = self.red.get(self.key_prefix + conversation_id)
         if serialised_lock:
             return TicketLock.from_dict(json.loads(serialised_lock))
