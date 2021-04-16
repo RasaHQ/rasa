@@ -6,6 +6,7 @@ from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, 
 
 import rasa.utils.train_utils
 from rasa.exceptions import MissingDependencyException
+from rasa.nlu.constants import COMPONENT_INDEX
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -13,7 +14,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.constants import COMPONENT_INDEX, TRAINABLE_EXTRACTORS
 import rasa.shared.utils.io
 
 if typing.TYPE_CHECKING:
