@@ -27,7 +27,6 @@ from rasa.shared.nlu.constants import (
     INTENT,
     TEXT,
     ENTITIES,
-    VALID_FEATURE_TYPES,
     FEATURE_TYPE_SENTENCE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,

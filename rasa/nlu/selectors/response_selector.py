@@ -20,7 +20,6 @@ from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     LABEL_KEY,
     LABEL_SUB_KEY,
-    SEQUENCE_LENGTH,
     SENTENCE,
     SEQUENCE,
 )
