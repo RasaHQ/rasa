@@ -85,10 +85,9 @@ class Tokenizer(Component):
 
         raise NotImplementedError
 
-    def train(
+    def process_training_data(
         self,
         training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> TrainingData:
         """Tokenize all training data."""
