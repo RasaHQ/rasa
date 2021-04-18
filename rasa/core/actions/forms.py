@@ -520,7 +520,44 @@ class FormAction(LoopAction):
                 self.name(),
                 f"Failed to extract slot {slot_to_fill} with action {self.name()}",
             )
-        return validation_events
+        # Add slot_filled_action
+        slot_filled_action_events = []
+        if some_slots_were_validated:
+            # get mapping for requested slot
+            requested_slot_mappings = self.get_mappings_for_slot(
+                slot_to_fill, domain
+            )
+
+            if len(requested_slot_mappings) > 0:
+                slot_filled_action_name = None
+                for mapping in requested_slot_mappings:
+                    slot_filled_action_name = mapping.get("slot_filled_action")
+
+                    if slot_filled_action_name:
+                        break
+
+                if slot_filled_action_name:
+                    action_to_ask_for_next_slot = (
+                        action.action_for_name_or_text(
+                            slot_filled_action_name,
+                            domain,
+                            self.action_endpoint,
+                        )
+                    )
+
+                    # Create temporary tracker with the validation events applied
+                    # Otherwise, the slots will not be set
+                    temp_tracker = self._temporary_tracker(
+                        tracker, validation_events, domain
+                    )
+
+                    slot_filled_action_events = (
+                        await action_to_ask_for_next_slot.run(
+                            output_channel, nlg, temp_tracker, domain
+                        )
+                    )
+
+        return validation_events + slot_filled_action_events
 
     async def request_next_slot(
         self,
