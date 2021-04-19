@@ -357,7 +357,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         # layers.
         if (
             f"unify_dims_before_seq_sent_concat.{SEQUENCE}" in self._tf_layers
-            or f"unify_dims_before_seq_sent_concat.{SENTENCE}"
+            or f"unify_dims_before_seq_sent_concat.{SENTENCE}" in self._tf_layers
         ):
             return config[CONCAT_DIMENSION][attribute]
         # Without dimension unification, the units from the underlying sparse_dense
