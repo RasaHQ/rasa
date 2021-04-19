@@ -2,11 +2,11 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from twilio.twiml.voice_response import VoiceResponse, Gather
-from typing import Text, Callable, Awaitable, List, Any, Dict, Optional, NoReturn
+from typing import Text, Callable, Awaitable, List, Any, Dict, Optional
 
 from rasa.shared.utils.io import raise_warning
 from rasa.shared.core.events import BotUttered
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.core.channels.channel import (
     InputChannel,
     CollectingOutputChannel,
@@ -86,6 +86,12 @@ class TwilioVoiceInput(InputChannel):
         "Polly.Gwyneth",
     ]
 
+    SUPPORTED_SPEECH_MODELS = [
+        "default",
+        "numbers_and_commands",
+        "phone_call"
+    ]
+
     @classmethod
     def name(cls) -> Text:
         """Name of your custom channel."""
@@ -94,16 +100,25 @@ class TwilioVoiceInput(InputChannel):
     @classmethod
     def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
         """Load custom configurations."""
-        if not credentials:
-            return cls(initial_prompt="hello", assistant_voice="woman")
+        credentials = credentials or {}
 
         return cls(
             credentials.get("initial_prompt", "hello"),
+            credentials.get("reprompt_fallback_phrase", "I'm sorry I didn't get that could you rephrase."),
             credentials.get("assistant_voice", "woman"),
+            credentials.get("speech_timeout", "auto"),
+            credentials.get("speech_model", "default"),
+            credentials.get("enhanced", "false")
         )
 
     def __init__(
-        self, initial_prompt: Optional[Text], assistant_voice: Optional[Text],
+        self,
+        initial_prompt: Optional[Text],
+        reprompt_fallback_phrase: Optional[Text],
+        assistant_voice: Optional[Text],
+        speech_timeout: Optional[Text],
+        speech_model: Optional[Text],
+        enhanced: Optional[Text]
     ) -> None:
         """Creates a connection to Twilio voice.
 
@@ -111,16 +126,61 @@ class TwilioVoiceInput(InputChannel):
             assistant_voice: name of the assistant voice to use.
         """
         self.initial_prompt = initial_prompt
+        self.reprompt_fallback_phrase = reprompt_fallback_phrase
         self.assistant_voice = assistant_voice
+        self.speech_timeout = speech_timeout
+        self.speech_model = speech_model
+        self.enhanced = enhanced
 
         if assistant_voice not in self.SUPPORTED_VOICES:
             self.raise_invalid_voice_exception()
 
+        try:
+            int(self.speech_timeout)
+        except ValueError:
+            if self.speech_timeout.lower() != "auto":
+                self.raise_invalid_speech_timeout_exception()
+
+        if speech_model not in self.SUPPORTED_SPEECH_MODELS:
+            self.raise_invalid_speech_model_exception()
+
+        if enhanced.lower() not in ["true", "false"]:
+            self.raise_invalid_enhanced_option_exception()
+
+        if (enhanced.lower() == "true") & (speech_model.lower() != "phone_call"):
+            self.raise_invalid_enhanced_speech_model_exception()
+
+    def raise_invalid_enhanced_option_exception(self) -> None:
+        """Raises an error if an invalid value is passed to the enhanced parameter."""
+        raise InvalidConfigException(
+            f"{self.enhanced} is invalid. You must provide either `true` or `false` for this value."
+        )
+
+    def raise_invalid_speech_model_exception(self) -> None:
+        """Raises an error if an invalid speech_model is provided."""
+        raise InvalidConfigException(
+            f"{self.speech_model} is invalid. You must choose one of 'default', 'numbers_and_commands', "
+            f"or 'phone_call'. Refer to the documentation for details about the selections."
+        )
+
+    def raise_invalid_speech_timeout_exception(self) -> None:
+        """Raises an error if an invalid speech_timeout is provided."""
+        raise InvalidConfigException(
+            f"{self.speech_timeout} is an invalid value for speech timeout. Only integers and 'auto' are valid entries."
+        )
+
     def raise_invalid_voice_exception(self) -> None:
         """Raises an error if an invalid voice is provided."""
-        raise RasaException(
+        raise InvalidConfigException(
             f"{self.assistant_voice} is an invalid as an assistant voice. Please refer to the documentation for a list "
             f"of valid voices you can use for your voice assistant."
+        )
+
+    def raise_invalid_enhanced_speech_model_exception(self) -> None:
+        """Raises an error if enhanced is turned on and an incompatible speech_model is used."""
+        raise InvalidConfigException(
+            f"If you set enhanced to 'true' then speech_model must be 'phone_call'. Current speech_model is: "
+            f"{self.speech_model}."
         )
 
     def blueprint(
@@ -140,6 +200,7 @@ class TwilioVoiceInput(InputChannel):
             input_channel = self.name()
             call_status = request.form.get("CallStatus")
 
+            print(text)
             collector = TwilioVoiceCollectingOutputChannel()
 
             # Provide an initial greeting to answer the user's call.
@@ -164,9 +225,9 @@ class TwilioVoiceInput(InputChannel):
                     None,
                 )
 
-                # If no previous utterance found say something generic.
+                # If no previous utterance found use the reprompt_fallback phrase.
                 if last_response is None:
-                    last_response = "I didn't get that."
+                    last_response = self.reprompt_fallback_phrase
                 else:
                     last_response = last_response.text
 
@@ -186,7 +247,9 @@ class TwilioVoiceInput(InputChannel):
             input="speech",
             action=f"/webhooks/{self.name()}/webhook",
             actionOnEmptyResult=True,
-            speechTimeout="auto",
+            speechTimeout=self.speech_timeout,
+            speechModel=self.speech_model,
+            enhanced=self.enhanced,
         )
 
         # Add pauses between messages.

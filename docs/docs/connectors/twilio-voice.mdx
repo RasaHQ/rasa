@@ -18,24 +18,25 @@ and port with the appropriate values for your deployment. Click `Save` at the bo
 
 <Image img={twilioWebhook} caption="Set Twilio Webhook" alt="Screenshot of Twilio Console to Set Webhook" max-width="500px"/>
 
-In your `credentials.yml` file make sure the `twilio_voice` channel is added.
-
-## Built-In Voice Behaviors
-
-### Assistant Voice
-
-You can add personality to your assistant by specifying the type of voice your assistant should speak with. In the
-`credentials.yml` file you can add an option for `assistant_voice` to specify the type of voice of your assistant. For a
-list of supported voices you can check the [Twilio documentation](https://www.twilio.com/docs/voice/twiml/say#voice). An
-example implementation looks like this where a woman's voice is used. If no voice is provided then a woman's voice will
-be used by default.
+In your `credentials.yml` file make sure the `twilio_voice` channel is added. Within `credentials.yml` there are a
+number of parameters you can set to control the behavior of your assistant. An example with definitions of each
+parameter is below. Unlike the Twilio text channel there is no need to add your Twilio
+credentials for the voice channel. Note, setting `enhanced` to "true" will result in higher transcription costs for
+using Twilio's premium speech transcription model.
 
 ```
 twilio_voice:
+  initial_prompt: "hello"
   assistant_voice: "woman"
+  reprompt_fallback_phrase: "I didn't get that could you repeat?"
+  speech_timeout: "auto"
+  speech_model: "default"
+  enhanced: "false"
 ```
 
-### Call Answering
+## Parameter Definitions
+
+### Initial Prompt
 
 When Twilio receives a new call and forwards this to Rasa Open Source, Twilio does not provide a user message. In this
  case Rasa Open Source will act as if the user sent the message "Hello". This behavior can be configured in your
@@ -45,14 +46,41 @@ When Twilio receives a new call and forwards this to Rasa Open Source, Twilio do
  [channel-specific variations](https://rasa.com/docs/rasa/responses/#channel-specific-response-variations) where
  necessary.
 
-```
-twilio_voice:
-  initial_prompt: "hello"
-  assistant_voice: "woman"
-```
+### Assistant Voice
 
-### Handling Conversation Pauses
+You can add personality to your assistant by specifying the type of voice your assistant should speak with. In the
+`credentials.yml` file you can add an option for `assistant_voice` to specify the type of voice of your assistant. For a
+list of supported voices you can check the [Twilio documentation](https://www.twilio.com/docs/voice/twiml/say#voice). An
+example implementation looks like this where a woman's voice is used. If no voice is provided then a woman's voice will
+be used by default.
+
+### Reprompt Fallback Phrase
 
 Unlike text channels where users can review previous messages in the conversation and take their time to
 reply, with voice channels users can get confused when there is a pause in the conversation. When a long pause is
-detected during a conversation Rasa will repeat the last utterance from the bot to re-prompt the user for a response.
+detected during a conversation Rasa will repeat the last utterance from the bot to re-prompt the user for a response. If
+the previous bot utterance cannot be identified then the message defined in `reprompt_fallback_phrase` will be sent. By
+default this is set to "I'm sorry I didn't get that could you rephrase".
+
+### Speech Timeout
+
+How long Twilio will collect speech from the caller. This parameter must be set to a number or "auto". If a number is
+provided the assistant will collect speech for the specified amount of time. If `speech_timeout` is set to "auto" then
+Twilio will collect speech until a pause is detected. The default setting of this parameter is "auto". You can find more
+details about `speech_timeout` in the
+[Twilio documenation](https://www.twilio.com/docs/voice/twiml/gather#speechtimeout).
+
+### Speech Model
+
+Adjusting the `speech_model` parameter can help Twilio with the accuracy of its speech-to-text transformation. Valid
+values are `default`, `numbers_and_commands`, and `phone_call`. The default setting is "default". You can find more
+details about `speech_model` in the
+[Twilio documentation](https://www.twilio.com/docs/voice/twiml/gather#speechmodel).
+
+### Enhanced
+
+Setting `enhanced` to `true` will allow you to use Twilio's premium speech model to improve the accuracy of
+transcription results. Note, setting this parameter to `true` will result in higher Twilio transcription costs! This
+parameter is only supported if you also have set the `speech_model` parameter to `phone_call`. By default `enhanced` is
+set to "false". You can find more about the `enhanced` speech model option in the
+[Twilio documentation](https://www.twilio.com/docs/voice/twiml/gather#enhanced).
