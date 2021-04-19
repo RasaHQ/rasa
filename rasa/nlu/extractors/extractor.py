@@ -217,22 +217,23 @@ class EntityExtractor(Component):
                 last_group_tag != current_group_tag or last_role_tag != current_role_tag
             )
 
-            if bilou_utils.bilou_prefix_from_tag(current_entity_tag):
+            prefix_from_current_entity_tag = bilou_utils.bilou_prefix_from_tag(
+                current_entity_tag
+            )
+
+            if prefix_from_current_entity_tag:
                 # checks for new bilou tag
                 # new bilou tag begins are not with I- , L- tags
                 new_bilou_tag_starts = last_entity_tag != current_entity_tag and (
-                    bilou_utils.LAST
-                    != bilou_utils.bilou_prefix_from_tag(current_entity_tag)
-                    and bilou_utils.INSIDE
-                    != bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                    bilou_utils.LAST != prefix_from_current_entity_tag
+                    and bilou_utils.INSIDE != prefix_from_current_entity_tag
                 )
 
                 # to handle bilou tags such as only I-, L- tags without B-tag
                 # and handle multiple U-tags consecutively
                 new_unigram_bilou_tag_starts = (
                     last_entity_tag == NO_ENTITY_TAG
-                    or bilou_utils.UNIT
-                    == bilou_utils.bilou_prefix_from_tag(current_entity_tag)
+                    or bilou_utils.UNIT == prefix_from_current_entity_tag
                 )
 
                 new_tag_found = (
