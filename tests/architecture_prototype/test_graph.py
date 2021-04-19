@@ -12,7 +12,9 @@ from rasa.architecture_prototype.graph import (
     StoryGraphReader,
     MessageToE2EFeatureConverter,
     TrackerGenerator,
+    NLUPredictionToHistoryAdder,
 )
+from rasa.core.channels import UserMessage
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
@@ -28,6 +30,7 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
 
 project = "examples/moodbot"
@@ -312,9 +315,10 @@ def test_train_full_model():
 predict_graph_schema = {
     "read_message": {
         "uses": MessageCreator,
+        # TODO: have load which converts to NLU message
         "fn": "create",
         "config": {"text": "Pikachu has green shoes ksldfndsklfndsjkfndsjksfn"},
-        "needs": {},
+        "needs": {"message": "load_user_message"},
         "persist": False,
     },
     "tokenize": {
@@ -362,6 +366,13 @@ predict_graph_schema = {
         },
         "needs": {"message": "add_count_features2"},
     },
+    "synonym_mapper": {
+        "uses": EntitySynonymMapper,
+        "constructor_name": "load",
+        "fn": "process",
+        "config": {"resource_name": "train_synonym_mapper"},
+        "needs": {"message": "classify",},
+    },
     "response_selector": {
         "uses": ResponseSelector,
         "constructor_name": "load",
@@ -370,20 +381,65 @@ predict_graph_schema = {
             "resource_name": "train_response_selector",
             "component_config": {"epochs": 1,},
         },
-        "needs": {"message": "add_count_features2"},
-    },
-    "synonym_mapper": {
-        "uses": EntitySynonymMapper,
-        "constructor_name": "load",
-        "fn": "process",
-        "config": {"resource_name": "train_synonym_mapper"},
-        "needs": {"message": "classify",},
+        "needs": {"message": "synonym_mapper"},
     },
     "fallback_classifier": {
         "uses": FallbackClassifier,
         "fn": "process",
         "config": {},
-        "needs": {"message": "classify",},
+        "needs": {"message": "response_selector"},
+    },
+    "load_user_message": lambda: lambda: UserMessage(
+        text="dasd", output_channel="dasd"
+    ),
+    "load_history": {
+        "uses": "TrackerLoader",
+        "fn": "load",
+        "needs": {},
+        "config": {"tracker": DialogueStateTracker.from_events("some_sender", [])},
+        "persist": False,
+    },
+    "load_domain": {
+        "uses": DomainReader,
+        "fn": "read",
+        "config": {"project": project},
+        "needs": {},
+        "persist": False,
+    },
+    "add_parsed_nlu_message": {
+        "uses": NLUPredictionToHistoryAdder,
+        "fn": "merge",
+        "needs": {
+            "tracker": "load_history",
+            "initial_message": "load_user_message",
+            "parsed_message": "fallback_classifier",
+            "domain": "load_domain",
+        },
+    },
+    "train_memoization_policy": {
+        "uses": MemoizationPolicy,
+        "constructor_name": "load",
+        "fn": "predict_action_probabilities",
+        "config": {},
+        "needs": {"training_trackers": "generate_trackers", "domain": "load_domain"},
+    },
+    "train_rule_policy": {
+        "uses": RulePolicy,
+        "constructor_name": "load",
+        "fn": "predict_action_probabilities",
+        "config": {},
+        "needs": {"training_trackers": "generate_trackers", "domain": "load_domain"},
+    },
+    "train_ted_policy": {
+        "uses": TEDPolicy,
+        "constructor_name": "load",
+        "fn": "predict_action_probabilities",
+        "config": {"max_history": 5, "checkpoint_model": True},
+        "needs": {
+            "e2e_features": "create_e2e_lookup",
+            "training_trackers": "generate_trackers",
+            "domain": "load_domain",
+        },
     },
 }
 

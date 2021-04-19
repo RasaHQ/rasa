@@ -8,10 +8,13 @@ from typing import Any, Text, Dict, List, Union, Generator
 
 import dask
 
+from rasa.core.channels import UserMessage
 from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT, INTENT, TEXT
@@ -91,6 +94,39 @@ class MessageCreator:
 
     def create(self):
         return Message.build(text=self._text)
+
+
+class TrackerLoader:
+    def __init__(self, tracker: DialogueStateTracker) -> None:
+        self._tracker = tracker
+
+    def load(self) -> DialogueStateTracker:
+        return self._tracker
+
+
+class NLUPredictionToHistoryAdder:
+    def process(
+        self,
+        tracker: DialogueStateTracker,
+        initial_user_message: UserMessage,
+        parsed_message: Message,
+        domain: Domain,
+    ) -> None:
+        parse_data = parsed_message.as_dict()
+        if tracker.latest_action_name == ACTION_LISTEN_NAME:
+            tracker.update(
+                UserUttered(
+                    initial_user_message.text,
+                    parse_data["intent"],
+                    parse_data["entities"],
+                    parse_data,
+                    input_channel=initial_user_message.input_channel,
+                    message_id=initial_user_message.message_id,
+                    metadata=initial_user_message.metadata,
+                ),
+                domain,
+            )
+
 
 class RasaComponent:
     def __init__(
