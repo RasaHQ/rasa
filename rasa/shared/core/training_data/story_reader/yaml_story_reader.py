@@ -1,12 +1,11 @@
 import functools
 import logging
-import os
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
 import rasa.shared.data
 from rasa.shared.core.slots import TextSlot, ListSlot
-from rasa.shared.exceptions import YamlException, FileNotFoundException
+from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
 from rasa.shared.nlu.constants import (
@@ -44,7 +43,6 @@ KEY_ENTITIES = "entities"
 KEY_USER_INTENT = "intent"
 KEY_USER_MESSAGE = "user"
 KEY_SLOT_NAME = "slot_was_set"
-KEY_SLOT_VALUE = "value"
 KEY_ACTIVE_LOOP = "active_loop"
 KEY_ACTION = "action"
 KEY_BOT_END_TO_END_MESSAGE = "bot"

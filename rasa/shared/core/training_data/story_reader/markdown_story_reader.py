@@ -14,7 +14,7 @@ from typing import Dict, Text, List, Any, Union, Tuple, Optional
 
 import rasa.shared.data
 from rasa.shared.core.domain import Domain
-from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
