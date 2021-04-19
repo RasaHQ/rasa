@@ -32,7 +32,7 @@ Create a reader from another reader.
 #### read\_from\_file
 
 ```python
- | read_from_file(filename: Union[Text, Path]) -> List[StoryStep]
+ | read_from_file(filename: Union[Text, Path], skip_validation: bool = False) -> List[StoryStep]
 ```
 
 Read stories or rules from file.
@@ -40,6 +40,8 @@ Read stories or rules from file.
 **Arguments**:
 
 - `filename` - Path to the story/rule file.
+- `skip_validation` - `True` if the file was already validated
+  e.g. when it was stored in the database.
   
 
 **Returns**:
@@ -49,7 +51,7 @@ Read stories or rules from file.
 #### read\_from\_string
 
 ```python
- | read_from_string(string: Text) -> List[StoryStep]
+ | read_from_string(string: Text, skip_validation: bool = False) -> List[StoryStep]
 ```
 
 Read stories or rules from a string.
@@ -57,6 +59,8 @@ Read stories or rules from a string.
 **Arguments**:
 
 - `string` - Unprocessed YAML file content.
+- `skip_validation` - `True` if the string was already validated
+  e.g. when it was stored in the database.
   
 
 **Returns**:
