@@ -274,7 +274,9 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         self._prepare_sparse_dense_concat_layers(attribute, attribute_signature, config)
 
         # Prepare components for combining sequence- and sentence-level features
-        self.output_units = self._prepare_sequence_sentence_concat(attribute, config)
+        self._prepare_sequence_sentence_concat(attribute, config)
+
+        self.output_units = self._calculate_output_units(attribute, config)
 
     @staticmethod
     def _get_present_feature_types(
@@ -315,10 +317,12 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
 
     def _prepare_sequence_sentence_concat(
         self, attribute: Text, config: Dict[Text, Any]
-    ) -> int:
-        """Sets up combining sentence- and sequence-level features if needed.
+    ):
+        """Sets up combining sentence- and sequence-level features (if needed).
 
-        Returns the number of output units for this layer class.
+        This boils down to preparing for unifying the units of the sequence- and
+        sentence-level features if they differ -- the same number of units is required
+        for combining the features.
         """
         if (
             self._feature_types_present[SEQUENCE]
@@ -343,19 +347,24 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
                         reg_lambda=config[REGULARIZATION_CONSTANT],
                         sparsity=config[WEIGHT_SPARSITY],
                     )
-                return config[CONCAT_DIMENSION][attribute]
-            else:
-                # If the features have the same last dimension size, that will also be
-                # the output size of the entire layer.
-                return sequence_units
 
-        # If only sequence-level features are present, they will determine the output
-        # size of this layer.
+    def _calculate_output_units(self, attribute: Text, config: Dict[Text, Any]) -> int:
+        """Calculates the number of output units for this layer class.
+
+        The number depends mainly on whether dimension unification is used or not.
+        """
+        # If dimension unification is used, output units are determined by the unifying
+        # layers.
+        if (
+            f"unify_dims_before_seq_sent_concat.{SEQUENCE}" in self._tf_layers
+            or f"unify_dims_before_seq_sent_concat.{SENTENCE}"
+        ):
+            return config[CONCAT_DIMENSION][attribute]
+        # Without dimension unification, the units from the underlying sparse_dense
+        # layers are carried over and should be the same for sequence-level features
+        # (if present) as for sentence-level features.
         elif self._feature_types_present[SEQUENCE]:
             return self._tf_layers[f"sparse_dense.{SEQUENCE}"].output_units
-
-        # If only sentence-level features are present, they will determine the output
-        # size of this layer.
         return self._tf_layers[f"sparse_dense.{SENTENCE}"].output_units
 
     def _concat_sequence_sentence_features(
