@@ -817,7 +817,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         else:
             # minimize all similarities with incorrect labels
             max_margin = tf.maximum(0.0, self.mu_neg + sim_neg_il)
-            loss += tf.reduce_sum(max_margin, axis=-1)
+            loss += tf.reduce_mean(max_margin, axis=-1)
 
         # penalize max similarity between pos label and neg label embeddings
         loss += tf.maximum(0.0, self.mu_neg + tf.reduce_max(sim_neg_ll, axis=-1))
