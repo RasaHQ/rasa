@@ -221,12 +221,14 @@ class EntityExtractor(Component):
                 current_entity_tag
             )
 
-            if prefix_from_current_entity_tag:
+            if prefix_from_current_entity_tag != None:
                 # checks for new bilou tag
                 # new bilou tag begins are not with I- , L- tags
-                new_bilou_tag_starts = last_entity_tag != current_entity_tag and (
-                    bilou_utils.LAST != prefix_from_current_entity_tag
-                    and bilou_utils.INSIDE != prefix_from_current_entity_tag
+                new_bilou_tag_starts = (
+                    last_entity_tag != current_entity_tag
+                    and bilou_utils.LAST
+                    != prefix_from_current_entity_tag
+                    != bilou_utils.INSIDE
                 )
 
                 # to handle bilou tags such as only I-, L- tags without B-tag
@@ -450,26 +452,22 @@ class EntityExtractor(Component):
         for example in training_data.entity_examples:
             entities = example.get(ENTITIES)
             entity_boundaries = [
-                (entity[ENTITY_ATTRIBUTE_START], entity[ENTITY_ATTRIBUTE_END])
+                (
+                    entity[ENTITY_ATTRIBUTE_START],
+                    entity[ENTITY_ATTRIBUTE_END],
+                    entity[ENTITY_ATTRIBUTE_VALUE],
+                )
                 for entity in entities
             ]
             token_names_text = example.get(TOKENS_NAMES[TEXT])
-            token_start_positions = [t.start for t in token_names_text]
-            token_end_positions = [t.end for t in token_names_text]
+            token_start_positions = [token.start for token in token_names_text]
+            token_end_positions = [token.end for token in token_names_text]
 
-            for entity_start, entity_end in entity_boundaries:
+            for entity_start, entity_end, entity_value in entity_boundaries:
                 if (
                     entity_start not in token_start_positions
                     or entity_end not in token_end_positions
                 ):
-                    entities_repr = [
-                        (
-                            entity[ENTITY_ATTRIBUTE_START],
-                            entity[ENTITY_ATTRIBUTE_END],
-                            entity[ENTITY_ATTRIBUTE_VALUE],
-                        )
-                        for entity in entities
-                    ]
                     tokens_repr = [
                         (token.start, token.end, token.text)
                         for token in token_names_text
@@ -477,7 +475,7 @@ class EntityExtractor(Component):
                     rasa.shared.utils.io.raise_warning(
                         f"Misaligned entity annotation in message '{example.get(TEXT)}' "
                         f"with intent '{example.get(INTENT)}'. Make sure the start and "
-                        f"end values of entities ({entities_repr}) in the training "
+                        f"end values of entities ({entity_boundaries}) in the training "
                         f"data match the token boundaries ({tokens_repr}). "
                         "Common causes: \n  1) entities include trailing whitespaces "
                         "or punctuation"
