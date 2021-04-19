@@ -203,7 +203,7 @@ class TrainingData:
             if ex.get(RESPONSE):
                 ex.set(RESPONSE, ex.get(RESPONSE).strip())
 
-        return list(OrderedDict.fromkeys(examples))
+        return examples
 
     @lazy_property
     def nlu_examples(self) -> List[Message]:
