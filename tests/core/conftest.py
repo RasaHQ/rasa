@@ -1,12 +1,11 @@
 import asyncio
-import os
 
 from rasa.utils.endpoints import EndpointConfig
 from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Text, Generator, Callable
+from typing import Generator, Callable
 
 import pytest
 

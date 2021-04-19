@@ -1,10 +1,9 @@
 import copy
-from typing import Union, List
 
 import pytest
 import numpy as np
 
-from rasa.utils.tensorflow.model_data import RasaModelData, FeatureArray
+from rasa.utils.tensorflow.model_data import RasaModelData
 
 
 def test_shuffle_session_data(model_data: RasaModelData):

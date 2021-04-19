@@ -1,14 +1,10 @@
 import logging
 import re
 from collections import OrderedDict
-from json import JSONDecodeError
 from pathlib import Path
-from typing import Any, Text, Optional, Tuple, Dict, Union
+from typing import Any, Text, Optional, Tuple, Union
 
-from rasa.shared.constants import (
-    LEGACY_DOCS_BASE_URL,
-    DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
-)
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION
 from rasa.shared.exceptions import MarkdownException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats.readerwriter import (
