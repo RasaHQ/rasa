@@ -162,6 +162,9 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v2
+
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
         # TODO comment the if condition for testing, will uncommment it later
