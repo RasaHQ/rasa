@@ -30,7 +30,7 @@ list of supported voices you can check the [Twilio documentation](https://www.tw
 example implementation looks like this where a woman's voice is used. If no voice is provided then a woman's voice will
 be used by default.
 
-```
+```yaml title="credentials.yml"
 twilio_voice:
   assistant_voice: "woman"
 ```
@@ -45,7 +45,7 @@ When Twilio receives a new call and forwards this to Rasa Open Source, Twilio do
  [channel-specific variations](https://rasa.com/docs/rasa/responses/#channel-specific-response-variations) where
  necessary.
 
-```
+```yaml title="credentials.yml"
 twilio_voice:
   initial_prompt: "hello"
   assistant_voice: "woman"
