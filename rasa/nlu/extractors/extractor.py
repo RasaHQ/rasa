@@ -396,7 +396,6 @@ class EntityExtractor(Component):
         confidences: Optional[Dict[Text, List[float]]] = None,
     ) -> Dict[Text, Any]:
         """Create a new entity.
-
         Args:
             tag_names: The tag names to include in the entity.
             entity_tag: The entity type value.
@@ -414,22 +413,26 @@ class EntityExtractor(Component):
             ENTITY_ATTRIBUTE_END: token.end,
         }
 
-        if confidences is not None:
-            entity[ENTITY_ATTRIBUTE_CONFIDENCE_TYPE] = confidences[
-                ENTITY_ATTRIBUTE_TYPE
-            ][idx]
+        confidence_entity_atributes = [
+            (ENTITY_ATTRIBUTE_CONFIDENCE_TYPE, ENTITY_ATTRIBUTE_TYPE)
+        ]
 
         if ENTITY_ATTRIBUTE_ROLE in tag_names and role_tag != NO_ENTITY_TAG:
             entity[ENTITY_ATTRIBUTE_ROLE] = role_tag
-            if confidences is not None:
-                entity[ENTITY_ATTRIBUTE_CONFIDENCE_ROLE] = confidences[
-                    ENTITY_ATTRIBUTE_ROLE
-                ][idx]
+            confidence_entity_atributes.append(
+                (ENTITY_ATTRIBUTE_CONFIDENCE_ROLE, ENTITY_ATTRIBUTE_ROLE)
+            )
+
         if ENTITY_ATTRIBUTE_GROUP in tag_names and group_tag != NO_ENTITY_TAG:
             entity[ENTITY_ATTRIBUTE_GROUP] = group_tag
+            confidence_entity_atributes.append(
+                (ENTITY_ATTRIBUTE_CONFIDENCE_GROUP, ENTITY_ATTRIBUTE_GROUP)
+            )
+
+        for confidence_entity_atribute in confidence_entity_atributes:
             if confidences is not None:
-                entity[ENTITY_ATTRIBUTE_CONFIDENCE_GROUP] = confidences[
-                    ENTITY_ATTRIBUTE_GROUP
+                entity[confidence_entity_atribute[0]] = confidences[
+                    confidence_entity_atribute[1]
                 ][idx]
 
         return entity
@@ -445,12 +448,14 @@ class EntityExtractor(Component):
             training_data: The training data.
         """
         for example in training_data.entity_examples:
+            entities = example.get(ENTITIES)
             entity_boundaries = [
                 (entity[ENTITY_ATTRIBUTE_START], entity[ENTITY_ATTRIBUTE_END])
-                for entity in example.get(ENTITIES)
+                for entity in entities
             ]
-            token_start_positions = [t.start for t in example.get(TOKENS_NAMES[TEXT])]
-            token_end_positions = [t.end for t in example.get(TOKENS_NAMES[TEXT])]
+            token_names_text = example.get(TOKENS_NAMES[TEXT])
+            token_start_positions = [t.start for t in token_names_text]
+            token_end_positions = [t.end for t in token_names_text]
 
             for entity_start, entity_end in entity_boundaries:
                 if (
@@ -463,11 +468,11 @@ class EntityExtractor(Component):
                             entity[ENTITY_ATTRIBUTE_END],
                             entity[ENTITY_ATTRIBUTE_VALUE],
                         )
-                        for entity in example.get(ENTITIES)
+                        for entity in entities
                     ]
                     tokens_repr = [
-                        (t.start, t.end, t.text)
-                        for t in example.get(TOKENS_NAMES[TEXT])
+                        (token.start, token.end, token.text)
+                        for token in token_names_text
                     ]
                     rasa.shared.utils.io.raise_warning(
                         f"Misaligned entity annotation in message '{example.get(TEXT)}' "
