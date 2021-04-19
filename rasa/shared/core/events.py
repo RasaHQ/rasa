@@ -272,12 +272,12 @@ class Event(ABC):
         return [cls(parameters.get("timestamp"), parameters.get("metadata"))]
 
     def as_dict(self) -> Dict[Text, Any]:
-        d = {"event": self.type_name, "timestamp": self.timestamp}
+        dictionary = {"event": self.type_name, "timestamp": self.timestamp}
 
         if self.metadata:
-            d["metadata"] = self.metadata
+            dictionary["metadata"] = self.metadata
 
-        return d
+        return dictionary
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> Optional["Event"]:
@@ -664,9 +664,9 @@ class DefinePrevUserUtteredFeaturization(SkipEventInMDStoryMixin):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
-        d.update({USE_TEXT_FOR_FEATURIZATION: self.use_text_for_featurization})
-        return d
+        dictionary = super().as_dict()
+        dictionary.update({USE_TEXT_FOR_FEATURIZATION: self.use_text_for_featurization})
+        return dictionary
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state.
@@ -744,9 +744,9 @@ class EntitiesAdded(SkipEventInMDStoryMixin):
         Returns:
             A dict that represents this event.
         """
-        d = super().as_dict()
-        d.update({ENTITIES: self.entities})
-        return d
+        dictionary = super().as_dict()
+        dictionary.update({ENTITIES: self.entities})
+        return dictionary
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state.
@@ -831,19 +831,19 @@ class BotUttered(SkipEventInMDStoryMixin):
 
     def message(self) -> Dict[Text, Any]:
         """Return the complete message as a dictionary."""
-        m = self.data.copy()
-        m["text"] = self.text
-        m["timestamp"] = self.timestamp
-        m.update(self.metadata)
+        message_as_dict = self.data.copy()
+        message_as_dict["text"] = self.text
+        message_as_dict["timestamp"] = self.timestamp
+        message_as_dict.update(self.metadata)
 
-        if m.get("image") == m.get("attachment"):
+        if message_as_dict.get("image") == message_as_dict.get("attachment"):
             # we need this as there is an oddity we introduced a while ago where
             # we automatically set the attachment to the image. to not break
             # any persisted events we kept that, but we need to make sure that
             # the message contains the image only once
-            m["attachment"] = None
+            message_as_dict["attachment"] = None
 
-        return m
+        return message_as_dict
 
     @staticmethod
     def empty() -> "BotUttered":
@@ -852,9 +852,11 @@ class BotUttered(SkipEventInMDStoryMixin):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
-        d.update({"text": self.text, "data": self.data, "metadata": self.metadata})
-        return d
+        dictionary = super().as_dict()
+        dictionary.update(
+            {"text": self.text, "data": self.data, "metadata": self.metadata}
+        )
+        return dictionary
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> "BotUttered":
@@ -934,9 +936,9 @@ class SlotSet(Event):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
-        d.update({"name": self.key, "value": self.value})
-        return d
+        dictionary = super().as_dict()
+        dictionary.update({"name": self.key, "value": self.value})
+        return dictionary
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> "SlotSet":
@@ -1115,9 +1117,9 @@ class ReminderScheduled(Event):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
-        d.update(self._properties())
-        return d
+        dictionary = super().as_dict()
+        dictionary.update(self._properties())
+        return dictionary
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -1378,9 +1380,9 @@ class FollowupAction(Event):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
-        d.update({"name": self.action_name})
-        return d
+        dictionary = super().as_dict()
+        dictionary.update({"name": self.action_name})
+        return dictionary
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
@@ -1525,8 +1527,8 @@ class ActionExecuted(Event):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
-        d.update(
+        dictionary = super().as_dict()
+        dictionary.update(
             {
                 "name": self.action_name,
                 "policy": self.policy,
@@ -1535,7 +1537,7 @@ class ActionExecuted(Event):
                 "hide_rule_turn": self.hide_rule_turn,
             }
         )
-        return d
+        return dictionary
 
     def as_sub_state(self) -> Dict[Text, Text]:
         """Turns ActionExecuted into a dictionary containing action name or action text.
@@ -1602,9 +1604,9 @@ class AgentUttered(SkipEventInMDStoryMixin):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
-        d.update({"text": self.text, "data": self.data})
-        return d
+        dictionary = super().as_dict()
+        dictionary.update({"text": self.text, "data": self.data})
+        return dictionary
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> "AgentUttered":
@@ -1673,9 +1675,9 @@ class ActiveLoop(Event):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
-        d.update({LOOP_NAME: self.name})
-        return d
+        dictionary = super().as_dict()
+        dictionary.update({LOOP_NAME: self.name})
+        return dictionary
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
@@ -1693,11 +1695,11 @@ class LegacyForm(ActiveLoop):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
+        dictionary = super().as_dict()
         # Dump old `Form` events as `ActiveLoop` events instead of keeping the old
         # event type.
-        d["event"] = ActiveLoop.type_name
-        return d
+        dictionary["event"] = ActiveLoop.type_name
+        return dictionary
 
 
 class LoopInterrupted(SkipEventInMDStoryMixin):
@@ -1753,9 +1755,9 @@ class LoopInterrupted(SkipEventInMDStoryMixin):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
-        d.update({LOOP_INTERRUPTED: self.is_interrupted})
-        return d
+        dictionary = super().as_dict()
+        dictionary.update({LOOP_INTERRUPTED: self.is_interrupted})
+        return dictionary
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
@@ -1793,11 +1795,11 @@ class LegacyFormValidation(LoopInterrupted):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
+        dictionary = super().as_dict()
         # Dump old `Form` events as `ActiveLoop` events instead of keeping the old
         # event type.
-        d["event"] = LoopInterrupted.type_name
-        return d
+        dictionary["event"] = LoopInterrupted.type_name
+        return dictionary
 
 
 class ActionExecutionRejected(SkipEventInMDStoryMixin):
@@ -1858,15 +1860,15 @@ class ActionExecutionRejected(SkipEventInMDStoryMixin):
 
     def as_dict(self) -> Dict[Text, Any]:
         """Returns serialized event."""
-        d = super().as_dict()
-        d.update(
+        dictionary = super().as_dict()
+        dictionary.update(
             {
                 "name": self.action_name,
                 "policy": self.policy,
                 "confidence": self.confidence,
             }
         )
-        return d
+        return dictionary
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
