@@ -66,9 +66,9 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
 
     deserialised = []
 
-    for e in serialized_events:
-        if "event" in e:
-            event = Event.from_parameters(e)
+    for evt in serialized_events:
+        if "event" in evt:
+            event = Event.from_parameters(evt)
             if event:
                 deserialised.append(event)
             else:
@@ -84,7 +84,7 @@ def deserialise_entities(entities: Union[Text, List[Any]]) -> List[Dict[Text, An
     if isinstance(entities, str):
         entities = json.loads(entities)
 
-    return [e for e in entities if isinstance(e, dict)]
+    return [evt for evt in entities if isinstance(evt, dict)]
 
 
 def format_message(
@@ -154,8 +154,8 @@ def split_events(
 
         # there are further conditions - check those
         return all(
-            getattr(evt, k, None) == v
-            for k, v in additional_splitting_conditions.items()
+            getattr(evt, attribute_key, None) == value
+            for attribute_key, value in additional_splitting_conditions.items()
         )
 
     for event in events:
@@ -794,8 +794,12 @@ class BotUttered(SkipEventInMDStoryMixin):
         super().__init__(timestamp, metadata)
 
     def __members(self) -> Tuple[Optional[Text], Text, Text]:
-        data_no_nones = {k: v for k, v in self.data.items() if v is not None}
-        meta_no_nones = {k: v for k, v in self.metadata.items() if v is not None}
+        data_no_nones = {
+            key: value for key, value in self.data.items() if value is not None
+        }
+        meta_no_nones = {
+            key: value for key, value in self.metadata.items() if value is not None
+        }
         return (
             self.text,
             jsonpickle.encode(data_no_nones),
