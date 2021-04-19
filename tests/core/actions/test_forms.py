@@ -1571,6 +1571,6 @@ def test_form_with_no_required_slots_keyword():
     )
 
     assert (
-        domain.__dict__["forms"]["some_form"]["required_slots"]["some_slot"][0]["type"]
+        domain.forms["some_form"]["required_slots"]["some_slot"][0]["type"]
         == "from_text"
     )

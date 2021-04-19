@@ -176,9 +176,9 @@ class FormAction(LoopAction):
             The value/s found in `ignored_intents` parameter in the `domain.yml`
             (under forms).
         """
-        if domain.__dict__["forms"]:
-            if IGNORED_INTENTS in domain.__dict__["forms"][self.name()]:
-                ignored_intents = domain.__dict__["forms"][self.name()][IGNORED_INTENTS]
+        if domain.forms:
+            if IGNORED_INTENTS in domain.forms[self.name()]:
+                ignored_intents = domain.forms[self.name()][IGNORED_INTENTS]
             else:
                 ignored_intents = []
             if not isinstance(ignored_intents, list):
