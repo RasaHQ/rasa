@@ -111,6 +111,10 @@ class SessionConfig(NamedTuple):
         )
 
     def are_sessions_enabled(self) -> bool:
+        """Returns a boolean value depending on the value of session_expiration_time.
+
+        Returns True if the value of the session_expiration_time variable is greater
+        than zero and False if session_expiration_time is less than/equal to zero."""
         return self.session_expiration_time > 0
 
 
@@ -159,6 +163,7 @@ class Domain:
 
     @classmethod
     def from_file(cls, path: Text) -> "Domain":
+        """Given a specific filepath (path), returns the domain in a yaml format."""
         return cls.from_yaml(rasa.shared.utils.io.read_file(path), path)
 
     @classmethod
@@ -671,7 +676,7 @@ class Domain:
         """
         if isinstance(forms, dict):
             for form_name, form_data in forms.items():
-                if REQUIRED_SLOTS_KEY not in form_data:
+                if form_data is not None and REQUIRED_SLOTS_KEY not in form_data:
                     forms[form_name] = {REQUIRED_SLOTS_KEY: form_data}
             # dict with slot mappings
             return list(forms.keys()), forms, []
@@ -1885,6 +1890,14 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
     for form_name, form_data in forms.items():
         if form_data is None:
             continue
+
+        if not isinstance(form_data, Dict):
+            raise InvalidDomain(
+                f"The contents of form '{form_name}' were specified "
+                f"as '{type(form_data)}'. They need to be specified "
+                f"as dictionary. Please see {DOCS_URL_FORMS} "
+                f"for more information."
+            )
 
         if REQUIRED_SLOTS_KEY in form_data:
             slots = forms[form_name].get(REQUIRED_SLOTS_KEY)
