@@ -809,35 +809,35 @@ class DotProductLoss(tf.keras.layers.Layer):
         """Define max margin loss."""
 
         # loss for maximizing similarity with correct action
-        loss = tf.maximum(0.0, 1 - tf.squeeze(sim_pos, axis=-1))
+        loss = tf.maximum(0.0, self.mu_pos - tf.squeeze(sim_pos, axis=-1))
 
         # loss for minimizing similarity with `num_neg` incorrect actions
         if self.use_max_sim_neg:
             # minimize only maximum similarity over incorrect actions
             max_sim_neg_il = tf.reduce_max(sim_neg_il, axis=-1)
-            loss += tf.maximum(0.0, 1 + max_sim_neg_il)
+            loss += tf.maximum(0.0, self.mu_neg + max_sim_neg_il)
         else:
             # minimize all similarities with incorrect actions
-            max_margin = tf.maximum(0.0, 1 + sim_neg_il)
+            max_margin = tf.maximum(0.0, self.mu_neg + sim_neg_il)
             loss += tf.reduce_sum(max_margin, axis=-1)
 
-        # # penalize max similarity between pos bot and neg bot embeddings
-        # max_sim_neg_ll = tf.maximum(
-        #     0.0, 1 + tf.reduce_max(sim_neg_ll, axis=-1)
-        # )
-        # loss += max_sim_neg_ll * self.neg_lambda
-        #
-        # # penalize max similarity between pos dial and neg dial embeddings
-        # max_sim_neg_ii = tf.maximum(
-        #     0.0, 1 + tf.reduce_max(sim_neg_ii, axis=-1)
-        # )
-        # loss += max_sim_neg_ii * self.neg_lambda
-        #
-        # # penalize max similarity between pos bot and neg dial embeddings
-        # max_sim_neg_li = tf.maximum(
-        #     0.0, 1 + tf.reduce_max(sim_neg_li, axis=-1)
-        # )
-        # loss += max_sim_neg_li * self.neg_lambda
+        # penalize max similarity between pos bot and neg bot embeddings
+        max_sim_neg_ll = tf.maximum(
+            0.0, self.mu_neg + tf.reduce_max(sim_neg_ll, axis=-1)
+        )
+        loss += max_sim_neg_ll * self.neg_lambda
+
+        # penalize max similarity between pos dial and neg dial embeddings
+        max_sim_neg_ii = tf.maximum(
+            0.0, self.mu_neg + tf.reduce_max(sim_neg_ii, axis=-1)
+        )
+        loss += max_sim_neg_ii * self.neg_lambda
+
+        # penalize max similarity between pos bot and neg dial embeddings
+        max_sim_neg_li = tf.maximum(
+            0.0, self.mu_neg + tf.reduce_max(sim_neg_li, axis=-1)
+        )
+        loss += max_sim_neg_li * self.neg_lambda
 
         if mask is not None:
             # mask loss for different length sequences
