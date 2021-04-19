@@ -20,6 +20,7 @@ from rasa.nlu.constants import TOKENS_NAMES, FEATURIZER_CLASS_ALIAS
 from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE
 
 from rasa.nlu.model import Metadata
+from rasa.utils import train_utils
 import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
@@ -108,8 +109,9 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
         return training_data
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> Message:
         self._create_sparse_features(message)
+        return message
 
     def _create_feature_to_idx_dict(
         self, training_data: TrainingData
@@ -286,16 +288,19 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
-        model_dir: Text,
+        persistor: Persistor,
+        resource_name: Text,
+        meta: Dict[Text, Any] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["LexicalSyntacticFeaturizer"] = None,
         **kwargs: Any,
     ) -> "LexicalSyntacticFeaturizer":
         """Loads trained component (see parent class for full docstring)."""
-        file_name = meta.get("file")
+        if not meta:
+            meta = {}
+        meta = train_utils.override_defaults(cls.defaults, meta)
 
-        feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
+        feature_to_idx_file = Path(persistor.get_resource(resource_name, "feature_to_idx_dict.pkl"))
         feature_to_idx_dict = io_utils.json_unpickle(feature_to_idx_file)
 
         return LexicalSyntacticFeaturizer(meta, feature_to_idx_dict=feature_to_idx_dict)

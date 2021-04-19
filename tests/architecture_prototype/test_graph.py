@@ -6,6 +6,7 @@ import dask
 from rasa.architecture_prototype import graph
 from rasa.architecture_prototype.graph import (
     DomainReader,
+    MessageCreator,
     TrainingDataReader,
     StoryToTrainingDataConverter,
     StoryGraphReader,
@@ -16,6 +17,7 @@ from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
@@ -26,6 +28,7 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.training_data.message import Message
 
 project = "examples/moodbot"
 
@@ -112,7 +115,7 @@ rasa_nlu_train_graph = {
     "train_classifier": {
         "uses": DIETClassifier,
         "fn": "train",
-        "config": {"component_config": {"epochs": 1,},},
+        "config": {"component_config": {"epochs": 100,},},
         "needs": {"training_data": "add_count_features2"},
     },
     "train_response_selector": {
@@ -146,6 +149,7 @@ def test_train_nlu():
         rasa_nlu_train_graph,
         ["train_classifier", "train_response_selector", "train_synonym_mapper"],
     )
+
 
 full_model_train_graph = {
     "load_domain": {
@@ -280,7 +284,6 @@ full_model_train_graph = {
 }
 
 
-
 def test_visualize_e2e_graph():
     dask_graph = graph.convert_to_dask_graph(full_model_train_graph)
 
@@ -304,3 +307,103 @@ def test_train_full_model():
     )
 
     print(trained_components)
+
+
+predict_graph_schema = {
+    "read_message": {
+        "uses": MessageCreator,
+        "fn": "create",
+        "config": {"text": "Pikachu has green shoes ksldfndsklfndsjkfndsjksfn"},
+        "needs": {},
+        "persist": False,
+    },
+    "tokenize": {
+        "uses": WhitespaceTokenizer,
+        "fn": "process",
+        "config": {},
+        "needs": {"message": "read_message"},
+        "persist": False,
+    },
+    "add_regex_features": {
+        "uses": RegexFeaturizer,
+        "constructor_name": "load",
+        "fn": "process",
+        "config": {"resource_name": "train_regex_featurizer"},
+        "needs": {"message": "tokenize",},
+    },
+    "add_lexical_features": {
+        "uses": LexicalSyntacticFeaturizer,
+        "constructor_name": "load",
+        "fn": "process",
+        "config": {"resource_name": "train_lexical_featurizer", "component_config": {}},
+        "needs": {"message": "add_regex_features",},
+    },
+    "add_count_features1": {
+        "uses": CountVectorsFeaturizer,
+        "constructor_name": "load",
+        "fn": "process",
+        "config": {"resource_name": "train_count_featurizer1",},
+        "needs": {"message": "add_lexical_features",},
+    },
+    "add_count_features2": {
+        "uses": CountVectorsFeaturizer,
+        "constructor_name": "load",
+        "fn": "process",
+        "config": {"resource_name": "train_count_featurizer2",},
+        "needs": {"message": "add_count_features1",},
+    },
+    "classify": {
+        "uses": DIETClassifier,
+        "fn": "process",
+        "constructor_name": "load",
+        "config": {
+            "component_config": {"epochs": 1,},
+            "resource_name": "train_classifier",
+        },
+        "needs": {"message": "add_count_features2"},
+    },
+    "response_selector": {
+        "uses": ResponseSelector,
+        "constructor_name": "load",
+        "fn": "process",
+        "config": {
+            "resource_name": "train_response_selector",
+            "component_config": {"epochs": 1,},
+        },
+        "needs": {"message": "add_count_features2"},
+    },
+    "synonym_mapper": {
+        "uses": EntitySynonymMapper,
+        "constructor_name": "load",
+        "fn": "process",
+        "config": {"resource_name": "train_synonym_mapper"},
+        "needs": {"message": "classify",},
+    },
+    "fallback_classifier": {
+        "uses": FallbackClassifier,
+        "fn": "process",
+        "config": {},
+        "needs": {"message": "classify",},
+    },
+}
+
+
+def test_train_load_predict():
+    # clean up before testing persistence
+    cache_dir = Path("model")
+    shutil.rmtree(cache_dir, ignore_errors=True)
+    cache_dir.mkdir()
+
+    core_targets = ["train_memoization_policy", "train_ted_policy", "train_rule_policy"]
+    nlu_targets = [
+        "train_classifier",
+        "train_response_selector",
+        "train_synonym_mapper",
+    ]
+    graph.run_as_dask_graph(full_model_train_graph, core_targets + nlu_targets)
+    processed_message = graph.run_as_dask_graph(
+        predict_graph_schema,
+        ["synonym_mapper", "response_selector", "fallback_classifier"],
+    )
+    for m in processed_message.values():
+        print(m.data["intent"])

@@ -85,6 +85,13 @@ class MessageToE2EFeatureConverter:
         return additional_features
 
 
+class MessageCreator:
+    def __init__(self, text):
+        self._text = text
+
+    def create(self):
+        return Message.build(text=self._text)
+
 class RasaComponent:
     def __init__(
         self,
@@ -174,6 +181,7 @@ class RasaComponent:
 class Persistor:
     def __init__(self, node_name: Text, parent_dir: Path) -> None:
         self._node_name = node_name
+        self._parent_dir = parent_dir
         self._dir_for_node = Path(parent_dir / node_name)
 
     def file_for(self, filename: Text) -> Text:
@@ -186,9 +194,8 @@ class Persistor:
         directory.mkdir()
         return str(directory)
 
-    @staticmethod
-    def get_resource(resource_name, filename) -> Text:
-        return str(Path(resource_name, filename))
+    def get_resource(self, resource_name, filename) -> Text:
+        return str(Path(self._parent_dir, resource_name, filename))
 
     def resource_name(self) -> Text:
         return self._node_name

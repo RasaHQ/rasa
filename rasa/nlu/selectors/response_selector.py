@@ -26,6 +26,7 @@ from rasa.nlu.classifiers.diet_classifier import (
     SEQUENCE,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
+from rasa.utils import train_utils
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -245,6 +246,15 @@ class ResponseSelector(DIETClassifier):
         # Model confidence to be returned during inference. Possible values -
         # 'softmax' and 'linear_norm'.
         MODEL_CONFIDENCE: SOFTMAX,
+        # If 'True' intent classification is trained and intent predicted.
+        INTENT_CLASSIFICATION: True,
+        # If 'True' named entity recognition is trained and entities predicted.
+        ENTITY_RECOGNITION: True,
+        # 'BILOU_flag' determines whether to use BILOU tagging or not.
+        # If set to 'True' labelling is more rigorous, however more
+        # examples per entity are required.
+        # Rule of thumb: you should have more than 100 examples per entity.
+        BILOU_FLAG: True,
     }
 
     def __init__(
@@ -407,7 +417,7 @@ class ResponseSelector(DIETClassifier):
                     return search_key
         return None
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> Message:
         """Selects most like response for message.
 
         Args:
@@ -483,6 +493,8 @@ class ResponseSelector(DIETClassifier):
         if out and DIAGNOSTIC_DATA in out:
             message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
 
+        return message
+
     def persist(self) -> Text:
         """Persist this model into the passed directory.
 
@@ -538,19 +550,20 @@ class ResponseSelector(DIETClassifier):
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
-        model_dir: Text,
+        persistor: Persistor,
+        resource_name: Text,
+        meta: Dict[Text, Any] = None,
         model_metadata: Metadata = None,
         cached_component: Optional["ResponseSelector"] = None,
         **kwargs: Any,
     ) -> "ResponseSelector":
         """Loads the trained model from the provided directory."""
-
         model = super().load(
-            meta, model_dir, model_metadata, cached_component, **kwargs
+            persistor, resource_name, meta, model_metadata, cached_component, **kwargs
         )
-        if not meta.get("file"):
-            return model
+        if not meta:
+            meta = {}
+        meta = train_utils.override_defaults(cls.defaults, meta)
 
         model.responses = meta.get("responses", {})
         model.all_retrieval_intents = meta.get("all_retrieval_intents", [])

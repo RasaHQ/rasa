@@ -961,7 +961,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return entities
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> Message:
         """Augments the message with intents, entities, and diagnostic data."""
         out = self._predict(message)
 
@@ -978,6 +978,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         if out and DIAGNOSTIC_DATA in out:
             message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
+
+        return message
 
     def persist(self) -> Optional[Text]:
         """Persist this model into the passed directory.
@@ -1021,14 +1023,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
-        resource_name: Text,
         persistor: Persistor,
+        resource_name: Text,
+        meta: Dict[Text, Any] = None,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "DIETClassifier":
+        if not meta:
+            meta = {}
         """Loads the trained model from the provided directory."""
         (
             index_label_id_mapping,

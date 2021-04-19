@@ -107,7 +107,7 @@ class Tokenizer(Component):
 
         return training_data
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> Message:
         """Tokenize the incoming message."""
         for attribute in MESSAGE_ATTRIBUTES:
             if isinstance(message.get(attribute), str):
@@ -117,6 +117,8 @@ class Tokenizer(Component):
                     tokens = self.tokenize(message, attribute)
 
                 message.set(TOKENS_NAMES[attribute], tokens)
+
+        return message
 
     def _tokenize_on_split_symbol(self, text: Text) -> List[Text]:
 

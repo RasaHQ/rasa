@@ -11,6 +11,7 @@ from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.utils import write_json_to_file
+from rasa.utils import train_utils
 import rasa.utils.io
 import rasa.shared.utils.io
 
@@ -48,11 +49,13 @@ class EntitySynonymMapper(EntityExtractor):
 
         return self.persist()
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> Message:
 
         updated_entities = message.get(ENTITIES, [])[:]
         self.replace_synonyms(updated_entities)
         message.set(ENTITIES, updated_entities, add_to_output=True)
+
+        return message
 
     def persist(self,) -> Optional[Text]:
 
@@ -67,14 +70,17 @@ class EntitySynonymMapper(EntityExtractor):
     @classmethod
     def load(
         cls,
-        meta: Dict[Text, Any],
         persistor: Persistor,
         resource_name: Text,
+        meta: Dict[Text, Any] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["EntitySynonymMapper"] = None,
         **kwargs: Any,
     ) -> "EntitySynonymMapper":
         """Loads trained component (see parent class for full docstring)."""
+        if not meta:
+            meta = {}
+        meta = train_utils.override_defaults(cls.defaults, meta)
         entity_synonyms_file = persistor.get_resource(resource_name, "synonyms.json")
         if os.path.isfile(entity_synonyms_file):
             synonyms = rasa.shared.utils.io.read_json_file(entity_synonyms_file)

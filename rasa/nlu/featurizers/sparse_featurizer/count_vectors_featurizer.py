@@ -760,7 +760,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         return training_data
 
-    def process(self, message: Message, **kwargs: Any,) -> None:
+    def process(self, message: Message, **kwargs: Any,) -> Message:
         """Process incoming message and compute and set features"""
 
         if self.vectorizers is None:
@@ -769,7 +769,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 "component is either not trained or "
                 "didn't receive enough training data"
             )
-            return
+            return message
 
         for attribute in self._attributes:
 
@@ -785,6 +785,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             self._set_attribute_features(
                 attribute, sequence_features, sentence_features, [message]
             )
+
+        return message
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""

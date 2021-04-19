@@ -203,8 +203,9 @@ class RegexFeaturizer(SparseFeaturizer):
 
         return training_data
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Message, **kwargs: Any) -> Message:
         self._text_features_with_regex(message, TEXT)
+        return message
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         """Helper method to extract features and set them appropriately in the message.
@@ -302,7 +303,8 @@ class RegexFeaturizer(SparseFeaturizer):
     @classmethod
     def load(
         cls,
-        filename: Text,
+        persistor: Persistor,
+        resource_name: Text,
         component_config: Dict[Text, Any] = None,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["RegexFeaturizer"] = None,
@@ -328,9 +330,9 @@ class RegexFeaturizer(SparseFeaturizer):
             cls.defaults, component_config
         )
 
-        patterns_file_name = Path(filename + ".patterns.pkl")
+        patterns_file_name = Path(persistor.get_resource(resource_name, "patterns.pkl"))
 
-        vocabulary_stats_file_name = Path(filename + ".vocabulary_stats.pkl")
+        vocabulary_stats_file_name = Path(persistor.get_resource(resource_name, "vocabulary_stats.pkl"))
 
         known_patterns = None
         vocabulary_stats = None
