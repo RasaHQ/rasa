@@ -6,7 +6,7 @@ from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.nlu.utils.bilou_utils
-from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS, DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
@@ -93,7 +93,6 @@ def update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns:
         updated model configuration
     """
-    # TODO: Completely deprecate this with 3.0
     if config.get(LOSS_TYPE) == SOFTMAX:
         rasa.shared.utils.io.raise_deprecation_warning(
             f"`{LOSS_TYPE}={SOFTMAX}` is deprecated. "
@@ -115,13 +114,13 @@ def update_deprecated_sparsity_to_density(config: Dict[Text, Any]) -> Dict[Text,
     Returns:
         Updated model configuration
     """
-    # TODO: Completely deprecate this with 3.0
     if WEIGHT_SPARSITY in config:
         rasa.shared.utils.io.raise_deprecation_warning(
             f"`{WEIGHT_SPARSITY}` is deprecated."
             f"Please update your configuration file to use"
             f"`{CONNECTION_DENSITY}` instead.",
             warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+            docs=DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY,
         )
         config[CONNECTION_DENSITY] = 1.0 - config[WEIGHT_SPARSITY]
 
