@@ -563,8 +563,8 @@ class TransformerEncoder(tf.keras.layers.Layer):
         self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
     def _get_angles(self) -> np.ndarray:
-        i = np.arange(self.units)[np.newaxis, :]
-        return 1 / np.power(10000, (2 * (i // 2)) / np.float32(self.units))
+        array_2D = np.arange(self.units)[np.newaxis, :]
+        return 1 / np.power(10000, (2 * (array_2D // 2)) / np.float32(self.units))
 
     def _positional_encoding(self, max_position: tf.Tensor) -> tf.Tensor:
         max_position = tf.cast(max_position, dtype=tf.float32)
