@@ -200,7 +200,6 @@ class TwilioVoiceInput(InputChannel):
             input_channel = self.name()
             call_status = request.form.get("CallStatus")
 
-            print(text)
             collector = TwilioVoiceCollectingOutputChannel()
 
             # Provide an initial greeting to answer the user's call.
