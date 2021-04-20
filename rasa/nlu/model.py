@@ -27,6 +27,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.utils import write_json_to_file
 from rasa.utils.tensorflow.constants import EPOCHS
 

@@ -5,10 +5,11 @@ import random
 from collections import Counter, OrderedDict
 import copy
 from os.path import relpath
-from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
+from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable, Generator
 import operator
 
 import rasa.shared.data
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.utils.common import lazy_property
 import rasa.shared.utils.io
 from rasa.shared.nlu.constants import (
@@ -25,6 +26,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
+from rasa.shared.nlu.training_data.feature_persistor import FeatureReader, FeatureWriter
 
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
@@ -59,6 +61,26 @@ class TrainingData:
         self.responses = responses or {}
 
         self._fill_response_phrases()
+
+    def stream_featurized_messages(
+        self, chunk_path: Text
+    ) -> Generator[Message, None, None]:
+        for m, f in zip(self.training_examples, FeatureReader(chunk_path)):
+            yield m.withFeatures(f)
+
+    def add_features(
+        self, chunk_path_from: Optional[Text], chunk_path_to: Text
+    ) -> Generator[Message, List[Features], None]:
+        with FeatureWriter(chunk_path_to) as out:
+            source = (
+                self.stream_featurized_messages(chunk_path_from)
+                if chunk_path_from
+                else self.training_examples
+            )
+            for msg in source:
+                new_features = yield msg
+                joined_features = msg.features + new_features
+                out.write(joined_features)
 
     @staticmethod
     def _load_lookup_table(lookup_table: Dict[Text, Any]) -> Dict[Text, Any]:

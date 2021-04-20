@@ -53,6 +53,15 @@ class Message:
         if features is not None:
             self.features.append(features)
 
+    def with_features(self, features: ["Features"]) -> "Message":
+        """Returns a new message with features added."""
+        return Message(
+            self.data,
+            output_properties=self.output_properties,
+            time=self.time,
+            features=features,
+        )
+
     def add_diagnostic_data(self, origin: Text, data: Dict[Text, Any]) -> None:
         """Adds diagnostic data from the `origin` component.
 
