@@ -1,6 +1,5 @@
 import logging
 import os
-import typing
 from typing import Text, Dict, Optional, List, Any, Iterable, Tuple, Union
 from pathlib import Path
 
@@ -14,8 +13,6 @@ from rasa.exceptions import ModelNotFound
 import rasa.shared.nlu.training_data.loading
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
-if typing.TYPE_CHECKING:
-    from rasa.core.agent import Agent
 
 logger = logging.getLogger(__name__)
 

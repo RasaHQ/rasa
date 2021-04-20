@@ -63,9 +63,6 @@ jobs:
     needs: [ changes ]
 
     steps:
-      - name: Checkout git repository 🕝
-        uses: actions/checkout@v2
-
       - name: Wait for doc tests
         uses: fountainhead/action-wait-for-check@4699210ccc66e2a13260803fadbb77085421b891
         id: wait-for-doc-tests
@@ -158,6 +155,30 @@ jobs:
       # errors during the docs build, so easier to catch them early on by
       # trying to run the `rasa` command once before the docs build.
       run: poetry run rasa --help
+
+
+  changelog:
+    name: Check for changelog
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v2
+
+      - name: Assert release includes all changelog entries
+        # check changelog folder only when we create pull request preparing release
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release')
+        working-directory: changelog
+        run: |
+          # List all unexpected files in changelog/
+          UNEXPECTED_FILES=$(ls -A --ignore={"README.md",".gitignore","_template.md.jinja2"})
+
+          # Exit with error if found any unexpected files
+          [[ "$UNEXPECTED_FILES" ]] && \
+          echo "Found the following unexpected files in changelogs/" && \
+          echo "$UNEXPECTED_FILES" && \
+          exit 1 || \
+          echo "Release includes all changelog entries."
 
   test:
     name: Run Tests

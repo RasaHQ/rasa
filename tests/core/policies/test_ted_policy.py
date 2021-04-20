@@ -140,9 +140,7 @@ class TestTEDPolicy(PolicyTestCollection):
         training_data, label_ids, entity_tags = trained_policy._featurize_for_training(
             training_trackers, default_domain, interpreter
         )
-        label_data, all_labels = trained_policy._create_label_data(
-            default_domain, interpreter
-        )
+        _, all_labels = trained_policy._create_label_data(default_domain, interpreter)
         model_data = trained_policy._create_model_data(
             training_data, label_ids, entity_tags, all_labels
         )
@@ -155,22 +153,22 @@ class TestTEDPolicy(PolicyTestCollection):
         (
             (
                 batch_action_name_mask,
-                batch_action_name_sentence_indices,
-                batch_action_name_sentence_data,
+                _,
+                _,
                 batch_action_name_sentence_shape,
                 batch_dialogue_length,
                 batch_entities_mask,
-                batch_entities_sentence_indices,
-                batch_entities_sentence_data,
+                _,
+                _,
                 batch_entities_sentence_shape,
                 batch_intent_mask,
-                batch_intent_sentence_indices,
-                batch_intent_sentence_data,
+                _,
+                _,
                 batch_intent_sentence_shape,
                 batch_label_ids,
                 batch_slots_mask,
-                batch_slots_sentence_indices,
-                batch_slots_sentence_data,
+                _,
+                _,
                 batch_slots_sentence_shape,
             ),
             _,
@@ -221,22 +219,22 @@ class TestTEDPolicy(PolicyTestCollection):
         (
             (
                 batch_action_name_mask,
-                batch_action_name_sentence_indices,
-                batch_action_name_sentence_data,
+                _,
+                _,
                 batch_action_name_sentence_shape,
                 batch_dialogue_length,
                 batch_entities_mask,
-                batch_entities_sentence_indices,
-                batch_entities_sentence_data,
+                _,
+                _,
                 batch_entities_sentence_shape,
                 batch_intent_mask,
-                batch_intent_sentence_indices,
-                batch_intent_sentence_data,
+                _,
+                _,
                 batch_intent_sentence_shape,
                 batch_label_ids,
                 batch_slots_mask,
-                batch_slots_sentence_indices,
-                batch_slots_sentence_data,
+                _,
+                _,
                 batch_slots_sentence_shape,
             ),
             _,

@@ -22,7 +22,7 @@ from rasa.core.policies.memoization import MemoizationPolicy
 
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
-from rasa.nlu.test import evaluate_entities, run_evaluation
+from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
 from rasa.core.agent import Agent
 
 
@@ -109,7 +109,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(
     assert num_stories == 1
 
 
-@pytest.mark.timeout(300)
+@pytest.mark.timeout(300, func_only=True)
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     generator = await _create_data_generator(
         "data/test_evaluations/test_form_end_to_end_stories.yml",
@@ -255,7 +255,7 @@ def test_event_has_proper_implementation(
     assert actual_entities[0] == expected_entity
 
 
-@pytest.mark.timeout(600)
+@pytest.mark.timeout(600, func_only=True)
 @pytest.mark.parametrize(
     "test_file",
     [
@@ -302,7 +302,7 @@ async def test_retrieval_intent_wrong_prediction(
     assert "# predicted: chitchat/ask_name" in failed_stories
 
 
-@pytest.mark.timeout(240)
+@pytest.mark.timeout(240, func_only=True)
 async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
     test_file = "data/test_e2ebot/tests/test_stories.yml"
 

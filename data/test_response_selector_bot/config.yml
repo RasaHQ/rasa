@@ -1,0 +1,15 @@
+language: en
+
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "CountVectorsFeaturizer"
+  - name: "DIETClassifier"
+    entity_recognition: False
+    epochs: 5
+    random_seed: 42
+  - name: ResponseSelector
+    epochs: 5
+    random_seed: 42
+
+policies:
+  - name: RulePolicy
