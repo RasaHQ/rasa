@@ -177,10 +177,7 @@ class FormAction(LoopAction):
             (under forms).
         """
         if domain.forms:
-            if IGNORED_INTENTS in domain.forms[self.name()]:
-                ignored_intents = domain.forms[self.name()][IGNORED_INTENTS]
-            else:
-                ignored_intents = []
+            ignored_intents = domain.forms[self.name()].get(IGNORED_INTENTS, [])
             if not isinstance(ignored_intents, list):
                 ignored_intents = [ignored_intents]
 
