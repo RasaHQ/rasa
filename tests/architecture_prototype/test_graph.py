@@ -13,8 +13,10 @@ from rasa.architecture_prototype.graph import (
     MessageToE2EFeatureConverter,
     TrackerGenerator,
     NLUPredictionToHistoryAdder,
+    NLUMessageConverter,
+    TrackerLoader,
 )
-from rasa.core.channels import UserMessage
+from rasa.core.policies import SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
@@ -30,8 +32,9 @@ from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import 
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.training_data.message import Message
 
 project = "examples/moodbot"
 
@@ -160,7 +163,6 @@ full_model_train_graph = {
         "fn": "read",
         "config": {"project": project},
         "needs": {},
-        "persist": False,
     },
     "load_stories": {
         "uses": StoryGraphReader,
@@ -313,11 +315,17 @@ def test_train_full_model():
 
 
 predict_graph_schema = {
-    "read_message": {
+    "load_user_message": {
         "uses": MessageCreator,
-        # TODO: have load which converts to NLU message
         "fn": "create",
-        "config": {"text": "Pikachu has green shoes ksldfndsklfndsjkfndsjksfn"},
+        "config": {"text": "Hello"},
+        "needs": {},
+        "persist": False,
+    },
+    "convert_message_to_nlu": {
+        "uses": NLUMessageConverter,
+        "fn": "convert",
+        "config": {},
         "needs": {"message": "load_user_message"},
         "persist": False,
     },
@@ -325,7 +333,7 @@ predict_graph_schema = {
         "uses": WhitespaceTokenizer,
         "fn": "process",
         "config": {},
-        "needs": {"message": "read_message"},
+        "needs": {"message": "convert_message_to_nlu"},
         "persist": False,
     },
     "add_regex_features": {
@@ -389,57 +397,82 @@ predict_graph_schema = {
         "config": {},
         "needs": {"message": "response_selector"},
     },
-    "load_user_message": lambda: lambda: UserMessage(
-        text="dasd", output_channel="dasd"
-    ),
     "load_history": {
-        "uses": "TrackerLoader",
+        "uses": TrackerLoader,
         "fn": "load",
         "needs": {},
-        "config": {"tracker": DialogueStateTracker.from_events("some_sender", [])},
+        "config": {
+            "tracker": DialogueStateTracker.from_events(
+                "some_sender", [ActionExecuted(action_name=ACTION_LISTEN_NAME)]
+            )
+        },
         "persist": False,
     },
     "load_domain": {
         "uses": DomainReader,
-        "fn": "read",
-        "config": {"project": project},
+        "fn": "provide",
+        "config": {"resource_name": "load_domain"},
         "needs": {},
-        "persist": False,
     },
     "add_parsed_nlu_message": {
         "uses": NLUPredictionToHistoryAdder,
         "fn": "merge",
         "needs": {
             "tracker": "load_history",
-            "initial_message": "load_user_message",
+            "initial_user_message": "load_user_message",
             "parsed_message": "fallback_classifier",
             "domain": "load_domain",
         },
+        "config": {},
+        "persist": False,
     },
-    "train_memoization_policy": {
+    "predict_memoization_policy": {
         "uses": MemoizationPolicy,
         "constructor_name": "load",
         "fn": "predict_action_probabilities",
-        "config": {},
-        "needs": {"training_trackers": "generate_trackers", "domain": "load_domain"},
+        "config": {"resource_name": "train_memoization_policy"},
+        "needs": {"tracker": "add_parsed_nlu_message", "domain": "load_domain"},
     },
-    "train_rule_policy": {
+    "predict_rule_policy": {
         "uses": RulePolicy,
         "constructor_name": "load",
         "fn": "predict_action_probabilities",
-        "config": {},
-        "needs": {"training_trackers": "generate_trackers", "domain": "load_domain"},
+        "config": {"resource_name": "train_rule_policy"},
+        "needs": {"tracker": "add_parsed_nlu_message", "domain": "load_domain"},
     },
-    "train_ted_policy": {
+    "predict_ted_policy": {
         "uses": TEDPolicy,
         "constructor_name": "load",
         "fn": "predict_action_probabilities",
-        "config": {"max_history": 5, "checkpoint_model": True},
-        "needs": {
-            "e2e_features": "create_e2e_lookup",
-            "training_trackers": "generate_trackers",
-            "domain": "load_domain",
+        "config": {
+            "max_history": 5,
+            "checkpoint_model": True,
+            "resource_name": "train_ted_policy",
         },
+        "needs": {"tracker": "add_parsed_nlu_message", "domain": "load_domain"},
+        # "needs": {
+        #     "e2e_features": "create_e2e_lookup",
+        #     "training_trackers": "generate_trackers",
+        #     "domain": "load_domain",
+        # },
+    },
+    "select_prediction": {
+        "uses": SimplePolicyEnsemble,
+        "fn": "probabilities_using_best_policy",
+        "config": {},
+        "persist": False,
+        "needs": {
+            "tracker": "add_parsed_nlu_message",
+            "domain": "load_domain",
+            "rule_prediction": "predict_rule_policy",
+            "memo_prediction": "predict_memoization_policy",
+            "ted_prediction": "predict_ted_policy",
+        },
+        # "needs": {
+        #     "e2e_features": "create_e2e_lookup",
+        #     "training_trackers": "generate_trackers",
+        #     "domain": "load_domain",
+        # },
     },
 }
 
@@ -457,9 +490,13 @@ def test_train_load_predict():
         "train_synonym_mapper",
     ]
     graph.run_as_dask_graph(full_model_train_graph, core_targets + nlu_targets)
-    processed_message = graph.run_as_dask_graph(
-        predict_graph_schema,
-        ["synonym_mapper", "response_selector", "fallback_classifier"],
-    )
-    for m in processed_message.values():
-        print(m.data["intent"])
+    predictions = graph.run_as_dask_graph(predict_graph_schema, ["select_prediction"],)
+    for prediction in predictions.values():
+        print(prediction)
+
+    # TODO: Metadata
+
+    # TODO: Fix empty message
+    # TODO: Fix e2e features during prediction
+    g = graph.convert_to_dask_graph(predict_graph_schema)
+    dask.visualize(g, filename="graph.png")

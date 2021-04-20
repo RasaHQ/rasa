@@ -304,7 +304,9 @@ class TEDPolicy(Policy):
     }
 
     @staticmethod
-    def _standard_featurizer(persistor: Persistor, max_history: Optional[int] = None) -> TrackerFeaturizer:
+    def _standard_featurizer(
+        persistor: Persistor, max_history: Optional[int] = None
+    ) -> TrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
             SingleStateFeaturizer(), max_history=max_history, persistor=persistor
         )
@@ -331,7 +333,11 @@ class TEDPolicy(Policy):
             featurizer = self._standard_featurizer(persistor, max_history)
 
         super().__init__(
-            featurizer, priority, should_finetune=should_finetune, persistor=persistor, **kwargs
+            featurizer,
+            priority,
+            should_finetune=should_finetune,
+            persistor=persistor,
+            **kwargs,
         )
         self._load_params(**kwargs)
 
@@ -666,7 +672,7 @@ class TEDPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.

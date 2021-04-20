@@ -1067,7 +1067,7 @@ class RulePolicy(MemoizationPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> "PolicyPrediction":
         """Predicts the next action (see parent class for more information)."""

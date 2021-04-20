@@ -242,11 +242,17 @@ class SingleStateFeaturizer:
         ):
             interpreter = RegexInterpreter()
 
-        key = next(
-            k for k in sub_state.keys() if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
-        )
-        parsed_message = e2e_features[key]
-        assert parsed_message
+        if e2e_features is None:
+            message = Message(data=sub_state)
+            parsed_message = interpreter.featurize_message(message)
+        else:
+            key = next(
+                k
+                for k in sub_state.keys()
+                if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
+            )
+            parsed_message = e2e_features[key]
+            assert parsed_message
 
         # remove entities from possible attributes
         attributes = set(

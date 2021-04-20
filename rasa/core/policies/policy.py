@@ -364,7 +364,9 @@ class Policy:
         return self._persistor.resource_name()
 
     @classmethod
-    def load(cls, persistor: Optional[Persistor], resource_name: Text, **kwargs: Any) -> "Policy":
+    def load(
+        cls, persistor: Optional[Persistor], resource_name: Text, **kwargs: Any
+    ) -> "Policy":
         """Loads a policy from path.
 
         Args:
@@ -582,6 +584,9 @@ class PolicyPrediction:
             The highest predicted probability.
         """
         return max(self.probabilities, default=0.0)
+
+    def __repr__(self) -> Text:
+        return f"{self.__class__.__name__}({self.policy_name}, {self.probabilities})"
 
 
 def confidence_scores_for(

@@ -1291,20 +1291,15 @@ class Domain:
         else:
             return []
 
-    def persist_specification(self, model_path: Text) -> None:
+    def persist_specification(self, filename: Text) -> None:
         """Persist the domain specification to storage."""
-        domain_spec_path = os.path.join(model_path, "domain.json")
-        rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
-
         metadata = {"states": self.input_states}
-        rasa.shared.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(filename, metadata)
 
     @classmethod
     def load_specification(cls, path: Text) -> Dict[Text, Any]:
         """Load a domains specification from a dumped model directory."""
-        metadata_path = os.path.join(path, "domain.json")
-
-        return json.loads(rasa.shared.utils.io.read_file(metadata_path))
+        return json.loads(rasa.shared.utils.io.read_file(path))
 
     def compare_with_specification(self, path: Text) -> bool:
         """Compare the domain spec of the current and the loaded domain.

@@ -1,14 +1,13 @@
 import os.path
 from collections import ChainMap
 import inspect
-from contextlib import contextmanager
-from io import TextIOWrapper
 from pathlib import Path
-from typing import Any, Text, Dict, List, Union, Generator
+from typing import Any, Text, Dict, List, Union, Optional
 
 import dask
 
-from rasa.core.channels import UserMessage
+from rasa.core.channels import UserMessage, CollectingOutputChannel
+from rasa.nlu.persistor import Persistor
 from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
@@ -43,9 +42,28 @@ class TrainingDataReader(ProjectReader):
 
 
 class DomainReader(ProjectReader):
+    def __init__(
+        self,
+        project: Optional[Text] = None,
+        persistor: Optional["Persistor"] = None,
+        resource_name: Optional[Text] = None,
+    ) -> None:
+        super().__init__(project)
+        self._persistor = persistor
+        self._resource_name = resource_name
+
     def read(self) -> Domain:
         importer = self.load_importer()
-        return rasa.utils.common.run_in_loop(importer.get_domain())
+        domain = rasa.utils.common.run_in_loop(importer.get_domain())
+
+        target_file = self._persistor.file_for("domain.yml")
+        domain.persist(target_file)
+
+        return domain
+
+    def provide(self) -> Domain:
+        filename = self._persistor.get_resource(self._resource_name, "domain.yml")
+        return Domain.load(filename)
 
 
 class StoryGraphReader(ProjectReader):
@@ -92,8 +110,8 @@ class MessageCreator:
     def __init__(self, text):
         self._text = text
 
-    def create(self):
-        return Message.build(text=self._text)
+    def create(self) -> UserMessage:
+        return UserMessage(text=self._text, output_channel=CollectingOutputChannel())
 
 
 class TrackerLoader:
@@ -104,14 +122,19 @@ class TrackerLoader:
         return self._tracker
 
 
+class NLUMessageConverter:
+    def convert(self, message: UserMessage) -> Message:
+        return Message.build(message.text)
+
+
 class NLUPredictionToHistoryAdder:
-    def process(
+    def merge(
         self,
         tracker: DialogueStateTracker,
         initial_user_message: UserMessage,
         parsed_message: Message,
         domain: Domain,
-    ) -> None:
+    ) -> DialogueStateTracker:
         parse_data = parsed_message.as_dict()
         if tracker.latest_action_name == ACTION_LISTEN_NAME:
             tracker.update(
@@ -126,6 +149,7 @@ class NLUPredictionToHistoryAdder:
                 ),
                 domain,
             )
+        return tracker
 
 
 class RasaComponent:
@@ -189,7 +213,11 @@ class RasaComponent:
             )
             self.create_component(**const_kwargs)
 
-        run_kwargs = rasa.shared.utils.common.minimal_kwargs(kwargs, self._run_fn)
+        run_kwargs = kwargs
+
+        if "kwargs" not in rasa.shared.utils.common.arguments_of(self._run_fn):
+            run_kwargs = rasa.shared.utils.common.minimal_kwargs(kwargs, self._run_fn)
+
         return {self._node_name: self._run_fn(self._component, **run_kwargs)}
 
     def create_component(self, **const_kwargs: Any) -> None:

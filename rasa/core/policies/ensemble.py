@@ -57,10 +57,10 @@ class PolicyEnsemble:
 
     def __init__(
         self,
-        policies: List[Policy],
+        policies: Optional[List[Policy]] = None,
         action_fingerprints: Optional[Dict[Any, Dict[Text, List]]] = None,
     ) -> None:
-        self.policies = policies
+        self.policies = policies or []
         self.date_trained = None
 
         self.action_fingerprints = action_fingerprints or {}
@@ -661,6 +661,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        predictions: Dict[Text, PolicyPrediction],
     ) -> PolicyPrediction:
         """Finds the best policy prediction.
 
@@ -690,12 +691,13 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         ):
             rejected_action_name = last_action_event.action_name
 
-        predictions = {
-            f"policy_{i}_{type(p).__name__}": self._get_prediction(
-                p, tracker, domain, interpreter
-            )
-            for i, p in enumerate(self.policies)
-        }
+        if not predictions:
+            predictions = {
+                f"policy_{i}_{type(p).__name__}": self._get_prediction(
+                    p, tracker, domain, interpreter
+                )
+                for i, p in enumerate(self.policies)
+            }
 
         if rejected_action_name:
             logger.debug(
@@ -796,7 +798,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -813,7 +815,15 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         Returns:
             The best policy prediction.
         """
-        winning_prediction = self._best_policy_prediction(tracker, domain, interpreter)
+        predictions = {
+            f"policy_0_{prediction.policy_name}": prediction
+            for name, prediction in kwargs.items()
+            if name.endswith("_prediction")
+        }
+
+        winning_prediction = self._best_policy_prediction(
+            tracker, domain, interpreter, predictions
+        )
 
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME
