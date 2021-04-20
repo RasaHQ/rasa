@@ -16,6 +16,7 @@ from rasa.core.actions.action import (
     ActionBotResponse,
     ActionListen,
     ActionExecutionRejection,
+    ActionUnlikelyIntent,
 )
 import rasa.core.policies.policy
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
@@ -904,17 +905,13 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
 
 async def test_action_unlikely_intent_metadata(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
-        "some-sender",
-        evts=[
-            ActionExecuted(ACTION_LISTEN_NAME),
-            ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
-        ],
+        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME),],
     )
     domain = Domain.empty()
     metadata = {"key1": 1, "key2": "2"}
 
     await default_processor._run_action(
-        ActionListen(),
+        ActionUnlikelyIntent(),
         tracker,
         CollectingOutputChannel(),
         TemplatedNaturalLanguageGenerator(domain.responses),
@@ -925,8 +922,8 @@ async def test_action_unlikely_intent_metadata(default_processor: MessageProcess
     assert applied_events == [
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_UNLIKELY_INTENT_NAME, metadata=metadata),
-        ActionExecuted(ACTION_LISTEN_NAME),
     ]
+    assert applied_events[1].metadata == metadata
 
 
 @pytest.mark.parametrize(
