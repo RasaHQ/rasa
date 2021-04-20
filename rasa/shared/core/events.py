@@ -99,7 +99,7 @@ def format_message(
 
     Return:
         Message with entities annotated inline, e.g.
-        `I am from [Berlin]{"entity": "city"}`.
+        `I am from [Berlin]{`"`entity`"`: `"`city`"`}`.
     """
     from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
     from rasa.shared.nlu.training_data import entities_parser

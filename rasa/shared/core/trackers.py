@@ -401,7 +401,7 @@ class DialogueStateTracker:
         group in latest message.
 
         If you are only interested in the first entity of a given type use
-        `next(tracker.get_latest_entity_values("my_entity_name"), None)`.
+        `next(tracker.get_latest_entity_values(`"`my_entity_name`"`), None)`.
         If no entity is found `None` is the default result.
 
         Args:
