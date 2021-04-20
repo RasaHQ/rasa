@@ -49,7 +49,7 @@ rasa_nlu_train_graph = {
     },
     "tokenize": {
         "uses": WhitespaceTokenizer,
-        "fn": "train",
+        "fn": "process_training_data",
         "config": {},
         "needs": {"training_data": "load_data"},
         "persist": False,
@@ -141,7 +141,6 @@ rasa_nlu_train_graph = {
 
 def test_create_graph_with_rasa_syntax():
     dask_graph = graph.convert_to_dask_graph(rasa_nlu_train_graph)
-
     dask.visualize(dask_graph, filename="graph.png")
 
 
@@ -187,7 +186,7 @@ full_model_train_graph = {
     },
     "core_tokenize": {
         "uses": WhitespaceTokenizer,
-        "fn": "train",
+        "fn": "process_training_data",
         "config": {},
         "needs": {"training_data": "convert_stories_for_nlu"},
         "persist": False,

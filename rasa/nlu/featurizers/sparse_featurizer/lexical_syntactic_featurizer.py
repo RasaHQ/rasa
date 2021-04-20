@@ -74,7 +74,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
     def __init__(
         self,
-        component_config: Dict[Text, Any],
+        component_config: Dict[Text, Any] = None,
         feature_to_idx_dict: Optional[Dict[Text, Any]] = None,
         persistor: Optional[Persistor] = None,
     ):
