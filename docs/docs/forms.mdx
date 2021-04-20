@@ -51,7 +51,8 @@ before the definition of the slot mappings):
 ```yaml-rasa
 forms:
   restaurant_form:
-    ignored_intents: chitchat
+    ignored_intents: 
+    - chitchat
     required_slots:
         cuisine:
           - type: from_entity
