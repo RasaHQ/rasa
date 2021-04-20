@@ -167,8 +167,7 @@ jobs:
 
       - name: Assert release includes all changelog entries
         # check changelog folder only when we create pull request preparing release
-        # TODO comment the if condition for testing, will uncommment it later
-        # if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release')
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release')
         working-directory: changelog
         run: |
           # List all unexpected files in changelog/
