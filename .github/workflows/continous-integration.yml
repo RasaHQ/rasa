@@ -70,9 +70,14 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Test Documentation
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          owner: ${{ github.event.pull_request.head.repo.owner.login || github.actor }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
+
+      - name: Fail the step if the doc tests run could not be found
+        if: ${{ steps.wait-for-doc-tests.outputs.conclusion == 'timed_out' }}
+        run: |
+          echo "Could not find the doc tests run."
+          exit 1
 
 
   quality:

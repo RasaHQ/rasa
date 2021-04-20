@@ -50,7 +50,6 @@ from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     Event,
-    SlotSet,
     Restarted,
     ActionReverted,
     UserUtteranceReverted,
@@ -852,23 +851,6 @@ class DialogueStateTracker:
         """Clears follow up action when it was executed."""
 
         self.followup_action = None
-
-    def _merge_slots(
-        self, entities: Optional[List[Dict[Text, Any]]] = None
-    ) -> List[SlotSet]:
-        """Take a list of entities and create tracker slot set events.
-
-        If an entity type matches a slots name, the entities value is set
-        as the slots value by creating a ``SlotSet`` event.
-        """
-
-        entities = entities if entities else self.latest_message.entities
-        new_slots = [
-            SlotSet(e["entity"], e["value"])
-            for e in entities
-            if e["entity"] in self.slots.keys()
-        ]
-        return new_slots
 
     @property
     def active_loop_name(self) -> Optional[Text]:
