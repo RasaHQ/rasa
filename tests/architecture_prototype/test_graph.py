@@ -121,7 +121,7 @@ rasa_nlu_train_graph = {
     "train_classifier": {
         "uses": DIETClassifier,
         "fn": "train",
-        "config": {"component_config": {"epochs": 100,},},
+        "config": {"epochs": 100,},
         "needs": {"training_data": "add_count_features2"},
     },
     "train_response_selector": {
@@ -368,10 +368,7 @@ predict_graph_schema = {
         "uses": DIETClassifier,
         "fn": "process",
         "constructor_name": "load",
-        "config": {
-            "component_config": {"epochs": 1,},
-            "resource_name": "train_classifier",
-        },
+        "config": {"epochs": 1, "resource_name": "train_classifier",},
         "needs": {"message": "add_count_features2"},
     },
     "synonym_mapper": {
@@ -489,12 +486,19 @@ def test_train_load_predict():
         "train_response_selector",
         "train_synonym_mapper",
     ]
+
+    graph.fill_defaults(full_model_train_graph)
+    # graph.persist_graph(full_model_train_graph)
     graph.run_as_dask_graph(full_model_train_graph, core_targets + nlu_targets)
+
     predictions = graph.run_as_dask_graph(predict_graph_schema, ["select_prediction"],)
     for prediction in predictions.values():
         print(prediction)
 
     # TODO: Metadata
+    # 1. Components either return complete config or only default parameters
+    # 2. Based on which we merge ourselves or merge within component
+    # 3. Store full config in the graph right after building the graph
 
     # TODO: Fix empty message
     # TODO: Fix e2e features during prediction

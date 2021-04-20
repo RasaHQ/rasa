@@ -320,14 +320,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         finetune_mode: bool = False,
         persistor: Optional[Persistor] = None,
+        **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
+        component_config = kwargs
         if component_config is not None and EPOCHS not in component_config:
             rasa.shared.utils.io.raise_warning(
                 f"Please configure the number of '{EPOCHS}' in your configuration file."
@@ -1025,14 +1026,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         cls,
         persistor: Persistor,
         resource_name: Text,
-        meta: Dict[Text, Any] = None,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "DIETClassifier":
-        if not meta:
-            meta = {}
+        meta = kwargs
         """Loads the trained model from the provided directory."""
         (
             index_label_id_mapping,

@@ -168,12 +168,12 @@ class RasaComponent:
         self._inputs = inputs
         self._constructor_name = constructor_name
         self._component_class = component_class
-        self._config = config
         self._fn_name = fn_name
         self._run_fn = getattr(self._component_class, fn_name)
         self._component = None
         self._node_name = node_name
         self._persist = persist
+        self._config = config
 
         if self._constructor_name:
             self._constructor_fn = getattr(
@@ -289,3 +289,12 @@ def convert_to_dask_graph(rasa_graph: Dict[Text, Any]):
             *step_config["needs"].values(),
         )
     return dsk
+
+
+def fill_defaults(graph: Dict[Text, Any]):
+    for step_name, step_config in graph.items():
+        component_class = step_config["uses"]
+
+        if hasattr(component_class, "defaults"):
+            defaults = component_class.defaults
+            step_config["config"].update(defaults)
