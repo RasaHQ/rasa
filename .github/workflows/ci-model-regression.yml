@@ -185,9 +185,6 @@ jobs:
     strategy:
       max-parallel: 1
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
-    outputs:
-      dataset_branch: ${{ matrix.dataset_branch }}
-      dataset_commit: ${{ steps.set-dataset-commit.outputs.dataset-commit }}
     if: "contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
@@ -208,7 +205,7 @@ jobs:
         run: |
           DATASET_COMMIT=$(git rev-parse HEAD)
           echo $DATASET_COMMIT
-          echo "::set-output name=dataset-commit::$DATASET_COMMIT"
+          echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
       - name: Set DATASET and CONFIG variables
         id: set_dataset_config_vars
@@ -312,6 +309,7 @@ jobs:
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
+          DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
@@ -337,9 +335,6 @@ jobs:
     strategy:
       max-parallel: 1
       matrix: ${{fromJson(needs.read_test_configuration.outputs.matrix)}}
-    outputs:
-      dataset_branch: ${{ matrix.dataset_branch }}
-      dataset_commit: ${{ steps.set-dataset-commit.outputs.dataset-commit }}
     if: "!contains(github.event.pull_request.labels.*.name, 'runner:gpu') && github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests') && needs.read_test_configuration.outputs.configuration_id != ''"
 
     steps:
@@ -360,7 +355,7 @@ jobs:
         run: |
           DATASET_COMMIT=$(git rev-parse HEAD)
           echo $DATASET_COMMIT
-          echo "::set-output name=dataset-commit::$DATASET_COMMIT"
+          echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
       - name: Download gomplate
         run: |-
@@ -464,6 +459,7 @@ jobs:
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
+          DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
@@ -535,8 +531,6 @@ jobs:
           message: |-
 
             Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            Dataset branch: ${{ needs.model_regression_test_gpu.outputs.dataset_branch}}, commit: ${{ needs.model_regression_test_gpu.outputs.dataset_commit}}
 
             ${{ steps.get_results.outputs.result }}
 
@@ -613,8 +607,6 @@ jobs:
           message: |-
 
             Commit: ${{ github.sha }}, [The full report is available as an artifact.](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            Dataset branch: ${{ needs.model_regression_test_cpu.outputs.dataset_branch}}, commit: ${{ needs.model_regression_test_cpu.outputs.dataset_commit}}
 
             ${{ steps.get_results.outputs.result }}
 
