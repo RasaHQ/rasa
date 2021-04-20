@@ -203,6 +203,7 @@ jobs:
         id: set-dataset-commit
         working-directory: dataset
         run: |
+          sleep 3600
           DATASET_COMMIT=$(git rev-parse HEAD)
           echo $DATASET_COMMIT
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
