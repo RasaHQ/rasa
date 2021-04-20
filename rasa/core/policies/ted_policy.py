@@ -544,7 +544,8 @@ class TEDPolicy(Policy):
                 self._entity_tag_specs,
             )
             self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]),
+                run_eagerly=True,
             )
 
         (
@@ -1766,7 +1767,7 @@ class TED(TransformerRasaModel):
         self._compute_dialogue_indices(tf_batch_data)
 
         (
-            dialogue_in,
+            dialogue_in,  # (1, num_dialogue_steps, 100?)
             text_transformer_output,
             text_sequence_lengths,
         ) = self._process_batch_data(tf_batch_data)
