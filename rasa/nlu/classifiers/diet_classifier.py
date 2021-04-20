@@ -320,7 +320,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def __init__(
         self,
-        component_config,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
@@ -329,13 +328,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
-        if component_config is not None and EPOCHS not in component_config:
+
+        super().__init__(persistor=persistor, **kwargs)
+
+        if self.component_config is not None and EPOCHS not in self.component_config:
             rasa.shared.utils.io.raise_warning(
                 f"Please configure the number of '{EPOCHS}' in your configuration file."
                 f" We will change the default value of '{EPOCHS}' in the future to 1. "
             )
-
-        super().__init__(component_config, persistor=persistor)
 
         self._check_config_parameters()
 
@@ -1026,30 +1026,27 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         cls,
         persistor: Persistor,
         resource_name: Text,
-        model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "DIETClassifier":
-        meta = kwargs
         """Loads the trained model from the provided directory."""
         (
             index_label_id_mapping,
             entity_tag_specs,
             label_data,
-            meta,
             data_example,
-        ) = cls._load_from_files(meta, persistor=persistor, resource_name=resource_name)
+        ) = cls._load_from_files(persistor=persistor, resource_name=resource_name)
 
-        meta = train_utils.override_defaults(cls.defaults, meta)
-        meta = train_utils.update_confidence_type(meta)
-        meta = train_utils.update_similarity_type(meta)
-        meta = train_utils.update_deprecated_loss_type(meta)
+        component_config = kwargs
+        component_config = train_utils.update_confidence_type(component_config)
+        component_config = train_utils.update_similarity_type(component_config)
+        component_config = train_utils.update_deprecated_loss_type(component_config)
 
         model = cls._load_model(
             entity_tag_specs,
             label_data,
-            meta,
+            component_config,
             data_example,
             persistor=persistor,
             resource_name=resource_name,
@@ -1057,22 +1054,21 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         return cls(
-            component_config=meta,
             index_label_id_mapping=index_label_id_mapping,
             entity_tag_specs=entity_tag_specs,
             model=model,
             finetune_mode=should_finetune,
             persistor=persistor,
+            **kwargs,
         )
 
     @classmethod
     def _load_from_files(
-        cls, meta: Dict[Text, Any], persistor: Persistor, resource_name: Text
+        cls, persistor: Persistor, resource_name: Text
     ) -> Tuple[
         Dict[int, Text],
         List[EntityTagSpec],
         RasaModelData,
-        Dict[Text, Any],
         Dict[Text, Dict[Text, List[FeatureArray]]],
     ]:
         data_example = io_utils.pickle_load(
@@ -1111,7 +1107,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             index_label_id_mapping,
             entity_tag_specs,
             label_data,
-            meta,
             data_example,
         )
 

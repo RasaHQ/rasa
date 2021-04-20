@@ -58,11 +58,11 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
         known_patterns: Optional[List[Dict[Text, Text]]] = None,
         pattern_vocabulary_stats: Optional[Dict[Text, int]] = None,
         finetune_mode: bool = False,
         persistor: Optional[Persistor] = None,
+        **kwargs: Any,
     ) -> None:
         """Constructs new features for regexes and lookup table using regex expressions.
 
@@ -73,7 +73,7 @@ class RegexFeaturizer(SparseFeaturizer):
                 and total number available.
             finetune_mode: Load component in finetune mode.
         """
-        super().__init__(component_config, persistor=persistor)
+        super().__init__(persistor=persistor, **kwargs)
 
         self.known_patterns = known_patterns if known_patterns else []
         self.case_sensitive = self.component_config["case_sensitive"]
@@ -305,8 +305,6 @@ class RegexFeaturizer(SparseFeaturizer):
         cls,
         persistor: Persistor,
         resource_name: Text,
-        component_config: Dict[Text, Any] = None,
-        model_metadata: Optional[Metadata] = None,
         cached_component: Optional["RegexFeaturizer"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
@@ -323,13 +321,6 @@ class RegexFeaturizer(SparseFeaturizer):
             **kwargs: Any other arguments.
         """
 
-        if not component_config:
-            component_config = {}
-
-        component_config = rasa.utils.train_utils.override_defaults(
-            cls.defaults, component_config
-        )
-
         patterns_file_name = Path(persistor.get_resource(resource_name, "patterns.pkl"))
 
         vocabulary_stats_file_name = Path(persistor.get_resource(resource_name, "vocabulary_stats.pkl"))
@@ -344,10 +335,11 @@ class RegexFeaturizer(SparseFeaturizer):
             )
 
         return RegexFeaturizer(
-            component_config,
             known_patterns=known_patterns,
             pattern_vocabulary_stats=vocabulary_stats,
             finetune_mode=should_finetune,
+            persistor=persistor,
+            **kwargs,
         )
 
     def persist(self) -> Text:

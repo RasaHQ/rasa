@@ -1,5 +1,6 @@
 from collections import ChainMap
 import inspect
+import json
 from pathlib import Path
 from typing import Any, Text, Dict, List, Union
 
@@ -70,7 +71,7 @@ class RasaComponent:
             const_kwargs = rasa.shared.utils.common.minimal_kwargs(
                 kwargs, self._constructor_fn
             )
-            self.create_component(**const_kwargs)
+            self.create_component(**const_kwargs, **self._config)
 
         run_kwargs = kwargs
 
@@ -124,9 +125,9 @@ class Persistor:
         return self._node_name
 
 
-def convert_to_dask_graph(rasa_graph: Dict[Text, Any]):
+def convert_to_dask_graph(graph_schema: Dict[Text, Any]):
     dsk = {}
-    for step_name, step_config in rasa_graph.items():
+    for step_name, step_config in graph_schema.items():
         dsk[step_name] = (
             RasaComponent(
                 node_name=step_name,
@@ -143,22 +144,28 @@ def convert_to_dask_graph(rasa_graph: Dict[Text, Any]):
     return dsk
 
 
-def fill_defaults(graph: Dict[Text, Any]):
-    for step_name, step_config in graph.items():
+def fill_defaults(graph_schema: Dict[Text, Any]):
+    for step_name, step_config in graph_schema.items():
         component_class = step_config["uses"]
 
         if hasattr(component_class, "defaults"):
-            defaults = component_class.defaults
-            step_config["config"].update(defaults)
+            step_config["config"] = {
+                **component_class.defaults,
+                **step_config["config"],
+            }
 
 
 def run_as_dask_graph(
-    rasa_graph: Dict[Text, Any], target_names: Union[Text, List[Text]]
+    graph_schema: Dict[Text, Any], target_names: Union[Text, List[Text]]
 ) -> Dict[Text, Any]:
-    dask_graph = convert_to_dask_graph(rasa_graph)
+    dask_graph = convert_to_dask_graph(graph_schema)
     return dict(ChainMap(*dask.get(dask_graph, target_names)))
 
 
-def visualise_as_dask_graph(rasa_graph: Dict[Text, Any], filename: Text) -> None:
-    dask_graph = convert_to_dask_graph(rasa_graph)
+def visualise_as_dask_graph(graph_schema: Dict[Text, Any], filename: Text) -> None:
+    dask_graph = convert_to_dask_graph(graph_schema)
     dask.visualize(dask_graph, filename=filename)
+
+
+def serialize_graph_schema(graph_schema: Dict[Text, Any]) -> Text:
+    return json.dumps(graph_schema)

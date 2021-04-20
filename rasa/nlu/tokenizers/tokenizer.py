@@ -63,10 +63,10 @@ class Token:
 
 
 class Tokenizer(Component):
-    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
-        super().__init__(component_config)
+        super().__init__(**kwargs)
 
         # flag to check whether to split intents
         self.intent_tokenization_flag = self.component_config.get(

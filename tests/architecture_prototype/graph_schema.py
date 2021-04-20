@@ -34,7 +34,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 project = "examples/moodbot"
 
 # We can omit `FallbackClassifier` as this doesn't train
-rasa_nlu_train_graph = {
+nlu_train_graph_schema = {
     "load_data": {
         "uses": TrainingDataReader,
         "fn": "read",
@@ -67,13 +67,13 @@ rasa_nlu_train_graph = {
     "train_lexical_featurizer": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "train",
-        "config": {"component_config": {}},
+        "config": {},
         "needs": {"training_data": "tokenize"},
     },
     "add_lexical_features": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "process_training_data",
-        "config": {"component_config": {}},
+        "config": {},
         "needs": {
             "training_data": "add_regex_features",
             "resource_name": "train_lexical_featurizer",
@@ -116,13 +116,13 @@ rasa_nlu_train_graph = {
     "train_classifier": {
         "uses": DIETClassifier,
         "fn": "train",
-        "config": {"component_config": {"epochs": 100,},},
+        "config": {"epochs": 10},
         "needs": {"training_data": "add_count_features2"},
     },
     "train_response_selector": {
         "uses": ResponseSelector,
         "fn": "train",
-        "config": {"component_config": {"epochs": 1,},},
+        "config": {"epochs": 1},
         "needs": {"training_data": "add_count_features2"},
     },
     "train_synonym_mapper": {
@@ -133,7 +133,7 @@ rasa_nlu_train_graph = {
     },
 }
 
-full_model_train_graph = {
+full_model_train_graph_schema = {
     "load_domain": {
         "uses": DomainReader,
         "fn": "read",
@@ -186,13 +186,13 @@ full_model_train_graph = {
     "core_train_lexical_featurizer": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "train",
-        "config": {"component_config": {}},
+        "config": {},
         "needs": {"training_data": "core_tokenize"},
     },
     "core_add_lexical_features": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "process_training_data",
-        "config": {"component_config": {}},
+        "config": {},
         "needs": {
             "training_data": "core_add_regex_features",
             "resource_name": "core_train_lexical_featurizer",
@@ -261,7 +261,7 @@ full_model_train_graph = {
             "domain": "load_domain",
         },
     },
-    **rasa_nlu_train_graph,
+    **nlu_train_graph_schema,
 }
 
 predict_graph_schema = {
@@ -297,31 +297,28 @@ predict_graph_schema = {
         "uses": LexicalSyntacticFeaturizer,
         "constructor_name": "load",
         "fn": "process",
-        "config": {"resource_name": "train_lexical_featurizer", "component_config": {}},
+        "config": {"resource_name": "train_lexical_featurizer"},
         "needs": {"message": "add_regex_features",},
     },
     "add_count_features1": {
         "uses": CountVectorsFeaturizer,
         "constructor_name": "load",
         "fn": "process",
-        "config": {"resource_name": "train_count_featurizer1",},
+        "config": {"resource_name": "train_count_featurizer1"},
         "needs": {"message": "add_lexical_features",},
     },
     "add_count_features2": {
         "uses": CountVectorsFeaturizer,
         "constructor_name": "load",
         "fn": "process",
-        "config": {"resource_name": "train_count_featurizer2",},
+        "config": {"resource_name": "train_count_featurizer2"},
         "needs": {"message": "add_count_features1",},
     },
     "classify": {
         "uses": DIETClassifier,
         "fn": "process",
         "constructor_name": "load",
-        "config": {
-            "component_config": {"epochs": 1,},
-            "resource_name": "train_classifier",
-        },
+        "config": {"resource_name": "train_classifier",},
         "needs": {"message": "add_count_features2"},
     },
     "synonym_mapper": {
@@ -335,10 +332,7 @@ predict_graph_schema = {
         "uses": ResponseSelector,
         "constructor_name": "load",
         "fn": "process",
-        "config": {
-            "resource_name": "train_response_selector",
-            "component_config": {"epochs": 1,},
-        },
+        "config": {"resource_name": "train_response_selector",},
         "needs": {"message": "synonym_mapper"},
     },
     "fallback_classifier": {

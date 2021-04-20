@@ -74,11 +74,11 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
     def __init__(
         self,
-        component_config: Dict[Text, Any] = None,
         feature_to_idx_dict: Optional[Dict[Text, Any]] = None,
         persistor: Optional[Persistor] = None,
+        **kwargs: Any,
     ):
-        super().__init__(component_config, persistor=persistor)
+        super().__init__(persistor=persistor, **kwargs)
 
         self.feature_to_idx_dict = feature_to_idx_dict or {}
         self.number_of_features = self._calculate_number_of_features()
@@ -290,20 +290,15 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         cls,
         persistor: Persistor,
         resource_name: Text,
-        meta: Dict[Text, Any] = None,
-        model_metadata: Optional[Metadata] = None,
         cached_component: Optional["LexicalSyntacticFeaturizer"] = None,
         **kwargs: Any,
     ) -> "LexicalSyntacticFeaturizer":
         """Loads trained component (see parent class for full docstring)."""
-        if not meta:
-            meta = {}
-        meta = train_utils.override_defaults(cls.defaults, meta)
 
         feature_to_idx_file = Path(persistor.get_resource(resource_name, "feature_to_idx_dict.pkl"))
         feature_to_idx_dict = io_utils.json_unpickle(feature_to_idx_file)
 
-        return LexicalSyntacticFeaturizer(meta, feature_to_idx_dict=feature_to_idx_dict)
+        return LexicalSyntacticFeaturizer(feature_to_idx_dict=feature_to_idx_dict, persistor=persistor, **kwargs)
 
     def persist(self,) -> Text:
         """Persist this model into the passed directory.

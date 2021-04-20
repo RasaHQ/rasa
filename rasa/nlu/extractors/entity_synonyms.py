@@ -23,12 +23,12 @@ class EntitySynonymMapper(EntityExtractor):
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
         synonyms: Optional[Dict[Text, Any]] = None,
         persistor: Optional[Persistor] = None,
+        **kwargs: Any,
     ) -> None:
 
-        super().__init__(component_config, persistor=persistor)
+        super().__init__(persistor=persistor, **kwargs)
 
         self.synonyms = synonyms if synonyms else {}
 
@@ -72,15 +72,10 @@ class EntitySynonymMapper(EntityExtractor):
         cls,
         persistor: Persistor,
         resource_name: Text,
-        meta: Dict[Text, Any] = None,
-        model_metadata: Optional[Metadata] = None,
         cached_component: Optional["EntitySynonymMapper"] = None,
         **kwargs: Any,
     ) -> "EntitySynonymMapper":
         """Loads trained component (see parent class for full docstring)."""
-        if not meta:
-            meta = {}
-        meta = train_utils.override_defaults(cls.defaults, meta)
         entity_synonyms_file = persistor.get_resource(resource_name, "synonyms.json")
         if os.path.isfile(entity_synonyms_file):
             synonyms = rasa.shared.utils.io.read_json_file(entity_synonyms_file)
@@ -90,7 +85,7 @@ class EntitySynonymMapper(EntityExtractor):
                 f"Failed to load synonyms file from '{entity_synonyms_file}'.",
                 docs=DOCS_URL_TRAINING_DATA + "#synonyms",
             )
-        return cls(meta, synonyms, persistor=persistor)
+        return cls(synonyms, persistor=persistor, **kwargs)
 
     def replace_synonyms(self, entities: List[Dict[Text, Any]]) -> None:
         for entity in entities:

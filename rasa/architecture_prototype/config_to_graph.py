@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional, Text, Tuple, Type
 
 from rasa.architecture_prototype.graph_components import TrainingDataReader
+from rasa.architecture_prototype import graph
 from rasa.nlu import registry
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.components import Component
@@ -145,5 +146,7 @@ def nlu_config_to_train_graph(config: Text) -> Tuple[Dict[Text, Any], Text]:
             config=config,
         )
         nlu_train_graph.update(component_def)
+
+    graph.fill_defaults(nlu_train_graph)
 
     return nlu_train_graph, last_component_out
