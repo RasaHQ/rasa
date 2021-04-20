@@ -334,7 +334,10 @@ class FormAction(LoopAction):
         )
 
     def extract_requested_slot(
-        self, tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text,
+        self,
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+        slot_to_fill: Text,
     ) -> Dict[Text, Any]:
         """Extract the value of requested slot from a user input else return `None`.
 
@@ -520,16 +523,32 @@ class FormAction(LoopAction):
                 self.name(),
                 f"Failed to extract slot {slot_to_fill} with action {self.name()}",
             )
+
         # Add slot_filled_action
         slot_filled_action_events = []
-        if some_slots_were_validated:
+
+        # Create temporary tracker with the validation events applied
+        # Otherwise, the slots will not be set
+        temp_tracker = self._temporary_tracker(
+            tracker, validation_events, domain
+        )
+
+        slots_filled = [
+            event.key
+            for event in validation_events
+            if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
+        ]
+
+        for slot_filled in slots_filled:
             # get mapping for requested slot
             requested_slot_mappings = self.get_mappings_for_slot(
-                slot_to_fill, domain
+                slot_filled, domain
             )
 
             if len(requested_slot_mappings) > 0:
                 slot_filled_action_name = None
+
+                # Get first slot_filled_action found
                 for mapping in requested_slot_mappings:
                     slot_filled_action_name = mapping.get("slot_filled_action")
 
@@ -545,13 +564,7 @@ class FormAction(LoopAction):
                         )
                     )
 
-                    # Create temporary tracker with the validation events applied
-                    # Otherwise, the slots will not be set
-                    temp_tracker = self._temporary_tracker(
-                        tracker, validation_events, domain
-                    )
-
-                    slot_filled_action_events = (
+                    slot_filled_action_events += (
                         await action_to_ask_for_next_slot.run(
                             output_channel, nlg, temp_tracker, domain
                         )
@@ -786,22 +799,25 @@ class FormAction(LoopAction):
         # We explicitly check only the last occurrences for each possible termination
         # event instead of doing `return event in events_so_far` to make it possible
         # to override termination events which were returned earlier.
-        return next(
-            (
-                event
-                for event in reversed(events_so_far)
-                if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
-            ),
-            None,
-        ) == SlotSet(REQUESTED_SLOT, None) or next(
-            (
-                event
-                for event in reversed(events_so_far)
-                if isinstance(event, ActiveLoop)
-            ),
-            None,
-        ) == ActiveLoop(
-            None
+        return (
+            next(
+                (
+                    event
+                    for event in reversed(events_so_far)
+                    if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
+                ),
+                None,
+            )
+            == SlotSet(REQUESTED_SLOT, None)
+            or next(
+                (
+                    event
+                    for event in reversed(events_so_far)
+                    if isinstance(event, ActiveLoop)
+                ),
+                None,
+            )
+            == ActiveLoop(None)
         )
 
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:
