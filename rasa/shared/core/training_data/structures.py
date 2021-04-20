@@ -219,7 +219,7 @@ class StoryStep:
 
     @staticmethod
     def is_action_unlikely_intent(event: Event) -> bool:
-        """Check if the executed action is a `action_unlikely_intent`."""
+        """Checks if the executed action is a `action_unlikely_intent`."""
         return (
             type(event) == ActionExecuted
             and event.action_name == ACTION_UNLIKELY_INTENT_NAME
@@ -227,7 +227,7 @@ class StoryStep:
 
     @staticmethod
     def is_action_session_start(event: Event) -> bool:
-        """Check if the executed action is a `action_session_start`."""
+        """Checks if the executed action is a `action_session_start`."""
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
         return (

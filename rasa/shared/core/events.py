@@ -1475,8 +1475,8 @@ class ActionExecuted(Event):
 
     def __repr__(self) -> Text:
         """Returns event as string for debugging."""
-        return "ActionExecuted(action: {}, policy: {}, confidence: {}, metadata: {})".format(
-            self.action_name, self.policy, self.confidence, self.metadata
+        return "ActionExecuted(action: {}, policy: {}, confidence: {})".format(
+            self.action_name, self.policy, self.confidence
         )
 
     def __str__(self) -> Text:
