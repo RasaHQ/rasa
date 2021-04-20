@@ -283,7 +283,7 @@ However, additional parameters exist that can be adapted.
 |                                       |                        | or 'inner'.                                                  |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | loss_type                             | "cross_entropy"        | The type of the loss function, either 'cross_entropy'        |
-|                                       |                        | or 'margin'.                                                 |
+|                                       |                        | or 'triplet'.                                                |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | ranking_length                        | 10                     | Number of top actions to normalize scores for. Applicable    |
 |                                       |                        | only with loss type 'cross_entropy' and 'softmax'            |
@@ -295,10 +295,6 @@ However, additional parameters exist that can be adapted.
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | maximum_negative_similarity           | -0.2                   | Maximum negative similarity for incorrect labels.            |
 |                                       |                        | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
-+---------------------------------------+------------------------+--------------------------------------------------------------+
-| use_maximum_negative_similarity       | True                   | If 'True' the algorithm only minimizes maximum similarity    |
-|                                       |                        | over incorrect intent labels, used only if 'loss_type' is    |
-|                                       |                        | set to 'margin'.                                             |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | scale_loss                            | True                   | Scale loss inverse proportionally to confidence of correct   |
 |                                       |                        | prediction.                                                  |

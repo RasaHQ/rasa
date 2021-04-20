@@ -23,12 +23,14 @@ from rasa.utils.tensorflow.constants import (
     COSINE,
     SEQUENCE,
     CROSS_ENTROPY,
+    TRIPLET,
     TRANSFORMER_SIZE,
     NUM_TRANSFORMER_LAYERS,
     DENSE_DIMENSION,
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
     NEGATIVE_MARGIN_SCALE,
+    USE_MAX_NEG_SIM,
 )
 from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
@@ -558,18 +560,32 @@ def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
         SOFTMAX,
         CROSS_ENTROPY,
     ]:
-        rasa.shared.utils.io.raise_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
             f"to set it to `True` when using cross-entropy loss. It will be set to "
             f"`True` by default, "
             f"Rasa Open Source 3.0.0 onwards.",
-            category=UserWarning,
+            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
         )
     if component_config.get(NEGATIVE_MARGIN_SCALE) is not None:
-        rasa.shared.utils.io.raise_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"{NEGATIVE_MARGIN_SCALE} is deprecated. It will be removed in "
             f"Rasa Open Source 3.0.0 onwards.",
-            category=UserWarning,
+            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+        )
+    if component_config.get(NEGATIVE_MARGIN_SCALE) is not None:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"{USE_MAX_NEG_SIM} is deprecated. It will be removed in "
+            f"Rasa Open Source 3.0.0 onwards.",
+            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+        )
+    if component_config.get(LOSS_TYPE) == MARGIN:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"`{LOSS_TYPE}={MARGIN}` is deprecated. It will be removed in "
+            f"Rasa Open Source 3.0.0 onwards. "
+            f"Please update your configuration file to use"
+            f"`{LOSS_TYPE}={TRIPLET}` instead.",
+            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
         )
 
 

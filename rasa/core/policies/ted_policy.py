@@ -218,7 +218,7 @@ class TEDPolicy(Policy):
         NUM_NEG: 20,
         # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
         SIMILARITY_TYPE: AUTO,
-        # The type of the loss function, either 'cross_entropy' or 'margin'.
+        # The type of the loss function, either 'cross_entropy' or 'triplet'.
         LOSS_TYPE: CROSS_ENTROPY,
         # Number of top actions to normalize scores for. Applicable with
         # loss type 'cross_entropy' and 'softmax' confidences. Set to 0

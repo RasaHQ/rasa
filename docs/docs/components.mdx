@@ -1542,7 +1542,7 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | or 'inner'.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
-|                                 |                  | or 'margin'.                                                 |
+|                                 |                  | or 'triplet'.                                                |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | ranking_length                  | 10               | Number of top intents to normalize scores for. Applicable    |
 |                                 |                  | only with loss type 'cross_entropy' and 'softmax'            |
@@ -1554,10 +1554,6 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+------------------+--------------------------------------------------------------+
 | maximum_negative_similarity     | -0.4             | Maximum negative similarity for incorrect labels.            |
 |                                 |                  | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
-+---------------------------------+------------------+--------------------------------------------------------------+
-| use_maximum_negative_similarity | True             | If 'True' the algorithm only minimizes maximum similarity    |
-|                                 |                  | over incorrect intent labels, used only if 'loss_type' is    |
-|                                 |                  | set to 'margin'.                                             |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | scale_loss                      | False            | Scale loss inverse proportionally to confidence of correct   |
 |                                 |                  | prediction.                                                  |
@@ -2462,7 +2458,8 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   | similarity_type                 | "auto"           | Type of similarity measure to use, either 'auto' or 'cosine' |
   |                                 |                  | or 'inner'.                                                  |
   +---------------------------------+------------------+--------------------------------------------------------------+
-  | loss_type                       | "softmax"        | The type of the loss function, either 'softmax' or 'margin'. |
+  | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
+  |                                 |                  | or 'triplet'.                                                |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
   |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
@@ -2474,17 +2471,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   | maximum_negative_similarity     | -0.4             | Maximum negative similarity for incorrect labels.            |
   |                                 |                  | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
   +---------------------------------+------------------+--------------------------------------------------------------+
-  | use_maximum_negative_similarity | True             | If 'True' the algorithm only minimizes maximum similarity    |
-  |                                 |                  | over incorrect intent labels, used only if 'loss_type' is    |
-  |                                 |                  | set to 'margin'.                                             |
-  +---------------------------------+------------------+--------------------------------------------------------------+
   | scale_loss                      | False            | Scale loss inverse proportionally to confidence of correct   |
   |                                 |                  | prediction.                                                  |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | regularization_constant         | 0.002            | The scale of regularization.                                 |
-  +---------------------------------+------------------+--------------------------------------------------------------+
-  | negative_margin_scale           | 0.8              | The scale of how important it is to minimize the maximum     |
-  |                                 |                  | similarity between embeddings of different labels.           |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | weight_sparsity                 | 0.8              | Sparsity of the weights in dense layers.                     |
   |                                 |                  | Value should be between 0 and 1.                             |
@@ -2821,7 +2811,7 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | or 'inner'.                                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"   | The type of the loss function, either 'cross_entropy'        |
-|                                 |                   | or 'margin'.                                                 |
+|                                 |                   | or 'triplet'.                                                |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | ranking_length                  | 10                | Number of top responses to normalize scores for. Applicable  |
 |                                 |                   | only with loss type 'cross_entropy' and 'softmax'            |
@@ -2834,17 +2824,10 @@ However, additional parameters exist that can be adapted.
 | maximum_negative_similarity     | -0.4              | Maximum negative similarity for incorrect labels.            |
 |                                 |                   | Should be -1.0 < ... < 1.0 for 'cosine' similarity type.     |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| use_maximum_negative_similarity | True              | If 'True' the algorithm only minimizes maximum similarity    |
-|                                 |                   | over incorrect intent labels, used only if 'loss_type' is    |
-|                                 |                   | set to 'margin'.                                             |
-+---------------------------------+-------------------+--------------------------------------------------------------+
 | scale_loss                      | True              | Scale loss inverse proportionally to confidence of correct   |
 |                                 |                   | prediction.                                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | regularization_constant         | 0.002             | The scale of regularization.                                 |
-+---------------------------------+-------------------+--------------------------------------------------------------+
-| negative_margin_scale           | 0.8               | The scale of how important is to minimize the maximum        |
-|                                 |                   | similarity between embeddings of different labels.           |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | weight_sparsity                 | 0.8               | Sparsity of the weights in dense layers.                     |
 |                                 |                   | Value should be between 0 and 1.                             |

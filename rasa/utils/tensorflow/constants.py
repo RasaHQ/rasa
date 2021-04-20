@@ -68,6 +68,7 @@ INNER = "inner"
 LINEAR_NORM = "linear_norm"
 COSINE = "cosine"
 CROSS_ENTROPY = "cross_entropy"
+TRIPLET = "triplet"
 
 BALANCED = "balanced"
 
