@@ -1818,6 +1818,7 @@ class SlotMapping(Enum):
     FROM_INTENT = 1
     FROM_TRIGGER_INTENT = 2
     FROM_TEXT = 3
+    SLOT_FILLED_ACTION = 4
 
     def __str__(self) -> Text:
         """Returns a string representation of the object."""
@@ -1847,6 +1848,7 @@ class SlotMapping(Enum):
             str(SlotMapping.FROM_INTENT): ["value"],
             str(SlotMapping.FROM_TRIGGER_INTENT): ["value"],
             str(SlotMapping.FROM_TEXT): [],
+            str(SlotMapping.SLOT_FILLED_ACTION): [],
         }
 
         mapping_type = mapping.get("type")
@@ -1867,7 +1869,6 @@ class SlotMapping(Enum):
                     f"for slot '{slot_name}' in the form '{form_name}'. Please see "
                     f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
                 )
-
 
 def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
     if isinstance(forms, list):
