@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional, Text, Tuple, Type
 
-from rasa.architecture_prototype.graph import TrainingDataReader
+from rasa.architecture_prototype.graph_components import TrainingDataReader
 from rasa.nlu import registry
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.components import Component

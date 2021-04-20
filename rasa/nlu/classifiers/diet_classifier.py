@@ -320,6 +320,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def __init__(
         self,
+        component_config,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
@@ -328,7 +329,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
-        component_config = kwargs
         if component_config is not None and EPOCHS not in component_config:
             rasa.shared.utils.io.raise_warning(
                 f"Please configure the number of '{EPOCHS}' in your configuration file."
