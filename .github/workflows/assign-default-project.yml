@@ -1,0 +1,23 @@
+name: Assign default project to issues
+
+on:
+  issues:
+    types:
+    - opened
+
+jobs:
+  vulnerability_scan:
+    name: Assign relevant issues to Enable project board
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Add issue to project
+      if: contains(github.event.issue.labels.*.name, 'tool:trivy') || contains(github.event.issue.labels.*.name, 'tool:sentry')
+      uses: peter-evans/create-or-update-project-card@3d5056faa1b952f322b49b5d5f37adefd702e3e1
+
+      with:
+        token: ${{ secrets.RASABOT_ASSIGN_ISSUE_RESEARCH_BOARD_TOKEN }}
+        # https://github.com/orgs/RasaHQ/projects/40
+        project-location: RasaHQ
+        project-number: 40
+        column-name: Inbox
