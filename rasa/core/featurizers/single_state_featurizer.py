@@ -232,27 +232,11 @@ class SingleStateFeaturizer:
         sparse: bool = False,
         e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Dict[Text, List["Features"]]:
-        # this method is called during both prediction and training,
-        # `self._use_regex_interpreter == True` means that core was trained
-        # separately, therefore substitute interpreter based on some trained
-        # nlu model with default RegexInterpreter to make sure
-        # that prediction and train time features are the same
-        if self._use_regex_interpreter and not isinstance(
-            interpreter, RegexInterpreter
-        ):
-            interpreter = RegexInterpreter()
-
-        if e2e_features is None:
-            message = Message(data=sub_state)
-            parsed_message = interpreter.featurize_message(message)
-        else:
-            key = next(
-                k
-                for k in sub_state.keys()
-                if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
-            )
-            parsed_message = e2e_features[key]
-            assert parsed_message
+        key = next(
+            k for k in sub_state.keys() if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
+        )
+        parsed_message = e2e_features[key]
+        assert parsed_message
 
         # remove entities from possible attributes
         attributes = set(

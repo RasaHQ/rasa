@@ -11,7 +11,7 @@ from rasa.nlu.persistor import Persistor
 from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -82,12 +82,44 @@ class TrackerGenerator:
 
 
 class StoryToTrainingDataConverter:
-    def convert(self, story_graph: StoryGraph) -> TrainingData:
+    def convert_for_training(self, story_graph: StoryGraph) -> TrainingData:
         messages = []
-        for tracker in story_graph.story_steps:
-            for event in tracker.events:
-                if isinstance(event, (ActionExecuted, UserUttered)):
+        for step in story_graph.story_steps:
+            messages += self._convert_tracker_to_messages(step.events)
+
+        # Workaround: add at least one end to end message to initialize
+        # the `CountVectorizer` for e2e. Alternatives: Store information or simply config
+        messages.append(
+            Message(
+                data=UserUttered(
+                    text="hi", use_text_for_featurization=True
+                ).as_sub_state()
+            )
+        )
+        return TrainingData(training_examples=messages)
+
+    def _convert_tracker_to_messages(self, events: List[Event]) -> List[Message]:
+        messages = []
+        for event in events:
+            if isinstance(event, ActionExecuted):
+                messages.append(Message(data=event.as_sub_state()))
+
+            if isinstance(event, UserUttered):
+                if event.use_text_for_featurization is None:
+                    event.use_text_for_featurization = False
                     messages.append(Message(data=event.as_sub_state()))
+
+                    event.use_text_for_featurization = True
+                    messages.append(Message(data=event.as_sub_state()))
+
+                    event.use_text_for_featurization = None
+                else:
+                    messages.append(Message(data=event.as_sub_state()))
+
+        return messages
+
+    def convert_for_inference(self, tracker: DialogueStateTracker) -> TrainingData:
+        messages = self._convert_tracker_to_messages(tracker.events)
 
         return TrainingData(training_examples=messages)
 

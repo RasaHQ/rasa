@@ -605,7 +605,7 @@ class TEDPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Dict[Text, Message],
     ) -> List[List[Dict[Text, List["Features"]]]]:
         # construct two examples in the batch to be fed to the model -
         # one by featurizing last user text
@@ -613,7 +613,10 @@ class TEDPolicy(Policy):
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
         tracker_state_features = self._featurize_for_prediction(
-            tracker, domain, interpreter, use_text_for_last_user_input=self.only_e2e,
+            tracker,
+            domain,
+            e2e_features=e2e_features,
+            use_text_for_last_user_input=self.only_e2e,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -622,7 +625,10 @@ class TEDPolicy(Policy):
             and not self.only_e2e
         ):
             tracker_state_features += self._featurize_for_prediction(
-                tracker, domain, interpreter, use_text_for_last_user_input=True,
+                tracker,
+                domain,
+                e2e_features=e2e_features,
+                use_text_for_last_user_input=True,
             )
         return tracker_state_features
 
@@ -672,7 +678,7 @@ class TEDPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        e2e_features: Dict[Text, Message],
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -691,7 +697,7 @@ class TEDPolicy(Policy):
 
         # create model data from tracker
         tracker_state_features = self._featurize_tracker_for_e2e(
-            tracker, domain, interpreter
+            tracker, domain, e2e_features
         )
         model_data = self._create_model_data(tracker_state_features)
         output = self.model.rasa_predict(model_data)
@@ -712,7 +718,7 @@ class TEDPolicy(Policy):
             )
 
         optional_events = self._create_optional_event_for_entities(
-            output, is_e2e_prediction, interpreter, tracker
+            output, is_e2e_prediction, e2e_features, tracker
         )
 
         return self._prediction(
@@ -726,7 +732,7 @@ class TEDPolicy(Policy):
         self,
         prediction_output: Dict[Text, tf.Tensor],
         is_e2e_prediction: bool,
-        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Dict[Text, Message],
         tracker: DialogueStateTracker,
     ) -> Optional[List[Event]]:
         if tracker.latest_action_name != ACTION_LISTEN_NAME or not is_e2e_prediction:
@@ -761,7 +767,7 @@ class TEDPolicy(Policy):
         # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities
         text = tracker.latest_message.text
-        parsed_message = interpreter.featurize_message(Message(data={TEXT: text}))
+        parsed_message = e2e_features[text]
         tokens = parsed_message.get(TOKENS_NAMES[TEXT])
         entities = EntityExtractor.convert_predictions_into_entities(
             text,

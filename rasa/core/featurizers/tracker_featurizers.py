@@ -1,10 +1,8 @@
-from pathlib import Path
-
 import jsonpickle
 import logging
 
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Union, Any
+from typing import Tuple, List, Optional, Dict, Text, Any
 import numpy as np
 
 from rasa.architecture_prototype.graph import Persistor
@@ -43,7 +41,9 @@ class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
     def __init__(
-        self, state_featurizer: Optional[SingleStateFeaturizer] = None, persistor: Optional[Persistor] = None,
+        self,
+        state_featurizer: Optional[SingleStateFeaturizer] = None,
+        persistor: Optional[Persistor] = None,
     ) -> None:
         """Initialize the tracker featurizer.
 
@@ -302,7 +302,7 @@ class TrackerFeaturizer:
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Dict[Text, Message],
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
@@ -334,7 +334,9 @@ class TrackerFeaturizer:
             ignore_rule_only_turns,
             rule_only_data,
         )
-        return self._featurize_states(trackers_as_states, interpreter)
+        return self._featurize_states(
+            trackers_as_states, interpreter=None, e2e_features=e2e_features
+        )
 
     def persist(self) -> None:
         """Persist the tracker featurizer to the given path.
@@ -354,7 +356,9 @@ class TrackerFeaturizer:
         )
 
     @staticmethod
-    def load(persistor: Persistor, resource_name: Text) -> Optional["TrackerFeaturizer"]:
+    def load(
+        persistor: Persistor, resource_name: Text
+    ) -> Optional["TrackerFeaturizer"]:
         """Load the featurizer from file.
 
         Args:

@@ -238,7 +238,7 @@ class Policy:
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Dict[Text, Message],
         use_text_for_last_user_input: bool = False,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         """Transforms training tracker into a vector representation.
@@ -263,7 +263,7 @@ class Policy:
         return self.featurizer.create_state_features(
             [tracker],
             domain,
-            interpreter,
+            e2e_features=e2e_features,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
             rule_only_data=self._rule_only_data,

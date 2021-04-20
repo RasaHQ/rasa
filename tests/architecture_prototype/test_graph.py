@@ -180,7 +180,7 @@ full_model_train_graph = {
     },
     "convert_stories_for_nlu": {
         "uses": StoryToTrainingDataConverter,
-        "fn": "convert",
+        "fn": "convert_for_training",
         "config": {},
         "needs": {"story_graph": "load_stories"},
         "persist": False,
@@ -423,6 +423,58 @@ predict_graph_schema = {
         "config": {},
         "persist": False,
     },
+    "convert_tracker_for_e2e": {
+        "uses": StoryToTrainingDataConverter,
+        "fn": "convert_for_inference",
+        "config": {},
+        "needs": {"tracker": "add_parsed_nlu_message"},
+        "persist": False,
+    },
+    "core_tokenize": {
+        "uses": WhitespaceTokenizer,
+        "fn": "train",
+        "config": {},
+        "needs": {"training_data": "convert_tracker_for_e2e"},
+        "persist": False,
+    },
+    "core_add_regex_features": {
+        "uses": RegexFeaturizer,
+        "constructor_name": "load",
+        "fn": "process_training_data",
+        "config": {"resource_name": "core_train_regex_featurizer",},
+        "needs": {"training_data": "core_tokenize",},
+    },
+    "core_add_lexical_features": {
+        "uses": LexicalSyntacticFeaturizer,
+        "constructor_name": "load",
+        "fn": "process_training_data",
+        "config": {
+            "component_config": {},
+            "resource_name": "core_train_lexical_featurizer",
+        },
+        "needs": {"training_data": "core_add_regex_features",},
+    },
+    "core_add_count_features1": {
+        "uses": CountVectorsFeaturizer,
+        "constructor_name": "load",
+        "fn": "process_training_data",
+        "config": {"resource_name": "core_train_count_featurizer1",},
+        "needs": {"training_data": "core_add_lexical_features",},
+    },
+    "core_add_count_features2": {
+        "uses": CountVectorsFeaturizer,
+        "constructor_name": "load",
+        "fn": "process_training_data",
+        "config": {"resource_name": "core_train_count_featurizer2",},
+        "needs": {"training_data": "core_add_count_features1",},
+    },
+    "create_e2e_lookup": {
+        "uses": MessageToE2EFeatureConverter,
+        "fn": "convert",
+        "config": {},
+        "needs": {"training_data": "core_add_count_features2",},
+        "persist": False,
+    },
     "predict_memoization_policy": {
         "uses": MemoizationPolicy,
         "constructor_name": "load",
@@ -446,12 +498,11 @@ predict_graph_schema = {
             "checkpoint_model": True,
             "resource_name": "train_ted_policy",
         },
-        "needs": {"tracker": "add_parsed_nlu_message", "domain": "load_domain"},
-        # "needs": {
-        #     "e2e_features": "create_e2e_lookup",
-        #     "training_trackers": "generate_trackers",
-        #     "domain": "load_domain",
-        # },
+        "needs": {
+            "tracker": "add_parsed_nlu_message",
+            "domain": "load_domain",
+            "e2e_features": "create_e2e_lookup",
+        },
     },
     "select_prediction": {
         "uses": SimplePolicyEnsemble,
@@ -465,11 +516,6 @@ predict_graph_schema = {
             "memo_prediction": "predict_memoization_policy",
             "ted_prediction": "predict_ted_policy",
         },
-        # "needs": {
-        #     "e2e_features": "create_e2e_lookup",
-        #     "training_trackers": "generate_trackers",
-        #     "domain": "load_domain",
-        # },
     },
 }
 
