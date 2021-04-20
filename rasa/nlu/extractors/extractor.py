@@ -146,11 +146,7 @@ class EntityExtractor(Component):
 
         filtered = []
         for message in entity_examples:
-            entities = []
-            for ent in message.get(ENTITIES, []):
-                extractor = ent.get(EXTRACTOR)
-                if not extractor or extractor == self.name:
-                    entities.append(ent)
+            entities = extract_entities(message)
             data = message.data.copy()
             data[ENTITIES] = entities
             filtered.append(
@@ -164,6 +160,14 @@ class EntityExtractor(Component):
             )
 
         return filtered
+
+    def extract_entities(self, message: list) -> list:
+        entities = []
+        for entity in message.get(ENTITIES, []):
+            extractor = ent.get(EXTRACTOR)
+            if not extractor or extractor == self.name:
+                entities.append(ent)
+        return entities
 
     @staticmethod
     def convert_predictions_into_entities(
@@ -221,7 +225,7 @@ class EntityExtractor(Component):
                 current_entity_tag
             )
 
-            if prefix_from_current_entity_tag != None:
+            if prefix_from_current_entity_tag:
                 # checks for new bilou tag
                 # new bilou tag begins are not with I- , L- tags
                 new_bilou_tag_starts = (
@@ -450,38 +454,55 @@ class EntityExtractor(Component):
             training_data: The training data.
         """
         for example in training_data.entity_examples:
-            entities = example.get(ENTITIES)
             entity_boundaries = [
-                (
-                    entity[ENTITY_ATTRIBUTE_START],
-                    entity[ENTITY_ATTRIBUTE_END],
-                    entity[ENTITY_ATTRIBUTE_VALUE],
-                )
-                for entity in entities
+                (entity[ENTITY_ATTRIBUTE_START], entity[ENTITY_ATTRIBUTE_END],)
+                for entity in example.get(ENTITIES)
             ]
             token_names_text = example.get(TOKENS_NAMES[TEXT])
             token_start_positions = [token.start for token in token_names_text]
             token_end_positions = [token.end for token in token_names_text]
+            EntityExtractor.check_entity_boundaries(
+                example,
+                entity_boundaries,
+                token_start_positions,
+                token_end_positions,
+                token_names_text,
+            )
 
-            for entity_start, entity_end, entity_value in entity_boundaries:
-                if (
-                    entity_start not in token_start_positions
-                    or entity_end not in token_end_positions
-                ):
-                    tokens_repr = [
-                        (token.start, token.end, token.text)
-                        for token in token_names_text
-                    ]
-                    rasa.shared.utils.io.raise_warning(
-                        f"Misaligned entity annotation in message '{example.get(TEXT)}' "
-                        f"with intent '{example.get(INTENT)}'. Make sure the start and "
-                        f"end values of entities ({entity_boundaries}) in the training "
-                        f"data match the token boundaries ({tokens_repr}). "
-                        "Common causes: \n  1) entities include trailing whitespaces "
-                        "or punctuation"
-                        "\n  2) the tokenizer gives an unexpected result, due to "
-                        "languages such as Chinese that don't use whitespace for word "
-                        "separation",
-                        docs=DOCS_URL_TRAINING_DATA_NLU,
+    @staticmethod
+    def check_entity_boundaries(
+        example: list,
+        entity_boundaries: list,
+        token_start_positions: list,
+        token_end_positions: list,
+        token_names_text: list,
+    ) -> None:
+        for entity_start, entity_end in entity_boundaries:
+            if (
+                entity_start not in token_start_positions
+                or entity_end not in token_end_positions
+            ):
+                entities_repr = [
+                    (
+                        entity[ENTITY_ATTRIBUTE_START],
+                        entity[ENTITY_ATTRIBUTE_END],
+                        entity[ENTITY_ATTRIBUTE_VALUE],
                     )
-                    break
+                    for entity in example.get(ENTITIES)
+                ]
+                tokens_repr = [
+                    (token.start, token.end, token.text) for token in token_names_text
+                ]
+                rasa.shared.utils.io.raise_warning(
+                    f"Misaligned entity annotation in message '{example.get(TEXT)}' "
+                    f"with intent '{example.get(INTENT)}'. Make sure the start and "
+                    f"end values of entities ({entities_repr}) in the training "
+                    f"data match the token boundaries ({tokens_repr}). "
+                    "Common causes: \n  1) entities include trailing whitespaces "
+                    "or punctuation"
+                    "\n  2) the tokenizer gives an unexpected result, due to "
+                    "languages such as Chinese that don't use whitespace for word "
+                    "separation",
+                    docs=DOCS_URL_TRAINING_DATA_NLU,
+                )
+                break
