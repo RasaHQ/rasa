@@ -44,9 +44,9 @@ forms:
 You can define a list of intents to ignore for the whole form under the 
 `ignored_intents` key. Intents listed under `ignored_intents` will be added to the `not_intent` key of each required slot in the form.
 
-For example, if you do not want any of the slots of the specific form to be filled with
-intent `chitchat` then you would need to define the following (after the form name and
-before the definition of the slot mappings):
+For example, if you do not want any of the required slots of a form to be filled when
+the intent is `chitchat`, then you would need to define the following (after the form
+name and under the `ignored_intents` keyword):
 
 ```yaml-rasa
 forms:
