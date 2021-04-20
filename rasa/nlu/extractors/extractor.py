@@ -226,26 +226,11 @@ class EntityExtractor(Component):
             )
 
             if prefix_from_current_entity_tag:
-                # checks for new bilou tag
-                # new bilou tag begins are not with I- , L- tags
-                new_bilou_tag_starts = (
-                    last_entity_tag != current_entity_tag
-                    and bilou_utils.LAST
-                    != prefix_from_current_entity_tag
-                    != bilou_utils.INSIDE
-                )
-
-                # to handle bilou tags such as only I-, L- tags without B-tag
-                # and handle multiple U-tags consecutively
-                new_unigram_bilou_tag_starts = (
-                    last_entity_tag == NO_ENTITY_TAG
-                    or bilou_utils.UNIT == prefix_from_current_entity_tag
-                )
-
-                new_tag_found = (
-                    new_bilou_tag_starts
-                    or new_unigram_bilou_tag_starts
-                    or group_or_role_changed
+                new_tag_found = EntityExtractor._get_new_tag_from_prefix_entity_tag(
+                    last_entity_tag,
+                    current_entity_tag,
+                    prefix_from_current_entity_tag,
+                    group_or_role_changed,
                 )
                 last_entity_tag = current_entity_tag
                 current_entity_tag = bilou_utils.tag_without_prefix(current_entity_tag)
@@ -306,6 +291,36 @@ class EntityExtractor(Component):
             ]
 
         return entities
+
+    @staticmethod
+    def _get_new_tag_from_prefix_entity_tag(
+        last_entity_tag: str,
+        current_entity_tag: str,
+        prefix_from_current_entity_tag: str,
+        group_or_role_changed: bool,
+    ) -> bool:
+        import rasa.nlu.utils.bilou_utils as bilou_utils
+
+        # checks for new bilou tag
+        # new bilou tag begins are not with I- , L- tags
+        new_bilou_tag_starts = (
+            last_entity_tag != current_entity_tag
+            and bilou_utils.LAST != prefix_from_current_entity_tag != bilou_utils.INSIDE
+        )
+
+        # to handle bilou tags such as only I-, L- tags without B-tag
+        # and handle multiple U-tags consecutively
+        new_unigram_bilou_tag_starts = (
+            last_entity_tag == NO_ENTITY_TAG
+            or bilou_utils.UNIT == prefix_from_current_entity_tag
+        )
+
+        new_tag_found = (
+            new_bilou_tag_starts
+            or new_unigram_bilou_tag_starts
+            or group_or_role_changed
+        )
+        return new_tag_found
 
     @staticmethod
     def _update_confidence_values(
