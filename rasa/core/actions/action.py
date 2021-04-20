@@ -75,8 +75,8 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionRevertFallbackEvents(),
         ActionDefaultAskAffirmation(),
         ActionDefaultAskRephrase(),
-        ActionUnlikelyIntent(),
         TwoStageFallbackAction(action_endpoint),
+        ActionUnlikelyIntent(),
         ActionBack(),
     ]
 
@@ -802,9 +802,7 @@ class ActionUnlikelyIntent(Action):
         domain: "Domain",
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        evts = await super().run(output_channel, nlg, tracker, domain)
-
-        return evts
+        return []
 
 
 def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
