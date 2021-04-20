@@ -167,7 +167,7 @@ class FormAction(LoopAction):
         return mapping_as_string in self._unique_entity_mappings
 
     def get_ignored_intents(self, domain: Domain) -> List[Text]:
-        """Returns a list of ignored intents as retrieved from `ignored_intents`.
+        """Returns a list of ignored intents.
 
         Args:
             domain: The current model domain.

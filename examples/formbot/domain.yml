@@ -89,12 +89,11 @@ actions:
 
 forms:
   restaurant_form:
-    ignored_intents: [chitchat, inform]
+    ignored_intents: chitchat
     required_slots:
       cuisine:
       - type: from_entity
         entity: cuisine
-        not_intent: chitchat
       num_people:
       - type: from_entity
         entity: number

@@ -111,10 +111,7 @@ class SessionConfig(NamedTuple):
         )
 
     def are_sessions_enabled(self) -> bool:
-        """Returns a boolean value depending on the value of session_expiration_time.
-
-        Returns True if the value of the session_expiration_time variable is greater
-        than zero and False if session_expiration_time is less than/equal to zero."""
+        """Returns a boolean value depending on the value of session_expiration_time."""
         return self.session_expiration_time > 0
 
 
@@ -163,11 +160,12 @@ class Domain:
 
     @classmethod
     def from_file(cls, path: Text) -> "Domain":
-        """Given a specific filepath (path), returns the domain in a yaml format."""
+        """Loads the `Domain` from a YAML file."""
         return cls.from_yaml(rasa.shared.utils.io.read_file(path), path)
 
     @classmethod
     def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
+        """Loads the `Domain` from YAML text after validating it."""
         try:
             rasa.shared.utils.validation.validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
 
