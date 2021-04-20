@@ -49,7 +49,6 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_DEACTIVATE_LOOP_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
@@ -105,21 +104,26 @@ def test_domain_action_instantiation():
         for action_name in domain.action_names_or_texts
     ]
 
-    assert len(instantiated_actions) == 14
-    assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
-    assert instantiated_actions[1].name() == ACTION_RESTART_NAME
-    assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
-    assert instantiated_actions[3].name() == ACTION_DEFAULT_FALLBACK_NAME
-    assert instantiated_actions[4].name() == ACTION_DEACTIVATE_LOOP_NAME
-    assert instantiated_actions[5].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
-    assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
-    assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
-    assert instantiated_actions[8].name() == ACTION_TWO_STAGE_FALLBACK_NAME
-    assert instantiated_actions[9].name() == ACTION_BACK_NAME
-    assert instantiated_actions[10].name() == RULE_SNIPPET_ACTION_NAME
-    assert instantiated_actions[11].name() == "my_module.ActionTest"
-    assert instantiated_actions[12].name() == "utter_test"
-    assert instantiated_actions[13].name() == "utter_chitchat"
+    name_test_array = [
+        ACTION_LISTEN_NAME,
+        ACTION_RESTART_NAME,
+        ACTION_SESSION_START_NAME,
+        ACTION_DEFAULT_FALLBACK_NAME,
+        ACTION_DEACTIVATE_LOOP_NAME,
+        ACTION_REVERT_FALLBACK_EVENTS_NAME,
+        ACTION_DEFAULT_ASK_REPHRASE_NAME,
+        ACTION_TWO_STAGE_FALLBACK_NAME,
+        ACTION_BACK_NAME,
+        RULE_SNIPPET_ACTION_NAME,
+        "my_module.ActionTest",
+        "utter_test",
+        "utter_chitchat",
+    ]
+
+    instantiated_actions_len = len(instantiated_actions)
+    assert instantiated_actions_len == 14
+    for i in range(instantiated_actions_len):
+        assert instantiated_actions[i].name == name_test_array
 
 
 async def test_remote_action_runs(
