@@ -1004,3 +1004,232 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
         return loss, accuracy
+
+
+class MultiLabelDotProductLoss(DotProductLoss):
+    """Same as DotProductLoss but adapted for multiple labels for a single data point."""
+
+    def _get_neg_values(self, tensor, neg_ids):
+
+        tensor_expanded = tf.tile(
+            tf.expand_dims(self._make_flat(tensor), 0), (tf.shape(tensor)[0], 1, 1)
+        )
+        neg_tensor = tf.gather(tensor_expanded, neg_ids, batch_dims=1)
+        neg_tensor = tf.expand_dims(neg_tensor, axis=1)
+
+        return neg_tensor
+
+    def _sample_negatives(
+        self,
+        inputs_embed: tf.Tensor,
+        labels_embed: tf.Tensor,
+        label_ids: tf.Tensor,
+        all_labels_embed: tf.Tensor,
+        all_label_ids: tf.Tensor,
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+        """Sample negative examples."""
+
+        pos_inputs_embed = tf.expand_dims(
+            inputs_embed, axis=-2, name="expand_pos_input"
+        )
+        # Take only the first label as positive, others may or may not be picked during random sampling
+        pos_labels_embed = tf.expand_dims(
+            tf.expand_dims(labels_embed[:, 0, ...], axis=-2),
+            axis=1,
+            name="expand_pos_labels",
+        )
+
+        # get negative batch indices from batch itself.
+        neg_ids = self._get_neg_indices(
+            tf.shape(inputs_embed)[0], tf.shape(inputs_embed)[0]
+        )
+
+        # Get the label embeddings corresponding to negative indices sampled earlier
+        neg_labels_embed = self._get_neg_values(labels_embed[:, 0, ...], neg_ids)
+
+        # Get the label ids corresponding to negative indices sampled earlier
+        neg_labels_ids = self._get_neg_values(label_ids[:, 0, ...], neg_ids)
+
+        max_label_id = tf.cast(tf.math.reduce_max(all_label_ids), dtype=tf.int32)
+        # dimension size is 1 indexed and hence 1 more than maximum label id
+        depth_needed = max_label_id + 1
+
+        # Convert the positive label ids to their one_hot representation.
+        batch_labels_one_hot = tf.one_hot(
+            tf.cast(tf.squeeze(label_ids, axis=-1), tf.int32), depth_needed, axis=-1
+        )  # bs x num_pos_labels(varied) x depth_needed
+
+        # Collapse the extra dimension and convert to a multi-hot representation
+        # by aggregating all ones in the one-hot representation.
+        # Here tf.reduce_any is important and tf.reduce_sum
+        # cannot be used. Reason being that due to padding in label_ids,
+        # there can be more than one 1's at the 0'th index of the last dimension.
+        # Otherwise the loss function will be highly unstable.
+        batch_labels_multi_hot = tf.cast(
+            tf.math.reduce_any(tf.cast(batch_labels_one_hot, dtype=tf.bool), axis=-2),
+            tf.float32,
+        )  # bs x num_pos_labels
+
+        # Remove extra dimensions for gather
+        neg_labels_ids = tf.squeeze(tf.squeeze(neg_labels_ids, 1), -1)
+
+        # Collect the labels corresponding to negative
+        # label ids sampled for each data point of the batch earlier.
+        pos_neg_labels = tf.gather(
+            batch_labels_multi_hot,
+            tf.cast(neg_labels_ids, tf.int32),
+            batch_dims=1,
+            name="gather_labels",
+        )
+
+        pos_neg_labels = tf.cast(pos_neg_labels, tf.float32)
+
+        return pos_inputs_embed, pos_labels_embed, neg_labels_embed, pos_neg_labels
+
+    def _get_neg_indices(self, target_size, total_candidates):
+
+        neg_ids = self._random_indices(target_size, total_candidates)
+
+        return neg_ids
+
+    def _loss_sigmoid(
+        self,
+        sim_pos: tf.Tensor,
+        sim_neg_il: tf.Tensor,
+        pos_neg_labels: tf.Tensor,
+        # sim_neg_ll: tf.Tensor,
+        mask: Optional[tf.Tensor],
+    ) -> tf.Tensor:
+        """Define sigmoid loss."""
+
+        logits = tf.concat([sim_pos, sim_neg_il], axis=-1, name="logit_concat")
+        logits = tf.squeeze(logits, 1)
+
+        # create label_ids for sigmoid
+        pos_label_ids = tf.ones_like(sim_pos, tf.float32)
+        pos_label_ids = tf.squeeze(pos_label_ids, -1)
+
+        label_ids = tf.concat(
+            [pos_label_ids, pos_neg_labels], axis=-1, name="gt_concat"
+        )
+
+        loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label_ids, logits=logits)
+
+        if self.scale_loss:
+            # in case of cross entropy log_likelihood = -loss
+            loss *= _scale_loss(-loss)
+
+        if mask is not None:
+            loss *= mask
+
+        if len(loss.shape) == 2:
+            # average over the sequence
+            if mask is not None:
+                loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
+            else:
+                loss = tf.reduce_mean(loss, axis=-1)
+
+        # average the loss over the batch
+        return tf.reduce_mean(loss)
+
+    def _train_sim(
+        self,
+        pos_inputs_embed: tf.Tensor,
+        pos_labels_embed: tf.Tensor,
+        neg_labels_embed: tf.Tensor,
+        # bad_neg_labels: tf.Tensor,
+        mask: Optional[tf.Tensor],
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Define similarity."""
+
+        # calculate similarity with several
+        # embedded intents for the loss
+        # neg_inf = tf.constant(-1e9)
+
+        sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
+        sim_neg_il = self.sim(pos_inputs_embed, neg_labels_embed, mask)
+
+        # TODO: Check if adding an extra term for similarity
+        #  between pos and negative labels makes sense. It may not
+        #  because as opposed to action labels, intent labels are
+        #  not completely independent of each other as two intents
+        #  can be the positive label for the exact same input.
+        # sim_neg_ll = (
+        #     self.sim(pos_labels_embed, neg_labels_embed, mask) + neg_inf * bad_neg_labels
+        # )
+
+        return sim_pos, sim_neg_il  # , sim_neg_ll
+
+    def call(
+        self,
+        batch_inputs_embed: tf.Tensor,
+        batch_labels_embed: tf.Tensor,
+        batch_label_ids: tf.Tensor,
+        all_labels_embed: tf.Tensor,
+        all_label_ids: tf.Tensor,
+        mask: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Calculate loss and accuracy.
+        Arguments:
+            batch_inputs_embed: Embedding tensor for the batch inputs.
+            batch_labels_embed: Embedding tensor for the batch labels.
+            batch_label_ids: Tensor representing batch labels.
+            all_labels_embed: Embedding tensor for the all labels.
+            all_label_ids: Tensor representing all labels.
+            mask: Optional tensor representing sequence mask,
+                contains `1` for inputs and `0` for padding.
+        Returns:
+            loss: Total loss.
+            accuracy: Training accuracy.
+        """
+        (
+            pos_inputs_embed,
+            pos_labels_embed,
+            neg_labels_embed,
+            pos_neg_labels,
+        ) = self._sample_negatives(
+            batch_inputs_embed,
+            batch_labels_embed,
+            batch_label_ids,
+            all_labels_embed,
+            all_label_ids,
+        )
+
+        # calculate similarities
+        sim_pos, sim_neg_il = self._train_sim(
+            pos_inputs_embed, pos_labels_embed, neg_labels_embed, mask
+        )
+
+        accuracy = self._calc_accuracy(sim_pos, sim_neg_il, pos_neg_labels)
+
+        loss = self._loss_sigmoid(
+            sim_pos,
+            sim_neg_il,
+            pos_neg_labels,
+            # , sim_neg_ll
+            mask,
+        )
+
+        return loss, accuracy
+
+    @staticmethod
+    def _calc_accuracy(
+        sim_pos: tf.Tensor, sim_neg: tf.Tensor, pos_neg_labels: tf.Tensor
+    ) -> tf.Tensor:
+        """Calculate accuracy."""
+
+        all_preds = tf.concat([sim_pos, sim_neg], axis=-1, name="acc_concat_preds")
+        all_preds_sigmoid = tf.nn.sigmoid(all_preds)
+        all_pred_labels = tf.squeeze(tf.math.round(all_preds_sigmoid), 1)
+
+        complete_gt = tf.concat(
+            [tf.squeeze(tf.ones_like(sim_pos), axis=-1), pos_neg_labels],
+            axis=-1,
+            name="acc_concat_gt",
+        )
+
+        acc = tf.reduce_mean(
+            tf.cast(tf.math.equal(all_pred_labels, complete_gt), tf.float32)
+        )
+
+        return acc
