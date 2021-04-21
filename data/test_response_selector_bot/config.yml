@@ -5,10 +5,10 @@ pipeline:
   - name: "CountVectorsFeaturizer"
   - name: "DIETClassifier"
     entity_recognition: False
-    epochs: 5
+    epochs: 50
     random_seed: 42
   - name: ResponseSelector
-    epochs: 5
+    epochs: 50
     random_seed: 42
 
 policies:
