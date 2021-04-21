@@ -15,7 +15,9 @@ from rasa.architecture_prototype.graph import (
     NLUPredictionToHistoryAdder,
     NLUMessageConverter,
     TrackerLoader,
+    Model,
 )
+from rasa.core.channels import UserMessage
 from rasa.core.policies import SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
@@ -33,8 +35,9 @@ from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturi
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
-from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 
 project = "examples/moodbot"
 
@@ -398,11 +401,7 @@ predict_graph_schema = {
         "uses": TrackerLoader,
         "fn": "load",
         "needs": {},
-        "config": {
-            "tracker": DialogueStateTracker.from_events(
-                "some_sender", [ActionExecuted(action_name=ACTION_LISTEN_NAME)]
-            )
-        },
+        "config": {"tracker": None,},
         "persist": False,
     },
     "load_domain": {
@@ -550,3 +549,28 @@ def test_train_load_predict():
     # TODO: Fix e2e features during prediction
     g = graph.convert_to_dask_graph(predict_graph_schema)
     dask.visualize(g, filename="graph.png")
+
+
+def test_model_prediction_with_and_without_nlu():
+    model = Model(predict_graph_schema)
+
+    prediction_with_nlu = model.handle_message(
+        DialogueStateTracker.from_events(
+            "some_sender", [ActionExecuted(action_name=ACTION_LISTEN_NAME)]
+        ),
+        message=UserMessage(text="hello"),
+    )
+    print(prediction_with_nlu)
+
+    prediction_without_nlu = model.predict_next_action(
+        DialogueStateTracker.from_events(
+            "some_sender",
+            [
+                ActionExecuted(action_name=ACTION_LISTEN_NAME),
+                UserUttered("hi", intent={INTENT_NAME_KEY: "greet"}),
+            ],
+        )
+    )
+    print(prediction_without_nlu)
+
+    assert prediction_with_nlu == prediction_without_nlu

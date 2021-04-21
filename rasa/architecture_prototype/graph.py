@@ -2,7 +2,7 @@ import os.path
 from collections import ChainMap
 import inspect
 from pathlib import Path
-from typing import Any, Text, Dict, List, Union, Optional
+from typing import Any, Text, Dict, List, Union, Optional, Tuple, TYPE_CHECKING
 
 import dask
 
@@ -22,6 +22,9 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.core.training
+
+if TYPE_CHECKING:
+    from rasa.core.policies.policy import PolicyPrediction
 
 
 class ProjectReader:
@@ -164,11 +167,11 @@ class NLUPredictionToHistoryAdder:
         self,
         tracker: DialogueStateTracker,
         initial_user_message: UserMessage,
-        parsed_message: Message,
         domain: Domain,
+        parsed_message: Optional[Message] = None,
     ) -> DialogueStateTracker:
-        parse_data = parsed_message.as_dict()
-        if tracker.latest_action_name == ACTION_LISTEN_NAME:
+        if parsed_message:
+            parse_data = parsed_message.as_dict()
             tracker.update(
                 UserUttered(
                     initial_user_message.text,
@@ -297,6 +300,54 @@ class Persistor:
         return self._node_name
 
 
+class Model:
+    def __init__(self, rasa_graph: Dict[Text, Any]) -> None:
+        self._rasa_graph = rasa_graph
+
+        self._predict_graph = convert_to_dask_graph(self._rasa_graph)
+
+        graph = self._predict_graph.copy()
+        graph = _drop_parameter_requirement(
+            graph, rasa_graph, "add_parsed_nlu_message", "parsed_message"
+        )
+        self._predict_graph_without_nlu = _minimal_graph(
+            graph, targets=["select_prediction"]
+        )
+
+    def handle_message(
+        self, tracker: DialogueStateTracker, message: UserMessage
+    ) -> "PolicyPrediction":
+        graph = self._predict_graph.copy()
+
+        # Insert user message into graph
+        graph["load_user_message"] = _graph_component_for_config(
+            "load_user_message",
+            self._rasa_graph["load_user_message"],
+            {"text": message.text},
+        )
+
+        return self._predict(graph, tracker)
+
+    def _predict(
+        self,
+        graph: Dict[Text, Tuple[RasaComponent, Text]],
+        tracker: DialogueStateTracker,
+    ) -> "PolicyPrediction":
+        # Insert dialogue history into graph
+        graph["load_history"] = _graph_component_for_config(
+            "load_history", self._rasa_graph["load_history"], {"tracker": tracker}
+        )
+
+        result = dask.get(graph, "select_prediction")
+
+        return result["select_prediction"]
+
+    def predict_next_action(self, tracker: DialogueStateTracker,) -> "PolicyPrediction":
+        graph = self._predict_graph_without_nlu.copy()
+
+        return self._predict(graph, tracker)
+
+
 def run_as_dask_graph(
     rasa_graph: Dict[Text, Any], target_names: Union[Text, List[Text]]
 ) -> Dict[Text, Any]:
@@ -307,20 +358,32 @@ def run_as_dask_graph(
 def convert_to_dask_graph(rasa_graph: Dict[Text, Any]):
     dsk = {}
     for step_name, step_config in rasa_graph.items():
-        dsk[step_name] = (
-            RasaComponent(
-                node_name=step_name,
-                component_class=step_config["uses"],
-                config=step_config["config"],
-                fn_name=step_config["fn"],
-                inputs=step_config["needs"],
-                constructor_name=step_config.get("constructor_name"),
-                eager=step_config.get("eager", True),
-                persist=step_config.get("persist", True),
-            ),
-            *step_config["needs"].values(),
-        )
+        dsk[step_name] = _graph_component_for_config(step_name, step_config)
     return dsk
+
+
+def _graph_component_for_config(
+    step_name: Text,
+    step_config: Dict[Text, Any],
+    config_overrides: Dict[Text, Any] = None,
+) -> Tuple[RasaComponent, Text]:
+    component_config = step_config["config"].copy()
+    if config_overrides:
+        component_config.update(config_overrides)
+
+    return (
+        RasaComponent(
+            node_name=step_name,
+            component_class=step_config["uses"],
+            config=component_config,
+            fn_name=step_config["fn"],
+            inputs=step_config["needs"],
+            constructor_name=step_config.get("constructor_name"),
+            eager=step_config.get("eager", True),
+            persist=step_config.get("persist", True),
+        ),
+        *step_config["needs"].values(),
+    )
 
 
 def fill_defaults(graph: Dict[Text, Any]):
@@ -330,3 +393,47 @@ def fill_defaults(graph: Dict[Text, Any]):
         if hasattr(component_class, "defaults"):
             defaults = component_class.defaults
             step_config["config"].update(defaults)
+
+
+def _drop_parameter_requirement(
+    dask_graph: Dict[Text, Tuple[RasaComponent, Text]],
+    rasa_graph: Dict[Text, Any],
+    step_name: Text,
+    step_requirement_to_drop: Text,
+) -> Dict[Text, Tuple[RasaComponent, Text]]:
+    updated_config = rasa_graph[step_name]
+    updated_config["needs"] = {
+        parameter_name: required_step
+        for parameter_name, required_step in updated_config["needs"].items()
+        if parameter_name != step_requirement_to_drop
+    }
+
+    step_requirement_to_drop = _graph_component_for_config(step_name, updated_config)
+    dask_graph[step_name] = step_requirement_to_drop
+
+    return dask_graph
+
+
+def _minimal_graph(
+    dask_graph: Dict[Text, Tuple[RasaComponent, Text]], targets: List[Text]
+) -> Dict[Text, Tuple[RasaComponent, Text]]:
+    dependencies = _all_dependencies(dask_graph, targets)
+
+    return {
+        step_name: step
+        for step_name, step in dask_graph.items()
+        if step_name in dependencies
+    }
+
+
+def _all_dependencies(
+    dask_graph: Dict[Text, Tuple[RasaComponent, Text]], targets: List[Text]
+) -> List[Text]:
+    required = []
+    for target in targets:
+        required.append(target)
+        target_dependencies = dask_graph[target][1:]
+        for dependency in target_dependencies:
+            required += _all_dependencies(dask_graph, [dependency])
+
+    return required
