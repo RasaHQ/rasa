@@ -100,6 +100,8 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
 )
+from functools import partial
+from rasa.utils.tensorflow.data_generator import MessageStreamDataGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -601,7 +603,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         labels_idx_examples = []
         for label_name, idx in label_id_dict.items():
             label_example = self._find_example_for_label(
-                label_name, training_data.intent_examples, attribute
+                label_name, training_data.stream_featurized_messages("test2"), attribute
             )
             labels_idx_examples.append((idx, label_example))
 
@@ -757,7 +759,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
 
     # train helpers
-    def preprocess_train_data(self, training_data: TrainingData) -> RasaModelData:
+    def preprocess_train_data(self, training_data: TrainingData) -> None:
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
@@ -768,10 +770,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_id_index_mapping = self._label_id_index_mapping(
             training_data, attribute=INTENT
         )
-
-        if not label_id_index_mapping:
-            # no labels are present to train
-            return RasaModelData()
+        #
+        # if not label_id_index_mapping:
+        #     # no labels are present to train
+        #     return RasaModelData()
 
         self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
 
@@ -780,20 +782,20 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         self._entity_tag_specs = self._create_entity_tag_specs(training_data)
-
-        label_attribute = (
-            INTENT if self.component_config[INTENT_CLASSIFICATION] else None
-        )
-
-        model_data = self._create_model_data(
-            training_data.nlu_examples,
-            label_id_index_mapping,
-            label_attribute=label_attribute,
-        )
-
-        self._check_input_dimension_consistency(model_data)
-
-        return model_data
+        #
+        # label_attribute = (
+        #     INTENT if self.component_config[INTENT_CLASSIFICATION] else None
+        # )
+        #
+        # model_data = self._create_model_data(
+        #     training_data.nlu_examples,
+        #     label_id_index_mapping,
+        #     label_attribute=label_attribute,
+        # )
+        #
+        # self._check_input_dimension_consistency(model_data)
+        #
+        # return model_data
 
     @staticmethod
     def _check_enough_labels(model_data: RasaModelData) -> bool:
@@ -806,43 +808,73 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
-        model_data = self.preprocess_train_data(training_data)
-        if model_data.is_empty():
-            logger.debug(
-                f"Cannot train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the classifier."
-            )
-            return
-
-        if self.component_config.get(INTENT_CLASSIFICATION):
-            if not self._check_enough_labels(model_data):
-                logger.error(
-                    f"Cannot train '{self.__class__.__name__}'. "
-                    f"Need at least 2 different intent classes. "
-                    f"Skipping training of classifier."
-                )
-                return
+        self.preprocess_train_data(training_data)
+        # if model_data.is_empty():
+        #     logger.debug(
+        #         f"Cannot train '{self.__class__.__name__}'. No data was provided. "
+        #         f"Skipping training of the classifier."
+        #     )
+        #     return
+        #
+        # if self.component_config.get(INTENT_CLASSIFICATION):
+        #     if not self._check_enough_labels(model_data):
+        #         logger.error(
+        #             f"Cannot train '{self.__class__.__name__}'. "
+        #             f"Need at least 2 different intent classes. "
+        #             f"Skipping training of classifier."
+        #         )
+        #         return
         if self.component_config.get(ENTITY_RECOGNITION):
             self.check_correct_entity_annotations(training_data)
 
+        label_attribute = (
+            INTENT if self.component_config[INTENT_CLASSIFICATION] else None
+        )
+        label_id_index_mapping = self._invert_mapping(self.index_label_id_mapping)
+
+        messages_to_data = partial(
+            self._create_model_data,
+            label_id_dict=label_id_index_mapping,
+            label_attribute=label_attribute,
+        )
+
+        featurized_messages_stream = training_data.stream_featurized_messages("test2")
+        some_messages = []
+        for msg in featurized_messages_stream:
+            some_messages.append(msg)
+            # if len(some_messages) > 40:
+            #     break
+
+        model_data2 = messages_to_data(some_messages)
+
+        self._check_input_dimension_consistency(model_data2)
+        #
+        # return model_data
         # keep one example for persisting and loading
-        self._data_example = model_data.first_data_example()
+        self._data_example = model_data2.first_data_example()
 
         if not self.finetune_mode:
             # No pre-trained model to load from. Create a new instance of the model.
-            self.model = self._instantiate_model_class(model_data)
+            self.model = self._instantiate_model_class(model_data2)
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
 
-        data_generator, validation_data_generator = train_utils.create_data_generators(
-            model_data,
-            self.component_config[BATCH_SIZES],
-            self.component_config[EPOCHS],
-            self.component_config[BATCH_STRATEGY],
-            self.component_config[EVAL_NUM_EXAMPLES],
-            self.component_config[RANDOM_SEED],
+        data_generator, validation_data_generator = (
+            MessageStreamDataGenerator(
+                training_data, self.component_config[BATCH_SIZES], messages_to_data
+            ),
+            None,
         )
+
+        # data_generator, validation_data_generator = train_utils.create_data_generators(
+        #     model_data2,
+        #     self.component_config[BATCH_SIZES],
+        #     self.component_config[EPOCHS],
+        #     self.component_config[BATCH_STRATEGY],
+        #     self.component_config[EVAL_NUM_EXAMPLES],
+        #     self.component_config[RANDOM_SEED],
+        # )
         callbacks = train_utils.create_common_callbacks(
             self.component_config[EPOCHS],
             self.component_config[TENSORBOARD_LOG_DIR],

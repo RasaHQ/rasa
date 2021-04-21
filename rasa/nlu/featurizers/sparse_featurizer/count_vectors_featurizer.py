@@ -709,9 +709,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self.initialize(training_data, config, **kwargs)
 
         msg_pipe = training_data.add_features(None, "test2")
-        for msg in msg_pipe:
-            features = self.msg_to_features(msg)
-            msg_pipe.send(features)
+        try:
+            msg = next(msg_pipe)
+            while msg:
+                features = self.msg_to_features(msg)
+                msg = msg_pipe.send(features)
+        except StopIteration:
+            pass
 
     def process(self, message: Message, **kwargs: Any) -> None:
         """Process incoming message and compute and set features"""

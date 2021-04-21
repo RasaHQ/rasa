@@ -1,10 +1,13 @@
-from typing import List, Union, Text, Optional, Any, Tuple, Dict
+from typing import List, Union, Text, Optional, Any, Tuple, Dict, Callable
 
 import logging
 import scipy.sparse
 import numpy as np
 import tensorflow as tf
+from functools import lru_cache
 
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.constants import SEQUENCE, BALANCED
 from rasa.utils.tensorflow.model_data import RasaModelData, Data, FeatureArray
 
@@ -423,3 +426,119 @@ class RasaBatchDataGenerator(RasaDataGenerator):
             )
         else:
             return int(self.batch_size[0])
+
+
+class MessageStreamDataGenerator(tf.keras.utils.Sequence):
+    """Data generator working with a message stream."""
+
+    def __init__(
+        self,
+        training_data: TrainingData,
+        batch_size: int,
+        message_to_data_function: Callable[[List[Message]], Data],
+        batch_strategy: Text = SEQUENCE,
+        shuffle: bool = True,
+    ):
+        """Initializes the data generator.
+
+        Args:
+            model_data: The model data to use.
+            batch_size: The batch size(s).
+            batch_strategy: The batch strategy.
+            shuffle: If 'True', data should be shuffled.
+        """
+        self.training_data = training_data
+        self.batch_size = batch_size
+        self.message_to_data_function = message_to_data_function
+        self.shuffle = shuffle
+        self.batch_strategy = batch_strategy
+        self.current_message_stream = None
+        self.on_epoch_end()
+
+    def __len__(self) -> int:
+        """Number of batches in the Sequence.
+
+        Returns:
+            The number of batches in the Sequence.
+        """
+        num_examples = len(self.training_data.training_examples)
+        batch_size = self.batch_size
+        return num_examples // batch_size + int(num_examples % batch_size > 0)
+
+    @lru_cache(1)  # quick fix, as index=0 is accessed twice somewhere
+    def __getitem__(self, index: int) -> Tuple[Any, Any]:
+        """Gets batch at position `index`.
+
+        Arguments:
+            index: position of the batch in the Sequence (ignored)
+
+        Returns:
+            A batch (tuple of input data and target data).
+        """
+        print(self, index)
+        messages = []
+        while len(messages) < self.batch_size:
+            try:
+                messages.append(next(self.current_message_stream))
+            except StopIteration:
+                break
+        data = self.message_to_data_function(messages)
+        return self.prepare_batch(data), None
+
+    def on_epoch_end(self) -> None:
+        """Update the data after every epoch."""
+        self.current_message_stream = self.training_data.stream_featurized_messages(
+            "test2"
+        )
+
+    @staticmethod
+    def prepare_batch(
+        data: Data,
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+        tuple_sizes: Optional[Dict[Text, int]] = None,
+    ) -> Tuple[Optional[np.ndarray]]:
+        """Slices model data into batch using given start and end value.
+
+        Args:
+            data: The data to prepare.
+            start: The start index of the batch
+            end: The end index of the batch
+            tuple_sizes: In case the feature is not present we propagate the batch with
+              None. Tuple sizes contains the number of how many None values to add for
+              what kind of feature.
+
+        Returns:
+            The features of the batch.
+        """
+        batch_data = []
+
+        for key, attribute_data in data.items():
+            for sub_key, f_data in attribute_data.items():
+                # add None for not present values during processing
+                if not f_data:
+                    if tuple_sizes:
+                        batch_data += [None] * tuple_sizes[key]
+                    else:
+                        batch_data.append(None)
+                    continue
+
+                for v in f_data:
+                    if start is not None and end is not None:
+                        _data = v[start:end]
+                    elif start is not None:
+                        _data = v[start:]
+                    elif end is not None:
+                        _data = v[:end]
+                    else:
+                        _data = v[:]
+
+                    if _data.is_sparse:
+                        batch_data.extend(
+                            RasaDataGenerator._scipy_matrix_to_values(_data)
+                        )
+                    else:
+                        batch_data.append(RasaDataGenerator._pad_dense_data(_data))
+
+        # len of batch_data is equal to the number of keys in model data
+        return tuple(batch_data)

@@ -66,7 +66,7 @@ class TrainingData:
         self, chunk_path: Text
     ) -> Generator[Message, None, None]:
         for m, f in zip(self.training_examples, FeatureReader(chunk_path)):
-            yield m.withFeatures(f)
+            yield m.with_features(f)
 
     def add_features(
         self, chunk_path_from: Optional[Text], chunk_path_to: Text
@@ -79,8 +79,7 @@ class TrainingData:
             )
             for msg in source:
                 new_features = yield msg
-                joined_features = msg.features + new_features
-                out.write(joined_features)
+                out.write(msg.features + new_features)
 
     @staticmethod
     def _load_lookup_table(lookup_table: Dict[Text, Any]) -> Dict[Text, Any]:
