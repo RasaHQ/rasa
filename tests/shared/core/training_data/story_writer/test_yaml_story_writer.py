@@ -183,6 +183,29 @@ def test_yaml_writer_stories_to_yaml(domain: Domain):
     assert len(result["stories"]) == 1
 
 
+def test_yaml_writer_stories_to_yaml_with_null_entities(domain: Domain):
+    from collections import OrderedDict
+
+    writer = YAMLStoryWriter()
+    stories = textwrap.dedent(
+        """
+    version: "2.0"
+    stories:
+    - story: happy path
+      steps:
+      - intent: test_intent
+        entities:
+        - test_entity: null
+    """
+    )
+
+    stories_yaml = YAMLStoryReader().read_from_string(stories)
+    result = writer.stories_to_yaml(stories_yaml)
+    assert isinstance(result, OrderedDict)
+    assert "stories" in result
+    assert len(result["stories"]) == 1
+
+
 def test_writing_end_to_end_stories(domain: Domain):
     story_name = "test_writing_end_to_end_stories"
     events = [
