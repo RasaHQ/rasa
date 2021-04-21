@@ -136,7 +136,7 @@ jobs:
           echo "CONFIG=${CONFIG}" >> $GITHUB_ENV
           echo "DOMAIN_FILE=${DOMAIN_FILE}" >> $GITHUB_ENV
           echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
-          echo "TRAIN_DIR=${TEST_DIR}" >> $GITHUB_ENV
+          echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
 
           if [[ -z "${TRAIN_DIR}" ]]; then
             echo "TRAIN_DIR=train" >> $GITHUB_ENV
@@ -147,7 +147,7 @@ jobs:
           if [[ -z "${TEST_DIR}" ]]; then
             echo "TEST_DIR=test" >> $GITHUB_ENV
           else
-            echo "TEST_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
+            echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           fi
 
       - name: Checkout dataset - external
