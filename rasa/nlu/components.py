@@ -451,20 +451,15 @@ class Component(metaclass=ComponentMetaclass):
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
         persistor: Optional[Persistor] = None,
+        **kwargs: Any,
     ) -> None:
 
-        if not component_config:
-            component_config = {}
+        self.component_config = kwargs
 
         # makes sure the name of the configuration is part of the config
         # this is important for e.g. persistence
-        component_config["name"] = self.name
-
-        self.component_config = rasa.utils.train_utils.override_defaults(
-            self.defaults, component_config
-        )
+        self.component_config["name"] = self.name
 
         self._persistor = persistor
 

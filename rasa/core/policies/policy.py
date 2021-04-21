@@ -89,7 +89,16 @@ class SupportedData(Enum):
         return trackers
 
 
-class Policy:
+class PolicyMetaclass(type):
+    """Metaclass with `name` class property."""
+
+    @property
+    def name(cls) -> Text:
+        """The name property is a function of the class - its __name__."""
+        return cls.__name__
+
+
+class Policy(metaclass=PolicyMetaclass):
     @staticmethod
     def supported_data() -> SupportedData:
         """The type of data supported by this policy.
