@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 import tensorflow as tf
-import rasa.utils.tensorflow.layers
 from rasa.utils.tensorflow.layers import RandomlyConnectedDense
 
 

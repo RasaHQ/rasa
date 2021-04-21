@@ -6,7 +6,10 @@ from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.nlu.utils.bilou_utils
-from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS, DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY
+from rasa.shared.constants import (
+    NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+    DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY,
+)
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (

@@ -14,8 +14,6 @@ from rasa.utils.tensorflow.constants import (
     CROSS_ENTROPY,
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
-from rasa.shared.exceptions import InvalidParameterException
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
