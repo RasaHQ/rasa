@@ -6,12 +6,12 @@ on:
     - opened
 
 jobs:
-  vulnerability_scan:
-    name: Assign relevant issues to Enable project board
+  assign_default_project:
+    name: Assign default project to issue
     runs-on: ubuntu-latest
 
     steps:
-    - name: Add issue to project
+    - name: Assign vulnerability scans or Sentry issues to Enable
       if: contains(github.event.issue.labels.*.name, 'tool:trivy') || contains(github.event.issue.labels.*.name, 'tool:sentry')
       uses: peter-evans/create-or-update-project-card@3d5056faa1b952f322b49b5d5f37adefd702e3e1
 
