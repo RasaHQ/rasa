@@ -21,15 +21,15 @@ and port with the appropriate values for your deployment. Click `Save` at the bo
 In your `credentials.yml` file make sure the `twilio_voice` channel is added. Within `credentials.yml` there are a
 number of parameters you can set to control the behavior of your assistant. An example with definitions of each
 parameter is below. Unlike the Twilio text channel there is no need to add your Twilio
-credentials for the voice channel. Note, setting `enhanced` to "true" will result in higher transcription costs for
-using Twilio's premium speech transcription model.
+credentials for the voice channel. Note, changing values for `enhanced` and `assistant_voice` can result in added costs
+from Twilio. Review the documentation below for details about these settings.
 
 ```yaml title="credentials.yml"
 twilio_voice:
   initial_prompt: "hello"
   assistant_voice: "woman"
   reprompt_fallback_phrase: "I didn't get that could you repeat?"
-  speech_timeout: "auto"
+  speech_timeout: "5"
   speech_model: "default"
   enhanced: "false"
 ```
@@ -50,9 +50,10 @@ When Twilio receives a new call and forwards this to Rasa Open Source, Twilio do
 
 You can add personality to your assistant by specifying the type of voice your assistant should speak with. In the
 `credentials.yml` file you can add an option for `assistant_voice` to specify the type of voice of your assistant. For a
-list of supported voices you can check the [Twilio documentation](https://www.twilio.com/docs/voice/twiml/say#voice). An
-example implementation looks like this where a woman's voice is used. If no voice is provided then a woman's voice will
-be used by default.
+list of supported voices you can check the [Twilio documentation](https://www.twilio.com/docs/voice/twiml/say#voice). By
+default Twilio's `woman` voice will be used. Note that you will incur additional charges for using any of the `Polly`
+voices. The Twilio documentation has details about
+[Polly pricing](https://www.twilio.com/docs/voice/twiml/say/text-speech#pricing).
 
 ### Reprompt Fallback Phrase
 
@@ -68,7 +69,9 @@ How long Twilio will collect speech from the caller. This parameter must be set 
 provided the assistant will collect speech for the specified amount of time. If `speech_timeout` is set to "auto" then
 Twilio will collect speech until a pause is detected. The default setting of this parameter is "auto". You can find more
 details about `speech_timeout` in the
-[Twilio documenation](https://www.twilio.com/docs/voice/twiml/gather#speechtimeout).
+[Twilio documenation](https://www.twilio.com/docs/voice/twiml/gather#speechtimeout). Note that `speech_timeout="auto"`
+is only compatible with `speech_model='numbers_and_commands'`. An error will be raised if an incompatible
+`speech_model` is used with the `speech_timeout`.
 
 ### Speech Model
 
@@ -80,7 +83,20 @@ details about `speech_model` in the
 ### Enhanced
 
 Setting `enhanced` to `true` will allow you to use Twilio's premium speech model to improve the accuracy of
-transcription results. Note, setting this parameter to `true` will result in higher Twilio transcription costs! This
+transcription results. Note, setting this parameter to `true` will result in higher Twilio transcription costs. This
 parameter is only supported if you also have set the `speech_model` parameter to `phone_call`. By default `enhanced` is
 set to "false". You can find more about the `enhanced` speech model option in the
 [Twilio documentation](https://www.twilio.com/docs/voice/twiml/gather#enhanced).
+
+## Custom Voice Responses
+
+It is highly recommended that you provide voice
+[channel specific responses](https://rasa.com/docs/rasa/responses/#channel-specific-response-variations) for all
+responses containing images and/or emojis. Visual media like images and emojis do not translate well to voice
+applications. Having voice alternatives to those responses lets you tailor the user experience to the voice channel. If
+a response is detected as containing either an image or emoji a warning will be raised. The image or emoji will be
+removed from the response and only any accompanying text will be included in the response back to the user.
+
+In addition to reviewing responses containing images and emojis you should also review all other responses for their
+applicability to voice channels. Interactions with users can differ between text and voice channels. Reviewing all
+responses in the scope of a voice channel and providing voice specific responses can make for a better user experience.

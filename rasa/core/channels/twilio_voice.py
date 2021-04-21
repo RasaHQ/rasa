@@ -1,3 +1,4 @@
+import re
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
@@ -106,7 +107,7 @@ class TwilioVoiceInput(InputChannel):
             credentials.get("initial_prompt", "hello"),
             credentials.get("reprompt_fallback_phrase", "I'm sorry I didn't get that could you rephrase."),
             credentials.get("assistant_voice", "woman"),
-            credentials.get("speech_timeout", "auto"),
+            credentials.get("speech_timeout", "5"),
             credentials.get("speech_model", "default"),
             credentials.get("enhanced", "false")
         )
@@ -149,6 +150,16 @@ class TwilioVoiceInput(InputChannel):
 
         if (enhanced.lower() == "true") & (speech_model.lower() != "phone_call"):
             self.raise_invalid_enhanced_speech_model_exception()
+
+        if (speech_model.lower() != "numbers_and_commands") & (speech_timeout.lower() == "auto"):
+            self.raise_invalid_speech_model_timeout_exception()
+
+    def raise_invalid_speech_model_timeout_exception(self) -> None:
+        """Raises an error if incompatible speech_timeout and speech_model are provided."""
+        raise InvalidConfigException(
+            f"If speech_time is 'auto' the speech_model must be 'numbers_and_commands'. Please update your "
+            f"speech_model to be 'numbers_and_commands' if you would like to continue using the 'auto' speech_model."
+        )
 
     def raise_invalid_enhanced_option_exception(self) -> None:
         """Raises an error if an invalid value is passed to the enhanced parameter."""
@@ -270,10 +281,42 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
     (doesn't send them anywhere, just collects them).
     """
 
+    EMOJI = re.compile(
+                "["
+                "\U0001F600-\U0001F64F"  # emoticons
+                "\U0001F300-\U0001F5FF"  # symbols & pictographs
+                "\U0001F680-\U0001F6FF"  # transport & map symbols
+                "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                "\U00002702-\U000027B0"
+                "\U000024C2-\U0001F251"
+                "\u200d"  # zero width joiner
+                "\u200c"  # zero width non-joiner
+                "]+",
+                flags=re.UNICODE,
+            )
+
     @classmethod
     def name(cls) -> Text:
         """Name of the output channel."""
         return "twilio_voice"
+
+    async def emoji_warning(
+        self,
+        text: Text,
+    ) -> None:
+        """Raises a warning if text contains an emoji."""
+        if self.EMOJI.findall(text):
+            raise_warning(
+                "Text contains an emoji in a voice response. Review responses to provide a voice-friendly "
+                "alternative."
+            )
+
+    async def send_text_message(
+        self, recipient_id: Text, text: Text, **kwargs: Any
+    ) -> None:
+        await self.emoji_warning(text)
+        for message_part in text.strip().split("\n\n"):
+            await self._persist_message(self._message(recipient_id, text=message_part))
 
     async def send_text_with_buttons(
         self,
@@ -283,9 +326,11 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         **kwargs: Any,
     ) -> None:
         """Convert buttons into a voice representation."""
+        await self.emoji_warning(text)
         await self._persist_message(self._message(recipient_id, text=text))
 
         for b in buttons:
+            await self.emoji_warning(b["title"])
             await self._persist_message(self._message(recipient_id, text=b["title"]))
 
     async def send_image_url(
