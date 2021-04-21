@@ -573,7 +573,7 @@ def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
             f"Rasa Open Source 3.0.0 onwards.",
             warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
         )
-    if component_config.get(NEGATIVE_MARGIN_SCALE) is not None:
+    if component_config.get(USE_MAX_NEG_SIM) is not None:
         rasa.shared.utils.io.raise_deprecation_warning(
             f"{USE_MAX_NEG_SIM} is deprecated. It will be removed in "
             f"Rasa Open Source 3.0.0 onwards.",
