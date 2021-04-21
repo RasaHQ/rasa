@@ -333,7 +333,6 @@ def _validate_augment_nlu_args(args: argparse.Namespace) -> None:
             "The argument 'intent_proportion' must be greater than 0 and smaller than 1!"
         )
 
-
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
     """Validates either the story structure or the entire project.
 
