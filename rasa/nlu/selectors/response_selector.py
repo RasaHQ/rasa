@@ -248,18 +248,17 @@ class ResponseSelector(DIETClassifier):
         MODEL_CONFIDENCE: SOFTMAX,
         # If 'True' intent classification is trained and intent predicted.
         INTENT_CLASSIFICATION: True,
-        # If 'True' named entity recognition is trained and entities predicted.
+        # # If 'True' named entity recognition is trained and entities predicted.
         ENTITY_RECOGNITION: True,
-        # 'BILOU_flag' determines whether to use BILOU tagging or not.
-        # If set to 'True' labelling is more rigorous, however more
-        # examples per entity are required.
-        # Rule of thumb: you should have more than 100 examples per entity.
+        # # 'BILOU_flag' determines whether to use BILOU tagging or not.
+        # # If set to 'True' labelling is more rigorous, however more
+        # # examples per entity are required.
+        # # Rule of thumb: you should have more than 100 examples per entity.
         BILOU_FLAG: True,
     }
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
         index_label_id_mapping: Optional[Dict[int, Text]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
@@ -267,6 +266,7 @@ class ResponseSelector(DIETClassifier):
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
         finetune_mode: bool = False,
         persistor: Optional[Persistor] = None,
+        **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values.
 
@@ -280,12 +280,19 @@ class ResponseSelector(DIETClassifier):
             finetune_mode: If `True` loads the model with pre-trained weights,
                 otherwise initializes it with random weights.
         """
-        component_config = component_config or {}
+        super().__init__(
+            index_label_id_mapping,
+            entity_tag_specs,
+            model,
+            finetune_mode=finetune_mode,
+            persistor=persistor,
+            **kwargs
+        )
 
         # the following properties cannot be adapted for the ResponseSelector
-        component_config[INTENT_CLASSIFICATION] = True
-        component_config[ENTITY_RECOGNITION] = False
-        component_config[BILOU_FLAG] = None
+        self.component_config[INTENT_CLASSIFICATION] = True
+        self.component_config[ENTITY_RECOGNITION] = False
+        self.component_config[BILOU_FLAG] = None
 
         # Initialize defaults
         self.responses = responses or {}
@@ -293,14 +300,7 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent = None
         self.use_text_as_label = False
 
-        super().__init__(
-            component_config,
-            index_label_id_mapping,
-            entity_tag_specs,
-            model,
-            finetune_mode=finetune_mode,
-            persistor=persistor,
-        )
+
 
     @property
     def label_key(self) -> Text:
@@ -552,21 +552,16 @@ class ResponseSelector(DIETClassifier):
         cls,
         persistor: Persistor,
         resource_name: Text,
-        meta: Dict[Text, Any] = None,
-        model_metadata: Metadata = None,
         cached_component: Optional["ResponseSelector"] = None,
         **kwargs: Any,
     ) -> "ResponseSelector":
         """Loads the trained model from the provided directory."""
         model = super().load(
-            persistor, resource_name, meta, model_metadata, cached_component, **kwargs
+            persistor, resource_name, cached_component, **kwargs
         )
-        if not meta:
-            meta = {}
-        meta = train_utils.override_defaults(cls.defaults, meta)
-
-        model.responses = meta.get("responses", {})
-        model.all_retrieval_intents = meta.get("all_retrieval_intents", [])
+        component_config = kwargs
+        model.responses = component_config.get("responses", {})
+        model.all_retrieval_intents = component_config.get("all_retrieval_intents", [])
 
         return model
 

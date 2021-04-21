@@ -211,13 +211,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
         finetune_mode: bool = False,
         persistor: Optional[Persistor] = None,
+        **kwargs: Any,
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
-        super().__init__(component_config, persistor=persistor)
+        super().__init__(persistor=persistor, **kwargs)
 
         # parameters for sklearn's CountVectorizer
         self._load_count_vect_params()
@@ -891,23 +891,16 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         cls,
         persistor: Persistor,
         resource_name: Text,
-        component_config: Dict[Text, Any] = None,
-        model_metadata: Optional[Metadata] = None,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
         """Loads trained component (see parent class for full docstring)."""
-        if not component_config:
-            component_config = {}
-
-        component_config = rasa.utils.train_utils.override_defaults(
-            cls.defaults, component_config
-        )
+        component_config = kwargs
 
         filename = persistor.get_resource(resource_name, "count_features.pkl")
         if not os.path.exists(filename):
-            return cls(component_config, persistor=persistor)
+            return cls(persistor=persistor, **component_config)
 
         vocabulary = io_utils.json_unpickle(filename)
 
@@ -922,7 +915,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 component_config, vocabulary=vocabulary,
             )
 
-        ftr = cls(component_config, vectorizers, should_finetune, persistor=persistor)
+        ftr = cls(vectorizers, should_finetune, persistor=persistor, **component_config)
 
         # make sure the vocabulary has been loaded correctly
         for attribute in vectorizers:

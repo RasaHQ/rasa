@@ -10,18 +10,14 @@ from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 class Featurizer(Component):
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
         persistor: Optional[Persistor] = None,
+        **kwargs: Any,
     ) -> None:
-        if not component_config:
-            component_config = {}
+        super().__init__(persistor=persistor, **kwargs)
 
         # makes sure the alias name is set
         # Necessary for `unique_name` to be defined
-        self.component_config = component_config
-        component_config.setdefault(FEATURIZER_CLASS_ALIAS, self.unique_name)
-
-        super().__init__(component_config, persistor=persistor)
+        self.component_config.setdefault(FEATURIZER_CLASS_ALIAS, self.unique_name)
 
 
 class DenseFeaturizer(Featurizer):
