@@ -833,8 +833,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data = messages_to_data(some_messages)
 
         self._check_input_dimension_consistency(model_data)
-        #
-        # return model_data
+
         # keep one example for persisting and loading
         self._data_example = model_data.first_data_example()
 
