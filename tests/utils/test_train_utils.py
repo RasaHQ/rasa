@@ -22,6 +22,7 @@ from rasa.utils.tensorflow.constants import (
     MARGIN,
     AUTO,
     LINEAR_NORM,
+    TRIPLET,
 )
 from rasa.shared.exceptions import InvalidConfigException
 
@@ -93,15 +94,19 @@ def test_init_split_entities_config(
     "component_config, raises_exception",
     [
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, True),
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: TRIPLET}, True),
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: SOFTMAX}, False),
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, False),
         ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: MARGIN}, False),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: TRIPLET}, False),
         ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: SOFTMAX}, False),
         ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY}, False),
         ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: MARGIN}, True),
+        ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: TRIPLET}, True),
         ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: SOFTMAX}, True),
         ({MODEL_CONFIDENCE: INNER, LOSS_TYPE: CROSS_ENTROPY}, True),
         ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: MARGIN}, True),
+        ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: TRIPLET}, True),
         ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: SOFTMAX}, True),
         ({MODEL_CONFIDENCE: COSINE, LOSS_TYPE: CROSS_ENTROPY}, True),
     ],
@@ -141,9 +146,11 @@ def test_confidence_similarity_settings(
     "component_config, model_confidence",
     [
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, AUTO),
+        ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: TRIPLET}, AUTO),
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, SOFTMAX),
         ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY}, LINEAR_NORM,),
         ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: MARGIN}, AUTO),
+        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: TRIPLET}, AUTO),
     ],
 )
 def test_update_confidence_type(

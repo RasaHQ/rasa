@@ -35,6 +35,8 @@ from rasa.utils.tensorflow.constants import (
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
     LINEAR_NORM,
+    TRIPLET,
+    MARGIN,
 )
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -222,7 +224,7 @@ async def test_train_persist_load_with_different_settings(component_builder, tmp
     pipeline = [
         {"name": "WhitespaceTokenizer"},
         {"name": "CountVectorsFeaturizer"},
-        {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
+        {"name": "DIETClassifier", LOSS_TYPE: TRIPLET, EPOCHS: 1},
     ]
     await _train_persist_load_with_different_settings(
         pipeline, component_builder, tmpdir, should_finetune=False
@@ -434,9 +436,12 @@ async def test_inner_linear_normalization(
 
 @pytest.mark.parametrize(
     "classifier_params, output_length",
-    [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1}, LABEL_RANKING_LENGTH)],
+    [
+        ({LOSS_TYPE: TRIPLET, RANDOM_SEED: 42, EPOCHS: 1}, LABEL_RANKING_LENGTH),
+        ({LOSS_TYPE: MARGIN, RANDOM_SEED: 42, EPOCHS: 1}, LABEL_RANKING_LENGTH),
+    ],
 )
-async def test_margin_loss_is_not_normalized(
+async def test_triplet_loss_is_not_normalized(
     monkeypatch, component_builder, tmpdir, classifier_params, output_length
 ):
     pipeline = as_pipeline(

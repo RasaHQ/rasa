@@ -24,6 +24,8 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     RANKING_LENGTH,
     LOSS_TYPE,
+    MARGIN,
+    TRIPLET,
 )
 from rasa.utils import train_utils
 from rasa.shared.nlu.constants import TEXT
@@ -369,9 +371,13 @@ async def test_cross_entropy_with_linear_norm(
 
 
 @pytest.mark.parametrize(
-    "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
+    "classifier_params",
+    [
+        ({LOSS_TYPE: TRIPLET, RANDOM_SEED: 42, EPOCHS: 1}),
+        ({LOSS_TYPE: MARGIN, RANDOM_SEED: 42, EPOCHS: 1}),
+    ],
 )
-async def test_margin_loss_is_not_normalized(
+async def test_triplet_loss_is_not_normalized(
     monkeypatch: MonkeyPatch,
     component_builder: ComponentBuilder,
     tmp_path: Path,

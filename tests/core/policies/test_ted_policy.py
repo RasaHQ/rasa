@@ -37,6 +37,8 @@ from rasa.utils.tensorflow.constants import (
     COSINE,
     AUTO,
     LINEAR_NORM,
+    MARGIN,
+    TRIPLET,
 )
 from tests.core.test_policies import PolicyTestCollection
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -271,12 +273,12 @@ class TestTEDPolicy(PolicyTestCollection):
         )
 
 
-class TestTEDPolicyMargin(TestTEDPolicy):
+class TestTEDPolicyTriplet(TestTEDPolicy):
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> Policy:
         return TEDPolicy(
-            featurizer=featurizer, priority=priority, **{LOSS_TYPE: "margin"}
+            featurizer=featurizer, priority=priority, **{LOSS_TYPE: TRIPLET}
         )
 
     def test_similarity_type(self, trained_policy: TEDPolicy):
@@ -313,6 +315,15 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         assert len(prediction.probabilities) == default_domain.num_actions
         assert max(prediction.probabilities) <= 1.0
         assert min(prediction.probabilities) >= -1.0
+
+
+class TestTEDPolicyMargin(TestTEDPolicyTriplet):
+    def create_policy(
+        self, featurizer: Optional[TrackerFeaturizer], priority: int
+    ) -> Policy:
+        return TEDPolicy(
+            featurizer=featurizer, priority=priority, **{LOSS_TYPE: MARGIN}
+        )
 
 
 class TestTEDPolicyWithEval(TestTEDPolicy):
