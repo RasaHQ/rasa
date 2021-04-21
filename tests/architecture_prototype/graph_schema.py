@@ -10,6 +10,7 @@ from rasa.architecture_prototype.graph_components import (
     NLUMessageConverter,
     TrackerLoader,
 )
+from rasa.core.channels import UserMessage
 from rasa.core.policies import SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
@@ -268,7 +269,7 @@ predict_graph_schema = {
     "load_user_message": {
         "uses": MessageCreator,
         "fn": "create",
-        "config": {"text": "Hello"},
+        "config": {"message": UserMessage(text="hi")},
         "needs": {},
         "persist": False,
     },

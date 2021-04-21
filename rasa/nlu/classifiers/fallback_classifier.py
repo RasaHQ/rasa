@@ -39,7 +39,7 @@ class FallbackClassifier(IntentClassifier):
     def required_components(cls) -> List[Type[Component]]:
         return [IntentClassifier]
 
-    def process(self, message: Message, **kwargs: Any) -> Message:
+    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
         """Process an incoming message.
 
         This is the components chance to process an incoming
@@ -56,6 +56,8 @@ class FallbackClassifier(IntentClassifier):
             process.
 
         """
+        if message is None:
+            return None
 
         if not self._should_fallback(message):
             return message

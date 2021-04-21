@@ -449,11 +449,7 @@ class Component(metaclass=ComponentMetaclass):
     # This is an important feature for backwards compatibility of components.
     not_supported_language_list = None
 
-    def __init__(
-        self,
-        persistor: Optional[Persistor] = None,
-        **kwargs: Any,
-    ) -> None:
+    def __init__(self, persistor: Optional[Persistor] = None, **kwargs: Any,) -> None:
 
         self.component_config = kwargs
 
@@ -579,7 +575,7 @@ class Component(metaclass=ComponentMetaclass):
         """
         pass
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
         """Processes an incoming message.
 
         This is the components chance to process an incoming

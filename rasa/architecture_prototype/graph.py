@@ -1,7 +1,7 @@
 from collections import ChainMap
 import inspect
 from pathlib import Path
-from typing import Any, Text, Dict, List, Union, TYPE_CHECKING, Tuple
+from typing import Any, Text, Dict, List, Union, TYPE_CHECKING, Tuple, Optional
 
 import dask
 
@@ -132,19 +132,10 @@ class Persistor:
 class Model:
     def __init__(self, rasa_graph: Dict[Text, Any]) -> None:
         self._rasa_graph = rasa_graph
-
         self._predict_graph = convert_to_dask_graph(self._rasa_graph)
 
-        graph = self._predict_graph.copy()
-        graph = _drop_parameter_requirement(
-            graph, rasa_graph, "add_parsed_nlu_message", "parsed_message"
-        )
-        self._predict_graph_without_nlu = _minimal_graph(
-            graph, targets=["select_prediction"]
-        )
-
     def handle_message(
-        self, tracker: DialogueStateTracker, message: UserMessage
+        self, tracker: DialogueStateTracker, message: Optional[UserMessage]
     ) -> "PolicyPrediction":
         graph = self._predict_graph.copy()
 
@@ -152,16 +143,9 @@ class Model:
         graph["load_user_message"] = _graph_component_for_config(
             "load_user_message",
             self._rasa_graph["load_user_message"],
-            {"text": message.text},
+            {"message": message},
         )
 
-        return self._predict(graph, tracker)
-
-    def _predict(
-        self,
-        graph: Dict[Text, Tuple[RasaComponent, Text]],
-        tracker: DialogueStateTracker,
-    ) -> "PolicyPrediction":
         # Insert dialogue history into graph
         graph["load_history"] = _graph_component_for_config(
             "load_history", self._rasa_graph["load_history"], {"tracker": tracker}
@@ -172,9 +156,7 @@ class Model:
         return result["select_prediction"]
 
     def predict_next_action(self, tracker: DialogueStateTracker,) -> "PolicyPrediction":
-        graph = self._predict_graph_without_nlu.copy()
-
-        return self._predict(graph, tracker)
+        return self.handle_message(tracker, message=None)
 
 
 def _graph_component_for_config(

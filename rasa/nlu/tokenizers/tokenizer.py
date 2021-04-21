@@ -86,9 +86,7 @@ class Tokenizer(Component):
         raise NotImplementedError
 
     def process_training_data(
-        self,
-        training_data: TrainingData,
-        **kwargs: Any,
+        self, training_data: TrainingData, **kwargs: Any,
     ) -> TrainingData:
         """Tokenize all training data."""
 
@@ -106,8 +104,11 @@ class Tokenizer(Component):
 
         return training_data
 
-    def process(self, message: Message, **kwargs: Any) -> Message:
+    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
         """Tokenize the incoming message."""
+        if message is None:
+            return None
+
         for attribute in MESSAGE_ATTRIBUTES:
             if isinstance(message.get(attribute), str):
                 if attribute in [INTENT, ACTION_NAME, RESPONSE_IDENTIFIER_DELIMITER]:

@@ -49,7 +49,9 @@ class EntitySynonymMapper(EntityExtractor):
 
         return self.persist()
 
-    def process(self, message: Message, **kwargs: Any) -> Message:
+    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
+        if message is None:
+            return None
 
         updated_entities = message.get(ENTITIES, [])[:]
         self.replace_synonyms(updated_entities)

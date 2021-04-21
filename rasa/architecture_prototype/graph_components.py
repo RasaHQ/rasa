@@ -5,7 +5,6 @@ from typing import Optional, Text, Dict, List
 from rasa.architecture_prototype.graph import Persistor
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -148,11 +147,11 @@ class MessageToE2EFeatureConverter(GraphComponent):
 
 
 class MessageCreator(GraphComponent):
-    def __init__(self, text):
-        self._text = text
+    def __init__(self, message: Optional[UserMessage]) -> None:
+        self._message = message
 
-    def create(self) -> UserMessage:
-        return UserMessage(text=self._text, output_channel=CollectingOutputChannel())
+    def create(self) -> Optional[UserMessage]:
+        return self._message
 
 
 class TrackerLoader(GraphComponent):

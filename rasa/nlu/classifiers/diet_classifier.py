@@ -4,7 +4,6 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
-import os
 import scipy.sparse
 import tensorflow as tf
 
@@ -962,8 +961,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return entities
 
-    def process(self, message: Message, **kwargs: Any) -> Message:
+    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
         """Augments the message with intents, entities, and diagnostic data."""
+        if message is None:
+            return None
+
         out = self._predict(message)
 
         if self.component_config[INTENT_CLASSIFICATION]:

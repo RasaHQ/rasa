@@ -760,8 +760,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         return training_data
 
-    def process(self, message: Message, **kwargs: Any,) -> Message:
+    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
         """Process incoming message and compute and set features"""
+        if message is None:
+            return None
 
         if self.vectorizers is None:
             logger.error(

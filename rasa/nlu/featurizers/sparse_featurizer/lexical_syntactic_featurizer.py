@@ -109,7 +109,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
         return training_data
 
-    def process(self, message: Message, **kwargs: Any) -> Message:
+    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
+        if message is None:
+            return None
+
         self._create_sparse_features(message)
         return message
 
@@ -295,10 +298,14 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     ) -> "LexicalSyntacticFeaturizer":
         """Loads trained component (see parent class for full docstring)."""
 
-        feature_to_idx_file = Path(persistor.get_resource(resource_name, "feature_to_idx_dict.pkl"))
+        feature_to_idx_file = Path(
+            persistor.get_resource(resource_name, "feature_to_idx_dict.pkl")
+        )
         feature_to_idx_dict = io_utils.json_unpickle(feature_to_idx_file)
 
-        return LexicalSyntacticFeaturizer(feature_to_idx_dict=feature_to_idx_dict, persistor=persistor, **kwargs)
+        return LexicalSyntacticFeaturizer(
+            feature_to_idx_dict=feature_to_idx_dict, persistor=persistor, **kwargs
+        )
 
     def persist(self,) -> Text:
         """Persist this model into the passed directory.
