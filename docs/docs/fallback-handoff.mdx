@@ -187,8 +187,6 @@ The following snippet is an implementation of a custom action which does the sam
 ```python title="actions.py"
 from typing import Any, Text, Dict, List
 
-from rasa.shared.core.constants import ACTION_DEFAULT_FALLBACK_NAME
-
 from rasa_sdk import Action, Tracker
 from rasa_sdk.events import UserUtteranceReverted
 from rasa_sdk.executor import CollectingDispatcher
@@ -198,7 +196,7 @@ class ActionDefaultFallback(Action):
     of the dialogue"""
 
     def name(self) -> Text:
-        return ACTION_DEFAULT_FALLBACK_NAME
+        return "action_default_fallback"
 
     async def run(
         self,
@@ -303,15 +301,13 @@ For example, if you want the bot to call a human and stop interacting with the u
 ```python title="actions.py"
 from typing import Any, Dict, List, Text
 
-from rasa.shared.core.constants import ACTION_DEFAULT_FALLBACK_NAME
-
 from rasa_sdk import Action, Tracker
 from rasa_sdk.events import UserUtteranceReverted
 from rasa_sdk.executor import CollectingDispatcher
 
 class ActionDefaultFallback(Action):
     def name(self) -> Text:
-        return ACTION_DEFAULT_FALLBACK_NAME
+        return "action_default_fallback"
 
     def run(
         self,
