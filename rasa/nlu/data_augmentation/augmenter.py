@@ -7,6 +7,7 @@ import logging
 
 from rasa.model import get_model
 import rasa.shared.utils.components
+import rasa.shared.utils.io
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
