@@ -176,14 +176,11 @@ class FormAction(LoopAction):
             The value/s found in `ignored_intents` parameter in the `domain.yml`
             (under forms).
         """
-        if domain.forms:
-            ignored_intents = domain.forms[self.name()].get(IGNORED_INTENTS, [])
-            if not isinstance(ignored_intents, list):
-                ignored_intents = [ignored_intents]
+        ignored_intents = domain.forms[self.name()].get(IGNORED_INTENTS, [])
+        if not isinstance(ignored_intents, list):
+            ignored_intents = [ignored_intents]
 
-            return ignored_intents
-        else:
-            return []
+        return ignored_intents
 
     def intent_is_desired(
         self,
@@ -377,13 +374,11 @@ class FormAction(LoopAction):
 
         # get mapping for requested slot
         requested_slot_mappings = self.get_mappings_for_slot(slot_to_fill, domain)
-
         for requested_slot_mapping in requested_slot_mappings:
             logger.debug(f"Got mapping '{requested_slot_mapping}'")
 
             if self.intent_is_desired(requested_slot_mapping, tracker, domain):
                 mapping_type = requested_slot_mapping["type"]
-
                 if mapping_type == str(SlotMapping.FROM_ENTITY):
                     value = self.get_entity_value(
                         requested_slot_mapping.get("entity"),

@@ -725,7 +725,26 @@ def test_temporary_tracker():
 
 def test_extract_requested_slot_default():
     """Test default extraction of a slot value from entity with the same name."""
-    form = FormAction("some form", None)
+    form_name = "some_form"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_dict(
+        {
+            "forms": {
+                form_name: {
+                    REQUIRED_SLOTS_KEY: {
+                        "some_slot": [
+                            {
+                                "type": "from_entity",
+                                "entity": "some_slot",
+                                "value": "some_value",
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    )
 
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -739,7 +758,7 @@ def test_extract_requested_slot_default():
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, Domain.empty(), "some_slot")
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     assert slot_values == {"some_slot": "some_value"}
 
 
@@ -1606,20 +1625,3 @@ def test_ignored_intents_with_other_type_of_slots(
 
     slot_values = form.extract_other_slots(tracker, domain)
     assert slot_values == {}
-
-
-def test_form_with_no_required_slots_keyword():
-    domain = Domain.from_dict(
-        {
-            "forms": {
-                "some_form": {
-                    "some_slot": [{"type": "from_text", "intent": "some_intent",}],
-                }
-            }
-        }
-    )
-
-    assert (
-        domain.forms["some_form"]["required_slots"]["some_slot"][0]["type"]
-        == "from_text"
-    )

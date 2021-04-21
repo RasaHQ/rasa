@@ -1353,3 +1353,21 @@ def test_ignored_intents_slot_mappings_invalid_domain():
     }
     with pytest.raises(InvalidDomain):
         Domain.from_dict(domain_as_dict)
+
+
+def test_form_with_no_required_slots_keyword():
+    with pytest.warns(FutureWarning):
+        domain = Domain.from_dict(
+            {
+                "forms": {
+                    "some_form": {
+                        "some_slot": [{"type": "from_text", "intent": "some_intent",}],
+                    }
+                }
+            }
+        )
+
+    assert (
+        domain.forms["some_form"]["required_slots"]["some_slot"][0]["type"]
+        == "from_text"
+    )
