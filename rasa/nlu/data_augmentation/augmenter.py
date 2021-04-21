@@ -30,6 +30,7 @@ from rasa.shared.nlu.constants import (
     TEXT,
     VOCABULARY,
 )
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 import rasa.utils.plotting
 
 logger = logging.getLogger(__name__)
@@ -595,7 +596,7 @@ def _run_data_augmentation(
             *without* data augmentation.
     """
     # Store augmented training data to file
-    nlu_training_data.persist_nlu(filename=nlu_training_file)
+    RasaYAMLWriter().dump(target=nlu_training_file, training_data=nlu_training_data)
 
     # Run NLU train/test loop
     intent_report = _train_test_nlu_model(
