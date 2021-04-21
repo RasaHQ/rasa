@@ -475,7 +475,6 @@ class MessageStreamDataGenerator(tf.keras.utils.Sequence):
         Returns:
             A batch (tuple of input data and target data).
         """
-        print(self, index)
         messages = []
         while len(messages) < self.batch_size:
             try:
@@ -483,62 +482,10 @@ class MessageStreamDataGenerator(tf.keras.utils.Sequence):
             except StopIteration:
                 break
         data = self.message_to_data_function(messages)
-        return self.prepare_batch(data), None
+        return RasaDataGenerator.prepare_batch(data), None
 
     def on_epoch_end(self) -> None:
         """Update the data after every epoch."""
         self.current_message_stream = self.training_data.stream_featurized_messages(
             "test2"
         )
-
-    @staticmethod
-    def prepare_batch(
-        data: Data,
-        start: Optional[int] = None,
-        end: Optional[int] = None,
-        tuple_sizes: Optional[Dict[Text, int]] = None,
-    ) -> Tuple[Optional[np.ndarray]]:
-        """Slices model data into batch using given start and end value.
-
-        Args:
-            data: The data to prepare.
-            start: The start index of the batch
-            end: The end index of the batch
-            tuple_sizes: In case the feature is not present we propagate the batch with
-              None. Tuple sizes contains the number of how many None values to add for
-              what kind of feature.
-
-        Returns:
-            The features of the batch.
-        """
-        batch_data = []
-
-        for key, attribute_data in data.items():
-            for sub_key, f_data in attribute_data.items():
-                # add None for not present values during processing
-                if not f_data:
-                    if tuple_sizes:
-                        batch_data += [None] * tuple_sizes[key]
-                    else:
-                        batch_data.append(None)
-                    continue
-
-                for v in f_data:
-                    if start is not None and end is not None:
-                        _data = v[start:end]
-                    elif start is not None:
-                        _data = v[start:]
-                    elif end is not None:
-                        _data = v[:end]
-                    else:
-                        _data = v[:]
-
-                    if _data.is_sparse:
-                        batch_data.extend(
-                            RasaDataGenerator._scipy_matrix_to_values(_data)
-                        )
-                    else:
-                        batch_data.append(RasaDataGenerator._pad_dense_data(_data))
-
-        # len of batch_data is equal to the number of keys in model data
-        return tuple(batch_data)

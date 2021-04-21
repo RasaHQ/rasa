@@ -809,21 +809,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> None:
         """Train the embedding intent classifier on a data set."""
         self.preprocess_train_data(training_data)
-        # if model_data.is_empty():
-        #     logger.debug(
-        #         f"Cannot train '{self.__class__.__name__}'. No data was provided. "
-        #         f"Skipping training of the classifier."
-        #     )
-        #     return
-        #
-        # if self.component_config.get(INTENT_CLASSIFICATION):
-        #     if not self._check_enough_labels(model_data):
-        #         logger.error(
-        #             f"Cannot train '{self.__class__.__name__}'. "
-        #             f"Need at least 2 different intent classes. "
-        #             f"Skipping training of classifier."
-        #         )
-        #         return
+
         if self.component_config.get(ENTITY_RECOGNITION):
             self.check_correct_entity_annotations(training_data)
 
@@ -842,20 +828,19 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         some_messages = []
         for msg in featurized_messages_stream:
             some_messages.append(msg)
-            # if len(some_messages) > 40:
-            #     break
+            break
 
-        model_data2 = messages_to_data(some_messages)
+        model_data = messages_to_data(some_messages)
 
-        self._check_input_dimension_consistency(model_data2)
+        self._check_input_dimension_consistency(model_data)
         #
         # return model_data
         # keep one example for persisting and loading
-        self._data_example = model_data2.first_data_example()
+        self._data_example = model_data.first_data_example()
 
         if not self.finetune_mode:
             # No pre-trained model to load from. Create a new instance of the model.
-            self.model = self._instantiate_model_class(model_data2)
+            self.model = self._instantiate_model_class(model_data)
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
@@ -867,14 +852,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             None,
         )
 
-        # data_generator, validation_data_generator = train_utils.create_data_generators(
-        #     model_data2,
-        #     self.component_config[BATCH_SIZES],
-        #     self.component_config[EPOCHS],
-        #     self.component_config[BATCH_STRATEGY],
-        #     self.component_config[EVAL_NUM_EXAMPLES],
-        #     self.component_config[RANDOM_SEED],
-        # )
         callbacks = train_utils.create_common_callbacks(
             self.component_config[EPOCHS],
             self.component_config[TENSORBOARD_LOG_DIR],
