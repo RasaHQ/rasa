@@ -10,7 +10,6 @@ from typing import Callable, Text, Dict, List
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.pytester import RunResult, Testdir
 from rasa.cli import data
-from rasa.cli.data import augment_nlu_data
 from rasa.core.constants import (
     DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
     DEFAULT_NLU_FALLBACK_THRESHOLD,
@@ -263,7 +262,7 @@ def test_rasa_data_augment_nlu_invalid_parameters(
     setattr(namespace, "max_paraphrase_sim_score", max_paraphrase_sim_score)
 
     with pytest.raises(InvalidParameterException):
-        augment_nlu_data(namespace)
+        data.augment_nlu_data(namespace)
 
 
 @pytest.mark.parametrize(
@@ -336,7 +335,7 @@ def test_rasa_data_augment_nlu_invalid_config(
     setattr(namespace, "max_paraphrase_sim_score", max_paraphrase_sim_score)
 
     with pytest.raises(InvalidConfigException):
-        augment_nlu_data(namespace)
+        data.(namespace)
 
 
 @pytest.mark.parametrize(
@@ -453,7 +452,7 @@ def test_rasa_data_augment_nlu_invalid_paths(
     setattr(namespace, "max_paraphrase_sim_score", max_paraphrase_sim_score)
 
     with pytest.raises(FileNotFoundException):
-        augment_nlu_data(namespace)
+        data.augment_nlu_data(namespace)
 
 
 @pytest.mark.parametrize(
