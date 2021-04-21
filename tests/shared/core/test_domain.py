@@ -172,7 +172,7 @@ async def test_create_train_data_unfeaturized_entities():
 def test_domain_from_template(domain: Domain):
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
-    assert len(domain.action_names_or_texts) == 16
+    assert len(domain.action_names_or_texts) == 17
 
 
 def test_avoid_action_repetition(domain: Domain):

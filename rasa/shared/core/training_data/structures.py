@@ -19,7 +19,11 @@ from typing import (
 )
 
 import rasa.shared.utils.io
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
+)
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -183,6 +187,7 @@ class StoryStep:
             if (
                 self.is_action_listen(event)
                 or self.is_action_session_start(event)
+                or self.is_action_unlikely_intent(event)
                 or isinstance(event, SessionStarted)
             ):
                 continue
@@ -213,7 +218,16 @@ class StoryStep:
         return type(event) == ActionExecuted and event.action_name == ACTION_LISTEN_NAME
 
     @staticmethod
+    def is_action_unlikely_intent(event: Event) -> bool:
+        """Checks if the executed action is a `action_unlikely_intent`."""
+        return (
+            type(event) == ActionExecuted
+            and event.action_name == ACTION_UNLIKELY_INTENT_NAME
+        )
+
+    @staticmethod
     def is_action_session_start(event: Event) -> bool:
+        """Checks if the executed action is a `action_session_start`."""
         # this is not an `isinstance` because
         # we don't want to allow subclasses here
         return (

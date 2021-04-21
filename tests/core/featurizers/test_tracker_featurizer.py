@@ -42,7 +42,7 @@ def test_convert_labels_to_ids(domain: Domain):
     actual_output = tracker_featurizer._convert_labels_to_ids(
         trackers_as_actions, domain
     )
-    expected_output = np.array([np.array([14, 11]), np.array([14, 12, 13])])
+    expected_output = np.array([np.array([15, 12]), np.array([15, 13, 14])])
 
     assert expected_output.size == actual_output.size
     for expected_array, actual_array in zip(expected_output, actual_output):

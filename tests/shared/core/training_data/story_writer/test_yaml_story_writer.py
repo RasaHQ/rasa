@@ -4,7 +4,11 @@ from typing import Text
 
 import pytest
 
-from rasa.shared.core.constants import ACTION_SESSION_START_NAME, ACTION_LISTEN_NAME
+from rasa.shared.core.constants import (
+    ACTION_SESSION_START_NAME,
+    ACTION_LISTEN_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -114,6 +118,35 @@ def test_yaml_writer_dumps_user_messages():
           - action: utter_greet
 
     """
+        ).strip()
+    )
+
+
+def test_yaml_writer_doesnt_dump_action_unlikely_intent():
+    events = [
+        UserUttered("Hello", {"name": "greet"}),
+        ActionExecuted("utter_hello"),
+        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME, metadata={"key1": "value1"}),
+        ActionExecuted("utter_bye"),
+    ]
+    tracker = DialogueStateTracker.from_events("default", events)
+    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps, is_test_story=True)
+
+    assert (
+        dump.strip()
+        == textwrap.dedent(
+            """
+    version: "2.0"
+    stories:
+    - story: default
+      steps:
+      - intent: greet
+        user: |-
+          Hello
+      - action: utter_hello
+      - action: utter_bye
+
+"""
         ).strip()
     )
 

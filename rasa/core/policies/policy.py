@@ -478,6 +478,7 @@ class PolicyPrediction:
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
         hide_rule_turn: bool = False,
+        action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Creates a `PolicyPrediction`.
 
@@ -503,6 +504,8 @@ class PolicyPrediction:
                 fine-tuning purposes.
             hide_rule_turn: `True` if the prediction was made by the rules which
                 do not appear in the stories
+            action_metadata: Specifies additional metadata that can be passed
+                by policies.
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
@@ -513,6 +516,7 @@ class PolicyPrediction:
         self.is_no_user_prediction = is_no_user_prediction
         self.diagnostic_data = diagnostic_data or {}
         self.hide_rule_turn = hide_rule_turn
+        self.action_metadata = action_metadata
 
     @staticmethod
     def for_action_name(
@@ -557,6 +561,7 @@ class PolicyPrediction:
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
             and self.is_no_user_prediction == other.is_no_user_prediction
             and self.hide_rule_turn == other.hide_rule_turn
+            and self.action_metadata == other.action_metadata
             # We do not compare `diagnostic_data`, because it has no effect on the
             # action prediction.
         )
