@@ -16,7 +16,7 @@ jobs:
       uses: peter-evans/create-or-update-project-card@3d5056faa1b952f322b49b5d5f37adefd702e3e1
 
       with:
-        token: ${{ secrets.RASABOT_ASSIGN_ISSUE_RESEARCH_BOARD_TOKEN }}
+        token: ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}
         # https://github.com/orgs/RasaHQ/projects/40
         project-location: RasaHQ
         project-number: 40

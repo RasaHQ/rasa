@@ -266,7 +266,7 @@ jobs:
           # Add this issue to a project column
           curl \
             -X POST \
-            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUE_RESEARCH_BOARD_TOKEN }}" \
+            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}" \
             -H 'Accept: application/vnd.github.inertia-preview+json' \
             -d "{\"content_type\": \"Issue\", \"content_id\": $ISSUE_ID}" \
             "https://api.github.com/projects/columns/${{ secrets.RESEARCH_BOARD_INBOX_COLUMN_ID }}/cards"
@@ -419,7 +419,7 @@ jobs:
           # Add this issue to a project column
           curl \
             -X POST \
-            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUE_RESEARCH_BOARD_TOKEN }}" \
+            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}" \
             -H 'Accept: application/vnd.github.inertia-preview+json' \
             -d "{\"content_type\": \"Issue\", \"content_id\": $ISSUE_ID}" \
             "https://api.github.com/projects/columns/${{ secrets.RESEARCH_BOARD_INBOX_COLUMN_ID }}/cards"
