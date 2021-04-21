@@ -79,7 +79,7 @@ def update_similarity_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
     if config.get(SIMILARITY_TYPE) == AUTO:
         if config[LOSS_TYPE] == CROSS_ENTROPY:
             config[SIMILARITY_TYPE] = INNER
-        elif config[LOSS_TYPE] == MARGIN:
+        elif config[LOSS_TYPE] in [MARGIN, TRIPLET]:
             config[SIMILARITY_TYPE] = COSINE
 
     return config
@@ -489,11 +489,23 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
     if component_config[LOSS_TYPE] == MARGIN:
         rasa.shared.utils.io.raise_warning(
             f"Overriding defaults by setting {MODEL_CONFIDENCE} to "
-            f"{AUTO} as {LOSS_TYPE} is set to {MARGIN} in the configuration. This means that "
-            f"model's confidences will be computed as cosine similarities. "
-            f"Users are encouraged to shift to cross entropy loss by setting `{LOSS_TYPE}={CROSS_ENTROPY}`."
+            f"{AUTO} as {LOSS_TYPE} is set to {MARGIN} in the configuration. "
+            f"This means that model's confidences will be computed as "
+            f"cosine similarities. "
+            f"Users are encouraged to shift to cross entropy loss "
+            f"by setting `{LOSS_TYPE}={CROSS_ENTROPY}`."
         )
         component_config[MODEL_CONFIDENCE] = AUTO
+
+    if component_config[LOSS_TYPE] == TRIPLET:
+        rasa.shared.utils.io.raise_warning(
+            f"Overriding defaults by setting {MODEL_CONFIDENCE} to "
+            f"{AUTO} as {LOSS_TYPE} is set to {MARGIN} in the configuration. "
+            f"This means that model's confidences will be computed as "
+            f"cosine similarities. "
+        )
+        component_config[MODEL_CONFIDENCE] = AUTO
+
     return component_config
 
 
@@ -594,7 +606,7 @@ def _check_similarity_loss_setting(component_config: Dict[Text, Any]) -> None:
         component_config[SIMILARITY_TYPE] == COSINE
         and component_config[LOSS_TYPE] == CROSS_ENTROPY
         or component_config[SIMILARITY_TYPE] == INNER
-        and component_config[LOSS_TYPE] == MARGIN
+        and component_config[LOSS_TYPE] in [MARGIN, TRIPLET]
     ):
         rasa.shared.utils.io.raise_warning(
             f"`{SIMILARITY_TYPE}={component_config[SIMILARITY_TYPE]}`"
@@ -602,7 +614,7 @@ def _check_similarity_loss_setting(component_config: Dict[Text, Any]) -> None:
             f"is not a recommended setting as it may not lead to best results."
             f"Ideally use `{SIMILARITY_TYPE}={INNER}`"
             f" and `{LOSS_TYPE}={CROSS_ENTROPY}` or"
-            f"`{SIMILARITY_TYPE}={COSINE}` and `{LOSS_TYPE}={MARGIN}`.",
+            f"`{SIMILARITY_TYPE}={COSINE}` and `{LOSS_TYPE}={TRIPLET}`.",
             category=UserWarning,
         )
 
