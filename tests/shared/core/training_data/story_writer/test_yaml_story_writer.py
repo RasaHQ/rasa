@@ -196,6 +196,7 @@ def test_yaml_writer_stories_to_yaml_with_null_entities(domain: Domain):
       - intent: test_intent
         entities:
         - test_entity: null
+        - test_entity2: false
     """
     )
 
@@ -204,6 +205,9 @@ def test_yaml_writer_stories_to_yaml_with_null_entities(domain: Domain):
     assert isinstance(result, OrderedDict)
     assert "stories" in result
     assert len(result["stories"]) == 1
+    entities = result["stories"][0]["steps"][0]["entities"]
+    assert entities[0] == "test_entity"
+    assert entities[1] == OrderedDict({"test_entity2": False})
 
 
 def test_writing_end_to_end_stories(domain: Domain):
