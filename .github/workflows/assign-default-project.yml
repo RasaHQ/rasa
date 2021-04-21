@@ -13,7 +13,7 @@ jobs:
     steps:
     - name: Assign vulnerability scans or Sentry issues to Enable
       if: contains(github.event.issue.labels.*.name, 'tool:trivy') || contains(github.event.issue.labels.*.name, 'tool:sentry')
-      uses: peter-evans/create-or-update-project-card@3d5056faa1b952f322b49b5d5f37adefd702e3e1
+      uses: m-vdb/create-or-update-project-card@9c632af4932aabf8115780d762841f3ca07f7b6b
 
       with:
         token: ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}
