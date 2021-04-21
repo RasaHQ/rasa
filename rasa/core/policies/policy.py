@@ -504,7 +504,7 @@ class PolicyPrediction:
                 fine-tuning purposes.
             hide_rule_turn: `True` if the prediction was made by the rules which
                 do not appear in the stories
-            action_metadata: Specifies an additional metadata that can be passed
+            action_metadata: Specifies additional metadata that can be passed
                 by policies.
         """
         self.probabilities = probabilities

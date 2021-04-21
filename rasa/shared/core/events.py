@@ -1473,7 +1473,7 @@ class ActionExecuted(Event):
 
         super().__init__(timestamp, metadata)
 
-    def __members(self) -> Tuple[Optional[Text], Optional[Text], Text]:
+    def __members__(self) -> Tuple[Optional[Text], Optional[Text], Text]:
         meta_no_nones = {k: v for k, v in self.metadata.items() if v is not None}
         return (
             self.action_name,
@@ -1493,14 +1493,14 @@ class ActionExecuted(Event):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(self.__members())
+        return hash(self.__members__())
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, ActionExecuted):
             return NotImplemented
 
-        return self.__members() == other.__members()
+        return self.__members__() == other.__members__()
 
     def as_story_string(self) -> Text:
         """Returns event in Markdown format."""
