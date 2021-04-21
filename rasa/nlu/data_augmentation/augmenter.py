@@ -69,7 +69,7 @@ def _collect_intents_for_data_augmentation(
     Returns:
         The set of intent names for which data augmentation will be performed.
     """
-    num_intents = len(nlu_training_data.number_of_examples_per_intent)
+    num_intents = len(nlu_training_data.intents)
     num_intents_to_augment = round(num_intents * intent_proportion)
 
     # Determine low data, low performing and frequently confused intents
