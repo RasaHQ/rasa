@@ -213,7 +213,7 @@ def _add_data_augment_parsers(
         "augment",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         parents=parents,
-        help="Performs data augmentation.",
+        help="Performs NLU training data augmentation.",
     )
     arguments.set_augment_arguments(augment_parser)
 
