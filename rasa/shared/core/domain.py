@@ -678,6 +678,21 @@ class Domain:
             # dict with slot mappings
             return list(forms.keys()), forms, []
 
+        if isinstance(forms, list) and (not forms or isinstance(forms[0], str)):
+            # list of form names (Rasa Open Source 1 format)
+            rasa.shared.utils.io.raise_warning(
+                "The `forms` section in the domain used the old Rasa Open Source 1 "
+                "list format to define forms. Rasa Open Source will be configured to "
+                "use the deprecated `FormAction` within the Rasa SDK. If you want to "
+                "use the new Rasa Open Source 2 `FormAction` adapt your `forms` "
+                "section as described in the documentation. Support for the "
+                "deprecated `FormAction` in the Rasa SDK will be removed in Rasa Open "
+                "Source 3.0.",
+                docs=rasa.shared.constants.DOCS_URL_FORMS,
+                category=FutureWarning,
+            )
+            return forms, {form_name: {} for form_name in forms}, forms
+
         rasa.shared.utils.io.raise_warning(
             f"The `forms` section in the domain needs to contain a dictionary. "
             f"Instead found an object of type '{type(forms)}'.",
