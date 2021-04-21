@@ -333,31 +333,6 @@ def _validate_augment_nlu_args(args: argparse.Namespace) -> None:
             "The argument 'intent_proportion' must be greater than 0 and smaller than 1!"
         )
 
-    if not os.path.exists(args.nlu_training_data):
-        raise FileNotFoundException(
-            f"The NLU training data could not be found at: {args.nlu_training_data}!"
-        )
-
-    if not os.path.exists(args.nlu_evaluation_data):
-        raise FileNotFoundException(
-            f"The NLU evaluation data could not be found at: {args.nlu_evaluation_data}!"
-        )
-
-    if not os.path.exists(args.nlu_classification_report):
-        raise FileNotFoundException(
-            f"The NLU classification report could not be found at: {args.nlu_classification_report}!"
-        )
-
-    if not os.path.exists(args.paraphrases):
-        raise FileNotFoundException(
-            f"The Paraphrase data could not be found at: {args.paraphrases}!"
-        )
-    print("CONFIG:", args.config)
-    if not os.path.exists(args.config):
-        raise FileNotFoundException(
-            f"The NLU config file could not be found at: {args.config}!"
-        )
-
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
     """Validates either the story structure or the entire project.

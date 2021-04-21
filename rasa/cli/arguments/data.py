@@ -99,30 +99,34 @@ def set_augment_arguments(parser: argparse.ArgumentParser) -> None:
 
     parser.add_argument(
         "--nlu-training-data",
-        type=str,
         help="File containing your NLU training data, i.e. the train set generated with the `rasa data split nlu` "
         "command.",
+        required=True,
+        type=argparse.FileType("r", encoding="UTF-8")
     )
 
     parser.add_argument(
         "--nlu-evaluation-data",
-        type=str,
         help="File containing your NLU evaluation data, i.e. the test set generated with the `rasa data split nlu` "
         "command.",
+        required=True,
+        type=argparse.FileType("r", encoding="UTF-8")
     )
 
     parser.add_argument(
         "--nlu-classification-report",
         default=INTENT_REPORT_FILE_NAME,
-        type=str,
         help="File containing your NLU classification report.",
+        required=True,
+        type=argparse.FileType("r", encoding="UTF-8")
     )
 
     parser.add_argument(
         "--paraphrases",
-        type=str,
         help="File containing your paraphrases generated from the paraphraser repository: "
-        "https://github.com/RasaHQ/rasa/pull/7584.",
+        "https://github.com/RasaHQ/paraphraser.",
+        required=True,
+        type=argparse.FileType("r", encoding="UTF-8")
     )
 
     parser.add_argument(
