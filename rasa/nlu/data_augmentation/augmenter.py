@@ -578,7 +578,7 @@ def _run_data_augmentation(
     output_directory: Text,
     config: Text,
     nlu_evaluation_data: TrainingData,
-    classification_report_no_augmentation: Dict[Text, Dict[Text, float]],
+    classification_report_no_augmentation: Dict[Text, Any],
 ) -> None:
     """Runs the NLU train/test cycle with data augmentation.
 
