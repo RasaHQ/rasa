@@ -20,7 +20,20 @@ import rasa.utils.common
 import rasa.core.training
 
 
-class ProjectReader:
+class GraphComponentMetaclass(type):
+    """Metaclass with `name` class property."""
+
+    @property
+    def name(cls) -> Text:
+        """The name property is a function of the class - its __name__."""
+        return cls.__name__
+
+
+class GraphComponent(metaclass=GraphComponentMetaclass):
+    pass
+
+
+class ProjectReader(GraphComponent):
     def __init__(self, project: Text) -> None:
         self._project = project
 
@@ -69,7 +82,7 @@ class StoryGraphReader(ProjectReader):
         return rasa.utils.common.run_in_loop(importer.get_stories())
 
 
-class TrackerGenerator:
+class TrackerGenerator(GraphComponent):
     def generate(
         self, domain: Domain, story_graph: StoryGraph
     ) -> List[TrackerWithCachedStates]:
@@ -77,7 +90,7 @@ class TrackerGenerator:
         return rasa.utils.common.run_in_loop(generated_coroutine)
 
 
-class StoryToTrainingDataConverter:
+class StoryToTrainingDataConverter(GraphComponent):
     def convert(self, story_graph: StoryGraph) -> TrainingData:
         messages = []
         for tracker in story_graph.story_steps:
@@ -88,7 +101,7 @@ class StoryToTrainingDataConverter:
         return TrainingData(training_examples=messages)
 
 
-class MessageToE2EFeatureConverter:
+class MessageToE2EFeatureConverter(GraphComponent):
     def convert(self, training_data: TrainingData) -> Dict[Text, Message]:
         additional_features = {}
         for message in training_data.training_examples:
@@ -102,7 +115,7 @@ class MessageToE2EFeatureConverter:
         return additional_features
 
 
-class MessageCreator:
+class MessageCreator(GraphComponent):
     def __init__(self, text):
         self._text = text
 
@@ -110,7 +123,7 @@ class MessageCreator:
         return UserMessage(text=self._text, output_channel=CollectingOutputChannel())
 
 
-class TrackerLoader:
+class TrackerLoader(GraphComponent):
     def __init__(self, tracker: DialogueStateTracker) -> None:
         self._tracker = tracker
 
@@ -118,12 +131,12 @@ class TrackerLoader:
         return self._tracker
 
 
-class NLUMessageConverter:
+class NLUMessageConverter(GraphComponent):
     def convert(self, message: UserMessage) -> Message:
         return Message.build(message.text)
 
 
-class NLUPredictionToHistoryAdder:
+class NLUPredictionToHistoryAdder(GraphComponent):
     def merge(
         self,
         tracker: DialogueStateTracker,
@@ -146,3 +159,30 @@ class NLUPredictionToHistoryAdder:
                 domain,
             )
         return tracker
+
+
+components = [
+    ProjectReader,
+    TrainingDataReader,
+    DomainReader,
+    StoryGraphReader,
+    TrackerGenerator,
+    StoryToTrainingDataConverter,
+    MessageToE2EFeatureConverter,
+    MessageCreator,
+    TrackerLoader,
+    NLUMessageConverter,
+    NLUPredictionToHistoryAdder,
+]
+registry = {c.name: c for c in components}
+
+
+class GraphComponentNotFound(Exception):
+    pass
+
+
+def load_graph_component(name: Text):
+    if name not in registry:
+        raise GraphComponentNotFound()
+
+    return registry[name]

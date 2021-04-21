@@ -1,6 +1,5 @@
 from collections import ChainMap
 import inspect
-import json
 from pathlib import Path
 from typing import Any, Text, Dict, List, Union
 
@@ -166,6 +165,3 @@ def visualise_as_dask_graph(graph_schema: Dict[Text, Any], filename: Text) -> No
     dask_graph = convert_to_dask_graph(graph_schema)
     dask.visualize(dask_graph, filename=filename)
 
-
-def serialize_graph_schema(graph_schema: Dict[Text, Any]) -> Text:
-    return json.dumps(graph_schema)
