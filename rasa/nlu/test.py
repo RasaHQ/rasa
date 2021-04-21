@@ -656,7 +656,7 @@ def create_intent_report(
             given.
 
     Returns:
-        Dictionary with evaluation results.
+        Evaluation results.
     """
     # remove empty intent targets
     num_examples = len(intent_results)
