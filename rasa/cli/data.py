@@ -13,7 +13,7 @@ from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
 import rasa.cli.utils
 import rasa.nlu.convert
-from rasa.nlu.data_augmentation.augmenter import nlu_data_augmentation
+from rasa.nlu.data_augmentation.augmenter import augment_nlu_training_data
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
@@ -300,7 +300,7 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     classification_report = rasa.shared.utils.io.read_json_file(report_file)
 
     # Run augmentation
-    nlu_data_augmentation(
+    augment_nlu_training_data(
         nlu_training_data=nlu_training_data,
         nlu_evaluation_data=nlu_evaluation_data,
         paraphrases=paraphrases,
