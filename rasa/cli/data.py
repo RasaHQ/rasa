@@ -352,7 +352,6 @@ def _validate_augment_nlu_args(args: argparse.Namespace) -> None:
         raise FileNotFoundException(
             f"The Paraphrase data could not be found at: {args.paraphrases}!"
         )
-    print("CONFIG:", args.config)
     if not os.path.exists(args.config):
         raise FileNotFoundException(
             f"The NLU config file could not be found at: {args.config}!"
