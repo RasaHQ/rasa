@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
-from rasa.shared.exceptions import FileNotFoundException, InvalidParameterException
+from rasa.shared.exceptions import InvalidParameterException
 from rasa import telemetry
 from rasa.cli import SubParsersAction
 from rasa.cli.arguments import data as arguments
