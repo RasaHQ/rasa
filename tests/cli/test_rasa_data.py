@@ -29,6 +29,10 @@ from rasa.validator import Validator
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
 
+from rasa.shared.nlu.constants import (
+    INTENT_ERRORS_FILE_NAME,
+    INTENT_REPORT_FILE_NAME,
+)
 
 def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
     responses_yml = (
@@ -218,6 +222,10 @@ def test_rasa_data_augment_nlu_invalid_parameters(
     os.makedirs(out_path)
 
     data_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+    xxx = parser.parse_args(["-a the_action", "-i some/file.txt"])
+
+
 
     namespace = argparse.Namespace()
     setattr(
@@ -510,10 +518,10 @@ def test_rasa_data_augment_nlu(
     )
 
     out_report_diverse = os.path.join(
-        out_path, "augmentation_max_vocab_expansion/intent_report.json"
+        out_path, f"augmentation_max_vocab_expansion/{INTENT_REPORT_FILE_NAME}"
     )
     out_errors_diverse = os.path.join(
-        out_path, "augmentation_max_vocab_expansion/intent_errors.json"
+        out_path, f"augmentation_max_vocab_expansion/{INTENT_ERRORS_FILE_NAME}"
     )
     out_plot_f1_diverse = os.path.join(
         out_path, "augmentation_max_vocab_expansion/f1-score_changes.png"
@@ -537,8 +545,8 @@ def test_rasa_data_augment_nlu(
     assert os.path.exists(out_plot_recall_diverse)
     assert os.path.exists(out_augmented_train_diverse)
 
-    out_report_random = os.path.join(out_path, "augmentation_random/intent_report.json")
-    out_errors_random = os.path.join(out_path, "augmentation_random/intent_errors.json")
+    out_report_random = os.path.join(out_path, f"augmentation_random/{INTENT_REPORT_FILE_NAME}")
+    out_errors_random = os.path.join(out_path, f"augmentation_random/{INTENT_ERRORS_FILE_NAME}")
     out_plot_f1_random = os.path.join(
         out_path, "augmentation_random/f1-score_changes.png"
     )

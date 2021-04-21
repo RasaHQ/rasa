@@ -15,6 +15,7 @@ INTENT_RANKING_KEY = "intent_ranking"
 PREDICTED_CONFIDENCE_KEY = "confidence"
 
 INTENT_REPORT_FILE_NAME = "intent_report.json"
+INTENT_ERRORS_FILE_NAME = "intent_errors.json"
 
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 

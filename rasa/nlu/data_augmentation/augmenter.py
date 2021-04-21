@@ -23,6 +23,7 @@ from rasa.nlu.test import (
 )
 from rasa.shared.nlu.constants import (
     INTENT,
+    INTENT_ERRORS_FILE_NAME,
     INTENT_REPORT_FILE_NAME,
     METADATA,
     METADATA_EXAMPLE,
@@ -377,7 +378,7 @@ def _train_test_nlu_model(
     )
     intent_errors = get_intent_errors(intent_results=intent_results)
     rasa.shared.utils.io.dump_obj_as_json_to_file(
-        os.path.join(output_directory, "intent_errors.json"), intent_errors,
+        os.path.join(output_directory, INTENT_ERRORS_FILE_NAME), intent_errors,
     )
 
     return intent_report["report"]
