@@ -60,7 +60,7 @@ class MattermostBot(OutputChannel):
                 f"Failed to send message to mattermost channel "
                 f"{data.get('channel_id')}. Response: {request}"
             )
-        return r
+        return requests
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
