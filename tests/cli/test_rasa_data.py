@@ -33,6 +33,7 @@ from rasa.shared.nlu.constants import (
     INTENT_REPORT_FILE_NAME,
 )
 
+
 def test_data_split_nlu(run_in_simple_project: Callable[..., RunResult]):
     responses_yml = (
         "responses:\n"
@@ -165,10 +166,10 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
             "nlu_test.yml",
             "paraphrases.yml",
             "nlu_classification_report_no_augmentation.json",
-            0.1,
-            -1.0,
-            2,
-            0.5,
+            "0.1",
+            "-1.0",
+            "2",
+            "0.5",
         ),
         (
             "config.yml",
@@ -176,10 +177,10 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
             "nlu_test.yml",
             "paraphrases.yml",
             "nlu_classification_report_no_augmentation.json",
-            0.1,
-            1.0,
-            -2,
-            0.5,
+            "0.1",
+            "1.0",
+            "-2",
+            "0.5",
         ),
         (
             "config.yml",
@@ -187,10 +188,10 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
             "nlu_test.yml",
             "paraphrases.yml",
             "nlu_classification_report_no_augmentation.json",
-            0.1,
-            1.0,
-            -2,
-            -0.5,
+            "0.1",
+            "1.0",
+            "-2",
+            "-0.5",
         ),
         (
             "config.yml",
@@ -198,10 +199,10 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
             "nlu_test.yml",
             "paraphrases.yml",
             "nlu_classification_report_no_augmentation.json",
-            0.1,
-            1.0,
-            -2,
-            1.5,
+            "0.1",
+            "1.0",
+            "-2",
+            "1.5",
         ),
     ],
 )
@@ -211,58 +212,160 @@ def test_rasa_data_augment_nlu_invalid_parameters(
     nlu_test_file: Text,
     paraphrases_file: Text,
     classification_report_file: Text,
-    min_paraphrase_sim_score: float,
-    max_paraphrase_sim_score: float,
-    augmentation_factor: float,
-    intent_proportion: float,
+    min_paraphrase_sim_score: Text,
+    max_paraphrase_sim_score: Text,
+    augmentation_factor: Text,
+    intent_proportion: Text,
+    tmp_path: Path,
 ):
-    tmp_path = rasa.utils.io.create_temporary_directory()
-    out_path = os.path.join(tmp_path, "augmentation_results")
-    os.makedirs(out_path)
+    out_path = Path(tmp_path / "augmentation_results")
+    out_path.mkdir()
 
     data_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
-    xxx = parser.parse_args(["-a the_action", "-i some/file.txt"])
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    data.add_subparser(subparsers, parents=[])
+
+    args = parser.parse_args(
+        [
+            "data",
+            "augment",
+            "nlu",
+            "--nlu-training-data",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_train_file}"),
+            "--nlu-evaluation-data",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_test_file}"),
+            "--paraphrases",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{paraphrases_file}"),
+            "--nlu-classification-report",
+            os.path.join(
+                data_root, f"data/test_nlu_paraphrasing/{classification_report_file}"
+            ),
+            "--out",
+            str(out_path.resolve()),
+            "--config",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{config_file}"),
+            "--random-seed",
+            "29306",
+            "--intent-proportion",
+            intent_proportion,
+            "--augmentation-factor",
+            augmentation_factor,
+            "--min-paraphrase-sim-score",
+            min_paraphrase_sim_score,
+            "--max-paraphrase-sim-score",
+            max_paraphrase_sim_score,
+        ]
+    )
+
+    with pytest.raises(InvalidParameterException):
+        data.augment_nlu_data(args)
 
 
+@pytest.mark.parametrize(
+    "config_file, nlu_train_file, nlu_test_file, paraphrases_file, classification_report_file, "
+    "min_paraphrase_sim_score, max_paraphrase_sim_score, augmentation_factor, intent_proportion",
+    [
+        (
+            "config.yml",
+            "file_not_exists_nlu_train.yml",
+            "nlu_test.yml",
+            "paraphrases.yml",
+            "nlu_classification_report_no_augmentation.json",
+            "0.1",
+            "1.0",
+            "2",
+            "0.5",
+        ),
+        (
+            "config.yml",
+            "nlu_train.yml",
+            "file_not_exists_nlu_test.yml",
+            "paraphrases.yml",
+            "nlu_classification_report_no_augmentation.json",
+            "0.1",
+            "1.0",
+            "2",
+            "0.5",
+        ),
+        (
+            "config.yml",
+            "nlu_train.yml",
+            "nlu_test.yml",
+            "file_not_exists_paraphrases.yml",
+            "nlu_classification_report_no_augmentation.json",
+            "0.1",
+            "1.0",
+            "2",
+            "0.5",
+        ),
+        (
+            "config.yml",
+            "nlu_train.yml",
+            "nlu_test.yml",
+            "paraphrases.yml",
+            "file_not_exists_nlu_classification_report_no_augmentation.json",
+            "0.1",
+            "1.0",
+            "2",
+            "0.5",
+        ),
+    ],
+)
+def test_rasa_data_augment_nlu_invalid_file_args(
+    config_file: Text,
+    nlu_train_file: Text,
+    nlu_test_file: Text,
+    paraphrases_file: Text,
+    classification_report_file: Text,
+    min_paraphrase_sim_score: Text,
+    max_paraphrase_sim_score: Text,
+    augmentation_factor: Text,
+    intent_proportion: Text,
+    tmp_path: Path,
+):
+    out_path = Path(tmp_path / "augmentation_results")
+    out_path.mkdir()
 
-    namespace = argparse.Namespace()
-    setattr(
-        namespace,
-        "nlu_training_data",
+    data_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    data.add_subparser(subparsers, parents=[])
+
+    arg_list = [
+        "data",
+        "augment",
+        "nlu",
+        "--nlu-training-data",
         os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_train_file}"),
-    )
-    setattr(
-        namespace,
-        "nlu_evaluation_data",
+        "--nlu-evaluation-data",
         os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_test_file}"),
-    )
-    setattr(
-        namespace,
-        "paraphrases",
+        "--paraphrases",
         os.path.join(data_root, f"data/test_nlu_paraphrasing/{paraphrases_file}"),
-    )
-    setattr(
-        namespace,
-        "nlu_classification_report",
+        "--nlu-classification-report",
         os.path.join(
             data_root, f"data/test_nlu_paraphrasing/{classification_report_file}"
         ),
-    )
-    setattr(namespace, "out", out_path)
-    setattr(
-        namespace,
-        "config",
+        "--out",
+        str(out_path.resolve()),
+        "--config",
         os.path.join(data_root, f"data/test_nlu_paraphrasing/{config_file}"),
-    )
-    setattr(namespace, "random_seed", 29306)
-    setattr(namespace, "intent_proportion", intent_proportion)
-    setattr(namespace, "augmentation_factor", augmentation_factor)
-    setattr(namespace, "min_paraphrase_sim_score", min_paraphrase_sim_score)
-    setattr(namespace, "max_paraphrase_sim_score", max_paraphrase_sim_score)
+        "--random-seed",
+        "29306",
+        "--intent-proportion",
+        intent_proportion,
+        "--augmentation-factor",
+        augmentation_factor,
+        "--min-paraphrase-sim-score",
+        min_paraphrase_sim_score,
+        "--max-paraphrase-sim-score",
+        max_paraphrase_sim_score,
+    ]
 
-    with pytest.raises(InvalidParameterException):
-        data.augment_nlu_data(namespace)
+    with pytest.raises(SystemExit):
+        _ = parser.parse_args(arg_list)
 
 
 @pytest.mark.parametrize(
@@ -275,10 +378,10 @@ def test_rasa_data_augment_nlu_invalid_parameters(
             "nlu_test.yml",
             "paraphrases.yml",
             "nlu_classification_report_no_augmentation.json",
-            0.1,
-            1.0,
-            2.0,
-            0.5,
+            "0.1",
+            "1.0",
+            "2.0",
+            "0.5",
         )
     ],
 )
@@ -288,54 +391,55 @@ def test_rasa_data_augment_nlu_invalid_config(
     nlu_test_file: Text,
     paraphrases_file: Text,
     classification_report_file: Text,
-    min_paraphrase_sim_score: float,
-    max_paraphrase_sim_score: float,
-    augmentation_factor: float,
-    intent_proportion: float,
+    min_paraphrase_sim_score: Text,
+    max_paraphrase_sim_score: Text,
+    augmentation_factor: Text,
+    intent_proportion: Text,
+    tmp_path: Path,
 ):
-    tmp_path = rasa.utils.io.create_temporary_directory()
-    out_path = os.path.join(tmp_path, "augmentation_results")
-    os.makedirs(out_path)
+    out_path = Path(tmp_path / "augmentation_results")
+    out_path.mkdir()
 
     data_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
-    namespace = argparse.Namespace()
-    setattr(
-        namespace,
-        "nlu_training_data",
-        os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_train_file}"),
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    data.add_subparser(subparsers, parents=[])
+
+    args = parser.parse_args(
+        [
+            "data",
+            "augment",
+            "nlu",
+            "--nlu-training-data",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_train_file}"),
+            "--nlu-evaluation-data",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_test_file}"),
+            "--paraphrases",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{paraphrases_file}"),
+            "--nlu-classification-report",
+            os.path.join(
+                data_root, f"data/test_nlu_paraphrasing/{classification_report_file}"
+            ),
+            "--out",
+            str(out_path.resolve()),
+            "--config",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{config_file}"),
+            "--random-seed",
+            "29306",
+            "--intent-proportion",
+            intent_proportion,
+            "--augmentation-factor",
+            augmentation_factor,
+            "--min-paraphrase-sim-score",
+            min_paraphrase_sim_score,
+            "--max-paraphrase-sim-score",
+            max_paraphrase_sim_score,
+        ]
     )
-    setattr(
-        namespace,
-        "nlu_evaluation_data",
-        os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_test_file}"),
-    )
-    setattr(
-        namespace,
-        "paraphrases",
-        os.path.join(data_root, f"data/test_nlu_paraphrasing/{paraphrases_file}"),
-    )
-    setattr(
-        namespace,
-        "nlu_classification_report",
-        os.path.join(
-            data_root, f"data/test_nlu_paraphrasing/{classification_report_file}"
-        ),
-    )
-    setattr(namespace, "out", out_path)
-    setattr(
-        namespace,
-        "config",
-        os.path.join(data_root, f"data/test_nlu_paraphrasing/{config_file}"),
-    )
-    setattr(namespace, "random_seed", 29306)
-    setattr(namespace, "intent_proportion", intent_proportion)
-    setattr(namespace, "augmentation_factor", augmentation_factor)
-    setattr(namespace, "min_paraphrase_sim_score", min_paraphrase_sim_score)
-    setattr(namespace, "max_paraphrase_sim_score", max_paraphrase_sim_score)
 
     with pytest.raises(InvalidConfigException):
-        data.(namespace)
+        data.augment_nlu_data(args)
 
 
 @pytest.mark.parametrize(
@@ -348,111 +452,68 @@ def test_rasa_data_augment_nlu_invalid_config(
             "nlu_test.yml",
             "paraphrases.yml",
             "nlu_classification_report_no_augmentation.json",
-            0.1,
-            1.0,
-            2,
-            0.5,
-        ),
-        (
-            "config.yml",
-            "file_not_exists_nlu_train.yml",
-            "nlu_test.yml",
-            "paraphrases.yml",
-            "nlu_classification_report_no_augmentation.json",
-            0.1,
-            1.0,
-            2,
-            0.5,
-        ),
-        (
-            "config.yml",
-            "nlu_train.yml",
-            "file_not_exists_nlu_test.yml",
-            "paraphrases.yml",
-            "nlu_classification_report_no_augmentation.json",
-            0.1,
-            1.0,
-            2,
-            0.5,
-        ),
-        (
-            "config.yml",
-            "nlu_train.yml",
-            "nlu_test.yml",
-            "file_not_exists_paraphrases.yml",
-            "nlu_classification_report_no_augmentation.json",
-            0.1,
-            1.0,
-            2,
-            0.5,
-        ),
-        (
-            "config.yml",
-            "nlu_train.yml",
-            "nlu_test.yml",
-            "paraphrases.yml",
-            "file_not_exists_nlu_classification_report_no_augmentation.json",
-            0.1,
-            1.0,
-            2,
-            0.5,
+            "0.1",
+            "1.0",
+            "2",
+            "0.5",
         ),
     ],
 )
-def test_rasa_data_augment_nlu_invalid_paths(
+def test_rasa_data_augment_nlu_invalid_config_path(
     config_file: Text,
     nlu_train_file: Text,
     nlu_test_file: Text,
     paraphrases_file: Text,
     classification_report_file: Text,
-    min_paraphrase_sim_score: float,
-    max_paraphrase_sim_score: float,
-    augmentation_factor: float,
-    intent_proportion: float,
+    min_paraphrase_sim_score: Text,
+    max_paraphrase_sim_score: Text,
+    augmentation_factor: Text,
+    intent_proportion: Text,
+    tmp_path: Path,
 ):
-    tmp_path = rasa.utils.io.create_temporary_directory()
-    out_path = os.path.join(tmp_path, "augmentation_results")
-    os.makedirs(out_path)
+    out_path = Path(tmp_path / "augmentation_results")
+    out_path.mkdir()
 
     data_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
-    namespace = argparse.Namespace()
-    setattr(
-        namespace,
-        "nlu_training_data",
-        os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_train_file}"),
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(help="Rasa commands")
+    data.add_subparser(subparsers, parents=[])
+
+    args = parser.parse_args(
+        [
+            "data",
+            "augment",
+            "nlu",
+            "--nlu-training-data",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_train_file}"),
+            "--nlu-evaluation-data",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_test_file}"),
+            "--paraphrases",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{paraphrases_file}"),
+            "--nlu-classification-report",
+            os.path.join(
+                data_root, f"data/test_nlu_paraphrasing/{classification_report_file}"
+            ),
+            "--out",
+            str(out_path.resolve()),
+            "--config",
+            os.path.join(data_root, f"data/test_nlu_paraphrasing/{config_file}"),
+            "--random-seed",
+            "29306",
+            "--intent-proportion",
+            intent_proportion,
+            "--augmentation-factor",
+            augmentation_factor,
+            "--min-paraphrase-sim-score",
+            min_paraphrase_sim_score,
+            "--max-paraphrase-sim-score",
+            max_paraphrase_sim_score,
+        ]
     )
-    setattr(
-        namespace,
-        "nlu_evaluation_data",
-        os.path.join(data_root, f"data/test_nlu_paraphrasing/{nlu_test_file}"),
-    )
-    setattr(
-        namespace,
-        "paraphrases",
-        os.path.join(data_root, f"data/test_nlu_paraphrasing/{paraphrases_file}"),
-    )
-    setattr(
-        namespace,
-        "nlu_classification_report",
-        os.path.join(
-            data_root, f"data/test_nlu_paraphrasing/{classification_report_file}"
-        ),
-    )
-    setattr(namespace, "out", out_path)
-    setattr(
-        namespace,
-        "config",
-        os.path.join(data_root, f"data/test_nlu_paraphrasing/{config_file}"),
-    )
-    setattr(namespace, "random_seed", 29306)
-    setattr(namespace, "intent_proportion", intent_proportion)
-    setattr(namespace, "augmentation_factor", augmentation_factor)
-    setattr(namespace, "min_paraphrase_sim_score", min_paraphrase_sim_score)
-    setattr(namespace, "max_paraphrase_sim_score", max_paraphrase_sim_score)
 
     with pytest.raises(FileNotFoundException):
-        data.augment_nlu_data(namespace)
+        data.augment_nlu_data(args)
 
 
 @pytest.mark.parametrize(
@@ -483,11 +544,10 @@ def test_rasa_data_augment_nlu(
     max_paraphrase_sim_score: Text,
     augmentation_factor: Text,
     intent_proportion: Text,
+    tmp_path: Path,
 ):
-
-    tmp_path = rasa.utils.io.create_temporary_directory()
-    out_path = os.path.join(tmp_path, "augmentation_results")
-    os.makedirs(out_path)
+    out_path = Path(tmp_path / "augmentation_results")
+    out_path.mkdir()
 
     data_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     run(
@@ -516,56 +576,56 @@ def test_rasa_data_augment_nlu(
         augmentation_factor,
     )
 
-    out_report_diverse = os.path.join(
-        out_path, f"augmentation_max_vocab_expansion/{INTENT_REPORT_FILE_NAME}"
+    out_report_diverse = Path(
+        out_path / f"augmentation_max_vocab_expansion/{INTENT_REPORT_FILE_NAME}"
     )
-    out_errors_diverse = os.path.join(
-        out_path, f"augmentation_max_vocab_expansion/{INTENT_ERRORS_FILE_NAME}"
+    out_errors_diverse = Path(
+        out_path / f"augmentation_max_vocab_expansion/{INTENT_ERRORS_FILE_NAME}"
     )
-    out_plot_f1_diverse = os.path.join(
-        out_path, "augmentation_max_vocab_expansion/f1-score_changes.png"
+    out_plot_f1_diverse = Path(
+        out_path / "augmentation_max_vocab_expansion/f1-score_changes.png"
     )
-    out_plot_precision_diverse = os.path.join(
-        out_path, "augmentation_max_vocab_expansion/precision_changes.png"
+    out_plot_precision_diverse = Path(
+        out_path / "augmentation_max_vocab_expansion/precision_changes.png"
     )
-    out_plot_recall_diverse = os.path.join(
-        out_path, "augmentation_max_vocab_expansion/recall_changes.png"
+    out_plot_recall_diverse = Path(
+        out_path / "augmentation_max_vocab_expansion/recall_changes.png"
     )
-    out_augmented_train_diverse = os.path.join(
-        out_path,
-        "augmentation_max_vocab_expansion/nlu_train_augmented_max_vocab_expansion.yml",
+    out_augmented_train_diverse = Path(
+        out_path
+        / "augmentation_max_vocab_expansion/nlu_train_augmented_max_vocab_expansion.yml",
     )
 
     # Files from the diverse augmentation criterion exist
-    assert os.path.exists(out_report_diverse)
-    assert os.path.exists(out_errors_diverse)
-    assert os.path.exists(out_plot_f1_diverse)
-    assert os.path.exists(out_plot_precision_diverse)
-    assert os.path.exists(out_plot_recall_diverse)
-    assert os.path.exists(out_augmented_train_diverse)
+    assert out_report_diverse.exists()
+    assert out_errors_diverse.exists()
+    assert out_plot_f1_diverse.exists()
+    assert out_plot_precision_diverse.exists()
+    assert out_plot_recall_diverse.exists()
+    assert out_augmented_train_diverse.exists()
 
-    out_report_random = os.path.join(out_path, f"augmentation_random/{INTENT_REPORT_FILE_NAME}")
-    out_errors_random = os.path.join(out_path, f"augmentation_random/{INTENT_ERRORS_FILE_NAME}")
-    out_plot_f1_random = os.path.join(
-        out_path, "augmentation_random/f1-score_changes.png"
+    out_report_random = Path(
+        out_path / f"augmentation_random/{INTENT_REPORT_FILE_NAME}"
     )
-    out_plot_precision_random = os.path.join(
-        out_path, "augmentation_random/precision_changes.png"
+    out_errors_random = Path(
+        out_path / f"augmentation_random/{INTENT_ERRORS_FILE_NAME}"
     )
-    out_plot_recall_random = os.path.join(
-        out_path, "augmentation_random/recall_changes.png"
+    out_plot_f1_random = Path(out_path / "augmentation_random/f1-score_changes.png")
+    out_plot_precision_random = Path(
+        out_path / "augmentation_random/precision_changes.png"
     )
-    out_augmented_train_random = os.path.join(
-        out_path, "augmentation_random/nlu_train_augmented_random.yml"
+    out_plot_recall_random = Path(out_path / "augmentation_random/recall_changes.png")
+    out_augmented_train_random = Path(
+        out_path / "augmentation_random/nlu_train_augmented_random.yml"
     )
 
     # Files from the random augmentation criterion exist
-    assert os.path.exists(out_report_random)
-    assert os.path.exists(out_errors_random)
-    assert os.path.exists(out_plot_f1_random)
-    assert os.path.exists(out_plot_precision_random)
-    assert os.path.exists(out_plot_recall_random)
-    assert os.path.exists(out_augmented_train_random)
+    assert out_report_random.exists()
+    assert out_errors_random.exists()
+    assert out_plot_f1_random.exists()
+    assert out_plot_precision_random.exists()
+    assert out_plot_recall_random.exists()
+    assert out_augmented_train_random.exists()
 
 
 def test_validate_files_exit_early():

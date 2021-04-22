@@ -284,18 +284,18 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
 
     # Collect inputs
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
-        args.nlu_training_data
+        args.nlu_training_data.name
     )
     nlu_evaluation_data = rasa.shared.nlu.training_data.loading.load_data(
-        args.nlu_evaluation_data
+        args.nlu_evaluation_data.name
     )
-    paraphrases = rasa.shared.nlu.training_data.loading.load_data(args.paraphrases)
+    paraphrases = rasa.shared.nlu.training_data.loading.load_data(args.paraphrases.name)
 
     default_report_file_path = os.path.join(
         DEFAULT_RESULTS_PATH, INTENT_REPORT_FILE_NAME
     )
     report_file = rasa.cli.utils.get_validated_path(
-        args.nlu_classification_report, "", default_report_file_path
+        args.nlu_classification_report.name, "", default_report_file_path
     )
     classification_report = rasa.shared.utils.io.read_json_file(report_file)
 
@@ -332,6 +332,7 @@ def _validate_augment_nlu_args(args: argparse.Namespace) -> None:
         raise InvalidParameterException(
             "The argument 'intent_proportion' must be greater than 0 and smaller than 1!"
         )
+
 
 def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None:
     """Validates either the story structure or the entire project.
