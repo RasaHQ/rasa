@@ -104,7 +104,9 @@ class Message:
 
         # Filter all keys with None value. These could have come while building the
         # Message object in markdown format
-        return {key: value for key, value in dictionary_data.items() if value is not None}
+        return {
+            key: value for key, value in dictionary_data.items() if value is not None
+        }
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Message):
@@ -148,8 +150,7 @@ class Message:
         """
         data: Dict[Text, Any] = {TEXT: text}
         if intent:
-            split_intent, response_key = cls.separate_intent_response_key(
-                intent)
+            split_intent, response_key = cls.separate_intent_response_key(intent)
             if split_intent:
                 data[INTENT] = split_intent
             if response_key:
@@ -218,10 +219,8 @@ class Message:
             attribute, featurizers
         )
 
-        sequence_features = self._combine_features(
-            sequence_features, featurizers)
-        sentence_features = self._combine_features(
-            sentence_features, featurizers)
+        sequence_features = self._combine_features(sequence_features, featurizers)
+        sentence_features = self._combine_features(sentence_features, featurizers)
 
         return sequence_features, sentence_features
 
@@ -243,10 +242,8 @@ class Message:
             attribute, featurizers
         )
 
-        sequence_features = self._combine_features(
-            sequence_features, featurizers)
-        sentence_features = self._combine_features(
-            sentence_features, featurizers)
+        sequence_features = self._combine_features(sequence_features, featurizers)
+        sentence_features = self._combine_features(sentence_features, featurizers)
 
         return sequence_features, sentence_features
 
@@ -396,7 +393,7 @@ class Message:
         entities_with_location.sort(key=lambda e: e[ENTITY_ATTRIBUTE_START])
         overlapping_pairs: List[Tuple[Dict[Text, Any], Dict[Text, Any]]] = []
         for i, entity in enumerate(entities_with_location):
-            for other_entity in entities_with_location[i + 1:]:
+            for other_entity in entities_with_location[i + 1 :]:
                 if other_entity[ENTITY_ATTRIBUTE_START] < entity[ENTITY_ATTRIBUTE_END]:
                     overlapping_pairs.append((entity, other_entity))
                 else:
