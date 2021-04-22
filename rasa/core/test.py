@@ -377,7 +377,7 @@ async def _create_data_generator(
 
     core_model, _ = get_model_subdirectories(agent.model_directory)
 
-    if core_model:
+    if core_model and os.path.exists(os.path.join(core_model, DEFAULT_DOMAIN_PATH)):
         domain_path = os.path.join(core_model, DEFAULT_DOMAIN_PATH)
     else:
         domain_path = None
