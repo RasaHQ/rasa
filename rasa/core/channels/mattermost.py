@@ -54,13 +54,13 @@ class MattermostBot(OutputChannel):
         """Send a message to a mattermost channel."""
 
         headers = {"Authorization": "Bearer " + self.token}
-        request = requests.post(self.url + "/posts", headers=headers, data=json.dumps(data))
-        if not request.status_code == 200:
+        response = requests.post(self.url + "/posts", headers=headers, data=json.dumps(data))
+        if not response.status_code == 200:
             logger.error(
                 f"Failed to send message to mattermost channel "
-                f"{data.get('channel_id')}. Response: {request}"
+                f"{data.get('channel_id')}. Response: {response}"
             )
-        return requests
+        return response
 
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
