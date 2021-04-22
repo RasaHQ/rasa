@@ -11,7 +11,7 @@ which contain paths to file/directory.
 {{- $config := $mapping.configurations -}}
 {{- if has $dataset "repository" }}
 export DATASET="{{ $dataset.repository }}"
-export IS_EXTERNAL=true
+export IS_EXTERNAL="true"
 echo "::add-mask::{{ $dataset.repository }}"
 {{ if has $dataset "repository_branch" }}
 export EXTERNAL_DATASET_REPOSITORY_BRANCH="{{ $dataset.repository_branch }}"
@@ -20,7 +20,7 @@ export EXTERNAL_DATASET_REPOSITORY_BRANCH="main"
 {{ end }}
 {{- else if has $dataset "path" }}
 export DATASET="{{ $dataset.path }}"
-export IS_EXTERNAL=false
+export IS_EXTERNAL="false"
 echo "::add-mask::{{ $dataset.path }}"
 {{ end }}
 
