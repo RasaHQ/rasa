@@ -5,10 +5,13 @@ title: Twilio Voice
 description: Deploy a Rasa Open Source IVR assistant via the Twilio Voice connector
 ---
 import twilioWebhook from './img/twilio-set-webhook.png';
+import twilioSipWebhook from './img/twilio-set-sip-webhook.png';
 
-You can use the Twilio Voice connector to answer phone calls made to your Twilio phone number.
+You can use the Twilio Voice connector to answer phone calls made to your Twilio phone number or Twilio SIP domain.
 
 ## Running on Twilio
+
+### Connect to a Twilio Phone Number
 
 To forward calls from Twilio to your Rasa assistant the webhook for your phone number needs to be updated. Go to the [Phone
 Numbers](https://www.twilio.com/console/phone-numbers/incoming) section of your Twilio account and select the phone
@@ -17,6 +20,20 @@ add the webhook URL (e.g. `https://<host>:<port>/webhooks/twilio_voice/webhook`)
 and port with the appropriate values for your deployment. Click `Save` at the bottom of the page.
 
 <Image img={twilioWebhook} caption="Set Twilio Webhook" alt="Screenshot of Twilio Console to Set Webhook" max-width="500px"/>
+
+### Connect to a Twilio SIP Domain
+
+You can also connect your Twilio Voice channel to a Twilio SIP domain. You can follow the
+[Twilio Sending SIP](https://www.twilio.com/docs/voice/api/sending-sip) guide to forward SIP requests to your Twilio SIP
+domain. Once your SIP domain is configured you will have to forward incoming calls to Rasa. In the Twilio console go to
+the [SIP Domains](https://console.twilio.com/develop/voice/manage/sip-domains?frameUrl=/console/voice/sip/endpoints)
+section. Select the SIP domain you would like to use. Find the `Call Control Configuration` section and add the
+webhook URL (e.g. `https://<host>:<port>/webhooks/twilio_voice/webhook`) for your Rasa bot replacing the host and port
+with the appropriate values for your deployment. Click `Save` at the bottom of the page.
+
+<Image img={twilioSipWebhook} caption="Set Twilio SIP Domain Webhook" alt="Screenshot of Twilio Console to Set Webhook" max-width="500px"/>
+
+## Configure Channel in Rasa
 
 In your `credentials.yml` file make sure the `twilio_voice` channel is added. Within `credentials.yml` there are a
 number of parameters you can set to control the behavior of your assistant. An example with definitions of each
@@ -92,11 +109,13 @@ set to "false". You can find more about the `enhanced` speech model option in th
 
 It is highly recommended that you provide voice
 [channel specific responses](https://rasa.com/docs/rasa/responses/#channel-specific-response-variations) for all
-responses containing images and/or emojis. Visual media like images and emojis do not translate well to voice
-applications. Having voice alternatives to those responses lets you tailor the user experience to the voice channel. If
-a response is detected as containing either an image or emoji a warning will be raised. The image or emoji will be
-removed from the response and only any accompanying text will be included in the response back to the user.
+responses containing images, emojis and/or abbreviations. Visual media like images and emojis do not translate well to
+voice applications. Having voice alternatives to those responses lets you tailor the user experience to the voice
+channel. If a response is detected as containing either an image or emoji a warning will be raised. The image or emoji
+will be removed from the response and only any accompanying text will be included in the response back to the user.
 
 In addition to reviewing responses containing images and emojis you should also review all other responses for their
-applicability to voice channels. Interactions with users can differ between text and voice channels. Reviewing all
-responses in the scope of a voice channel and providing voice specific responses can make for a better user experience.
+applicability to voice channels. Short-hand abbreviations like "e.g." do not translate well. Voice responses should use
+the long-hand versions of any abbreviations. Interactions with users can differ between text and voice channels.
+Reviewing all responses in the scope of a voice channel and providing voice specific responses can make for a better
+user experience.
