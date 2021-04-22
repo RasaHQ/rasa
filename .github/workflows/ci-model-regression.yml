@@ -241,6 +241,8 @@ jobs:
           echo "DOMAIN_FILE=${DOMAIN_FILE}" >> $GITHUB_ENV
           echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
+          echo "EXTERNAL_DATASET_REPOSITORY_BRANCH=${EXTERNAL_DATASET_REPOSITORY_BRANCH}" >> $GITHUB_ENV
+          echo "IS_EXTERNAL=${IS_EXTERNAL}" >> $GITHUB_ENV
 
           if [[ -z "${TRAIN_DIR}" ]]; then
             echo "TRAIN_DIR=train" >> $GITHUB_ENV
@@ -451,6 +453,8 @@ jobs:
           echo "DOMAIN_FILE=${DOMAIN_FILE}" >> $GITHUB_ENV
           echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
+          echo "EXTERNAL_DATASET_REPOSITORY_BRANCH=${EXTERNAL_DATASET_REPOSITORY_BRANCH}" >> $GITHUB_ENV
+          echo "IS_EXTERNAL=${IS_EXTERNAL}" >> $GITHUB_ENV
 
           if [[ -z "${TRAIN_DIR}" ]]; then
             echo "TRAIN_DIR=train" >> $GITHUB_ENV
