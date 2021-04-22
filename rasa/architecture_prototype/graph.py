@@ -77,6 +77,7 @@ class RasaComponent:
         if "kwargs" not in rasa.shared.utils.common.arguments_of(self._run_fn):
             run_kwargs = rasa.shared.utils.common.minimal_kwargs(kwargs, self._run_fn)
 
+        print(f"************** {self._node_name} ***************")
         return {self._node_name: self._run_fn(self._component, **run_kwargs)}
 
     def create_component(self, **const_kwargs: Any) -> None:

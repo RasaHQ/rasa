@@ -1,10 +1,11 @@
 import dask
+import pytest
 
 from rasa.architecture_prototype import graph
-from rasa.architecture_prototype.config_to_graph import nlu_config_to_train_graph
+from rasa.architecture_prototype.config_to_graph import old_config_to_graph_schema
 from tests.architecture_prototype.test_graph import clean_directory
 
-nlu_config = """
+default_config = """
 pipeline:
   - name: WhitespaceTokenizer
   - name: RegexFeaturizer
@@ -21,16 +22,28 @@ pipeline:
   - name: ResponseSelector
     epochs: 2
     constrain_similarities: true
+policies:
+  - name: MemoizationPolicy
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 10
+    constrain_similarities: true
+  - name: RulePolicy
 """
 
+project = "examples/moodbot"
 
-def test_train_nlu():
-    nlu_train_graph, last_component_out = nlu_config_to_train_graph(nlu_config)
-    dask_graph = graph.convert_to_dask_graph(nlu_train_graph)
-    dask.visualize(dask_graph, filename="auto_generated_nlu_graph.png")
+
+@pytest.mark.timeout(600)
+def test_generate_train_graph():
+    train_graph_schema, last_components_out = old_config_to_graph_schema(project=project, config=default_config)
+    graph.fill_defaults(train_graph_schema)
+
+    dask_graph = graph.convert_to_dask_graph(train_graph_schema)
+    dask.visualize(dask_graph, filename="generated_default_config_graph.png")
 
     clean_directory()
-
     graph.run_as_dask_graph(
-        nlu_train_graph, [last_component_out],
+        train_graph_schema, last_components_out,
     )
+
