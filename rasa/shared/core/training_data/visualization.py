@@ -300,10 +300,10 @@ async def _replace_edge_labels_with_nodes(
                 fillcolor="lightblue",
                 **_transfer_style(edge_label_d, {"class": "intent"}),
             )
-            graph.add_edge(edge_label_s, next_id, **
-                           {"class": edge_label_d.get("class", "")})
-            graph.add_edge(next_id, edge_label_e, **
-                           {"class": edge_label_d.get("class", "")})
+            graph.add_edge(edge_label_s, next_id,
+                           ** {"class": edge_label_d.get("class", "")})
+            graph.add_edge(next_id, edge_label_e,
+                           ** {"class": edge_label_d.get("class", "")})
 
 
 def visualization_html_path() -> Text:
