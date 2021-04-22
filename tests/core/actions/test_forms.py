@@ -1523,7 +1523,7 @@ def test_ignored_intents_with_slot_type_from_text(
 
 
 @pytest.mark.parametrize(
-    "ignored_intents, slot_not_intent, type",
+    "ignored_intents, slot_not_intent, entity_type",
     [
         # same examples for entity_type -> from_intent
         (
@@ -1584,7 +1584,7 @@ def test_ignored_intents_with_slot_type_from_text(
 def test_ignored_intents_with_other_type_of_slots(
     ignored_intents: Union[Text, List[Text]],
     slot_not_intent: Union[Text, List[Text]],
-    type: Text,
+    entity_type: Text,
 ):
     form_name = "some_form"
     entity_name = "some_slot"
@@ -1598,7 +1598,7 @@ def test_ignored_intents_with_other_type_of_slots(
                     REQUIRED_SLOTS_KEY: {
                         entity_name: [
                             {
-                                "type": type,
+                                "type": entity_type,
                                 "value": "affirm",
                                 "intent": "true",
                                 "not_intent": slot_not_intent,

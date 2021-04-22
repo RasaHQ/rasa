@@ -1769,8 +1769,7 @@ class Domain:
                 rasa.shared.utils.io.raise_warning(
                     f"Action '{response}' is listed as a "
                     f"response action in the domain file, but there is "
-                    f"no matching response defined. Please "
-                    f"check your domain.",
+                    f"no matching response defined. Please check your domain.",
                     docs=DOCS_URL_RESPONSES,
                 )
 
@@ -1820,10 +1819,7 @@ class Domain:
         Returns:
             The slot mapping or an empty dictionary in case no mapping was found.
         """
-        if self.forms.get(form_name, {}):
-            return self.forms.get(form_name, {})[REQUIRED_SLOTS_KEY]
-        else:
-            return {}
+        return self.forms.get(form_name, {})[REQUIRED_SLOTS_KEY]
 
 
 class SlotMapping(Enum):
@@ -1910,25 +1906,25 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
                 f"for more information."
             )
 
+        if IGNORED_INTENTS in form_data and REQUIRED_SLOTS_KEY not in form_data:
+            raise InvalidDomain(
+                f"If you use the `{IGNORED_INTENTS}` parameter in your form, then "
+                f"the keyword `{REQUIRED_SLOTS_KEY}` should precede the definition "
+                f"of your slot mappings. Please see {DOCS_URL_FORMS} "
+                f"for more information."
+            )
+
         if REQUIRED_SLOTS_KEY in form_data:
             slots = forms[form_name].get(REQUIRED_SLOTS_KEY)
         else:
             rasa.shared.utils.io.raise_deprecation_warning(
-                f"The definition of slot mappings in your form"
-                f" should always be preceded by the keyword {REQUIRED_SLOTS_KEY}."
-                f" The lack of this keyword will be deprecated in"
-                f" Rasa Open Source 3.0.0. Please see "
-                f"{DOCS_URL_FORMS} for more information.",
+                f"The definition of slot mappings in your form "
+                f"should always be preceded by the keyword `{REQUIRED_SLOTS_KEY}`. "
+                f"The lack of this keyword will be deprecated in "
+                f"Rasa Open Source 3.0.0. Please see {DOCS_URL_FORMS} "
+                f"for more information.",
             )
             slots = form_data
-
-        if IGNORED_INTENTS in form_data and REQUIRED_SLOTS_KEY not in form_data:
-            raise InvalidDomain(
-                f"If you use the {IGNORED_INTENTS} parameter in your form, then"
-                f" the keyword {REQUIRED_SLOTS_KEY} should precede the definition"
-                f" of your slot mappings. Please see"
-                f" {DOCS_URL_FORMS} for more information."
-            )
 
         if not isinstance(slots, Dict):
             raise InvalidDomain(
@@ -1942,10 +1938,10 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
             if not isinstance(slot_mappings, list):
                 raise InvalidDomain(
                     f"The slot mappings for slot '{slot_name}' in "
-                    f"form '{form_name}' have type "
-                    f"'{type(slot_mappings)}'. It is required to "
-                    f"provide a list of slot mappings. Please see "
-                    f"{DOCS_URL_FORMS} for more information."
+                    f"form '{form_name}' have type '{type(slot_mappings)}'. "
+                    f"It is required to provide a list of slot "
+                    f"mappings. Please see {DOCS_URL_FORMS} "
+                    f"for more information."
                 )
             for slot_mapping in slot_mappings:
                 SlotMapping.validate(slot_mapping, form_name, slot_name)

@@ -25,10 +25,9 @@ Before, if a user did not want to fill any slots of a form with a specified inte
 they would have to define it under the `not_intent` parameter for every slot mapping
 as shown in the following example :
 
-```yaml
+```yaml-rasa title="domain.yml"
 forms:
   restaurant_form:
-    required_slots:
       cuisine:
       - type: from_entity
         entity: cuisine
@@ -47,7 +46,7 @@ forms:
 By introducing the `ignored_intents` parameter, we now only need to define it
 in one place and it will affect all the slots of the form :
 
-```yaml
+```yaml-rasa title="domain.yml"
 forms:
   restaurant_form:
     ignored_intents: chitchat
