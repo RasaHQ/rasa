@@ -28,11 +28,11 @@ class MattermostBot(OutputChannel):
         """Retrieve access token for mattermost user."""
 
         data = {"login_id": user, "password": password}
-        r = requests.post(url + "/users/login", data=json.dumps(data))
-        if r.status_code == 200:
-            return r.headers["Token"]
+        request = requests.post(url + "/users/login", data=json.dumps(data))
+        if request.status_code == 200:
+            return request.headers["Token"]
         else:
-            logger.error(f"Failed to login mattermost user {user}. Response: {r}")
+            logger.error(f"Failed to login mattermost user {user}. Response: {request}")
             return None
 
     def __init__(
@@ -54,11 +54,11 @@ class MattermostBot(OutputChannel):
         """Send a message to a mattermost channel."""
 
         headers = {"Authorization": "Bearer " + self.token}
-        r = requests.post(self.url + "/posts", headers=headers, data=json.dumps(data))
-        if not r.status_code == 200:
+        request = requests.post(self.url + "/posts", headers=headers, data=json.dumps(data))
+        if not request.status_code == 200:
             logger.error(
                 f"Failed to send message to mattermost channel "
-                f"{data.get('channel_id')}. Response: {r}"
+                f"{data.get('channel_id')}. Response: {request}"
             )
         return r
 

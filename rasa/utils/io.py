@@ -103,19 +103,19 @@ def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Te
     mode defines NamedTemporaryFile's  mode parameter in py3."""
 
     encoding = None if "b" in mode else rasa.shared.utils.io.DEFAULT_ENCODING
-    f = tempfile.NamedTemporaryFile(
+    file = tempfile.NamedTemporaryFile(
         mode=mode, suffix=suffix, delete=False, encoding=encoding
     )
-    f.write(data)
+    file.write(data)
 
-    f.close()
-    return f.name
+    file.close()
+    return file.name
 
 
 def create_temporary_directory() -> Text:
     """Creates a tempfile.TemporaryDirectory."""
-    f = tempfile.TemporaryDirectory()
-    return f.name
+    file = tempfile.TemporaryDirectory()
+    return file.name
 
 
 def create_path(file_path: Text) -> None:
