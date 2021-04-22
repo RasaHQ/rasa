@@ -7,6 +7,9 @@ SUMMARY_FILE = os.environ["SUMMARY_FILE"]
 CONFIG = os.environ["CONFIG"]
 DATASET = os.environ["DATASET_NAME"]
 TYPE = os.environ["TYPE"]
+IS_EXTERNAL = os.environ["IS_EXTERNAL"]
+CONFIG_REPOSITORY = "training-data"
+CONFIG_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 task_mapping = {
     "intent_report.json": "intent_classification",
@@ -23,8 +26,17 @@ def generate_json(file, task, data):
     elif not CONFIG in data[DATASET]:
         data[DATASET] = {CONFIG: {}, **data[DATASET]}
 
+    if IS_EXTERNAL.lower() in ("yes", "true", "t", "1"):
+        IS_EXTERNAL = True
+        DATASET_REPOSITORY_BRANCH = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
+    else:
+        IS_EXTERNAL = False
+
     data[DATASET][CONFIG] = {
+        "external_dataset_repository": IS_EXTERNAL,
         "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
+        "config_repository": CONFIG_REPOSITORY,
+        "config_repository_branch": CONFIG_REPOSITORY_BRANCH,
         "accelerator_type": os.environ["ACCELERATOR_TYPE"],
         "test_run_time": os.environ["TEST_RUN_TIME"],
         "train_run_time": os.environ["TRAIN_RUN_TIME"],

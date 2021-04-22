@@ -411,7 +411,14 @@ jobs:
           DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG_NAME: "${{ matrix.config }}"
         run: |-
-          # determine DATASET and CONFIG environment variables
+          # determine extra environment variables
+          # - CONFIG
+          # - DATASET
+          # - IS_EXTERNAL
+          # - EXTERNAL_DATASET_REPOSITORY_BRANCH
+          # - TRAIN_DIR
+          # - TEST_DIR
+          # - DOMAIN_FILE
           source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
 
           # Not all configurations are available for all datasets.

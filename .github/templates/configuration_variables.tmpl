@@ -13,6 +13,11 @@ which contain paths to file/directory.
 export DATASET="{{ $dataset.repository }}"
 export IS_EXTERNAL=true
 echo "::add-mask::{{ $dataset.repository }}"
+{{ if has $dataset "repository_branch" }}
+export EXTERNAL_DATASET_REPOSITORY_BRANCH="{{ $dataset.repository_branch }}"
+{{ else }}
+export EXTERNAL_DATASET_REPOSITORY_BRANCH="main"
+{{ end }}
 {{- else if has $dataset "path" }}
 export DATASET="{{ $dataset.path }}"
 export IS_EXTERNAL=false
@@ -26,7 +31,7 @@ export TRAIN_DIR="{{ $dataset.train }}"
 export TEST_DIR="{{ $dataset.test }}"
 {{ end }}
 {{- if has $dataset "domain" }}
-export DOMAI_FILE="{{ $dataset.domain }}"
+export DOMAIN_FILE="{{ $dataset.domain }}"
 {{ end }}
 
 {{- if (has $config.nlu (getenv "CONFIG_NAME")) }}

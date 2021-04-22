@@ -5,6 +5,12 @@ import datetime
 import json
 import os
 
+IS_EXTERNAL = os.environ["IS_EXTERNAL"]
+DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
+EXTERNAL_DATASET_REPOSITORY_BRANCH = None
+CONFIG_REPOSITORY = "training-data"
+CONFIG_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
+
 analytics.write_key = os.environ["SEGMENT_TOKEN"]
 
 task_mapping = {
@@ -23,12 +29,21 @@ def send_to_segment(context):
         jobID, {"name": "model-regression-tests", "created_at": datetime.datetime.now()}
     )
 
+    if IS_EXTERNAL.lower() in ("yes", "true", "t", "1"):
+        IS_EXTERNAL = True
+        DATASET_REPOSITORY_BRANCH = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
+    else:
+        IS_EXTERNAL = False
+
     analytics.track(
         jobID,
         "results",
         {
             "dataset": os.environ["DATASET_NAME"],
-            "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
+            "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
+            "external_dataset_repository": IS_EXTERNAL,
+            "config_repository": CONFIG_REPOSITORY,
+            "config_repository_branch": CONFIG_REPOSITORY_BRANCH,
             "workflow": os.environ["GITHUB_WORKFLOW"],
             "config": os.environ["CONFIG"],
             "pr_url": os.environ["PR_URL"],
