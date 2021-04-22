@@ -506,7 +506,7 @@ class DynamoTrackerStore(TrackerStore):
 
     def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
         """Serializes the tracker, returns object with decimal types."""
-        dialogue_tracker= tracker.as_dialogue().as_dict()
+        dialogue_tracker = tracker.as_dialogue().as_dict()
         dialogue_tracker.update(
             {"sender_id": tracker.sender_id,}
         )
