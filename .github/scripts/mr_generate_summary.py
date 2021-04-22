@@ -21,6 +21,9 @@ task_mapping = {
 
 
 def generate_json(file, task, data):
+    global IS_EXTERNAL
+    global DATASET_REPOSITORY_BRANCH
+
     if not DATASET in data:
         data = {DATASET: {CONFIG: {}}, **data}
     elif not CONFIG in data[DATASET]:

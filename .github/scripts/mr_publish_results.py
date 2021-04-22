@@ -23,6 +23,9 @@ task_mapping = {
 
 
 def send_to_segment(context):
+    global IS_EXTERNAL
+    global DATASET_REPOSITORY_BRANCH
+
     jobID = os.environ["GITHUB_RUN_ID"]
 
     analytics.identify(
