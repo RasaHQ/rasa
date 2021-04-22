@@ -110,7 +110,14 @@ jobs:
           DATASET_NAME: "${{ matrix.dataset }}"
           CONFIG_NAME: "${{ matrix.config }}"
         run: |-
-          # determine DATASET and CONFIG environment variables
+          # determine extra environment variables
+          # - CONFIG
+          # - DATASET
+          # - IS_EXTERNAL
+          # - EXTERNAL_DATASET_REPOSITORY_BRANCH
+          # - TRAIN_DIR
+          # - TEST_DIR
+          # - DOMAIN_FILE
           source <(gomplate -d mapping=./dataset/dataset_config_mapping.json -f .github/templates/configuration_variables.tmpl)
 
           # Not all configurations are available for all datasets.
@@ -137,6 +144,8 @@ jobs:
           echo "DOMAIN_FILE=${DOMAIN_FILE}" >> $GITHUB_ENV
           echo "TEST_DIR=${TEST_DIR}" >> $GITHUB_ENV
           echo "TRAIN_DIR=${TRAIN_DIR}" >> $GITHUB_ENV
+          echo "EXTERNAL_DATASET_REPOSITORY_BRANCH=${EXTERNAL_DATASET_REPOSITORY_BRANCH}" >> $GITHUB_ENV
+          echo "IS_EXTERNAL=${IS_EXTERNAL}" >> $GITHUB_ENV
 
           if [[ -z "${TRAIN_DIR}" ]]; then
             echo "TRAIN_DIR=train" >> $GITHUB_ENV
@@ -157,6 +166,7 @@ jobs:
           repository: ${{ env.DATASET }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset_external'
+          ref: ${{ env.EXTERNAL_DATASET_REPOSITORY_BRANCH }}
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@v2

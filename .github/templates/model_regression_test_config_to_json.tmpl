@@ -23,6 +23,18 @@ core
 {{- /* use all available datasets if value is equal to all */ -}}
 {{- if eq (index $pair.dataset 0) "all" -}}
 {{ $dataset = (coll.Keys (datasource "mapping").datasets) }}
+{{- else if eq (index $pair.dataset 0) "all-core" -}}
+{{- range $dataset_name, $dataset_spec := (datasource "mapping").datasets -}}
+{{- if has $dataset_spec "domain" -}}
+{{ $dataset = (coll.Append $dataset_name $dataset) -}}
+{{- end -}}
+{{- end -}}
+{{- else if eq (index $pair.dataset 0) "all-nlu" -}}
+{{- range $dataset_name, $dataset_spec := (datasource "mapping").datasets -}}
+{{- if not (has $dataset_spec "domain") -}}
+{{ $dataset = (coll.Append $dataset_name $dataset) -}}
+{{- end -}}
+{{- end -}}
 {{- else -}}
 {{- $dataset = $pair.dataset -}}
 {{- end -}}
