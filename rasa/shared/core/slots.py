@@ -33,7 +33,6 @@ class Slot:
         influence_conversation: bool = True,
     ) -> None:
         """Create a Slot.
-
         Args:
             name: The name of the slot.
             initial_value: The initial value of the slot.
@@ -54,7 +53,6 @@ class Slot:
 
     def feature_dimensionality(self) -> int:
         """How many features this single slot creates.
-
         Returns:
             The number of features. `0` if the slot is unfeaturized. The dimensionality
             of the array returned by `as_feature` needs to correspond to this value.
@@ -74,7 +72,6 @@ class Slot:
 
     def value_reset_delay(self) -> Optional[int]:
         """After how many turns the slot should be reset to the initial_value.
-
         If the delay is set to `None`, the slot will keep its value forever."""
         # TODO: FUTURE this needs to be implemented - slots are not reset yet
         return self._value_reset_delay
@@ -186,7 +183,8 @@ class FloatSlot(Slot):
 
     def _as_feature(self) -> List[float]:
         try:
-            capped_value = max(self.min_value, min(self.max_value, float(self.value)))
+            capped_value = max(self.min_value, min(
+                self.max_value, float(self.value)))
             if abs(self.max_value - self.min_value) > 0:
                 covered_range = abs(self.max_value - self.min_value)
             else:
@@ -197,10 +195,10 @@ class FloatSlot(Slot):
 
     def persistence_info(self) -> Dict[Text, Any]:
         """Returns relevant information to persist this slot."""
-        d = super().persistence_info()
-        d["max_value"] = self.max_value
-        d["min_value"] = self.min_value
-        return d
+        dictionary_persistence = super().persistence_info()
+        dictionary_persistence["max_value"] = self.max_value
+        dictionary_persistence["min_value"] = self.min_value
+        return dictionary_persistence
 
     def _feature_dimensionality(self) -> int:
         return len(self.as_feature())
@@ -330,15 +328,15 @@ class CategoricalSlot(Slot):
 
     def persistence_info(self) -> Dict[Text, Any]:
         """Returns serialized slot."""
-        d = super().persistence_info()
-        d["values"] = [
+        dictionary_serialized = super().persistence_info()
+        dictionary_serialized["values"] = [
             value
             for value in self.values
             # Don't add default slot when persisting it.
             # We'll re-add it on the fly when creating the domain.
             if value != rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
         ]
-        return d
+        return dictionary_serialized
 
     def _as_feature(self) -> List[float]:
         r = [0.0] * self.feature_dimensionality()
