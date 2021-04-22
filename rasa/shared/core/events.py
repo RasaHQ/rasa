@@ -272,6 +272,7 @@ class Event(ABC):
         return [cls(parameters.get("timestamp"), parameters.get("metadata"))]
 
     def as_dict(self) -> Dict[Text, Any]:
+        """Returns serialized event."""
         dictionary = {"event": self.type_name, "timestamp": self.timestamp}
 
         if self.metadata:
