@@ -48,12 +48,13 @@ class UserMessageGenerator:
         dictionary_intent_to_messages = defaultdict(list)
         for example in data.training_examples:
             if example.get(INTENT, {}) is not None:
-                dictionary_intent_to_messages[example.get(
-                    INTENT, {})].append(example)
+                dictionary_intent_to_messages[example.get(INTENT, {})].append(example)
         return dictionary_intent_to_messages
 
     @staticmethod
-    def _contains_same_entity(entities: Dict[Text, Any], entity: Dict[Text, Any]) -> bool:
+    def _contains_same_entity(
+        entities: Dict[Text, Any], entity: Dict[Text, Any]
+    ) -> bool:
         return entities.get(entity.get(ENTITY_ATTRIBUTE_TYPE)) is None or entities.get(
             entity.get(ENTITY_ATTRIBUTE_TYPE)
         ) != entity.get(ENTITY_ATTRIBUTE_VALUE)
@@ -69,7 +70,9 @@ class UserMessageGenerator:
             random.shuffle(usable_examples)
             for example in usable_examples:
                 entities = {
-                    entity.get(ENTITY_ATTRIBUTE_TYPE): entity.get(ENTITY_ATTRIBUTE_VALUE)
+                    entity.get(ENTITY_ATTRIBUTE_TYPE): entity.get(
+                        ENTITY_ATTRIBUTE_VALUE
+                    )
                     for entity in example.get(ENTITIES, [])
                 }
                 for entity in structured_info.get(ENTITIES, []):
@@ -223,14 +226,13 @@ def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) ->
         for index, i in enumerate(remaining_node_ids):
             if graph.has_node(i):
                 # assumes node equivalence is cumulative
-                for j in remaining_node_ids[index + 1:]:
+                for j in remaining_node_ids[index + 1 :]:
                     if graph.has_node(j) and _nodes_are_equivalent(
                         graph, i, j, max_history
                     ):
                         # make sure we keep special styles
                         _transfer_style(
-                            graph.nodes(data=True)[
-                                j], graph.nodes(data=True)[i]
+                            graph.nodes(data=True)[j], graph.nodes(data=True)[i]
                         )
 
                         changed = True
@@ -249,8 +251,7 @@ def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) ->
                             )
                             graph.remove_edge(j, succ_node)
                         # moves all incoming edges to the other node
-                        j_incoming_edges = list(
-                            graph.in_edges(j, keys=True, data=True))
+                        j_incoming_edges = list(graph.in_edges(j, keys=True, data=True))
                         for prev_node, _, k, d in j_incoming_edges:
                             _add_edge(
                                 graph,
@@ -285,8 +286,13 @@ async def _replace_edge_labels_with_nodes(
     edges = list(graph.edges(keys=True, data=True))
     for edge_label_s, edge_label_e, edge_label_k, edge_label_d in edges:
         if edge_label_k != EDGE_NONE_LABEL:
-            if message_generator and edge_label_d.get("label", edge_label_k) is not None:
-                parsed_info = await interpreter.parse(edge_label_d.get("label", edge_label_k))
+            if (
+                message_generator
+                and edge_label_d.get("label", edge_label_k) is not None
+            ):
+                parsed_info = await interpreter.parse(
+                    edge_label_d.get("label", edge_label_k)
+                )
                 label = message_generator.message_for_data(parsed_info)
             else:
                 label = edge_label_d.get("label", edge_label_k)
@@ -300,10 +306,12 @@ async def _replace_edge_labels_with_nodes(
                 fillcolor="lightblue",
                 **_transfer_style(edge_label_d, {"class": "intent"}),
             )
-            graph.add_edge(edge_label_s, next_id,
-                           ** {"class": edge_label_d.get("class", "")})
-            graph.add_edge(next_id, edge_label_e,
-                           ** {"class": edge_label_d.get("class", "")})
+            graph.add_edge(
+                edge_label_s, next_id, **{"class": edge_label_d.get("class", "")}
+            )
+            graph.add_edge(
+                next_id, edge_label_e, **{"class": edge_label_d.get("class", "")}
+            )
 
 
 def visualization_html_path() -> Text:
@@ -325,8 +333,7 @@ def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
     graph_as_text = expg.to_string()
     # escape backslashes
     graph_as_text = graph_as_text.replace("\\", "\\\\")
-    template = template.replace(
-        "// { graph-content }", f"graph = `{graph_as_text}`", 1)
+    template = template.replace("// { graph-content }", f"graph = `{graph_as_text}`", 1)
 
     rasa.shared.utils.io.write_text_file(template, output_file)
 
@@ -373,8 +380,7 @@ def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> No
         fontsize=fontsize,
         **{"class": "end"},
     )
-    graph.add_node(TMP_NODE_ID, label="TMP",
-                   style="invis", **{"class": "invisible"})
+    graph.add_node(TMP_NODE_ID, label="TMP", style="invis", **{"class": "invisible"})
 
 
 def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
@@ -453,8 +459,7 @@ async def visualize_neighborhood(
                 else:
                     message = el.parse_data
             elif (
-                isinstance(
-                    el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
+                isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
             ):
                 next_node_idx += 1
                 graph.add_node(
@@ -499,8 +504,7 @@ async def visualize_neighborhood(
         elif index == len(events) - 1:
             target = END_NODE_ID
         elif current_node and current_node not in path_ellipsis_ends:
-            graph.add_node(special_node_idx, label="...",
-                           **{"class": "ellipsis"})
+            graph.add_node(special_node_idx, label="...", **{"class": "ellipsis"})
             target = special_node_idx
             path_ellipsis_ends.add(current_node)
             special_node_idx -= 1
