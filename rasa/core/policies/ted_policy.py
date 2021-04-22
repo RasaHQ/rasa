@@ -230,7 +230,7 @@ class TEDPolicy(Policy):
         MAX_POS_SIM: 0.8,
         # Maximum negative similarity for incorrect labels.
         # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-        MAX_NEG_SIM: -0.2,
+        MAX_NEG_SIM: -0.8,
         # If 'True' the algorithm only minimizes maximum similarity over
         # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
         USE_MAX_NEG_SIM: True,
@@ -354,6 +354,8 @@ class TEDPolicy(Policy):
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
+        rasa.utils.train_utils.check_margin_loss_setting(kwargs)
+
         self.config = rasa.utils.train_utils.override_defaults(
             self.defaults, new_config
         )

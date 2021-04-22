@@ -189,7 +189,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         MAX_POS_SIM: 0.8,
         # Maximum negative similarity for incorrect labels.
         # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-        MAX_NEG_SIM: -0.4,
+        MAX_NEG_SIM: -0.8,
         # If 'True' the algorithm only minimizes maximum similarity over
         # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
         USE_MAX_NEG_SIM: True,
@@ -330,6 +330,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 f"Please configure the number of '{EPOCHS}' in your configuration file."
                 f" We will change the default value of '{EPOCHS}' in the future to 1. "
             )
+        train_utils.check_margin_loss_setting(component_config)
 
         super().__init__(component_config)
 

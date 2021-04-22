@@ -569,18 +569,6 @@ def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
             f"Rasa Open Source 3.0.0 onwards.",
             warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
         )
-    if component_config.get(NEGATIVE_MARGIN_SCALE) is not None:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"{NEGATIVE_MARGIN_SCALE} is deprecated. It will be removed in "
-            f"Rasa Open Source 3.0.0 onwards.",
-            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-        )
-    if component_config.get(USE_MAX_NEG_SIM) is not None:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"{USE_MAX_NEG_SIM} is deprecated. It will be removed in "
-            f"Rasa Open Source 3.0.0 onwards.",
-            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-        )
     if component_config.get(LOSS_TYPE) == MARGIN:
         rasa.shared.utils.io.raise_deprecation_warning(
             f"`{LOSS_TYPE}={MARGIN}` is deprecated. It will be removed in "
@@ -606,6 +594,26 @@ def _check_similarity_loss_setting(component_config: Dict[Text, Any]) -> None:
             f" and `{LOSS_TYPE}={CROSS_ENTROPY}` or"
             f"`{SIMILARITY_TYPE}={COSINE}` and `{LOSS_TYPE}={TRIPLET}`.",
             category=UserWarning,
+        )
+
+
+def check_margin_loss_setting(component_config: Dict[Text, Any]) -> None:
+    """Checks if deprecated parameters are provided in the config.
+
+    Args:
+        component_config: Configuration to validate.
+    """
+    if component_config.get(NEGATIVE_MARGIN_SCALE) is not None:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"{NEGATIVE_MARGIN_SCALE} is deprecated. It will be removed in "
+            f"Rasa Open Source 3.0.0 onwards.",
+            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+        )
+    if component_config.get(USE_MAX_NEG_SIM) is not None:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"{USE_MAX_NEG_SIM} is deprecated. It will be removed in "
+            f"Rasa Open Source 3.0.0 onwards.",
+            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
         )
 
 
