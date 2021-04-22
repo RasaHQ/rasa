@@ -214,8 +214,12 @@ class BotFrameworkInput(InputChannel):
 
         @botframework_webhook.route("/webhook", methods=["POST"])
         async def webhook(request: Request) -> HTTPResponse:
-            """ The content of the Activity object exchanged in this request is detailed in MS
-                docs here : https://docs.microsoft.com/en-us/azure/bot-service/rest-api/bot-framework-rest-connector-api-reference?view=azure-bot-service-4.0#activity-object
+            """ Webhook receiving requests from MS Botframework.
+            
+            The request contains data about end-user messages or actions.
+            The content of the Activity object exchanged in this request
+            is detailed in MS:
+            https://docs.microsoft.com/en-us/azure/bot-service/rest-api/bot-framework-rest-connector-api-reference?view=azure-bot-service-4.0#activity-object
 
             """
             postdata = request.json
