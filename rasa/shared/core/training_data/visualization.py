@@ -43,24 +43,23 @@ class UserMessageGenerator:
         data: "TrainingData",
     ) -> Dict[Dict[Text, Any], List["Message"]]:
         """Create a mapping from intent to messages
-
         This allows a faster intent lookup."""
 
-        d = defaultdict(list)
+        dictionary_intent_to_messages = defaultdict(list)
         for example in data.training_examples:
             if example.get(INTENT, {}) is not None:
-                d[example.get(INTENT, {})].append(example)
-        return d
+                dictionary_intent_to_messages[example.get(
+                    INTENT, {})].append(example)
+        return dictionary_intent_to_messages
 
     @staticmethod
-    def _contains_same_entity(entities: Dict[Text, Any], e: Dict[Text, Any]) -> bool:
-        return entities.get(e.get(ENTITY_ATTRIBUTE_TYPE)) is None or entities.get(
-            e.get(ENTITY_ATTRIBUTE_TYPE)
-        ) != e.get(ENTITY_ATTRIBUTE_VALUE)
+    def _contains_same_entity(entities: Dict[Text, Any], entity: Dict[Text, Any]) -> bool:
+        return entities.get(entity.get(ENTITY_ATTRIBUTE_TYPE)) is None or entities.get(
+            entity.get(ENTITY_ATTRIBUTE_TYPE)
+        ) != entity.get(ENTITY_ATTRIBUTE_VALUE)
 
     def message_for_data(self, structured_info: Dict[Text, Any]) -> Any:
         """Find a data sample with the same intent and entities.
-
         Given the parsed data from a message (intent and entities) finds a
         message in the data that has the same intent and entities."""
 
@@ -70,11 +69,11 @@ class UserMessageGenerator:
             random.shuffle(usable_examples)
             for example in usable_examples:
                 entities = {
-                    e.get(ENTITY_ATTRIBUTE_TYPE): e.get(ENTITY_ATTRIBUTE_VALUE)
-                    for e in example.get(ENTITIES, [])
+                    entity.get(ENTITY_ATTRIBUTE_TYPE): entity.get(ENTITY_ATTRIBUTE_VALUE)
+                    for entity in example.get(ENTITIES, [])
                 }
-                for e in structured_info.get(ENTITIES, []):
-                    if self._contains_same_entity(entities, e):
+                for entity in structured_info.get(ENTITIES, []):
+                    if self._contains_same_entity(entities, entity):
                         break
                 else:
                     return example.get(TEXT)
@@ -85,7 +84,6 @@ def _fingerprint_node(
     graph: "networkx.MultiDiGraph", node: int, max_history: int
 ) -> Set[Text]:
     """Fingerprint a node in a graph.
-
     Can be used to identify nodes that are similar and can be merged within the
     graph.
     Generates all paths starting at `node` following the directed graph up to
@@ -138,7 +136,6 @@ def _outgoing_edges_are_similar(
 ) -> bool:
     """If the outgoing edges from the two nodes are similar enough,
     it doesn't matter if you are in a or b.
-
     As your path will be the same because the outgoing edges will lead you to
     the same nodes anyways."""
 
@@ -170,8 +167,8 @@ def _nodes_are_equivalent(
 
 def _add_edge(
     graph: "networkx.MultiDiGraph",
-    u: int,
-    v: int,
+    vertex_u: int,
+    vertex_v: int,
     key: Optional[Text],
     label: Optional[Text] = None,
     **kwargs: Any,
@@ -185,18 +182,17 @@ def _add_edge(
     if key == EDGE_NONE_LABEL:
         label = ""
 
-    if not graph.has_edge(u, v, key=EDGE_NONE_LABEL):
-        graph.add_edge(u, v, key=key, label=label, **kwargs)
+    if not graph.has_edge(vertex_u, vertex_v, key=EDGE_NONE_LABEL):
+        graph.add_edge(vertex_u, vertex_v, key=key, label=label, **kwargs)
     else:
-        d = graph.get_edge_data(u, v, key=EDGE_NONE_LABEL)
-        _transfer_style(kwargs, d)
+        data = graph.get_edge_data(vertex_u, vertex_v, key=EDGE_NONE_LABEL)
+        _transfer_style(kwargs, data)
 
 
 def _transfer_style(
     source: Dict[Text, Any], target: Dict[Text, Any]
 ) -> Dict[Text, Any]:
     """Copy over class names from source to target for all special classes.
-
     Used if a node is highlighted and merged with another node."""
 
     clazzes = source.get("class", "")
@@ -206,9 +202,9 @@ def _transfer_style(
     if "class" not in target:
         target["class"] = ""
 
-    for c in special_classes:
-        if c in clazzes and c not in target["class"]:
-            target["class"] += " " + c
+    for copy in special_classes:
+        if copy in clazzes and copy not in target["class"]:
+            target["class"] += " " + copy
 
     target["class"] = target["class"].strip()
     return target
@@ -224,16 +220,17 @@ def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) ->
     while changed:
         changed = False
         remaining_node_ids = [n for n in graph.nodes() if n > 0]
-        for idx, i in enumerate(remaining_node_ids):
+        for index, i in enumerate(remaining_node_ids):
             if graph.has_node(i):
                 # assumes node equivalence is cumulative
-                for j in remaining_node_ids[idx + 1 :]:
+                for j in remaining_node_ids[index + 1:]:
                     if graph.has_node(j) and _nodes_are_equivalent(
                         graph, i, j, max_history
                     ):
                         # make sure we keep special styles
                         _transfer_style(
-                            graph.nodes(data=True)[j], graph.nodes(data=True)[i]
+                            graph.nodes(data=True)[
+                                j], graph.nodes(data=True)[i]
                         )
 
                         changed = True
@@ -252,7 +249,8 @@ def _merge_equivalent_nodes(graph: "networkx.MultiDiGraph", max_history: int) ->
                             )
                             graph.remove_edge(j, succ_node)
                         # moves all incoming edges to the other node
-                        j_incoming_edges = list(graph.in_edges(j, keys=True, data=True))
+                        j_incoming_edges = list(
+                            graph.in_edges(j, keys=True, data=True))
                         for prev_node, _, k, d in j_incoming_edges:
                             _add_edge(
                                 graph,
@@ -274,7 +272,6 @@ async def _replace_edge_labels_with_nodes(
 ) -> None:
     """User messages are created as edge labels. This removes the labels and
     creates nodes instead.
-
     The algorithms (e.g. merging) are simpler if the user messages are labels
     on the edges. But it sometimes
     looks better if in the final graphs the user messages are nodes instead
@@ -286,25 +283,27 @@ async def _replace_edge_labels_with_nodes(
         message_generator = None
 
     edges = list(graph.edges(keys=True, data=True))
-    for s, e, k, d in edges:
-        if k != EDGE_NONE_LABEL:
-            if message_generator and d.get("label", k) is not None:
-                parsed_info = await interpreter.parse(d.get("label", k))
+    for edge_label_s, edge_label_e, edge_label_k, edge_label_d in edges:
+        if edge_label_k != EDGE_NONE_LABEL:
+            if message_generator and edge_label_d.get("label", edge_label_k) is not None:
+                parsed_info = await interpreter.parse(edge_label_d.get("label", edge_label_k))
                 label = message_generator.message_for_data(parsed_info)
             else:
-                label = d.get("label", k)
+                label = edge_label_d.get("label", edge_label_k)
             next_id += 1
-            graph.remove_edge(s, e, k)
+            graph.remove_edge(edge_label_s, edge_label_e, edge_label_k)
             graph.add_node(
                 next_id,
                 label=label,
                 shape="rect",
                 style="filled",
                 fillcolor="lightblue",
-                **_transfer_style(d, {"class": "intent"}),
+                **_transfer_style(edge_label_d, {"class": "intent"}),
             )
-            graph.add_edge(s, next_id, **{"class": d.get("class", "")})
-            graph.add_edge(next_id, e, **{"class": d.get("class", "")})
+            graph.add_edge(edge_label_s, next_id, **
+                           {"class": edge_label_d.get("class", "")})
+            graph.add_edge(next_id, edge_label_e, **
+                           {"class": edge_label_d.get("class", "")})
 
 
 def visualization_html_path() -> Text:
@@ -326,7 +325,8 @@ def persist_graph(graph: "networkx.Graph", output_file: Text) -> None:
     graph_as_text = expg.to_string()
     # escape backslashes
     graph_as_text = graph_as_text.replace("\\", "\\\\")
-    template = template.replace("// { graph-content }", f"graph = `{graph_as_text}`", 1)
+    template = template.replace(
+        "// { graph-content }", f"graph = `{graph_as_text}`", 1)
 
     rasa.shared.utils.io.write_text_file(template, output_file)
 
@@ -373,7 +373,8 @@ def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> No
         fontsize=fontsize,
         **{"class": "end"},
     )
-    graph.add_node(TMP_NODE_ID, label="TMP", style="invis", **{"class": "invisible"})
+    graph.add_node(TMP_NODE_ID, label="TMP",
+                   style="invis", **{"class": "invisible"})
 
 
 def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
@@ -439,12 +440,12 @@ async def visualize_neighborhood(
 
         message = None
         current_node = START_NODE_ID
-        idx = 0
+        index = 0
         is_current = events == current
 
-        for idx, el in enumerate(events):
+        for index, el in enumerate(events):
             if not prefix:
-                idx -= 1
+                index -= 1
                 break
             if isinstance(el, UserUttered):
                 if not el.intent:
@@ -452,7 +453,8 @@ async def visualize_neighborhood(
                 else:
                     message = el.parse_data
             elif (
-                isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
+                isinstance(
+                    el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
             ):
                 next_node_idx += 1
                 graph.add_node(
@@ -475,8 +477,8 @@ async def visualize_neighborhood(
         # "END" or a "TMP" node if this is the active conversation
         if is_current:
             if (
-                isinstance(events[idx], ActionExecuted)
-                and events[idx].action_name == ACTION_LISTEN_NAME
+                isinstance(events[index], ActionExecuted)
+                and events[index].action_name == ACTION_LISTEN_NAME
             ):
                 next_node_idx += 1
                 graph.add_node(
@@ -494,10 +496,11 @@ async def visualize_neighborhood(
                 target = TMP_NODE_ID
             else:
                 target = TMP_NODE_ID
-        elif idx == len(events) - 1:
+        elif index == len(events) - 1:
             target = END_NODE_ID
         elif current_node and current_node not in path_ellipsis_ends:
-            graph.add_node(special_node_idx, label="...", **{"class": "ellipsis"})
+            graph.add_node(special_node_idx, label="...",
+                           **{"class": "ellipsis"})
             target = special_node_idx
             path_ellipsis_ends.add(current_node)
             special_node_idx -= 1
@@ -550,7 +553,6 @@ async def visualize_stories(
     fontsize: int = 12,
 ) -> "networkx.MultiDiGraph":
     """Given a set of stories, generates a graph visualizing the flows in the stories.
-
     Visualization is always a trade off between making the graph as small as
     possible while
     at the same time making sure the meaning doesn't change to "much". The
@@ -560,17 +562,14 @@ async def visualize_stories(
     the algorithm might create paths through the graph that aren't actually
     specified in the
     stories, but we try to minimize that.
-
     Output file defines if and where a file containing the plotted graph
     should be stored.
-
     The history defines how much 'memory' the graph has. This influences in
     which situations the
     algorithm will merge nodes. Nodes will only be merged if they are equal
     within the history, this
     means the larger the history is we take into account the less likely it
     is we merge any nodes.
-
     The training data parameter can be used to pass in a Rasa NLU training
     data instance. It will
     be used to replace the user messages from the story file with actual
