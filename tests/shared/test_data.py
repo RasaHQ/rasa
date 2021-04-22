@@ -3,16 +3,14 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
+from typing import Text
 
 import pytest
 import rasa.shared
 
 import rasa.shared.data
-from rasa.shared.constants import DEFAULT_E2E_TESTS_PATH
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.shared.utils.io import write_text_file, json_to_string
-from tests.conftest import DEFAULT_NLU_DATA
-from tests.core.conftest import DEFAULT_STORIES_FILE
 
 
 @pytest.mark.parametrize(
@@ -81,8 +79,16 @@ def test_default_story_files_are_story_files():
         assert rasa.shared.data.is_story_file(fn)
 
 
-def test_default_conversation_tests_are_conversation_tests_yml(tmpdir: Path):
-    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
+def test_default_conversation_tests_are_conversation_tests_yml(tmp_path: Path):
+    e2e_path = tmp_path / "test_stories.yml"
+    e2e_story = """stories:"""
+    write_text_file(e2e_story, e2e_path)
+
+    assert rasa.shared.data.is_test_stories_file(str(e2e_path))
+
+
+def test_conversation_tests_in_a_directory(tmp_path: Path):
+    parent = tmp_path / "tests"
     Path(parent).mkdir(parents=True)
 
     e2e_path = parent / "test_stories.yml"
@@ -94,21 +100,18 @@ def test_default_conversation_tests_are_conversation_tests_yml(tmpdir: Path):
 
 def test_default_conversation_tests_are_conversation_tests_md(tmpdir: Path):
     # can be removed once conversation tests MD support is removed
-    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
+    parent = tmpdir / "tests"
     Path(parent).mkdir(parents=True)
 
-    e2e_path = parent / "conversation_tests.md"
-    e2e_story = """## my story test"""
+    e2e_path = parent / "test_stories.yml"
+    e2e_story = """stories:"""
     write_text_file(e2e_story, e2e_path)
 
     assert rasa.shared.data.is_test_stories_file(str(e2e_path))
 
 
 def test_nlu_data_files_are_not_conversation_tests(tmpdir: Path):
-    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
-    Path(parent).mkdir(parents=True)
-
-    nlu_path = parent / "nlu.md"
+    nlu_path = tmpdir / "nlu.md"
     nlu_data = """
 ## intent: greet
 - hello
@@ -121,11 +124,7 @@ def test_nlu_data_files_are_not_conversation_tests(tmpdir: Path):
 
 
 def test_domain_files_are_not_conversation_tests(tmpdir: Path):
-    parent = tmpdir / DEFAULT_E2E_TESTS_PATH
-    Path(parent).mkdir(parents=True)
-
-    domain_path = parent / "domain.yml"
-
+    domain_path = tmpdir / "domain.yml"
     assert not rasa.shared.data.is_test_stories_file(str(domain_path))
 
 
@@ -213,21 +212,19 @@ def test_get_core_nlu_directories_with_none():
     assert all(not os.listdir(directory) for directory in directories)
 
 
-def test_same_file_names_get_resolved(tmp_path):
+def test_same_file_names_get_resolved(
+    tmp_path: Path, stories_path: Text, nlu_data_path: Text
+):
     # makes sure the resolution properly handles if there are two files with
     # with the same name in different directories
 
     (tmp_path / "one").mkdir()
     (tmp_path / "two").mkdir()
-    data_dir_one = str(tmp_path / "one" / "stories.md")
-    data_dir_two = str(tmp_path / "two" / "stories.md")
-    shutil.copy2(DEFAULT_STORIES_FILE, data_dir_one)
-    shutil.copy2(DEFAULT_STORIES_FILE, data_dir_two)
+    shutil.copy2(stories_path, tmp_path / "one" / "stories.yml")
+    shutil.copy2(stories_path, tmp_path / "two" / "stories.yml")
 
-    nlu_dir_one = str(tmp_path / "one" / "nlu.yml")
-    nlu_dir_two = str(tmp_path / "two" / "nlu.yml")
-    shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_one)
-    shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_two)
+    shutil.copy2(nlu_data_path, tmp_path / "one" / "nlu.yml")
+    shutil.copy2(nlu_data_path, tmp_path / "two" / "nlu.yml")
 
     core_directory, nlu_directory = rasa.shared.data.get_core_nlu_directories(
         [str(tmp_path)]
@@ -241,7 +238,7 @@ def test_same_file_names_get_resolved(tmp_path):
     stories = os.listdir(core_directory)
 
     assert len(stories) == 2
-    assert all(f.endswith("stories.md") for f in stories)
+    assert all(f.endswith("stories.yml") for f in stories)
 
 
 @pytest.mark.parametrize(
@@ -254,6 +251,8 @@ def test_same_file_names_get_resolved(tmp_path):
                 "data/examples/dialogflow/entities/cuisine.json",
                 "data/examples/dialogflow/entities/cuisine_entries_en.json",
                 "data/examples/dialogflow/entities/cuisine_entries_es.json",
+                "data/examples/dialogflow/entities/flightNumber.json",
+                "data/examples/dialogflow/entities/flightNumber_entries_en.json",
                 "data/examples/dialogflow/entities/location.json",
                 "data/examples/dialogflow/entities/location_entries_en.json",
                 "data/examples/dialogflow/entities/location_entries_es.json",
@@ -273,21 +272,14 @@ def test_same_file_names_get_resolved(tmp_path):
                 "data/examples/dialogflow/package.json",
             ],
         ),
-        (
-            "luis",
-            [
-                "data/examples/luis/demo-restaurants_v2.json",
-                "data/examples/luis/demo-restaurants_v4.json",
-                "data/examples/luis/demo-restaurants_v5.json",
-            ],
-        ),
+        ("luis", ["data/examples/luis/demo-restaurants_v7.json",],),
         (
             "rasa",
             [
-                "data/examples/rasa/demo-rasa-multi-intent.md",
-                "data/examples/rasa/demo-rasa-responses.md",
+                "data/examples/rasa/demo-rasa-multi-intent.yml",
+                "data/examples/rasa/demo-rasa-responses.yml",
                 "data/examples/rasa/demo-rasa.json",
-                "data/examples/rasa/demo-rasa.md",
+                "data/examples/rasa/demo-rasa.yml",
             ],
         ),
         ("wit", ["data/examples/wit/demo-flights.json"]),

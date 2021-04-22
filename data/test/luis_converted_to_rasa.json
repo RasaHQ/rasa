@@ -8,6 +8,7 @@
           {
             "start": 31,
             "end": 36,
+            "role": "to",
             "value": "north",
             "entity": "location"
           }

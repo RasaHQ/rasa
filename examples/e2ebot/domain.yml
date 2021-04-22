@@ -1,0 +1,23 @@
+version: "2.0"
+
+actions:
+ - utter_greet
+ - utter_suggest_cuisine
+ - utter_search_restaurants
+
+intents:
+ - greet
+ - affirm
+ - deny
+ - search_restaurant
+
+responses:
+  utter_greet:
+  - text: "hi!"
+  utter_suggest_cuisine:
+  - text: "how about greek food?"
+  - text: "how about chinese food?"
+  - text: "how about italian food?"
+  - text: "how about sushi?"
+  utter_search_restaurants:
+  - text: "great! here's what I found ..."

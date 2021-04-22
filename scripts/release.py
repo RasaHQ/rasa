@@ -217,17 +217,17 @@ def git_current_branch() -> Text:
         return output.decode().strip()
     except CalledProcessError:
         # e.g. we are in detached head state
-        return "master"
+        return "main"
 
 
-def git_current_branch_is_master_or_release() -> bool:
+def git_current_branch_is_main_or_release() -> bool:
     """
     Returns True if the current local git
-    branch is master or a release branch e.g. 1.10.x
+    branch is main or a release branch e.g. 1.10.x
     """
     current_branch = git_current_branch()
     return (
-        current_branch == "master"
+        current_branch == "main"
         or RELEASE_BRANCH_PATTERN.match(current_branch) is not None
     )
 
@@ -335,7 +335,7 @@ def main(args: argparse.Namespace) -> None:
         generate_changelog(version)
 
     # alpha workflow on feature branch when a version bump is required
-    if version.is_alpha and not git_current_branch_is_master_or_release():
+    if version.is_alpha and not git_current_branch_is_main_or_release():
         create_commit(version)
         push_changes()
 

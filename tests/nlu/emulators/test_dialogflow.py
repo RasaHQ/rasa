@@ -18,23 +18,15 @@ def test_dialogflow_response():
     norm = em.normalise_response_json(data)
 
     assert norm == {
-        "id": norm["id"],
-        "result": {
-            "action": data["intent"]["name"],
-            "actionIncomplete": False,
-            "contexts": [],
-            "fulfillment": {},
-            "metadata": {
-                "intentId": norm["result"]["metadata"]["intentId"],
-                "intentName": data["intent"]["name"],
-                "webhookUsed": "false",
-            },
+        "responseId": norm["responseId"],
+        "queryResult": {
+            "queryText": "I want italian food",
+            "action": "inform",
             "parameters": {"cuisine": ["italian"]},
-            "resolvedQuery": data["text"],
-            "score": data["intent"]["confidence"],
-            "source": "agent",
+            "fulfillmentText": "",
+            "fulfillmentMessages": [],
+            "outputContexts": [],
+            "intent": {"name": "inform", "displayName": "inform"},
+            "intentDetectionConfidence": 0.4794813722432127,
         },
-        "sessionId": norm["sessionId"],
-        "status": {"code": 200, "errorType": "success"},
-        "timestamp": norm["timestamp"],
     }

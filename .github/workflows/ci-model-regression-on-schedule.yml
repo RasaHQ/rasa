@@ -7,7 +7,8 @@ on:
     - cron:  '1 23 * * */7'
 
 env:
-  GKE_ZONE: us-central1-a
+  GKE_ZONE: us-central1
+  GCLOUD_VERSION: "318.0.0"
 
 jobs:
   read_test_configuration:
@@ -16,7 +17,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-    - name: Checkout master
+    - name: Checkout main
       uses: actions/checkout@v2
 
     - name: Download yq
@@ -48,17 +49,19 @@ jobs:
 
       - name: Render deployment template
         run: |-
+          export GH_RUNNER_IMAGE=${{ secrets.GH_RUNNER_IMAGE }}
           ./gomplate -f .github/runner/github-runner-deployment.yaml.tmpl -o runner_deployment.yaml
 
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@0.1.2
+      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
         with:
-          service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
-          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
+          version: "${{ env.GCLOUD_VERSION }}"
+          service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
+          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
 
       # Get the GKE credentials so we can deploy to the cluster
       - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}"
+          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}"
 
       - name: Deploy Github Runner
         run: |-
@@ -138,7 +141,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v1
+        uses: Gr1N/setup-poetry@v4
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -148,7 +151,7 @@ jobs:
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           path: ~/.cache/pypoetry/virtualenvs
-          key: ${{ runner.os }}-poetry-3.8-${{ hashFiles('**/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.8-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
 
       - name: Install Dependencies 📦
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -156,7 +159,6 @@ jobs:
           poetry install --extras full
           make install
           poetry run python -m spacy download de_core_news_md
-          poetry run python -m spacy link --force de_core_news_md de
 
       - name: Validate that GPUs are working
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
@@ -169,6 +171,7 @@ jobs:
         env:
           TFHUB_CACHE_DIR: ~/.tfhub_cache/
           OMP_NUM_THREADS: 1
+          TF_DETERMINISTIC_OPS: 1 # Run GPUs in a deterministic mode
         run: |-
           poetry run rasa --version
 
@@ -204,6 +207,7 @@ jobs:
           TRAIN_RUN_TIME: ${{ steps.run_test.outputs.train_run_time }}
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           PR_URL: ""
+          DATASET_REPOSITORY_BRANCH: "main"
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
@@ -217,6 +221,239 @@ jobs:
           name: report.json
           path: ./report.json
 
+      - name: Pick an assignee randomly
+        if: failure()
+        id: pick_assignee
+        run: |
+          ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
+          # Randomly select an item from assignees list
+          ASSIGNEE=${ASSIGNEES_LIST[ $(( RANDOM % ${#ASSIGNEES_LIST[@]} )) ]}
+          echo "::set-output name=assignee::$ASSIGNEE"
+
+      - name: Open GitHub Issue 📬
+        if: failure()
+        uses: rishabhgupta/git-action-issue@v2
+        id: open_issue
+        with:
+            token: ${{ secrets.GITHUB_TOKEN }}
+            title: "Scheduled Model Regression Test Failed"
+            body: "*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br> Scheduled Model Regression Test failed. <br> **Configuration**: ${{ matrix.config }} <br> **Dataset**: ${{ matrix.dataset}}"
+            assignees: ${{ steps.pick_assignee.outputs.assignee }}
+
+      - name: Add Label to the Issue
+        if: failure()
+        id: add_label
+        env:
+          LABEL: "type:bug :bug:"
+        run: |
+          # Get issue number
+          ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.number')
+          echo "::set-output name=issue_number::$ISSUE_NUMBER"
+
+          # Add label to the issue
+          curl \
+            -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
+            -d '{"labels":["${{ env.LABEL }}"]}'
+
+      - name: Assign Issue to Project Column
+        if: failure()
+        run: |
+          ISSUE_ID=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.id')
+
+          # Add this issue to a project column
+          curl \
+            -X POST \
+            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUE_RESEARCH_BOARD_TOKEN }}" \
+            -H 'Accept: application/vnd.github.inertia-preview+json' \
+            -d "{\"content_type\": \"Issue\", \"content_id\": $ISSUE_ID}" \
+            "https://api.github.com/projects/columns/${{ secrets.RESEARCH_BOARD_INBOX_COLUMN_ID }}/cards"
+
+      - name: Notify Slack of Failure 😱
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow,job,commit,repo,ref,author,took
+          custom_payload: |
+            {
+              attachments: [{
+                fallback: 'fallback',
+                color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
+                title: `${process.env.AS_WORKFLOW}`,
+                text: 'Scheduled model regression test failed :no_entry:️',
+                fields: [{
+                  title: 'Configuration',
+                  value: '${{ matrix.config }}',
+                  short: false
+                },
+                {
+                  title: 'Dataset',
+                  value: '${{ matrix.dataset }}',
+                  short: false
+                },
+                {
+                  title: 'GitHub Issue',
+                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.add_label.outputs.issue_number }}`,
+                  short: false
+                },
+                {
+                  title: 'GitHub Action',
+                  value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+                  short: false
+                }],
+                actions: [{
+                }]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
+
+  analyse_performance:
+    name: Analyse Performance
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+    - deploy_runner_gpu
+    - model_regression_test_gpu
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download an artifact with the results for the schedule version
+        run: |
+          # Get ID of the schedule workflow
+          SCHEDULE_ID=$(curl -X GET -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows" \
+            | jq -r  '.workflows[] | select(.name == "${{ github.workflow }}") | select(.path | test("schedule")) | .id')
+
+          ARTIFACT_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}'  -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${SCHEDULE_ID}/runs?event=schedule&status=completed&branch=main&per_page=1" | jq -r .workflow_runs[0].artifacts_url)
+
+          DOWNLOAD_URL=$(curl -s -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -H "Accept: application/vnd.github.v3+json" "${ARTIFACT_URL}" \
+            | jq -r '.artifacts[] | select(.name="report.json") | .archive_download_url')
+
+          # Download the artifact
+          curl -H 'Authorization: token ${{ secrets.GITHUB_TOKEN }}' -LJO  -H "Accept: application/vnd.github.v3+json" $DOWNLOAD_URL
+
+          # Unzip and change name
+          unzip report.json.zip && mv report.json report_main.json
+
+      - name: Download the report
+        uses: actions/download-artifact@v2
+        with:
+          name: report.json
+
+      - name: Download gomplate
+        run: |-
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo chmod +x /usr/local/bin/gomplate
+
+      - name: Analyse Performance 🔍
+        id: performance
+        run: |
+          OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
+
+          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          echo "::set-output name=report_description::${OUTPUT}"
+
+          # Remove all (-0.00) from OUTPUT.
+          # We don't want to count (-0.00) as a performance drop
+          OUTPUT=${OUTPUT//(-0.00)/}
+
+          # Any (negatives) found means there is a performance drops.
+          if [[ "${OUTPUT}" =~ \(-[0-9.]+\) ]]; then
+            echo "Some test performance scores decreased."
+            echo "::set-output name=is_dropped::true"
+          else
+            echo "No test performance drops."
+            echo "::set-output name=is_dropped::false"
+          fi
+
+      - name: Pick an assignee randomly
+        if: steps.performance.outputs.is_dropped == 'true'
+        id: pick_assignee
+        run: |
+          ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
+          # Randomly select an item from assignees list
+          ASSIGNEE=${ASSIGNEES_LIST[ $(( RANDOM % ${#ASSIGNEES_LIST[@]} )) ]}
+          echo "::set-output name=assignee::$ASSIGNEE"
+
+      - name: Open GitHub Issue 📬
+        if: steps.performance.outputs.is_dropped == 'true'
+        uses: rishabhgupta/git-action-issue@v2
+        id: open_issue
+        with:
+            token: ${{ secrets.GITHUB_TOKEN }}
+            title: "Scheduled Model Regression Test Performance Drops"
+            body: "*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br> ${{ steps.performance.outputs.report_description }}"
+            assignees: ${{ steps.pick_assignee.outputs.assignee }}
+
+      - name: Add Label to the Issue
+        if: steps.performance.outputs.is_dropped == 'true'
+        id: add_label
+        env:
+          LABEL: "type:bug :bug:"
+        run: |
+          # Get issue number
+          ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.number')
+          echo "::set-output name=issue_number::$ISSUE_NUMBER"
+
+          # Add label to the issue
+          curl \
+            -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
+            -d '{"labels":["${{ env.LABEL }}"]}'
+
+      - name: Assign Issue to Project Column
+        if: steps.performance.outputs.is_dropped == 'true'
+        run: |
+          ISSUE_ID=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.id')
+
+          # Add this issue to a project column
+          curl \
+            -X POST \
+            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUE_RESEARCH_BOARD_TOKEN }}" \
+            -H 'Accept: application/vnd.github.inertia-preview+json' \
+            -d "{\"content_type\": \"Issue\", \"content_id\": $ISSUE_ID}" \
+            "https://api.github.com/projects/columns/${{ secrets.RESEARCH_BOARD_INBOX_COLUMN_ID }}/cards"
+
+      - name: Notify Slack when Performance Drops 💬
+        if: steps.performance.outputs.is_dropped == 'true'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow,job,commit,repo,ref,author,took
+          custom_payload: |
+            {
+              attachments: [{
+                fallback: 'fallback',
+                color: 'danger',
+                title: `${process.env.AS_WORKFLOW}`,
+                text: 'Scheduled model regression test performance drops :chart_with_downwards_trend:',
+                fields: [{
+                  title: 'GitHub Issue',
+                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.add_label.outputs.issue_number }}`,
+                  short: false
+                },
+                {
+                  title: 'GitHub Action',
+                  value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+                  short: false
+                }],
+                actions: [{
+                }]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
+
   remove_runner_gpu:
     name: Delete Github Runner - GPU
     if: always()
@@ -227,14 +464,15 @@ jobs:
 
     steps:
       # Setup gcloud CLI
-      - uses: GoogleCloudPlatform/github-actions@0.1.3
+      - uses: GoogleCloudPlatform/github-actions@e23988b2af9696c66e87d1efbc688d3a80c3be14
         with:
-          service_account_key: ${{ secrets.GKE_SA_RASA_CI_GPU }}
-          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME }}
+          version: "${{ env.GCLOUD_VERSION }}"
+          service_account_key: ${{ secrets.GKE_SA_RASA_CI_CD_GPU_RASA_CI_CD }}
+          service_account_email: ${{ secrets.GKE_RASA_CI_GPU_SA_NAME_RASA_CI_CD }}
 
       # Get the GKE credentials so we can deploy to the cluster
       - run: |-
-          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT }}"
+          gcloud container clusters get-credentials "${{ secrets.GKE_GPU_CLUSTER_RASA_CI_CD }}" --zone "$GKE_ZONE" --project "${{ secrets.GKE_SA_RASA_CI_GPU_PROJECT_RASA_CI_CD }}"
 
       - name: Remove Github Runner
         run: kubectl -n github-runner delete deployments github-runner-${GITHUB_RUN_ID} --grace-period=30

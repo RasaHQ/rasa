@@ -54,10 +54,8 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        affirm_action = action.action_from_name(
-            ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-            self._action_endpoint,
-            domain.user_actions,
+        affirm_action = action.action_for_name_or_text(
+            ACTION_DEFAULT_ASK_AFFIRMATION_NAME, domain, self._action_endpoint
         )
 
         return await affirm_action.run(output_channel, nlg, tracker, domain)
@@ -69,8 +67,8 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        rephrase = action.action_from_name(
-            ACTION_DEFAULT_ASK_REPHRASE_NAME, self._action_endpoint, domain.user_actions
+        rephrase = action.action_for_name_or_text(
+            ACTION_DEFAULT_ASK_REPHRASE_NAME, domain, self._action_endpoint
         )
 
         return await rephrase.run(output_channel, nlg, tracker, domain)
@@ -104,31 +102,8 @@ class TwoStageFallbackAction(LoopAction):
         if _two_fallbacks_in_a_row(tracker) or _second_affirmation_failed(tracker):
             return await self._give_up(output_channel, nlg, tracker, domain)
 
-        return await self._revert_fallback_events(
-            output_channel, nlg, tracker, domain, events_so_far
-        ) + _message_clarification(tracker)
-
-    async def _revert_fallback_events(
-        self,
-        output_channel: OutputChannel,
-        nlg: NaturalLanguageGenerator,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        events_so_far: List[Event],
-    ) -> List[Event]:
-        revert_events = [UserUtteranceReverted(), UserUtteranceReverted()]
-
-        temp_tracker = DialogueStateTracker.from_events(
-            tracker.sender_id, tracker.applied_events() + events_so_far + revert_events
-        )
-
-        while temp_tracker.latest_message and not await self.is_done(
-            output_channel, nlg, temp_tracker, domain, []
-        ):
-            temp_tracker.update(revert_events[-1])
-            revert_events.append(UserUtteranceReverted())
-
-        return revert_events
+        # revert fallback events
+        return [UserUtteranceReverted()] + _message_clarification(tracker)
 
     async def _give_up(
         self,
@@ -137,8 +112,8 @@ class TwoStageFallbackAction(LoopAction):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> List[Event]:
-        fallback = action.action_from_name(
-            ACTION_DEFAULT_FALLBACK_NAME, self._action_endpoint, domain.user_actions
+        fallback = action.action_for_name_or_text(
+            ACTION_DEFAULT_FALLBACK_NAME, domain, self._action_endpoint
         )
 
         return await fallback.run(output_channel, nlg, tracker, domain)
@@ -165,7 +140,9 @@ def _last_n_intent_names(
     intent_names = []
     for i in range(number_of_last_intent_names):
         message = tracker.get_last_event_for(
-            UserUttered, skip=i, event_verbosity=EventVerbosity.AFTER_RESTART
+            (UserUttered, UserUtteranceReverted),
+            skip=i,
+            event_verbosity=EventVerbosity.AFTER_RESTART,
         )
         if isinstance(message, UserUttered):
             intent_names.append(message.intent.get("name"))
@@ -194,7 +171,14 @@ def _second_affirmation_failed(tracker: DialogueStateTracker) -> bool:
 
 
 def _message_clarification(tracker: DialogueStateTracker) -> List[Event]:
-    clarification = copy.deepcopy(tracker.latest_message)
+    latest_message = tracker.latest_message
+    if not latest_message:
+        raise TypeError(
+            "Cannot issue message clarification because "
+            "latest message is not on tracker."
+        )
+
+    clarification = copy.deepcopy(latest_message)
     clarification.parse_data["intent"]["confidence"] = 1.0
     clarification.timestamp = time.time()
     return [ActionExecuted(ACTION_LISTEN_NAME), clarification]

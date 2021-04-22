@@ -4,9 +4,18 @@ import os
 import shutil
 import warnings
 from types import TracebackType
-from typing import Any, Coroutine, Dict, List, Optional, Text, Type, TypeVar
+from typing import (
+    Any,
+    Coroutine,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Type,
+    TypeVar,
+    Union,
+)
 
-import rasa.core.utils
 import rasa.utils.io
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
 from rasa.shared.constants import DEFAULT_LOG_LEVEL, ENV_LOG_LEVEL
@@ -52,7 +61,7 @@ def read_global_config(path: Text) -> Dict[Text, Any]:
         return {}
 
 
-def set_log_level(log_level: Optional[int] = None):
+def set_log_level(log_level: Optional[int] = None) -> None:
     """Set log level of Rasa and Tensorflow either to the provided log level or
     to the log level specified in the environment variable 'LOG_LEVEL'. If none is set
     a default log level will be used."""
@@ -98,31 +107,22 @@ def update_socketio_log_level() -> None:
 
 
 def update_tensorflow_log_level() -> None:
-    """Set the log level of Tensorflow to the log level specified in the environment
-    variable 'LOG_LEVEL_LIBRARIES'."""
-
-    # Disables libvinfer, tensorRT, cuda, AVX2 and FMA warnings (CPU support). This variable needs to be set before the
+    """Sets Tensorflow log level based on env variable 'LOG_LEVEL_LIBRARIES'."""
+    # Disables libvinfer, tensorRT, cuda, AVX2 and FMA warnings (CPU support).
+    # This variable needs to be set before the
     # first import since some warnings are raised on the first import.
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-    import tensorflow as tf
-
     log_level = os.environ.get(ENV_LOG_LEVEL_LIBRARIES, DEFAULT_LOG_LEVEL_LIBRARIES)
 
-    if log_level == "DEBUG":
-        tf_log_level = tf.compat.v1.logging.DEBUG
-    elif log_level == "INFO":
-        tf_log_level = tf.compat.v1.logging.INFO
-    elif log_level == "WARNING":
-        tf_log_level = tf.compat.v1.logging.WARN
-    else:
-        tf_log_level = tf.compat.v1.logging.ERROR
+    if not log_level:
+        log_level = "ERROR"
 
-    tf.compat.v1.logging.set_verbosity(tf_log_level)
+    logging.getLogger("tensorflow").setLevel(log_level)
     logging.getLogger("tensorflow").propagate = False
 
 
-def update_sanic_log_level(log_file: Optional[Text] = None):
+def update_sanic_log_level(log_file: Optional[Text] = None) -> None:
     """Set the log level of sanic loggers to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     from sanic.log import logger, error_logger, access_logger
@@ -176,19 +176,6 @@ def set_log_and_warnings_filters() -> None:
     warnings.filterwarnings("once", category=UserWarning)
 
 
-def obtain_verbosity() -> int:
-    """Returns a verbosity level according to the set log level."""
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-
-    verbosity = 0
-    if log_level == "DEBUG":
-        verbosity = 2
-    if log_level == "INFO":
-        verbosity = 1
-
-    return verbosity
-
-
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     """Sorts a list of dictionaries by their first key."""
     return sorted(dicts, key=lambda d: list(d.keys())[0])
@@ -222,7 +209,7 @@ def write_global_config_value(name: Text, value: Any) -> bool:
 def read_global_config_value(name: Text, unavailable_ok: bool = True) -> Any:
     """Read a value from the global Rasa configuration."""
 
-    def not_found():
+    def not_found() -> None:
         if unavailable_ok:
             return None
         else:
@@ -263,7 +250,8 @@ class RepeatedLogFilter(logging.Filter):
 
     last_log = None
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Determines whether current log is different to last log."""
         current_log = (
             record.levelno,
             record.pathname,
@@ -312,3 +300,21 @@ def run_in_loop(
     loop.run_until_complete(asyncio.gather(*pending))
 
     return result
+
+
+async def call_potential_coroutine(
+    coroutine_or_return_value: Union[Any, Coroutine]
+) -> Any:
+    """Awaits coroutine or returns value directly if it's not a coroutine.
+
+    Args:
+        coroutine_or_return_value: Either the return value of a synchronous function
+            call or a coroutine which needs to be await first.
+
+    Returns:
+        The return value of the function.
+    """
+    if asyncio.iscoroutine(coroutine_or_return_value):
+        return await coroutine_or_return_value
+
+    return coroutine_or_return_value

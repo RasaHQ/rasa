@@ -3,11 +3,9 @@ from typing import Union, Text, Optional, List, Any, Tuple
 import numpy as np
 import scipy.sparse
 
-from rasa.shared.nlu.constants import VALID_FEATURE_TYPES
-
 
 class Features:
-    """Stores the features produces by any featurizer."""
+    """Stores the features produced by any featurizer."""
 
     def __init__(
         self,
@@ -16,20 +14,18 @@ class Features:
         attribute: Text,
         origin: Union[Text, List[Text]],
     ) -> None:
-        self._validate_feature_type(feature_type)
+        """Initializes the Features object.
 
+        Args:
+            features: The features.
+            feature_type: Type of the feature, e.g. FEATURE_TYPE_SENTENCE.
+            attribute: Message attribute, e.g. INTENT or TEXT.
+            origin: Name of the component that created the features.
+        """
         self.features = features
         self.type = feature_type
         self.origin = origin
         self.attribute = attribute
-
-    @staticmethod
-    def _validate_feature_type(feature_type: Text) -> None:
-        if feature_type not in VALID_FEATURE_TYPES:
-            raise ValueError(
-                f"Invalid feature type '{feature_type}' used. Valid feature types are: "
-                f"{VALID_FEATURE_TYPES}."
-            )
 
     def is_sparse(self) -> bool:
         """Checks if features are sparse or not.
@@ -93,12 +89,23 @@ class Features:
     ) -> Tuple[
         Text, Text, Union[np.ndarray, scipy.sparse.spmatrix], Union[Text, List[Text]]
     ]:
+        """Returns a 4-tuple of defining properties.
+
+        Returns:
+            Tuple of type, attribute, features, and origin properties.
+        """
         return (self.type, self.attribute, self.features, self.origin)
 
-    def __hash__(self) -> int:
-        return hash(self.__key__())
-
     def __eq__(self, other: Any) -> bool:
+        """Tests if the `self` `Feature` equals to the `other`.
+
+        Args:
+            other: The other object.
+
+        Returns:
+            `True` when the other object is a `Feature` and has the same
+            type, attribute, and feature tensors.
+        """
         if not isinstance(other, Features):
             return False
 

@@ -16,7 +16,7 @@ from rasa.utils.common import TempDirectoryPath
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
     from rasa.core.utils import AvailableEndpoints
-
+    from rasa.core.agent import Agent
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +30,11 @@ async def train(
     policy_config: Optional[Union[Text, Dict]] = None,
     exclusion_percentage: Optional[int] = None,
     additional_arguments: Optional[Dict] = None,
-):
-    from rasa.core.agent import Agent
+    model_to_finetune: Optional["Agent"] = None,
+) -> "Agent":
     from rasa.core import config, utils
     from rasa.core.utils import AvailableEndpoints
+    from rasa.core.agent import Agent
 
     if not endpoints:
         endpoints = AvailableEndpoints()
@@ -64,6 +65,8 @@ async def train(
     training_data = await agent.load_data(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
+    if model_to_finetune:
+        agent.policy_ensemble = model_to_finetune.policy_ensemble
     agent.train(training_data, **additional_arguments)
     agent.persist(output_path)
 
@@ -78,7 +81,7 @@ async def train_comparison_models(
     policy_configs: Optional[List] = None,
     runs: int = 1,
     additional_arguments: Optional[Dict] = None,
-):
+) -> None:
     """Train multiple models for comparison of policies"""
     from rasa import model
 
@@ -140,7 +143,7 @@ async def do_compare_training(
     args: argparse.Namespace,
     story_file: Text,
     additional_arguments: Optional[Dict] = None,
-):
+) -> None:
     _, no_stories = await asyncio.gather(
         train_comparison_models(
             story_file=story_file,
@@ -170,7 +173,7 @@ async def do_compare_training(
 
 def do_interactive_learning(
     args: argparse.Namespace, file_importer: TrainingDataImporter
-):
+) -> None:
     from rasa.core.training import interactive
 
     interactive.run_interactive_learning(

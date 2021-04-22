@@ -1,12 +1,18 @@
 import json
 import logging
 import typing
+import scipy.sparse
+import numpy as np
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 from collections import defaultdict, OrderedDict
-import scipy.sparse
 
-import numpy as np
+from sklearn.base import clone
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import LabelEncoder
+
+import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.utils.tensorflow.model_data_utils as model_data_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
@@ -17,18 +23,13 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-import rasa.shared.utils.io
-from sklearn.base import clone
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import LabelEncoder
 from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
 from rasa.shared.nlu.training_data.features import Features
+from rasa.utils.tensorflow.model_data import Data, FeatureArray
 from rasa.utils.tensorflow.constants import SENTENCE
-from rasa.utils.tensorflow.model_data import Data
 
 # noinspection PyProtectedMember
 from sklearn.utils import shuffle as sklearn_shuffle
@@ -59,9 +60,9 @@ class SklearnPolicy(Policy):
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: int = DEFAULT_MAX_HISTORY,
         model: Optional["sklearn.base.BaseEstimator"] = None,
-        param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
+        param_grid: Optional[Union[Dict[Text, List], List[Dict]]] = None,
         cv: Optional[int] = None,
-        scoring: Optional[Text or List or Dict or Callable] = "accuracy",
+        scoring: Optional[Union[Text, List, Dict, Callable]] = "accuracy",
         label_encoder: LabelEncoder = LabelEncoder(),
         shuffle: bool = True,
         zero_state_features: Optional[Dict[Text, List["Features"]]] = None,
@@ -72,6 +73,8 @@ class SklearnPolicy(Policy):
         Args:
             featurizer: Featurizer used to convert the training data into
                 vector format.
+            priority: Policy priority
+            max_history: Maximum history of the dialogs.
             model: The sklearn model or model pipeline.
             param_grid: If *param_grid* is not None and *cv* is given,
                 a grid search on the given *param_grid* is performed
@@ -85,7 +88,6 @@ class SklearnPolicy(Policy):
             shuffle: Whether to shuffle training data.
             zero_state_features: Contains default feature values for attributes
         """
-
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
                 raise TypeError(
@@ -104,7 +106,7 @@ class SklearnPolicy(Policy):
                 )
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority)
+        super().__init__(featurizer, priority, **kwargs)
 
         self.model = model or self._default_model()
         self.cv = cv
@@ -128,10 +130,11 @@ class SklearnPolicy(Policy):
         return LogisticRegression(solver="liblinear", multi_class="auto")
 
     @property
-    def _state(self):
+    def _state(self) -> Dict[Text, Any]:
         return {attr: getattr(self, attr) for attr in self._pickle_params}
 
-    def model_architecture(self, **kwargs) -> Any:
+    def model_architecture(self, **kwargs: Any) -> Any:
+        """Sets model parameters for training."""
         # filter out kwargs that cannot be passed to model
         train_params = self._get_valid_params(self.model.__init__, **kwargs)
         return self.model.set_params(**train_params)
@@ -160,20 +163,32 @@ class SklearnPolicy(Policy):
         ]
         return features
 
-    def _get_features_for_attribute(self, attribute_data: Dict[Text, List[np.ndarray]]):
-        """
-        Given a list of all features for one attribute, turn it into a numpy array;
+    def _get_features_for_attribute(
+        self, attribute_data: Dict[Text, List[FeatureArray]]
+    ) -> np.ndarray:
+        """Given a list of all features for one attribute, turn it into a numpy array.
+
         shape_attribute = features[SENTENCE][0][0].shape[-1]
             (Shape of features of one attribute)
+
         Args:
-            attribute_data: all features in the attribute stored in a np.array;
-        Output:
+            attribute_data: all features in the attribute stored in a FeatureArray
+
+        Returns:
             2D np.ndarray with features for an attribute with
                 shape [num_dialogs x (max_history * shape_attribute)]
         """
         sentence_features = attribute_data[SENTENCE][0]
-        if isinstance(sentence_features[0], scipy.sparse.coo_matrix):
+
+        # vstack serves as removing dimension
+        if sentence_features.is_sparse:
+            sentence_features = [
+                scipy.sparse.vstack(value) for value in sentence_features
+            ]
             sentence_features = [feature.toarray() for feature in sentence_features]
+        else:
+            sentence_features = [np.vstack(value) for value in sentence_features]
+
         # MaxHistoryFeaturizer is always used with SkLearn policy;
         max_history = self.featurizer.max_history
         features = self._fill_in_features_to_max_length(sentence_features, max_history)
@@ -205,7 +220,13 @@ class SklearnPolicy(Policy):
         attribute_data = OrderedDict(attribute_data)
         return np.concatenate(list(attribute_data.values()), axis=-1)
 
-    def _search_and_score(self, model, X, y, param_grid) -> Tuple[Any, Any]:
+    def _search_and_score(
+        self,
+        model: Any,
+        X: np.ndarray,
+        y: np.ndarray,
+        param_grid: Union[Dict[Text, List], List[Dict]],
+    ) -> Tuple[Any, Any]:
         search = GridSearchCV(
             model, param_grid=param_grid, cv=self.cv, scoring="accuracy", verbose=1
         )
@@ -220,7 +241,7 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
-        tracker_state_features, label_ids = self.featurize_for_training(
+        tracker_state_features, label_ids, _ = self._featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )
         training_data, zero_state_features = model_data_utils.convert_to_data_format(
@@ -250,7 +271,9 @@ class SklearnPolicy(Policy):
         if score is not None:
             logger.info(f"Cross validation score: {score:.5f}")
 
-    def _postprocess_prediction(self, y_proba, domain) -> List[float]:
+    def _postprocess_prediction(
+        self, y_proba: np.ndarray, domain: Domain
+    ) -> List[float]:
         yp = y_proba[0].tolist()
 
         # Some classes might not be part of the training labels. Since
@@ -269,17 +292,28 @@ class SklearnPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
-        X = self.featurizer.create_state_features([tracker], domain, interpreter)
+    ) -> PolicyPrediction:
+        """Predicts the next action the bot should take after seeing the tracker.
+
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
+
+        Returns:
+             The policy's prediction (e.g. the probabilities for the actions).
+        """
+        X = self._featurize_for_prediction(tracker, domain, interpreter)
         training_data, _ = model_data_utils.convert_to_data_format(
             X, self.zero_state_features
         )
         Xt = self._preprocess_data(training_data)
         y_proba = self.model.predict_proba(Xt)
-        return self._postprocess_prediction(y_proba, domain)
+        return self._prediction(self._postprocess_prediction(y_proba, domain))
 
     def persist(self, path: Union[Text, Path]) -> None:
-
+        """Persists the policy properties (see parent class for more information)."""
         if self.model:
             self.featurizer.persist(path)
 
@@ -302,14 +336,18 @@ class SklearnPolicy(Policy):
             )
 
     @classmethod
-    def load(cls, path: Union[Text, Path]) -> Policy:
+    def load(
+        cls, path: Union[Text, Path], should_finetune: bool = False, **kwargs: Any
+    ) -> Policy:
+        """See the docstring for `Policy.load`."""
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"
         if not Path(path).exists():
-            raise OSError(
+            logger.error(
                 f"Failed to load dialogue model. Path {filename.absolute()} "
                 f"doesn't exist."
             )
+            return
 
         featurizer = TrackerFeaturizer.load(path)
         assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), (
@@ -325,6 +363,7 @@ class SklearnPolicy(Policy):
             featurizer=featurizer,
             priority=meta["priority"],
             zero_state_features=zero_state_features,
+            should_finetune=should_finetune,
         )
 
         state = io_utils.pickle_load(filename)

@@ -17,7 +17,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
@@ -71,6 +71,7 @@ class MemoizationPolicy(Policy):
         priority: int = MEMOIZATION_POLICY_PRIORITY,
         max_history: Optional[int] = MAX_HISTORY_NOT_SET,
         lookup: Optional[Dict] = None,
+        **kwargs: Any,
     ) -> None:
         """Initialize the policy.
 
@@ -81,7 +82,6 @@ class MemoizationPolicy(Policy):
             lookup: a dictionary that stores featurized tracker states and
                 predicted actions for them
         """
-
         if max_history == MAX_HISTORY_NOT_SET:
             max_history = OLD_DEFAULT_MAX_HISTORY  # old default value
             rasa.shared.utils.io.raise_warning(
@@ -97,7 +97,7 @@ class MemoizationPolicy(Policy):
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(featurizer, priority)
+        super().__init__(featurizer, priority, **kwargs)
 
         self.max_history = self.featurizer.max_history
         self.lookup = lookup if lookup is not None else {}
@@ -195,8 +195,18 @@ class MemoizationPolicy(Policy):
         return self.lookup.get(self._create_feature_key(states))
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
+        """Finds the action based on the given states.
+
+        Args:
+            states: List of states.
+            tracker: The tracker.
+            domain: The Domain.
+
+        Returns:
+            The name of the action.
+        """
         return self._recall_states(states)
 
     def _prediction_result(
@@ -221,12 +231,22 @@ class MemoizationPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
+        """Predicts the next action the bot should take after seeing the tracker.
+
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
+
+        Returns:
+             The policy's prediction (e.g. the probabilities for the actions).
+        """
         result = self._default_predictions(domain)
 
-        tracker_as_states = self.featurizer.prediction_states([tracker], domain)
-        states = tracker_as_states[0]
-        logger.debug(f"Current tracker state {states}")
+        states = self._prediction_states(tracker, domain)
+        logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
         predicted_action_name = self.recall(states, tracker, domain)
         if predicted_action_name is not None:
             logger.debug(f"There is a memorised next action '{predicted_action_name}'")
@@ -234,7 +254,7 @@ class MemoizationPolicy(Policy):
         else:
             logger.debug("There is no memorised next action")
 
-        return result
+        return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
         return {
@@ -267,7 +287,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
     @staticmethod
     def _back_to_the_future(
-        tracker, again: bool = False
+        tracker: DialogueStateTracker, again: bool = False
     ) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
         the new featurization for the future"""
@@ -301,18 +321,27 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         return mcfly_tracker
 
-    def _recall_using_delorean(self, old_states, tracker, domain) -> Optional[Text]:
-        """Recursively go to the past to correctly forget slots,
-        and then back to the future to recall."""
+    def _recall_using_delorean(
+        self, old_states: List[State], tracker: DialogueStateTracker, domain: Domain,
+    ) -> Optional[Text]:
+        """Applies to the future idea to change the past and get the new future.
 
+        Recursively go to the past to correctly forget slots,
+        and then back to the future to recall.
+
+        Args:
+            old_states: List of states.
+            tracker: The tracker.
+            domain: The Domain.
+
+        Returns:
+            The name of the action.
+        """
         logger.debug("Launch DeLorean...")
 
         mcfly_tracker = self._back_to_the_future(tracker)
         while mcfly_tracker is not None:
-            tracker_as_states = self.featurizer.prediction_states(
-                [mcfly_tracker], domain
-            )
-            states = tracker_as_states[0]
+            states = self._prediction_states(mcfly_tracker, domain,)
 
             if old_states != states:
                 # check if we like new futures
@@ -330,12 +359,24 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         return None
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain
+        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
     ) -> Optional[Text]:
+        """Finds the action based on the given states.
 
+        Uses back to the future idea to change the past and check whether the new future
+        can be used to recall the action.
+
+        Args:
+            states: List of states.
+            tracker: The tracker.
+            domain: The Domain.
+
+        Returns:
+            The name of the action.
+        """
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_delorean(states, tracker, domain)
+            return self._recall_using_delorean(states, tracker, domain,)
         else:
             return predicted_action_name

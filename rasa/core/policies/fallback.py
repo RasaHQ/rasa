@@ -8,7 +8,7 @@ from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEFAULT_FALLBA
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import (
@@ -39,10 +39,12 @@ class FallbackPolicy(Policy):
         ambiguity_threshold: float = DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
         core_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD,
         fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
+        **kwargs: Any,
     ) -> None:
         """Create a new Fallback policy.
 
         Args:
+            priority: Fallback policy priority.
             core_threshold: if NLU confidence threshold is met,
                 predict fallback action with confidence `core_threshold`.
                 If this is the highest confidence in the ensemble,
@@ -54,7 +56,7 @@ class FallbackPolicy(Policy):
                 between confidences of the top two predictions
             fallback_action_name: name of the action to execute as a fallback
         """
-        super().__init__(priority=priority)
+        super().__init__(priority=priority, **kwargs)
 
         self.nlu_threshold = nlu_threshold
         self.ambiguity_threshold = ambiguity_threshold
@@ -151,13 +153,12 @@ class FallbackPolicy(Policy):
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> List[float]:
+    ) -> PolicyPrediction:
         """Predicts a fallback action.
 
         The fallback action is predicted if the NLU confidence is low
         or no other policy has a high-confidence prediction.
         """
-
         nlu_data = tracker.latest_message.parse_data
 
         if (
@@ -189,7 +190,7 @@ class FallbackPolicy(Policy):
             )
             result = self.fallback_scores(domain, self.core_threshold)
 
-        return result
+        return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
         return {

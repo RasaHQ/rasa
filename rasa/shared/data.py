@@ -4,6 +4,7 @@ import tempfile
 import uuid
 from pathlib import Path
 from typing import Text, Optional, Union, List, Tuple, Callable, Set, Iterable
+import rasa.shared.utils.io
 
 YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
 JSON_FILE_EXTENSIONS = [".json"]
@@ -23,7 +24,7 @@ def yaml_file_extension() -> Text:
     return YAML_FILE_EXTENSIONS[0]
 
 
-def is_likely_yaml_file(file_path: Text) -> bool:
+def is_likely_yaml_file(file_path: Union[Text, Path]) -> bool:
     """Check if a file likely contains yaml.
 
     Arguments:
@@ -69,6 +70,10 @@ def get_test_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     Returns:
         Path to temporary directory containing all found Core training files.
     """
+    rasa.shared.utils.io.raise_warning(
+        "`get_test_directory` is deprecated and will be removed in Rasa 3.0.0. ",
+        category=DeprecationWarning,
+    )
     test_files = get_data_files(paths, is_test_stories_file)
     return _copy_files_to_new_dir(test_files)
 
@@ -111,7 +116,10 @@ def get_core_nlu_directories(
         Path to directory containing the Core files and path to directory
         containing the NLU training files.
     """
-
+    rasa.shared.utils.io.raise_warning(
+        "`get_core_nlu_directories` is deprecated and will be removed in Rasa 3.0.0. ",
+        category=DeprecationWarning,
+    )
     story_files = get_data_files(paths, is_story_file)
     nlu_data_files = get_data_files(paths, is_nlu_file)
 

@@ -1,0 +1,8 @@
+version: "2.0"
+stories:
+  - story: greet and then query knowledge base
+    steps:
+    - intent: greet
+    - action: utter_greet
+    - intent: query_knowledge_base
+    - action: action_query_knowledge_base

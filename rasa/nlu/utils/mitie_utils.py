@@ -3,7 +3,8 @@ import typing
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.config import RasaNLUModelConfig
+import rasa.utils.train_utils
 from rasa.nlu.model import Metadata
 
 if typing.TYPE_CHECKING:
@@ -19,10 +20,11 @@ class MitieNLP(Component):
     }
 
     def __init__(
-        self, component_config: Optional[Dict[Text, Any]] = None, extractor=None
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        extractor: Optional["mitie.total_word_feature_extractor"] = None,
     ) -> None:
         """Construct a new language model from the MITIE framework."""
-
         super().__init__(component_config)
 
         self.extractor = extractor
@@ -37,7 +39,9 @@ class MitieNLP(Component):
     ) -> "MitieNLP":
         import mitie
 
-        component_config = override_defaults(cls.defaults, component_config)
+        component_config = rasa.utils.train_utils.override_defaults(
+            cls.defaults, component_config
+        )
 
         model_file = component_config.get("model")
         if not model_file:
@@ -87,11 +91,12 @@ class MitieNLP(Component):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["MitieNLP"] = None,
         **kwargs: Any,
     ) -> "MitieNLP":
+        """Loads trained component (see parent class for full docstring)."""
         import mitie
 
         if cached_component:

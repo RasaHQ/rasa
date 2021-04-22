@@ -7,14 +7,6 @@ from rasa.core.training.converters.story_markdown_to_yaml_converter import (
     StoryMarkdownToYamlConverter,
 )
 
-from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
-    MarkdownStoryReader,
-)
-
-from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-    YAMLStoryReader,
-)
-
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 
 
@@ -22,7 +14,7 @@ from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
     "training_data_file, should_filter",
     [
         ("data/test_stories/stories.md", True),
-        ("data/test_nlu/default_retrieval_intents.md", False),
+        ("data/test_md/default_retrieval_intents.md", False),
         ("data/test_yaml_stories/rules_without_stories.yml", False),
     ],
 )
@@ -32,12 +24,12 @@ def test_converter_filters_correct_files(training_data_file: Text, should_filter
     )
 
 
-async def test_stories_are_converted(tmpdir: Path):
-    converted_data_folder = tmpdir / "converted_data"
-    os.mkdir(converted_data_folder)
+async def test_stories_are_converted(tmp_path: Path):
+    converted_data_folder = tmp_path / "converted_data"
+    converted_data_folder.mkdir()
 
-    training_data_folder = tmpdir / "data/core"
-    os.makedirs(training_data_folder, exist_ok=True)
+    training_data_folder = tmp_path / "data" / "core"
+    training_data_folder.mkdir(parents=True)
     training_data_file = Path(training_data_folder / "stories.md")
 
     simple_story_md = """
@@ -48,12 +40,14 @@ async def test_stories_are_converted(tmpdir: Path):
         - slot{"name": ["value1", "value2"]}
     """
 
-    with open(training_data_file, "w") as f:
-        f.write(simple_story_md)
+    training_data_file.write_text(simple_story_md)
 
-    await StoryMarkdownToYamlConverter().convert_and_write(
-        training_data_file, converted_data_folder
-    )
+    with pytest.warns(None) as warnings:
+        await StoryMarkdownToYamlConverter().convert_and_write(
+            training_data_file, converted_data_folder
+        )
+
+    assert not warnings
 
     assert len(os.listdir(converted_data_folder)) == 1
 
@@ -76,12 +70,12 @@ async def test_stories_are_converted(tmpdir: Path):
         )
 
 
-async def test_test_stories(tmpdir: Path):
-    converted_data_folder = tmpdir / "converted_data"
-    os.mkdir(converted_data_folder)
+async def test_test_stories(tmp_path: Path):
+    converted_data_folder = tmp_path / "converted_data"
+    converted_data_folder.mkdir()
 
-    test_data_folder = tmpdir / "tests"
-    os.makedirs(test_data_folder, exist_ok=True)
+    test_data_folder = tmp_path / "tests"
+    test_data_folder.mkdir(exist_ok=True)
     test_data_file = Path(test_data_folder / "test_stories.md")
 
     simple_story_md = """
@@ -92,14 +86,16 @@ async def test_test_stories(tmpdir: Path):
         - action_set_faq_slot
     """
 
-    with open(test_data_file, "w") as f:
-        f.write(simple_story_md)
+    test_data_file.write_text(simple_story_md)
 
-    await StoryMarkdownToYamlConverter().convert_and_write(
-        test_data_file, converted_data_folder
-    )
+    with pytest.warns(None) as warnings:
+        await StoryMarkdownToYamlConverter().convert_and_write(
+            test_data_file, converted_data_folder
+        )
 
-    assert len(os.listdir(converted_data_folder)) == 1
+    assert not warnings
+
+    assert len(list(converted_data_folder.glob("*"))) == 1
 
     with open(f"{converted_data_folder}/test_stories_converted.yml", "r") as f:
         content = f.read()
@@ -115,4 +111,74 @@ async def test_test_stories(tmpdir: Path):
             "    - product: x\n"
             "  - action: respond_faq\n"
             "  - action: action_set_faq_slot\n"
+        )
+
+
+async def test_test_stories_conversion_response_key(tmp_path: Path):
+    converted_data_folder = tmp_path / "converted_data"
+    converted_data_folder.mkdir()
+
+    test_data_folder = tmp_path / "tests"
+    test_data_folder.mkdir(exist_ok=True)
+    test_data_file = Path(test_data_folder / "test_stories.md")
+
+    simple_story_md = """
+    ## id
+
+    * out_of_scope/other: hahaha
+        - utter_out_of_scope/other
+    """
+
+    test_data_file.write_text(simple_story_md)
+
+    await StoryMarkdownToYamlConverter().convert_and_write(
+        test_data_file, converted_data_folder
+    )
+
+    assert len(os.listdir(converted_data_folder)) == 1
+    with open(f"{converted_data_folder}/test_stories_converted.yml", "r") as f:
+        content = f.read()
+        assert content == (
+            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
+            "stories:\n"
+            "- story: id\n"
+            "  steps:\n"
+            "  - intent: out_of_scope/other\n"
+            "    user: |-\n"
+            "      hahaha\n"
+            "  - action: utter_out_of_scope/other\n"
+        )
+
+
+async def test_stories_conversion_response_key(tmp_path: Path):
+    converted_data_folder = tmp_path / "converted_data"
+    converted_data_folder.mkdir()
+
+    training_data_folder = tmp_path / "data" / "core"
+    training_data_folder.mkdir(parents=True)
+    training_data_file = Path(training_data_folder / "stories.md")
+
+    simple_story_md = """
+    ## id
+    * out_of_scope/other
+        - utter_out_of_scope/other
+    """
+
+    training_data_file.write_text(simple_story_md)
+
+    await StoryMarkdownToYamlConverter().convert_and_write(
+        training_data_file, converted_data_folder
+    )
+
+    assert len(os.listdir(converted_data_folder)) == 1
+
+    with open(f"{converted_data_folder}/stories_converted.yml", "r") as f:
+        content = f.read()
+        assert content == (
+            f'version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"\n'
+            "stories:\n"
+            "- story: id\n"
+            "  steps:\n"
+            "  - intent: out_of_scope/other\n"
+            "  - action: utter_out_of_scope/other\n"
         )

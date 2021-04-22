@@ -15,7 +15,7 @@ def _common_entity_properties() -> Dict[Text, Any]:
         "entity": {"type": "string"},
         "role": {"type": "string"},
         "group": {"type": "string"},
-        "value": {"type": "string"},
+        "value": {"type": ["string", "number"]},
     }
 
 

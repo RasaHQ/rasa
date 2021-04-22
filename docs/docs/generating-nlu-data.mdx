@@ -30,14 +30,26 @@ Conversation-Driven Development (CDD) means letting real user conversations guid
 development. For building a great NLU model, this means two key things:
 
 ### Gather Real Data
-When it comes to building out NLU training data, developers often rely on text
-generation tools to quickly increase the number of training examples. While this
-approach can be time-saving, it makes NLU models prone to overfit data that is not
-representative of things a real user would say.
+When it comes to building out NLU training data, developers are sometimes tempted
+to use text generation tools or templates to quickly increase the number of training examples.
+This is a bad idea for two reasons:
 
-To avoid such a problem, it is always a good idea to collect as much real user data
-as possible to use as training data. Even though your bot will make mistakes initially,
-the process of training & evaluating on user data will enable your model to generalize
+* First, your synthetic data won't look like the messages
+that users actually send to your assistant, so your model will underperform.
+* Second, by training and testing on synthetic data, you trick yourself into thinking that your
+model *is* actually performing well, and you won't notice major issues.
+
+
+Remember that if you use a script to generate training data, the only thing your model can
+learn is how to reverse-engineer the script. 
+
+
+To avoid these problems, it is always a good idea to collect as much real user data
+as possible to use as training data. Real user messages can be messy, contain typos,
+and be far from 'ideal' examples of your intents. But keep in mind that those are the
+messages you're asking your model to make predictions about!
+Your assistant will always make mistakes initially, but
+the process of training & evaluating on user data will set your model up to generalize
 much more effectively in real-world scenarios.
 
 ### Share with Test Users Early

@@ -29,5 +29,27 @@ schema;responses:
                   type: "str"
                 payload:
                   type: "str"
+          button_type:
+            type: "str"
+          quick_replies:
+            type: "seq"
+            sequence:
+            - type: "map"
+              allowempty: True
+              mapping:
+                title:
+                  type: "str"
+                payload:
+                  type: "str"
+          attachment:
+            type: "map"
+            allowempty: True
+          elements:
+            type: "seq"
+            sequence:
+            - type: "map"
+              allowempty: True
           channel:
             type: "str"
+          metadata:
+            type: "any"

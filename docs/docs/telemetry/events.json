@@ -55,7 +55,7 @@
         },
         "num_templates": {
           "type": "integer",
-          "description": "Number of templates defined in the domain."
+          "description": "Number of templates or responses defined in the domain."
         },
         "num_slots": {
           "type": "integer",
@@ -88,6 +88,10 @@
         "num_regexes": {
           "type": "integer",
           "description": "Total number of regexes defined."
+        },
+        "is_finetuning": {
+          "type": "boolean",
+          "description": "True if a model is trained by finetuning an existing model."
         }
       },
       "additionalProperties": false,

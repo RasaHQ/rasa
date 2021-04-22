@@ -1,46 +1,55 @@
 import uuid
-from datetime import datetime
+from collections import defaultdict
 from typing import Any, Dict, Text
 
-from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from rasa.nlu.emulators.no_emulator import NoEmulator
+from rasa.shared.nlu.constants import (
+    INTENT_NAME_KEY,
+    ENTITIES,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    INTENT,
+    TEXT,
+    PREDICTED_CONFIDENCE_KEY,
+)
+from rasa.nlu.emulators.emulator import Emulator
 
 
-class DialogflowEmulator(NoEmulator):
-    def __init__(self) -> None:
+class DialogflowEmulator(Emulator):
+    """Emulates the response format of the DialogFlow.
 
-        super().__init__()
-        self.name = "api"
+    # noqa: W505
+    https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/projects.agent.environments.users.sessions/detectIntent
+    https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse
+    """
 
     def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
-        """Transform data to Dialogflow format."""
+        """"Transform response JSON to DialogFlow format.
 
-        # populate entities dict
-        entities = {
-            entity_type: [] for entity_type in {x["entity"] for x in data["entities"]}
-        }
+        Args:
+            data: input JSON data as a dictionary.
 
-        for entity in data["entities"]:
-            entities[entity["entity"]].append(entity["value"])
+        Returns:
+            The transformed input data.
+        """
+        entities = defaultdict(list)
+        for entity in data[ENTITIES]:
+            entities[entity[ENTITY_ATTRIBUTE_TYPE]].append(
+                entity[ENTITY_ATTRIBUTE_VALUE]
+            )
 
         return {
-            "id": str(uuid.uuid1()),
-            "timestamp": datetime.now().isoformat(),
-            "result": {
-                "source": "agent",
-                "resolvedQuery": data["text"],
-                "action": data["intent"][INTENT_NAME_KEY],
-                "actionIncomplete": False,
+            "responseId": str(uuid.uuid1()),
+            "queryResult": {
+                "queryText": data[TEXT],
+                "action": data[INTENT][INTENT_NAME_KEY],
                 "parameters": entities,
-                "contexts": [],
-                "metadata": {
-                    "intentId": str(uuid.uuid1()),
-                    "webhookUsed": "false",
-                    "intentName": data["intent"]["name"],
+                "fulfillmentText": "",
+                "fulfillmentMessages": [],
+                "outputContexts": [],
+                "intent": {
+                    "name": data[INTENT][INTENT_NAME_KEY],
+                    "displayName": data[INTENT][INTENT_NAME_KEY],
                 },
-                "fulfillment": {},
-                "score": data["intent"]["confidence"],
+                "intentDetectionConfidence": data[INTENT][PREDICTED_CONFIDENCE_KEY],
             },
-            "status": {"code": 200, "errorType": "success"},
-            "sessionId": str(uuid.uuid1()),
         }

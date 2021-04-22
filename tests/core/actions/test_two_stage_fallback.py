@@ -2,6 +2,8 @@ from typing import List, Text
 
 import pytest
 
+from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.processor import MessageProcessor
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.actions.two_stage_fallback import TwoStageFallbackAction
 from rasa.core.channels import CollectingOutputChannel
@@ -9,6 +11,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
+    SlotSet,
     ActiveLoop,
     BotUttered,
     UserUtteranceReverted,
@@ -45,16 +48,23 @@ def _two_stage_clarification_request() -> List[Event]:
     return [ActionExecuted(ACTION_TWO_STAGE_FALLBACK_NAME), BotUttered("please affirm")]
 
 
-async def test_ask_affirmation():
-    tracker = DialogueStateTracker.from_events(
-        "some-sender", evts=_message_requiring_fallback()
-    )
+@pytest.mark.parametrize(
+    "events",
+    [
+        _message_requiring_fallback(),
+        _message_requiring_fallback()
+        + [UserUtteranceReverted()]
+        + _message_requiring_fallback(),
+    ],
+)
+async def test_ask_affirmation(events: List[Event]):
+    tracker = DialogueStateTracker.from_events("some-sender", evts=events)
     domain = Domain.empty()
     action = TwoStageFallbackAction()
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -64,10 +74,13 @@ async def test_ask_affirmation():
     assert isinstance(events[1], BotUttered)
 
 
-async def test_1st_affirmation_is_successful():
+async def test_1st_affirmation_is_successful(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
         "some-sender",
         evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("my name is John", {"name": "say_name", "confidence": 1.0}),
+            SlotSet("some_slot", "example_value"),
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
             ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
@@ -81,18 +94,19 @@ async def test_1st_affirmation_is_successful():
     domain = Domain.empty()
     action = TwoStageFallbackAction()
 
-    events = await action.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+    await default_processor._run_action(
+        action,
         tracker,
-        domain,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        PolicyPrediction([], "some policy"),
     )
-
-    for events in events:
-        tracker.update(events, domain)
 
     applied_events = tracker.applied_events()
     assert applied_events == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("my name is John", {"name": "say_name", "confidence": 1.0}),
+        SlotSet("some_slot", "example_value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("hi", {"name": "greet", "confidence": 1.0}),
     ]
@@ -116,7 +130,7 @@ async def test_give_it_up_after_low_confidence_after_affirm_request():
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -142,6 +156,7 @@ async def test_ask_rephrase_after_failed_affirmation():
 
     domain = Domain.from_yaml(
         f"""
+        version: "2.0"
         responses:
             utter_ask_rephrase:
             - text: {rephrase_text}
@@ -151,7 +166,7 @@ async def test_ask_rephrase_after_failed_affirmation():
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -164,10 +179,13 @@ async def test_ask_rephrase_after_failed_affirmation():
     assert bot_utterance.text == rephrase_text
 
 
-async def test_ask_rephrasing_successful():
+async def test_ask_rephrasing_successful(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
         "some-sender",
         evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("my name is John", {"name": "say_name", "confidence": 1.0}),
+            SlotSet("some_slot", "example_value"),
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
             ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
@@ -186,18 +204,19 @@ async def test_ask_rephrasing_successful():
     domain = Domain.empty()
     action = TwoStageFallbackAction()
 
-    events = await action.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+    await default_processor._run_action(
+        action,
         tracker,
-        domain,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        PolicyPrediction([], "some policy"),
     )
-
-    for event in events:
-        tracker.update(event)
 
     applied_events = tracker.applied_events()
     assert applied_events == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("my name is John", {"name": "say_name", "confidence": 1.0}),
+        SlotSet("some_slot", "example_value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("hi", {"name": "greet"}),
     ]
@@ -227,7 +246,7 @@ async def test_ask_affirm_after_rephrasing():
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -236,10 +255,13 @@ async def test_ask_affirm_after_rephrasing():
     assert isinstance(events[0], BotUttered)
 
 
-async def test_2nd_affirm_successful():
+async def test_2nd_affirm_successful(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
         "some-sender",
         evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("my name is John", {"name": "say_name", "confidence": 1.0}),
+            SlotSet("some_slot", "example_value"),
             # User sends message with low NLU confidence
             *_message_requiring_fallback(),
             ActiveLoop(ACTION_TWO_STAGE_FALLBACK_NAME),
@@ -262,19 +284,20 @@ async def test_2nd_affirm_successful():
     domain = Domain.empty()
     action = TwoStageFallbackAction()
 
-    events = await action.run(
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+    await default_processor._run_action(
+        action,
         tracker,
-        domain,
+        CollectingOutputChannel(),
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        PolicyPrediction([], "some policy"),
     )
-
-    for event in events:
-        tracker.update(event)
 
     applied_events = tracker.applied_events()
 
     assert applied_events == [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("my name is John", {"name": "say_name", "confidence": 1.0}),
+        SlotSet("some_slot", "example_value"),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("hi", {"name": "greet"}),
     ]
@@ -312,7 +335,7 @@ async def test_2nd_affirmation_failed(intent_which_lets_action_give_up: Text):
 
     events = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )

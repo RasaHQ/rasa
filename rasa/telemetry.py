@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-import functools
 from functools import wraps
 import hashlib
 import json
@@ -93,6 +92,9 @@ TELEMETRY_VISUALIZATION_STARTED_EVENT = "Story Visualization Started"
 TELEMETRY_TEST_CORE_EVENT = "Model Core Tested"
 TELEMETRY_TEST_NLU_EVENT = "Model NLU Tested"
 
+# used to calculate the context on the first call and cache it afterwards
+TELEMETRY_CONTEXT = None
+
 
 def print_telemetry_reporting_info() -> None:
     """Print telemetry information to std out."""
@@ -126,8 +128,11 @@ def _write_default_telemetry_configuration(
         CONFIG_FILE_TELEMETRY_KEY, new_config
     )
 
-    if is_enabled and success:
+    # Do not show info if user has enabled/disabled telemetry via env var
+    telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
+    if is_enabled and success and telemetry_environ is None:
         print_telemetry_reporting_info()
+
     return success
 
 
@@ -148,7 +153,7 @@ def _is_telemetry_enabled_in_configuration() -> bool:
     except ValueError as e:
         logger.debug(f"Could not read telemetry settings from configuration file: {e}")
 
-        # seems like there is no config, we'll create on and enable telemetry
+        # seems like there is no config, we'll create one and enable telemetry
         success = _write_default_telemetry_configuration()
         # if writing the configuration failed, telemetry will be disabled
         return TELEMETRY_ENABLED_BY_DEFAULT and success
@@ -162,15 +167,15 @@ def is_telemetry_enabled() -> bool:
     """
     telemetry_environ = os.environ.get(TELEMETRY_ENABLED_ENVIRONMENT_VARIABLE)
 
-    if telemetry_environ is None:
-        try:
-            return rasa_utils.read_global_config_value(
-                CONFIG_FILE_TELEMETRY_KEY, unavailable_ok=False
-            )[CONFIG_TELEMETRY_ENABLED]
-        except ValueError:
-            return False
-    else:
+    if telemetry_environ is not None:
         return telemetry_environ.lower() == "true"
+
+    try:
+        return rasa_utils.read_global_config_value(
+            CONFIG_FILE_TELEMETRY_KEY, unavailable_ok=False
+        )[CONFIG_TELEMETRY_ENABLED]
+    except ValueError:
+        return False
 
 
 def initialize_telemetry() -> bool:
@@ -190,8 +195,8 @@ def initialize_telemetry() -> bool:
 
         if telemetry_environ is None:
             return is_enabled_in_configuration
-        else:
-            return telemetry_environ.lower() == "true"
+
+        return telemetry_environ.lower() == "true"
     except Exception as e:  # skipcq:PYL-W0703
         logger.exception(
             f"Failed to initialize telemetry reporting: {e}."
@@ -210,29 +215,24 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     Returns:
         Return wrapped function
     """
-    # checks if telemetry is enabled and creates a default config if this is the first
-    # call to it
-    initialize_telemetry()
-
     # allows us to use the decorator for async and non async functions
     if asyncio.iscoroutinefunction(f):
 
         @wraps(f)
-        async def decorated(*args, **kwargs):
+        async def decorated_coroutine(*args: Any, **kwargs: Any) -> Any:
             if is_telemetry_enabled():
                 return await f(*args, **kwargs)
             return None
 
-        return decorated
-    else:
+        return decorated_coroutine
 
-        @wraps(f)
-        def decorated(*args, **kwargs):
-            if is_telemetry_enabled():
-                return f(*args, **kwargs)
-            return None
+    @wraps(f)
+    def decorated(*args: Any, **kwargs: Any) -> Any:
+        if is_telemetry_enabled():
+            return f(*args, **kwargs)
+        return None
 
-        return decorated
+    return decorated
 
 
 def _fetch_write_key(tool: Text, environment_variable: Text) -> Optional[Text]:
@@ -463,26 +463,33 @@ def with_default_context_fields(
     return {**_default_context_fields(), **context}
 
 
-@functools.lru_cache()
 def _default_context_fields() -> Dict[Text, Any]:
     """Return a dictionary that contains the default context values.
 
     Return:
         A new context containing information about the runtime environment.
     """
-    import tensorflow as tf
 
-    return {
-        "os": {"name": platform.system(), "version": platform.release()},
-        "ci": in_continuous_integration(),
-        "project": model.project_fingerprint(),
-        "directory": _hash_directory_path(os.getcwd()),
-        "python": sys.version.split(" ")[0],
-        "rasa_open_source": rasa.__version__,
-        "gpu": len(tf.config.list_physical_devices("GPU")),
-        "cpu": multiprocessing.cpu_count(),
-        "docker": _is_docker(),
-    }
+    global TELEMETRY_CONTEXT
+
+    if not TELEMETRY_CONTEXT:
+        # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+        # if you change / add context
+        TELEMETRY_CONTEXT = {
+            "os": {"name": platform.system(), "version": platform.release()},
+            "ci": in_continuous_integration(),
+            "project": model.project_fingerprint(),
+            "directory": _hash_directory_path(os.getcwd()),
+            "python": sys.version.split(" ")[0],
+            "rasa_open_source": rasa.__version__,
+            "cpu": multiprocessing.cpu_count(),
+            "docker": _is_docker(),
+        }
+
+    # avoid returning the cached dict --> caller could modify the dictionary...
+    # usually we would use `lru_cache`, but that doesn't return a dict copy and
+    # doesn't work on inner functions, so we need to roll our own caching...
+    return TELEMETRY_CONTEXT.copy()
 
 
 def _track(
@@ -633,7 +640,15 @@ def initialize_error_reporting() -> None:
         ],
         send_default_pii=False,  # activate PII filter
         server_name=telemetry_id or "UNKNOWN",
-        ignore_errors=[KeyboardInterrupt, RasaException, NotImplementedError],
+        ignore_errors=[
+            # std lib errors
+            KeyboardInterrupt,  # user hit the interrupt key (Ctrl+C)
+            MemoryError,  # machine is running out of memory
+            NotImplementedError,  # user is using a feature that is not implemented
+            asyncio.CancelledError,  # an async operation has been cancelled by the user
+            # expected Rasa errors
+            RasaException,
+        ],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
         release=f"rasa-{rasa.__version__}",
@@ -641,24 +656,26 @@ def initialize_error_reporting() -> None:
         environment="development" if in_continuous_integration() else "production",
     )
 
-    if telemetry_id:
-        with configure_scope() as scope:
-            # sentry added these more recently, just a protection in a case where a
-            # user has installed an older version of sentry
-            if hasattr(scope, "set_user"):
-                scope.set_user({"id": telemetry_id})
+    if not telemetry_id:
+        return
 
-            default_context = _default_context_fields()
-            if hasattr(scope, "set_context"):
-                if "os" in default_context:
-                    # os is a nested dict, hence we report it separately
-                    scope.set_context("Operating System", default_context.pop("os"))
-                scope.set_context("Environment", default_context)
+    with configure_scope() as scope:
+        # sentry added these more recently, just a protection in a case where a
+        # user has installed an older version of sentry
+        if hasattr(scope, "set_user"):
+            scope.set_user({"id": telemetry_id})
+
+        default_context = _default_context_fields()
+        if hasattr(scope, "set_context"):
+            if "os" in default_context:
+                # os is a nested dict, hence we report it separately
+                scope.set_context("Operating System", default_context.pop("os"))
+            scope.set_context("Environment", default_context)
 
 
 @async_generator.asynccontextmanager
 async def track_model_training(
-    training_data: "TrainingDataImporter", model_type: Text
+    training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False
 ) -> typing.AsyncGenerator[None, None]:
     """Track a model training started.
 
@@ -670,6 +687,7 @@ async def track_model_training(
         training_data: Training data used for the training.
         model_type: Specifies the type of training, should be either "rasa", "core"
             or "nlu".
+        is_finetuning: `True` if the model is trained by finetuning another model.
     """
     if not initialize_telemetry():
         # telemetry reporting is disabled. we won't do any reporting
@@ -683,6 +701,8 @@ async def track_model_training(
 
     training_id = uuid.uuid4().hex
 
+    # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+    # if you change / add any properties
     _track(
         TRAINING_STARTED_EVENT,
         {
@@ -693,10 +713,10 @@ async def track_model_training(
             "policies": config.get("policies"),
             "num_intent_examples": len(nlu_data.intent_examples),
             "num_entity_examples": len(nlu_data.entity_examples),
-            "num_actions": len(domain.action_names),
+            "num_actions": len(domain.action_names_or_texts),
             # Old nomenclature from when 'responses' were still called
             # 'templates' in the domain
-            "num_templates": len(domain.templates),
+            "num_templates": len(domain.responses),
             "num_slots": len(domain.slots),
             "num_forms": len(domain.forms),
             "num_intents": len(domain.intents),
@@ -705,6 +725,7 @@ async def track_model_training(
             "num_lookup_tables": len(nlu_data.lookup_tables),
             "num_synonyms": len(nlu_data.entity_synonyms),
             "num_regexes": len(nlu_data.regex_features),
+            "is_finetuning": is_finetuning,
         },
     )
     start = datetime.now()
@@ -870,7 +891,7 @@ def track_project_init(path: Text) -> None:
         path: Location of the project
     """
     _track(
-        TELEMETRY_PROJECT_CREATED_EVENT, {"init_directory": _hash_directory_path(path)},
+        TELEMETRY_PROJECT_CREATED_EVENT, {"init_directory": _hash_directory_path(path)}
     )
 
 

@@ -24,7 +24,6 @@ PRETRAINED_EXTRACTORS = {
     "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
     "SpacyEntityExtractor",
 }
-TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
@@ -63,9 +62,6 @@ TOKENS_NAMES = {
     rasa.shared.nlu.constants.INTENT_RESPONSE_KEY: "intent_response_key_tokens",
 }
 
-TOKENS = "tokens"
-TOKEN_IDS = "token_ids"
-
 SEQUENCE_FEATURES = "sequence_features"
 SENTENCE_FEATURES = "sentence_features"
 
@@ -74,10 +70,16 @@ RESPONSE_SELECTOR_RETRIEVAL_INTENTS = "all_retrieval_intents"
 RESPONSE_SELECTOR_DEFAULT_INTENT = "default"
 RESPONSE_SELECTOR_PREDICTION_KEY = "response"
 RESPONSE_SELECTOR_RANKING_KEY = "ranking"
-RESPONSE_SELECTOR_RESPONSES_KEY = "response_templates"
+RESPONSE_SELECTOR_RESPONSES_KEY = "responses"
+RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY = "response_templates"
+RESPONSE_SELECTOR_UTTER_ACTION_KEY = "utter_action"
 RESPONSE_SELECTOR_TEMPLATE_NAME_KEY = "template_name"
 RESPONSE_IDENTIFIER_DELIMITER = "/"
 
 FEATURIZER_CLASS_ALIAS = "alias"
 
 NO_LENGTH_RESTRICTION = -1
+
+COMPONENT_INDEX = "index"
+MIN_ADDITIONAL_REGEX_PATTERNS = 10
+MIN_ADDITIONAL_CVF_VOCABULARY = 1000

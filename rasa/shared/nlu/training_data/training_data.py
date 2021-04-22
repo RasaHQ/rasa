@@ -6,6 +6,7 @@ from collections import Counter, OrderedDict
 import copy
 from os.path import relpath
 from typing import Any, Dict, List, Optional, Set, Text, Tuple, Callable
+import operator
 
 import rasa.shared.data
 from rasa.shared.utils.common import lazy_property
@@ -21,7 +22,6 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     TEXT,
     ACTION_NAME,
-    ACTION_TEXT,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
@@ -60,17 +60,90 @@ class TrainingData:
 
         self._fill_response_phrases()
 
-    def merge(self, *others: "TrainingData") -> "TrainingData":
-        """Return merged instance of this data with other training data."""
+    @staticmethod
+    def _load_lookup_table(lookup_table: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Loads the actual lookup table from file if there is a file specified.
 
+        Checks if the specified lookup table contains a filename in
+        `elements` and replaces it with actual elements from the file.
+        Returns the unchanged lookup table otherwise.
+        It works with Markdown and JSON training data.
+
+        Params:
+            lookup_table: A lookup table.
+
+        Returns:
+            Updated lookup table where filenames are replaced with the contents of
+            these files.
+        """
+        elements = lookup_table["elements"]
+        potential_file = elements if isinstance(elements, str) else elements[0]
+
+        if Path(potential_file).is_file():
+            try:
+                lookup_table["elements"] = rasa.shared.utils.io.read_file(
+                    potential_file
+                )
+                return lookup_table
+            except (FileNotFoundError, UnicodeDecodeError):
+                return lookup_table
+
+        return lookup_table
+
+    def fingerprint(self) -> Text:
+        """Fingerprint the training data.
+
+        Returns:
+            hex string as a fingerprint of the training data.
+        """
+        relevant_attributes = {
+            "training_examples": list(
+                sorted(e.fingerprint() for e in self.training_examples)
+            ),
+            "entity_synonyms": self.entity_synonyms,
+            "regex_features": self.regex_features,
+            "lookup_tables": [
+                self._load_lookup_table(table) for table in self.lookup_tables
+            ],
+            "responses": self.responses,
+        }
+        return rasa.shared.utils.io.deep_container_fingerprint(relevant_attributes)
+
+    def label_fingerprint(self) -> Text:
+        """Fingerprints the labels in the training data.
+
+        Returns:
+            hex string as a fingerprint of the training data labels.
+        """
+        labels = {
+            "intents": sorted(self.intents),
+            "entities": sorted(self.entities),
+            "entity_groups": sorted(self.entity_groups),
+            "entity_roles": sorted(self.entity_roles),
+            "actions": sorted(self.action_names),
+        }
+        return rasa.shared.utils.io.deep_container_fingerprint(labels)
+
+    def merge(self, *others: Optional["TrainingData"]) -> "TrainingData":
+        """Return merged instance of this data with other training data.
+
+        Args:
+            others: other training data instances to merge this one with
+
+        Returns:
+            Merged training data object. Merging is not done in place, this
+            will be a new instance.
+        """
         training_examples = copy.deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = copy.deepcopy(self.regex_features)
         lookup_tables = copy.deepcopy(self.lookup_tables)
         responses = copy.deepcopy(self.responses)
-        others = [other for other in others if other]
 
         for o in others:
+            if not o:
+                continue
+
             training_examples.extend(copy.deepcopy(o.training_examples))
             regex_features.extend(copy.deepcopy(o.regex_features))
             lookup_tables.extend(copy.deepcopy(o.lookup_tables))
@@ -108,10 +181,12 @@ class TrainingData:
         )
 
     def __hash__(self) -> int:
-        stringified = self.nlu_as_json() + self.nlg_as_markdown()
-        text_hash = rasa.shared.utils.io.get_text_hash(stringified)
+        """Calculate hash for the training data object.
 
-        return int(text_hash, 16)
+        Returns:
+            Hash of the training data object.
+        """
+        return int(self.fingerprint(), 16)
 
     @staticmethod
     def sanitize_examples(examples: List[Message]) -> List[Message]:
@@ -132,18 +207,30 @@ class TrainingData:
 
     @lazy_property
     def nlu_examples(self) -> List[Message]:
-        return [ex for ex in self.training_examples if not ex.is_core_message()]
+        """Return examples which have come from NLU training data.
+
+        E.g. If the example came from a story or domain it is not included.
+
+        Returns:
+            List of NLU training examples.
+        """
+        return [
+            ex for ex in self.training_examples if not ex.is_core_or_domain_message()
+        ]
 
     @lazy_property
     def intent_examples(self) -> List[Message]:
+        """Returns the list of examples that have intent."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT)]
 
     @lazy_property
     def response_examples(self) -> List[Message]:
+        """Returns the list of examples that have response."""
         return [ex for ex in self.nlu_examples if ex.get(INTENT_RESPONSE_KEY)]
 
     @lazy_property
     def entity_examples(self) -> List[Message]:
+        """Returns the list of examples that have entities."""
         return [ex for ex in self.nlu_examples if ex.get(ENTITIES)]
 
     @lazy_property
@@ -152,8 +239,13 @@ class TrainingData:
         return {ex.get(INTENT) for ex in self.training_examples} - {None}
 
     @lazy_property
+    def action_names(self) -> Set[Text]:
+        """Returns the set of action names in the training data."""
+        return {ex.get(ACTION_NAME) for ex in self.training_examples} - {None}
+
+    @lazy_property
     def retrieval_intents(self) -> Set[Text]:
-        """Returns the total number of response types in the training data"""
+        """Returns the total number of response types in the training data."""
         return {
             ex.get(INTENT)
             for ex in self.training_examples
@@ -163,7 +255,7 @@ class TrainingData:
     @lazy_property
     def number_of_examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
-        intents = [ex.get(INTENT) for ex in self.training_examples]
+        intents = [ex.get(INTENT) for ex in self.nlu_examples]
         return dict(Counter(intents))
 
     @lazy_property
@@ -179,30 +271,30 @@ class TrainingData:
     @lazy_property
     def entities(self) -> Set[Text]:
         """Returns the set of entity types in the training data."""
-        entity_types = [e.get(ENTITY_ATTRIBUTE_TYPE) for e in self.sorted_entities()]
-        return set(entity_types)
+        return {e.get(ENTITY_ATTRIBUTE_TYPE) for e in self.sorted_entities()}
 
     @lazy_property
     def entity_roles(self) -> Set[Text]:
         """Returns the set of entity roles in the training data."""
-        entity_types = [
+        entity_types = {
             e.get(ENTITY_ATTRIBUTE_ROLE)
             for e in self.sorted_entities()
             if ENTITY_ATTRIBUTE_ROLE in e
-        ]
-        return set(entity_types) - {NO_ENTITY_TAG}
+        }
+        return entity_types - {NO_ENTITY_TAG}
 
     @lazy_property
     def entity_groups(self) -> Set[Text]:
         """Returns the set of entity groups in the training data."""
-        entity_types = [
+        entity_types = {
             e.get(ENTITY_ATTRIBUTE_GROUP)
             for e in self.sorted_entities()
             if ENTITY_ATTRIBUTE_GROUP in e
-        ]
-        return set(entity_types) - {NO_ENTITY_TAG}
+        }
+        return entity_types - {NO_ENTITY_TAG}
 
     def entity_roles_groups_used(self) -> bool:
+        """Checks if any entity roles or groups are used in the training data."""
         entity_groups_used = (
             self.entity_groups is not None and len(self.entity_groups) > 0
         )
@@ -236,10 +328,10 @@ class TrainingData:
         )
 
     def _fill_response_phrases(self) -> None:
-        """Set response phrase for all examples by looking up NLG stories"""
+        """Set response phrase for all examples by looking up NLG stories."""
         for example in self.training_examples:
-            # if intent_response_key is None, that means the corresponding intent is not a
-            # retrieval intent and hence no response text needs to be fetched.
+            # if intent_response_key is None, that means the corresponding intent is
+            # not a retrieval intent and hence no response text needs to be fetched.
             # If intent_response_key is set, fetch the corresponding response text
             if example.get(INTENT_RESPONSE_KEY) is None:
                 continue
@@ -372,8 +464,12 @@ class TrainingData:
         return sorted(entity_examples, key=lambda e: e["entity"])
 
     def sorted_intent_examples(self) -> List[Message]:
-        """Sorts the intent examples by the name of the intent and then response"""
-
+        """Sorts the intent examples by the name of the intent and then response."""
+        rasa.shared.utils.io.raise_warning(
+            "`sorted_intent_examples` is deprecated and will be removed in Rasa "
+            "3.0.0.",
+            category=DeprecationWarning,
+        )
         return sorted(
             self.intent_examples,
             key=lambda e: (e.get(INTENT), e.get(INTENT_RESPONSE_KEY)),
@@ -486,45 +582,109 @@ class TrainingData:
 
         Args:
             train_frac: percentage of examples to add to the training set.
-            random_seed: random seed
+            random_seed: random seed used to shuffle examples.
 
         Returns:
             Test and training examples.
         """
-        train, test = [], []
-        training_examples = set(self.training_examples)
 
-        def _split(_examples: List[Message], _count: int) -> None:
+        self.validate()
+
+        # Stratified split: both test and train should have (approximately) the
+        # same class distribution as the original data. We also require that
+        # each class is represented in both splits.
+
+        # First check that there is enough data to split at the requested
+        # rate: we must be able to include one example per class in both
+        # test and train, so num_classes is the minimum size of either.
+        smaller_split_frac = train_frac if train_frac < 0.5 else (1.0 - train_frac)
+        num_classes = (
+            len(self.number_of_examples_per_intent.items())
+            - len(self.retrieval_intents)
+            + len(self.number_of_examples_per_response)
+        )
+        num_examples = sum(self.number_of_examples_per_intent.values())
+
+        if int(smaller_split_frac * num_examples) + 1 < num_classes:
+            rasa.shared.utils.io.raise_warning(
+                f"There aren't enough intent examples in your data to include "
+                f"an example of each class in both test and train splits and "
+                f"also reserve {train_frac} of the data for training. "
+                f"The output training fraction will differ."
+            )
+
+        # Now simulate traversing the sorted examples, sampling at a rate
+        # of train_frac, so that after traversing k examples (for all k), we
+        # have sampled int(k * train_frac) of them for training.
+        # Corner case that makes this approximate: we require at least one sample
+        # in test, and at least one in train, so proportions will be less exact
+        # when classes have few examples, e.g. when a class has only 2 examples
+        # but the user requests an 80% / 20% split.
+
+        train, test = [], []
+
+        # helper to simulate the traversal of all examples in a single class
+        def _split_class(
+            _examples: List[Message], _running_count: int, _running_train_count: int
+        ) -> Tuple[int, int]:
             if random_seed is not None:
                 random.Random(random_seed).shuffle(_examples)
             else:
                 random.shuffle(_examples)
 
-            n_train = int(_count * train_frac)
-            train.extend(_examples[:n_train])
-            test.extend(_examples[n_train:])
+            # first determine how many samples we should have in training after
+            # traversing the examples in this class, if sampling train_frac of
+            # them. Then adjust so there's at least one example in test and train.
+            # Adjustment can accumulate until we encounter a frequent class.
+            exact_train_count = (
+                int((_running_count + len(_examples)) * train_frac)
+                - _running_train_count
+            )
+            approx_train_count = min(len(_examples) - 1, max(1, exact_train_count))
 
-        # to make sure we have at least one example per response and intent in the
-        # training/test data, we first go over the response examples and then go over
-        # intent examples
+            train.extend(_examples[:approx_train_count])
+            test.extend(_examples[approx_train_count:])
 
-        for response, count in self.number_of_examples_per_response.items():
+            return (
+                _running_count + len(_examples),
+                _running_train_count + approx_train_count,
+            )
+
+        training_examples = set(self.training_examples)
+        running_count = 0
+        running_train_count = 0
+
+        # Sort by class frequency so we first handle the tail of the distribution,
+        # where the percentages in the split are most approximate. Items from
+        # more frequent classes can then be over/ undersampled as needed to
+        # meet the requested train_frac. First for responses:
+        for response, _ in sorted(
+            self.number_of_examples_per_response.items(), key=operator.itemgetter(1)
+        ):
             examples = [
                 e
                 for e in training_examples
                 if e.get(INTENT_RESPONSE_KEY) and e.get(INTENT_RESPONSE_KEY) == response
             ]
-            _split(examples, count)
+            running_count, running_train_count = _split_class(
+                examples, running_count, running_train_count
+            )
             training_examples = training_examples - set(examples)
 
-        for intent, count in self.number_of_examples_per_intent.items():
+        # Again for intents:
+        for intent, _ in sorted(
+            self.number_of_examples_per_intent.items(), key=operator.itemgetter(1)
+        ):
             examples = [
                 e
                 for e in training_examples
                 if INTENT in e.data and e.data[INTENT] == intent
             ]
-            _split(examples, count)
-            training_examples = training_examples - set(examples)
+            if len(examples) > 0:  # will be 0 for retrieval intents
+                running_count, running_train_count = _split_class(
+                    examples, running_count, running_train_count
+                )
+                training_examples = training_examples - set(examples)
 
         return test, train
 
@@ -565,7 +725,6 @@ class TrainingData:
 
     def is_empty(self) -> bool:
         """Checks if any training data was loaded."""
-
         lists_to_check = [
             self.training_examples,
             self.entity_synonyms,
@@ -574,9 +733,8 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
-    def can_train_nlu_model(self) -> bool:
+    def contains_no_pure_nlu_data(self) -> bool:
         """Checks if any NLU training data was loaded."""
-
         lists_to_check = [
             self.nlu_examples,
             self.entity_synonyms,
@@ -585,6 +743,20 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
+    def has_e2e_examples(self) -> bool:
+        """Checks if there are any training examples from e2e stories."""
+        return any(message.is_e2e_message() for message in self.training_examples)
+
 
 def list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text:
+    """Converts list to a string.
+
+    Args:
+        lst: The list to convert.
+        delim: The delimiter that is used to separate list inputs.
+        quote: The quote that is used to wrap list inputs.
+
+    Returns:
+        The string.
+    """
     return delim.join([quote + e + quote for e in lst])

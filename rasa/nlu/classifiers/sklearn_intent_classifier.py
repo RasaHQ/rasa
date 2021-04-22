@@ -163,7 +163,6 @@ class SklearnIntentClassifier(IntentClassifier):
             cv=cv_splits,
             scoring=self.component_config["scoring_function"],
             verbose=1,
-            iid=False,
         )
 
     def process(self, message: Message, **kwargs: Any) -> None:
@@ -244,11 +243,12 @@ class SklearnIntentClassifier(IntentClassifier):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["SklearnIntentClassifier"] = None,
         **kwargs: Any,
     ) -> "SklearnIntentClassifier":
+        """Loads trained component (see parent class for full docstring)."""
         from sklearn.preprocessing import LabelEncoder
 
         classifier_file = os.path.join(model_dir, meta.get("classifier"))

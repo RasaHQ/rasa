@@ -6,6 +6,7 @@ import os
 SUMMARY_FILE = os.environ["SUMMARY_FILE"]
 CONFIG = os.environ["CONFIG"]
 DATASET = os.environ["DATASET_NAME"]
+DATASET_REPOSITORY_BRANCH = os.environ["DATASET_REPOSITORY_BRANCH"]
 task_mapping = {
     "intent_report.json": "intent_classification",
     "CRFEntityExtractor_report.json": "entity_prediction",
@@ -21,6 +22,7 @@ def generate_json(file, task, data):
         data[DATASET] = {CONFIG: {}, **data[DATASET]}
 
     data[DATASET][CONFIG] = {
+        "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
         "accelerator_type": os.environ["ACCELERATOR_TYPE"],
         "test_run_time": os.environ["TEST_RUN_TIME"],
         "train_run_time": os.environ["TRAIN_RUN_TIME"],

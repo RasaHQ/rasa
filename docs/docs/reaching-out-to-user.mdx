@@ -46,9 +46,9 @@ rules:
       - action: utter_welcome
 ```
 
-### 3. Add a response template
+### 3. Add a response
 
-Finally, add a template for the `utter_welcome` response to your domain:
+Finally, add a response for the `utter_welcome` utter action to your domain:
 
 ```yaml-rasa title="domain.yml"
 responses:
@@ -62,7 +62,7 @@ Sometimes you want an external device to change the course of an ongoing convers
 For example, if you have a moisture-sensor attached to a Raspberry Pi, you could use it to notify
 you when a plant needs watering via your assistant.
 
-The examples below are from the [reminderbot example bot](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot),
+The examples below are from the [reminderbot example bot](https://github.com/RasaHQ/rasa/blob/main/examples/reminderbot),
 which includes both reminders and external events.
 
 ### 1. Trigger an Intent
@@ -90,7 +90,7 @@ In a real-life scenario, your external device would get the conversation ID from
 In the dry plant example, you might have a database of plants, the users that water them, and the users'
 conversation IDs. Your Raspberry Pi would get the conversation ID directly from the database.
 To try out the reminderbot example locally, you'll need to get the conversation ID manually. See
-the reminderbot [README](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot for more information.
+the reminderbot [README](https://github.com/RasaHQ/rasa/blob/main/examples/reminderbot) for more information.
 
 ### 3. Add NLU Training Data
 
@@ -157,7 +157,7 @@ External Events and Reminders don't work in request-response channels like the `
 Custom connectors for assistants implementing reminders or external events should be built
 off of the [CallbackInput channel](./connectors/your-own-website.mdx#callbackinput) instead of the RestInput channel.
 
-See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot/README.md)
+See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/main/examples/reminderbot/README.md)
 for instructions on how to test your reminders locally.
 :::
 
@@ -179,7 +179,7 @@ You should see the bot respond in your channel:
 ## Reminders
 
 You can have your assistant reach out to the user after a set amount of time by using [Reminders](https://rasa.com/docs/action-server/events#ReminderScheduled).
-The examples below are from the [reminderbot example bot](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot).
+The examples below are from the [reminderbot example bot](https://github.com/RasaHQ/rasa/blob/main/examples/reminderbot).
 You can clone it and follow the instructions in `README` to try out the full version.
 
 ### Scheduling Reminders
@@ -283,6 +283,7 @@ names in your training data, since Spacy has a `PERSON` dimension:
 pipeline:
 # other components
 - name: SpacyNLP
+  model: "en_core_web_md"
 - name: SpacyEntityExtractor
   dimensions: ["PERSON"]
 ```
@@ -431,7 +432,7 @@ intents:
 To try out reminders you'll need to start either [Rasa X](https://rasa.com/docs/rasa-x/)
 or a [CallbackChannel](./connectors/your-own-website.mdx#callbackinput).
 You'll also need to start the action server to schedule, react to, and cancel your reminders.
-See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/master/examples/reminderbot) for details.
+See the [reminderbot README](https://github.com/RasaHQ/rasa/blob/main/examples/reminderbot) for details.
 
 Then, if you send the bot a message like `Remind me to call Paul Pots`, you should get a reminder
 back five seconds later that says `Remember to call Paul Pots!`.

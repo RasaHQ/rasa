@@ -13,22 +13,55 @@ def test_wit_response():
     data = {
         "text": "I want italian food",
         "intent": {"name": "inform", "confidence": 0.4794813722432127},
-        "entities": [{"entity": "cuisine", "value": "italian", "start": 7, "end": 14}],
+        "entities": [
+            {
+                "entity": "cuisine",
+                "value": "italian",
+                "start": 7,
+                "end": 14,
+                "confidence_entity": 0.1234,
+            },
+            {
+                "entity": "cuisine",
+                "value": "italian",
+                "role": "desert",
+                "start": 7,
+                "end": 14,
+                "confidence_entity": 0.1234,
+            },
+        ],
     }
     norm = em.normalise_response_json(data)
-    assert norm == [
-        {
-            "entities": {
-                "cuisine": {
-                    "confidence": None,
-                    "type": "value",
-                    "value": "italian",
+
+    expected = {
+        "text": "I want italian food",
+        "intents": [{"name": "inform", "confidence": 0.4794813722432127}],
+        "entities": {
+            "cuisine:cuisine": [
+                {
+                    "name": "cuisine",
+                    "role": "cuisine",
                     "start": 7,
                     "end": 14,
+                    "body": "italian",
+                    "value": "italian",
+                    "confidence": 0.1234,
+                    "entities": [],
                 }
-            },
-            "intent": "inform",
-            "_text": "I want italian food",
-            "confidence": 0.4794813722432127,
-        }
-    ]
+            ],
+            "cuisine:desert": [
+                {
+                    "name": "cuisine",
+                    "role": "desert",
+                    "start": 7,
+                    "end": 14,
+                    "body": "italian",
+                    "value": "italian",
+                    "confidence": 0.1234,
+                    "entities": [],
+                }
+            ],
+        },
+    }
+
+    assert norm == expected

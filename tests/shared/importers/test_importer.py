@@ -8,6 +8,7 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_CONVERSATION_TEST_PATH,
 )
 import rasa.shared.utils.io
 import rasa.shared.core.constants
@@ -17,14 +18,14 @@ from rasa.shared.importers.importer import (
     CombinedDataImporter,
     TrainingDataImporter,
     NluDataImporter,
-    CoreDataImporter,
     E2EImporter,
-    RetrievalModelsDataImporter,
+    ResponsesSyncImporter,
 )
 from rasa.shared.importers.multi_project import MultiProjectImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.validation import YamlValidationException
 
 
 @pytest.fixture()
@@ -74,6 +75,11 @@ async def test_combined_file_importer_with_single_importer(project: Text):
 
     assert actual_stories.as_story_string() == expected_stories.as_story_string()
 
+    expected_tests = await importer.get_conversation_tests()
+    actual_tests = await combined.get_conversation_tests()
+
+    assert actual_tests.as_story_string() == expected_tests.as_story_string()
+
 
 @pytest.mark.parametrize(
     "config, expected",
@@ -113,7 +119,7 @@ def test_load_from_dict(
     )
 
     assert isinstance(actual, E2EImporter)
-    assert isinstance(actual.importer, RetrievalModelsDataImporter)
+    assert isinstance(actual.importer, ResponsesSyncImporter)
 
     actual_importers = [i.__class__ for i in actual.importer._importer._importers]
     assert actual_importers == expected
@@ -128,7 +134,7 @@ def test_load_from_config(tmpdir: Path):
 
     importer = TrainingDataImporter.load_from_config(config_path)
     assert isinstance(importer, E2EImporter)
-    assert isinstance(importer.importer, RetrievalModelsDataImporter)
+    assert isinstance(importer.importer, ResponsesSyncImporter)
     assert isinstance(importer.importer._importer._importers[0], MultiProjectImporter)
 
 
@@ -140,10 +146,13 @@ async def test_nlu_only(project: Text):
     )
 
     assert isinstance(actual, NluDataImporter)
-    assert isinstance(actual._importer, RetrievalModelsDataImporter)
+    assert isinstance(actual._importer, ResponsesSyncImporter)
 
     stories = await actual.get_stories()
     assert stories.is_empty()
+
+    conversation_tests = await actual.get_stories()
+    assert conversation_tests.is_empty()
 
     domain = await actual.get_domain()
     assert domain.is_empty()
@@ -153,29 +162,6 @@ async def test_nlu_only(project: Text):
 
     nlu_data = await actual.get_nlu_data()
     assert not nlu_data.is_empty()
-
-
-async def test_core_only(project: Text):
-    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
-    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
-    default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-    actual = TrainingDataImporter.load_core_importer_from_config(
-        config_path, domain_path, training_data_paths=[default_data_path]
-    )
-
-    assert isinstance(actual, CoreDataImporter)
-
-    stories = await actual.get_stories()
-    assert not stories.is_empty()
-
-    domain = await actual.get_domain()
-    assert not domain.is_empty()
-
-    config = await actual.get_config()
-    assert config
-
-    nlu_data = await actual.get_nlu_data()
-    assert nlu_data.is_empty()
 
 
 async def test_import_nlu_training_data_from_e2e_stories(
@@ -210,9 +196,9 @@ async def test_import_nlu_training_data_from_e2e_stories(
     importer_without_e2e.get_stories = mocked_stories
 
     # The wrapping `E2EImporter` simply forwards these method calls
-    assert (await importer_without_e2e.get_stories()).as_story_string() == (
+    assert (await importer_without_e2e.get_stories()).fingerprint() == (
         await default_importer.get_stories()
-    ).as_story_string()
+    ).fingerprint()
     assert (await importer_without_e2e.get_config()) == (
         await default_importer.get_config()
     )
@@ -333,31 +319,75 @@ async def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
 
     domain = await default_importer.get_domain()
 
-    assert all(action_name in domain.action_names for action_name in additional_actions)
+    assert all(
+        action_name in domain.action_names_or_texts
+        for action_name in additional_actions
+    )
 
 
 async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = "data/test_domains/default_retrieval_intents.yml"
     data_paths = [
-        "data/test_nlu/default_retrieval_intents.md",
-        "data/test_responses/default.md",
+        "data/test/stories_default_retrieval_intents.yml",
+        "data/test_responses/default.yml",
     ]
-    base_data_importer = TrainingDataImporter.load_from_dict(
+    importer = TrainingDataImporter.load_from_dict(
         {}, config_path, domain_path, data_paths
     )
 
-    nlu_importer = NluDataImporter(base_data_importer)
-    core_importer = CoreDataImporter(base_data_importer)
-
-    importer = RetrievalModelsDataImporter(
-        CombinedDataImporter([nlu_importer, core_importer])
-    )
     domain = await importer.get_domain()
     nlu_data = await importer.get_nlu_data()
 
     assert domain.retrieval_intents == ["chitchat"]
     assert domain.intent_properties["chitchat"].get("is_retrieval_intent")
-    assert domain.retrieval_intent_templates == nlu_data.responses
-    assert domain.templates != nlu_data.responses
-    assert "utter_chitchat" in domain.action_names
+    assert domain.retrieval_intent_responses == nlu_data.responses
+    assert domain.responses != nlu_data.responses
+    assert "utter_chitchat" in domain.action_names_or_texts
+
+
+async def test_nlu_data_domain_sync_responses(project: Text):
+    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
+    domain_path = "data/test_domains/default.yml"
+    data_paths = ["data/test_responses/responses_utter_rasa.yml"]
+
+    importer = TrainingDataImporter.load_from_dict(
+        {}, config_path, domain_path, data_paths
+    )
+
+    with pytest.warns(None):
+        domain = await importer.get_domain()
+
+    # Responses were sync between "test_responses.yml" and the "domain.yml"
+    assert "utter_rasa" in domain.responses.keys()
+
+
+def test_importer_with_invalid_model_config(tmp_path: Path):
+    invalid = {"version": "2.0", "policies": ["name"]}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(invalid, config_file)
+
+    with pytest.raises(YamlValidationException):
+        TrainingDataImporter.load_from_config(str(config_file))
+
+
+async def test_importer_with_unicode_files():
+    importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=["./data/test_nlu_no_responses/nlu_with_unicode.yml"]
+    )
+
+    # None of these should raise
+    nlu_data = await importer.get_nlu_data()
+    assert not nlu_data.is_empty()
+
+    await importer.get_stories()
+    await importer.get_domain()
+
+
+async def test_read_conversation_tests(project: Text):
+    importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[str(Path(project) / DEFAULT_CONVERSATION_TEST_PATH)]
+    )
+
+    test_stories = await importer.get_conversation_tests()
+    assert len(test_stories.story_steps) == 7

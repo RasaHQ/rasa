@@ -18,7 +18,7 @@ Each file should be named like `<ISSUE>.<TYPE>.md`, where
 * `feature`: new user facing features, like new command-line options and new behavior.
 * `improvement`: improvement of existing functionality, usually without requiring user intervention.
 * `bugfix`: fixes a reported bug.
-* `doc`: documentation improvement, like rewording an entire session or adding missing docs.
+* `doc`: documentation improvement, like rewording an entire section or adding missing docs.
 * `removal`: feature deprecation or feature removal.
 * `misc`: fixing a small typo or internal change, will not be included in the changelog.
 

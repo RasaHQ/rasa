@@ -12,18 +12,22 @@ import warnings
 
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
-from ruamel.yaml.constructor import DuplicateKeyError
+from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
 
 from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
     ENV_LOG_LEVEL,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+    CONFIG_SCHEMA_FILE,
+    MODEL_CONFIG_SCHEMA_FILE,
 )
 from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
     YamlSyntaxException,
+    RasaException,
 )
+import rasa.shared.utils.validation
 
 DEFAULT_ENCODING = "utf-8"
 YAML_VERSION = (1, 2)
@@ -68,7 +72,7 @@ def raise_warning(
         filename: Text,
         lineno: Optional[int],
         line: Optional[Text] = None,
-    ):
+    ) -> Text:
         """Function to format a warning the standard way."""
 
         if not should_show_source_line():
@@ -194,12 +198,91 @@ def list_subdirectories(path: Text) -> List[Text]:
     return [fn for fn in glob.glob(os.path.join(path, "*")) if os.path.isdir(fn)]
 
 
+def deep_container_fingerprint(
+    obj: Union[List[Any], Dict[Any, Any]], encoding: Text = DEFAULT_ENCODING
+) -> Text:
+    """Calculate a hash which is stable, independent of a containers key order.
+
+    Works for lists and dictionaries. For keys and values, we recursively call
+    `hash(...)` on them. Keep in mind that a list with keys in a different order
+    will create the same hash!
+
+    Args:
+        obj: dictionary or list to be hashed.
+        encoding: encoding used for dumping objects as strings
+
+    Returns:
+        hash of the container.
+    """
+    if isinstance(obj, dict):
+        return get_dictionary_fingerprint(obj, encoding)
+    if isinstance(obj, list):
+        return get_list_fingerprint(obj, encoding)
+    else:
+        return get_text_hash(str(obj), encoding)
+
+
+def get_dictionary_fingerprint(
+    dictionary: Dict[Any, Any], encoding: Text = DEFAULT_ENCODING
+) -> Text:
+    """Calculate the fingerprint for a dictionary.
+
+    The dictionary can contain any keys and values which are either a dict,
+    a list or a elements which can be dumped as a string.
+
+    Args:
+        dictionary: dictionary to be hashed
+        encoding: encoding used for dumping objects as strings
+
+    Returns:
+        The hash of the dictionary
+    """
+    stringified = json.dumps(
+        {
+            deep_container_fingerprint(k, encoding): deep_container_fingerprint(
+                v, encoding
+            )
+            for k, v in dictionary.items()
+        },
+        sort_keys=True,
+    )
+    return get_text_hash(stringified, encoding)
+
+
+def get_list_fingerprint(
+    elements: List[Any], encoding: Text = DEFAULT_ENCODING
+) -> Text:
+    """Calculate a fingerprint for an unordered list.
+
+    Args:
+        elements: unordered list
+        encoding: encoding used for dumping objects as strings
+
+    Returns:
+        the fingerprint of the list
+    """
+    stringified = json.dumps(
+        [deep_container_fingerprint(element, encoding) for element in elements]
+    )
+    return get_text_hash(stringified, encoding)
+
+
 def get_text_hash(text: Text, encoding: Text = DEFAULT_ENCODING) -> Text:
     """Calculate the md5 hash for a text."""
-    return md5(text.encode(encoding)).hexdigest()
+    return md5(text.encode(encoding)).hexdigest()  # nosec
 
 
 def json_to_string(obj: Any, **kwargs: Any) -> Text:
+    """Dumps a JSON-serializable object to string.
+
+    Args:
+        obj: JSON-serializable object.
+        kwargs: serialization options. Defaults to 2 space indentation
+                and disable escaping of non-ASCII characters.
+
+    Returns:
+        The objects serialized to JSON, as a string.
+    """
     indent = kwargs.pop("indent", 2)
     ensure_ascii = kwargs.pop("ensure_ascii", False)
     return json.dumps(obj, indent=indent, ensure_ascii=ensure_ascii, **kwargs)
@@ -208,35 +291,41 @@ def json_to_string(obj: Any, **kwargs: Any) -> Text:
 def fix_yaml_loader() -> None:
     """Ensure that any string read by yaml is represented as unicode."""
 
-    def construct_yaml_str(self, node):
+    def construct_yaml_str(self: BaseConstructor, node: ScalarNode) -> Any:
         # Override the default string handling function
         # to always return unicode objects
         return self.construct_scalar(node)
 
     yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
     yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
+    yaml.allow_duplicate_keys = False
 
 
 def replace_environment_variables() -> None:
     """Enable yaml loader to process the environment variables in the yaml."""
     # eg. ${USER_NAME}, ${PASSWORD}
     env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
-    yaml.add_implicit_resolver("!env_var", env_var_pattern)
+    yaml.Resolver.add_implicit_resolver("!env_var", env_var_pattern, None)
 
-    def env_var_constructor(loader, node):
+    def env_var_constructor(loader: BaseConstructor, node: ScalarNode) -> Text:
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
         expanded_vars = os.path.expandvars(value)
-        if "$" in expanded_vars:
-            not_expanded = [w for w in expanded_vars.split() if "$" in w]
-            raise ValueError(
-                "Error when trying to expand the environment variables"
-                " in '{}'. Please make sure to also set these environment"
-                " variables: '{}'.".format(value, not_expanded)
+        not_expanded = [
+            w for w in expanded_vars.split() if w.startswith("$") and w in value
+        ]
+        if not_expanded:
+            raise RasaException(
+                f"Error when trying to expand the environment variables in '{value}'. "
+                f"Please make sure to also set these environment variables: '{not_expanded}'."
             )
         return expanded_vars
 
     yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
+
+
+fix_yaml_loader()
+replace_environment_variables()
 
 
 def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> Any:
@@ -244,20 +333,11 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
 
     Args:
         content: A text containing yaml content.
-        reader_type: Reader type to use. By default "safe" will be used
+        reader_type: Reader type to use. By default "safe" will be used.
 
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
     """
-    fix_yaml_loader()
-
-    replace_environment_variables()
-
-    yaml_parser = yaml.YAML(typ=reader_type)
-    yaml_parser.version = YAML_VERSION
-    yaml_parser.preserve_quotes = True
-    yaml.allow_duplicate_keys = False
-
     if _is_ascii(content):
         # Required to make sure emojis are correctly parsed
         content = (
@@ -266,6 +346,10 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
             .encode("utf-16", "surrogatepass")
             .decode("utf-16")
         )
+
+    yaml_parser = yaml.YAML(typ=reader_type)
+    yaml_parser.version = YAML_VERSION
+    yaml_parser.preserve_quotes = True
 
     return yaml_parser.load(content) or {}
 
@@ -329,6 +413,31 @@ def write_yaml(
 YAML_LINE_MAX_WIDTH = 4096
 
 
+def is_key_in_yaml(file_path: Union[Text, Path], *keys: Text) -> bool:
+    """Checks if any of the keys is contained in the root object of the yaml file.
+
+    Arguments:
+        file_path: path to the yaml file
+        keys: keys to look for
+
+    Returns:
+          `True` if at least one of the keys is found, `False` otherwise.
+
+    Raises:
+        FileNotFoundException: if the file cannot be found.
+    """
+    try:
+        with open(file_path, encoding=DEFAULT_ENCODING) as file:
+            return any(
+                any(line.lstrip().startswith(f"{key}:") for key in keys)
+                for line in file
+            )
+    except FileNotFoundError:
+        raise FileNotFoundException(
+            f"Failed to read file, " f"'{os.path.abspath(file_path)}' does not exist."
+        )
+
+
 def convert_to_ordered_dict(obj: Any) -> Any:
     """Convert object to an `OrderedDict`.
 
@@ -381,8 +490,7 @@ def create_directory_for_file(file_path: Union[Text, Path]) -> None:
 
 def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
     """Dump an object as a json string to a file."""
-
-    write_text_file(json.dumps(obj, indent=2), filename)
+    write_text_file(json.dumps(obj, ensure_ascii=False, indent=2), filename)
 
 
 def dump_obj_as_yaml_to_string(
@@ -439,29 +547,68 @@ def raise_deprecation_warning(
     raise_warning(message, FutureWarning, docs, **kwargs)
 
 
-def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
-    """Parses a yaml configuration file. Content needs to be a dictionary
+def read_validated_yaml(filename: Union[Text, Path], schema: Text) -> Any:
+    """Validates YAML file content and returns parsed content.
 
     Args:
         filename: The path to the file which should be read.
-    """
-    content = read_yaml_file(filename)
+        schema: The path to the schema file which should be used for validating the
+            file content.
 
-    if content is None:
-        return {}
-    elif isinstance(content, dict):
-        return content
-    else:
-        raise YamlSyntaxException(
-            filename,
-            ValueError(
-                f"Tried to load configuration file '{filename}'. "
-                f"Expected a key value mapping but found a {type(content).__name__}"
-            ),
-        )
+    Returns:
+        The parsed file content.
+
+    Raises:
+        YamlValidationException: In case the model configuration doesn't match the
+            expected schema.
+    """
+    content = read_file(filename)
+
+    rasa.shared.utils.validation.validate_yaml_schema(content, schema)
+    return read_yaml(content)
+
+
+def read_config_file(filename: Union[Path, Text]) -> Dict[Text, Any]:
+    """Parses a yaml configuration file. Content needs to be a dictionary.
+
+    Args:
+        filename: The path to the file which should be read.
+
+    Raises:
+        YamlValidationException: In case file content is not a `Dict`.
+
+    Returns:
+        Parsed config file.
+    """
+    return read_validated_yaml(filename, CONFIG_SCHEMA_FILE)
+
+
+def read_model_configuration(filename: Union[Path, Text]) -> Dict[Text, Any]:
+    """Parses a model configuration file.
+
+    Args:
+        filename: The path to the file which should be read.
+
+    Raises:
+        YamlValidationException: In case the model configuration doesn't match the
+            expected schema.
+
+    Returns:
+        Parsed config file.
+    """
+    return read_validated_yaml(filename, MODEL_CONFIG_SCHEMA_FILE)
 
 
 def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
+    """Checks if `path` is a subdirectory of `potential_parent_directory`.
+
+    Args:
+        path: Path to a file or directory.
+        potential_parent_directory: Potential parent directory.
+
+    Returns:
+        `True` if `path` is a subdirectory of `potential_parent_directory`.
+    """
     if path is None or potential_parent_directory is None:
         return False
 

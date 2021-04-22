@@ -27,6 +27,7 @@ def send_to_segment(context):
         "results",
         {
             "dataset": os.environ["DATASET_NAME"],
+            "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
             "workflow": os.environ["GITHUB_WORKFLOW"],
             "config": os.environ["CONFIG"],
             "pr_url": os.environ["PR_URL"],

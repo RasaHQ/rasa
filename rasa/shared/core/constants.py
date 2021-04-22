@@ -6,6 +6,7 @@ USER_INTENT_RESTART = "restart"
 USER_INTENT_BACK = "back"
 USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
 USER_INTENT_SESSION_START = "session_start"
+SESSION_START_METADATA_SLOT = "session_started_metadata"
 
 DEFAULT_INTENTS = [
     USER_INTENT_RESTART,
@@ -54,6 +55,7 @@ ACTIVE_LOOP = "active_loop"
 LOOP_INTERRUPTED = "is_interrupted"
 LOOP_REJECTED = "rejected"
 TRIGGER_MESSAGE = "trigger_message"
+FOLLOWUP_ACTION = "followup_action"
 
 # start of special user message section
 EXTERNAL_MESSAGE_PREFIX = "EXTERNAL: "
@@ -76,4 +78,20 @@ DEFAULT_KNOWLEDGE_BASE_ACTION = "action_query_knowledge_base"
 USER = "user"
 SLOTS = "slots"
 
+USE_TEXT_FOR_FEATURIZATION = "use_text_for_featurization"
 ENTITY_LABEL_SEPARATOR = "#"
+
+RULE_ONLY_SLOTS = "rule_only_slots"
+RULE_ONLY_LOOPS = "rule_only_loops"
+
+# if you add more policy/classifier names, make sure to add a test as well to ensure
+# that the name and the class stay in sync
+POLICY_NAME_TWO_STAGE_FALLBACK = "TwoStageFallbackPolicy"
+POLICY_NAME_MAPPING = "MappingPolicy"
+POLICY_NAME_FALLBACK = "FallbackPolicy"
+POLICY_NAME_FORM = "FormPolicy"
+POLICY_NAME_RULE = "RulePolicy"
+
+CLASSIFIER_NAME_FALLBACK = "FallbackClassifier"
+
+POLICIES_THAT_EXTRACT_ENTITIES = {"TEDPolicy"}
