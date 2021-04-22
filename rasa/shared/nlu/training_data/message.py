@@ -55,7 +55,6 @@ class Message:
 
     def add_diagnostic_data(self, origin: Text, data: Dict[Text, Any]) -> None:
         """Adds diagnostic data from the `origin` component.
-
         Args:
             origin: Name of the component that created the data.
             data: The diagnostic data.
@@ -71,7 +70,6 @@ class Message:
 
     def set(self, prop: Text, info: Any, add_to_output: bool = False) -> None:
         """Sets the message's property to the given value.
-
         Args:
             prop: Name of the property to be set.
             info: Value to be assigned to that property.
@@ -87,26 +85,26 @@ class Message:
     def as_dict_nlu(self) -> dict:
         """Get dict representation of message as it would appear in training data"""
 
-        d = self.as_dict()
-        if d.get(INTENT, None):
-            d[INTENT] = self.get_full_intent()
-        d.pop(RESPONSE, None)
-        d.pop(INTENT_RESPONSE_KEY, None)
-        return d
+        dictionary_message = self.as_dict()
+        if dictionary_message.get(INTENT, None):
+            dictionary_message[INTENT] = self.get_full_intent()
+        dictionary_message.pop(RESPONSE, None)
+        dictionary_message.pop(INTENT_RESPONSE_KEY, None)
+        return dictionary_message
 
     def as_dict(self, only_output_properties: bool = False) -> Dict:
         if only_output_properties:
-            d = {
+            dictionary_data = {
                 key: value
                 for key, value in self.data.items()
                 if key in self.output_properties
             }
         else:
-            d = self.data
+            dictionary_data = self.data
 
         # Filter all keys with None value. These could have come while building the
         # Message object in markdown format
-        return {key: value for key, value in d.items() if value is not None}
+        return {key: value for key, value in dictionary_data.items() if value is not None}
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Message):
@@ -116,7 +114,6 @@ class Message:
 
     def __hash__(self) -> int:
         """Calculate a hash for the message.
-
         Returns:
             Hash of the message.
         """
@@ -124,7 +121,6 @@ class Message:
 
     def fingerprint(self) -> Text:
         """Calculate a string fingerprint for the message.
-
         Returns:
             Fingerprint of the message.
         """
@@ -141,20 +137,19 @@ class Message:
         **kwargs: Any,
     ) -> "Message":
         """Builds a Message from `UserUttered` data.
-
         Args:
             text: text of a user's utterance
             intent: an intent of the user utterance
             entities: entities in the user's utterance
             intent_metadata: optional metadata for the intent
             example_metadata: optional metadata for the intent example
-
         Returns:
             Message
         """
         data: Dict[Text, Any] = {TEXT: text}
         if intent:
-            split_intent, response_key = cls.separate_intent_response_key(intent)
+            split_intent, response_key = cls.separate_intent_response_key(
+                intent)
             if split_intent:
                 data[INTENT] = split_intent
             if response_key:
@@ -209,13 +204,10 @@ class Message:
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
         """Gets all sparse features for the attribute given the list of featurizers.
-
         If no featurizers are provided, all available features will be considered.
-
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
-
         Returns:
             Sparse features.
         """
@@ -226,8 +218,10 @@ class Message:
             attribute, featurizers
         )
 
-        sequence_features = self._combine_features(sequence_features, featurizers)
-        sentence_features = self._combine_features(sentence_features, featurizers)
+        sequence_features = self._combine_features(
+            sequence_features, featurizers)
+        sentence_features = self._combine_features(
+            sentence_features, featurizers)
 
         return sequence_features, sentence_features
 
@@ -235,13 +229,10 @@ class Message:
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:
         """Gets all dense features for the attribute given the list of featurizers.
-
         If no featurizers are provided, all available features will be considered.
-
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
-
         Returns:
             Dense features.
         """
@@ -252,8 +243,10 @@ class Message:
             attribute, featurizers
         )
 
-        sequence_features = self._combine_features(sequence_features, featurizers)
-        sentence_features = self._combine_features(sentence_features, featurizers)
+        sequence_features = self._combine_features(
+            sequence_features, featurizers)
+        sentence_features = self._combine_features(
+            sentence_features, featurizers)
 
         return sequence_features, sentence_features
 
@@ -261,13 +254,10 @@ class Message:
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> List["Features"]:
         """Gets all features for the attribute given the list of featurizers.
-
         If no featurizers are provided, all available features will be considered.
-
         Args:
             attribute: message attribute
             featurizers: names of featurizers to consider
-
         Returns:
             Features.
         """
@@ -280,13 +270,10 @@ class Message:
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> bool:
         """Checks if there are any features present for the attribute and featurizers.
-
         If no featurizers are provided, all available features will be considered.
-
         Args:
             attribute: Message attribute.
             featurizers: Names of featurizers to consider.
-
         Returns:
             ``True``, if features are present, ``False`` otherwise.
         """
@@ -368,10 +355,8 @@ class Message:
 
     def is_core_or_domain_message(self) -> bool:
         """Checks whether the message is a core message or from the domain.
-
         E.g. a core message is created from a story or a domain action,
         not from the NLU data.
-
         Returns:
             True, if message is a core or domain message, false otherwise.
         """
@@ -390,7 +375,6 @@ class Message:
 
     def is_e2e_message(self) -> bool:
         """Checks whether the message came from an e2e story.
-
         Returns:
             `True`, if message is a from an e2e story, `False` otherwise.
         """
@@ -412,7 +396,7 @@ class Message:
         entities_with_location.sort(key=lambda e: e[ENTITY_ATTRIBUTE_START])
         overlapping_pairs: List[Tuple[Dict[Text, Any], Dict[Text, Any]]] = []
         for i, entity in enumerate(entities_with_location):
-            for other_entity in entities_with_location[i + 1 :]:
+            for other_entity in entities_with_location[i + 1:]:
                 if other_entity[ENTITY_ATTRIBUTE_START] < entity[ENTITY_ATTRIBUTE_END]:
                     overlapping_pairs.append((entity, other_entity))
                 else:
