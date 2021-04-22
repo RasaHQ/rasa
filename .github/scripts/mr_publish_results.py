@@ -32,7 +32,7 @@ def send_to_segment(context):
         jobID, {"name": "model-regression-tests", "created_at": datetime.datetime.now()}
     )
 
-    if IS_EXTERNAL.lower() in ("yes", "true", "t", "1"):
+    if str(IS_EXTERNAL).lower() in ("yes", "true", "t", "1"):
         IS_EXTERNAL = True
         DATASET_REPOSITORY_BRANCH = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
     else:

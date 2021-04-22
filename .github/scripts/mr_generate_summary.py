@@ -29,7 +29,7 @@ def generate_json(file, task, data):
     elif not CONFIG in data[DATASET]:
         data[DATASET] = {CONFIG: {}, **data[DATASET]}
 
-    if IS_EXTERNAL.lower() in ("yes", "true", "t", "1"):
+    if str(IS_EXTERNAL).lower() in ("yes", "true", "t", "1"):
         IS_EXTERNAL = True
         DATASET_REPOSITORY_BRANCH = os.environ["EXTERNAL_DATASET_REPOSITORY_BRANCH"]
     else:
