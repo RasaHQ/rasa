@@ -28,11 +28,11 @@ class MattermostBot(OutputChannel):
         """Retrieve access token for mattermost user."""
 
         data = {"login_id": user, "password": password}
-        request = requests.post(url + "/users/login", data=json.dumps(data))
-        if request.status_code == 200:
-            return request.headers["Token"]
+        response = requests.post(url + "/users/login", data=json.dumps(data))
+        if response.status_code == 200:
+            return response.headers["Token"]
         else:
-            logger.error(f"Failed to login mattermost user {user}. Response: {request}")
+            logger.error(f"Failed to login mattermost user {user}. Response: {response}")
             return None
 
     def __init__(
