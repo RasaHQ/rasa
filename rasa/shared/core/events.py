@@ -66,9 +66,9 @@ def deserialise_events(serialized_events: List[Dict[Text, Any]]) -> List["Event"
 
     deserialised = []
 
-    for evt in serialized_events:
-        if "event" in evt:
-            event = Event.from_parameters(evt)
+    for serialized_event in serialized_events:
+        if "event" in serialized_event:
+            event = Event.from_parameters(serialized_event)
             if event:
                 deserialised.append(event)
             else:
@@ -84,7 +84,7 @@ def deserialise_entities(entities: Union[Text, List[Any]]) -> List[Dict[Text, An
     if isinstance(entities, str):
         entities = json.loads(entities)
 
-    return [evt for evt in entities if isinstance(evt, dict)]
+    return [event for event in entities if isinstance(event, dict)]
 
 
 def format_message(
@@ -143,9 +143,9 @@ def split_events(
     sub_events = []
     current = []
 
-    def event_fulfills_splitting_condition(evt: "Event") -> bool:
+    def event_fulfills_splitting_condition(event: "Event") -> bool:
         # event does not have the correct type
-        if not isinstance(evt, event_type_to_split_on):
+        if not isinstance(event, event_type_to_split_on):
             return False
 
         # the type is correct and there are no further conditions
@@ -154,7 +154,7 @@ def split_events(
 
         # there are further conditions - check those
         return all(
-            getattr(evt, attribute_key, None) == value
+            getattr(event, attribute_key, None) == value
             for attribute_key, value in additional_splitting_conditions.items()
         )
 
