@@ -1,7 +1,7 @@
 from pathlib import Path
 import textwrap
 from typing import Text
-
+from collections import OrderedDict
 import pytest
 
 from rasa.shared.core.constants import ACTION_SESSION_START_NAME, ACTION_LISTEN_NAME
@@ -169,8 +169,6 @@ async def test_action_start_action_listen_are_not_dumped():
 
 
 def test_yaml_writer_stories_to_yaml(domain: Domain):
-    from collections import OrderedDict
-
     reader = YAMLStoryReader(domain, None, False)
     writer = YAMLStoryWriter()
     steps = reader.read_from_file(
@@ -184,8 +182,6 @@ def test_yaml_writer_stories_to_yaml(domain: Domain):
 
 
 def test_yaml_writer_stories_to_yaml_with_null_entities(domain: Domain):
-    from collections import OrderedDict
-
     writer = YAMLStoryWriter()
     stories = textwrap.dedent(
         """
