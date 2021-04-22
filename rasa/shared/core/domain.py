@@ -241,19 +241,22 @@ class Domain:
         combined = self.as_dict()
 
         def merge_dicts(
-            d1: Dict[Text, Any],
-            d2: Dict[Text, Any],
+            tempDict1: Dict[Text, Any],
+            tempDict2: Dict[Text, Any],
             override_existing_values: bool = False,
         ) -> Dict[Text, Any]:
-            if override_existing_values:
-                a, b = d1.copy(), d2.copy()
-            else:
-                a, b = d2.copy(), d1.copy()
-            a.update(b)
-            return a
 
-        def merge_lists(l1: List[Any], l2: List[Any]) -> List[Any]:
-            return sorted(list(set(l1 + l2)))
+            if override_existing_values:
+                merge_dicts, b = tempDict1.copy(), tempDict2.copy()
+
+            else:
+                merge_dicts, b = tempDict2.copy(), tempDict1.copy()
+
+            merge_dicts.update(b)
+            return merge_dicts
+
+        def merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
+            return sorted(list(set(list1 + list2)))
 
         def merge_lists_of_dicts(
             dict_list1: List[Dict],
@@ -359,27 +362,26 @@ class Domain:
         # label with the corresponding role or group label to make sure roles and
         # groups can also influence the dialogue predictions
         if properties[USE_ENTITIES_KEY] is True:
-            included_entities = set(entities)
-            included_entities.update(Domain.concatenate_entity_labels(roles))
-            included_entities.update(Domain.concatenate_entity_labels(groups))
+            included_entities = include_all_entities(entities, roles, groups)
         else:
-            included_entities = set(properties[USE_ENTITIES_KEY])
-            for entity in list(included_entities):
-                included_entities.update(
-                    Domain.concatenate_entity_labels(roles, entity)
-                )
-                included_entities.update(
-                    Domain.concatenate_entity_labels(groups, entity)
-                )
-        excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
-        for entity in list(excluded_entities):
-            excluded_entities.update(Domain.concatenate_entity_labels(roles, entity))
-            excluded_entities.update(Domain.concatenate_entity_labels(groups, entity))
-        used_entities = list(included_entities - excluded_entities)
-        used_entities.sort()
+            included_entities = include_entities(entities, roles, group)
+
+        excluded_entities = remove_entities(roles, group)
 
         # Only print warning for ambiguous configurations if entities were included
         # explicitly.
+        warn_if_ambigous_configuration(included_entities, excluded_entities)
+
+        properties[USED_ENTITIES_KEY] = used_entities
+        del properties[USE_ENTITIES_KEY]
+        del properties[IGNORE_ENTITIES_KEY]
+
+        return intent
+
+    @staticmethod
+    def warn_if_ambigous_configuration(
+        included_entities: List[Text], excluded_entities: List[Text], name: Text
+    ):
         explicitly_included = isinstance(properties[USE_ENTITIES_KEY], list)
         ambiguous_entities = included_entities.intersection(excluded_entities)
         if explicitly_included and ambiguous_entities:
@@ -391,11 +393,46 @@ class Domain:
                 docs=f"{rasa.shared.constants.DOCS_URL_DOMAINS}",
             )
 
-        properties[USED_ENTITIES_KEY] = used_entities
-        del properties[USE_ENTITIES_KEY]
-        del properties[IGNORE_ENTITIES_KEY]
+    @staticmethod
+    def remove_entities(
+        roles: Dict[Text, List[Text]],
+        groups: Dict[Text, List[Text]],
+    ):
 
-        return intent
+        excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
+        for entity in list(excluded_entities):
+            excluded_entities.update(Domain.concatenate_entity_labels(roles, entity))
+            excluded_entities.update(Domain.concatenate_entity_labels(groups, entity))
+        used_entities = list(included_entities - excluded_entities)
+        used_entities.sort()
+
+        return excluded_entities
+
+    @staticmethod
+    def include_entities(
+        entities: List[Text],
+        roles: Dict[Text, List[Text]],
+        groups: Dict[Text, List[Text]],
+    ):
+
+        included_entities = set(properties[USE_ENTITIES_KEY])
+        for entity in list(included_entities):
+            included_entities.update(Domain.concatenate_entity_labels(roles, entity))
+            included_entities.update(Domain.concatenate_entity_labels(groups, entity))
+        return included_entities
+
+    @staticmethod
+    def include_all_entities(
+        entities: List[Text],
+        roles: Dict[Text, List[Text]],
+        groups: Dict[Text, List[Text]],
+    ):
+        """List retrieval intents present in the domain."""
+        included_entities = set(entities)
+        included_entities.update(Domain.concatenate_entity_labels(roles))
+        included_entities.update(Domain.concatenate_entity_labels(groups))
+
+        return included_entities
 
     @rasa.shared.utils.common.lazy_property
     def retrieval_intents(self) -> List[Text]:
@@ -751,7 +788,10 @@ class Domain:
         """Return only the responses which are defined for retrieval intents."""
         return dict(
             filter(
-                lambda x: self.is_retrieval_intent_response(x), self.responses.items()
+                lambda intent_response: self.is_retrieval_intent_response(
+                    intent_response
+                ),
+                self.responses.items(),
             )
         )
 
@@ -823,7 +863,7 @@ class Domain:
         needs to fill in next (either explicitly or implicitly) as part of a form.
         """
         if self.form_names and rasa.shared.core.constants.REQUESTED_SLOT not in [
-            s.name for s in self.slots
+            slot.name for slot in self.slots
         ]:
             self.slots.append(
                 TextSlot(
@@ -860,15 +900,15 @@ class Domain:
                     rasa.shared.core.constants.DEFAULT_KNOWLEDGE_BASE_ACTION
                 )
             )
-            slot_names = [s.name for s in self.slots]
+            slot_names = [slot.name for slot in self.slots]
             knowledge_base_slots = [
                 rasa.shared.core.constants.SLOT_LISTED_ITEMS,
                 rasa.shared.core.constants.SLOT_LAST_OBJECT,
                 rasa.shared.core.constants.SLOT_LAST_OBJECT_TYPE,
             ]
-            for s in knowledge_base_slots:
-                if s not in slot_names:
-                    self.slots.append(TextSlot(s, influence_conversation=False))
+            for slot in knowledge_base_slots:
+                if slot not in slot_names:
+                    self.slots.append(TextSlot(slot, influence_conversation=False))
 
     def add_knowledge_base_slots(self) -> None:
         """See `_add_categorical_slot_default_value` for docstring."""
@@ -882,7 +922,9 @@ class Domain:
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
+            AnySlot(
+                rasa.shared.core.constants.SESSION_START_METADATA_SLOT,
+            )
         )
 
     def index_for_action(self, action_name: Text) -> int:
@@ -1075,7 +1117,8 @@ class Domain:
 
     @staticmethod
     def _get_slots_sub_state(
-        tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+        tracker: "DialogueStateTracker",
+        omit_unset_slots: bool = False,
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
         """Sets all set slots with the featurization of the stored value.
 
@@ -1141,7 +1184,9 @@ class Domain:
         }
 
     def get_active_states(
-        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+        self,
+        tracker: "DialogueStateTracker",
+        omit_unset_slots: bool = False,
     ) -> State:
         """Returns a bag of active states from the tracker state.
 
@@ -1167,7 +1212,8 @@ class Domain:
 
     @staticmethod
     def _remove_rule_only_features(
-        state: State, rule_only_data: Optional[Dict[Text, Any]],
+        state: State,
+        rule_only_data: Optional[Dict[Text, Any]],
     ) -> None:
         if not rule_only_data:
             return
@@ -1276,16 +1322,20 @@ class Domain:
         """
         if self.store_entities_as_slots:
             slot_events = []
-            for s in self.slots:
-                if s.auto_fill:
+            for slot in self.slots:
+                if slot.auto_fill:
                     matching_entities = [
-                        e.get("value") for e in entities if e.get("entity") == s.name
+                        entity.get("value")
+                        for entity in entities
+                        if entity.get("entity") == slot.name
                     ]
                     if matching_entities:
-                        if s.type_name == "list":
-                            slot_events.append(SlotSet(s.name, matching_entities))
+                        if slot.type_name == "list":
+                            slot_events.append(SlotSet(slot.name, matching_entities))
                         else:
-                            slot_events.append(SlotSet(s.name, matching_entities[-1]))
+                            slot_events.append(
+                                SlotSet(slot.name, matching_entities[-1])
+                            )
             return slot_events
         else:
             return []
@@ -1484,9 +1534,9 @@ class Domain:
 
         # clean empty keys
         return {
-            k: v
-            for k, v in domain_data.items()
-            if v != {} and v != [] and v is not None
+            key: val
+            for key, val in domain_data.items()
+            if val != {} and val != [] and val is not None
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:
@@ -1545,7 +1595,7 @@ class Domain:
         Excludes slots which aren't featurized.
         """
 
-        return [s.name for s in self._user_slots if s.influence_conversation]
+        return [slot.name for slot in self._user_slots if slot.influence_conversation]
 
     @property
     def _actions_for_domain_warnings(self) -> List[Text]:
@@ -1555,9 +1605,9 @@ class Domain:
         """
 
         return [
-            a
-            for a in self.user_actions_and_forms
-            if a not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
+            action
+            for action in self.user_actions_and_forms
+            if action not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
         ]
 
     @staticmethod
@@ -1588,7 +1638,7 @@ class Domain:
     ) -> List[Text]:
         """Combines actions with utter actions listed in responses section."""
         unique_utter_actions = [
-            a for a in sorted(list(responses.keys())) if a not in actions
+            action for action in sorted(list(responses.keys())) if action not in actions
         ]
         return actions + unique_utter_actions
 
@@ -1602,9 +1652,9 @@ class Domain:
         # 0 in this array. to keep it that way, we remove the duplicate
         # action names from the users list instead of the defaults
         unique_user_actions = [
-            a
-            for a in user_actions
-            if a not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
+            action
+            for action in user_actions
+            if action not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
         ]
         return rasa.shared.core.constants.DEFAULT_ACTION_NAMES + unique_user_actions
 
@@ -1745,9 +1795,9 @@ class Domain:
     def check_missing_responses(self) -> None:
         """Warn user of utterance names which have no specified response."""
         utterances = [
-            a
-            for a in self.action_names_or_texts
-            if a.startswith(rasa.shared.constants.UTTER_PREFIX)
+            action
+            for action in self.action_names_or_texts
+            if action.startswith(rasa.shared.constants.UTTER_PREFIX)
         ]
 
         missing_responses = [t for t in utterances if t not in self.responses.keys()]
