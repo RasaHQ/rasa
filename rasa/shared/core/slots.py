@@ -183,8 +183,7 @@ class FloatSlot(Slot):
 
     def _as_feature(self) -> List[float]:
         try:
-            capped_value = max(self.min_value, min(
-                self.max_value, float(self.value)))
+            capped_value = max(self.min_value, min(self.max_value, float(self.value)))
             if abs(self.max_value - self.min_value) > 0:
                 covered_range = abs(self.max_value - self.min_value)
             else:
