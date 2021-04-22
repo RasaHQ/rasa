@@ -32,6 +32,7 @@ class Slot:
         auto_fill: bool = True,
         influence_conversation: bool = True,
     ) -> None:
+
         """Create a Slot.
         Args:
             name: The name of the slot.
