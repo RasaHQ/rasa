@@ -13,7 +13,10 @@ from rasa.shared.core.constants import (
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
 )
-from rasa.shared.constants import UTTER_PREFIX
+from rasa.shared.constants import (
+    UTTER_PREFIX,
+    IGNORED_INTENTS,
+)
 from rasa.shared.core.events import (
     Event,
     SlotSet,
@@ -76,7 +79,6 @@ class FormAction(LoopAction):
             - role if it is not None
             - group if it is not None
         """
-
         intent, not_intent = self._list_intents(intent, not_intent)
 
         return {
@@ -95,10 +97,9 @@ class FormAction(LoopAction):
 
         If None, map requested slot to an entity with the same name
         """
-
         requested_slot_mappings = self._to_list(
             domain.slot_mapping_for_form(self.name()).get(
-                slot_to_fill, self.from_entity(slot_to_fill)
+                slot_to_fill, self.from_entity(slot_to_fill),
             )
         )
         # check provided slot mappings
@@ -165,14 +166,36 @@ class FormAction(LoopAction):
         mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
         return mapping_as_string in self._unique_entity_mappings
 
-    @staticmethod
+    def get_ignored_intents(self, domain: Domain) -> List[Text]:
+        """Returns a list of ignored intents.
+
+        Args:
+            domain: The current model domain.
+
+        Returns:
+            The value/s found in `ignored_intents` parameter in the `domain.yml`
+            (under forms).
+        """
+        ignored_intents = domain.forms[self.name()].get(IGNORED_INTENTS, [])
+        if not isinstance(ignored_intents, list):
+            ignored_intents = [ignored_intents]
+
+        return ignored_intents
+
     def intent_is_desired(
-        requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker"
+        self,
+        requested_slot_mapping: Dict[Text, Any],
+        tracker: "DialogueStateTracker",
+        domain: Domain,
     ) -> bool:
         """Check whether user intent matches intent conditions."""
         mapping_intents = FormAction._to_list(requested_slot_mapping.get("intent", []))
         mapping_not_intents = FormAction._to_list(
             requested_slot_mapping.get("not_intent", [])
+        )
+
+        mapping_not_intents = set(
+            mapping_not_intents + self.get_ignored_intents(domain)
         )
 
         intent = tracker.latest_message.intent.get("name")
@@ -201,7 +224,6 @@ class FormAction(LoopAction):
         Returns:
             True, if slot should be filled, false otherwise.
         """
-
         # slot name is equal to the entity type
         slot_equals_entity = slot == slot_mapping.get("entity")
         # if entity mapping is unique, it means that an entity always sets
@@ -282,7 +304,7 @@ class FormAction(LoopAction):
                     # check whether the slot should be filled by an entity in the input
                     should_fill_entity_slot = (
                         slot_mapping["type"] == str(SlotMapping.FROM_ENTITY)
-                        and self.intent_is_desired(slot_mapping, tracker)
+                        and self.intent_is_desired(slot_mapping, tracker, domain)
                         and self.entity_is_desired(
                             slot_mapping,
                             slot,
@@ -296,7 +318,7 @@ class FormAction(LoopAction):
                     should_fill_trigger_slot = (
                         tracker.active_loop_name != self.name()
                         and slot_mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT)
-                        and self.intent_is_desired(slot_mapping, tracker)
+                        and self.intent_is_desired(slot_mapping, tracker, domain)
                     )
                     if should_fill_entity_slot:
                         value = self.get_entity_value(
@@ -352,13 +374,11 @@ class FormAction(LoopAction):
 
         # get mapping for requested slot
         requested_slot_mappings = self.get_mappings_for_slot(slot_to_fill, domain)
-
         for requested_slot_mapping in requested_slot_mappings:
             logger.debug(f"Got mapping '{requested_slot_mapping}'")
 
-            if self.intent_is_desired(requested_slot_mapping, tracker):
+            if self.intent_is_desired(requested_slot_mapping, tracker, domain):
                 mapping_type = requested_slot_mapping["type"]
-
                 if mapping_type == str(SlotMapping.FROM_ENTITY):
                     value = self.get_entity_value(
                         requested_slot_mapping.get("entity"),
@@ -480,7 +500,6 @@ class FormAction(LoopAction):
         If nothing was extracted reject execution of the form action.
         Subclass this method to add custom validation and rejection logic
         """
-
         # extract other slots that were not requested
         # but set by corresponding entity or trigger intent mapping
         slot_values = self.extract_other_slots(tracker, domain)
@@ -631,7 +650,7 @@ class FormAction(LoopAction):
         intent: Optional[Union[Text, List[Text]]] = None,
         not_intent: Optional[Union[Text, List[Text]]] = None,
     ) -> Tuple[List[Text], List[Text]]:
-        """Check provided intent and not_intent"""
+        """Check provided intent and not_intent."""
         if intent and not_intent:
             raise ValueError(
                 f"Providing  both intent '{intent}' and not_intent '{not_intent}' "
@@ -671,8 +690,7 @@ class FormAction(LoopAction):
 
     @staticmethod
     def _should_request_slot(tracker: "DialogueStateTracker", slot_name: Text) -> bool:
-        """Check whether form action should request given slot"""
-
+        """Check whether form action should request given slot."""
         return tracker.get_slot(slot_name) is None
 
     async def activate(
@@ -698,7 +716,6 @@ class FormAction(LoopAction):
         Returns:
             Events from the activation.
         """
-
         logger.debug(f"Activated the form '{self.name()}'.")
         # collect values of required slots filled before activation
         prefilled_slots = {}
