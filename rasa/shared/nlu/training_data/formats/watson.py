@@ -1,13 +1,10 @@
 import logging
 from typing import Any, Dict, List, Text
-import re
 
 from rasa.shared.nlu.constants import (
     INTENT,
     ENTITIES,
     TEXT,
-    ENTITY_ATTRIBUTE_ROLE,
-    ENTITY_ATTRIBUTE_TYPE,
 )
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 from rasa.shared.nlu.training_data.util import transform_entity_synonyms
