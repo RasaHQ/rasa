@@ -375,7 +375,9 @@ async def _create_data_generator(
     from rasa.shared.constants import DEFAULT_DOMAIN_PATH
     from rasa.model import get_model_subdirectories
 
-    core_model, _ = get_model_subdirectories(agent.model_directory)
+    core_model = None
+    if agent.model_directory:
+        core_model, _ = get_model_subdirectories(agent.model_directory)
 
     if core_model and os.path.exists(os.path.join(core_model, DEFAULT_DOMAIN_PATH)):
         domain_path = os.path.join(core_model, DEFAULT_DOMAIN_PATH)
