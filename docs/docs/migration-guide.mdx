@@ -16,10 +16,10 @@ how you can migrate from one version to another.
 
 #### New `ignored_intents` parameter in Forms
 
-We added a new parameter under Forms with the name `ignored_intents`. This parameter
-can be used in case the user never wants to fill any slots of a form with the specified
-intent, e.g. chitchat. Please see the [Forms documentation](forms.mdx) for examples and
-more information on how to use it in your `domain.yml` file.
+There is a new parameter under Forms called `ignored_intents`. This parameter
+can be used to prevent any required slots in a form from being filled with the specified
+intent or intents. Please see the [Forms documentation](forms.mdx) for examples and more
+information on how to use it in your `domain.yml` file.
 
 Before, if a user did not want to fill any slots of a form with a specified intent
 they would have to define it under the `not_intent` parameter for every slot mapping
