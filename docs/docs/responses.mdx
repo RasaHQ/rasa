@@ -170,6 +170,10 @@ Messages starting with `/` are sent straight to the
 `RegexInterpreter`, which expects NLU input in a shortened `/intent{entities}` format.
 In the example above, if the user clicks a button, the user input
 will be directly classified as either the `mood_great` or `mood_sad` intent.
+
+`entities` is a comma separated key-value pair of entity type and values to pass along with the intent.
+For example, `/inform{"ORG":"Rasa", "GPE":"Germany"}` will pass the intent `inform` and the entities `Rasa`
+and `Germany` which are of type `ORG` and `GPE` respectively to the `RegexInterpreter`. 
 :::
 
 :::caution Check your channel
