@@ -40,7 +40,7 @@ def test_does_model_improve(logs: List[Dict[Text, float]], improved, tmpdir: Pat
     assert checkpoint._does_model_improve(logs[1]) == improved
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def trained_ted(mood_agent: Agent) -> TEDPolicy:
     # use the moodbot agent to get a trained TEDPolicy
     for policy in mood_agent.policy_ensemble.policies:
