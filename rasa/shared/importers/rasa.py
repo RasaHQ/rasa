@@ -76,7 +76,7 @@ class RasaFileImporter(TrainingDataImporter):
 
         # If domain path is None, attempt to load the default domain
         if not self._domain_path:
-            self._domain_path = DEFAULT_DOMAIN_PATH
+            return domain
         try:
             domain = Domain.load(self._domain_path)
         except InvalidDomain as e:
