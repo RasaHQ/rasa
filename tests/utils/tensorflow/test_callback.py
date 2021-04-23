@@ -49,7 +49,7 @@ def trained_ted(mood_agent: Agent) -> TEDPolicy:
 
 
 @pytest.mark.parametrize(
-    "logs, improved", [(BOTH_IMPROVED, True), (ONE_WORSE_ONE_EQUAL, False),]
+    "logs, improved", [(ONE_IMPROVED_ONE_EQUAL, True), (ONE_WORSE_ONE_EQUAL, False)]
 )
 def test_on_epoch_end_saves_checkpoints_file(
     logs: List[Dict[Text, float]], improved: bool, trained_ted: TEDPolicy, tmpdir: Path
