@@ -8,7 +8,7 @@ policies:
     - name: MaxHistoryTrackerFeaturizer
       max_history: 5
       state_featurizer:
-        - name: BinarySingleStateFeaturizer
+        - name: SingleStateFeaturizer
   - name: "MemoizationPolicy"
     max_history: 5
   - name: "FallbackPolicy"
