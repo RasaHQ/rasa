@@ -20,7 +20,19 @@ from typing import (
     Iterable,
 )
 
-import rasa.shared.constants
+from rasa.shared.constants import (
+    DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
+    DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+    DOMAIN_SCHEMA_FILE,
+    DOCS_URL_DOMAINS,
+    DOCS_URL_FORMS,
+    DOCS_URL_MIGRATION_GUIDE,
+    LATEST_TRAINING_DATA_FORMAT_VERSION,
+    UTTER_PREFIX,
+    DOCS_URL_RESPONSES,
+    REQUIRED_SLOTS_KEY,
+    IGNORED_INTENTS,
+)
 import rasa.shared.core.constants
 from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
 import rasa.shared.nlu.constants
@@ -84,17 +96,21 @@ class ActionNotFoundException(ValueError, RasaException):
 
 
 class SessionConfig(NamedTuple):
+    """The Session Configuration."""
+
     session_expiration_time: float  # in minutes
     carry_over_slots: bool
 
     @staticmethod
     def default() -> "SessionConfig":
+        """Returns the SessionConfig with the default values."""
         return SessionConfig(
-            rasa.shared.constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
-            rasa.shared.constants.DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+            DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
+            DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
         )
 
     def are_sessions_enabled(self) -> bool:
+        """Returns a boolean value depending on the value of session_expiration_time."""
         return self.session_expiration_time > 0
 
 
@@ -143,21 +159,20 @@ class Domain:
 
     @classmethod
     def from_file(cls, path: Text) -> "Domain":
+        """Loads the `Domain` from a YAML file."""
         return cls.from_yaml(rasa.shared.utils.io.read_file(path), path)
 
     @classmethod
     def from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain":
+        """Loads the `Domain` from YAML text after validating it."""
         try:
-            rasa.shared.utils.validation.validate_yaml_schema(
-                yaml, rasa.shared.constants.DOMAIN_SCHEMA_FILE
-            )
+            rasa.shared.utils.validation.validate_yaml_schema(yaml, DOMAIN_SCHEMA_FILE)
 
             data = rasa.shared.utils.io.read_yaml(yaml)
             if not rasa.shared.utils.validation.validate_training_data_format_version(
                 data, original_filename
             ):
                 return Domain.empty()
-
             return cls.from_dict(data)
         except YamlException as e:
             e.filename = original_filename
@@ -199,13 +214,10 @@ class Domain:
         session_expiration_time_min = session_config.get(SESSION_EXPIRATION_TIME_KEY)
 
         if session_expiration_time_min is None:
-            session_expiration_time_min = (
-                rasa.shared.constants.DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
-            )
+            session_expiration_time_min = DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 
         carry_over_slots = session_config.get(
-            CARRY_OVER_SLOTS_KEY,
-            rasa.shared.constants.DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+            CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
         )
 
         return SessionConfig(session_expiration_time_min, carry_over_slots)
@@ -388,7 +400,7 @@ class Domain:
                 f" excluded for intent '{name}'."
                 f"Excluding takes precedence in this case. "
                 f"Please resolve that ambiguity.",
-                docs=f"{rasa.shared.constants.DOCS_URL_DOMAINS}",
+                docs=f"{DOCS_URL_DOMAINS}",
             )
 
         properties[USED_ENTITIES_KEY] = used_entities
@@ -602,7 +614,6 @@ class Domain:
         self._user_slots = copy.copy(slots)
         self.slots = slots
         self._add_default_slots()
-
         self.store_entities_as_slots = store_entities_as_slots
         self._check_domain_sanity()
 
@@ -661,6 +672,9 @@ class Domain:
             `FormAction` which is implemented in the Rasa SDK.
         """
         if isinstance(forms, dict):
+            for form_name, form_data in forms.items():
+                if form_data is not None and REQUIRED_SLOTS_KEY not in form_data:
+                    forms[form_name] = {REQUIRED_SLOTS_KEY: form_data}
             # dict with slot mappings
             return list(forms.keys()), forms, []
 
@@ -682,7 +696,7 @@ class Domain:
         rasa.shared.utils.io.raise_warning(
             f"The `forms` section in the domain needs to contain a dictionary. "
             f"Instead found an object of type '{type(forms)}'.",
-            docs=rasa.shared.constants.DOCS_URL_FORMS,
+            docs=DOCS_URL_FORMS,
         )
 
         return [], {}, []
@@ -742,7 +756,7 @@ class Domain:
         """Return only the responses which are defined for retrieval intents."""
         rasa.shared.utils.io.raise_deprecation_warning(
             "The terminology 'template' is deprecated and replaced by 'response', call `retrieval_intent_responses` instead of `retrieval_intent_templates`.",
-            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         return self.retrieval_intent_responses
 
@@ -760,7 +774,7 @@ class Domain:
         """Temporary property before templates become completely deprecated."""
         rasa.shared.utils.io.raise_deprecation_warning(
             "The terminology 'template' is deprecated and replaced by 'response'. Instead of using the `templates` property, please use the `responses` property instead.",
-            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         return self.responses
 
@@ -775,7 +789,7 @@ class Domain:
         """
         rasa.shared.utils.io.raise_deprecation_warning(
             "The terminology 'template' is deprecated and replaced by 'response', call `is_retrieval_intent_response` instead of `is_retrieval_intent_template`.",
-            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
 
@@ -1514,7 +1528,7 @@ class Domain:
         # thanks to the `should_preserve_key_order` argument
         # of `dump_obj_as_yaml_to_string`
         domain_data: Dict[Text, Any] = {
-            KEY_TRAINING_DATA_FORMAT_VERSION: rasa.shared.constants.LATEST_TRAINING_DATA_FORMAT_VERSION
+            KEY_TRAINING_DATA_FORMAT_VERSION: LATEST_TRAINING_DATA_FORMAT_VERSION
         }
         if clean_before_dump:
             domain_data.update(self.cleaned_domain())
@@ -1738,16 +1752,14 @@ class Domain:
         """Warn user of utterance names which have no specified response."""
         rasa.shared.utils.io.raise_deprecation_warning(
             "The terminology 'template' is deprecated and replaced by 'response'. Please use `check_missing_responses` instead of `check_missing_templates`.",
-            docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
+            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         self.check_missing_responses()
 
     def check_missing_responses(self) -> None:
         """Warn user of utterance names which have no specified response."""
         utterances = [
-            a
-            for a in self.action_names_or_texts
-            if a.startswith(rasa.shared.constants.UTTER_PREFIX)
+            a for a in self.action_names_or_texts if a.startswith(UTTER_PREFIX)
         ]
 
         missing_responses = [t for t in utterances if t not in self.responses.keys()]
@@ -1757,9 +1769,8 @@ class Domain:
                 rasa.shared.utils.io.raise_warning(
                     f"Action '{response}' is listed as a "
                     f"response action in the domain file, but there is "
-                    f"no matching response defined. Please "
-                    f"check your domain.",
-                    docs=rasa.shared.constants.DOCS_URL_RESPONSES,
+                    f"no matching response defined. Please check your domain.",
+                    docs=DOCS_URL_RESPONSES,
                 )
 
     def is_empty(self) -> bool:
@@ -1808,7 +1819,7 @@ class Domain:
         Returns:
             The slot mapping or an empty dictionary in case no mapping was found.
         """
-        return self.forms.get(form_name, {})
+        return self.forms.get(form_name, {})[REQUIRED_SLOTS_KEY]
 
 
 class SlotMapping(Enum):
@@ -1839,7 +1850,7 @@ class SlotMapping(Enum):
             raise InvalidDomain(
                 f"Please make sure that the slot mappings for slot '{slot_name}' in "
                 f"your form '{form_name}' are valid dictionaries. Please see "
-                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+                f"{DOCS_URL_FORMS} for more information."
             )
 
         validations = {
@@ -1856,7 +1867,7 @@ class SlotMapping(Enum):
             raise InvalidDomain(
                 f"Your form '{form_name}' uses an invalid slot mapping of type "
                 f"'{mapping_type}' for slot '{slot_name}'. Please see "
-                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+                f"{DOCS_URL_FORMS} for more information."
             )
 
         for required_key in required_keys:
@@ -1865,7 +1876,7 @@ class SlotMapping(Enum):
                     f"You need to specify a value for the key "
                     f"'{required_key}' in the slot mapping of type '{mapping_type}' "
                     f"for slot '{slot_name}' in the form '{form_name}'. Please see "
-                    f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+                    f"{DOCS_URL_FORMS} for more information."
                 )
 
 
@@ -1875,7 +1886,7 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
             raise InvalidDomain(
                 f"If you use the deprecated list syntax for forms, "
                 f"all form names have to be strings. Please see "
-                f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+                f"{DOCS_URL_FORMS} for more information."
             )
 
         return
@@ -1883,15 +1894,43 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
     if not isinstance(forms, dict):
         raise InvalidDomain("Forms have to be specified as dictionary.")
 
-    for form_name, slots in forms.items():
-        if slots is None:
+    for form_name, form_data in forms.items():
+        if form_data is None:
             continue
+
+        if not isinstance(form_data, Dict):
+            raise InvalidDomain(
+                f"The contents of form '{form_name}' were specified "
+                f"as '{type(form_data)}'. They need to be specified "
+                f"as dictionary. Please see {DOCS_URL_FORMS} "
+                f"for more information."
+            )
+
+        if IGNORED_INTENTS in form_data and REQUIRED_SLOTS_KEY not in form_data:
+            raise InvalidDomain(
+                f"If you use the `{IGNORED_INTENTS}` parameter in your form, then "
+                f"the keyword `{REQUIRED_SLOTS_KEY}` should precede the definition "
+                f"of your slot mappings. Please see {DOCS_URL_FORMS} "
+                f"for more information."
+            )
+
+        if REQUIRED_SLOTS_KEY in form_data:
+            slots = forms[form_name].get(REQUIRED_SLOTS_KEY)
+        else:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The definition of slot mappings in your form "
+                f"should always be preceded by the keyword `{REQUIRED_SLOTS_KEY}`. "
+                f"The lack of this keyword will be deprecated in "
+                f"Rasa Open Source 3.0.0. Please see {DOCS_URL_FORMS} "
+                f"for more information.",
+            )
+            slots = form_data
 
         if not isinstance(slots, Dict):
             raise InvalidDomain(
                 f"The slots for form '{form_name}' were specified "
                 f"as '{type(slots)}'. They need to be specified "
-                f"as dictionary. Please see {rasa.shared.constants.DOCS_URL_FORMS} "
+                f"as dictionary. Please see {DOCS_URL_FORMS} "
                 f"for more information."
             )
 
@@ -1899,10 +1938,10 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
             if not isinstance(slot_mappings, list):
                 raise InvalidDomain(
                     f"The slot mappings for slot '{slot_name}' in "
-                    f"form '{form_name}' have type "
-                    f"'{type(slot_mappings)}'. It is required to "
-                    f"provide a list of slot mappings. Please see "
-                    f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
+                    f"form '{form_name}' have type '{type(slot_mappings)}'. "
+                    f"It is required to provide a list of slot "
+                    f"mappings. Please see {DOCS_URL_FORMS} "
+                    f"for more information."
                 )
             for slot_mapping in slot_mappings:
                 SlotMapping.validate(slot_mapping, form_name, slot_name)
