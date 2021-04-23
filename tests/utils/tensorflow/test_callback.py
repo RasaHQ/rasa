@@ -2,17 +2,24 @@ from typing import Dict, Text, List
 from pathlib import Path
 
 import pytest
+import sys
 
 from rasa.core.agent import Agent
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.utils.tensorflow.callback import RasaModelCheckpoint
 
-BOTH_IMPROVED = [{"val_i_acc": 0.5, "val_f1": 0.5}, {"val_i_acc": 0.7, "val_f1": 0.7}]
+BOTH_IMPROVED = [
+    {"val_i_acc": 0.5, "val_f1": 0.5},
+    {"val_i_acc": 0.7, "val_f1": 0.7}
+]
 ONE_IMPROVED_ONE_EQUAL = [
     {"val_i_acc": 0.5, "val_f1": 0.5},
     {"val_i_acc": 0.5, "val_f1": 0.7},
 ]
-BOTH_EQUAL = [{"val_i_acc": 0.7, "val_f1": 0.7}, {"val_i_acc": 0.7, "val_f1": 0.7}]
+BOTH_EQUAL = [
+    {"val_i_acc": 0.7, "val_f1": 0.7},
+    {"val_i_acc": 0.7, "val_f1": 0.7}
+]
 ONE_IMPROVED_ONE_WORSE = [
     {"val_i_acc": 0.6, "val_f1": 0.5},
     {"val_i_acc": 0.4, "val_f1": 0.7},
@@ -49,11 +56,21 @@ def trained_ted(mood_agent: Agent) -> TEDPolicy:
 
 
 @pytest.mark.parametrize(
-    "logs, improved", [(ONE_IMPROVED_ONE_EQUAL, True), (ONE_WORSE_ONE_EQUAL, False)]
+    "logs, improved",
+    [
+        ([{"val_i_acc": 0.5, "val_f1": 0.5}, {"val_i_acc": 0.5, "val_f1": 0.7}], True),
+        ([{"val_i_acc": 0.5, "val_f1": 0.5}, {"val_i_acc": 0.4, "val_f1": 0.5}], False)
+    ]
 )
 def test_on_epoch_end_saves_checkpoints_file(
     logs: List[Dict[Text, float]], improved: bool, trained_ted: TEDPolicy, tmpdir: Path
 ):
+    for log in logs:
+        sys.stdout.write("[")
+        for k, v in log.items():
+            sys.stdout.write(f"{k}:{v} ")
+        sys.stdout.write("] ")
+    sys.stdout.write("\n")
     model_name = "checkpoint"
     best_model_file = Path(str(tmpdir), model_name)
     assert not best_model_file.exists()
