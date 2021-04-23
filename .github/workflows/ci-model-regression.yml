@@ -233,6 +233,12 @@ jobs:
               && echo "::set-output name=is_config_exists::false" && exit 0)
           fi
 
+          # Skip job if a given type is not available for a given dataset
+          if [[ -z "${DOMAIN_FILE}" && "${{ matrix.type }}" == "core" ]]; then
+            echo "::warning::The ${{ matrix.dataset }} dataset doesn't include core type. Skipping the job." \
+              && echo "::set-output name=is_config_exists::false" && exit 0
+          fi
+
           test -f dataset/configs/$CONFIG || (echo "::warning::The ${{ matrix.config }} configuration file doesn't exist. Skipping the job." \
               && echo "::set-output name=is_dataset_exists::false" && exit 0)
 
@@ -436,6 +442,12 @@ jobs:
             echo "DATASET_DIR=dataset" >> $GITHUB_ENV
             test -d dataset/$DATASET || (echo "::warning::The ${{ matrix.dataset }} dataset doesn't exist. Skipping the job." \
               && echo "::set-output name=is_config_exists::false" && exit 0)
+          fi
+
+          # Skip job if a given type is not available for a given dataset
+          if [[ -z "${DOMAIN_FILE}" && "${{ matrix.type }}" == "core" ]]; then
+            echo "::warning::The ${{ matrix.dataset }} dataset doesn't include core type. Skipping the job." \
+              && echo "::set-output name=is_config_exists::false" && exit 0
           fi
 
           test -f dataset/configs/$CONFIG || (echo "::warning::The ${{ matrix.config }} configuration file doesn't exist. Skipping the job." \
