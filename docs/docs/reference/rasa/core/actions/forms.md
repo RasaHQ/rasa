@@ -63,11 +63,28 @@ Get mappings for requested slot.
 
 If None, map requested slot to an entity with the same name
 
+#### get\_ignored\_intents
+
+```python
+ | get_ignored_intents(domain: Domain) -> List[Text]
+```
+
+Returns a list of ignored intents.
+
+**Arguments**:
+
+- `domain` - The current model domain.
+  
+
+**Returns**:
+
+  The value/s found in `ignored_intents` parameter in the `domain.yml`
+  (under forms).
+
 #### intent\_is\_desired
 
 ```python
- | @staticmethod
- | intent_is_desired(requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker") -> bool
+ | intent_is_desired(requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain) -> bool
 ```
 
 Check whether user intent matches intent conditions.

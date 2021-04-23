@@ -19,6 +19,31 @@ class ActionNotFoundException(ValueError,  RasaException)
 
 Raised when an action name could not be found.
 
+## SessionConfig Objects
+
+```python
+class SessionConfig(NamedTuple)
+```
+
+The Session Configuration.
+
+#### default
+
+```python
+ | @staticmethod
+ | default() -> "SessionConfig"
+```
+
+Returns the SessionConfig with the default values.
+
+#### are\_sessions\_enabled
+
+```python
+ | are_sessions_enabled() -> bool
+```
+
+Returns a boolean value depending on the value of session_expiration_time.
+
 ## Domain Objects
 
 ```python
@@ -29,6 +54,24 @@ The domain specifies the universe in which the bot&#x27;s policy acts.
 
 A Domain subclass provides the actions the bot can take, the intents
 and entities it can recognise.
+
+#### from\_file
+
+```python
+ | @classmethod
+ | from_file(cls, path: Text) -> "Domain"
+```
+
+Loads the `Domain` from a YAML file.
+
+#### from\_yaml
+
+```python
+ | @classmethod
+ | from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain"
+```
+
+Loads the `Domain` from YAML text after validating it.
 
 #### from\_dict
 

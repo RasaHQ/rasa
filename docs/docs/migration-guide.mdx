@@ -10,6 +10,61 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.5 to 2.6
+
+### Forms
+
+#### New `ignored_intents` parameter in Forms
+
+There is a new parameter under Forms called `ignored_intents`. This parameter
+can be used to prevent any required slots in a form from being filled with the specified
+intent or intents. Please see the [Forms documentation](forms.mdx) for examples and more
+information on how to use it in your `domain.yml` file.
+
+Before, if a user did not want to fill any slots of a form with a specified intent
+they would have to define it under the `not_intent` parameter for every slot mapping
+as shown in the following example :
+
+```yaml-rasa title="domain.yml"
+forms:
+  restaurant_form:
+      cuisine:
+      - type: from_entity
+        entity: cuisine
+        not_intent: chitchat
+      num_people:
+      - type: from_entity
+        entity: number
+        intent: [inform, request_restaurant]
+        not_intent: chitchat
+      feedback:
+      - type: from_entity
+        entity: feedback
+        not_intent: chitchat
+```
+
+By introducing the `ignored_intents` parameter, we now only need to define it
+in one place and it will affect all the slots of the form :
+
+```yaml-rasa title="domain.yml"
+forms:
+  restaurant_form:
+    ignored_intents: chitchat
+    required_slots:
+      cuisine:
+      - type: from_entity
+        entity: cuisine
+      num_people:
+      - type: from_entity
+        entity: number
+        intent: [inform, request_restaurant]
+      feedback:
+      - type: from_entity
+        entity: feedback
+      - type: from_text
+```
+
+
 ## Rasa 2.4 to 2.5
 
 ### Machine Learning Components
