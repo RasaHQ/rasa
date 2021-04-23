@@ -33,7 +33,7 @@ The print_result_core template returns data depends on available fields.
 
 */ -}}
 {{ define "print_result_core_micro_avg" -}}
-{{{- if and (has (index .branch "micro avg") "f1-score") (has (index .main "micro avg") "f1-score") -}}
+{{- if and (has (index .branch "micro avg") "f1-score") (has (index .main "micro avg") "f1-score") -}}
 {{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index .main "micro avg") "f1-score") | math.Sub (index (index .branch "micro avg") "f1-score")) }})
 {{- else if and (has .branch "accuracy") (has .main "accuracy") -}}
 {{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" (.main.accuracy | math.Sub .branch.accuracy) }})
