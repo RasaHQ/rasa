@@ -33,8 +33,16 @@ The print_result_core template returns data depends on available fields.
 
 */ -}}
 {{ define "print_result_core_micro_avg" -}}
-{{- if and (has (index .branch "micro avg") "f1-score") (has (index .main "micro avg") "f1-score") -}}
+{{{- if and (has (index .branch "micro avg") "f1-score") (has (index .main "micro avg") "f1-score") -}}
 {{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} ({{ printf "%.2f" ((index (index .main "micro avg") "f1-score") | math.Sub (index (index .branch "micro avg") "f1-score")) }})
+{{- else if and (has .branch "accuracy") (has .main "accuracy") -}}
+{{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" (.main.accuracy | math.Sub .branch.accuracy) }})
+{{- else if and (has .branch "accuracy") (has (index .main "micro avg") "f1-score") -}}
+{{ printf "%.4f" .branch.accuracy }} ({{ printf "%.2f" ((index (index .main "micro avg") "f1-score") | math.Sub .branch.accuracy) }})
+{{- else if and (has (index .branch "micro avg") "f1-score") (has .main "accuracy") -}}
+{{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} ({{ printf "%.2f" (.main.accuracy | math.Sub (index (index .branch "micro avg") "f1-score")) }})
+{{- else if (has .branch "accuracy") -}}
+{{ printf "%.4f" .branch.accuracy }} (`no data`)
 {{- else if has (index .branch "micro avg") "f1-score" -}}
 {{ printf "%.4f" (index (index .branch "micro avg") "f1-score") }} (`no data`)
 {{- else -}}
