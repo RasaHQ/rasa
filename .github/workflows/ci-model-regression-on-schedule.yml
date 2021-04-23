@@ -9,6 +9,7 @@ on:
 env:
   GKE_ZONE: us-central1
   GCLOUD_VERSION: "318.0.0"
+  GITHUB_ISSUE_LABELS: '["type:bug :bug:", "tool:model-regression-tests"]'
 
 jobs:
   read_test_configuration:
@@ -243,8 +244,6 @@ jobs:
       - name: Add Label to the Issue
         if: failure()
         id: add_label
-        env:
-          LABEL: "type:bug :bug:"
         run: |
           # Get issue number
           ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.number')
@@ -256,20 +255,7 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
-            -d '{"labels":["${{ env.LABEL }}"]}'
-
-      - name: Assign Issue to Project Column
-        if: failure()
-        run: |
-          ISSUE_ID=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.id')
-
-          # Add this issue to a project column
-          curl \
-            -X POST \
-            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}" \
-            -H 'Accept: application/vnd.github.inertia-preview+json' \
-            -d "{\"content_type\": \"Issue\", \"content_id\": $ISSUE_ID}" \
-            "https://api.github.com/projects/columns/${{ secrets.RESEARCH_BOARD_INBOX_COLUMN_ID }}/cards"
+            -d '{"labels": ${{ env.GITHUB_ISSUE_LABELS }}}'
 
       - name: Notify Slack of Failure 😱
         if: failure()
@@ -396,8 +382,6 @@ jobs:
       - name: Add Label to the Issue
         if: steps.performance.outputs.is_dropped == 'true'
         id: add_label
-        env:
-          LABEL: "type:bug :bug:"
         run: |
           # Get issue number
           ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.number')
@@ -409,20 +393,7 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
-            -d '{"labels":["${{ env.LABEL }}"]}'
-
-      - name: Assign Issue to Project Column
-        if: steps.performance.outputs.is_dropped == 'true'
-        run: |
-          ISSUE_ID=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.id')
-
-          # Add this issue to a project column
-          curl \
-            -X POST \
-            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}" \
-            -H 'Accept: application/vnd.github.inertia-preview+json' \
-            -d "{\"content_type\": \"Issue\", \"content_id\": $ISSUE_ID}" \
-            "https://api.github.com/projects/columns/${{ secrets.RESEARCH_BOARD_INBOX_COLUMN_ID }}/cards"
+            -d '{"labels": ${{ env.GITHUB_ISSUE_LABELS }}}'
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true'
