@@ -1055,8 +1055,15 @@ def create_app(
             training_result = await train_async(**training_payload)
 
             if training_result.model:
-                filename = os.path.basename(training_result.model)
+                load_model = request.args.get('load_model')
 
+                if load_model and load_model == 'true':
+                    app.agent = await _load_agent(
+                        model_path=training_result.model, endpoints=endpoints, lock_store=app.agent.lock_store
+                    )
+                    logger.debug(f"Successfully loaded model '{training_result.model}'.")
+
+                filename = os.path.basename(training_result.model)
                 return await response.file(
                     training_result.model,
                     filename=filename,
