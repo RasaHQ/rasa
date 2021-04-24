@@ -476,6 +476,12 @@ paths:
           type: string
           default: 1
           description: Maximum amount of threads to use when training
+      - in: query
+        name: load_model
+        schema:
+          type: boolean
+          default: false
+          description: Load the trained model
       - $ref: '#/components/parameters/callback_url'
       requestBody:
         required: true
