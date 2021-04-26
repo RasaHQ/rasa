@@ -328,3 +328,95 @@ def test_nlg_fill_response_quick_replies(
         filled_slots={quick_replies_slot_name: quick_replies_slot_value},
     )
     assert result == {"quick_replies": str(quick_replies_slot_value)}
+
+
+def test_nlg_conditional_response_variations():
+    responses = {'utter_test': [{'text': 'Conditional Response A',
+                                 'condition': [
+                                     {
+                                         'type': 'slot',
+                                         'name': 'slot test',
+                                         'value': 'A'
+                                     }],
+                                 'channel': 'os'
+                                 },
+                                {'text': 'Conditional app response A',
+                                 'condition': [
+                                     {
+                                         'type': 'slot',
+                                         'name': 'slot test',
+                                         'value': 'A'
+                                     }],
+                                 'channel': 'app'
+                                 },
+                                {'text': 'Conditional Response B',
+                                 'condition': [
+                                      {
+                                          'type': 'slot',
+                                          'name': 'slot test',
+                                          'value': 'B'
+                                      }],
+                                 },
+                                {'text': 'Default response'}
+                                ]
+                 }
+    t = TemplatedNaturalLanguageGenerator(responses=responses)
+
+    condition_a = t._matches_filled_slots(filled_slots={'slot test': 'A'},
+                                          response=responses['utter_test'][0])
+    assert condition_a is True
+
+    condition_b = t._matches_filled_slots(filled_slots={'slot test': 'A'},
+                                          response=responses['utter_test'][2])
+    assert condition_b is False
+
+    response_a = t._responses_for_utter_action(utter_action='utter_test',
+                                               output_channel='os',
+                                               filled_slots={'slot test': 'A'})
+    assert response_a[0].get("text") == 'Conditional Response A'
+
+    response_b = t._responses_for_utter_action(utter_action='utter_test',
+                                               output_channel='',
+                                               filled_slots={'slot test': 'B'})
+    assert response_b[0].get("text") == 'Conditional Response B'
+
+    response_b = t._responses_for_utter_action(utter_action='utter_test',
+                                               output_channel='os',
+                                               filled_slots={'slot test': 'B'})
+    assert response_b[0].get("text") == 'Conditional Response B'
+
+    default_response = t._responses_for_utter_action(utter_action='utter_test',
+                                                     output_channel='',
+                                                     filled_slots={'slot test': 'C'})
+    assert default_response[0].get("text") == 'Default response'
+
+    default_app_response = t._responses_for_utter_action(utter_action='utter_test',
+                                                         output_channel='app',
+                                                         filled_slots={'slot test': 'A'})
+    assert default_app_response[0].get("text") == 'Conditional app response A'
+
+
+def test_nlg_when_multiple_conditions_satisfied():
+    responses = {
+        'utter_action': [
+            {'text': 'example A',
+             'condition': [{
+                 'type': 'slot',
+                 'name': 'test',
+                 'value': 'A'}]
+             },
+            {'text': 'example B',
+             'condition': [{
+                 'type': 'slot',
+                 'name': 'test_another',
+                 'value': 'B'}]
+             }
+        ]
+    }
+
+    t = TemplatedNaturalLanguageGenerator(responses=responses)
+    response_list = t._responses_for_utter_action(utter_action='utter_action',
+                                                  output_channel='',
+                                                  filled_slots={'test': 'A', 'test_another': 'B'})
+    assert len(response_list) == 2
+

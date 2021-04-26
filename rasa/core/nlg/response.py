@@ -24,29 +24,56 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             responses: responses that will be used to generate messages.
         """
         self.responses = responses
+        print(self.responses)
+
+    def _matches_filled_slots(
+            self,
+            filled_slots: Dict[Text, Any],
+            response: Dict[Text, Any],
+    ) -> bool:
+        """Checks if the conditional response variation matches the filled slots."""
+        condition_list = response.get("condition")
+        for condition in condition_list:
+            name = condition['name']
+            value = condition['value']
+            if filled_slots.get(name) == value:
+                return True
+        else:
+            return False
 
     def _responses_for_utter_action(
-        self, utter_action: Text, output_channel: Text
+        self, utter_action: Text, output_channel: Text, filled_slots: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
-        """Return array of responses that fit the channel and action."""
-        channel_responses = []
+        """Return array of responses that fit the channel, action and condition if any."""
         default_responses = []
+        conditional_responses = []
 
         for response in self.responses[utter_action]:
-            if response.get("channel") == output_channel:
-                channel_responses.append(response)
-            elif not response.get("channel"):
+            if response.get("condition") is None:
                 default_responses.append(response)
+            else:
+                matched_response = self._matches_filled_slots(filled_slots=filled_slots,
+                                                              response=response)
+                if matched_response:
+                    conditional_responses.append(response)
+
+        if conditional_responses:
+            potential_responses = conditional_responses[:]
+        else:
+            potential_responses = default_responses[:]
+
+        channel_responses = list(filter(lambda x: (x.get("channel") == output_channel),
+                                        potential_responses))
 
         # always prefer channel specific responses over default ones
         if channel_responses:
             return channel_responses
         else:
-            return default_responses
+            return potential_responses
 
     # noinspection PyUnusedLocal
     def _random_response_for(
-        self, utter_action: Text, output_channel: Text
+        self, utter_action: Text, output_channel: Text, filled_slots: Dict[Text, Any]
     ) -> Optional[Dict[Text, Any]]:
         """Select random response for the utter action from available ones.
 
@@ -57,7 +84,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         if utter_action in self.responses:
             suitable_responses = self._responses_for_utter_action(
-                utter_action, output_channel
+                utter_action, output_channel, filled_slots
             )
 
             if suitable_responses:
@@ -89,7 +116,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action."""
         # Fetching a random response for the passed utter action
-        r = copy.deepcopy(self._random_response_for(utter_action, output_channel))
+        r = copy.deepcopy(self._random_response_for(utter_action, output_channel, filled_slots))
         # Filling the slots in the response with placeholders and returning the response
         if r is not None:
             return self._fill_response(r, filled_slots, **kwargs)
