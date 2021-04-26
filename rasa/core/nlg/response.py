@@ -27,15 +27,13 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         print(self.responses)
 
     def _matches_filled_slots(
-            self,
-            filled_slots: Dict[Text, Any],
-            response: Dict[Text, Any],
+        self, filled_slots: Dict[Text, Any], response: Dict[Text, Any],
     ) -> bool:
         """Checks if the conditional response variation matches the filled slots."""
         condition_list = response.get("condition")
         for condition in condition_list:
-            name = condition['name']
-            value = condition['value']
+            name = condition["name"]
+            value = condition["value"]
             if filled_slots.get(name) == value:
                 return True
         else:
@@ -52,8 +50,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             if response.get("condition") is None:
                 default_responses.append(response)
             else:
-                matched_response = self._matches_filled_slots(filled_slots=filled_slots,
-                                                              response=response)
+                matched_response = self._matches_filled_slots(
+                    filled_slots=filled_slots, response=response
+                )
                 if matched_response:
                     conditional_responses.append(response)
 
@@ -62,8 +61,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         else:
             potential_responses = default_responses[:]
 
-        channel_responses = list(filter(lambda x: (x.get("channel") == output_channel),
-                                        potential_responses))
+        channel_responses = list(
+            filter(lambda x: (x.get("channel") == output_channel), potential_responses)
+        )
 
         # always prefer channel specific responses over default ones
         if channel_responses:
@@ -116,7 +116,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested utter action."""
         # Fetching a random response for the passed utter action
-        r = copy.deepcopy(self._random_response_for(utter_action, output_channel, filled_slots))
+        r = copy.deepcopy(
+            self._random_response_for(utter_action, output_channel, filled_slots)
+        )
         # Filling the slots in the response with placeholders and returning the response
         if r is not None:
             return self._fill_response(r, filled_slots, **kwargs)
