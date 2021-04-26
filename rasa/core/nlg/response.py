@@ -24,25 +24,28 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             responses: responses that will be used to generate messages.
         """
         self.responses = responses
-        print(self.responses)
 
     def _matches_filled_slots(
         self, filled_slots: Dict[Text, Any], response: Dict[Text, Any],
     ) -> bool:
         """Checks if the conditional response variation matches the filled slots."""
-        condition_list = response.get("condition")
-        for condition in condition_list:
-            name = condition["name"]
-            value = condition["value"]
+        satisfied_constraints = []
+        constraints = response.get("condition")
+        for constraint in constraints:
+            name = constraint["name"]
+            value = constraint["value"]
             if filled_slots.get(name) == value:
-                return True
-        else:
-            return False
+                satisfied_constraints.append(constraint)
+
+        if len(satisfied_constraints) == len(constraints):
+            return True
+
+        return False
 
     def _responses_for_utter_action(
         self, utter_action: Text, output_channel: Text, filled_slots: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
-        """Return array of responses that fit the channel, action and condition if any."""
+        """Return array of responses that fit the channel, action and condition."""
         default_responses = []
         conditional_responses = []
 
@@ -57,9 +60,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
                     conditional_responses.append(response)
 
         if conditional_responses:
-            potential_responses = conditional_responses[:]
+            potential_responses = conditional_responses
         else:
-            potential_responses = default_responses[:]
+            potential_responses = default_responses
 
         channel_responses = list(
             filter(lambda x: (x.get("channel") == output_channel), potential_responses)

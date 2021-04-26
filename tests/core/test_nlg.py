@@ -409,3 +409,45 @@ def test_nlg_when_multiple_conditions_satisfied():
         filled_slots={"test": "A", "test_another": "B"},
     )
     assert len(response_list) == 2
+
+
+def test_nlg_with_multiple_constraints():
+    responses = {
+        "utter_action": [
+            {
+                "text": "example AB",
+                "condition": [{"type": "slot", "name": "test", "value": "A"},
+                              {"type": "slot", "name": "test_other", "value": "B"}],
+            },
+            {
+                "text": "example CD",
+                "condition": [{"type": "slot", "name": "test", "value": "C"},
+                              {"type": "slot", "name": "test_other", "value": "D"}],
+            },
+        ]
+    }
+    t = TemplatedNaturalLanguageGenerator(responses=responses)
+
+    matches_ab = t._matches_filled_slots(
+        filled_slots={"test": "A", "test_other": "B"},
+        response=responses['utter_action'][0])
+    assert matches_ab is True
+
+    response_ab = t._responses_for_utter_action(
+        utter_action="utter_action",
+        output_channel="",
+        filled_slots={"test": "A", "test_other": "B"},
+    )
+    assert response_ab[0].get("text") == 'example AB'
+
+    matches_cd = t._matches_filled_slots(
+        filled_slots={"test": "C", "test_other": "D"},
+        response=responses['utter_action'][1])
+    assert matches_cd is True
+
+    response_cd = t._responses_for_utter_action(
+        utter_action="utter_action",
+        output_channel="",
+        filled_slots={"test": "C", "test_other": "D"},
+    )
+    assert response_cd[0].get("text") == 'example CD'
