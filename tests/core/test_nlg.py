@@ -7,6 +7,8 @@ from sanic import Sanic, response
 
 from rasa.core.nlg.callback import CallbackNaturalLanguageGenerator
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
+from rasa.shared.core.slots import Slot
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from rasa.core.agent import Agent
 
@@ -330,7 +332,7 @@ def test_nlg_fill_response_quick_replies(
     assert result == {"quick_replies": str(quick_replies_slot_value)}
 
 
-def test_nlg_conditional_response_variations():
+async def test_nlg_conditional_response_variations():
     responses = {
         "utter_test": [
             {
@@ -352,43 +354,42 @@ def test_nlg_conditional_response_variations():
     }
     t = TemplatedNaturalLanguageGenerator(responses=responses)
 
-    condition_a = t._matches_filled_slots(
-        filled_slots={"slot test": "A"}, response=responses["utter_test"][0]
+    slot_a = Slot(name="slot test", initial_value="A", influence_conversation=False)
+    slot_b = Slot(name="slot test", initial_value="B", influence_conversation=False)
+    slot_c = Slot(name="slot test", initial_value="C", influence_conversation=False)
+
+    tracker_a = DialogueStateTracker(sender_id="nlg_test_a", slots=[slot_a])
+    tracker_b = DialogueStateTracker(sender_id="nlg_test_b", slots=[slot_b])
+    tracker_c = DialogueStateTracker(sender_id="nlg_test_c", slots=[slot_c])
+    no_slots_tracker = DialogueStateTracker(sender_id="nlg_test_default", slots=None)
+
+    response_a_os = await t.generate(
+        utter_action="utter_test", tracker=tracker_a, output_channel="os"
     )
-    assert condition_a is True
+    assert response_a_os.get("text") == "Conditional Response A"
 
-    condition_b = t._matches_filled_slots(
-        filled_slots={"slot test": "A"}, response=responses["utter_test"][2]
+    response_a_app = await t.generate(
+        utter_action="utter_test", tracker=tracker_a, output_channel="app"
     )
-    assert condition_b is False
+    assert response_a_app.get("text") == "Conditional app response A"
 
-    response_a = t._responses_for_utter_action(
-        utter_action="utter_test", output_channel="os", filled_slots={"slot test": "A"}
+    response_b = await t.generate(
+        utter_action="utter_test", tracker=tracker_b, output_channel=""
     )
-    assert response_a[0].get("text") == "Conditional Response A"
+    assert response_b.get("text") == "Conditional Response B"
 
-    response_b = t._responses_for_utter_action(
-        utter_action="utter_test", output_channel="", filled_slots={"slot test": "B"}
+    response_c = await t.generate(
+        utter_action="utter_test", tracker=tracker_c, output_channel=""
     )
-    assert response_b[0].get("text") == "Conditional Response B"
+    assert response_c.get("text") == "Default response"
 
-    response_b = t._responses_for_utter_action(
-        utter_action="utter_test", output_channel="os", filled_slots={"slot test": "B"}
+    default_response = await t.generate(
+        utter_action="utter_test", tracker=no_slots_tracker, output_channel=""
     )
-    assert response_b[0].get("text") == "Conditional Response B"
-
-    default_response = t._responses_for_utter_action(
-        utter_action="utter_test", output_channel="", filled_slots={"slot test": "C"}
-    )
-    assert default_response[0].get("text") == "Default response"
-
-    default_app_response = t._responses_for_utter_action(
-        utter_action="utter_test", output_channel="app", filled_slots={"slot test": "A"}
-    )
-    assert default_app_response[0].get("text") == "Conditional app response A"
+    assert default_response.get("text") == "Default response"
 
 
-def test_nlg_when_multiple_conditions_satisfied():
+async def test_nlg_when_multiple_conditions_satisfied():
     responses = {
         "utter_action": [
             {
@@ -403,51 +404,48 @@ def test_nlg_when_multiple_conditions_satisfied():
     }
 
     t = TemplatedNaturalLanguageGenerator(responses=responses)
-    response_list = t._responses_for_utter_action(
-        utter_action="utter_action",
-        output_channel="",
-        filled_slots={"test": "A", "test_another": "B"},
+    slot_a = Slot(name="test", initial_value="A", influence_conversation=False)
+    slot_b = Slot(name="test_another", initial_value="B", influence_conversation=False)
+    tracker = DialogueStateTracker(sender_id="test_nlg", slots=[slot_a, slot_b])
+    resp = await t.generate(
+        utter_action="utter_action", tracker=tracker, output_channel=""
     )
-    assert len(response_list) == 2
+    assert resp.get("text") in ["example A", "example B"]
 
 
-def test_nlg_with_multiple_constraints():
+async def test_nlg_with_multiple_constraints():
     responses = {
         "utter_action": [
             {
                 "text": "example AB",
-                "condition": [{"type": "slot", "name": "test", "value": "A"},
-                              {"type": "slot", "name": "test_other", "value": "B"}],
+                "condition": [
+                    {"type": "slot", "name": "test", "value": "A"},
+                    {"type": "slot", "name": "test_other", "value": "B"},
+                ],
             },
             {
                 "text": "example CD",
-                "condition": [{"type": "slot", "name": "test", "value": "C"},
-                              {"type": "slot", "name": "test_other", "value": "D"}],
+                "condition": [
+                    {"type": "slot", "name": "test", "value": "C"},
+                    {"type": "slot", "name": "test_other", "value": "D"},
+                ],
             },
         ]
     }
     t = TemplatedNaturalLanguageGenerator(responses=responses)
+    slot_a = Slot(name="test", initial_value="A", influence_conversation=False)
+    slot_b = Slot(name="test_other", initial_value="B", influence_conversation=False)
+    slot_c = Slot(name="test", initial_value="C", influence_conversation=False)
+    slot_d = Slot(name="test_other", initial_value="D", influence_conversation=False)
+    tracker_ab = DialogueStateTracker(sender_id="test_nlg_ab", slots=[slot_a, slot_b])
+    tracker_cd = DialogueStateTracker(sender_id="test_nlg_cd", slots=[slot_c, slot_d])
 
-    matches_ab = t._matches_filled_slots(
-        filled_slots={"test": "A", "test_other": "B"},
-        response=responses['utter_action'][0])
-    assert matches_ab is True
-
-    response_ab = t._responses_for_utter_action(
-        utter_action="utter_action",
-        output_channel="",
-        filled_slots={"test": "A", "test_other": "B"},
+    response_ab = await t.generate(
+        utter_action="utter_action", tracker=tracker_ab, output_channel=""
     )
-    assert response_ab[0].get("text") == 'example AB'
+    assert response_ab.get("text") == "example AB"
 
-    matches_cd = t._matches_filled_slots(
-        filled_slots={"test": "C", "test_other": "D"},
-        response=responses['utter_action'][1])
-    assert matches_cd is True
-
-    response_cd = t._responses_for_utter_action(
-        utter_action="utter_action",
-        output_channel="",
-        filled_slots={"test": "C", "test_other": "D"},
+    response_cd = await t.generate(
+        utter_action="utter_action", tracker=tracker_cd, output_channel=""
     )
-    assert response_cd[0].get("text") == 'example CD'
+    assert response_cd.get("text") == "example CD"

@@ -29,23 +29,19 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         self, filled_slots: Dict[Text, Any], response: Dict[Text, Any],
     ) -> bool:
         """Checks if the conditional response variation matches the filled slots."""
-        satisfied_constraints = []
         constraints = response.get("condition")
         for constraint in constraints:
             name = constraint["name"]
             value = constraint["value"]
-            if filled_slots.get(name) == value:
-                satisfied_constraints.append(constraint)
+            if filled_slots.get(name) != value:
+                return False
 
-        if len(satisfied_constraints) == len(constraints):
-            return True
-
-        return False
+        return True
 
     def _responses_for_utter_action(
         self, utter_action: Text, output_channel: Text, filled_slots: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
-        """Return array of responses that fit the channel, action and condition."""
+        """Returns array of responses that fit the channel, action and condition."""
         default_responses = []
         conditional_responses = []
 
