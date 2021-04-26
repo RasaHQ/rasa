@@ -13,7 +13,7 @@ jobs:
     steps:
     - name: Assign vulnerability scans or Sentry issues to Enable
       if: contains(github.event.issue.labels.*.name, 'tool:trivy') || contains(github.event.issue.labels.*.name, 'tool:sentry')
-      uses: m-vdb/create-or-update-project-card@9c632af4932aabf8115780d762841f3ca07f7b6b
+      uses: RasaHQ/create-or-update-project-card@9c632af4932aabf8115780d762841f3ca07f7b6b
 
       with:
         token: ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}
@@ -24,7 +24,7 @@ jobs:
 
     - name: Assign model regression issues to Research
       if: contains(github.event.issue.labels.*.name, 'tool:model-regression-tests')
-      uses: m-vdb/create-or-update-project-card@9c632af4932aabf8115780d762841f3ca07f7b6b
+      uses: RasaHQ/create-or-update-project-card@9c632af4932aabf8115780d762841f3ca07f7b6b
 
       with:
         token: ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}
