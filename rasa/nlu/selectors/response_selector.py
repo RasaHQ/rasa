@@ -286,7 +286,7 @@ class ResponseSelector(DIETClassifier):
             model,
             finetune_mode=finetune_mode,
             persistor=persistor,
-            **kwargs
+            **kwargs,
         )
 
         # the following properties cannot be adapted for the ResponseSelector
@@ -299,8 +299,6 @@ class ResponseSelector(DIETClassifier):
         self.all_retrieval_intents = all_retrieval_intents or []
         self.retrieval_intent = None
         self.use_text_as_label = False
-
-
 
     @property
     def label_key(self) -> Text:
@@ -417,7 +415,7 @@ class ResponseSelector(DIETClassifier):
                     return search_key
         return None
 
-    def process(self, message: Message, **kwargs: Any) -> Message:
+    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
         """Selects most like response for message.
 
         Args:
@@ -428,6 +426,9 @@ class ResponseSelector(DIETClassifier):
             the most likely response, the associated intent_response_key and its
             similarity to the input.
         """
+        if message is None:
+            return None
+
         out = self._predict(message)
         top_label, label_ranking = self._predict_label(out)
 
@@ -556,9 +557,7 @@ class ResponseSelector(DIETClassifier):
         **kwargs: Any,
     ) -> "ResponseSelector":
         """Loads the trained model from the provided directory."""
-        model = super().load(
-            persistor, resource_name, cached_component, **kwargs
-        )
+        model = super().load(persistor, resource_name, cached_component, **kwargs)
         component_config = kwargs
         model.responses = component_config.get("responses", {})
         model.all_retrieval_intents = component_config.get("all_retrieval_intents", [])
