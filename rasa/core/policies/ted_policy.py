@@ -376,12 +376,19 @@ class TEDPolicy(Policy):
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_actions(domain, interpreter)
+        encoded_all_labels = state_featurizer.encode_all_labels(domain, interpreter)
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
         )
 
+        label_data = self._assemble_label_data(attribute_data, domain)
+
+        return label_data, encoded_all_labels
+
+    def _assemble_label_data(
+        self, attribute_data: Data, domain: Domain
+    ) -> RasaModelData:
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
         label_data.add_lengths(
@@ -390,15 +397,13 @@ class TEDPolicy(Policy):
             f"{LABEL}_{ACTION_TEXT}",
             SEQUENCE,
         )
-
         label_ids = np.arange(domain.num_actions)
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
             [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
         )
-
-        return label_data, encoded_all_labels
+        return label_data
 
     @staticmethod
     def _should_extract_entities(
@@ -502,21 +507,27 @@ class TEDPolicy(Policy):
 
         return model_data
 
-    def train(
+    def _prepare_for_training(
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> None:
-        """Train the policy on given training trackers."""
+    ) -> Tuple[RasaModelData, np.ndarray]:
+        """
 
-        if not training_trackers:
-            logger.error(
-                f"Can not train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the policy."
-            )
-            return
+        Args:
+            training_trackers:
+            domain:
+            interpreter:
+            **kwargs:
+
+        Returns:
+
+        """
+        self.featurizer.state_featurizer.prepare_for_training(
+            domain, interpreter, bilou_tagging=self.config[BILOU_FLAG]
+        )
 
         # dealing with training data
         tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
@@ -535,12 +546,6 @@ class TEDPolicy(Policy):
         model_data = self._create_model_data(
             tracker_state_features, label_ids, entity_tags, encoded_all_labels
         )
-        if model_data.is_empty():
-            logger.error(
-                f"Can not train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the policy."
-            )
-            return
 
         if self.config[ENTITY_RECOGNITION]:
             self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
@@ -548,6 +553,17 @@ class TEDPolicy(Policy):
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
 
+        return model_data, label_ids
+
+    def run_training(self, model_data: RasaModelData):
+        """
+
+        Args:
+            model_data:
+
+        Returns:
+
+        """
         if not self.finetune_mode:
             # This means the model wasn't loaded from a
             # previously trained model and hence needs
@@ -562,7 +578,6 @@ class TEDPolicy(Policy):
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
             )
-
         (
             data_generator,
             validation_data_generator,
@@ -580,7 +595,6 @@ class TEDPolicy(Policy):
             self.config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
         )
-
         self.model.fit(
             data_generator,
             epochs=self.config[EPOCHS],
@@ -590,6 +604,43 @@ class TEDPolicy(Policy):
             verbose=False,
             shuffle=False,  # we use custom shuffle inside data generator
         )
+
+    def run_post_training_procedures(
+        self, model_data: RasaModelData, label_ids: np.ndarray
+    ) -> None:
+        # No post training procedure for TEDPolicy
+        return
+
+    def train(
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> None:
+        """Train the policy on given training trackers."""
+
+        if not training_trackers:
+            logger.error(
+                f"Can not train '{self.__class__.__name__}'. No data was provided. "
+                f"Skipping training of the policy."
+            )
+            return
+
+        model_data, label_ids = self._prepare_for_training(
+            training_trackers, domain, interpreter, **kwargs
+        )
+
+        if model_data.is_empty():
+            logger.error(
+                f"Can not train '{self.__class__.__name__}'. No data was provided. "
+                f"Skipping training of the policy."
+            )
+            return
+
+        self.run_training(model_data)
+
+        self.run_post_training_procedures(model_data, label_ids)
 
     def _featurize_tracker_for_e2e(
         self,
@@ -688,7 +739,7 @@ class TEDPolicy(Policy):
 
         # take the last prediction in the sequence
         similarities = output["similarities"][:, -1, :]
-        confidences = output["action_scores"][:, -1, :]
+        confidences = output["scores"][:, -1, :]
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(
             confidences, similarities, domain
@@ -1787,7 +1838,7 @@ class TED(TransformerRasaModel):
         )
 
         predictions = {
-            "action_scores": scores,
+            "scores": scores,
             "similarities": sim_all,
             DIAGNOSTIC_DATA: {"attention_weights": attention_weights},
         }

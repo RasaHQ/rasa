@@ -23,7 +23,7 @@ from rasa.core.featurizers.single_state_featurizer import (
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, SupportedData
 from rasa.core.policies.ted_policy import TEDPolicy, TED
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
+from rasa.core.constants import UNLIKELY_INTENT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils import train_utils
 import rasa.shared.utils.io
@@ -91,6 +91,13 @@ from rasa.shared.core.constants import ACTION_LISTEN_NAME, SLOTS, ACTIVE_LOOP
 from rasa.shared.core.events import UserUttered
 from rasa.utils.tensorflow.constants import HIDDEN_LAYERS_SIZES, CONCAT_DIMENSION
 from rasa.utils.tensorflow import layers
+from rasa.utils.tensorflow.model_data import (
+    RasaModelData,
+    FeatureSignature,
+    FeatureArray,
+    Data,
+)
+from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -231,7 +238,7 @@ class IntentTEDPolicy(TEDPolicy):
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = DEFAULT_POLICY_PRIORITY,
+        priority: int = UNLIKELY_INTENT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
         fake_features: Optional[Dict[Text, List["Features"]]] = None,
@@ -255,7 +262,7 @@ class IntentTEDPolicy(TEDPolicy):
 
         self._all_labels = all_labels
         self.intent_thresholds = intent_thresholds
-        self.ignore_intent_list = self.config["intents_to_ignore"]
+        self.ignore_intent_list = self.config[IGNORE_INTENTS_LIST]
 
         # Set all invalid configuration parameters
         self.config[ENTITY_RECOGNITION] = False
@@ -270,40 +277,155 @@ class IntentTEDPolicy(TEDPolicy):
             IntentTokenizerSingleStateFeaturizer(), max_history=max_history
         )
 
-    def _create_label_data(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
-    ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
-        # encode all label_ids with policies' featurizer
-        state_featurizer: IntentTokenizerSingleStateFeaturizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_intents(domain, interpreter)
-
-        attribute_data, _ = convert_to_data_format(
-            encoded_all_labels, featurizers=self.config[FEATURIZERS]
-        )
-
+    def _assemble_label_data(
+        self, attribute_data: Data, domain: Domain
+    ) -> RasaModelData:
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
         label_data.add_lengths(
-            f"{LABEL}_{ACTION_TEXT}",
-            SEQUENCE_LENGTH,
-            f"{LABEL}_{ACTION_TEXT}",
-            SEQUENCE,
+            f"{LABEL}_{INTENT}", SEQUENCE_LENGTH, f"{LABEL}_{INTENT}", SEQUENCE,
         )
-
-        label_ids = np.arange(domain.num_actions)
+        label_ids = np.arange(len(domain.intents))
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
             [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
         )
-
-        return label_data, encoded_all_labels
+        return label_data
 
     def run_post_training_procedures(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> None:
 
         self.intent_thresholds = self.model.compute_thresholds(model_data, label_ids)
+
+    def _collect_action_metadata(
+        self, domain: Domain, similarities: np.array
+    ) -> Dict[Text, Dict[Text, float]]:
+        """
+
+        Args:
+            domain:
+            similarities:
+
+        Returns:
+
+        """
+        metadata = {}
+        for intent in domain.intents:
+            intent_index = domain.intents.index(intent)
+            metadata[intent] = {
+                "score": similarities[0][intent_index],
+                "threshold": self.intent_thresholds[intent_index],
+            }
+        return metadata
+
+    def predict_action_probabilities(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> PolicyPrediction:
+        """Predicts the next action the bot should take after seeing the tracker.
+
+        Args:
+            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
+            domain: the :class:`rasa.shared.core.domain.Domain`
+            interpreter: Interpreter which may be used by the policies to create
+                additional features.
+
+        Returns:
+             The policy's prediction (e.g. the probabilities for the actions).
+        """
+        if self.model is None:
+            return self._prediction(self._default_predictions(domain))
+
+        # create model data from tracker
+        tracker_state_features = self._featurize_for_prediction(
+            tracker, domain, interpreter
+        )
+
+        model_data = self._create_model_data(tracker_state_features)
+        output = self.model.rasa_predict(model_data)
+
+        # take the last prediction in the sequence
+        similarities = output["similarities"][:, -1, :]
+
+        # Check for unlikely intent
+        is_unlikely_intent = self._check_unlikely_intent(domain, similarities, tracker)
+
+        confidences = list(np.zeros(domain.num_actions))
+
+        if is_unlikely_intent:
+            confidences[domain.index_for_action(ACTION_UNLIKELY_INTENT_NAME)] = 1.0
+
+        return self._prediction(
+            confidences,
+            action_metadata=self._collect_action_metadata(domain, similarities),
+        )
+
+    def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
+
+        if domain.intents.index(intent) not in self.intent_thresholds:
+            # This means the intent was never present in a story
+            return False
+        if intent in self.config[IGNORE_INTENTS_LIST]:
+            return False
+
+        return True
+
+    def _check_unlikely_intent(
+        self, domain: Domain, similarities: np.array, tracker: DialogueStateTracker
+    ) -> bool:
+        """Check if the latest user event is probable according to IntentTED predictions.
+
+        If the similarity prediction for the intent of
+        latest user event is lower than the threshold
+        calculated for that intent during training, the
+        corresponding user intent is unlikely.
+
+        Args:
+            domain: Domain of the assistant.
+            similarities: Predicted similarities for all labels.
+            tracker: Current conversation tracker
+        """
+        predicted_intent_scores = {
+            index: similarities[0][index] for index, intent in enumerate(domain.intents)
+        }
+        sorted_intent_scores = sorted(
+            [
+                (intent_label, score)
+                for intent_label, score in predicted_intent_scores.items()
+            ],
+            key=lambda x: x[1],
+        )
+        # Get the last intent prediction from tracker
+        last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
+        if last_user_event:
+            query_label = last_user_event.intent_name
+            query_label_id = domain.intents.index(query_label)
+            query_label_score = similarities[0][query_label_id]
+
+            logger.debug(f"Querying for intent {query_label}")
+
+            if self._should_check_for_intent(query_label, domain):
+
+                logger.debug(
+                    f"Score for user intent {query_label} likely to occur here is "
+                    f"{query_label_score}, while threshold is {self.intent_thresholds[query_label_id]}"
+                )
+                logger.debug(
+                    f"Top 5 intents(in ascending order) that are likely here are: {sorted_intent_scores[-5:]}"
+                )
+
+                # If score for query intent is below threshold and
+                # the query intent is not the top likely intent
+                if (
+                    query_label_score < self.intent_thresholds[query_label_id]
+                    and query_label_id != sorted_intent_scores[-1][0]
+                ):
+                    return True
 
 
 class IntentTED(TED):

@@ -224,8 +224,6 @@ class TrackerFeaturizer:
                 f"to get numerical features for trackers."
             )
 
-        self.state_featurizer.prepare_for_training(domain, interpreter, bilou_tagging)
-
         (
             trackers_as_states,
             trackers_as_actions,
