@@ -1,8 +1,7 @@
 ---
-sidebar_label: yaml_story_reader
+sidebar_label: rasa.shared.core.training_data.story_reader.yaml_story_reader
 title: rasa.shared.core.training_data.story_reader.yaml_story_reader
 ---
-
 ## YAMLStoryReader Objects
 
 ```python

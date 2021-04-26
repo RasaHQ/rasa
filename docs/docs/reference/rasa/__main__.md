@@ -1,8 +1,7 @@
 ---
-sidebar_label: __main__
+sidebar_label: rasa.__main__
 title: rasa.__main__
 ---
-
 #### create\_argument\_parser
 
 ```python

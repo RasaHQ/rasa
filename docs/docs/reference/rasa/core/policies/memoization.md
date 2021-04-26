@@ -1,8 +1,7 @@
 ---
-sidebar_label: memoization
+sidebar_label: rasa.core.policies.memoization
 title: rasa.core.policies.memoization
 ---
-
 ## MemoizationPolicy Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: mitie_entity_extractor
+sidebar_label: rasa.nlu.extractors.mitie_entity_extractor
 title: rasa.nlu.extractors.mitie_entity_extractor
 ---
-
 ## MitieEntityExtractor Objects
 
 ```python

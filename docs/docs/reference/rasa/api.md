@@ -1,8 +1,7 @@
 ---
-sidebar_label: api
+sidebar_label: rasa.api
 title: rasa.api
 ---
-
 #### run
 
 ```python

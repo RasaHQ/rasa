@@ -1,8 +1,7 @@
 ---
-sidebar_label: pykwalify_extensions
+sidebar_label: rasa.shared.utils.pykwalify_extensions
 title: rasa.shared.utils.pykwalify_extensions
 ---
-
 This module regroups custom validation functions, and it is
 loaded as an extension of the pykwalify library:
 

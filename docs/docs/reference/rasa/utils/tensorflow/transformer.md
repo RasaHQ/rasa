@@ -1,8 +1,7 @@
 ---
-sidebar_label: transformer
+sidebar_label: rasa.utils.tensorflow.transformer
 title: rasa.utils.tensorflow.transformer
 ---
-
 ## MultiHeadAttention Objects
 
 ```python

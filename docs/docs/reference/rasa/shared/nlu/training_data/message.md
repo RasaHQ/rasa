@@ -1,8 +1,7 @@
 ---
-sidebar_label: message
+sidebar_label: rasa.shared.nlu.training_data.message
 title: rasa.shared.nlu.training_data.message
 ---
-
 ## Message Objects
 
 ```python

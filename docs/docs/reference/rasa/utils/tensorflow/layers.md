@@ -1,8 +1,7 @@
 ---
-sidebar_label: layers
+sidebar_label: rasa.utils.tensorflow.layers
 title: rasa.utils.tensorflow.layers
 ---
-
 ## SparseDropout Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: callback
+sidebar_label: rasa.core.nlg.callback
 title: rasa.core.nlg.callback
 ---
-
 #### nlg\_response\_format\_spec
 
 ```python

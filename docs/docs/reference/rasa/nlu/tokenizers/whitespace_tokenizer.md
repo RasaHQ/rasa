@@ -1,8 +1,7 @@
 ---
-sidebar_label: whitespace_tokenizer
+sidebar_label: rasa.nlu.tokenizers.whitespace_tokenizer
 title: rasa.nlu.tokenizers.whitespace_tokenizer
 ---
-
 ## WhitespaceTokenizer Objects
 
 ```python

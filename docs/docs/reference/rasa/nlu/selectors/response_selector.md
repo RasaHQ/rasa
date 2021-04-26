@@ -1,8 +1,7 @@
 ---
-sidebar_label: response_selector
+sidebar_label: rasa.nlu.selectors.response_selector
 title: rasa.nlu.selectors.response_selector
 ---
-
 ## ResponseSelector Objects
 
 ```python

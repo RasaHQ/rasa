@@ -1,8 +1,7 @@
 ---
-sidebar_label: default_arguments
+sidebar_label: rasa.cli.arguments.default_arguments
 title: rasa.cli.arguments.default_arguments
 ---
-
 #### add\_endpoint\_param
 
 ```python

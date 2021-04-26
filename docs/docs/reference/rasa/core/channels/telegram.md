@@ -1,8 +1,7 @@
 ---
-sidebar_label: telegram
+sidebar_label: rasa.core.channels.telegram
 title: rasa.core.channels.telegram
 ---
-
 ## TelegramOutput Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: botframework
+sidebar_label: rasa.core.channels.botframework
 title: rasa.core.channels.botframework
 ---
-
 ## BotFramework Objects
 
 ```python

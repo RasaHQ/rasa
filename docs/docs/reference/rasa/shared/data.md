@@ -1,8 +1,7 @@
 ---
-sidebar_label: data
+sidebar_label: rasa.shared.data
 title: rasa.shared.data
 ---
-
 #### markdown\_file\_extension
 
 ```python

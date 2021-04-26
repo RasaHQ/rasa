@@ -1,8 +1,7 @@
 ---
-sidebar_label: readerwriter
+sidebar_label: rasa.shared.nlu.training_data.formats.readerwriter
 title: rasa.shared.nlu.training_data.formats.readerwriter
 ---
-
 ## TrainingDataReader Objects
 
 ```python

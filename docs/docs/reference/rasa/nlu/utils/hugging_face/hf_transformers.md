@@ -1,8 +1,7 @@
 ---
-sidebar_label: hf_transformers
+sidebar_label: rasa.nlu.utils.hugging_face.hf_transformers
 title: rasa.nlu.utils.hugging_face.hf_transformers
 ---
-
 ## HFTransformersNLP Objects
 
 ```python

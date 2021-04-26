@@ -1,8 +1,7 @@
 ---
-sidebar_label: markdown_story_reader
+sidebar_label: rasa.shared.core.training_data.story_reader.markdown_story_reader
 title: rasa.shared.core.training_data.story_reader.markdown_story_reader
 ---
-
 ## MarkdownStoryReader Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: convert_tokenizer
+sidebar_label: rasa.nlu.tokenizers.convert_tokenizer
 title: rasa.nlu.tokenizers.convert_tokenizer
 ---
-
 ## ConveRTTokenizer Objects
 
 ```python

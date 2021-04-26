@@ -1,8 +1,7 @@
 ---
-sidebar_label: autoconfig
+sidebar_label: rasa.shared.importers.autoconfig
 title: rasa.shared.importers.autoconfig
 ---
-
 #### get\_configuration
 
 ```python

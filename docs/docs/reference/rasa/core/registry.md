@@ -1,8 +1,7 @@
 ---
-sidebar_label: registry
+sidebar_label: rasa.core.registry
 title: rasa.core.registry
 ---
-
 This module imports all of the components. To avoid cycles, no component
 should import this in module scope.
 

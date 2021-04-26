@@ -1,8 +1,7 @@
 ---
-sidebar_label: channel
+sidebar_label: rasa.core.channels.channel
 title: rasa.core.channels.channel
 ---
-
 ## UserMessage Objects
 
 ```python

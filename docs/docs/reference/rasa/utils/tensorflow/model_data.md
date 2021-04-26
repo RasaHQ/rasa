@@ -1,8 +1,7 @@
 ---
-sidebar_label: model_data
+sidebar_label: rasa.utils.tensorflow.model_data
 title: rasa.utils.tensorflow.model_data
 ---
-
 ## FeatureArray Objects
 
 ```python

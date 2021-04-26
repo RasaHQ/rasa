@@ -1,8 +1,7 @@
 ---
-sidebar_label: hangouts
+sidebar_label: rasa.core.channels.hangouts
 title: rasa.core.channels.hangouts
 ---
-
 ## HangoutsOutput Objects
 
 ```python

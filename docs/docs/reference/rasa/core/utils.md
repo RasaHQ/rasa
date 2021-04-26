@@ -1,8 +1,7 @@
 ---
-sidebar_label: utils
+sidebar_label: rasa.core.utils
 title: rasa.core.utils
 ---
-
 #### configure\_file\_logging
 
 ```python

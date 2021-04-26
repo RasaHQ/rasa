@@ -1,8 +1,7 @@
 ---
-sidebar_label: interactive
+sidebar_label: rasa.core.training.interactive
 title: rasa.core.training.interactive
 ---
-
 ## RestartConversation Objects
 
 ```python

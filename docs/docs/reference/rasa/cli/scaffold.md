@@ -1,8 +1,7 @@
 ---
-sidebar_label: scaffold
+sidebar_label: rasa.cli.scaffold
 title: rasa.cli.scaffold
 ---
-
 #### add\_subparser
 
 ```python

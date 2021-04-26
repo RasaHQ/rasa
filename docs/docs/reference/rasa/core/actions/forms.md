@@ -1,8 +1,7 @@
 ---
-sidebar_label: forms
+sidebar_label: rasa.core.actions.forms
 title: rasa.core.actions.forms
 ---
-
 ## FormAction Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: wit
+sidebar_label: rasa.shared.nlu.training_data.formats.wit
 title: rasa.shared.nlu.training_data.formats.wit
 ---
-
 ## WitReader Objects
 
 ```python

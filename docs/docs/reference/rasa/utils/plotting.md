@@ -1,8 +1,7 @@
 ---
-sidebar_label: plotting
+sidebar_label: rasa.utils.plotting
 title: rasa.utils.plotting
 ---
-
 #### plot\_confusion\_matrix
 
 ```python

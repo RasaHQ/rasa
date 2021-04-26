@@ -1,8 +1,7 @@
 ---
-sidebar_label: training
+sidebar_label: rasa.core.training
 title: rasa.core.training
 ---
-
 #### extract\_story\_graph
 
 ```python

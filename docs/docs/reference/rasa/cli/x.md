@@ -1,8 +1,7 @@
 ---
-sidebar_label: x
+sidebar_label: rasa.cli.x
 title: rasa.cli.x
 ---
-
 #### add\_subparser
 
 ```python

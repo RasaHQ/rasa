@@ -1,8 +1,7 @@
 ---
-sidebar_label: utils
+sidebar_label: rasa.cli.utils
 title: rasa.cli.utils
 ---
-
 #### get\_validated\_path
 
 ```python

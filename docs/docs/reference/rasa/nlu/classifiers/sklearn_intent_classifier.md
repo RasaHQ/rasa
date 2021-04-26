@@ -1,8 +1,7 @@
 ---
-sidebar_label: sklearn_intent_classifier
+sidebar_label: rasa.nlu.classifiers.sklearn_intent_classifier
 title: rasa.nlu.classifiers.sklearn_intent_classifier
 ---
-
 ## SklearnIntentClassifier Objects
 
 ```python

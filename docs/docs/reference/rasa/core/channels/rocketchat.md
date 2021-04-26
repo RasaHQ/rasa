@@ -1,8 +1,7 @@
 ---
-sidebar_label: rocketchat
+sidebar_label: rasa.core.channels.rocketchat
 title: rasa.core.channels.rocketchat
 ---
-
 ## RocketChatBot Objects
 
 ```python

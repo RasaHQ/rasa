@@ -1,8 +1,7 @@
 ---
-sidebar_label: utils
+sidebar_label: rasa.nlu.utils
 title: rasa.nlu.utils
 ---
-
 #### module\_path\_from\_object
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: interpreter
+sidebar_label: rasa.core.interpreter
 title: rasa.core.interpreter
 ---
-
 #### create\_interpreter
 
 ```python

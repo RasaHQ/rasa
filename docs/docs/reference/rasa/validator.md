@@ -1,8 +1,7 @@
 ---
-sidebar_label: validator
+sidebar_label: rasa.validator
 title: rasa.validator
 ---
-
 ## Validator Objects
 
 ```python

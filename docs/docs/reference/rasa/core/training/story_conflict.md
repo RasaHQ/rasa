@@ -1,8 +1,7 @@
 ---
-sidebar_label: story_conflict
+sidebar_label: rasa.core.training.story_conflict
 title: rasa.core.training.story_conflict
 ---
-
 ## StoryConflict Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: components
+sidebar_label: rasa.nlu.components
 title: rasa.nlu.components
 ---
-
 #### find\_unavailable\_packages
 
 ```python

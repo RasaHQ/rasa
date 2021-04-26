@@ -1,8 +1,7 @@
 ---
-sidebar_label: server
+sidebar_label: rasa.server
 title: rasa.server
 ---
-
 ## ErrorResponse Objects
 
 ```python

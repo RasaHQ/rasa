@@ -1,8 +1,7 @@
 ---
-sidebar_label: train
+sidebar_label: rasa.cli.train
 title: rasa.cli.train
 ---
-
 #### add\_subparser
 
 ```python

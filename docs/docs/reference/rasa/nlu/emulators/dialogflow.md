@@ -1,8 +1,7 @@
 ---
-sidebar_label: dialogflow
+sidebar_label: rasa.nlu.emulators.dialogflow
 title: rasa.nlu.emulators.dialogflow
 ---
-
 ## DialogflowEmulator Objects
 
 ```python

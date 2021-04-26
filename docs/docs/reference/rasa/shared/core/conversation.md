@@ -1,8 +1,7 @@
 ---
-sidebar_label: conversation
+sidebar_label: rasa.shared.core.conversation
 title: rasa.shared.core.conversation
 ---
-
 ## Dialogue Objects
 
 ```python

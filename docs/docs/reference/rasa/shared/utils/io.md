@@ -1,8 +1,7 @@
 ---
-sidebar_label: io
+sidebar_label: rasa.shared.utils.io
 title: rasa.shared.utils.io
 ---
-
 #### raise\_warning
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: story_reader
+sidebar_label: rasa.shared.core.training_data.story_reader.story_reader
 title: rasa.shared.core.training_data.story_reader.story_reader
 ---
-
 ## StoryReader Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: luis
+sidebar_label: rasa.shared.nlu.training_data.formats.luis
 title: rasa.shared.nlu.training_data.formats.luis
 ---
-
 ## LuisReader Objects
 
 ```python

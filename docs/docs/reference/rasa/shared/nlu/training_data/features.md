@@ -1,8 +1,7 @@
 ---
-sidebar_label: features
+sidebar_label: rasa.shared.nlu.training_data.features
 title: rasa.shared.nlu.training_data.features
 ---
-
 ## Features Objects
 
 ```python

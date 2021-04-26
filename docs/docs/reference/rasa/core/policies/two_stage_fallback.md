@@ -1,8 +1,7 @@
 ---
-sidebar_label: two_stage_fallback
+sidebar_label: rasa.core.policies.two_stage_fallback
 title: rasa.core.policies.two_stage_fallback
 ---
-
 ## TwoStageFallbackPolicy Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: endpoints
+sidebar_label: rasa.utils.endpoints
 title: rasa.utils.endpoints
 ---
-
 #### read\_endpoint\_config
 
 ```python

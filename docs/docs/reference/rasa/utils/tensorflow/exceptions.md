@@ -1,8 +1,7 @@
 ---
-sidebar_label: exceptions
+sidebar_label: rasa.utils.tensorflow.exceptions
 title: rasa.utils.tensorflow.exceptions
 ---
-
 ## TFLayerConfigException Objects
 
 ```python

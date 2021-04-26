@@ -1,8 +1,7 @@
 ---
-sidebar_label: synonyms_parser
+sidebar_label: rasa.shared.nlu.training_data.synonyms_parser
 title: rasa.shared.nlu.training_data.synonyms_parser
 ---
-
 #### add\_synonyms\_from\_entities
 
 ```python

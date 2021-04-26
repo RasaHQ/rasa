@@ -1,8 +1,7 @@
 ---
-sidebar_label: common
+sidebar_label: rasa.utils.common
 title: rasa.utils.common
 ---
-
 ## TempDirectoryPath Objects
 
 ```python

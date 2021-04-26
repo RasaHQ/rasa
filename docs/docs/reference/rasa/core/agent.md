@@ -1,8 +1,7 @@
 ---
-sidebar_label: agent
+sidebar_label: rasa.core.agent
 title: rasa.core.agent
 ---
-
 #### load\_from\_server
 
 ```python

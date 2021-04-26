@@ -1,8 +1,7 @@
 ---
-sidebar_label: model_testing
+sidebar_label: rasa.model_testing
 title: rasa.model_testing
 ---
-
 #### test\_core\_models\_in\_directory
 
 ```python

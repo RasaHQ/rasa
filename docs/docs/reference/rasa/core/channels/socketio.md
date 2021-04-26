@@ -1,8 +1,7 @@
 ---
-sidebar_label: socketio
+sidebar_label: rasa.core.channels.socketio
 title: rasa.core.channels.socketio
 ---
-
 ## SocketIOOutput Objects
 
 ```python

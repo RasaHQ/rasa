@@ -1,8 +1,7 @@
 ---
-sidebar_label: exceptions
+sidebar_label: rasa.exceptions
 title: rasa.exceptions
 ---
-
 ## ModelNotFound Objects
 
 ```python

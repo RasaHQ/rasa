@@ -1,8 +1,7 @@
 ---
-sidebar_label: telemetry
+sidebar_label: rasa.telemetry
 title: rasa.telemetry
 ---
-
 #### print\_telemetry\_reporting\_info
 
 ```python

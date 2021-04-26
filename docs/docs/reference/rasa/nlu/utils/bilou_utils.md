@@ -1,8 +1,7 @@
 ---
-sidebar_label: bilou_utils
+sidebar_label: rasa.nlu.utils.bilou_utils
 title: rasa.nlu.utils.bilou_utils
 ---
-
 #### bilou\_prefix\_from\_tag
 
 ```python

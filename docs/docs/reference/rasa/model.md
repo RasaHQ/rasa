@@ -1,8 +1,7 @@
 ---
-sidebar_label: model
+sidebar_label: rasa.model
 title: rasa.model
 ---
-
 ## Section Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: single_state_featurizer
+sidebar_label: rasa.core.featurizers.single_state_featurizer
 title: rasa.core.featurizers.single_state_featurizer
 ---
-
 ## SingleStateFeaturizer Objects
 
 ```python

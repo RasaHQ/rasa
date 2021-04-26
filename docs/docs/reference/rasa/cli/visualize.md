@@ -1,8 +1,7 @@
 ---
-sidebar_label: visualize
+sidebar_label: rasa.cli.visualize
 title: rasa.cli.visualize
 ---
-
 #### add\_subparser
 
 ```python

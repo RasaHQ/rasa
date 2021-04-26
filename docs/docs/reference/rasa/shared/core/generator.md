@@ -1,8 +1,7 @@
 ---
-sidebar_label: generator
+sidebar_label: rasa.shared.core.generator
 title: rasa.shared.core.generator
 ---
-
 ## TrackerWithCachedStates Objects
 
 ```python

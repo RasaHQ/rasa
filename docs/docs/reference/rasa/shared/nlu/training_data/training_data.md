@@ -1,8 +1,7 @@
 ---
-sidebar_label: training_data
+sidebar_label: rasa.shared.nlu.training_data.training_data
 title: rasa.shared.nlu.training_data.training_data
 ---
-
 ## TrainingData Objects
 
 ```python

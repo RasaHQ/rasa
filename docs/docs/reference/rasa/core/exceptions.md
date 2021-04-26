@@ -1,8 +1,7 @@
 ---
-sidebar_label: exceptions
+sidebar_label: rasa.core.exceptions
 title: rasa.core.exceptions
 ---
-
 ## UnsupportedDialogueModelError Objects
 
 ```python

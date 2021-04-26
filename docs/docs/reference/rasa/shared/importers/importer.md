@@ -1,8 +1,7 @@
 ---
-sidebar_label: importer
+sidebar_label: rasa.shared.importers.importer
 title: rasa.shared.importers.importer
 ---
-
 ## TrainingDataImporter Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: slots
+sidebar_label: rasa.shared.core.slots
 title: rasa.shared.core.slots
 ---
-
 ## InvalidSlotTypeException Objects
 
 ```python

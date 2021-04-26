@@ -1,8 +1,7 @@
 ---
-sidebar_label: duckling_entity_extractor
+sidebar_label: rasa.nlu.extractors.duckling_entity_extractor
 title: rasa.nlu.extractors.duckling_entity_extractor
 ---
-
 ## DucklingEntityExtractor Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: models
+sidebar_label: rasa.utils.tensorflow.models
 title: rasa.utils.tensorflow.models
 ---
-
 ## RasaModel Objects
 
 ```python

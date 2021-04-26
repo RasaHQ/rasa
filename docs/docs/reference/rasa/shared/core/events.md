@@ -1,8 +1,7 @@
 ---
-sidebar_label: events
+sidebar_label: rasa.shared.core.events
 title: rasa.shared.core.events
 ---
-
 #### deserialise\_events
 
 ```python

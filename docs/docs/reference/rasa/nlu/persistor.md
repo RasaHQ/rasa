@@ -1,8 +1,7 @@
 ---
-sidebar_label: persistor
+sidebar_label: rasa.nlu.persistor
 title: rasa.nlu.persistor
 ---
-
 #### get\_persistor
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: model
+sidebar_label: rasa.nlu.model
 title: rasa.nlu.model
 ---
-
 ## InvalidModelError Objects
 
 ```python

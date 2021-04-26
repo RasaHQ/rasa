@@ -1,8 +1,7 @@
 ---
-sidebar_label: rule_policy
+sidebar_label: rasa.core.policies.rule_policy
 title: rasa.core.policies.rule_policy
 ---
-
 ## InvalidRule Objects
 
 ```python

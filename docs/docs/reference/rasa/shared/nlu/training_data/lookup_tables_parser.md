@@ -1,8 +1,7 @@
 ---
-sidebar_label: lookup_tables_parser
+sidebar_label: rasa.shared.nlu.training_data.lookup_tables_parser
 title: rasa.shared.nlu.training_data.lookup_tables_parser
 ---
-
 #### add\_item\_to\_lookup\_tables
 
 ```python

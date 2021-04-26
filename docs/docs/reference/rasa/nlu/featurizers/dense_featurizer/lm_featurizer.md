@@ -1,8 +1,7 @@
 ---
-sidebar_label: lm_featurizer
+sidebar_label: rasa.nlu.featurizers.dense_featurizer.lm_featurizer
 title: rasa.nlu.featurizers.dense_featurizer.lm_featurizer
 ---
-
 ## LanguageModelFeaturizer Objects
 
 ```python

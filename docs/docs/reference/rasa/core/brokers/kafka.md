@@ -1,8 +1,7 @@
 ---
-sidebar_label: kafka
+sidebar_label: rasa.core.brokers.kafka
 title: rasa.core.brokers.kafka
 ---
-
 ## KafkaEventBroker Objects
 
 ```python

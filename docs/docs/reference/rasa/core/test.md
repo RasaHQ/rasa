@@ -1,8 +1,7 @@
 ---
-sidebar_label: test
+sidebar_label: rasa.core.test
 title: rasa.core.test
 ---
-
 ## WrongPredictionException Objects
 
 ```python

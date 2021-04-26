@@ -1,8 +1,7 @@
 ---
-sidebar_label: io
+sidebar_label: rasa.utils.io
 title: rasa.utils.io
 ---
-
 #### pickle\_dump
 
 ```python

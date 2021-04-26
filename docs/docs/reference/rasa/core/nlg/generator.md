@@ -1,8 +1,7 @@
 ---
-sidebar_label: generator
+sidebar_label: rasa.core.nlg.generator
 title: rasa.core.nlg.generator
 ---
-
 ## NaturalLanguageGenerator Objects
 
 ```python

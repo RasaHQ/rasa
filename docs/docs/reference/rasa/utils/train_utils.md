@@ -1,8 +1,7 @@
 ---
-sidebar_label: train_utils
+sidebar_label: rasa.utils.train_utils
 title: rasa.utils.train_utils
 ---
-
 #### normalize
 
 ```python

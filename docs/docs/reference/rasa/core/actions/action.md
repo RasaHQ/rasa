@@ -1,8 +1,7 @@
 ---
-sidebar_label: action
+sidebar_label: rasa.core.actions.action
 title: rasa.core.actions.action
 ---
-
 #### default\_actions
 
 ```python

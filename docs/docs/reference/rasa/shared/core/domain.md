@@ -1,8 +1,7 @@
 ---
-sidebar_label: domain
+sidebar_label: rasa.shared.core.domain
 title: rasa.shared.core.domain
 ---
-
 ## InvalidDomain Objects
 
 ```python

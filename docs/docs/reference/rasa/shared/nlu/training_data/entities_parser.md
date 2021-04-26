@@ -1,8 +1,7 @@
 ---
-sidebar_label: entities_parser
+sidebar_label: rasa.shared.nlu.training_data.entities_parser
 title: rasa.shared.nlu.training_data.entities_parser
 ---
-
 ## EntityAttributes Objects
 
 ```python
