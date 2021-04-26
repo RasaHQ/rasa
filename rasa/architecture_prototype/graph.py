@@ -10,6 +10,7 @@ from rasa.shared.constants import DEFAULT_DATA_PATH
 import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.core.training
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 
 if TYPE_CHECKING:
@@ -158,48 +159,9 @@ class Model:
     def predict_next_action(self, tracker: DialogueStateTracker,) -> "PolicyPrediction":
         return self.handle_message(tracker, message=None)
 
-
-def _graph_component_for_config(
-    step_name: Text,
-    step_config: Dict[Text, Any],
-    config_overrides: Dict[Text, Any] = None,
-) -> Tuple[RasaComponent, Text]:
-    component_config = step_config["config"].copy()
-    if config_overrides:
-        component_config.update(config_overrides)
-
-    return (
-        RasaComponent(
-            node_name=step_name,
-            component_class=step_config["uses"],
-            config=component_config,
-            fn_name=step_config["fn"],
-            inputs=step_config["needs"],
-            constructor_name=step_config.get("constructor_name"),
-            eager=step_config.get("eager", True),
-            persist=step_config.get("persist", True),
-        ),
-        *step_config["needs"].values(),
-    )
-
-
-def _drop_parameter_requirement(
-    dask_graph: Dict[Text, Tuple[RasaComponent, Text]],
-    rasa_graph: Dict[Text, Any],
-    step_name: Text,
-    step_requirement_to_drop: Text,
-) -> Dict[Text, Tuple[RasaComponent, Text]]:
-    updated_config = rasa_graph[step_name]
-    updated_config["needs"] = {
-        parameter_name: required_step
-        for parameter_name, required_step in updated_config["needs"].items()
-        if parameter_name != step_requirement_to_drop
-    }
-
-    step_requirement_to_drop = _graph_component_for_config(step_name, updated_config)
-    dask_graph[step_name] = step_requirement_to_drop
-
-    return dask_graph
+    def get_domain(self) -> Domain:
+        domain_graph = _minimal_graph(self._predict_graph, targets=["load_domain"])
+        return dask.get(domain_graph, "load_domain")["load_domain"]
 
 
 def _minimal_graph(
@@ -247,7 +209,7 @@ def _graph_component_for_config(
         RasaComponent(
             node_name=step_name,
             component_class=step_config["uses"],
-            config=step_config["config"],
+            config=component_config,
             fn_name=step_config["fn"],
             inputs=step_config["needs"],
             constructor_name=step_config.get("constructor_name"),

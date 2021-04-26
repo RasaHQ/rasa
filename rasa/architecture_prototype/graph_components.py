@@ -163,8 +163,10 @@ class TrackerLoader(GraphComponent):
 
 
 class NLUMessageConverter(GraphComponent):
-    def convert(self, message: UserMessage) -> Message:
-        return Message.build(message.text)
+    def convert(self, message: Optional[UserMessage]) -> Optional[Message]:
+        if message:
+            return Message.build(message.text)
+        return None
 
 
 class NLUPredictionToHistoryAdder(GraphComponent):
