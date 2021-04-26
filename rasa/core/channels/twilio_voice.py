@@ -5,6 +5,7 @@ from sanic.response import HTTPResponse
 from twilio.twiml.voice_response import VoiceResponse, Gather
 from typing import Text, Callable, Awaitable, List, Any, Dict, Optional
 
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.utils.io import raise_warning
 from rasa.shared.core.events import BotUttered
 from rasa.shared.exceptions import InvalidConfigException
@@ -133,61 +134,65 @@ class TwilioVoiceInput(InputChannel):
         self.speech_model = speech_model
         self.enhanced = enhanced
 
-        if assistant_voice not in self.SUPPORTED_VOICES:
-            self.raise_invalid_voice_exception()
+        self._validate_configuration()
+
+    def _validate_configuration(self) -> None:
+        """Checks that the user configurations are valid."""
+        if self.assistant_voice not in self.SUPPORTED_VOICES:
+            self._raise_invalid_voice_exception()
 
         try:
             int(self.speech_timeout)
         except ValueError:
             if self.speech_timeout.lower() != "auto":
-                self.raise_invalid_speech_timeout_exception()
+                self._raise_invalid_speech_timeout_exception()
 
-        if speech_model not in self.SUPPORTED_SPEECH_MODELS:
-            self.raise_invalid_speech_model_exception()
+        if self.speech_model not in self.SUPPORTED_SPEECH_MODELS:
+            self._raise_invalid_speech_model_exception()
 
-        if enhanced.lower() not in ["true", "false"]:
-            self.raise_invalid_enhanced_option_exception()
+        if self.enhanced.lower() not in ["true", "false"]:
+            self._raise_invalid_enhanced_option_exception()
 
-        if (enhanced.lower() == "true") & (speech_model.lower() != "phone_call"):
-            self.raise_invalid_enhanced_speech_model_exception()
+        if (self.enhanced.lower() == "true") and (self.speech_model.lower() != "phone_call"):
+            self._raise_invalid_enhanced_speech_model_exception()
 
-        if (speech_model.lower() != "numbers_and_commands") & (speech_timeout.lower() == "auto"):
-            self.raise_invalid_speech_model_timeout_exception()
+        if (self.speech_model.lower() != "numbers_and_commands") and (self.speech_timeout.lower() == "auto"):
+            self._raise_invalid_speech_model_timeout_exception()
 
-    def raise_invalid_speech_model_timeout_exception(self) -> None:
+    def _raise_invalid_speech_model_timeout_exception(self) -> None:
         """Raises an error if incompatible speech_timeout and speech_model are provided."""
         raise InvalidConfigException(
             f"If speech_time is 'auto' the speech_model must be 'numbers_and_commands'. Please update your "
             f"speech_model to be 'numbers_and_commands' if you would like to continue using the 'auto' speech_model."
         )
 
-    def raise_invalid_enhanced_option_exception(self) -> None:
+    def _raise_invalid_enhanced_option_exception(self) -> None:
         """Raises an error if an invalid value is passed to the enhanced parameter."""
         raise InvalidConfigException(
             f"{self.enhanced} is invalid. You must provide either `true` or `false` for this value."
         )
 
-    def raise_invalid_speech_model_exception(self) -> None:
+    def _raise_invalid_speech_model_exception(self) -> None:
         """Raises an error if an invalid speech_model is provided."""
         raise InvalidConfigException(
             f"{self.speech_model} is invalid. You must choose one of 'default', 'numbers_and_commands', "
             f"or 'phone_call'. Refer to the documentation for details about the selections."
         )
 
-    def raise_invalid_speech_timeout_exception(self) -> None:
+    def _raise_invalid_speech_timeout_exception(self) -> None:
         """Raises an error if an invalid speech_timeout is provided."""
         raise InvalidConfigException(
             f"{self.speech_timeout} is an invalid value for speech timeout. Only integers and 'auto' are valid entries."
         )
 
-    def raise_invalid_voice_exception(self) -> None:
+    def _raise_invalid_voice_exception(self) -> None:
         """Raises an error if an invalid voice is provided."""
         raise InvalidConfigException(
             f"{self.assistant_voice} is an invalid as an assistant voice. Please refer to the documentation for a list "
             f"of valid voices you can use for your voice assistant."
         )
 
-    def raise_invalid_enhanced_speech_model_exception(self) -> None:
+    def _raise_invalid_enhanced_speech_model_exception(self) -> None:
         """Raises an error if enhanced is turned on and an incompatible speech_model is used."""
         raise InvalidConfigException(
             f"If you set enhanced to 'true' then speech_model must be 'phone_call'. Current speech_model is: "
@@ -281,31 +286,19 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
     (doesn't send them anywhere, just collects them).
     """
 
-    EMOJI = re.compile(
-                "["
-                "\U0001F600-\U0001F64F"  # emoticons
-                "\U0001F300-\U0001F5FF"  # symbols & pictographs
-                "\U0001F680-\U0001F6FF"  # transport & map symbols
-                "\U0001F1E0-\U0001F1FF"  # flags (iOS)
-                "\U00002702-\U000027B0"
-                "\U000024C2-\U0001F251"
-                "\u200d"  # zero width joiner
-                "\u200c"  # zero width non-joiner
-                "]+",
-                flags=re.UNICODE,
-            )
-
     @classmethod
     def name(cls) -> Text:
         """Name of the output channel."""
         return "twilio_voice"
 
-    async def emoji_warning(
-        self,
+    @staticmethod
+    def emoji_warning(
         text: Text,
     ) -> None:
         """Raises a warning if text contains an emoji."""
-        if self.EMOJI.findall(text):
+        tok = WhitespaceTokenizer()
+        emoji_regex = tok.get_emoji_regex()
+        if emoji_regex.findall(text):
             raise_warning(
                 "Text contains an emoji in a voice response. Review responses to provide a voice-friendly "
                 "alternative."
@@ -314,7 +307,7 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
-        await self.emoji_warning(text)
+        self.emoji_warning(text)
         for message_part in text.strip().split("\n\n"):
             await self._persist_message(self._message(recipient_id, text=message_part))
 
@@ -326,11 +319,11 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         **kwargs: Any,
     ) -> None:
         """Convert buttons into a voice representation."""
-        await self.emoji_warning(text)
+        self.emoji_warning(text)
         await self._persist_message(self._message(recipient_id, text=text))
 
         for b in buttons:
-            await self.emoji_warning(b["title"])
+            self.emoji_warning(b["title"])
             await self._persist_message(self._message(recipient_id, text=b["title"]))
 
     async def send_image_url(

@@ -60,7 +60,7 @@ When Twilio receives a new call and forwards this to Rasa Open Source, Twilio do
  `credentials.yml` file by setting the `initial_prompt` parameter to the desired input. The `initial_prompt` value will
  be sent to Rasa Open Source and the response will be spoken to the user to start the voice conversation. How you greet
  a user via a voice channel may differ from a text channel. You should review your responses and consider creating
- [channel-specific variations](https://rasa.com/docs/rasa/responses/#channel-specific-response-variations) where
+ [channel-specific variations](../responses.mdx#channel-specific-response-variations) where
  necessary.
 
 ### Assistant Voice
@@ -108,7 +108,7 @@ set to "false". You can find more about the `enhanced` speech model option in th
 ## Custom Voice Responses
 
 It is highly recommended that you provide voice
-[channel specific responses](https://rasa.com/docs/rasa/responses/#channel-specific-response-variations) for all
+[channel specific responses](../responses.mdx#channel-specific-response-variations) for all
 responses containing images, emojis and/or abbreviations. Visual media like images and emojis do not translate well to
 voice applications. Having voice alternatives to those responses lets you tailor the user experience to the voice
 channel. If a response is detected as containing either an image or emoji a warning will be raised. The image or emoji

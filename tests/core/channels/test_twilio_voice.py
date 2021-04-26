@@ -72,78 +72,69 @@ async def test_twilio_voice_twiml_response_buttons():
     )
 
 
-async def test_twilio_invalid_assistant_voice():
-
-    inputs = {
-        "initial_prompt": "hello",
-        "reprompt_fallback_phrase": "i didn't get that",
-        "speech_model": "default",
-        "speech_timeout": "5",
-        "assistant_voice": "alien",
-        "enhanced": "false"
-    }
-
-    with pytest.raises(InvalidConfigException):
-        TwilioVoiceInput(**inputs)
-
-
-async def test_speech_timeout():
-
-    inputs = {
-        "initial_prompt": "hello",
-        "reprompt_fallback_phrase": "i didn't get that",
-        "speech_model": "default",
-        "speech_timeout": "not a number",
-        "assistant_voice": "woman",
-        "enhanced": "false"
-    }
-
-    with pytest.raises(InvalidConfigException):
-        TwilioVoiceInput(**inputs)
-
-
-async def test_enhanced_config():
-
-    inputs = {
-        "initial_prompt": "hello",
-        "reprompt_fallback_phrase": "i didn't get that",
-        "speech_model": "default",
-        "speech_timeout": "auto",
-        "assistant_voice": "woman",
-        "enhanced": "wrong"
-    }
-
-    with pytest.raises(InvalidConfigException):
-        TwilioVoiceInput(**inputs)
-
-
-async def test_enhanced_invalid_speech_model():
-
-    inputs = {
-        "initial_prompt": "hello",
-        "reprompt_fallback_phrase": "i didn't get that",
-        "speech_model": "default",
-        "speech_timeout": "5",
-        "assistant_voice": "woman",
-        "enhanced": "true"
-    }
-
-    with pytest.raises(InvalidConfigException):
-        TwilioVoiceInput(**inputs)
+@pytest.mark.parametrize(
+    "configs, expected",
+    [
+        (
+            {
+                "initial_prompt": "hello",
+                "reprompt_fallback_phrase": "i didn't get that",
+                "speech_model": "default",
+                "speech_timeout": "5",
+                "assistant_voice": "alien",
+                "enhanced": "false"
+            }, InvalidConfigException
+        ),
+        (
+            {
+                "initial_prompt": "hello",
+                "reprompt_fallback_phrase": "i didn't get that",
+                "speech_model": "default",
+                "speech_timeout": "not a number",
+                "assistant_voice": "woman",
+                "enhanced": "false"
+            }, InvalidConfigException
+        ),
+        (
+            {
+                "initial_prompt": "hello",
+                "reprompt_fallback_phrase": "i didn't get that",
+                "speech_model": "default",
+                "speech_timeout": "auto",
+                "assistant_voice": "woman",
+                "enhanced": "wrong"
+            }, InvalidConfigException
+        ),
+        (
+            {
+                "initial_prompt": "hello",
+                "reprompt_fallback_phrase": "i didn't get that",
+                "speech_model": "default",
+                "speech_timeout": "5",
+                "assistant_voice": "woman",
+                "enhanced": "true"
+            }, InvalidConfigException
+        )
+    ]
+)
+def test_invalid_configs(configs, expected):
+    with pytest.raises(expected):
+        TwilioVoiceInput(**configs)
 
 
 async def test_twilio_voice_remove_image():
 
-    output_channel = TwilioVoiceCollectingOutputChannel()
-    await output_channel.send_response(
-        recipient_id="Chuck Norris",
-        message={
-            "image": "https://i.imgur.com/nGF1K8f.jpg",
-            "text": "Some text."
-        }
-    )
-    assert len(output_channel.messages) == 1
-    assert output_channel.messages[0]["text"] == "Some text."
+    with pytest.warns(UserWarning):
+        output_channel = TwilioVoiceCollectingOutputChannel()
+        await output_channel.send_response(
+            recipient_id="Chuck Norris",
+            message={
+                "image": "https://i.imgur.com/nGF1K8f.jpg",
+                "text": "Some text."
+            }
+        )
+        assert len(output_channel.messages) == 1
+        assert output_channel.messages[0]["text"] == "Some text."
 
 
 async def test_twilio_emoji_warning():
@@ -158,7 +149,7 @@ async def test_twilio_emoji_warning():
         )
 
 
-async def test_twilio_incompatible_speech_timeout_and_model():
+def test_twilio_incompatible_speech_timeout_and_model():
 
     input_default_model = {
         "initial_prompt": "hello",
