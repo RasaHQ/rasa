@@ -86,10 +86,11 @@ class MitieEntityExtractor(EntityExtractor):
         trainer.num_threads = kwargs.get("num_threads", 1)
         found_one_entity = False
 
-        # filter out pre-trained entity examples
-        filtered_entity_examples = self.filter_trainable_entities(
-            training_data.nlu_examples
-        )
+        # remove out pre-trained entity annotations
+        filtered_entity_examples = [
+            self.remove_foreign_entity_annotations(msg)
+            for msg in training_data.nlu_examples
+        ]
 
         for example in filtered_entity_examples:
             sample = self._prepare_mitie_sample(example)

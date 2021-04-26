@@ -134,36 +134,26 @@ class EntityExtractor(Component):
         end = ends.index(entity[ENTITY_ATTRIBUTE_END]) + 1
         return start, end
 
-    def filter_trainable_entities(
-        self, entity_examples: List[Message]
-    ) -> List[Message]:
-        """Filters out untrainable entity annotations.
+    def remove_foreign_entity_annotations(self, message: Message) -> Message:
+        """Removes entity annotations from other extractors.
 
         Creates a copy of entity_examples in which entities that have
         `extractor` set to something other than
-        self.name (e.g. 'CRFEntityExtractor') are removed.
-        """
-
-        filtered = []
-        for message in entity_examples:
-            entities = []
-            for ent in message.get(ENTITIES, []):
-                extractor = ent.get(EXTRACTOR)
-                if not extractor or extractor == self.name:
-                    entities.append(ent)
-            data = message.data.copy()
-            data[ENTITIES] = entities
-            filtered.append(
-                Message(
-                    text=message.get(TEXT),
-                    data=data,
-                    output_properties=message.output_properties,
-                    time=message.time,
-                    features=message.features,
-                )
-            )
-
-        return filtered
+        self.name (e.g. 'CRFEntityExtractor') are removed."""
+        entities = []
+        for ent in message.get(ENTITIES, []):
+            extractor = ent.get(EXTRACTOR)
+            if not extractor or extractor == self.name:
+                entities.append(ent)
+        data = message.data.copy()
+        data[ENTITIES] = entities
+        return Message(
+            text=message.get(TEXT),
+            data=data,
+            output_properties=message.output_properties,
+            time=message.time,
+            features=message.features,
+        )
 
     @staticmethod
     def convert_predictions_into_entities(
