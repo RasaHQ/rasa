@@ -79,6 +79,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         feature_type_signature: List[FeatureSignature],
         config: Dict[Text, Any],
     ) -> None:
+        """Creates a new `ConcatenateSparseDenseFeatures` object."""
         if not feature_type_signature:
             raise TFLayerConfigException(
                 "The feature type signature must contain some feature signatures."
@@ -255,6 +256,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         attribute_signature: Dict[Text, List[FeatureSignature]],
         config: Dict[Text, Any],
     ) -> None:
+        """Creates a new `RasaFeatureCombiningLayer` object."""
         if not attribute_signature or not (
             attribute_signature.get(SENTENCE, [])
             or attribute_signature.get(SEQUENCE, [])
@@ -616,6 +618,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         attribute_signature: Dict[Text, List[FeatureSignature]],
         config: Dict[Text, Any],
     ) -> None:
+        """Creates a new `RasaSequenceLayer` object."""
         if not attribute_signature or not attribute_signature.get(SEQUENCE, []):
             raise TFLayerConfigException(
                 "The attribute signature must contain some sequence-level feature"
