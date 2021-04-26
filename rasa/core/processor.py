@@ -13,6 +13,7 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
+import rasa.model
 import rasa.core.utils
 import rasa.core.interpreter
 from rasa.core.policies.policy import PolicyPrediction, Policy
@@ -49,6 +50,7 @@ from rasa.shared.constants import (
     DOCS_URL_POLICIES,
     UTTER_PREFIX,
     DOCS_URL_SLOTS,
+    DEFAULT_DOMAIN_PATH,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.lock_store import LockStore
@@ -72,14 +74,15 @@ class MessageProcessor:
         domain: Domain,
         tracker_store: rasa.core.tracker_store.TrackerStore,
         lock_store: LockStore,
-        generator: NaturalLanguageGenerator,
+        generator: Optional[NaturalLanguageGenerator],
         action_endpoint: Optional[EndpointConfig] = None,
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         message_preprocessor: Optional[LambdaType] = None,
         on_circuit_break: Optional[LambdaType] = None,
     ) -> None:
         self.interpreter = interpreter
-        self.nlg = generator
+
+        self.nlg = NaturalLanguageGenerator.create(generator, domain)
         self.policy_ensemble = policy_ensemble
         self.domain = domain
         self.tracker_store = tracker_store
@@ -92,23 +95,43 @@ class MessageProcessor:
     @classmethod
     def create(
         cls,
-        policies: Union[PolicyEnsemble, List[Policy], None],
-        interpreter: Optional[NaturalLanguageInterpreter],
-        domain: Domain,
+        model_path: Text,
         tracker_store: rasa.core.tracker_store.TrackerStore,
         lock_store: LockStore,
-        generator: NaturalLanguageGenerator,
+        generator: Optional[NaturalLanguageGenerator],
         action_endpoint: Optional[EndpointConfig],
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
     ) -> "MessageProcessor":
-        policy_ensemble = cls._create_ensemble(policies)
+        core_model, nlu_model = rasa.model.get_model_subdirectories(model_path)
 
-        PolicyEnsemble.check_domain_ensemble_compatibility(policy_ensemble, domain)
+        interpreter = rasa.core.interpreter.create_interpreter(nlu_model)
+
+        domain = None
+        ensemble = None
+
+        if core_model:
+            domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
+            ensemble = (
+                PolicyEnsemble.load(
+                    core_model,
+                    new_config=new_config,
+                    finetuning_epoch_fraction=finetuning_epoch_fraction,
+                )
+                if core_model
+                else None
+            )
+
+            # ensures the domain hasn't changed between test and train
+            domain.compare_with_specification(core_model)
+
+        PolicyEnsemble.check_domain_ensemble_compatibility(ensemble, domain)
 
         interpreter = rasa.core.interpreter.create_interpreter(interpreter)
 
         return MessageProcessor(
             interpreter,
-            policy_ensemble,
+            ensemble,
             domain,
             tracker_store,
             lock_store,
@@ -149,7 +172,6 @@ class MessageProcessor:
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message with this processor."""
 
-        # TODO: Skip this until `predict_and_execute_next_action`?
         # preprocess message if necessary
         tracker = await self.log_message(message, should_save_tracker=False)
 
@@ -427,7 +449,7 @@ class MessageProcessor:
         return tracker
 
     def predict_next_action(
-        self, tracker: DialogueStateTracker
+        self, tracker: DialogueStateTracker, message: UserMessage
     ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
         """Predicts the next action the bot should take after seeing x.
 
@@ -645,7 +667,6 @@ class MessageProcessor:
     async def _handle_message_with_tracker(
         self, message: UserMessage, tracker: DialogueStateTracker
     ) -> None:
-        # TODO: Changes here
         if message.parse_data:
             parse_data = message.parse_data
         else:
@@ -699,7 +720,10 @@ class MessageProcessor:
         )
 
     async def _predict_and_execute_next_action(
-        self, output_channel: OutputChannel, tracker: DialogueStateTracker
+        self,
+        output_channel: OutputChannel,
+        tracker: DialogueStateTracker,
+        message: UserMessage,
     ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
@@ -712,8 +736,10 @@ class MessageProcessor:
             and num_predicted_actions < self.max_number_of_predictions
         ):
             # this actually just calls the policy's method by the same name
-            # TODO: Override this action?
-            action, prediction = self.predict_next_action(tracker)
+
+            action, prediction = self.predict_next_action(tracker, message)
+            # only predict with message once
+            message = None
 
             should_predict_another_action = await self._run_action(
                 action, tracker, output_channel, self.nlg, prediction

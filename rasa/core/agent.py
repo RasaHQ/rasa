@@ -12,6 +12,8 @@ from aiohttp import ClientError
 
 import rasa
 import rasa.utils
+from rasa.architecture_prototype import graph
+from rasa.architecture_prototype.processor import GraphProcessor
 from rasa.core import jobs, training
 from rasa.core.channels.channel import OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -384,10 +386,6 @@ class Agent:
         self,
         domain: Union[Text, Domain, None] = None,
         processor: Optional[MessageProcessor] = None,
-        # TODO: This to
-        # policies: Union[PolicyEnsemble, List[Policy], None] = None,
-        # interpreter: Optional[NaturalLanguageInterpreter] = None,
-        # TODO: End here goes into processor
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
         tracker_store: Optional[TrackerStore] = None,
         lock_store: Optional[LockStore] = None,
@@ -399,7 +397,11 @@ class Agent:
         path_to_model_archive: Optional[Text] = None,
     ):
         # Initializing variables with the passed parameters.
-        self.domain = self._create_domain(domain)
+        if domain:
+            self.domain = self._create_domain(domain)
+        else:
+            self.domain = processor.domain
+
         self.processor = processor
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
@@ -476,40 +478,29 @@ class Agent:
                 f"`agent.load_data(...)` instead. {e}"
             )
 
-        core_model, nlu_model = get_model_subdirectories(model_path)
-
-        if not interpreter and nlu_model:
-            interpreter = rasa.core.interpreter.create_interpreter(nlu_model)
-
-        domain = None
-        ensemble = None
-
-        if core_model:
-            domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
-            ensemble = (
-                PolicyEnsemble.load(
-                    core_model,
-                    new_config=new_config,
-                    finetuning_epoch_fraction=finetuning_epoch_fraction,
-                )
-                if core_model
-                else None
+        old_style_model = any(
+            match.name == "core" or match.name == "nlu"
+            for match in Path(model_path).glob("*")
+        )
+        if old_style_model:
+            processor = MessageProcessor.create(
+                model_path, tracker_store, lock_store, generator, action_endpoint,
             )
+        else:
+            from tests.architecture_prototype.test_processor import predict_graph_schema
 
-            # ensures the domain hasn't changed between test and train
-            domain.compare_with_specification(core_model)
+            graph.fill_defaults(predict_graph_schema)
 
+            processor = GraphProcessor.create(
+                tracker_store=tracker_store,
+                lock_store=InMemoryLockStore(),
+                generator=generator,
+                action_endpoint=None,
+                rasa_graph=predict_graph_schema,
+            )
         return cls(
-            domain=domain,
-            processor=MessageProcessor.create(
-                ensemble,
-                interpreter,
-                domain,
-                tracker_store,
-                lock_store,
-                generator,
-                action_endpoint,
-            ),
+            domain=None,
+            processor=processor,
             generator=generator,
             tracker_store=tracker_store,
             lock_store=lock_store,
@@ -935,8 +926,6 @@ class Agent:
         working_directory = tempfile.mkdtemp()
         unpacked_model = unpack_model(model_archive, working_directory)
 
-        # TODO: Load agent here or only interpreter / ensemble?
-        # TODO: Load domain?
         return Agent.load(
             unpacked_model,
             interpreter=interpreter,

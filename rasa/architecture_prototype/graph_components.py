@@ -178,7 +178,8 @@ class NLUPredictionToHistoryAdder(GraphComponent):
         parsed_message: Optional[Message] = None,
     ) -> DialogueStateTracker:
         if parsed_message:
-            parse_data = parsed_message.as_dict()
+            parse_data = parsed_message.as_dict(only_output_properties=True)
+
             tracker.update(
                 UserUttered(
                     initial_user_message.text,

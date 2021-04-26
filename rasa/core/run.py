@@ -239,17 +239,6 @@ async def load_agent_on_start(
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments).
     """
-    # noinspection PyBroadException
-    try:
-        with model.get_model(model_path) as unpacked_model:
-            _, nlu_model = model.get_model_subdirectories(unpacked_model)
-            _interpreter = rasa.core.interpreter.create_interpreter(
-                endpoints.nlu or nlu_model
-            )
-    except Exception:
-        logger.debug(f"Could not load interpreter from '{model_path}'.")
-        _interpreter = None
-
     _broker = await EventBroker.create(endpoints.event_broker, loop=loop)
     _tracker_store = TrackerStore.create(endpoints.tracker_store, event_broker=_broker)
     _lock_store = LockStore.create(endpoints.lock_store)
@@ -261,7 +250,6 @@ async def load_agent_on_start(
             model_path,
             model_server=model_server,
             remote_storage=remote_storage,
-            interpreter=_interpreter,
             generator=endpoints.nlg,
             tracker_store=_tracker_store,
             lock_store=_lock_store,
