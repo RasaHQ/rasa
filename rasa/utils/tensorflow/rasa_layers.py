@@ -319,7 +319,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
 
     def _prepare_sequence_sentence_concat(
         self, attribute: Text, config: Dict[Text, Any]
-    ):
+    ) -> None:
         """Sets up combining sentence- and sequence-level features (if needed).
 
         This boils down to preparing for unifying the units of the sequence- and
