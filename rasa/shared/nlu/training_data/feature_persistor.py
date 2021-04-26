@@ -1,5 +1,6 @@
-from typing import Text, List
+from typing import Text, List, Tuple
 import pickle
+import random
 import os
 
 from rasa.shared.nlu.training_data.features import Features
@@ -7,6 +8,10 @@ from rasa.shared.nlu.training_data.features import Features
 
 class FeaturePersistence:
     MSG_PER_CHUNK = 512
+
+
+# message id and its features
+IndexedFeatures = Tuple[Text, List[Features]]
 
 
 class FeatureWriter(FeaturePersistence):
@@ -30,7 +35,7 @@ class FeatureWriter(FeaturePersistence):
         if not os.path.exists(self.path):
             os.mkdir(self.path)
 
-    def write(self, features: List[Features]) -> None:
+    def write(self, features: IndexedFeatures) -> None:
         """Caches the features and maybe writes them to disc."""
         self._current_features.append(features)
         self.number_written += 1
@@ -50,29 +55,31 @@ class FeatureWriter(FeaturePersistence):
 class FeatureReader(FeaturePersistence):
     """Reads features from disc."""
 
-    def __init__(self, path: Text):
+    def __init__(self, path: Text, shuffle_chunks=False):
         self.path = path
-        self._file_idx = 0
+        self.chunks = sorted([f for f in os.listdir(path) if f.endswith(".pickle")])
+        if shuffle_chunks:
+            random.shuffle(self.chunks)
         self._current_features = []
 
     def __iter__(self):
-        self._file_idx = 0
+        self._chunk_idx = 0
         self._load_current_chunk()
         return self
 
-    def __next__(self) -> List[Features]:
+    def __next__(self) -> IndexedFeatures:
         if self._current_features:
             return self._current_features.pop()
         else:
-            self._file_idx += 1
+            self._chunk_idx += 1
             try:
                 self._load_current_chunk()
-            except:
+            except IndexError:
                 raise StopIteration
             else:
                 return next(self)
 
     def _load_current_chunk(self):
-        target_file = f"{self.path}/features_{self._file_idx:03}.pickle"
+        target_file = f"{self.path}/{self.chunks[self._chunk_idx]}"
         with open(target_file, "rb") as f:
             self._current_features = pickle.load(f)[::-1]

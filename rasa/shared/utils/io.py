@@ -7,7 +7,8 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional, Text, Type, Union
+import random
+from typing import Any, Dict, List, Optional, Text, Type, Union, TypeVar, Generator
 import warnings
 
 from ruamel import yaml as yaml
@@ -616,3 +617,33 @@ def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
     potential_parent_directory = os.path.abspath(potential_parent_directory)
 
     return potential_parent_directory in path
+
+
+T = TypeVar("T")
+
+
+def shuffle_generator(
+    generator: Generator[T, None, None], n: int
+) -> Generator[T, None, None]:
+    """Pseudo shuffles a generator by accumulating and shuffling n elements."""
+    if n < 1:
+        raise ValueError(
+            f"Buffer size `n` for shuffling generators "
+            f"must be larger than 0, but n={n}"
+        )
+    shuffle_buffer = []
+    for element in generator:
+        # first loading the buffer up to designated size
+        shuffle_buffer.append(element)
+        if len(shuffle_buffer) < n:
+            continue
+
+        # shuffle and use buffer
+        random.shuffle(shuffle_buffer)
+        while shuffle_buffer:
+            yield shuffle_buffer.pop()
+
+    # shuffle and use remaining buffer
+    random.shuffle(shuffle_buffer)
+    while shuffle_buffer:
+        yield shuffle_buffer.pop()

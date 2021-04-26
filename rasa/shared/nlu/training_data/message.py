@@ -4,6 +4,7 @@ import typing
 import copy
 
 import rasa.shared.utils.io
+from rasa.nlu.constants import MESSAGE_ATTRIBUTES
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -54,7 +55,7 @@ class Message:
             self.features.append(features)
 
     def with_features(self, features: ["Features"]) -> "Message":
-        """Returns a new message with features added."""
+        """Returns a new message with features overwritten."""
         return Message(
             self.data,
             output_properties=self.output_properties,
@@ -138,6 +139,20 @@ class Message:
             Fingerprint of the message.
         """
         return rasa.shared.utils.io.deep_container_fingerprint(self.data)
+
+    def fingerprint_primary_attributes(self) -> Text:
+        """Calculate a fingerprint for the primary attributes of the message.
+
+        primary attributes are those that don't change as the message moves
+        through the pipeline such as `text` or `intent`. This method provides
+        a robust fingerprint for re-identifying messages even as metadata
+        is added during processing.
+
+        Returns:
+            Fingerprint of the primary attributes
+        """
+        primary_data = {k: v for k, v in self.data.items() if k in MESSAGE_ATTRIBUTES}
+        return rasa.shared.utils.io.deep_container_fingerprint(primary_data)
 
     @classmethod
     def build(

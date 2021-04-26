@@ -1,4 +1,6 @@
 import asyncio
+import tempfile
+import numpy as np
 from pathlib import Path
 from typing import Text, List, Dict, Any
 from unittest.mock import Mock
@@ -22,6 +24,7 @@ from rasa.shared.nlu.constants import (
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
@@ -36,6 +39,7 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 from rasa.shared.importers.importer import TrainingDataImporter, E2EImporter
+from rasa.utils.common import TempDirectoryPath
 
 
 def test_luis_data():
@@ -849,3 +853,109 @@ def test_label_fingerprints(message: Message):
     )
     training_data2 = training_data1.merge(TrainingData([message]))
     assert training_data1.label_fingerprint() != training_data2.label_fingerprint()
+
+
+def test_streaming_messages_from_memory() -> None:
+    training_data = load_data("data/examples/rasa/demo-rasa.yml")
+    consumed_stream = [msg for msg in training_data.stream_featurized_messages()]
+    assert consumed_stream == training_data.training_examples
+
+
+def test_storing_and_restoring_features() -> None:
+    training_data = load_data("data/examples/rasa/demo-rasa.yml")
+    with TempDirectoryPath(tempfile.mkdtemp()) as chunk_dir:
+        msg_pipe = training_data.add_features(chunk_dir)
+        try:
+            msg = next(msg_pipe)
+            while msg:
+                fake_feature = Features(
+                    np.random.random((2, 2)),
+                    "fake_type",
+                    "fake_attr",
+                    msg.fingerprint_primary_attributes(),
+                )
+                msg = msg_pipe.send([fake_feature])
+
+        except StopIteration:
+            pass
+
+        restored_featurized_messages = [
+            msg for msg in training_data.stream_featurized_messages(chunk_dir)
+        ]
+
+        assert len(restored_featurized_messages) == len(training_data.training_examples)
+
+        # check order invariance
+        assert [
+            msg.fingerprint_primary_attributes()
+            for msg in training_data.training_examples
+        ] == [
+            msg.fingerprint_primary_attributes() for msg in restored_featurized_messages
+        ]
+
+        # check proper features < - > msg matching
+        assert all(
+            [
+                msg.fingerprint_primary_attributes() == msg.features[0].origin
+                for msg in restored_featurized_messages
+            ]
+        )
+
+
+def test_storing_and_restoring_features_with_shuffling() -> None:
+    training_data = load_data("data/examples/rasa/demo-rasa.yml")
+    with TempDirectoryPath(tempfile.mkdtemp()) as chunk_dir:
+        msg_pipe = training_data.add_features(chunk_dir)
+        try:
+            msg = next(msg_pipe)
+            while msg:
+                fake_feature = Features(
+                    np.random.random((2, 2)),
+                    "fake_type",
+                    "fake_attr",
+                    msg.fingerprint_primary_attributes(),
+                )
+                msg = msg_pipe.send([fake_feature])
+
+        except StopIteration:
+            pass
+
+        restored_messages_shuffled = [
+            msg
+            for msg in training_data.stream_featurized_messages(chunk_dir, shuffle=True)
+        ]
+
+        # check proper length
+        assert len(restored_messages_shuffled) == len(training_data.training_examples)
+
+        # check order invariance broken
+        assert [
+            msg.fingerprint_primary_attributes()
+            for msg in training_data.training_examples
+        ] != [
+            msg.fingerprint_primary_attributes() for msg in restored_messages_shuffled
+        ]
+
+        # check proper features < - > msg matching
+        assert all(
+            [
+                msg.fingerprint_primary_attributes() == msg.features[0].origin
+                for msg in restored_messages_shuffled
+            ]
+        )
+
+        # second shuffled stream should be different
+        restored_messages_shuffled_2 = [
+            msg
+            for msg in training_data.stream_featurized_messages(chunk_dir, shuffle=True)
+        ]
+
+        # check proper length
+        assert len(restored_messages_shuffled_2) == len(restored_messages_shuffled)
+
+        # check order changed again on second shuffle
+        assert [
+            msg.fingerprint_primary_attributes() for msg in restored_messages_shuffled_2
+        ] != [
+            msg.fingerprint_primary_attributes() for msg in restored_messages_shuffled
+        ]

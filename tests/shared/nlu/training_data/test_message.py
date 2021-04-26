@@ -272,3 +272,35 @@ def test_add_diagnostic_data_with_repeated_component_raises_warning():
     message.add_diagnostic_data("a", {})
     with pytest.warns(UserWarning):
         message.add_diagnostic_data("a", {})
+
+
+def test_fingerprint_primary_attributes_uniqueness() -> None:
+    """Tests that fingerprints don't collide."""
+    messages = [
+        Message({INTENT: "intent", TEXT: "text"}),
+        Message({INTENT: "intent", TEXT: "text2"}),
+        Message({RESPONSE: "response", TEXT: "text"}),
+        Message({INTENT: "intent"}),
+        Message({ACTION_TEXT: "action text"}),
+        Message({ACTION_NAME: "action name"}),
+        Message({TEXT: "text"}),
+    ]
+
+    fingerprints = [m.fingerprint_primary_attributes() for m in messages]
+
+    assert len(set(fingerprints)) == len(messages)
+
+
+def test_fingerprint_primary_attributes_stability() -> None:
+    """Tests that adding properties doesn't change primary fingerprints."""
+    msg = Message({INTENT: "intent", TEXT: "text"})
+    primary_fingerprint = msg.fingerprint_primary_attributes()
+    fingerprint = msg.fingerprint()
+    msg.set("another_property", True)
+    msg.set("metadata", {"sentiment": "positive"})
+
+    new_primary_fingerprint = msg.fingerprint_primary_attributes()
+    new_fingerprint = msg.fingerprint()
+
+    assert fingerprint != new_fingerprint
+    assert primary_fingerprint == new_primary_fingerprint

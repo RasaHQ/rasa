@@ -557,3 +557,21 @@ async def test_is_key_in_yaml_with_unicode_files():
     assert rasa.shared.utils.io.is_key_in_yaml(
         "./data/test_nlu_no_responses/nlu_with_unicode.yml", "nlu"
     )
+
+
+def test_shuffle_stream_invalid_n():
+    simple_generator = (i for i in range(20))
+    with pytest.raises(ValueError):
+        next(rasa.shared.utils.io.shuffle_generator(simple_generator, 0))
+
+
+def test_shuffle_stream_buffer_1():
+    simple_generator = (i for i in range(20))
+    not_shuffled = rasa.shared.utils.io.shuffle_generator(simple_generator, 1)
+    assert [el for el in not_shuffled] == list(range(20))
+
+
+def test_shuffle_stream_buffer_sections():
+    simple_generator = (i for i in range(20))
+    somewhat_shuffled = rasa.shared.utils.io.shuffle_generator(simple_generator, 5)
+    assert set(range(5)) == set([el for el in somewhat_shuffled][:5])

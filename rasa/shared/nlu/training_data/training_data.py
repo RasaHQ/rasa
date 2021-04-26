@@ -26,7 +26,11 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data import util
-from rasa.shared.nlu.training_data.feature_persistor import FeatureReader, FeatureWriter
+from rasa.shared.nlu.training_data.feature_persistor import (
+    FeatureReader,
+    FeatureWriter,
+    FeaturePersistence,
+)
 
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.yml"
@@ -61,25 +65,79 @@ class TrainingData:
         self.responses = responses or {}
 
         self._fill_response_phrases()
+        self.training_examples_index = self.build_message_index(self.training_examples)
+
+    def _read_and_merge_stashed_features(
+        self, chunk_path: Text, shuffle: bool = False
+    ) -> Generator[Message, None, None]:
+        """Reads stored away features and merges them with message objects."""
+        for msg_fingerprint, f in FeatureReader(chunk_path, shuffle):
+            msg = self.training_examples_index[msg_fingerprint]
+            yield msg.with_features(f)
 
     def stream_featurized_messages(
-        self, chunk_path: Text
+        self,
+        chunk_path: Optional[Text] = None,
+        shuffle: bool = False,
+        shuffle_buffer_size: int = FeaturePersistence.MSG_PER_CHUNK * 3,
     ) -> Generator[Message, None, None]:
-        for m, f in zip(self.training_examples, FeatureReader(chunk_path)):
-            yield m.with_features(f)
+        """Stream the featurized messages from disc.
+
+        Features come from disc, message metadata are in memory.
+        Shuffling does two things. First, it randomizes the order in which chunks
+        are consumed from disc. Second, it accumulates a number of messages from
+        multiple chunks and shuffles that accumulation again before sending them
+        further down the stream.
+
+        Params:
+            chunk_path: the directory where the feature chunks are stored
+                if None, use messages from memory
+            shuffle: whether to shuffle the order of messages
+            shuffle_buffer_size: how many messages to store and shuffle across
+                chunk boundaries. Should be ideally the size of a couple chunks
+                combined to have properly random order of across all messages.
+
+        Returns:
+            A generator of messages
+        """
+        if not chunk_path:
+            yield from self.training_examples
+        else:
+            source = self._read_and_merge_stashed_features(chunk_path, shuffle)
+            if shuffle:
+                yield from rasa.shared.utils.io.shuffle_generator(
+                    source, shuffle_buffer_size
+                )
+            else:
+                yield from source
 
     def add_features(
-        self, chunk_path_from: Optional[Text], chunk_path_to: Text
+        self, chunk_path_to: Text, chunk_path_from: Optional[Text] = None
     ) -> Generator[Message, List[Features], None]:
+        """Allows components to add features to messages.
+
+        This method streams featurized messages from one chunk directory
+        to the component and saves the returned features to another one.
+        Reads features from and stores them to memory if no
+        directories are given respectively.
+
+        Params:
+            chunk_path_to: the directory for saving the old and new features.
+            chunk_path_from: the directory from which to take the current
+            features
+        Returns:
+            A generator of messages that can receive lists of features."""
         with FeatureWriter(chunk_path_to) as out:
-            source = (
-                self.stream_featurized_messages(chunk_path_from)
-                if chunk_path_from
-                else self.training_examples
-            )
-            for msg in source:
+            for msg in self.stream_featurized_messages(chunk_path_from):
                 new_features = yield msg
-                out.write(msg.features + new_features)
+                out.write(
+                    (msg.fingerprint_primary_attributes(), msg.features + new_features)
+                )
+
+    @staticmethod
+    def build_message_index(messages: List[Message]) -> Dict[Text, Message]:
+        """Builds an index `primary fingerprint of message` -> Message."""
+        return {m.fingerprint_primary_attributes(): m for m in messages}
 
     @staticmethod
     def _load_lookup_table(lookup_table: Dict[Text, Any]) -> Dict[Text, Any]:
