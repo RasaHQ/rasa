@@ -383,8 +383,11 @@ class Agent:
     def __init__(
         self,
         domain: Union[Text, Domain, None] = None,
-        policies: Union[PolicyEnsemble, List[Policy], None] = None,
-        interpreter: Optional[NaturalLanguageInterpreter] = None,
+        processor: Optional[MessageProcessor] = None,
+        # TODO: This to
+        # policies: Union[PolicyEnsemble, List[Policy], None] = None,
+        # interpreter: Optional[NaturalLanguageInterpreter] = None,
+        # TODO: End here goes into processor
         generator: Union[EndpointConfig, NaturalLanguageGenerator, None] = None,
         tracker_store: Optional[TrackerStore] = None,
         lock_store: Optional[LockStore] = None,
@@ -397,14 +400,7 @@ class Agent:
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
-        self.policy_ensemble = self._create_ensemble(policies)
-
-        PolicyEnsemble.check_domain_ensemble_compatibility(
-            self.policy_ensemble, self.domain
-        )
-
-        self.interpreter = rasa.core.interpreter.create_interpreter(interpreter)
-
+        self.processor = processor
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(tracker_store, self.domain)
         self.lock_store = self._create_lock_store(lock_store)
@@ -505,8 +501,15 @@ class Agent:
 
         return cls(
             domain=domain,
-            policies=ensemble,
-            interpreter=interpreter,
+            processor=MessageProcessor.create(
+                ensemble,
+                interpreter,
+                domain,
+                tracker_store,
+                lock_store,
+                generator,
+                action_endpoint,
+            ),
             generator=generator,
             tracker_store=tracker_store,
             lock_store=lock_store,
@@ -519,14 +522,14 @@ class Agent:
 
     def is_core_ready(self) -> bool:
         """Check if all necessary components and policies are ready to use the agent."""
-        return self.is_ready() and self.policy_ensemble is not None
+        return self.processor.is_core_ready()
 
     def is_ready(self) -> bool:
         """Check if all necessary components are instantiated to use agent.
 
         Policies might not be available, if this is an NLU only agent."""
 
-        return self.tracker_store is not None and self.interpreter is not None
+        return self.processor.is_ready()
 
     async def parse_message_using_nlu_interpreter(
         self, message_data: Text, tracker: DialogueStateTracker = None
@@ -868,16 +871,7 @@ class Agent:
                 "interpreter and a tracker store."
             )
 
-        return MessageProcessor(
-            self.interpreter,
-            self.policy_ensemble,
-            self.domain,
-            self.tracker_store,
-            self.lock_store,
-            self.nlg,
-            action_endpoint=self.action_endpoint,
-            message_preprocessor=preprocessor,
-        )
+        return self.processor
 
     @staticmethod
     def _create_domain(domain: Union[Domain, Text, None]) -> Domain:
@@ -917,24 +911,6 @@ class Agent:
         return InMemoryLockStore()
 
     @staticmethod
-    def _create_ensemble(
-        policies: Union[List[Policy], PolicyEnsemble, None]
-    ) -> Optional[PolicyEnsemble]:
-        if policies is None:
-            return None
-        if isinstance(policies, list):
-            return SimplePolicyEnsemble(policies)
-        elif isinstance(policies, PolicyEnsemble):
-            return policies
-        else:
-            passed_type = type(policies).__name__
-            raise InvalidParameterException(
-                f"Invalid param `policies`. Passed object is "
-                f"of type '{passed_type}', but should be policy, an array of "
-                f"policies, or a policy ensemble."
-            )
-
-    @staticmethod
     def load_local_model(
         model_path: Text,
         interpreter: Optional[NaturalLanguageInterpreter] = None,
@@ -959,6 +935,8 @@ class Agent:
         working_directory = tempfile.mkdtemp()
         unpacked_model = unpack_model(model_archive, working_directory)
 
+        # TODO: Load agent here or only interpreter / ensemble?
+        # TODO: Load domain?
         return Agent.load(
             unpacked_model,
             interpreter=interpreter,

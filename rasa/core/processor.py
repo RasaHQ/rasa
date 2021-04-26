@@ -14,7 +14,8 @@ from rasa.core.channels.channel import (
     UserMessage,
 )
 import rasa.core.utils
-from rasa.core.policies.policy import PolicyPrediction
+import rasa.core.interpreter
+from rasa.core.policies.policy import PolicyPrediction, Policy
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -39,6 +40,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_SLOT_NAME,
     KEY_ACTION,
 )
+from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
@@ -50,7 +52,7 @@ from rasa.shared.constants import (
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.lock_store import LockStore
-from rasa.core.policies.ensemble import PolicyEnsemble
+from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 import rasa.core.tracker_store
 import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
@@ -75,7 +77,7 @@ class MessageProcessor:
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         message_preprocessor: Optional[LambdaType] = None,
         on_circuit_break: Optional[LambdaType] = None,
-    ):
+    ) -> None:
         self.interpreter = interpreter
         self.nlg = generator
         self.policy_ensemble = policy_ensemble
@@ -87,11 +89,67 @@ class MessageProcessor:
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
 
+    @classmethod
+    def create(
+        cls,
+        policies: Union[PolicyEnsemble, List[Policy], None],
+        interpreter: Optional[NaturalLanguageInterpreter],
+        domain: Domain,
+        tracker_store: rasa.core.tracker_store.TrackerStore,
+        lock_store: LockStore,
+        generator: NaturalLanguageGenerator,
+        action_endpoint: Optional[EndpointConfig],
+    ) -> "MessageProcessor":
+        policy_ensemble = cls._create_ensemble(policies)
+
+        PolicyEnsemble.check_domain_ensemble_compatibility(policy_ensemble, domain)
+
+        interpreter = rasa.core.interpreter.create_interpreter(interpreter)
+
+        return MessageProcessor(
+            interpreter,
+            policy_ensemble,
+            domain,
+            tracker_store,
+            lock_store,
+            generator,
+            action_endpoint=action_endpoint,
+        )
+
+    @classmethod
+    def _create_ensemble(
+        cls, policies: Union[List[Policy], PolicyEnsemble, None]
+    ) -> Optional[PolicyEnsemble]:
+        if policies is None:
+            return None
+        if isinstance(policies, list):
+            return SimplePolicyEnsemble(policies)
+        elif isinstance(policies, PolicyEnsemble):
+            return policies
+        else:
+            passed_type = type(policies).__name__
+            raise InvalidParameterException(
+                f"Invalid param `policies`. Passed object is "
+                f"of type '{passed_type}', but should be policy, an array of "
+                f"policies, or a policy ensemble."
+            )
+
+    def is_core_ready(self) -> bool:
+        return self.is_ready() and self.policy_ensemble
+
+    def is_ready(self) -> bool:
+        """Check if all necessary components are instantiated to use agent.
+
+        Policies might not be available, if this is an NLU only agent."""
+
+        return self.tracker_store is not None and self.interpreter is not None
+
     async def handle_message(
         self, message: UserMessage
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message with this processor."""
 
+        # TODO: Skip this until `predict_and_execute_next_action`?
         # preprocess message if necessary
         tracker = await self.log_message(message, should_save_tracker=False)
 
@@ -587,7 +645,7 @@ class MessageProcessor:
     async def _handle_message_with_tracker(
         self, message: UserMessage, tracker: DialogueStateTracker
     ) -> None:
-
+        # TODO: Changes here
         if message.parse_data:
             parse_data = message.parse_data
         else:
@@ -654,6 +712,7 @@ class MessageProcessor:
             and num_predicted_actions < self.max_number_of_predictions
         ):
             # this actually just calls the policy's method by the same name
+            # TODO: Override this action?
             action, prediction = self.predict_next_action(tracker)
 
             should_predict_another_action = await self._run_action(
