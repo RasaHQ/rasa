@@ -487,5 +487,5 @@ class MessageStreamDataGenerator(tf.keras.utils.Sequence):
     def on_epoch_end(self) -> None:
         """Update the data after every epoch."""
         self.current_message_stream = self.training_data.stream_featurized_messages(
-            "test2", self.shuffle
+            None, self.shuffle
         )

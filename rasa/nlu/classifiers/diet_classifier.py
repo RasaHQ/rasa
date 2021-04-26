@@ -603,7 +603,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         labels_idx_examples = []
         for label_name, idx in label_id_dict.items():
             label_example = self._find_example_for_label(
-                label_name, training_data.stream_featurized_messages("test2"), attribute
+                label_name, training_data.stream_featurized_messages(), attribute
             )
             labels_idx_examples.append((idx, label_example))
 
@@ -824,7 +824,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_attribute=label_attribute,
         )
 
-        featurized_messages_stream = training_data.stream_featurized_messages("test2")
+        featurized_messages_stream = training_data.stream_featurized_messages()
         some_messages = []
         for msg in featurized_messages_stream:
             some_messages.append(msg)

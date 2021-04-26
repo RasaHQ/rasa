@@ -708,7 +708,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         self.initialize(training_data, config, **kwargs)
 
-        msg_pipe = training_data.add_features(None, "test2")
+        msg_pipe = training_data.add_features(self.unique_name)
         try:
             msg = next(msg_pipe)
             while msg:

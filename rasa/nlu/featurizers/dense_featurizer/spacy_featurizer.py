@@ -52,46 +52,62 @@ class SpacyFeaturizer(DenseFeaturizer):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-
-        for example in training_data.training_examples:
-            for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-                self._set_spacy_features(example, attribute)
+        """Process and featurize all messages in the training data."""
+        msg_pipe = training_data.add_features(self.unique_name)
+        try:
+            msg = next(msg_pipe)
+            while msg:
+                features = self.message_to_features(msg)
+                msg = msg_pipe.send(features)
+        except StopIteration:
+            pass
 
     def get_doc(self, message: Message, attribute: Text) -> Any:
+        """Return the spacy doc for the given attribute."""
         return message.get(SPACY_DOCS[attribute])
 
     def process(self, message: Message, **kwargs: Any) -> None:
-        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-            self._set_spacy_features(message, attribute)
+        """Calculate and add features in-place to the message object."""
+        for feature in self.message_to_features(message):
+            message.add_features(feature)
 
-    def _set_spacy_features(self, message: Message, attribute: Text = TEXT) -> None:
-        """Adds the spacy word vectors to the messages features."""
+    def message_to_features(self, message: Message) -> List[Features]:
+        """Calculates features for all relevant attributes of the message."""
+        features = []
+        for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
+            features.extend(self.message_attribute_to_features(message, attribute))
+        return features
+
+    def message_attribute_to_features(
+        self, message: Message, attribute: Text = TEXT
+    ) -> List[Features]:
+        """Calculates features for a specific attribute of the message."""
         doc = self.get_doc(message, attribute)
 
         if doc is None:
-            return
+            return []
 
         # in case an empty spaCy model was used, no vectors are present
         if doc.vocab.vectors_length == 0:
             logger.debug("No features present. You are using an empty spaCy model.")
-            return
+            return []
 
         sequence_features = self._features_for_doc(doc)
         sentence_features = self._calculate_sentence_features(
             sequence_features, self.pooling_operation
         )
 
-        final_sequence_features = Features(
-            sequence_features,
-            FEATURE_TYPE_SEQUENCE,
-            attribute,
-            self.component_config[FEATURIZER_CLASS_ALIAS],
-        )
-        message.add_features(final_sequence_features)
-        final_sentence_features = Features(
-            sentence_features,
-            FEATURE_TYPE_SENTENCE,
-            attribute,
-            self.component_config[FEATURIZER_CLASS_ALIAS],
-        )
-        message.add_features(final_sentence_features)
+        return [
+            Features(
+                sequence_features,
+                FEATURE_TYPE_SEQUENCE,
+                attribute,
+                self.component_config[FEATURIZER_CLASS_ALIAS],
+            ),
+            Features(
+                sentence_features,
+                FEATURE_TYPE_SENTENCE,
+                attribute,
+                self.component_config[FEATURIZER_CLASS_ALIAS],
+            ),
+        ]

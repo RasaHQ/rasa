@@ -66,6 +66,8 @@ class TrainingData:
 
         self._fill_response_phrases()
         self.training_examples_index = self.build_message_index(self.training_examples)
+        # storing these is not multi processing safe, just a short cut for now
+        self._chunk_stages = []
 
     def _read_and_merge_stashed_features(
         self, chunk_path: Text, shuffle: bool = False
@@ -91,7 +93,8 @@ class TrainingData:
 
         Params:
             chunk_path: the directory where the feature chunks are stored
-                if None, use messages from memory
+                if None, use the last chunk path that was added, or if there
+                are none either then just use the plain messages from memory
             shuffle: whether to shuffle the order of messages
             shuffle_buffer_size: how many messages to store and shuffle across
                 chunk boundaries. Should be ideally the size of a couple chunks
@@ -100,16 +103,19 @@ class TrainingData:
         Returns:
             A generator of messages
         """
-        if not chunk_path:
-            yield from self.training_examples
+        if not chunk_path and not self._chunk_stages:
+            source = (msg for msg in self.training_examples)
         else:
+            # use given chunk path or last one
+            chunk_path = chunk_path or self._chunk_stages[-1]
             source = self._read_and_merge_stashed_features(chunk_path, shuffle)
-            if shuffle:
-                yield from rasa.shared.utils.io.shuffle_generator(
-                    source, shuffle_buffer_size
-                )
-            else:
-                yield from source
+
+        if shuffle:
+            yield from rasa.shared.utils.io.shuffle_generator(
+                source, shuffle_buffer_size
+            )
+        else:
+            yield from source
 
     def add_features(
         self, chunk_path_to: Text, chunk_path_from: Optional[Text] = None
@@ -133,6 +139,7 @@ class TrainingData:
                 out.write(
                     (msg.fingerprint_primary_attributes(), msg.features + new_features)
                 )
+        self._chunk_stages.append(chunk_path_to)
 
     @staticmethod
     def build_message_index(messages: List[Message]) -> Dict[Text, Message]:
