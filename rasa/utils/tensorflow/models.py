@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_addons as tfa
 import numpy as np
 import logging
 import random
@@ -18,7 +17,6 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     LABEL,
-    SEQUENCE,
     SENTENCE,
     SEQUENCE_LENGTH,
     RANDOM_SEED,
@@ -26,24 +24,12 @@ from rasa.utils.tensorflow.constants import (
     REGULARIZATION_CONSTANT,
     SIMILARITY_TYPE,
     WEIGHT_SPARSITY,
-    NUM_TRANSFORMER_LAYERS,
-    TRANSFORMER_SIZE,
-    NUM_HEADS,
-    UNIDIRECTIONAL_ENCODER,
-    KEY_RELATIVE_ATTENTION,
-    VALUE_RELATIVE_ATTENTION,
-    MAX_RELATIVE_POSITION,
     NUM_NEG,
     LOSS_TYPE,
     MAX_POS_SIM,
     MAX_NEG_SIM,
     USE_MAX_NEG_SIM,
     NEGATIVE_MARGIN_SCALE,
-    HIDDEN_LAYERS_SIZES,
-    DROP_RATE,
-    DENSE_DIMENSION,
-    CONCAT_DIMENSION,
-    DROP_RATE_ATTENTION,
     SCALE_LOSS,
     LEARNING_RATE,
     CONSTRAIN_SIMILARITIES,
@@ -51,7 +37,6 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow import rasa_layers
-from rasa.utils.tensorflow.transformer import TransformerEncoder
 from rasa.utils.tensorflow.temp_keras_modules import TmpKerasModel
 from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
@@ -287,14 +272,12 @@ class RasaModel(TmpKerasModel):
     def _empty_lists_to_none_in_dict(input_dict: Dict[Text, Any]) -> Dict[Text, Any]:
         """Recursively replaces empty list or np array with None in a dictionary."""
 
-        def _recurse(x):
-            if not isinstance(x, dict):
-                if (isinstance(x, list) or isinstance(x, np.ndarray)) and np.size(
-                    x
-                ) == 0:
-                    return None
-                return x
-            return {k: _recurse(v) for k, v in x.items()}
+        def _recurse(x: Union[Dict[Text, Any], List[Any], np.ndarray]) -> Optional[Any]:
+            if isinstance(x, dict):
+                return {k: _recurse(v) for k, v in x.items()}
+            elif (isinstance(x, list) or isinstance(x, np.ndarray)) and np.size(x) == 0:
+                return None
+            return x
 
         return _recurse(input_dict)
 
