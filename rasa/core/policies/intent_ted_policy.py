@@ -90,6 +90,7 @@ from rasa.shared.nlu.constants import INTENT, TEXT, ENTITIES, ACTION_TEXT, ACTIO
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, SLOTS, ACTIVE_LOOP
 from rasa.shared.core.events import UserUttered
 from rasa.utils.tensorflow.constants import HIDDEN_LAYERS_SIZES, CONCAT_DIMENSION
+from rasa.utils.tensorflow import layers
 
 logger = logging.getLogger(__name__)
 
@@ -269,8 +270,48 @@ class IntentTEDPolicy(TEDPolicy):
             IntentTokenizerSingleStateFeaturizer(), max_history=max_history
         )
 
+    def _create_label_data(
+        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+    ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
+        # encode all label_ids with policies' featurizer
+        state_featurizer: IntentTokenizerSingleStateFeaturizer = self.featurizer.state_featurizer
+        encoded_all_labels = state_featurizer.encode_all_intents(domain, interpreter)
+
+        attribute_data, _ = convert_to_data_format(
+            encoded_all_labels, featurizers=self.config[FEATURIZERS]
+        )
+
+        label_data = RasaModelData()
+        label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
+        label_data.add_lengths(
+            f"{LABEL}_{ACTION_TEXT}",
+            SEQUENCE_LENGTH,
+            f"{LABEL}_{ACTION_TEXT}",
+            SEQUENCE,
+        )
+
+        label_ids = np.arange(domain.num_actions)
+        label_data.add_features(
+            LABEL_KEY,
+            LABEL_SUB_KEY,
+            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+        )
+
+        return label_data, encoded_all_labels
+
     def run_post_training_procedures(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> None:
 
         self.intent_thresholds = self.model.compute_thresholds(model_data, label_ids)
+
+
+class IntentTED(TED):
+    def _prepare_label_classification_layers(self, predictor_attribute: Text) -> None:
+        """Prepares layers & loss for the final label prediction step."""
+        self._prepare_embed_layers(predictor_attribute)
+        self._prepare_embed_layers(LABEL)
+
+        self._prepare_dot_product_loss(
+            LABEL, self.config[SCALE_LOSS], loss_layer=layers.MultiLabelDotProductLoss
+        )

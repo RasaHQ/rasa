@@ -124,7 +124,11 @@ LENGTH = "length"
 INDICES = "indices"
 SENTENCE_FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
 SEQUENCE_FEATURES_TO_ENCODE = [TEXT, ACTION_TEXT, f"{LABEL}_{ACTION_TEXT}"]
-LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
+LABEL_FEATURES_TO_ENCODE = [
+    f"{LABEL}_{ACTION_NAME}",
+    f"{LABEL}_{ACTION_TEXT}",
+    f"{LABEL}_{INTENT}",
+]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
 
@@ -1098,17 +1102,9 @@ class TED(TransformerRasaModel):
                 )
                 all_labels_encoded[key] = attribute_features
 
-        if (
-            all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None
-            and all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_NAME}") is not None
-        ):
-            x = all_labels_encoded.pop(
-                f"{LABEL_KEY}_{ACTION_TEXT}"
-            ) + all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
-        elif all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None:
-            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}")
-        else:
-            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
+        x = self._collect_label_attribute_encodings(
+            all_labels_encoded, LABEL_FEATURES_TO_ENCODE
+        )
 
         # additional sequence axis is artifact of our RasaModelData creation
         # TODO check whether this should be solved in data creation
@@ -1117,6 +1113,16 @@ class TED(TransformerRasaModel):
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
 
         return all_label_ids, all_labels_embed
+
+    @staticmethod
+    def _collect_label_attribute_encodings(
+        all_labels_encoded: Dict[Text, tf.Tensor], label_attributes: List[Text]
+    ):
+        x = []
+        for attribute in label_attributes:
+            if all_labels_encoded.get(attribute) is not None:
+                x += all_labels_encoded.pop(attribute)
+        return x
 
     def _embed_dialogue(
         self,
