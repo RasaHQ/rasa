@@ -320,6 +320,7 @@ async def test_process_gives_diagnostic_data(
     # The `attention_weights` key should exist, regardless of there being a transformer
     assert "attention_weights" in diagnostic_data[name]
     # By default, ResponseSelector has `number_of_transformer_layers = 0`
+    # in which case the attention weights should be None.
     assert diagnostic_data[name].get("attention_weights") is None
 
 
