@@ -420,34 +420,49 @@ domain files:
 ## rasa data augment nlu
 
 :::caution
-
-This is an experimental feature.
+This feature is currently experimental and might change or be removed in the future. Share your feedback on it in the
+[forum](https://forum.rasa.com) to help us making this feature ready for production.
 :::
 
 
-You can perform data augmentation by first [generating paraphrases](https://github.com/RasaHQ/paraphraser) and subsequently running the following command in order to get data suggestions that can be added to the training data:
+You can perform data augmentation by first [generating paraphrases](https://github.com/RasaHQ/paraphraser) and
+subsequently running the following command in order to get data suggestions that can be added to the training data:
 
 ```bash
 rasa data augment nlu
 ```
 
-This will automatically choose paraphrases and intents to augment from the provided data and train/test two augmented NLU models. You can specify the training data, the evaluation data, the paraphrases, an existing NLU classification report (without augmentation), the model config, and the output directory for storing the augmentation summaries and models using the following arguments:
+This will automatically choose paraphrases and intents to augment from the provided data and train/test two augmented
+NLU models. You can specify the training data, the evaluation data, the paraphrases, an existing NLU classification
+report (without augmentation), the model config, and the output directory for storing the augmentation summaries and
+models using the following arguments:
 
 ```text [rasa data augment nlu --help]
 ```
 
-Data augmentation is one strategy that can help produce more training data for intents that currently have little data, are frequently confused, or exhibit low performance in general. Our data augmentation strategy works by feeding the generated paraphrases and then evaluating whether adding a subset of these can improve intent classification performance.
+Data augmentation is one strategy that can help produce more training data for intents that currently have little data,
+are frequently confused, or exhibit low performance in general. Our data augmentation strategy works by feeding the
+generated paraphrases and then evaluating whether adding a subset of these can improve intent classification
+performance.
 
-We are evaluating two strategies for selecting paraphrases, firstly by simply randomly choosing a subset of paraphrases, and secondly, by maximising vocabulary expansion, i.e. preferring paraphrases that add new words to a given intent.
+We are evaluating two strategies for selecting paraphrases, firstly by simply randomly choosing a subset of paraphrases,
+and secondly, by maximising vocabulary expansion, i.e. preferring paraphrases that add new words to a given intent.
 
-The output of each strategy will be stored in individual directories inside the given `output_dir`. The output of the strategy that maximises vocabulary expansion will be inside `augmentation_max_vocab_expansion` and the output based on random sampling will be inside `augmentation_random`. The output includes intent classification reports that highlight the performance changes for each indiviual intent, the augmented training files, the trained models, and plots that highlight the changes in precision, recall and F1-score.
+The output of each strategy will be stored in individual directories inside the given `output_dir`. The output of the
+strategy that maximises vocabulary expansion will be inside `augmentation_max_vocab_expansion` and the output based on
+random sampling will be inside `augmentation_random`. The output includes intent classification reports that highlight
+the performance changes for each indiviual intent, the augmented training files, the trained models, and plots that
+highlight the changes in precision, recall and F1-score.
 
-The paraphrases should be pre-processed and supplied with similarity scores in order to ensure that noise is minimised (see the [paraphraser repository](https://github.com/RasaHQ/paraphraser) for more details).
+The paraphrases should be pre-processed and supplied with similarity scores in order to ensure that noise is minimised
+(see the [paraphraser repository](https://github.com/RasaHQ/paraphraser) for more details).
 
 :::note
-Usage of `rasa data augment nlu` requires a set of generated paraphrases from [https://github.com/RasaHQ/paraphraser](https://github.com/RasaHQ/paraphraser).
+Usage of `rasa data augment nlu` requires a set of generated paraphrases from
+[https://github.com/RasaHQ/paraphraser](https://github.com/RasaHQ/paraphraser).
 
-Alternatively, you can use paraphrases from any other resource for data augmentation as long as you make sure they are in the required format as in the example below:
+Alternatively, you can use paraphrases from any other resource for data augmentation as long as you make sure they are
+in the required format as in the example below:
 
 ```yaml
 nlu:
@@ -463,21 +478,29 @@ nlu:
        - 0.93
 ```
 
-The scores should represent the similarity between the paraphrase and the original sentence. You can calculate similarity scores by e.g. taking the cosine similarity of the encoded sentence vector of the original phrase and the vector respresentations of your paraphrases.
+The scores should represent the similarity between the paraphrase and the original sentence. You can calculate
+similarity scores by e.g. taking the cosine similarity of the encoded sentence vector of the original phrase and the
+vector respresentations of your paraphrases.
 
 :::
 
 :::note
-Data augmentation does **not** affect entity recognition performance. We furthermore recommend to either remove entity annotations during NLU training or to disable the enitity recognition option in the `DIETClassifier` config.
+Data augmentation does **not** affect entity recognition performance. We furthermore recommend to either remove entity
+annotations during NLU training or to disable the enitity recognition option in the `DIETClassifier` config.
 :::
 
 :::caution check results
-While data augmentation can substantially improve performance for some intents (and therefore also overall NLU performance), it can also degrade the performance of other intents. We therefore recommend you carefully check the generated reports.
+While data augmentation can substantially improve performance for some intents (and therefore also overall NLU
+performance), it can also degrade the performance of other intents. We therefore recommend you carefully check the
+generated reports.
 
-Make sure you the training examples you feed into the paraphraser do not contain entity annotations - i.e. make sure to remove them before generating paraphrases.
+Make sure you the training examples you feed into the paraphraser do not contain entity annotations - i.e. make sure to
+remove them before generating paraphrases.
 :::
 
-You need to specify additional arguments for `rasa data augment nlu`, e.g. the location of your generated paraphrases, your training and evaluation data, as well as an `intent_report.json` from a trained model (without data augmentation) and its config file:
+You need to specify additional arguments for `rasa data augment nlu`, e.g. the location of your generated paraphrases,
+your training and evaluation data, as well as an `intent_report.json` from a trained model (without data augmentation)
+and its config file:
 
 ```bash
 rasa data augment nlu --help
