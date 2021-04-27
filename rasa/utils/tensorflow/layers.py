@@ -1009,54 +1009,112 @@ class DotProductLoss(tf.keras.layers.Layer):
 class MultiLabelDotProductLoss(DotProductLoss):
     """Same as DotProductLoss but adapted for multiple labels for a single data point."""
 
-    def _get_neg_values(self, tensor, neg_ids):
+    def call(
+        self,
+        batch_inputs_embed: tf.Tensor,
+        batch_labels_embed: tf.Tensor,
+        batch_label_ids: tf.Tensor,
+        all_labels_embed: tf.Tensor,
+        all_label_ids: tf.Tensor,
+        mask: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Calculate loss and accuracy.
 
-        tensor_expanded = tf.tile(
-            tf.expand_dims(self._make_flat(tensor), 0), (tf.shape(tensor)[0], 1, 1)
+        Args:
+            batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized trackers)
+            batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents for IntentTED)
+            batch_label_ids: Batch label indices (e.g. indices of the intents)
+            all_labels_embed: Embeddings for all labels in the domain
+            all_label_ids: Indices for all labels in the domain
+            mask: Optional sequence mask, which contains `1` for inputs and `0` for padding.
+
+        Returns:
+            loss: Total loss (based on StarSpace http://arxiv.org/abs/1709.03856)
+            accuracy: Training accuracy
+        """
+        (
+            pos_inputs_embed,
+            pos_labels_embed,
+            candidate_labels_embed,
+            pos_neg_labels,
+        ) = self._sample_negatives(
+            batch_inputs_embed,
+            batch_labels_embed,
+            batch_label_ids,
+            all_labels_embed,
+            all_label_ids,
         )
-        neg_tensor = tf.gather(tensor_expanded, neg_ids, batch_dims=1)
-        neg_tensor = tf.expand_dims(neg_tensor, axis=1)
 
-        return neg_tensor
+        # Calculate similarities
+        sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
+        sim_candidate_il = self.sim(pos_inputs_embed, candidate_labels_embed, mask)
+
+        accuracy = self._calc_accuracy(sim_pos, sim_candidate_il, pos_neg_labels)
+
+        loss = self._loss_sigmoid(sim_pos, sim_candidate_il, pos_neg_labels, mask,)
+
+        return loss, accuracy
 
     def _sample_negatives(
         self,
-        inputs_embed: tf.Tensor,
-        labels_embed: tf.Tensor,
-        label_ids: tf.Tensor,
+        batch_inputs_embed: tf.Tensor,
+        batch_labels_embed: tf.Tensor,
+        batch_labels_ids: tf.Tensor,
         all_labels_embed: tf.Tensor,
         all_label_ids: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
-        """Sample negative examples."""
+        """Sample negative examples.
+        
+        Args:
+            batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized trackers)
+            batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents for IntentTED)
+            batch_labels_ids: Batch label indices (e.g. indices of the intents)
+            all_labels_embed: Embeddings for all labels in the domain
+            all_label_ids: Indices for all labels in the domain
 
+        Returns:
+            pos_inputs_embed: Embeddings of the batch inputs
+            pos_labels_embed: One example of the embedding of a positive label
+            candidate_labels_embed: More examples of embeddings of labels, some positive some negative
+            pos_neg_labels: Indicator for which candidates are positives and which are negatives
+        """
         pos_inputs_embed = tf.expand_dims(
-            inputs_embed, axis=-2, name="expand_pos_input"
+            batch_inputs_embed, axis=-2, name="expand_pos_input"
         )
-        # Take only the first label as positive, others may or may not be picked during random sampling
+
+        # We want to guarantee that we return at least one positive example. All labels
+        # in `batch_labels_embed` are positive examples, but their number can be different
+        # in each example. So we take the first positive one here as our guarantee, and
+        # we may or may not capture more positive examples with the candidate sampling below.
         pos_labels_embed = tf.expand_dims(
-            tf.expand_dims(labels_embed[:, 0, ...], axis=-2),
+            tf.expand_dims(batch_labels_embed[:, 0, ...], axis=-2),
             axis=1,
             name="expand_pos_labels",
         )
 
-        # get negative batch indices from batch itself.
-        neg_ids = self._get_neg_indices(
-            tf.shape(inputs_embed)[0], tf.shape(inputs_embed)[0]
+        # Pick random examples from the batch
+        candidate_ids = self._get_candidate_indices(
+            tf.shape(inputs_embed)[0], tf.shape(batch_inputs_embed)[0]
         )
 
-        # Get the label embeddings corresponding to negative indices sampled earlier
-        neg_labels_embed = self._get_neg_values(labels_embed[:, 0, ...], neg_ids)
+        # Get the label embeddings and ids corresponding to candidate indices
+        candidate_labels_embed = self._get_candidate_values(
+            batch_labels_embed[:, 0, ...], candidate_ids
+        )
+        candidate_labels_ids = self._get_candidate_values(
+            batch_labels_ids[:, 0, ...], candidate_ids
+        )
 
-        # Get the label ids corresponding to negative indices sampled earlier
-        neg_labels_ids = self._get_neg_values(label_ids[:, 0, ...], neg_ids)
-
+        # Determine how many distinct labels exist (highest label index)
         max_label_id = tf.cast(tf.math.reduce_max(all_label_ids), dtype=tf.int32)
         # dimension size is 1 indexed and hence 1 more than maximum label id
         depth_needed = max_label_id + 1
 
         # Convert the positive label ids to their one_hot representation.
         batch_labels_one_hot = tf.one_hot(
-            tf.cast(tf.squeeze(label_ids, axis=-1), tf.int32), depth_needed, axis=-1
+            tf.cast(tf.squeeze(batch_labels_ids, axis=-1), tf.int32),
+            depth_needed,
+            axis=-1,
         )  # bs x num_pos_labels(varied) x depth_needed
 
         # Collapse the extra dimension and convert to a multi-hot representation
@@ -1071,48 +1129,66 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )  # bs x num_pos_labels
 
         # Remove extra dimensions for gather
-        neg_labels_ids = tf.squeeze(tf.squeeze(neg_labels_ids, 1), -1)
+        candidate_labels_ids = tf.squeeze(tf.squeeze(candidate_labels_ids, 1), -1)
 
         # Collect the labels corresponding to negative
         # label ids sampled for each data point of the batch earlier.
         pos_neg_labels = tf.gather(
             batch_labels_multi_hot,
-            tf.cast(neg_labels_ids, tf.int32),
+            tf.cast(candidate_labels_ids, tf.int32),
             batch_dims=1,
             name="gather_labels",
         )
 
         pos_neg_labels = tf.cast(pos_neg_labels, tf.float32)
 
-        return pos_inputs_embed, pos_labels_embed, neg_labels_embed, pos_neg_labels
+        return (
+            pos_inputs_embed,
+            pos_labels_embed,
+            candidate_labels_embed,
+            pos_neg_labels,
+        )
 
-    def _get_neg_indices(self, target_size, total_candidates):
+    def _get_candidate_indices(self, target_size, total_candidates):
 
         neg_ids = self._random_indices(target_size, total_candidates)
 
         return neg_ids
 
+    def _get_candidate_values(self, tensor, candidate_ids):
+        tensor_expanded = tf.tile(
+            tf.expand_dims(self._make_flat(tensor), 0), (tf.shape(tensor)[0], 1, 1)
+        )
+        candidate_values = tf.gather(tensor_expanded, candidate_ids, batch_dims=1)
+        candidate_values = tf.expand_dims(candidate_values, axis=1)
+
+        return candidate_values
+
     def _loss_sigmoid(
         self,
         sim_pos: tf.Tensor,
-        sim_neg_il: tf.Tensor,
+        sim_candidates_il: tf.Tensor,
         pos_neg_labels: tf.Tensor,
         # sim_neg_ll: tf.Tensor,
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
         """Define sigmoid loss."""
-
-        logits = tf.concat([sim_pos, sim_neg_il], axis=-1, name="logit_concat")
+        # Concatenate the one guaranteed positive example with the candidate example,
+        # some of which are positives and others are negatives. Which are which
+        # is stored in `pos_neg_labels`.
+        logits = tf.concat([sim_pos, sim_candidates_il], axis=-1, name="logit_concat")
         logits = tf.squeeze(logits, 1)
 
-        # create label_ids for sigmoid
-        pos_label_ids = tf.ones_like(sim_pos, tf.float32)
-        pos_label_ids = tf.squeeze(pos_label_ids, -1)
-
+        # Create label_ids for sigmoid
+        pos_label_ids = tf.squeeze(tf.ones_like(sim_pos, tf.float32), -1)
         label_ids = tf.concat(
             [pos_label_ids, pos_neg_labels], axis=-1, name="gt_concat"
         )
 
+        # Compute the sigmoid cross-entropy loss. When minimized, the embeddings
+        # for the two classes (positive and negative) are pushed away from each
+        # other in the embedding space, while it is allowed that any input embedding
+        # (featurized tracker) corresponds to more than one label (intent).
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label_ids, logits=logits)
 
         if self.scale_loss:
@@ -1129,88 +1205,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
             else:
                 loss = tf.reduce_mean(loss, axis=-1)
 
-        # average the loss over the batch
+        # Average the loss over the batch
         return tf.reduce_mean(loss)
-
-    def _train_sim(
-        self,
-        pos_inputs_embed: tf.Tensor,
-        pos_labels_embed: tf.Tensor,
-        neg_labels_embed: tf.Tensor,
-        # bad_neg_labels: tf.Tensor,
-        mask: Optional[tf.Tensor],
-    ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Define similarity."""
-
-        # calculate similarity with several
-        # embedded intents for the loss
-        # neg_inf = tf.constant(-1e9)
-
-        sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
-        sim_neg_il = self.sim(pos_inputs_embed, neg_labels_embed, mask)
-
-        # TODO: Check if adding an extra term for similarity
-        #  between pos and negative labels makes sense. It may not
-        #  because as opposed to action labels, intent labels are
-        #  not completely independent of each other as two intents
-        #  can be the positive label for the exact same input.
-        # sim_neg_ll = (
-        #     self.sim(pos_labels_embed, neg_labels_embed, mask) + neg_inf * bad_neg_labels
-        # )
-
-        return sim_pos, sim_neg_il  # , sim_neg_ll
-
-    def call(
-        self,
-        batch_inputs_embed: tf.Tensor,
-        batch_labels_embed: tf.Tensor,
-        batch_label_ids: tf.Tensor,
-        all_labels_embed: tf.Tensor,
-        all_label_ids: tf.Tensor,
-        mask: Optional[tf.Tensor] = None,
-    ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Calculate loss and accuracy.
-        Arguments:
-            batch_inputs_embed: Embedding tensor for the batch inputs.
-            batch_labels_embed: Embedding tensor for the batch labels.
-            batch_label_ids: Tensor representing batch labels.
-            all_labels_embed: Embedding tensor for the all labels.
-            all_label_ids: Tensor representing all labels.
-            mask: Optional tensor representing sequence mask,
-                contains `1` for inputs and `0` for padding.
-        Returns:
-            loss: Total loss.
-            accuracy: Training accuracy.
-        """
-        (
-            pos_inputs_embed,
-            pos_labels_embed,
-            neg_labels_embed,
-            pos_neg_labels,
-        ) = self._sample_negatives(
-            batch_inputs_embed,
-            batch_labels_embed,
-            batch_label_ids,
-            all_labels_embed,
-            all_label_ids,
-        )
-
-        # calculate similarities
-        sim_pos, sim_neg_il = self._train_sim(
-            pos_inputs_embed, pos_labels_embed, neg_labels_embed, mask
-        )
-
-        accuracy = self._calc_accuracy(sim_pos, sim_neg_il, pos_neg_labels)
-
-        loss = self._loss_sigmoid(
-            sim_pos,
-            sim_neg_il,
-            pos_neg_labels,
-            # , sim_neg_ll
-            mask,
-        )
-
-        return loss, accuracy
 
     @staticmethod
     def _calc_accuracy(
