@@ -185,7 +185,7 @@ Passing multiple entities is also possible with:
 :::note bypass nlu with buttons
 It's common to use buttons as a shortcut to bypass the machine-learning-based NLU interpreter
 
-When interacting with the assistant through the shell or Rasa X, messages starting with `/` are sent straight to the
+Messages starting with `/` are sent straight to the
 `RegexInterpreter`, which expects NLU input in a shortened `/intent{entities}` format.
 In the example above, if the user clicks a button, the user input
 will be directly classified as either the `mood_great` or `mood_sad` intent.
