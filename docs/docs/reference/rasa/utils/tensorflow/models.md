@@ -132,7 +132,7 @@ Predicts the output for the given batch.
 #### rasa\_predict
 
 ```python
- | rasa_predict(model_data: RasaModelData) -> Dict[Text, tf.Tensor]
+ | rasa_predict(model_data: RasaModelData) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
 ```
 
 Custom prediction method that builds tf graph on the first call.
@@ -144,7 +144,7 @@ Custom prediction method that builds tf graph on the first call.
 
 **Returns**:
 
-  Prediction output.
+  Prediction output, including diagnostic data.
 
 #### save
 
