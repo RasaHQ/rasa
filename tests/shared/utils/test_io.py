@@ -9,7 +9,12 @@ from typing import Callable, Text, List, Set, Any, Dict
 import pytest
 
 import rasa.shared
-from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
+from rasa.shared.exceptions import (
+    FileIOException,
+    FileNotFoundException,
+    RasaException,
+    GeneratorException,
+)
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
@@ -575,3 +580,30 @@ def test_shuffle_stream_buffer_sections():
     simple_generator = (i for i in range(20))
     somewhat_shuffled = rasa.shared.utils.io.shuffle_generator(simple_generator, 5)
     assert set(range(5)) == set([el for el in somewhat_shuffled][:5])
+
+
+def test_split_generator():
+    simple_generator = (i for i in range(20))
+    (
+        simple_generator_split_1,
+        simple_generator_split_2,
+    ) = rasa.shared.utils.io.split_generator(simple_generator)
+    combined_generator = zip(simple_generator_split_1, simple_generator_split_2)
+    consumed = [t for t in combined_generator]
+    assert len(consumed) == len(range(20))
+    assert all([t[0] == t[1] for t in consumed])
+
+
+def test_copy_generator_advancement():
+    simple_generator = (i for i in range(20))
+    (
+        simple_generator_split_1,
+        simple_generator_split_2,
+    ) = rasa.shared.utils.io.split_generator(simple_generator)
+
+    assert next(simple_generator_split_1) == 0
+    assert next(simple_generator_split_2) == 0
+
+    assert next(simple_generator_split_1) == 1
+    with pytest.raises(GeneratorException):
+        next(simple_generator_split_1)

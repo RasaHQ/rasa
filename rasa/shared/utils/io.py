@@ -8,7 +8,18 @@ import os
 from pathlib import Path
 import re
 import random
-from typing import Any, Dict, List, Optional, Text, Type, Union, TypeVar, Generator
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Type,
+    Union,
+    TypeVar,
+    Generator,
+    Tuple,
+)
 import warnings
 
 from ruamel import yaml as yaml
@@ -27,6 +38,7 @@ from rasa.shared.exceptions import (
     FileNotFoundException,
     YamlSyntaxException,
     RasaException,
+    GeneratorException,
 )
 import rasa.shared.utils.validation
 
@@ -647,3 +659,33 @@ def shuffle_generator(
     random.shuffle(shuffle_buffer)
     while shuffle_buffer:
         yield shuffle_buffer.pop()
+
+
+def split_generator(
+    generator: Generator[T, None, None], n: int = 1
+) -> Tuple[Generator[T, None, None], Generator[T, None, None]]:
+    """Splits a generator into two which can be used independently n steps."""
+    buffer_a = []
+    buffer_b = []
+
+    def gen_split(my_buffer: List[T], other_buffer: List[T]):
+        while True:
+            if my_buffer:
+                yield my_buffer.pop(0)
+            else:
+                try:
+                    el = next(generator)
+                except StopIteration:
+                    break
+                if len(other_buffer) + 1 > n:
+                    raise GeneratorException(
+                        "You can't advance split generators"
+                        "more than the buffer you have "
+                        "allocated. This defeats the purpose"
+                        "of splitting generators."
+                    )
+                else:
+                    other_buffer.append(el)
+                    yield el
+
+    return gen_split(buffer_a, buffer_b), gen_split(buffer_b, buffer_a)

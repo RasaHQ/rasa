@@ -558,21 +558,6 @@ class CRFEntityExtractor(EntityExtractor):
 
         return tags
 
-    def _message_to_features(
-        self, message: Message, tag_name: Text
-    ) -> List[Dict[Text, Any]]:
-        """Preprocesses messages and turns it into crf feature format."""
-        include_tag_features = tag_name != ENTITY_ATTRIBUTE_TYPE
-        cleaned_message = self.remove_foreign_entity_annotations(message)
-        crf_tokens = self._convert_to_crf_tokens(cleaned_message)
-        return self._crf_tokens_to_features(crf_tokens, include_tag_features)
-
-    def _message_to_tags(self, message: Message, tag_name: Text) -> List[Text]:
-        """Preprocesses messages and turns them into crf tag format."""
-        cleaned_message = self.remove_foreign_entity_annotations(message)
-        crf_tokens = self._convert_to_crf_tokens(cleaned_message)
-        return self._crf_tokens_to_tags(crf_tokens, tag_name)
-
     def _train_model(self, training_data: TrainingData) -> None:
         """Train the crf tagger based on the training data."""
         import sklearn_crfsuite
@@ -582,14 +567,28 @@ class CRFEntityExtractor(EntityExtractor):
         for tag_name in self.crf_order:
             logger.debug(f"Training CRF for '{tag_name}'.")
 
+            cleaned_messages = (
+                self.remove_foreign_entity_annotations(message)
+                for message in training_data.stream_featurized_messages()
+            )
+
+            crf_tokens = (
+                self._convert_to_crf_tokens(message) for message in cleaned_messages
+            )
+
+            crf_tokens_1, crf_tokens_2 = rasa.shared.utils.io.split_generator(
+                crf_tokens
+            )
+
+            include_tag_features = tag_name != ENTITY_ATTRIBUTE_TYPE
             # this could be optimized if necessary
             X_train = (
-                self._message_to_features(msg, tag_name)
-                for msg in training_data.stream_featurized_messages()
+                self._crf_tokens_to_features(crf_tokens, include_tag_features)
+                for crf_tokens in crf_tokens_1
             )
             y_train = (
-                self._message_to_tags(msg, tag_name)
-                for msg in training_data.stream_featurized_messages()
+                self._crf_tokens_to_tags(crf_tokens, tag_name)
+                for crf_tokens in crf_tokens_2
             )
 
             entity_tagger = sklearn_crfsuite.CRF(
