@@ -40,6 +40,7 @@ from rasa.nlu.constants import (
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
+    INTENT_REPORT_FILE_NAME,
     INTENT_RESPONSE_KEY,
     ENTITIES,
     EXTRACTOR,
@@ -589,7 +590,7 @@ def evaluate_intents(
     if output_directory:
         _dump_report(
             output_directory=output_directory,
-            filename="intent_report.json",
+            filename=INTENT_REPORT_FILE_NAME,
             report=intent_report["report"],
         )
 
