@@ -268,17 +268,21 @@ class RasaModel(TmpKerasModel):
         return outputs
 
     def run_inference(
-        self, data_generator: RasaBatchDataGenerator
+        self, model_data: RasaModelData, batch_size: Union[int, List[int]] = 1
     ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
-        """
+        """Implements bulk inferencing through the model.
 
         Args:
-            data_generator:
+            model_data: Input data to be fed to the model.
+            batch_size: Size of batches that the generator should create.
 
         Returns:
-
+            Model outputs corresponding to the inputs fed.
         """
         outputs = {}
+        (data_generator, _,) = rasa.utils.train_utils.create_data_generators(
+            model_data=model_data, batch_sizes=batch_size, epochs=1, shuffle=False,
+        )
         data_iterator = iter(data_generator)
         while True:
             try:
@@ -380,10 +384,7 @@ class RasaModel(TmpKerasModel):
         # predict on one data example to speed up prediction during inference
         # the first prediction always takes a bit longer to trace tf function
         if not finetune_mode and predict_data_example:
-            (data_generator, _,) = rasa.utils.train_utils.create_data_generators(
-                model_data=predict_data_example, batch_sizes=1, epochs=1, shuffle=False
-            )
-            model.run_inference(data_generator)
+            model.run_inference(predict_data_example)
 
         logger.debug("Finished loading the model.")
         return model

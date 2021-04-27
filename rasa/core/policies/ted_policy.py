@@ -680,13 +680,7 @@ class TEDPolicy(Policy):
             tracker, domain, interpreter
         )
         model_data = self._create_model_data(tracker_state_features)
-        (data_generator, _,) = rasa.utils.train_utils.create_data_generators(
-            model_data=model_data,
-            batch_sizes=self.config[BATCH_SIZES],
-            epochs=1,
-            shuffle=False,
-        )
-        outputs = self.model.run_inference(data_generator)
+        outputs = self.model.run_inference(model_data)
 
         # take the last prediction in the sequence
         similarities = outputs["similarities"][:, -1, :]
