@@ -48,6 +48,25 @@ from tensorflow.python.keras.utils import tf_utils
 logger = logging.getLogger(__name__)
 
 
+def _merge_batch_outputs(
+    all_outputs: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
+    batch_output: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
+) -> Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]]:
+    if not all_outputs:
+        return batch_output
+    for key, val in batch_output.items():
+        if isinstance(val, np.ndarray):
+            all_outputs[key] = np.concatenate(
+                [all_outputs[key], batch_output[key]], axis=0
+            )
+
+        elif isinstance(val, dict):
+            # recurse and merge the inner dict first
+            all_outputs[key] = _merge_batch_outputs(all_outputs[key], val)
+
+    return all_outputs
+
+
 # noinspection PyMethodOverriding
 class RasaModel(TmpKerasModel):
     """Abstract custom Keras model.
@@ -289,29 +308,11 @@ class RasaModel(TmpKerasModel):
                 # Only want x, since y is always None out of our data generators
                 batch_in = next(data_iterator)[0]
                 batch_out = self.rasa_predict(batch_in)
-                outputs = self._merge_batch_outputs(outputs, batch_out)
+                outputs = _merge_batch_outputs(outputs, batch_out)
             except StopIteration:
                 # Generator ran out of batches, time to finish inferencing
                 break
         return outputs
-
-    def _merge_batch_outputs(
-        self,
-        all_outputs: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
-        batch_output: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
-    ) -> Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]]:
-        if not all_outputs:
-            return batch_output
-        for key, val in batch_output.items():
-            if isinstance(val, np.ndarray):
-                all_outputs[key] = np.concatenate(
-                    [all_outputs[key], batch_output[key]], axis=0
-                )
-            elif isinstance(val, dict):
-                # recurse and merge the inner dict first
-                all_outputs[key] = self._merge_batch_outputs(all_outputs[key], val)
-
-        return batch_output
 
     @staticmethod
     def _empty_lists_to_none_in_dict(input_dict: Dict[Text, Any]) -> Dict[Text, Any]:
