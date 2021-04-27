@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 from rasa.shared.nlu.state_machine.state_machine_models import (
     Intent,
@@ -24,6 +24,8 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import CategoricalSlot, TextSlot, AnySlot
 from rasa.shared.core.slots import Slot as RasaSlot
 from rasa.shared.utils.io import dump_obj_as_yaml_to_string, write_text_file
+
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
 
 # class SpaceEntity(Enum, Entity):
 #     person = "PERSON"
@@ -194,7 +196,10 @@ def convert_to_rasa_slot(slot: Slot) -> RasaSlot:
 
 
 def convert_intent_to_nlu(intent: Intent) -> Dict[str, Any]:
-    return {"intent": intent.name, "examples": intent.examples}
+    return {
+        "intent": intent.name,
+        "examples": "\n".join([f"- {example}" for example in intent.examples]),
+    }
 
 
 # Write NLU
@@ -228,6 +233,8 @@ def writeNLU(state: StateMachineState, domain_filename: str, nlu_filename: str):
     }
 
     nlu_data_yaml = dump_obj_as_yaml_to_string(nlu_data, should_preserve_key_order=True)
+
+    RasaYAMLReader().validate(nlu_data_yaml)
 
     write_text_file(nlu_data_yaml, nlu_filename)
 

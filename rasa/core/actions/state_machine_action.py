@@ -238,7 +238,11 @@ class StateMachineAction(LoopAction):
         ]
 
         valid_responses_action_names = [
-            valid_response.actions[0].name for valid_response in valid_responses
+            valid_response.actions[
+                random.randint(0, len(valid_response.actions) - 1)
+            ].name
+            for valid_response in valid_responses
+            if len(valid_response.actions) > 0
         ]
 
         valid_responses_actions = [
