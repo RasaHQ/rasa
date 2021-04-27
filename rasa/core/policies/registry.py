@@ -19,3 +19,5 @@ from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy  # noqa
 from rasa.core.policies.mapping_policy import MappingPolicy  # noqa: F401
 
 from rasa.core.policies.rule_policy import RulePolicy  # noqa: F401
+
+from rasa.core.policies.state_machine_policy import StateMachinePolicy  # noqa: F401
