@@ -1,15 +1,16 @@
 from pathlib import Path
+from collections import defaultdict
 
 import jsonpickle
 import logging
 
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Union, Any
+from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator
 import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.events import ActionExecuted, UserUttered, UserUtteranceReverted
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     is_prev_action_listen_in_state,
@@ -494,6 +495,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the max_history with -1.
     """
 
+    LABEL_NAME = "action"
+
+
     def __init__(
         self,
         state_featurizer: Optional[SingleStateFeaturizer] = None,
@@ -526,16 +530,26 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         return states[-slice_length:]
 
+
     @staticmethod
     def _hash_example(
-        states: List[State], action: Text, tracker: DialogueStateTracker
+        tracker: DialogueStateTracker,
+        states: List[State],
+        labels: Optional[List[Text]]=None,
     ) -> int:
-        """Hash states for efficient deduplication."""
+        """Hash states (and optionally label) for efficient deduplication.
+        If labels is None, labels is not hashed.
+        """
+
         frozen_states = tuple(
             s if s is None else tracker.freeze_current_state(s) for s in states
         )
-        frozen_actions = (action,)
-        return hash((frozen_states, frozen_actions))
+        if labels != None:
+            frozen_labels = tuple(labels)
+            return hash((frozen_states, frozen_labels))
+        else:
+            return hash(frozen_states)
+
 
     def training_states_actions_and_entities(
         self,
@@ -543,7 +557,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         domain: Domain,
         omit_unset_slots: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of states, actions and entity data.
+        """Transforms list of trackers to lists of states, labels and entity data.
 
         Args:
             trackers: The trackers to transform
@@ -551,20 +565,23 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             omit_unset_slots: If `True` do not include the initial values of slots.
 
         Returns:
-            A tuple of list of states, list of actions and list of entity data.
+            A tuple of list of states, list of labels and list of entity data.
         """
-        trackers_as_states = []
-        trackers_as_actions = []
-        trackers_as_entities = []
 
-        # from multiple states that create equal featurizations
-        # we only need to keep one.
-        hashed_examples = set()
+        self.setup_example_iterator()
+
+        example_states = []
+        example_labels = []
+        example_entities = []
 
         logger.debug(
-            "Creating states and action examples from "
+            "Creating states and {} label examples from "
             "collected trackers (by {}({}))..."
-            "".format(type(self).__name__, type(self.state_featurizer).__name__)
+            "".format(
+                self.LABEL_NAME,
+                type(self).__name__, 
+                type(self.state_featurizer).__name__
+            )
         )
         pbar = tqdm(
             trackers,
@@ -572,56 +589,115 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             disable=rasa.shared.utils.io.is_logging_disabled(),
         )
         for tracker in pbar:
-            states = self._create_states(
-                tracker, domain, omit_unset_slots=omit_unset_slots
-            )
 
-            states_length_for_action = 0
-            entity_data = {}
-            for event in tracker.applied_events():
-                if isinstance(event, UserUttered):
-                    entity_data = self._entity_data(event)
+            for states, label, entities in self.next_example(
+                tracker,
+                domain,
+                omit_unset_slots=omit_unset_slots
+            ):
 
-                if not isinstance(event, ActionExecuted):
+                if self.filter_example(tracker, states, label):
                     continue
 
-                states_length_for_action += 1
+                example_states.append(states)
+                example_labels.append(label)
+                example_entities.append(entities)
+
+                pbar.set_postfix({
+                    f"# {self.LABEL_NAME}": f"{len(example_labels):d}"
+                })
+
+        self.cleanup_example_iterator(
+            example_states, example_labels, example_entities
+        )
+
+        logger.debug(f"Created {len(example_states)} {self.LABEL_NAME} examples.")
+
+        return example_states, example_labels, example_entities
+
+
+    def setup_example_iterator(self) -> None:
+        """Create set for filtering out duplicated training examples."""
+        if self.remove_duplicates:
+            self.hashed_examples = set()
+
+
+    def next_example(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        omit_unset_slots: bool = False
+    ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
+        """Create an iterator over the training examples that will be created
+        from the provided tracker.
+
+        Returns:
+            An iterator over state, labels, entity tag tuples
+        """
+
+        tracker_states = self._create_states(
+            tracker, domain, omit_unset_slots=omit_unset_slots
+        )
+
+        label_index = 0
+        entity_data = {}
+        for event in tracker.applied_events():
+            if isinstance(event, UserUttered):
+                entity_data = self._entity_data(event)
+
+            elif isinstance(event, ActionExecuted):
+
+                label_index += 1
 
                 # use only actions which can be predicted at a stories start
                 if event.unpredictable:
                     continue
 
                 sliced_states = self.slice_state_history(
-                    states[:states_length_for_action], self.max_history
+                    tracker_states[:label_index], self.max_history
                 )
-                if self.remove_duplicates:
-                    hashed = self._hash_example(
-                        sliced_states, event.action_name or event.action_text, tracker
-                    )
+                label = [event.action_name or event.action_text]
+                entities = [entity_data]
 
-                    # only continue with tracker_states that created a
-                    # hashed_featurization we haven't observed
-                    if hashed not in hashed_examples:
-                        hashed_examples.add(hashed)
-                        trackers_as_states.append(sliced_states)
-                        trackers_as_actions.append(
-                            [event.action_name or event.action_text]
-                        )
-                        trackers_as_entities.append([entity_data])
-                else:
-                    trackers_as_states.append(sliced_states)
-                    trackers_as_actions.append([event.action_name or event.action_text])
-                    trackers_as_entities.append([entity_data])
+                yield sliced_states, label, entities
 
                 # reset entity_data for the the next turn
                 entity_data = {}
-                pbar.set_postfix({"# actions": "{:d}".format(len(trackers_as_actions))})
 
-        self._remove_user_text_if_intent(trackers_as_states)
 
-        logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
+    def filter_example(
+        self,
+        tracker: DialogueStateTracker,
+        states: List[State],
+        label: List[Text],
+    ) -> bool:
+        """Returns True if training example is a duplicate."""
+        if not self.remove_duplicates:
+            return False
+        else:
+            hashed = self._hash_example(
+                tracker, states, label
+            )
+            if hashed not in self.hashed_examples:
+                self.hashed_examples.add(hashed)
+                return False
+            else:
+                return True
 
-        return trackers_as_states, trackers_as_actions, trackers_as_entities
+
+    def cleanup_example_iterator(
+        self,
+        example_states:  List[List[State]],
+        example_labels: List[List[Text]],
+        example_entities: List[List[Dict[Text, Any]]]
+    ) -> None:
+        """Remove deduplication cache and remove intent text when intent label
+        is used."""
+        if self.remove_duplicates:
+            self.hashed_examples = None
+
+        self._remove_user_text_if_intent(example_states)
+
 
     def prediction_states(
         self,
