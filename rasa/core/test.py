@@ -343,25 +343,14 @@ class WronglyClassifiedUserUtterance(UserUttered):
             event.input_channel,
         )
 
-    def inline_comment(self, key: Optional[Text] = None) -> Text:
+    def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
         from rasa.shared.core.events import format_message
 
-        text = ""
-        for entity_key, entity in enumerate(self.predicted_entities):
-            text = (
-                text + f"predicted: `{entity['entity']}` instead of "
-                f"`{self.__dict__['entities'][entity_key]['entity']}`, "
-            )
-        if key == "entities":
-            return_text = text
-        else:
-            predicted_message = format_message(
-                self.text, self.predicted_intent, self.predicted_entities
-            )
-            return_text = f"predicted: {self.predicted_intent}: {predicted_message}"
-
-        return return_text
+        predicted_message = format_message(
+            self.text, self.predicted_intent, self.predicted_entities
+        )
+        return f"predicted: {self.predicted_intent}: {predicted_message}"
 
     def as_story_string(self, e2e: bool = True) -> Text:
         """Returns text representation of event."""

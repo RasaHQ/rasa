@@ -228,15 +228,19 @@ class YAMLStoryWriter(StoryWriter):
             entities = []
             for entity in user_utterance.entities:
                 if entity["value"]:
-                    entities.append(OrderedDict([(entity["entity"], entity["value"])]))
+                    for predicted in user_utterance.predicted_entities:
+                        if predicted["start"] == entity["start"]:
+                            entity_map = CommentedMap(
+                                [(entity["entity"], entity["value"])]
+                            )
+                            entity_comment = "predicted: " + predicted["entity"]
+                            entity_map.yaml_add_eol_comment(
+                                entity_comment, entity["entity"]
+                            )
+                            entities.append(entity_map)
                 else:
                     entities.append(entity["entity"])
             result[KEY_ENTITIES] = entities
-
-        if hasattr(user_utterance, "inline_comment"):
-            result.yaml_add_eol_comment(
-                user_utterance.inline_comment(KEY_ENTITIES), KEY_ENTITIES
-            )
 
         return result
 
