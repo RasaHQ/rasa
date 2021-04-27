@@ -1,9 +1,10 @@
 import logging
 import itertools
 import os
+from functools import wraps
 
 import numpy as np
-from typing import List, Text, Optional, Union, Any
+from typing import Any, Callable, List, Optional, Text, TypeVar, Union
 import matplotlib
 from matplotlib.ticker import FormatStrFormatter
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def _fix_matplotlib_backend() -> None:
-    """Tries to fix a broken matplotlib backend..."""
+    """Tries to fix a broken matplotlib backend."""
     # At first, matplotlib will be initialized with default OS-specific
     # available backend
     if matplotlib.get_backend() == "TkAgg":
@@ -39,10 +40,27 @@ def _fix_matplotlib_backend() -> None:
             matplotlib.use("agg")
 
 
-# we call the fix as soon as this package gets imported
-_fix_matplotlib_backend()
+ReturnType = TypeVar("ReturnType")
+FuncType = Callable[..., ReturnType]
+_MATPLOTLIB_BACKEND_FIXED = False
 
 
+def _needs_matplotlib_backend(func: FuncType) -> FuncType:
+    """Decorator to fix matplotlib backend before calling a function."""
+
+    @wraps(func)
+    def inner(*args: Any, **kwargs: Any) -> ReturnType:
+        """Replacement function that fixes matplotlib backend."""
+        global _MATPLOTLIB_BACKEND_FIXED
+        if not _MATPLOTLIB_BACKEND_FIXED:
+            _fix_matplotlib_backend()
+            _MATPLOTLIB_BACKEND_FIXED = True
+        return func(*args, **kwargs)
+
+    return inner
+
+
+@_needs_matplotlib_backend
 def plot_confusion_matrix(
     confusion_matrix: np.ndarray,
     classes: Union[np.ndarray, List[Text]],
@@ -117,6 +135,7 @@ def plot_confusion_matrix(
         fig.savefig(output_file, bbox_inches="tight")
 
 
+@_needs_matplotlib_backend
 def plot_histogram(
     hist_data: List[List[float]], title: Text, output_file: Optional[Text] = None
 ) -> None:
@@ -217,6 +236,7 @@ def plot_histogram(
         fig.savefig(output_file, bbox_inches="tight")
 
 
+@_needs_matplotlib_backend
 def plot_curve(
     output_directory: Text,
     number_of_examples: List[int],
