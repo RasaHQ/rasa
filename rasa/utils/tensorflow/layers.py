@@ -14,6 +14,7 @@ from rasa.utils.tensorflow.constants import (
     CROSS_ENTROPY,
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
+import rasa.utils.tensorflow.layers_utils as layers_utils
 
 logger = logging.getLogger(__name__)
 
@@ -649,21 +650,6 @@ class DotProductLoss(tf.keras.layers.Layer):
     def call(self, *args, **kwargs):
         raise NotImplementedError
 
-    # Some commonly used helper methods
-
-    def _random_indices(
-        self, batch_size: tf.Tensor, total_candidates: tf.Tensor
-    ) -> tf.Tensor:
-        return tf.random.uniform(
-            shape=(batch_size, self.num_neg), maxval=total_candidates, dtype=tf.int32
-        )
-
-    @staticmethod
-    def _make_flat(x: tf.Tensor) -> tf.Tensor:
-        """Make tensor 2D."""
-
-        return tf.reshape(x, (-1, x.shape[-1]))
-
 
 class SingleLabelDotProductLoss(DotProductLoss):
     """Dot-product loss layer."""
@@ -734,7 +720,9 @@ class SingleLabelDotProductLoss(DotProductLoss):
         self.same_sampling = same_sampling
 
     @staticmethod
-    def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:
+    def _sample_idxs(
+        batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor
+    ) -> tf.Tensor:  # ToDo: abstract this together with _get_candidate_values
         """Sample negative examples for given indices"""
 
         tiled = tf.tile(tf.expand_dims(x, 0), (batch_size, 1, 1))
@@ -761,14 +749,16 @@ class SingleLabelDotProductLoss(DotProductLoss):
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Get negative examples from given tensor."""
 
-        embeds_flat = self._make_flat(embeds)
-        labels_flat = self._make_flat(labels)
-        target_labels_flat = self._make_flat(target_labels)
+        embeds_flat = layers_utils.batch_flatten(embeds)
+        labels_flat = layers_utils.batch_flatten(labels)
+        target_labels_flat = layers_utils.batch_flatten(target_labels)
 
         total_candidates = tf.shape(embeds_flat)[0]
         target_size = tf.shape(target_labels_flat)[0]
 
-        neg_ids = self._random_indices(target_size, total_candidates)
+        neg_ids = layers_utils.random_indices(
+            target_size, self.num_neg, total_candidates
+        )
 
         neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
         bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
@@ -1086,8 +1076,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         """Declare instance variables with default values.
 
         Args:
-            num_neg: Positive integer, the number of incorrect labels;
-                the algorithm will minimize their similarity to the input.
+            num_neg: Positive integer, the number of candidate labels.
             scale_loss: If 'True' scale loss inverse proportionally to
                 the confidence of the correct prediction.
             similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
@@ -1140,7 +1129,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             pos_labels_embed,
             candidate_labels_embed,
             pos_neg_labels,
-        ) = self._sample_negatives(
+        ) = self._sample_candidates(
             batch_inputs_embed,
             batch_labels_embed,
             batch_labels_ids,
@@ -1157,7 +1146,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         return loss, accuracy
 
-    def _sample_negatives(
+    def _sample_candidates(
         self,
         batch_inputs_embed: tf.Tensor,
         batch_labels_embed: tf.Tensor,
@@ -1251,24 +1240,46 @@ class MultiLabelDotProductLoss(DotProductLoss):
             pos_neg_labels,
         )
 
-    def _get_candidate_indices(self, target_size, total_candidates):
-        return self._random_indices(target_size, total_candidates)
+    def _get_candidate_indices(
+        self, batch_size: tf.Tensor, total_candidates: tf.Tensor
+    ) -> tf.Tensor:
+        """Returns batch of random candidate indices
+        
+        Args:
+            batch_size: Size of zero'th dimension
+            total_candidates: Size of first dimension
 
-    def _get_candidate_values(self, tensor, candidate_ids):
+        Returns:
+            tf.int32 tensor of shape (target_size, total_candidates) with values 
+            in [0, self.num_neg).
+        """
+        return layers_utils.random_indices(batch_size, self.num_neg, total_candidates)
+
+    def _get_candidate_values(
+        self, x: tf.Tensor, candidate_ids: tf.Tensor
+    ) -> tf.Tensor:
+        """Gathers candidate values according to IDs.
+        
+        Args:
+            x: Any tensor with at least one dimension
+            candidate_ids: Indicator ???
+
+        Returns:
+            ???
+        """
         tensor_expanded = tf.tile(
-            tf.expand_dims(self._make_flat(tensor), 0), (tf.shape(tensor)[0], 1, 1)
+            tf.expand_dims(layers_utils.batch_flatten(x), 0), (tf.shape(x)[0], 1, 1)
         )
         candidate_values = tf.gather(tensor_expanded, candidate_ids, batch_dims=1)
         candidate_values = tf.expand_dims(candidate_values, axis=1)
 
-        return candidate_values
+        return candidate_values  # (batch_size of x, 1, ...)
 
     def _loss_sigmoid(
         self,
         sim_pos: tf.Tensor,
         sim_candidates_il: tf.Tensor,
         pos_neg_labels: tf.Tensor,
-        # sim_neg_ll: tf.Tensor,
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
         """Define sigmoid loss."""

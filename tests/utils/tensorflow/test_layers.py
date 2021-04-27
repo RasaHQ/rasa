@@ -44,3 +44,19 @@ def test_multi_label_dot_product_loss_call_shapes():
 
     assert len(tf.shape(loss)) == 0
     assert len(tf.shape(accuracy)) == 0
+
+
+def test_multi_label_dot_product_loss__get_candidate_indices_shape():
+    batch_size = 3
+    num_candidates = 4
+    total_candidates = 5
+    layer = MultiLabelDotProductLoss(
+        num_candidates, scale_loss=False, similarity_type=INNER
+    )
+    candidate_ids = layer._get_candidate_indices(batch_size, total_candidates)
+
+    assert np.all(tf.shape(candidate_ids).numpy() == [batch_size, num_candidates])
+
+
+def test_multi_label_dot_product_loss__get_candidate_values_shape():
+    pass
