@@ -1,5 +1,3 @@
-import pytest
-
 from rasa.core.agent import Agent
 from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
     MarkdownStoryWriter,

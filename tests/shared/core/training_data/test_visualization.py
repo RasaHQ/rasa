@@ -1,7 +1,4 @@
 from pathlib import Path
-from typing import Text
-
-import pytest
 
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain

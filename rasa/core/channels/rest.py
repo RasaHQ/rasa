@@ -3,7 +3,7 @@ import inspect
 import json
 import logging
 from asyncio import Queue, CancelledError
-from sanic import Sanic, Blueprint, response
+from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from typing import Text, Dict, Any, Optional, Callable, Awaitable, NoReturn

@@ -13,8 +13,6 @@ from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data import training_data
 from rasa.model_training import (
     CODE_CORE_NEEDS_TO_BE_RETRAINED,
-    CODE_NLU_NEEDS_TO_BE_RETRAINED,
-    CODE_NLG_NEEDS_TO_BE_RETRAINED,
     CODE_FORCED_TRAINING,
 )
 
