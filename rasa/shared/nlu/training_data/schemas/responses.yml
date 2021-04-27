@@ -10,7 +10,7 @@ schema;responses:
       sequence:
       - type: "map"
         required: True
-        allowempty: False
+        allowempty: True
         mapping:
           text:
             type: "str"

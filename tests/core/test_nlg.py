@@ -7,6 +7,7 @@ from sanic import Sanic, response
 
 from rasa.core.nlg.callback import CallbackNaturalLanguageGenerator
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
@@ -454,3 +455,111 @@ async def test_nlg_with_multiple_constraints(
         utter_action="utter_action", tracker=tracker, output_channel=""
     )
     assert r.get("text") == response_variation
+
+
+@pytest.mark.parametrize(
+    ("slot_name", "slot_value", "response_variation"),
+    (("test", "A", "example one A"), ("test", "B", "example two B")),
+)
+async def test_nlg_conditional_response_variations_with_interpolated_slots(
+    slot_name, slot_value, response_variation
+):
+    responses = {
+        "utter_action": [
+            {
+                "text": "example one {test}",
+                "condition": [{"type": "slot", "name": "test", "value": "A"}],
+            },
+            {
+                "text": "example two {test}",
+                "condition": [{"type": "slot", "name": "test", "value": "B"},],
+            },
+        ]
+    }
+    t = TemplatedNaturalLanguageGenerator(responses=responses)
+    slot = Slot(name=slot_name, initial_value=slot_value, influence_conversation=False)
+    tracker = DialogueStateTracker(sender_id="nlg_interpolated", slots=[slot])
+
+    r = await t.generate(
+        utter_action="utter_action", tracker=tracker, output_channel=""
+    )
+    assert r.get("text") == response_variation
+
+
+@pytest.mark.parametrize(
+    ("slot_name", "slot_value", "bot_message"),
+    (
+        (
+            "can_withdraw",
+            False,
+            "You are not allowed to withdraw any amounts. Please check permission.",
+        ),
+        (
+            "account_type",
+            "secondary",
+            "Withdrawal was sent for approval to primary account holder.",
+        ),
+    ),
+)
+async def test_nlg_conditional_response_variations_with_yaml_single_condition(
+    slot_name, slot_value, bot_message
+):
+    domain = Domain.from_file(
+        path="data/test_domains/conditional_response_variations.yml"
+    )
+    t = TemplatedNaturalLanguageGenerator(responses=domain.responses)
+
+    slot = Slot(name=slot_name, initial_value=slot_value, influence_conversation=False)
+    tracker = DialogueStateTracker(sender_id="conversation_id", slots=[slot])
+
+    r = await t.generate(
+        utter_action="utter_withdraw", tracker=tracker, output_channel=""
+    )
+    assert r.get("text") == bot_message
+
+
+async def test_nlg_conditional_response_variations_with_yaml_multi_constraints():
+    domain = Domain.from_file(
+        path="data/test_domains/conditional_response_variations.yml"
+    )
+    t = TemplatedNaturalLanguageGenerator(responses=domain.responses)
+
+    first_slot = Slot(
+        name="account_type", initial_value="primary", influence_conversation=False
+    )
+    second_slot = Slot(
+        name="can_withdraw", initial_value=True, influence_conversation=False
+    )
+    tracker = DialogueStateTracker(
+        sender_id="conversation_id", slots=[first_slot, second_slot]
+    )
+    r = await t.generate(
+        utter_action="utter_withdraw", tracker=tracker, output_channel=""
+    )
+    assert r.get("text") == "Withdrawal has been approved."
+
+
+async def test_nlg_conditional_response_variations_with_yaml_and_channel():
+    domain = Domain.from_file(
+        path="data/test_domains/conditional_response_variations.yml"
+    )
+    t = TemplatedNaturalLanguageGenerator(responses=domain.responses)
+
+    slot = Slot(
+        name="account_type", initial_value="primary", influence_conversation=False
+    )
+    tracker_os = DialogueStateTracker(sender_id="conversation_id", slots=[slot])
+
+    r = await t.generate(
+        utter_action="utter_check_balance", tracker=tracker_os, output_channel="os"
+    )
+    assert (
+        r.get("text")
+        == "As a primary account holder, you can now set-up your access on mobile app too."
+    )
+
+    tracker_default = DialogueStateTracker(sender_id="other_conversation", slots=[slot])
+    resp = await t.generate(
+        utter_action="utter_check_balance", tracker=tracker_default, output_channel=""
+    )
+    assert resp.get("text") == "Welcome to your account overview."
