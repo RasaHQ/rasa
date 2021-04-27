@@ -325,12 +325,14 @@ def _validate_augment_nlu_args(args: argparse.Namespace) -> None:
 
     if args.min_paraphrase_sim_score >= args.max_paraphrase_sim_score:
         raise InvalidParameterException(
-            "The argument 'min_paraphrase_sim_score' must be smaller than (<) 'max_paraphrase_sim_score'!"
+            "The argument 'min_paraphrase_sim_score' must be smaller than (<) "
+            "'max_paraphrase_sim_score'!"
         )
 
     if args.intent_proportion <= 0 or args.intent_proportion > 1:
         raise InvalidParameterException(
-            "The argument 'intent_proportion' must be greater than 0 and smaller than 1!"
+            "The argument 'intent_proportion' must be greater than 0 and smaller "
+            "than 1!"
         )
 
 
