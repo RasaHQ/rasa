@@ -537,6 +537,135 @@ class CRF(tf.keras.layers.Layer):
 
 
 class DotProductLoss(tf.keras.layers.Layer):
+    """Abstract dot-product loss layer class.
+    
+    Idea based on StarSpace paper: http://arxiv.org/abs/1709.03856
+    """
+
+    def __init__(
+        self,
+        num_candidates: int,
+        scale_loss: bool = False,
+        constrain_similarities: bool = True,
+        model_confidence: Text = SOFTMAX,
+        similarity_type: Text = INNER,
+        name: Optional[Text] = None,
+    ):
+        """Declare instance variables with default values.
+
+        Args:
+            num_candidates: Positive integer, the number of incorrect or candidate labels;
+                the algorithm will minimize the similarity of negative labels to the input.
+            loss_type: The type of the loss function, either 'cross_entropy' or
+                'margin'.
+            mu_pos: Float, indicates how similar the algorithm should
+                try to make embedding vectors for correct labels;
+                should be 0.0 < ... < 1.0 for 'cosine' similarity type.
+            mu_neg: Float, maximum negative similarity for incorrect labels,
+                should be -1.0 < ... < 1.0 for 'cosine' similarity type.
+            use_max_sim_neg: Boolean, if 'True' the algorithm only minimizes
+                maximum similarity over incorrect intent labels,
+                used only if 'loss_type' is set to 'margin'.
+            neg_lambda: Float, the scale of how important is to minimize
+                the maximum similarity between embeddings of different labels,
+                used only if 'loss_type' is set to 'margin'.
+            scale_loss: Boolean, if 'True' scale loss inverse proportionally to
+                the confidence of the correct prediction.
+            similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
+            name: Optional name of the layer.
+            same_sampling: Boolean, if 'True' sample same negative labels
+                for the whole batch.
+            constrain_similarities: Boolean, if 'True' applies sigmoid on all
+                similarity terms and adds to the loss function to
+                ensure that similarity values are approximately bounded.
+                Used inside _loss_cross_entropy() only.
+            model_confidence: Model confidence to be returned during inference.
+                Possible values - 'softmax' and 'linear_norm'.
+
+        Raises:
+            LayerConfigException: When `similarity_type` is not one of 'cosine' or
+                'inner'.
+        """
+        super().__init__(name=name)
+        self.num_neg = num_candidates
+        self.scale_loss = scale_loss
+        self.constrain_similarities = constrain_similarities
+        self.model_confidence = model_confidence
+        self.similarity_type = similarity_type
+        if self.similarity_type not in {COSINE, INNER}:
+            raise TFLayerConfigException(
+                f"Wrong similarity type '{self.similarity_type}', "
+                f"should be '{COSINE}' or '{INNER}'."
+            )
+
+    def sim(
+        self, a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None
+    ) -> tf.Tensor:
+        """Calculates similarity between `a` and `b`."""
+        if self.similarity_type == COSINE:
+            a = tf.nn.l2_normalize(a, axis=-1)
+            b = tf.nn.l2_normalize(b, axis=-1)
+        sim = tf.reduce_sum(a * b, axis=-1)
+        if mask is not None:
+            sim *= tf.expand_dims(mask, 2)
+
+        return sim
+
+    def similarity_confidence_from_embeddings(
+        self,
+        input_embeddings: tf.Tensor,
+        label_embeddings: tf.Tensor,
+        mask: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Computes similarity.
+
+        Calculates similary between input and label embeddings and model's confidence.
+
+        First compute the similarity from embeddings and then apply an activation
+        function if needed to get the confidence.
+
+        Args:
+            input_embeddings: Embeddings of input.
+            label_embeddings: Embeddings of labels.
+            mask: Mask over input and output sequence.
+
+        Returns:
+            similarity between input and label embeddings and model's prediction
+            confidence for each label.
+        """
+        similarities = self.sim(input_embeddings, label_embeddings, mask)
+        confidences = similarities
+        if self.model_confidence == SOFTMAX:
+            confidences = tf.nn.softmax(similarities)
+        if self.model_confidence == LINEAR_NORM:
+            # Clip negative values to 0 and linearly normalize to bring the predictions
+            # in the range [0,1].
+            clipped_similarities = tf.nn.relu(similarities)
+            confidences = clipped_similarities / tf.reduce_sum(
+                clipped_similarities, axis=-1
+            )
+        return similarities, confidences
+
+    def call(self, *args, **kwargs):
+        raise NotImplementedError
+
+    # Some commonly used helper methods
+
+    def _random_indices(
+        self, batch_size: tf.Tensor, total_candidates: tf.Tensor
+    ) -> tf.Tensor:
+        return tf.random.uniform(
+            shape=(batch_size, self.num_neg), maxval=total_candidates, dtype=tf.int32
+        )
+
+    @staticmethod
+    def _make_flat(x: tf.Tensor) -> tf.Tensor:
+        """Make tensor 2D."""
+
+        return tf.reshape(x, (-1, x.shape[-1]))
+
+
+class SingleLabelDotProductLoss(DotProductLoss):
     """Dot-product loss layer."""
 
     def __init__(
@@ -589,36 +718,20 @@ class DotProductLoss(tf.keras.layers.Layer):
             LayerConfigException: When `similarity_type` is not one of 'cosine' or
                 'inner'.
         """
-        super().__init__(name=name)
-        self.num_neg = num_neg
+        super().__init__(
+            num_neg,
+            scale_loss=scale_loss,
+            constrain_similarities=constrain_similarities,
+            model_confidence=model_confidence,
+            similarity_type=similarity_type,
+            name=name,
+        )
         self.loss_type = loss_type
         self.mu_pos = mu_pos
         self.mu_neg = mu_neg
         self.use_max_sim_neg = use_max_sim_neg
         self.neg_lambda = neg_lambda
-        self.scale_loss = scale_loss
         self.same_sampling = same_sampling
-        self.constrain_similarities = constrain_similarities
-        self.model_confidence = model_confidence
-        self.similarity_type = similarity_type
-        if self.similarity_type not in {COSINE, INNER}:
-            raise TFLayerConfigException(
-                f"Wrong similarity type '{self.similarity_type}', "
-                f"should be '{COSINE}' or '{INNER}'."
-            )
-
-    @staticmethod
-    def _make_flat(x: tf.Tensor) -> tf.Tensor:
-        """Make tensor 2D."""
-
-        return tf.reshape(x, (-1, x.shape[-1]))
-
-    def _random_indices(
-        self, batch_size: tf.Tensor, total_candidates: tf.Tensor
-    ) -> tf.Tensor:
-        return tf.random.uniform(
-            shape=(batch_size, self.num_neg), maxval=total_candidates, dtype=tf.int32
-        )
 
     @staticmethod
     def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:
@@ -699,54 +812,6 @@ class DotProductLoss(tf.keras.layers.Layer):
             inputs_bad_negs,
             labels_bad_negs,
         )
-
-    def sim(
-        self, a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None
-    ) -> tf.Tensor:
-        """Calculate similarity between given tensors."""
-        if self.similarity_type == COSINE:
-            a = tf.nn.l2_normalize(a, axis=-1)
-            b = tf.nn.l2_normalize(b, axis=-1)
-        sim = tf.reduce_sum(a * b, axis=-1)
-        if mask is not None:
-            sim *= tf.expand_dims(mask, 2)
-
-        return sim
-
-    def similarity_confidence_from_embeddings(
-        self,
-        input_embeddings: tf.Tensor,
-        label_embeddings: tf.Tensor,
-        mask: Optional[tf.Tensor] = None,
-    ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Computes similarity.
-
-        Calculates similary between input and label embeddings and model's confidence.
-
-        First compute the similarity from embeddings and then apply an activation
-        function if needed to get the confidence.
-
-        Args:
-            input_embeddings: Embeddings of input.
-            label_embeddings: Embeddings of labels.
-            mask: Mask over input and output sequence.
-
-        Returns:
-            similarity between input and label embeddings and model's prediction
-            confidence for each label.
-        """
-        similarities = self.sim(input_embeddings, label_embeddings, mask)
-        confidences = similarities
-        if self.model_confidence == SOFTMAX:
-            confidences = tf.nn.softmax(similarities)
-        if self.model_confidence == LINEAR_NORM:
-            # Clip negative values to 0 and linearly normalize to bring the predictions
-            # in the range [0,1].
-            clipped_similarities = tf.nn.relu(similarities)
-            confidences = clipped_similarities / tf.reduce_sum(
-                clipped_similarities, axis=-1
-            )
-        return similarities, confidences
 
     def _train_sim(
         self,
@@ -953,12 +1018,12 @@ class DotProductLoss(tf.keras.layers.Layer):
     # noinspection PyMethodOverriding
     def call(
         self,
-        inputs_embed: tf.Tensor,
-        labels_embed: tf.Tensor,
-        labels: tf.Tensor,
-        all_labels_embed: tf.Tensor,
-        all_labels: tf.Tensor,
-        mask: Optional[tf.Tensor] = None,
+        inputs_embed: tf.Tensor,  # (batch_size, 1, num_features)
+        labels_embed: tf.Tensor,  # (batch_size, 1, num_features)
+        labels: tf.Tensor,  # (batch_size, 1, 1)
+        all_labels_embed: tf.Tensor,  # (num_labels, num_features)
+        all_labels: tf.Tensor,  # (num_labels, 1)
+        mask: Optional[tf.Tensor] = None,  # (batch_size, 1)
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Calculate loss and accuracy.
 
@@ -1007,16 +1072,54 @@ class DotProductLoss(tf.keras.layers.Layer):
 
 
 class MultiLabelDotProductLoss(DotProductLoss):
-    """Same as DotProductLoss but adapted for multiple labels for a single data point."""
+    """DotProductLoss for multiple labels per data point."""
+
+    def __init__(
+        self,
+        num_neg: int,
+        scale_loss: bool,
+        similarity_type: Text,
+        name: Optional[Text] = None,
+        constrain_similarities: bool = True,
+        model_confidence: Text = SOFTMAX,
+    ) -> None:
+        """Declare instance variables with default values.
+
+        Args:
+            num_neg: Positive integer, the number of incorrect labels;
+                the algorithm will minimize their similarity to the input.
+            scale_loss: If 'True' scale loss inverse proportionally to
+                the confidence of the correct prediction.
+            similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
+            name: Optional name of the layer.
+            constrain_similarities: Boolean, if 'True' applies sigmoid on all
+                similarity terms and adds to the loss function to
+                ensure that similarity values are approximately bounded.
+                Used inside _loss_cross_entropy() only.
+            model_confidence: Model confidence to be returned during inference.
+                Possible values - 'softmax' and 'linear_norm'.
+
+        Raises:
+            LayerConfigException: When `similarity_type` is not one of 'cosine' or
+                'inner'.
+        """
+        super().__init__(
+            num_neg,
+            scale_loss=scale_loss,
+            similarity_type=similarity_type,
+            name=name,
+            constrain_similarities=constrain_similarities,
+            model_confidence=model_confidence,
+        )
 
     def call(
         self,
-        batch_inputs_embed: tf.Tensor,
-        batch_labels_embed: tf.Tensor,
-        batch_label_ids: tf.Tensor,
-        all_labels_embed: tf.Tensor,
-        all_label_ids: tf.Tensor,
-        mask: Optional[tf.Tensor] = None,
+        batch_inputs_embed: tf.Tensor,  # (batch_size, 1, num_features)
+        batch_labels_embed: tf.Tensor,  # (batch_size, max_num_labels, num_features)
+        batch_labels_ids: tf.Tensor,  # (batch_size, max_num_labels, 1)
+        all_labels_embed: tf.Tensor,  # (num_labels, num_features)
+        all_labels_ids: tf.Tensor,  # (num_labels, 1)
+        mask: Optional[tf.Tensor] = None,  # (batch_size, 1)
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Calculate loss and accuracy.
 
@@ -1040,9 +1143,9 @@ class MultiLabelDotProductLoss(DotProductLoss):
         ) = self._sample_negatives(
             batch_inputs_embed,
             batch_labels_embed,
-            batch_label_ids,
+            batch_labels_ids,
             all_labels_embed,
-            all_label_ids,
+            all_labels_ids,
         )
 
         # Calculate similarities
@@ -1050,8 +1153,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         sim_candidate_il = self.sim(pos_inputs_embed, candidate_labels_embed, mask)
 
         accuracy = self._calc_accuracy(sim_pos, sim_candidate_il, pos_neg_labels)
-
-        loss = self._loss_sigmoid(sim_pos, sim_candidate_il, pos_neg_labels, mask,)
+        loss = self._loss_sigmoid(sim_pos, sim_candidate_il, pos_neg_labels, mask)
 
         return loss, accuracy
 
@@ -1094,7 +1196,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         # Pick random examples from the batch
         candidate_ids = self._get_candidate_indices(
-            tf.shape(inputs_embed)[0], tf.shape(batch_inputs_embed)[0]
+            tf.shape(batch_inputs_embed)[0], tf.shape(batch_inputs_embed)[0]
         )
 
         # Get the label embeddings and ids corresponding to candidate indices
@@ -1150,10 +1252,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
     def _get_candidate_indices(self, target_size, total_candidates):
-
-        neg_ids = self._random_indices(target_size, total_candidates)
-
-        return neg_ids
+        return self._random_indices(target_size, total_candidates)
 
     def _get_candidate_values(self, tensor, candidate_ids):
         tensor_expanded = tf.tile(

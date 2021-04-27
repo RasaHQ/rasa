@@ -1,18 +1,13 @@
 import pytest
 import numpy as np
 import tensorflow as tf
-from rasa.utils.tensorflow.layers import DotProductLoss
+from rasa.utils.tensorflow.layers import DotProductLoss, MultiLabelDotProductLoss
 from rasa.utils.tensorflow.constants import INNER, CROSS_ENTROPY, SOFTMAX
 
 
 def test_dot_product_loss_inner_sim():
-    loss = DotProductLoss(
+    layer = DotProductLoss(
         0,
-        loss_type=CROSS_ENTROPY,
-        mu_pos=0.0,
-        mu_neg=0.0,
-        use_max_sim_neg=False,
-        neg_lambda=0.0,
         scale_loss=False,
         similarity_type=INNER,
         constrain_similarities=False,
@@ -21,6 +16,31 @@ def test_dot_product_loss_inner_sim():
     a = tf.constant([[[1.0, 0.0, 2.0]], [[1.0, 0.0, 2.0]]])
     b = tf.constant([[[1.0, 0.0, -2.0]], [[1.0, 0.0, -2.0]]])
     mask = tf.constant([[1.0, 0.0]])
-    similarity = loss.sim(a, b, mask=mask).numpy()
+    similarity = layer.sim(a, b, mask=mask).numpy()
     assert np.all(similarity[0][0] == [-3.0])
     assert np.all(similarity[0][1] == [0.0])
+
+
+def test_multi_label_dot_product_loss_call_shapes():
+    num_neg = 1
+    layer = MultiLabelDotProductLoss(num_neg, scale_loss=False, similarity_type=INNER)
+    batch_inputs_embed = tf.constant([[[0, 1, 2]], [[-2, 0, 2]],], dtype=tf.float32)
+    batch_labels_embed = tf.constant(
+        [[[0, 0, 1], [1, 0, 0]], [[0, 1, 0], [1, 0, 0]],], dtype=tf.float32
+    )
+    batch_labels_ids = tf.constant([[[3], [2]], [[2], [1]],], dtype=tf.float32)
+    all_labels_embed = tf.constant([[1, 0, 0], [0, 1, 0], [0, 0, 1],], dtype=tf.float32)
+    all_labels_ids = tf.constant([[1], [2], [3],], dtype=tf.float32)
+    mask = None
+
+    loss, accuracy = layer(
+        batch_inputs_embed,
+        batch_labels_embed,
+        batch_labels_ids,
+        all_labels_embed,
+        all_labels_ids,
+        mask,
+    )
+
+    assert len(tf.shape(loss)) == 0
+    assert len(tf.shape(accuracy)) == 0

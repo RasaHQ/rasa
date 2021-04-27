@@ -577,7 +577,7 @@ class TransformerRasaModel(RasaModel):
     def _prepare_dot_product_loss(
         self, name: Text, scale_loss: bool, prefix: Text = "loss"
     ) -> None:
-        self._tf_layers[f"{prefix}.{name}"] = layers.DotProductLoss(
+        self._tf_layers[f"{prefix}.{name}"] = layers.SingleLabelDotProductLoss(
             self.config[NUM_NEG],
             self.config[LOSS_TYPE],
             self.config[MAX_POS_SIM],
