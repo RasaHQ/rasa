@@ -453,7 +453,7 @@ def test_from_dict_does_not_change_passed_dict_parameter():
                     {
                         "name": "MaxHistoryTrackerFeaturizer",
                         "max_history": 5,
-                        "state_featurizer": [{"name": "BinarySingleStateFeaturizer"}],
+                        "state_featurizer": [{"name": "SingleStateFeaturizer"}],
                     }
                 ],
             }

@@ -227,7 +227,7 @@ class YAMLStoryWriter(StoryWriter):
         if len(user_utterance.entities) and not is_test_story:
             entities = []
             for entity in user_utterance.entities:
-                if entity["value"]:
+                if "value" in entity:
                     entities.append(OrderedDict([(entity["entity"], entity["value"])]))
                 else:
                     entities.append(entity["entity"])
