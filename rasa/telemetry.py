@@ -762,7 +762,7 @@ def track_data_split(fraction: float, data_type: Text) -> None:
 
 @ensure_telemetry_enabled
 def track_data_augment() -> None:
-    """Track when the NLU training data augmentation is used."""
+    """Tracks when the NLU training data augmentation is used."""
     _track(TELEMETRY_DATA_NLU_AUGMENT_EVENT)
 
 
