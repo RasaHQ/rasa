@@ -87,18 +87,66 @@ generalResponses: List[Response] = [
         ],
     ),
     Response(
-        condition=AndCondition(
-            [
-                IntentCondition(howAreYouDoingIntent),
-                SlotEqualsCondition(slotName, "Alice"),
-                SlotEqualsCondition(slotHometown, "Austin"),
-            ]
-        ),
+        condition=IntentCondition(howAreYouDoingIntent),
         actions=[
             Utterance(
                 text="I'm doing great",
                 name="utter_how_are_you_response",
             )
+        ],
+    ),
+    Response(
+        condition=IntentCondition(
+            Intent(
+                name="what_are_hours",
+                examples=[
+                    "What are your hours?",
+                    "When do you close?",
+                    "What time do you open until?",
+                    "What time do you close?",
+                    "Are you still open?",
+                ],
+            )
+        ),
+        actions=[
+            Utterance(
+                text="We're open from 9 to 5, Mondays to Fridays.",
+                name="utter_hours",
+            )
+        ],
+    ),
+    Response(
+        condition=IntentCondition(
+            Intent(
+                examples=[
+                    "Are you busy?",
+                    "How busy are you?",
+                    "Do you have a lot of work?",
+                ],
+            )
+        ),
+        actions=[
+            Utterance(
+                text="It's not too busy around here as you can see.",
+            )
+        ],
+    ),
+    Response(
+        condition=IntentCondition(
+            Intent(
+                name="what_school_mascot",
+                examples=[
+                    "What's the school mascot?",
+                ],
+            )
+        ),
+        actions=[
+            Utterance(
+                text="Why, the stag of course",
+            ),
+            Utterance(
+                text="The school mascot? You must mean the stag",
+            ),
         ],
     ),
 ]

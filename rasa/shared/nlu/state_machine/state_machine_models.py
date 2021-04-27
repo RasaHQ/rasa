@@ -3,9 +3,19 @@ from typing import Optional, List
 
 
 class Intent:
-    def __init__(self, name: str, examples: List[str]):
-        self.name = name
+    def __init__(self, examples: List[str], name: Optional[str] = None):
+        if len(examples) == 0:
+            raise ValueError("No examples provided.")
+
         self.examples = examples
+
+        if name:
+            self.name = name
+        else:
+            text_stripped = "".join(
+                e.lower() for e in examples[0] if e.isalnum() or e.isspace()
+            )
+            self.name = "_".join(text_stripped.split(" "))
 
 
 class Action(abc.ABC):
@@ -16,12 +26,19 @@ class Action(abc.ABC):
 
 class Utterance(Action):
 
-    # _name: str
-    # text: str
+    _name: str
+    text: str
 
     def __init__(self, text: str, name: Optional[str] = None):
         self.text = text
-        self._name = name
+
+        if name:
+            self._name = name
+        else:
+            text_stripped = "".join(
+                e.lower() for e in text if e.isalnum() or e.isspace()
+            )
+            self._name = "utter_" + "_".join(text_stripped.split(" "))
 
     @property
     def name(self) -> str:
