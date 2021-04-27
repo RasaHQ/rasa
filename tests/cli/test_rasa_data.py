@@ -118,14 +118,6 @@ def test_data_validate_help(run: Callable[..., RunResult]):
         assert line in printed_help
 
 
-def _text_is_part_of_output_error(text: Text, output: RunResult) -> bool:
-    found_info_string = False
-    for line in output.errlines:
-        if text in line:
-            found_info_string = True
-    return found_info_string
-
-
 def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(help="Rasa commands")

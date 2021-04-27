@@ -57,10 +57,6 @@ stories:
 
 
 def test_as_story_string_or_statement():
-    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-        YAMLStoryReader,
-    )
-
     import rasa.shared.utils.io
 
     stories = """
