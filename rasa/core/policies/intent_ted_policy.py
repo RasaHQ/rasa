@@ -437,3 +437,29 @@ class IntentTED(TED):
         self._prepare_dot_product_loss(
             LABEL, self.config[SCALE_LOSS], loss_layer=layers.MultiLabelDotProductLoss
         )
+
+    def compute_thresholds(
+        self, model_data: RasaModelData, label_ids: np.ndarray
+    ) -> Dict[int, float]:
+        """
+
+        Args:
+            model_data:
+            label_ids:
+
+        Returns:
+
+        """
+        self._training = False
+
+        batch_size = (
+            self.config[BATCH_SIZES]
+            if isinstance(self.config[BATCH_SIZES], int)
+            else self.config[BATCH_SIZES][0]
+        )
+        (data_generator, _) = rasa.utils.train_utils.create_data_generators(
+            model_data, batch_size, 1, SEQUENCE, 0,
+        )
+        while True:
+            batch_in = next(data_generator)
+            output = self.predict_step(batch_in)

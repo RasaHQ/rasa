@@ -27,23 +27,22 @@ DEFAULT_POLICY_PRIORITY = 1
 # policy predicts one, it's prediction is chosen by the ensemble and
 # then the ML based policies are again run to get the prediction for
 # an actual action.
-# TODO: Figure out the correct priority value that can be set.
 UNLIKELY_INTENT_POLICY_PRIORITY = 2
 # the priority intended to be used by mapping policies
-MAPPING_POLICY_PRIORITY = 2
+MAPPING_POLICY_PRIORITY = 3
 # the priority intended to be used by memoization policies
 # it is higher than default and mapping to prioritize training stories
-MEMOIZATION_POLICY_PRIORITY = 3
+MEMOIZATION_POLICY_PRIORITY = 4
 # the priority intended to be used by fallback policies
 # it is higher than memoization to prioritize fallback
-FALLBACK_POLICY_PRIORITY = 4
+FALLBACK_POLICY_PRIORITY = 5
 # the priority intended to be used by form policies
 # it is the highest to prioritize form to the rest of the policies
-FORM_POLICY_PRIORITY = 5
+FORM_POLICY_PRIORITY = 6
 # The priority of the `RulePolicy` is higher than the priorities for `FallbackPolicy`,
 # `TwoStageFallbackPolicy` and `FormPolicy` to make it possible to use the
 # `RulePolicy` in conjunction with these deprecated policies.
-RULE_POLICY_PRIORITY = 6
+RULE_POLICY_PRIORITY = 7
 
 DIALOGUE = "dialogue"
 
