@@ -176,6 +176,7 @@ responses:
     - title: "Home insurance"
       payload: '/inform{{"insurance":"home"}}'
 ```
+
 Passing multiple entities is also possible with:
 
 ```
@@ -197,6 +198,11 @@ You can include entities with the intent to be passed to the `RegexInterpreter` 
 The `RegexInterpreter` will classify the message above with the intent `inform` and extract the entities
 `Rasa` and `Germany` which are of type `ORG` and `GPE` respectively.
 
+:::
+
+:::note escaping curly braces in domain.yml
+You need to write the `/intent{entities}` shorthand response with double curly braces in domain.yml so that the assistant does not
+treat it as a [variable in a response](#using-variables-in-responses) and interpolates the content within the curly braces. 
 :::
 
 :::caution Check your channel
