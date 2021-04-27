@@ -3,7 +3,7 @@ import os
 from typing import Callable, List, Set, Text
 
 import pytest
-from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.constants import TOKENS_NAMES, VOCABULARY
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.constants import DEFAULT_RANDOM_SEED
 from rasa.shared.nlu.training_data.message import Message
@@ -11,7 +11,7 @@ import rasa.nlu.config
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.components
 import rasa.shared.utils.io
-from rasa.shared.nlu.constants import INTENT, TEXT, VOCABULARY, INTENT_REPORT_FILE_NAME
+from rasa.shared.nlu.constants import INTENT, TEXT, INTENT_REPORT_FILE_NAME
 
 
 def test_augmenter_create_tokenizer():

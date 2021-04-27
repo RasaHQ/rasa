@@ -13,7 +13,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.model_training import train_nlu
 import rasa.nlu.config
-from rasa.nlu.constants import TOKENS_NAMES
+from rasa.nlu.constants import TOKENS_NAMES, VOCABULARY
 from rasa.nlu.model import Interpreter
 from rasa.nlu.test import (
     create_intent_report,
@@ -28,7 +28,6 @@ from rasa.shared.nlu.constants import (
     METADATA,
     METADATA_EXAMPLE,
     TEXT,
-    VOCABULARY,
 )
 from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 import rasa.utils.plotting
