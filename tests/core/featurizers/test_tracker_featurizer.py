@@ -9,6 +9,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
+    IntentMaxHistoryTrackerFeaturizer
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -540,4 +541,304 @@ def test_prediction_states_with_max_history_tracker_featurizer(
     ):
         assert actual_states == expected_states
 
+
+@pytest.mark.parametrize("max_history", [None, 2])
+def test_featurize_trackers_with_intent_max_history_tracker_featurizer(
+    moodbot_domain: Domain, make_moodbot_example, max_history
+):
+    state_featurizer = SingleStateFeaturizer()
+    tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
+        state_featurizer, 
+        max_history=max_history
+    )
+
+    tracker = tracker_from_dialogue_file(
+        "data/test_dialogues/moodbot.json", moodbot_domain
+    )
+
+    state_features, labels, entity_tags = tracker_featurizer.featurize_trackers(
+        [tracker], moodbot_domain, RegexInterpreter()
+    )
+    
+    expected_example = make_moodbot_example(
+        max_history=max_history, 
+        label_type="intent"
+    )
+
+    assert state_features is not None
+    assert len(state_features) == len(expected_example["features"])
+    for actual_features, expected_features in zip(
+        state_features, 
+        expected_example["features"]
+    ):
+        assert compare_featurized_states(
+            actual_features, 
+            expected_features
+        )
+
+    assert labels is not None
+    assert labels.shape == expected_example["labels"].shape
+    assert np.all(labels == expected_example["labels"])
+
+    # moodbot doesn't contain e2e entities
+    assert not any([any(turn_tags) for turn_tags in entity_tags])
+
+
+@pytest.mark.parametrize("max_history", [None, 2])
+def test_deduplicate_featurize_trackers_with_intent_max_history_tracker_featurizer(
+    moodbot_domain: Domain, make_moodbot_example, max_history
+):
+    state_featurizer = SingleStateFeaturizer()
+    tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
+        state_featurizer, 
+        max_history=max_history,
+    )
+
+    tracker = tracker_from_dialogue_file(
+        "data/test_dialogues/moodbot.json", moodbot_domain
+    )
+
+    # add duplicate tracker
+    state_features, labels, entity_tags = tracker_featurizer.featurize_trackers(
+        [tracker, tracker], moodbot_domain, RegexInterpreter()
+    )
+    
+    expected_example = make_moodbot_example(
+        max_history=max_history,
+        label_type="intent",
+    )
+
+    assert state_features is not None
+    assert len(state_features) == len(expected_example["features"])
+    for actual_features, expected_features in zip(
+        state_features, 
+        expected_example["features"]
+    ):
+        assert compare_featurized_states(
+            actual_features, 
+            expected_features
+        )
+
+    assert labels is not None
+    assert labels.shape == expected_example["labels"].shape
+    assert np.all(labels == expected_example["labels"])
+
+    # moodbot doesn't contain e2e entities
+    assert not any([any(turn_tags) for turn_tags in entity_tags])
+
+
+@pytest.mark.parametrize("max_history", [None, 2])
+def test_no_deduplicate_featurize_trackers_with_intent_max_history_tracker_featurizer(
+    moodbot_domain: Domain, make_moodbot_example, max_history
+):
+    state_featurizer = SingleStateFeaturizer()
+    tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
+        state_featurizer, 
+        max_history=max_history,
+        remove_duplicates=False
+    )
+
+    tracker = tracker_from_dialogue_file(
+        "data/test_dialogues/moodbot.json", moodbot_domain
+    )
+
+    # add duplicate tracker
+    state_features, labels, entity_tags = tracker_featurizer.featurize_trackers(
+        [tracker, tracker], moodbot_domain, RegexInterpreter()
+    )
+    
+    expected_example = make_moodbot_example(
+        max_history=max_history, 
+        label_type="intent",
+        duplicate=True
+    )
+
+    assert state_features is not None
+    assert len(state_features) == len(expected_example["features"])
+    for actual_features, expected_features in zip(
+        state_features, 
+        expected_example["features"]
+    ):
+        assert compare_featurized_states(
+            actual_features, 
+            expected_features
+        )
+
+    assert labels is not None
+    assert labels.shape == expected_example["labels"].shape
+    assert np.all(labels == expected_example["labels"])
+
+    # moodbot doesn't contain e2e entities
+    assert not any([any(turn_tags) for turn_tags in entity_tags])
+
+
+@pytest.mark.parametrize("max_history", [None, 2])
+def test_create_state_features_with_intent_max_history_tracker_featurizer(
+    moodbot_domain: Domain, make_moodbot_example, max_history
+):
+    state_featurizer = SingleStateFeaturizer()
+    tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
+        state_featurizer, 
+        max_history=max_history
+    )
+
+    tracker = tracker_from_dialogue_file(
+        "data/test_dialogues/moodbot.json", moodbot_domain
+    )
+
+    interpreter = RegexInterpreter()
+    state_featurizer.prepare_for_training(moodbot_domain, interpreter)
+    state_features = tracker_featurizer.create_state_features(
+        [tracker], moodbot_domain, interpreter
+    )
+
+    expected_example = make_moodbot_example(
+        max_history=max_history,
+        remove_final_action=False,
+        label_type="intent",
+        prediction_features=True
+    )
+
+    assert state_features is not None
+    assert len(state_features) == len(expected_example["features"])
+    
+    for actual_features, expected_features in zip(
+        state_features, 
+        expected_example["features"]
+    ):
+        assert compare_featurized_states(
+            actual_features, 
+            expected_features
+        )
+
+
+@pytest.mark.parametrize("max_history", [None, 2])
+def test_prediction_states_with_intent_max_history_tracker_featurizer(
+    moodbot_domain: Domain, make_moodbot_example, max_history
+):
+    state_featurizer = SingleStateFeaturizer()
+    tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
+        state_featurizer, 
+        max_history=max_history
+    )
+
+    tracker = tracker_from_dialogue_file(
+        "data/test_dialogues/moodbot.json", moodbot_domain
+    )
+
+    states = tracker_featurizer.prediction_states(
+        [tracker], moodbot_domain,
+    )
+
+    expected_example = make_moodbot_example(
+        max_history=max_history,
+        remove_final_action=False,
+        label_type="intent",
+        prediction_features=True
+    )
+
+    assert states is not None
+    assert len(states) == len(expected_example["states"])
+   
+    for actual_states, expected_states in zip(
+        states, 
+        expected_example["states"]
+    ):
+        assert actual_states == expected_states
+
+
+def test_multilabels_with_intent_max_history_tracker_featurizer(moodbot_domain: Domain):
+    state_featurizer = SingleStateFeaturizer()
+    tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(state_featurizer)
+
+    event_list1 = [
+        ActionExecuted("action_listen"),
+        user_uttered("greet"),
+        ActionExecuted("utter_greet"),
+        ActionExecuted("action_listen"),
+        user_uttered("mood_great"),
+    ]
+    tracker1 = DialogueStateTracker.from_events(
+        "default",
+        event_list1,
+        domain=moodbot_domain
+    )
+    event_list2 = [
+        ActionExecuted("action_listen"),
+        user_uttered("greet"),
+        ActionExecuted("utter_greet"),
+        ActionExecuted("action_listen"),
+        user_uttered("mood_unhappy"),
+    ]
+    tracker2 = DialogueStateTracker.from_events(
+        "default",
+        event_list2,
+        domain=moodbot_domain
+    )
+
+    state_features, labels, entity_tags = tracker_featurizer.featurize_trackers(
+        [tracker1, tracker2], moodbot_domain, RegexInterpreter()
+    )
+
+    greet_index = 5
+    mood_great_index = 6
+    mood_unhappy_index = 7
+
+    expected_labels = np.array([
+        [greet_index, -1],
+        [mood_great_index, mood_unhappy_index],
+        [mood_unhappy_index, mood_great_index],
+    ])
+
+    assert np.all(labels == expected_labels)
+
+
+def test_multilabels_with_intent_max_history_tracker_featurizer_no_dedupe(moodbot_domain: Domain):
+    state_featurizer = SingleStateFeaturizer()
+    tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
+        state_featurizer,
+        remove_duplicates=False,
+    )
+
+    event_list1 = [
+        ActionExecuted("action_listen"),
+        user_uttered("greet"),
+        ActionExecuted("utter_greet"),
+        ActionExecuted("action_listen"),
+        user_uttered("mood_great"),
+    ]
+    tracker1 = DialogueStateTracker.from_events(
+        "default",
+        event_list1,
+        domain=moodbot_domain
+    )
+    event_list2 = [
+        ActionExecuted("action_listen"),
+        user_uttered("greet"),
+        ActionExecuted("utter_greet"),
+        ActionExecuted("action_listen"),
+        user_uttered("mood_unhappy"),
+    ]
+    tracker2 = DialogueStateTracker.from_events(
+        "default",
+        event_list2,
+        domain=moodbot_domain
+    )
+
+    state_features, labels, entity_tags = tracker_featurizer.featurize_trackers(
+        [tracker1, tracker2], moodbot_domain, RegexInterpreter()
+    )
+
+    greet_index = 5
+    mood_great_index = 6
+    mood_unhappy_index = 7
+
+    expected_labels = np.array([
+        [greet_index, -1],
+        [mood_great_index, mood_unhappy_index],
+        [greet_index, -1],
+        [mood_unhappy_index, mood_great_index],
+    ])
+
+    assert np.all(labels == expected_labels)
 
