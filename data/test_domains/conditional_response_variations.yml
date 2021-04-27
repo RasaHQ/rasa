@@ -40,8 +40,9 @@ responses:
           name: account_type
           value: primary
       channel: os
-    - text: "Welcome to your account overview."
+    - text: "Welcome to your app account overview."
       condition:
         - type: slot
           name: account_type
           value: primary
+      channel: app

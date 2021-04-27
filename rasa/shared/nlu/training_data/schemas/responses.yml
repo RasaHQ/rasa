@@ -10,7 +10,7 @@ schema;responses:
       sequence:
       - type: "map"
         required: True
-        allowempty: True
+        allowempty: False
         mapping:
           text:
             type: "str"
@@ -53,3 +53,15 @@ schema;responses:
             type: "str"
           metadata:
             type: "any"
+          condition:
+            type: "seq"
+            sequence:
+              - type: "map"
+                allowempty: False
+                mapping:
+                  type:
+                    type: "str"
+                  name:
+                    type: "str"
+                  value:
+                    type: "any"

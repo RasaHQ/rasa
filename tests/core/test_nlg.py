@@ -548,18 +548,17 @@ async def test_nlg_conditional_response_variations_with_yaml_and_channel():
     slot = Slot(
         name="account_type", initial_value="primary", influence_conversation=False
     )
-    tracker_os = DialogueStateTracker(sender_id="conversation_id", slots=[slot])
+    tracker = DialogueStateTracker(sender_id="conversation_id", slots=[slot])
 
     r = await t.generate(
-        utter_action="utter_check_balance", tracker=tracker_os, output_channel="os"
+        utter_action="utter_check_balance", tracker=tracker, output_channel="os"
     )
     assert (
         r.get("text")
         == "As a primary account holder, you can now set-up your access on mobile app too."
     )
 
-    tracker_default = DialogueStateTracker(sender_id="other_conversation", slots=[slot])
     resp = await t.generate(
-        utter_action="utter_check_balance", tracker=tracker_default, output_channel=""
+        utter_action="utter_check_balance", tracker=tracker, output_channel="app"
     )
-    assert resp.get("text") == "Welcome to your account overview."
+    assert resp.get("text") == "Welcome to your app account overview."
