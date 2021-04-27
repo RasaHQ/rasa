@@ -164,12 +164,45 @@ Each button in the list of `buttons` should have two keys:
 * `title`: The text displayed on the buttons that the user sees.
 * `payload`: The message sent from the user to the assistant when the button is clicked.
 
+If you would like the buttons to also pass entities to the assistant:
+
+```yaml-rasa {4-8} title="domain.yml"
+responses:
+  utter_greet:
+  - text: "Hey! Would you like to purchase motor or home insurance?"
+    buttons:
+    - title: "Motor insurance"
+      payload: '/inform{{"insurance":"motor"}}'
+    - title: "Home insurance"
+      payload: '/inform{{"insurance":"home"}}'
+```
+
+Passing multiple entities is also possible with:
+
+```
+'/intent_name{{"entity_type_1":"entity_value_1", "entity_type_2": "entity_value_2"}}'
+```
+
 :::note bypass nlu with buttons
-It's common to use buttons as a shortcut to bypass the machine-learning-based NLU interpreter.
+You can use buttons to bypass NLU prediction and trigger a specific intent and entities.
+
 Messages starting with `/` are sent straight to the
 `RegexInterpreter`, which expects NLU input in a shortened `/intent{entities}` format.
 In the example above, if the user clicks a button, the user input
 will be directly classified as either the `mood_great` or `mood_sad` intent.
+
+You can include entities with the intent to be passed to the `RegexInterpreter` using the following format:
+
+`/inform{"ORG":"Rasa", "GPE":"Germany"}`
+
+The `RegexInterpreter` will classify the message above with the intent `inform` and extract the entities
+`Rasa` and `Germany` which are of type `ORG` and `GPE` respectively.
+
+:::
+
+:::note escaping curly braces in domain.yml
+You need to write the `/intent{entities}` shorthand response with double curly braces in domain.yml so that the assistant does not
+treat it as a [variable in a response](#using-variables-in-responses) and interpolate the content within the curly braces. 
 :::
 
 :::caution Check your channel
