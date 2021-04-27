@@ -190,9 +190,13 @@ Messages starting with `/` are sent straight to the
 In the example above, if the user clicks a button, the user input
 will be directly classified as either the `mood_great` or `mood_sad` intent.
 
-`entities` is a comma separated key-value pair of entity type and values to pass along with the intent.
-For example, `/inform{"ORG":"Rasa", "GPE":"Germany"}` will pass the intent `inform` and the entities `Rasa`
-and `Germany` which are of type `ORG` and `GPE` respectively to the `RegexInterpreter`. 
+You can include entities with the intent to be passed to the `RegexInterpreter` using the following format:
+
+`/inform{"ORG":"Rasa", "GPE":"Germany"}`
+
+The `RegexInterpreter` will classify the message above with the intent `inform` and extract the entities
+`Rasa` and `Germany` which are of type `ORG` and `GPE` respectively.
+
 :::
 
 :::caution Check your channel
