@@ -562,3 +562,40 @@ async def test_nlg_conditional_response_variations_with_yaml_and_channel():
         utter_action="utter_check_balance", tracker=tracker, output_channel="app"
     )
     assert resp.get("text") == "Welcome to your app account overview."
+
+
+@pytest.mark.parametrize(
+    ("slot_name", "slot_value", "message"),
+    (
+        ("test_bool", True, "example boolean"),
+        ("test_int", 12, "example integer"),
+        ("test_list", [], "example list"),
+    ),
+)
+async def test_nlg_conditional_response_variations_with_diff_slot_types(
+    slot_name, slot_value, message
+):
+    responses = {
+        "utter_action": [
+            {
+                "text": "example boolean",
+                "condition": [{"type": "slot", "name": "test_bool", "value": True}],
+            },
+            {
+                "text": "example integer",
+                "condition": [{"type": "slot", "name": "test_int", "value": 12}],
+            },
+            {
+                "text": "example list",
+                "condition": [{"type": "slot", "name": "test_list", "value": []}],
+            },
+        ]
+    }
+    t = TemplatedNaturalLanguageGenerator(responses=responses)
+    slot = Slot(name=slot_name, initial_value=slot_value, influence_conversation=False)
+    tracker = DialogueStateTracker(sender_id="nlg_tracker", slots=[slot])
+
+    r = await t.generate(
+        utter_action="utter_action", tracker=tracker, output_channel=""
+    )
+    assert r.get("text") == message
