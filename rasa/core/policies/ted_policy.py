@@ -680,11 +680,17 @@ class TEDPolicy(Policy):
             tracker, domain, interpreter
         )
         model_data = self._create_model_data(tracker_state_features)
-        output = self.model.rasa_predict(model_data)
+        (data_generator, _,) = rasa.utils.train_utils.create_data_generators(
+            model_data=model_data,
+            batch_sizes=self.config[BATCH_SIZES],
+            epochs=1,
+            shuffle=False,
+        )
+        outputs = self.model.run_inference(data_generator)
 
         # take the last prediction in the sequence
-        similarities = output["similarities"][:, -1, :]
-        confidences = output["action_scores"][:, -1, :]
+        similarities = outputs["similarities"][:, -1, :]
+        confidences = outputs["action_scores"][:, -1, :]
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(
             confidences, similarities, domain
@@ -698,14 +704,14 @@ class TEDPolicy(Policy):
             )
 
         optional_events = self._create_optional_event_for_entities(
-            output, is_e2e_prediction, interpreter, tracker
+            outputs, is_e2e_prediction, interpreter, tracker
         )
 
         return self._prediction(
             confidence.tolist(),
             is_end_to_end_prediction=is_e2e_prediction,
             optional_events=optional_events,
-            diagnostic_data=output.get(DIAGNOSTIC_DATA),
+            diagnostic_data=outputs.get(DIAGNOSTIC_DATA),
         )
 
     def _create_optional_event_for_entities(
