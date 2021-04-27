@@ -738,3 +738,166 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
 
         return trackers_as_states
+
+
+class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
+
+    def _convert_labels_to_ids(
+        self, trackers_as_intents: List[List[Text]], domain: Domain
+    ) -> np.ndarray:
+        """Convert a list of labels to an np.ndarray of label ids.
+        The number of rows is equal to `len(trackers_as_intents)`.
+        The number of columns is equal to the maximum number of labels
+        that any Labels item has. Rows are padded with -1 if not all Labels 
+        items have the same number of labels.
+
+        Returns:
+            A 2d np.ndarray of label ids.
+        """
+
+        # store labels in numpy arrays so that it corresponds to np arrays of input features
+        label_ids = [
+            [
+                domain.intents.index(intent)
+                for intent in tracker_intents
+            ]
+            for tracker_intents in trackers_as_intents
+        ]
+
+        pad_val = -1
+
+        # Add -1 padding to labels array so that
+        # each example has equal number of labels
+        multiple_labels_count = [len(a) for a in label_ids]
+        max_labels_count = max(multiple_labels_count)
+        num_padding_needed = [max_labels_count - len(a) for a in label_ids]
+
+        new_label_ids = []
+        for ids, num_pads in zip(label_ids, num_padding_needed):
+            if num_pads:
+                ids.extend([pad_val] * num_pads)
+            new_label_ids.append(ids)
+
+        new_label_ids = np.array(new_label_ids)
+        return new_label_ids
+
+    def setup_example_iterator(self) -> None:
+        """Create any data structures for deduplication and tracking multiple 
+        intent labels.
+        """
+        super().setup_example_iterator()
+        self._state_hash_to_labels = defaultdict(list)
+
+    def next_example(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        omit_unset_slots: bool = False
+    ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
+        """Create an iterator over the training examples that will be created
+        from the provided tracker.
+
+        Returns:
+            An iterator over state, labels, entity tag tuples
+        """
+
+        tracker_states = self._create_states(
+            tracker, domain, omit_unset_slots=omit_unset_slots
+        )
+
+        label_index = 0
+        for event in tracker.applied_events():
+
+            if isinstance(event, ActionExecuted):
+                label_index += 1
+
+            elif isinstance(event, UserUttered):
+
+                sliced_states = self.slice_state_history(
+                    tracker_states[:label_index], self.max_history
+                )
+                label = [event.intent_name or event.intent_text]
+                entities = [{}]
+
+                yield sliced_states, label, entities
+
+
+    def filter_example(
+        self,
+        tracker: DialogueStateTracker,
+        states: List[State],
+        label: List[Text],
+    ) -> bool:
+        if not super().filter_example(tracker, states, label):
+            state_hash = self._hash_example(tracker, states)
+            self._state_hash_to_labels[state_hash].append(label)
+            return False
+        else:
+            return True
+
+    def cleanup_example_iterator(
+        self,
+        example_states: List[List[State]],
+        example_labels: List[List[Text]],
+        example_entities: List[List[Dict[Text, Any]]]
+    ) -> None:
+        """Clean up data structures and finalize any training examples."""
+
+        for labelset in self._state_hash_to_labels.values():
+            codomain = set([labels[0] for labels in labelset])
+            for labels in labelset:
+
+                filtered_codomain = filter(lambda label: label != labels[0], codomain)
+                labels.extend(filtered_codomain)
+
+        self._state_hash_to_labels = None
+        self.hashed_examples = None
+
+
+    def prediction_states(
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+    ) -> List[List[State]]:
+        """Transforms list of trackers to lists of states for prediction.
+
+        Args:
+            trackers: The trackers to transform.
+            domain: The domain.
+            use_text_for_last_user_input: Indicates whether to use text or intent label
+                for featurizing last user input.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
+
+        Returns:
+            A list of states.
+        """
+
+        # Create a copy of trackers
+        duplicate_trackers = [tracker.copy() for tracker in trackers]
+
+        # Remove last user event
+        for tracker in duplicate_trackers:
+            tracker.update(UserUtteranceReverted(), domain)
+
+        trackers_as_states = [
+            self._create_states(
+                tracker,
+                domain,
+                ignore_rule_only_turns=ignore_rule_only_turns,
+                rule_only_data=rule_only_data,
+            )
+            for tracker in duplicate_trackers
+        ]
+        trackers_as_states = [
+            self.slice_state_history(states, self.max_history)
+            for states in trackers_as_states
+        ]
+        self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
+
+        return trackers_as_states
