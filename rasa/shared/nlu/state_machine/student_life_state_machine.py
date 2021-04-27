@@ -1,6 +1,4 @@
-from enum import Enum
-
-from typing import List
+from typing import Any, Dict, List
 
 from rasa.shared.nlu.state_machine.state_machine_models import (
     Intent,
@@ -25,6 +23,7 @@ from rasa.shared.nlu.state_machine.conditions import (
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import CategoricalSlot, TextSlot, AnySlot
 from rasa.shared.core.slots import Slot as RasaSlot
+from rasa.shared.utils.io import dump_obj_as_yaml_to_string, write_text_file
 
 # class SpaceEntity(Enum, Entity):
 #     person = "PERSON"
@@ -40,7 +39,13 @@ whereAreYouFromIntent = Intent(
     name="where_are_you_from", examples=["Where are you from?"]
 )
 wheresTheWashroomIntent = Intent(
-    name="wheres_the_washroom", examples=["Where's the washroom?"]
+    name="wheres_the_washroom",
+    examples=[
+        "Where's the washroom?",
+        "Where is the restroom?",
+        "What is the location of the washroom?",
+        "I need to find the toilet",
+    ],
 )
 howAreYouDoingIntent = Intent(name="how_are_you_doing", examples=["How are you doing?"])
 
@@ -140,8 +145,12 @@ def convert_to_rasa_slot(slot: Slot) -> RasaSlot:
     return TextSlot(name=slot.name)
 
 
+def convert_intent_to_nlu(intent: Intent) -> Dict[str, Any]:
+    return {"intent": intent.name, "examples": intent.examples}
+
+
 # Write NLU
-def writeNLU(state: StateMachineState, filename: str):
+def writeNLU(state: StateMachineState, domain_filename: str, nlu_filename: str):
     all_entity_names = state.all_entities()
     all_intents: Set[Intent] = state.all_intents()
     all_utterances: Set[Utterance] = [
@@ -150,6 +159,7 @@ def writeNLU(state: StateMachineState, filename: str):
     all_actions: Set[Action] = state.all_actions()
     all_slots: Set[Slot] = state.all_slots()
 
+    # Write domain
     domain = Domain(
         intents=[intent.name for intent in all_intents],
         entities=all_entity_names,  # List of entity names
@@ -161,8 +171,21 @@ def writeNLU(state: StateMachineState, filename: str):
         forms={},
         action_texts=[],
     )
+    domain.persist(domain_filename)
 
-    domain.persist(filename)
+    # Write NLU
+    nlu_data = {
+        "version": "2.0",
+        "nlu": [convert_intent_to_nlu(intent) for intent in all_intents],
+    }
+
+    nlu_data_yaml = dump_obj_as_yaml_to_string(nlu_data, should_preserve_key_order=True)
+
+    write_text_file(nlu_data_yaml, nlu_filename)
 
 
-writeNLU(state=student_life_state_machine, filename="test.yaml")
+writeNLU(
+    state=student_life_state_machine,
+    domain_filename="state_machine_domain.yaml",
+    nlu_filename="state_machine_nlu.yaml",
+)

@@ -40,6 +40,8 @@ from rasa.shared.nlu.state_machine.student_life_state_machine import (
     student_life_state_machine,
 )
 
+import random
+
 logger = logging.getLogger(__name__)
 
 
@@ -69,346 +71,6 @@ class StateMachineAction(LoopAction):
             A list of slot names.
         """
         return list(domain.slot_mapping_for_form(self.name()).keys())
-
-    def from_entity(
-        self,
-        entity: Text,
-        intent: Optional[Union[Text, List[Text]]] = None,
-        not_intent: Optional[Union[Text, List[Text]]] = None,
-        role: Optional[Text] = None,
-        group: Optional[Text] = None,
-    ) -> Dict[Text, Any]:
-        """A dictionary for slot mapping to extract slot value.
-
-        From:
-        - an extracted entity
-        - conditioned on
-            - intent if it is not None
-            - not_intent if it is not None,
-                meaning user intent should not be this intent
-            - role if it is not None
-            - group if it is not None
-        """
-
-        intent, not_intent = self._list_intents(intent, not_intent)
-
-        return {
-            "type": str(SlotMapping.FROM_ENTITY),
-            "entity": entity,
-            "intent": intent,
-            "not_intent": not_intent,
-            "role": role,
-            "group": group,
-        }
-
-    def get_mappings_for_slot(
-        self, slot_to_fill: Text, domain: Domain
-    ) -> List[Dict[Text, Any]]:
-        """Get mappings for requested slot.
-
-        If None, map requested slot to an entity with the same name
-        """
-
-        requested_slot_mappings = self._to_list(
-            domain.slot_mapping_for_form(self.name()).get(
-                slot_to_fill, self.from_entity(slot_to_fill)
-            )
-        )
-        # check provided slot mappings
-        for requested_slot_mapping in requested_slot_mappings:
-            if (
-                not isinstance(requested_slot_mapping, dict)
-                or requested_slot_mapping.get("type") is None
-            ):
-                raise TypeError("Provided incompatible slot mapping")
-
-        return requested_slot_mappings
-
-    def _create_unique_entity_mappings(self, domain: Domain) -> Set[Text]:
-        """Finds mappings of type `from_entity` that uniquely set a slot.
-
-        For example in the following form:
-        some_form:
-          departure_city:
-            - type: from_entity
-              entity: city
-              role: from
-            - type: from_entity
-              entity: city
-          arrival_city:
-            - type: from_entity
-              entity: city
-              role: to
-            - type: from_entity
-              entity: city
-
-        An entity `city` with a role `from` uniquely sets the slot `departure_city`
-        and an entity `city` with a role `to` uniquely sets the slot `arrival_city`,
-        so corresponding mappings are unique.
-        But an entity `city` without a role can fill both `departure_city`
-        and `arrival_city`, so corresponding mapping is not unique.
-
-        Args:
-            domain: The domain.
-
-        Returns:
-            A set of json dumps of unique mappings of type `from_entity`.
-        """
-        unique_entity_slot_mappings = set()
-        duplicate_entity_slot_mappings = set()
-        for slot_mappings in domain.slot_mapping_for_form(self.name()).values():
-            for slot_mapping in slot_mappings:
-                if slot_mapping.get("type") == str(SlotMapping.FROM_ENTITY):
-                    mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
-                    if mapping_as_string in unique_entity_slot_mappings:
-                        unique_entity_slot_mappings.remove(mapping_as_string)
-                        duplicate_entity_slot_mappings.add(mapping_as_string)
-                    elif mapping_as_string not in duplicate_entity_slot_mappings:
-                        unique_entity_slot_mappings.add(mapping_as_string)
-
-        return unique_entity_slot_mappings
-
-    def _entity_mapping_is_unique(
-        self, slot_mapping: Dict[Text, Any], domain: Domain
-    ) -> bool:
-        if self._unique_entity_mappings is None:
-            # create unique entity mappings on the first call
-            self._unique_entity_mappings = self._create_unique_entity_mappings(domain)
-
-        mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
-        return mapping_as_string in self._unique_entity_mappings
-
-    @staticmethod
-    def intent_is_desired(
-        requested_slot_mapping: Dict[Text, Any],
-        tracker: "DialogueStateTracker",
-    ) -> bool:
-        """Check whether user intent matches intent conditions."""
-        mapping_intents = StateMachineAction._to_list(
-            requested_slot_mapping.get("intent", [])
-        )
-        mapping_not_intents = StateMachineAction._to_list(
-            requested_slot_mapping.get("not_intent", [])
-        )
-
-        intent = tracker.latest_message.intent.get("name")
-
-        intent_not_blocked = not mapping_intents and intent not in mapping_not_intents
-
-        return intent_not_blocked or intent in mapping_intents
-
-    def entity_is_desired(
-        self,
-        slot_mapping: Dict[Text, Any],
-        slot: Text,
-        entity_type_of_slot_to_fill: Optional[Text],
-        tracker: DialogueStateTracker,
-        domain: Domain,
-    ) -> bool:
-        """Check whether slot should be filled by an entity in the input or not.
-
-        Args:
-            slot_mapping: Slot mapping.
-            slot: The slot to be filled.
-            entity_type_of_slot_to_fill: Entity type of slot to fill.
-            tracker: The tracker.
-            domain: The domain.
-
-        Returns:
-            True, if slot should be filled, false otherwise.
-        """
-
-        # slot name is equal to the entity type
-        slot_equals_entity = slot == slot_mapping.get("entity")
-        # if entity mapping is unique, it means that an entity always sets
-        # a certain slot, so try to extract this slot if entity matches slot mapping
-        entity_mapping_is_unique = self._entity_mapping_is_unique(slot_mapping, domain)
-
-        # use the custom slot mapping 'from_entity' defined by the user to check
-        # whether we can fill a slot with an entity (only if a role or a group label
-        # is set)
-        if (
-            slot_mapping.get("role") is None and slot_mapping.get("group") is None
-        ) or entity_type_of_slot_to_fill != slot_mapping.get("entity"):
-            slot_fulfils_entity_mapping = False
-        else:
-            matching_values = self.get_entity_value(
-                slot_mapping.get("entity"),
-                tracker,
-                slot_mapping.get("role"),
-                slot_mapping.get("group"),
-            )
-            slot_fulfils_entity_mapping = matching_values is not None
-
-        return (
-            slot_equals_entity
-            or entity_mapping_is_unique
-            or slot_fulfils_entity_mapping
-        )
-
-    @staticmethod
-    def get_entity_value(
-        name: Text,
-        tracker: "DialogueStateTracker",
-        role: Optional[Text] = None,
-        group: Optional[Text] = None,
-    ) -> Any:
-        """Extract entities for given name and optional role and group.
-
-        Args:
-            name: entity type (name) of interest
-            tracker: the tracker
-            role: optional entity role of interest
-            group: optional entity group of interest
-
-        Returns:
-            Value of entity.
-        """
-
-        # Return None if latest entity values were gathered before the active loop was set
-        if not tracker.active_loop_name:
-            return None
-
-        # list is used to cover the case of list slot type
-        value = list(
-            tracker.get_latest_entity_values(name, entity_group=group, entity_role=role)
-        )
-        if len(value) == 0:
-            value = None
-        elif len(value) == 1:
-            value = value[0]
-        return value
-
-    def extract_other_slots(
-        self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Dict[Text, Any]:
-        """Extract the values of the other slots
-        if they are set by corresponding entities from the user input
-        else return `None`.
-        """
-        slot_to_fill = self.get_slot_to_fill(tracker)
-
-        entity_type_of_slot_to_fill = self._get_entity_type_of_slot_to_fill(
-            slot_to_fill, domain
-        )
-
-        slot_values = {}
-        for slot in self.required_slots(domain):
-            # look for other slots
-            if slot != slot_to_fill:
-                # list is used to cover the case of list slot type
-                slot_mappings = self.get_mappings_for_slot(slot, domain)
-
-                for slot_mapping in slot_mappings:
-                    # check whether the slot should be filled by an entity in the input
-                    should_fill_entity_slot = (
-                        slot_mapping["type"] == str(SlotMapping.FROM_ENTITY)
-                        and self.intent_is_desired(slot_mapping, tracker)
-                        and self.entity_is_desired(
-                            slot_mapping,
-                            slot,
-                            entity_type_of_slot_to_fill,
-                            tracker,
-                            domain,
-                        )
-                    )
-                    # check whether the slot should be
-                    # filled from trigger intent mapping
-                    should_fill_trigger_slot = (
-                        tracker.active_loop_name != self.name()
-                        and slot_mapping["type"] == str(SlotMapping.FROM_TRIGGER_INTENT)
-                        and self.intent_is_desired(slot_mapping, tracker)
-                    )
-                    if should_fill_entity_slot:
-                        value = self.get_entity_value(
-                            slot_mapping["entity"],
-                            tracker,
-                            slot_mapping.get("role"),
-                            slot_mapping.get("group"),
-                        )
-                    elif should_fill_trigger_slot:
-                        value = slot_mapping.get("value")
-                    else:
-                        value = None
-
-                    if value is not None:
-                        logger.debug(f"Extracted '{value}' for extra slot '{slot}'.")
-                        slot_values[slot] = value
-                        # this slot is done, check  next
-                        break
-
-        return slot_values
-
-    def get_slot_to_fill(self, tracker: "DialogueStateTracker") -> Optional[str]:
-        """Gets the name of the slot which should be filled next.
-
-        When switching to another form, the requested slot setting is still from the
-        previous form and must be ignored.
-
-        Returns:
-            The slot name or `None`
-        """
-        return (
-            tracker.get_slot(REQUESTED_SLOT)
-            if tracker.active_loop_name == self.name()
-            else None
-        )
-
-    def extract_requested_slot(
-        self,
-        tracker: "DialogueStateTracker",
-        domain: Domain,
-        slot_to_fill: Text,
-    ) -> Dict[Text, Any]:
-        """Extract the value of requested slot from a user input else return `None`.
-
-        Args:
-            tracker: a DialogueStateTracker instance
-            domain: the current domain
-            slot_to_fill: the name of the slot to fill
-
-        Returns:
-            a dictionary with one key being the name of the slot to fill
-            and its value being the slot value, or an empty dictionary
-            if no slot value was found.
-        """
-        logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
-
-        # get mapping for requested slot
-        requested_slot_mappings = self.get_mappings_for_slot(slot_to_fill, domain)
-
-        for requested_slot_mapping in requested_slot_mappings:
-            logger.debug(f"Got mapping '{requested_slot_mapping}'")
-
-            if self.intent_is_desired(requested_slot_mapping, tracker):
-                mapping_type = requested_slot_mapping["type"]
-
-                if mapping_type == str(SlotMapping.FROM_ENTITY):
-                    value = self.get_entity_value(
-                        requested_slot_mapping.get("entity"),
-                        tracker,
-                        requested_slot_mapping.get("role"),
-                        requested_slot_mapping.get("group"),
-                    )
-                elif mapping_type == str(SlotMapping.FROM_INTENT):
-                    value = requested_slot_mapping.get("value")
-                elif mapping_type == str(SlotMapping.FROM_TRIGGER_INTENT):
-                    # from_trigger_intent is only used on form activation
-                    continue
-                elif mapping_type == str(SlotMapping.FROM_TEXT):
-                    value = tracker.latest_message.text
-                else:
-                    raise InvalidDomain("Provided slot mapping type is not supported")
-
-                if value is not None:
-                    logger.debug(
-                        f"Successfully extracted '{value}' for requested slot "
-                        f"'{slot_to_fill}'"
-                    )
-                    return {slot_to_fill: value}
-
-        logger.debug(f"Failed to extract requested slot '{slot_to_fill}'")
-        return {}
 
     async def validate_slots(
         self,
@@ -471,7 +133,7 @@ class StateMachineAction(LoopAction):
             current_tracker.sender_id,
             current_tracker.events_after_latest_restart()
             # Insert SlotSet event to make sure REQUESTED_SLOT belongs to active form.
-            + [SlotSet(REQUESTED_SLOT, self.get_slot_to_fill(current_tracker))]
+            # + [SlotSet(REQUESTED_SLOT, self.get_slot_to_fill(current_tracker))]
             # Insert form execution event so that it's clearly distinguishable which
             # events were newly added.
             + [ActionExecuted(self.name())] + additional_events,
@@ -505,7 +167,8 @@ class StateMachineAction(LoopAction):
         slot_values = {}
 
         # Fill slots from latest utterance
-        for slot in slots:
+        unfilled_slots = [slot for slot in slots if tracker.get_slot(slot.name) == None]
+        for slot in unfilled_slots:
             # self.extract_requested_slot(tracker=tracker, domain=domain, slot_to_fill=slot.name)
             values_from_entities = [
                 self.get_entity_value(entity, tracker, None, None)
@@ -612,17 +275,25 @@ class StateMachineAction(LoopAction):
         # Get next slot utterance
         next_slot_prompt_action: Optional[str] = None
 
-        if len(empty_slots) > 0 and len(empty_slots[0].prompt_actions) > 0:
-            next_slot_utterance_name = empty_slots[0].prompt_actions[0].name
+        if len(empty_slots) > 0:
+            empty_slot = empty_slots[0]
+            if len(empty_slot.prompt_actions) == 0:
+                raise ActionExecutionRejection(
+                    self.name(),
+                    f"No prompt actions found for slot {empty_slot.name}",
+                )
+
+            randomIndex = random.randint(0, len(empty_slot.prompt_actions) - 1)
+            next_slot_utterance_name = empty_slot.prompt_actions[randomIndex].name
             next_slot_prompt_action = action.action_for_name_or_text(
                 next_slot_utterance_name,
                 domain,
                 self.action_endpoint,
             )
 
-            return [
-                await next_slot_prompt_action.run(output_channel, nlg, tracker, domain)
-            ]
+            return await next_slot_prompt_action.run(
+                output_channel, nlg, tracker, domain
+            )
 
         return []
 
@@ -782,18 +453,6 @@ class StateMachineAction(LoopAction):
 
     #     # no more required slots to fill
     #     return [SlotSet(REQUESTED_SLOT, None)]
-
-    def _find_next_slot_to_request(
-        self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Optional[Text]:
-        return next(
-            (
-                slot
-                for slot in self.required_slots(domain)
-                if self._should_request_slot(tracker, slot)
-            ),
-            None,
-        )
 
     # def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Optional[Text]:
     #     search_path = [
@@ -996,24 +655,35 @@ class StateMachineAction(LoopAction):
         logger.debug(f"Deactivating the form '{self.name()}'")
         return []
 
-    def _get_entity_type_of_slot_to_fill(
-        self, slot_to_fill: Text, domain: "Domain"
-    ) -> Optional[Text]:
-        if not slot_to_fill:
+    @staticmethod
+    def get_entity_value(
+        name: Text,
+        tracker: "DialogueStateTracker",
+        role: Optional[Text] = None,
+        group: Optional[Text] = None,
+    ) -> Any:
+        """Extract entities for given name and optional role and group.
+
+        Args:
+            name: entity type (name) of interest
+            tracker: the tracker
+            role: optional entity role of interest
+            group: optional entity group of interest
+
+        Returns:
+            Value of entity.
+        """
+
+        # Return None if latest entity values were gathered before the active loop was set
+        if not tracker.active_loop_name:
             return None
 
-        mappings = self.get_mappings_for_slot(slot_to_fill, domain)
-        mappings = [
-            m for m in mappings if m.get("type") == str(SlotMapping.FROM_ENTITY)
-        ]
-
-        if not mappings:
-            return None
-
-        entity_type = mappings[0].get("entity")
-
-        for i in range(1, len(mappings)):
-            if entity_type != mappings[i].get("entity"):
-                return None
-
-        return entity_type
+        # list is used to cover the case of list slot type
+        value = list(
+            tracker.get_latest_entity_values(name, entity_group=group, entity_role=role)
+        )
+        if len(value) == 0:
+            value = None
+        elif len(value) == 1:
+            value = value[0]
+        return value
