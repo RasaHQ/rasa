@@ -84,7 +84,7 @@ import json
 import pika
 
 
-def _callback(self, ch, method, properties, body):
+def _callback(ch, method, properties, body):
         # Do something useful with your incoming message body here, e.g.
         # saving it to a database
         print('Received event {}'.format(json.loads(body)))
@@ -101,9 +101,7 @@ if __name__ == '__main__':
 
     # start consumption of channel
     channel = connection.channel()
-    channel.basic_consume(_callback,
-                          queue='rasa_events',
-                          no_ack=True)
+    channel.basic_consume(queue="rasa_events", on_message_callback=_callback)
     channel.start_consuming()
 ```
 
