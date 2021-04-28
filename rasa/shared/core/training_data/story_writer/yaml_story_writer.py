@@ -228,16 +228,28 @@ class YAMLStoryWriter(StoryWriter):
             entities = []
             for entity in user_utterance.entities:
                 if entity["value"]:
-                    for predicted in user_utterance.predicted_entities:
-                        if predicted["start"] == entity["start"]:
-                            entity_map = CommentedMap(
-                                [(entity["entity"], entity["value"])]
-                            )
-                            entity_comment = "predicted: " + predicted["entity"]
-                            entity_map.yaml_add_eol_comment(
-                                entity_comment, entity["entity"]
-                            )
-                            entities.append(entity_map)
+                    from rasa.core.test import WronglyClassifiedUserUtterance
+
+                    if isinstance(user_utterance, WronglyClassifiedUserUtterance):
+                        for predicted in user_utterance.predicted_entities:
+                            if predicted["start"] == entity["start"]:
+                                entity_map = CommentedMap(
+                                    [(entity["entity"], entity["value"])]
+                                )
+                                entity_comment = (
+                                    "predicted: "
+                                    + predicted["entity"]
+                                    + ": "
+                                    + predicted["value"]
+                                )
+                                entity_map.yaml_add_eol_comment(
+                                    entity_comment, entity["entity"]
+                                )
+                                entities.append(entity_map)
+                    else:
+                        entities.append(
+                            OrderedDict([(entity["entity"], entity["value"])])
+                        )
                 else:
                     entities.append(entity["entity"])
             result[KEY_ENTITIES] = entities
