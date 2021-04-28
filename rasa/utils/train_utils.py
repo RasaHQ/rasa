@@ -393,7 +393,7 @@ def create_data_generators(
         batch_strategy: The batch strategy to use.
         eval_num_examples: Number of examples to use for validation data.
         random_seed: The random seed.
-        shuffle: Whether to shuffle data inside the data generator
+        shuffle: Whether to shuffle data inside the data generator.
 
     Returns:
         The training data generator and optional validation data generator.

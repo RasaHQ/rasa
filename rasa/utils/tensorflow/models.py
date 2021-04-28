@@ -256,7 +256,7 @@ class RasaModel(TmpKerasModel):
         """Custom prediction method that builds tf graph on the first call.
 
         Args:
-            batch_in: Prepared batch ready for input to predict_step method of model.
+            batch_in: Prepared batch ready for input to `predict_step` method of model.
 
         Return:
             Prediction output, including diagnostic data.
