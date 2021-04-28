@@ -1,6 +1,7 @@
 import json
 import logging
 import uuid
+import jwt
 from sanic import Sanic, Blueprint
 from sanic.request import Request
 from typing import (
@@ -16,7 +17,7 @@ from typing import (
 )
 
 from rasa.cli import utils as cli_utils
-from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
+from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID, BEARER_TOKEN_PREFIX
 from rasa.shared.exceptions import RasaException
 
 try:
@@ -94,6 +95,23 @@ def register(
         app.blueprint(channel.blueprint(handler), url_prefix=p)
 
     app.input_channels = input_channels
+
+
+def _decode_jwt(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Dict:
+    authorization_header_value = bearer_token.replace(BEARER_TOKEN_PREFIX, "")
+    return jwt.decode(authorization_header_value, jwt_key, algorithms=jwt_algorithm)
+
+
+def _decode_bearer_token(
+    bearer_token: Text, jwt_key: Text, jwt_algorithm: Text
+) -> Optional[Dict]:
+    # noinspection PyBroadException
+    try:
+        return _decode_jwt(bearer_token, jwt_key, jwt_algorithm)
+    except jwt.exceptions.InvalidSignatureError:
+        logger.error("JWT public key invalid.")
+    except Exception:
+        logger.exception("Failed to decode bearer token.")
 
 
 class InputChannel:

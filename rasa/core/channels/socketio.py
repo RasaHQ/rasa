@@ -3,7 +3,12 @@ import uuid
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
 
 from rasa.core import constants
-from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+from rasa.core.channels.channel import (
+    InputChannel,
+    OutputChannel,
+    UserMessage,
+    _decode_bearer_token,
+)
 import rasa.shared.utils.io
 from sanic import Blueprint, response, Sanic
 from sanic.request import Request
@@ -168,23 +173,6 @@ class SocketIOInput(InputChannel):
             return
         return SocketIOOutput(self.sio, self.bot_message_evt)
 
-    def _decode_jwt(self, bearer_token: Text) -> Dict:
-        authorization_header_value = bearer_token.replace(
-            constants.BEARER_TOKEN_PREFIX, ""
-        )
-        return jwt.decode(
-            authorization_header_value, self.jwt_key, algorithms=self.jwt_algorithm
-        )
-
-    def _decode_bearer_token(self, bearer_token: Text) -> Optional[Dict]:
-        # noinspection PyBroadException
-        try:
-            return self._decode_jwt(bearer_token)
-        except jwt.exceptions.InvalidSignatureError:
-            logger.error("JWT public key invalid.")
-        except Exception:
-            logger.exception("Failed to decode bearer token.")
-
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
@@ -203,17 +191,22 @@ class SocketIOInput(InputChannel):
             return response.json({"status": "ok"})
 
         @sio.on("connect", namespace=self.namespace)
-        async def connect(sid: Text, environ: Dict) -> None:
-            jwt_payload = None
-            if environ.get("HTTP_AUTHORIZATION"):
-                jwt_payload = self._decode_bearer_token(
-                    environ.get("HTTP_AUTHORIZATION")
-                )
+        async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> None:
+            if self.jwt_key:
+                jwt_payload = None
+                if environ.get("HTTP_AUTHORIZATION"):
+                    jwt_payload = _decode_bearer_token(
+                        environ.get("HTTP_AUTHORIZATION"),
+                        self.jwt_key,
+                        self.jwt_algorithm,
+                    )
 
-            if jwt_payload:
-                logger.debug(f"User {sid} connected to socketIO endpoint.")
+                if jwt_payload:
+                    logger.debug(f"User {sid} connected to socketIO endpoint.")
+                else:
+                    return False
             else:
-                return False
+                logger.debug(f"User {sid} connected to socketIO endpoint.")
 
         @sio.on("disconnect", namespace=self.namespace)
         async def disconnect(sid: Text) -> None:
