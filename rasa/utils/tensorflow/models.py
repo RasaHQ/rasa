@@ -307,7 +307,8 @@ class RasaModel(TmpKerasModel):
         """Merge a batch's output into the output for all batches.
 
         Function assumes that the schema of batch output remains the same,
-        i.e. keys and their value types do not change from one batch's output to another.
+        i.e. keys and their value types do not change from one batch's
+        output to another.
 
         Args:
             all_outputs: Existing output for all previous batches.

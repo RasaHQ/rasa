@@ -5,7 +5,6 @@ import tensorflow as tf
 
 from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData
-from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.model_data import FeatureArray
 from rasa.utils.tensorflow.constants import LABEL, IDS, SENTENCE
 from rasa.shared.nlu.constants import TEXT
