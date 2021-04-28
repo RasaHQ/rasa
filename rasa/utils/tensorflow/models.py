@@ -62,7 +62,8 @@ def _merge_batch_outputs(
         batch_output: Output for a batch.
 
     Returns:
-        Merged output with the output for current batch stacked below the output for all previous batches.
+        Merged output with the output for current batch stacked
+        below the output for all previous batches.
     """
     if not all_outputs:
         return batch_output
@@ -318,7 +319,8 @@ class RasaModel(TmpKerasModel):
         while True:
             try:
                 # data_generator is a tuple of 2 elements - input and output.
-                # We only need input, since output is always None and not consumed by our TF graphs.
+                # We only need input, since output is always None and not
+                # consumed by our TF graphs.
                 batch_in = next(data_iterator)[0]
                 batch_out = self.rasa_predict(batch_in)
                 outputs = _merge_batch_outputs(outputs, batch_out)
