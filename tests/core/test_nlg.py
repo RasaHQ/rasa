@@ -333,29 +333,17 @@ def test_nlg_fill_response_quick_replies(
     assert result == {"quick_replies": str(quick_replies_slot_value)}
 
 
-@pytest.mark.parametrize(
-    ("slot_name", "slot_value", "output_channel", "response_variation"),
-    (
-        ("slot test", "A", "os", "Conditional Response A"),
-        ("slot test", "A", "app", "Conditional app response A"),
-        ("slot test", "B", "", "Conditional Response B"),
-        ("slot test", "C", "", "Default response"),
-    ),
-)
-async def test_nlg_conditional_response_variations(
-    slot_name, slot_value, output_channel, response_variation
-):
+async def test_nlg_conditional_response_variations_with_no_slots():
     responses = {
         "utter_test": [
             {
-                "text": "Conditional Response A",
+                "text": "Conditional OS Response A",
                 "condition": [{"type": "slot", "name": "slot test", "value": "A"}],
                 "channel": "os",
             },
             {
-                "text": "Conditional app response A",
+                "text": "Conditional Response A",
                 "condition": [{"type": "slot", "name": "slot test", "value": "A"}],
-                "channel": "app",
             },
             {
                 "text": "Conditional Response B",
@@ -365,19 +353,11 @@ async def test_nlg_conditional_response_variations(
         ]
     }
     t = TemplatedNaturalLanguageGenerator(responses=responses)
-
-    slot = Slot(name=slot_name, initial_value=slot_value, influence_conversation=False)
-    tracker = DialogueStateTracker(sender_id="nlg_test", slots=[slot])
-
-    r = await t.generate(
-        utter_action="utter_test", tracker=tracker, output_channel=output_channel
-    )
-    assert r.get("text") == response_variation
-
     no_slots_tracker = DialogueStateTracker(sender_id="nlg_test_default", slots=None)
     default_response = await t.generate(
         utter_action="utter_test", tracker=no_slots_tracker, output_channel=""
     )
+
     assert default_response.get("text") == "Default response"
 
 
@@ -392,6 +372,16 @@ async def test_nlg_when_multiple_conditions_satisfied():
                 "text": "example B",
                 "condition": [{"type": "slot", "name": "test_another", "value": "B"}],
             },
+            {
+                "text": "non matching example 1",
+                "condition": [
+                    {"type": "slot", "name": "test_third_slot", "value": "C"}
+                ],
+            },
+            {
+                "text": "non matching example 2",
+                "condition": [{"type": "slot", "name": "test", "value": "D"}],
+            },
         ]
     }
 
@@ -403,58 +393,6 @@ async def test_nlg_when_multiple_conditions_satisfied():
         utter_action="utter_action", tracker=tracker, output_channel=""
     )
     assert resp.get("text") in ["example A", "example B"]
-
-
-@pytest.mark.parametrize(
-    (
-        "first_slot",
-        "first_slot_value",
-        "second_slot",
-        "second_slot_value",
-        "response_variation",
-    ),
-    (
-        ("test", "A", "test_other", "B", "example AB"),
-        ("test", "C", "test_other", "D", "example CD"),
-    ),
-)
-async def test_nlg_with_multiple_constraints(
-    first_slot, first_slot_value, second_slot, second_slot_value, response_variation
-):
-    responses = {
-        "utter_action": [
-            {
-                "text": "example AB",
-                "condition": [
-                    {"type": "slot", "name": "test", "value": "A"},
-                    {"type": "slot", "name": "test_other", "value": "B"},
-                ],
-            },
-            {
-                "text": "example CD",
-                "condition": [
-                    {"type": "slot", "name": "test", "value": "C"},
-                    {"type": "slot", "name": "test_other", "value": "D"},
-                ],
-            },
-        ]
-    }
-    t = TemplatedNaturalLanguageGenerator(responses=responses)
-
-    first_slot = Slot(
-        name=first_slot, initial_value=first_slot_value, influence_conversation=False
-    )
-    second_slot = Slot(
-        name=second_slot, initial_value=second_slot_value, influence_conversation=False
-    )
-    tracker = DialogueStateTracker(
-        sender_id="test_nlg_multiple", slots=[first_slot, second_slot]
-    )
-
-    r = await t.generate(
-        utter_action="utter_action", tracker=tracker, output_channel=""
-    )
-    assert r.get("text") == response_variation
 
 
 @pytest.mark.parametrize(
@@ -472,7 +410,7 @@ async def test_nlg_conditional_response_variations_with_interpolated_slots(
             },
             {
                 "text": "example two {test}",
-                "condition": [{"type": "slot", "name": "test", "value": "B"},],
+                "condition": [{"type": "slot", "name": "test", "value": "B"}],
             },
         ]
     }
@@ -599,3 +537,80 @@ async def test_nlg_conditional_response_variations_with_diff_slot_types(
         utter_action="utter_action", tracker=tracker, output_channel=""
     )
     assert r.get("text") == message
+
+
+async def test_nlg_non_matching_channel():
+    domain = Domain.from_yaml(
+        """
+    responses:
+        utter_hi:
+        - text: "Hello"
+        - text: "Hello Slack"
+          channel: "slack"
+    """
+    )
+    t = TemplatedNaturalLanguageGenerator(domain.responses)
+    tracker = DialogueStateTracker(sender_id="test", slots=[])
+    r = await t.generate("utter_hi", tracker, "signal")
+    assert r.get("text") == "Hello"
+
+
+async def test_nlg_conditional_response_variations_with_none_slot():
+    domain = Domain.from_yaml(
+        """
+        responses:
+            utter_action:
+            - text: "text A"
+              condition:
+              - type: slot
+                name: account
+                value: "A"
+        """
+    )
+    t = TemplatedNaturalLanguageGenerator(domain.responses)
+    slot = Slot(name="account", initial_value=None, influence_conversation=False)
+    tracker = DialogueStateTracker(sender_id="test", slots=[slot])
+    r = await t.generate("utter_action", tracker, "")
+    assert r is None
+
+
+async def test_nlg_conditional_response_variations_with_slot_not_a_constraint():
+    domain = Domain.from_yaml(
+        """
+            responses:
+                utter_action:
+                - text: "text A"
+                  condition:
+                  - type: slot
+                    name: account
+                    value: "A"
+            """
+    )
+    t = TemplatedNaturalLanguageGenerator(domain.responses)
+    slot = Slot(name="account", initial_value="B", influence_conversation=False)
+    tracker = DialogueStateTracker(sender_id="test", slots=[slot])
+    r = await t.generate("utter_action", tracker, "")
+    assert r is None
+
+
+async def test_nlg_conditional_response_variations_with_null_slot():
+    domain = Domain.from_yaml(
+        """
+                responses:
+                    utter_action:
+                    - text: "text for null"
+                      condition:
+                      - type: slot
+                        name: account
+                        value: null
+                """
+    )
+    t = TemplatedNaturalLanguageGenerator(domain.responses)
+    slot = Slot(name="account", initial_value=None, influence_conversation=False)
+    tracker = DialogueStateTracker(sender_id="test", slots=[slot])
+    r = await t.generate("utter_action", tracker, "")
+    assert r.get("text") == "text for null"
+
+    tracker_no_slots = DialogueStateTracker(sender_id="new_test", slots=[])
+    r = await t.generate("utter_action", tracker_no_slots, "")
+    assert r.get("text") == "text for null"

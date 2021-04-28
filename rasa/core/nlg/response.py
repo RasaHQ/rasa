@@ -6,6 +6,7 @@ from typing import Text, Any, Dict, Optional, List
 
 from rasa.core.nlg import interpolator
 from rasa.core.nlg.generator import NaturalLanguageGenerator
+from rasa.shared.constants import CONDITION, CHANNEL
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         self, filled_slots: Dict[Text, Any], response: Dict[Text, Any],
     ) -> bool:
         """Checks if the conditional response variation matches the filled slots."""
-        constraints = response.get("condition")
+        constraints = response.get(CONDITION)
         for constraint in constraints:
             name = constraint["name"]
             value = constraint["value"]
@@ -46,7 +47,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         conditional_responses = []
 
         for response in self.responses[utter_action]:
-            if response.get("condition") is None:
+            if response.get(CONDITION) is None:
                 default_responses.append(response)
             else:
                 matched_response = self._matches_filled_slots(
@@ -61,14 +62,15 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             potential_responses = default_responses
 
         channel_responses = list(
-            filter(lambda x: (x.get("channel") == output_channel), potential_responses)
+            filter(lambda x: (x.get(CHANNEL) == output_channel), potential_responses)
         )
 
         # always prefer channel specific responses over default ones
         if channel_responses:
             return channel_responses
-        else:
-            return potential_responses
+
+        # filter out any non-matching channel specific responses
+        return list(filter(lambda x: (x.get(CHANNEL) is None), potential_responses))
 
     # noinspection PyUnusedLocal
     def _random_response_for(
