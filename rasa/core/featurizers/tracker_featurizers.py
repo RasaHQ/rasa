@@ -742,6 +742,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
 class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
+    LABEL_NAME = "intent"
+
     def _convert_labels_to_ids(
         self, trackers_as_intents: List[List[Text]], domain: Domain
     ) -> np.ndarray:
