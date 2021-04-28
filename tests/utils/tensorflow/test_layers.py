@@ -81,24 +81,34 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
     batch_size = 3
     layer = MultiLabelDotProductLoss(num_neg, scale_loss=False, similarity_type=INNER)
 
+    # Some random input embeddings
     i0 = [0, 0, 0]
     i1 = [1, 1, 1]
     i2 = [2, 2, 2]
 
+    # Some random label embeddings
     l0 = [11, 12, 13]
     l1 = [21, 22, 23]
     l2 = [31, 32, 33]
     l3 = [41, 42, 43]
 
+    # Each example in the batch has one input
     batch_inputs_embed = tf.constant([[i0], [i1], [i2]], dtype=tf.float32)
+    # Each input can have multiple labels (here its always the same number of labels,
+    # but it doesn't have to be)
     batch_labels_embed = tf.constant([[l0, l1], [l2, l3], [l3, l0]], dtype=tf.float32)
+    # We assign the corresponding indices
     batch_labels_ids = tf.constant(
         [[[0], [1]], [[2], [3]], [[3], [0]]], dtype=tf.float32
     )
+    # List all the labels and ids in play
     all_labels_embed = tf.constant([l0, l1, l2, l3], dtype=tf.float32)
     all_labels_ids = tf.constant([[0], [1], [2], [3]], dtype=tf.float32)
+    # Forget about masks for now
     mask = None
 
+    # Inside `layer._sample_candidates` random indices will be generated for the
+    # candidates. We mock them to have a deterministic output.
     mock_indices = [0, 2, 0, 1, 0, 1]
 
     def mock_random_indices(*args, **kwargs) -> tf.Tensor:
@@ -106,6 +116,7 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
 
     monkeypatch.setattr(layers_utils, "random_indices", mock_random_indices)
 
+    # Now run the function we want to test
     (
         pos_inputs_embed,
         pos_labels_embed,
