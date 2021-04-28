@@ -16,9 +16,19 @@ logger = logging.getLogger(__name__)
 
 def _fix_matplotlib_backend() -> None:
     """Tries to fix a broken matplotlib backend."""
+    try:
+        backend = matplotlib.get_backend()
+    except Exception:  # skipcq:PYL-W0703
+        logger.error(
+            "Cannot retrieve Matplotlib backend, likely due to a compatibility "
+            "issue with system dependencies. Please refer to the documentation: "
+            "https://matplotlib.org/stable/tutorials/introductory/usage.html#backends"
+        )
+        raise
+
     # At first, matplotlib will be initialized with default OS-specific
     # available backend
-    if matplotlib.get_backend() == "TkAgg":
+    if backend == "TkAgg":
         try:
             # on OSX sometimes the tkinter package is broken and can't be imported.
             # we'll try to import it and if it fails we will use a different backend
@@ -28,7 +38,7 @@ def _fix_matplotlib_backend() -> None:
             matplotlib.use("agg")
 
     # if no backend is set by default, we'll try to set it up manually
-    elif matplotlib.get_backend() is None:  # pragma: no cover
+    elif backend is None:  # pragma: no cover
         try:
             # If the `tkinter` package is available, we can use the `TkAgg` backend
             import tkinter  # skipcq: PYL-W0611
