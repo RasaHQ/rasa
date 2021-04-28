@@ -3,9 +3,8 @@ from typing import Dict, Text, Union
 import numpy as np
 import tensorflow as tf
 
-from rasa.utils.tensorflow.models import _merge_batch_outputs, RasaModel
+from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData
-from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.model_data import FeatureArray
 from rasa.utils.tensorflow.constants import LABEL, IDS, SENTENCE
 from rasa.shared.nlu.constants import TEXT
@@ -37,7 +36,9 @@ def test_merging_batch_outputs(
     expected_output: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
 ):
 
-    predicted_output = _merge_batch_outputs(existing_outputs, new_batch_outputs)
+    predicted_output = RasaModel._merge_batch_outputs(
+        existing_outputs, new_batch_outputs
+    )
 
     def test_equal_dicts(
         dict1: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
@@ -76,7 +77,9 @@ def test_batch_inference(
         dummy_output = batch_in[0]
         output = {
             "dummy_output": dummy_output,
-            DIAGNOSTIC_DATA: tf.constant(np.array([[1, 2]]), dtype=tf.int32),
+            "non_input_affected_output": tf.constant(
+                np.array([[1, 2]]), dtype=tf.int32
+            ),
         }
         return output
 
@@ -108,4 +111,7 @@ def test_batch_inference(
     # equal to the number of batches passed to the model because for every
     # batch passed as input, it would have created a
     # corresponding diagnostic data entry.
-    assert output[DIAGNOSTIC_DATA].shape == (expected_number_of_batch_iterations, 2)
+    assert output["non_input_affected_output"].shape == (
+        expected_number_of_batch_iterations,
+        2,
+    )
