@@ -596,8 +596,6 @@ class Domain:
         for response_variations in self.responses.values():
             for variation in response_variations:
                 if CONDITION in variation:
-                    import rasa.shared.utils.common
-
                     rasa.shared.utils.common.mark_as_experimental_feature(
                         "conditional response variation feature"
                     )
