@@ -1110,7 +1110,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         all_labels_ids: tf.Tensor,  # (num_labels, 1)
         mask: Optional[tf.Tensor] = None,  # (batch_size, 1)
     ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Calculate loss and accuracy.
+        """Calculates loss and accuracy.
 
         Args:
             batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized trackers)
@@ -1152,20 +1152,20 @@ class MultiLabelDotProductLoss(DotProductLoss):
         batch_labels_embed: tf.Tensor,
         batch_labels_ids: tf.Tensor,
         all_labels_embed: tf.Tensor,
-        all_label_ids: tf.Tensor,
+        all_labels_ids: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
-        """Sample negative examples.
+        """Sample candidate examples.
         
         Args:
             batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized trackers)
             batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents for IntentTED)
             batch_labels_ids: Batch label indices (e.g. indices of the intents)
             all_labels_embed: Embeddings for all labels in the domain
-            all_label_ids: Indices for all labels in the domain
+            all_labels_ids: Indices for all labels in the domain
 
         Returns:
             pos_inputs_embed: Embeddings of the batch inputs
-            pos_labels_embed: One example of the embedding of a positive label
+            pos_labels_embed: First example of the embedding of a positive label
             candidate_labels_embed: More examples of embeddings of labels, some positive some negative
             pos_neg_labels: Indicator for which candidates are positives and which are negatives
         """
@@ -1197,7 +1197,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         # Determine how many distinct labels exist (highest label index)
-        max_label_id = tf.cast(tf.math.reduce_max(all_label_ids), dtype=tf.int32)
+        max_label_id = tf.cast(tf.math.reduce_max(all_labels_ids), dtype=tf.int32)
         # dimension size is 1 indexed and hence 1 more than maximum label id
         depth_needed = max_label_id + 1
 
