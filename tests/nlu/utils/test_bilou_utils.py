@@ -58,14 +58,6 @@ def test_tags_to_ids():
     assert tags == [1, 0, 0, 0, 0, 2, 3]
 
 
-def test_remove_bilou_prefixes():
-    actual = bilou_utils.remove_bilou_prefixes(
-        ["U-location", "O", "O", "O", "O", "B-organisation", "L-organisation"]
-    )
-
-    assert actual == ["location", "O", "O", "O", "O", "organisation", "organisation"]
-
-
 def test_build_tag_id_dict():
     message_1 = Message.build(
         text="Germany is part of the European Union", intent="inform"

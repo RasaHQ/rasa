@@ -12,7 +12,6 @@ PERCENTAGE_KEY = "__percentage__"
 
 PACKAGE_NAME = "rasa"
 NLU_MODEL_NAME_PREFIX = "nlu_"
-CHECKPOINT_MODEL_NAME = "rasa_model_checkpoint"
 
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005

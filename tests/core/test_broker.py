@@ -219,9 +219,7 @@ async def test_load_custom_broker_name(tmp_path: Path):
 class CustomEventBrokerWithoutAsync(EventBroker):
     @classmethod
     def from_endpoint_config(
-        cls,
-        broker_config: EndpointConfig,
-        event_loop: Optional[AbstractEventLoop] = None,
+        cls, _: EndpointConfig, __: Optional[AbstractEventLoop] = None,
     ) -> "EventBroker":
         return FileEventBroker()
 
