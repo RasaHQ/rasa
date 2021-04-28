@@ -645,6 +645,16 @@ class Domain:
         domain_dict = self.as_dict()
         return self.__class__.from_dict(copy.deepcopy(domain_dict, memo))
 
+    def count_conditional_response_variations(self) -> int:
+        """Returns count of conditional response variations."""
+        count = 0
+        for response_variations in self.responses.values():
+            for variation in response_variations:
+                if CONDITION in variation:
+                    count += 1
+
+        return count
+
     @staticmethod
     def _collect_overridden_default_intents(
         intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]]
