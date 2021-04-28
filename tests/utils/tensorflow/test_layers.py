@@ -256,3 +256,14 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
             ]
         )
     )
+
+
+def test_multi_label_dot_product_loss__loss_sigmoid_is_ln2_when_all_similarities_zero():
+    sim_pos = tf.zeros([2, 1, 1], dtype=tf.float32)
+    sim_candidates_il = tf.zeros([2, 1, 2], dtype=tf.float32)
+    pos_neg_labels = tf.cast(tf.random.uniform([2, 2]) < 0.5, tf.float32)
+    mask = None
+
+    layer = MultiLabelDotProductLoss(2, scale_loss=False, similarity_type=INNER)
+    loss = layer._loss_sigmoid(sim_pos, sim_candidates_il, pos_neg_labels, mask)
+    assert abs(loss.numpy() - np.math.log(2.0)) < 1e-6

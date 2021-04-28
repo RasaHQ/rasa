@@ -1125,10 +1125,10 @@ class MultiLabelDotProductLoss(DotProductLoss):
             accuracy: Training accuracy
         """
         (
-            pos_inputs_embed,
-            pos_labels_embed,
-            candidate_labels_embed,
-            pos_neg_labels,
+            pos_inputs_embed,  # (batch_size, 1, 1, num_features)
+            pos_labels_embed,  # (batch_size, 1, num_features)
+            candidate_labels_embed,  # (batch_size, 1, num_candidates, num_features)
+            pos_neg_labels,  # (batch_size, num_candidates)
         ) = self._sample_candidates(
             batch_inputs_embed,
             batch_labels_embed,
@@ -1138,8 +1138,12 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         # Calculate similarities
-        sim_pos = self.sim(pos_inputs_embed, pos_labels_embed, mask)
-        sim_candidate_il = self.sim(pos_inputs_embed, candidate_labels_embed, mask)
+        sim_pos = self.sim(
+            pos_inputs_embed, pos_labels_embed, mask
+        )  # (batch_size, 1, 1)
+        sim_candidate_il = self.sim(
+            pos_inputs_embed, candidate_labels_embed, mask
+        )  # (batch_size, 1, num_candidates)
 
         accuracy = self._calc_accuracy(sim_pos, sim_candidate_il, pos_neg_labels)
         loss = self._loss_sigmoid(sim_pos, sim_candidate_il, pos_neg_labels, mask)
@@ -1306,7 +1310,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         mask: Optional[tf.Tensor],
     ) -> tf.Tensor:
         """Define sigmoid loss."""
-        # Concatenate the one guaranteed positive example with the candidate example,
+        # Concatenate the one guaranteed positive example with the candidate examples,
         # some of which are positives and others are negatives. Which are which
         # is stored in `pos_neg_labels`.
         logits = tf.concat([sim_pos, sim_candidates_il], axis=-1, name="logit_concat")
