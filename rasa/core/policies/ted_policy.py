@@ -1169,10 +1169,14 @@ class TED(TransformerRasaModel):
     def _collect_label_attribute_encodings(
         all_labels_encoded: Dict[Text, tf.Tensor], label_attributes: List[Text]
     ):
-        x = []
+        x = None
         for attribute in label_attributes:
             if all_labels_encoded.get(attribute) is not None:
-                x += all_labels_encoded.pop(attribute)
+                x = (
+                    all_labels_encoded.pop(attribute)
+                    if not x
+                    else x + all_labels_encoded.pop(attribute)
+                )
         return x
 
     def _embed_dialogue(

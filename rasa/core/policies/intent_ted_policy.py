@@ -438,6 +438,19 @@ class IntentTED(TED):
             LABEL, self.config[SCALE_LOSS], loss_layer=layers.MultiLabelDotProductLoss
         )
 
+    @staticmethod
+    def _get_labels_embed(
+        label_ids: tf.Tensor, all_labels_embed: tf.Tensor
+    ) -> tf.Tensor:
+        # instead of processing labels again, gather embeddings from
+        # all_labels_embed using label ids
+
+        # Replace
+        indices = tf.cast(label_ids, tf.int32)
+        labels_embed = tf.gather(all_labels_embed, indices)
+
+        return labels_embed
+
     def compute_thresholds(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> Dict[int, float]:
