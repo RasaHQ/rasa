@@ -44,7 +44,7 @@ class TrainingDataReader(abc.ABC):
 
 
 class TrainingDataWriter:
-    def dump(self, filename: Text, training_data) -> None:
+    def dump(self, filename: Text, training_data: "TrainingData") -> None:
         """Writes a TrainingData object in markdown format to a file."""
         s = self.dumps(training_data)
         rasa.shared.utils.io.write_text_file(s, filename)

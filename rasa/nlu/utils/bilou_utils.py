@@ -105,18 +105,6 @@ def get_bilou_key_for_tag(tag_name: Text) -> Text:
     return BILOU_ENTITIES
 
 
-def remove_bilou_prefixes(tags: List[Text]) -> List[Text]:
-    """Removes the BILOU prefixes from the given list of tags.
-
-    Args:
-        tags: the list of tags
-
-    Returns:
-        list of tags without BILOU prefix
-    """
-    return [tag_without_prefix(t) for t in tags]
-
-
 def build_tag_id_dict(
     training_data: "TrainingData", tag_name: Text = ENTITY_ATTRIBUTE_TYPE
 ) -> Optional[Dict[Text, int]]:
@@ -245,7 +233,7 @@ def _add_bilou_tags_to_entities(
     entities: List[Tuple[int, int, Text]],
     end_pos_to_token_idx: Dict[int, int],
     start_pos_to_token_idx: Dict[int, int],
-):
+) -> None:
     for start_pos, end_pos, label in entities:
         start_token_idx = start_pos_to_token_idx.get(start_pos)
         end_token_idx = end_pos_to_token_idx.get(end_pos)
@@ -377,7 +365,7 @@ def _update_confidences(
     score: float,
     idx: int,
     last_idx: int,
-):
+) -> List[float]:
     """Update the confidence values.
 
     Set the confidence value of a tag to score value if the predicated

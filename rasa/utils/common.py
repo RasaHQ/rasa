@@ -14,7 +14,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    NoReturn,
 )
 
 import rasa.utils.io
@@ -62,7 +61,7 @@ def read_global_config(path: Text) -> Dict[Text, Any]:
         return {}
 
 
-def set_log_level(log_level: Optional[int] = None):
+def set_log_level(log_level: Optional[int] = None) -> None:
     """Set log level of Rasa and Tensorflow either to the provided log level or
     to the log level specified in the environment variable 'LOG_LEVEL'. If none is set
     a default log level will be used."""
@@ -123,7 +122,7 @@ def update_tensorflow_log_level() -> None:
     logging.getLogger("tensorflow").propagate = False
 
 
-def update_sanic_log_level(log_file: Optional[Text] = None):
+def update_sanic_log_level(log_file: Optional[Text] = None) -> None:
     """Set the log level of sanic loggers to the log level specified in the environment
     variable 'LOG_LEVEL_LIBRARIES'."""
     from sanic.log import logger, error_logger, access_logger
@@ -175,19 +174,6 @@ def set_log_and_warnings_filters() -> None:
         handler.addFilter(RepeatedLogFilter())
 
     warnings.filterwarnings("once", category=UserWarning)
-
-
-def obtain_verbosity() -> int:
-    """Returns a verbosity level according to the set log level."""
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-
-    verbosity = 0
-    if log_level == "DEBUG":
-        verbosity = 2
-    if log_level == "INFO":
-        verbosity = 1
-
-    return verbosity
 
 
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
@@ -264,7 +250,8 @@ class RepeatedLogFilter(logging.Filter):
 
     last_log = None
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Determines whether current log is different to last log."""
         current_log = (
             record.levelno,
             record.pathname,
@@ -309,7 +296,11 @@ def run_in_loop(
     result = loop.run_until_complete(f)
 
     # Let's also finish all running tasks:
-    pending = asyncio.Task.all_tasks()
+    # fallback for python 3.6, which doesn't have asyncio.all_tasks
+    try:
+        pending = asyncio.all_tasks(loop)
+    except AttributeError:
+        pending = asyncio.Task.all_tasks()
     loop.run_until_complete(asyncio.gather(*pending))
 
     return result

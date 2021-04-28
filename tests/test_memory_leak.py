@@ -11,6 +11,7 @@ import pytest
 
 import rasa
 import rasa.shared.utils.io
+from rasa.nlu.config import RasaNLUModelConfig
 
 PROFILING_INTERVAL = 0.1
 
@@ -54,7 +55,7 @@ class MemoryLeakTest(abc.ABC):
     def function_to_profile(self) -> None:
         raise NotImplementedError
 
-    @pytest.mark.timeout(600)
+    @pytest.mark.timeout(600, func_only=True)
     def test_for_memory_leak(
         self, name_for_dumped_files: Text, tmp_path: Path,
     ) -> None:
@@ -118,7 +119,7 @@ class TestNLULeakManyEpochs(MemoryLeakTest):
 
     @property
     def max_memory_threshold_mb(self) -> float:
-        return 1400
+        return 1600
 
     def function_to_profile(self) -> None:
         import rasa.model_training
@@ -147,7 +148,7 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
 
     @property
     def max_memory_threshold_mb(self) -> float:
-        return 950
+        return 1300
 
     def function_to_profile(self) -> None:
         import rasa.model_training
@@ -167,3 +168,61 @@ class TestCoreLeakManyEpochs(MemoryLeakTest):
             f"memory_usage_rasa_core_{rasa.__version__}_"
             f"epochs{self.epochs}_training_runs1"
         )
+
+
+class TestCRFDenseFeaturesLeak(MemoryLeakTest):
+    """Tests for memory leaks in NLU the CRF when using dense features."""
+
+    @property
+    def epochs(self) -> int:
+        return 1
+
+    @property
+    def max_memory_threshold_mb(self) -> float:
+        return 1600
+
+    def function_to_profile(self) -> None:
+        import rasa.model_training
+
+        config = RasaNLUModelConfig(
+            {
+                "pipeline": [
+                    {"name": "SpacyNLP"},
+                    {"name": "SpacyTokenizer"},
+                    {"name": "SpacyFeaturizer"},
+                    {
+                        "name": "CRFEntityExtractor",
+                        "features": [
+                            ["pos", "pos2"],
+                            [
+                                "bias",
+                                "prefix5",
+                                "prefix2",
+                                "suffix5",
+                                "suffix3",
+                                "suffix2",
+                                "pos",
+                                "pos2",
+                                "digit",
+                                "text_dense_features",
+                            ],
+                            ["pos", "pos2"],
+                        ],
+                    },
+                ]
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_for_test = Path(temp_dir) / "test_config.yml"
+            rasa.shared.utils.io.write_yaml(config.as_dict(), config_for_test)
+
+            rasa.model_training.train_nlu(
+                config_for_test,
+                Path("data", "test_nlu_no_responses", "sara_nlu_data.yml"),
+                output=temp_dir,
+            )
+
+    @pytest.fixture()
+    def name_for_dumped_files(self) -> Text:
+        return f"memory_usage_rasa_nlu_crf_dense_{rasa.__version__}_"

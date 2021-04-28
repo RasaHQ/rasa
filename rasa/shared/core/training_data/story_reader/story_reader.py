@@ -55,7 +55,18 @@ class StoryReader:
         self._is_used_for_training = is_used_for_training
         self._is_parsing_conditions = False
 
-    def read_from_file(self, filename: Text) -> List[StoryStep]:
+    def read_from_file(
+        self, filename: Text, skip_validation: bool = False
+    ) -> List[StoryStep]:
+        """Reads stories or rules from file.
+
+        Args:
+            filename: Path to the story/rule file.
+            skip_validation: `True` if file validation should be skipped.
+
+        Returns:
+            `StoryStep`s read from `filename`.
+        """
         raise NotImplementedError
 
     @staticmethod
@@ -87,11 +98,11 @@ class StoryReader:
             self.current_step_builder.flush()
             self.story_steps.extend(self.current_step_builder.story_steps)
 
-    def _new_story_part(self, name: Text, source_name: Optional[Text]):
+    def _new_story_part(self, name: Text, source_name: Optional[Text]) -> None:
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name)
 
-    def _new_rule_part(self, name: Text, source_name: Optional[Text]):
+    def _new_rule_part(self, name: Text, source_name: Optional[Text]) -> None:
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name, source_name, is_rule=True)
 
@@ -154,6 +165,6 @@ def _map_legacy_event_names(event: Event) -> None:
 class StoryParseError(RasaCoreException, ValueError):
     """Raised if there is an error while parsing a story file."""
 
-    def __init__(self, message) -> None:
+    def __init__(self, message: Text) -> None:
         self.message = message
         super(StoryParseError, self).__init__()

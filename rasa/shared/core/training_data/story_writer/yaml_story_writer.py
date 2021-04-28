@@ -227,6 +227,7 @@ class YAMLStoryWriter(StoryWriter):
         if len(user_utterance.entities) and not is_test_story:
             entities = []
             for entity in user_utterance.entities:
+        entity_evaluation_in_failed_test_stories
                 if entity["value"]:
                     for predicted in user_utterance.predicted_entities:
                         if predicted["start"] == entity["start"]:
@@ -274,7 +275,7 @@ class YAMLStoryWriter(StoryWriter):
         return result
 
     @staticmethod
-    def process_slot(event: SlotSet):
+    def process_slot(event: SlotSet) -> Dict[Text, List[Dict]]:
         """Converts a single `SlotSet` event into an ordered dict.
 
         Args:

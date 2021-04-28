@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class RasaReader(JsonTrainingDataReader):
-    def read_from_json(self, js: Dict[Text, Any], **_) -> "TrainingData":
+    def read_from_json(self, js: Dict[Text, Any], **_: Any) -> "TrainingData":
         """Loads training data stored in the rasa NLU data format."""
         import rasa.shared.nlu.training_data.schemas.data_schema as schema
         import rasa.shared.utils.validation as validation_utils
@@ -49,7 +49,7 @@ class RasaReader(JsonTrainingDataReader):
 
 
 class RasaWriter(TrainingDataWriter):
-    def dumps(self, training_data: "TrainingData", **kwargs) -> Text:
+    def dumps(self, training_data: "TrainingData", **kwargs: Any) -> Text:
         """Writes Training Data to a string in json format."""
 
         js_entity_synonyms = defaultdict(list)

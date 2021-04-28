@@ -15,7 +15,7 @@ from rasa.nlu.constants import SPACY_DOCS, DENSE_FEATURIZABLE_ATTRIBUTES
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from spacy.language import Language
+    from spacy.language import Language  # noqa: F401
     from spacy.tokens.doc import Doc
     from rasa.nlu.model import Metadata
 
@@ -94,7 +94,7 @@ class SpacyNLP(Component):
     @staticmethod
     def _check_model_fallback(
         spacy_model_name: Union[str, None], language_name: str, warn: bool = False
-    ):
+    ) -> Text:
         """This method checks if the `spacy_model_name` is missing.
 
         If it is missing, we will attempt a fallback. This feature is a measure
