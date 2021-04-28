@@ -159,9 +159,15 @@ class TrackerFeaturizer:
         Returns:
             A tuple of list of states, list of actions and list of entity data.
         """
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "'training_states_actions_and_entities' is being deprecated in favor of "
+            "'training_states_labels_and_labels'."
+            #docs=DOCS_URL_COMPONENTS,
+        )
         raise NotImplementedError(
             f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
         )
+
 
     def training_states_and_actions(
         self,
@@ -179,14 +185,67 @@ class TrackerFeaturizer:
         Returns:
             A tuple of list of states and list of actions.
         """
+
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "'training_states_and_actions' is being deprecated in favor of "
+            "'training_states_and_labels'."
+        )
+
+        return self.training_states_and_labels(
+            trackers,
+            domain,
+            omit_unset_slots=omit_unset_slots
+        )
+
+
+    def training_states_and_labels(
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        omit_unset_slots: bool = False,
+    ) -> Tuple[List[List[State]], List[List[Text]]]:
+        """Transforms list of trackers to lists of states and labels.
+
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns:
+            A tuple of list of states and list of labels.
+        """
         (
             trackers_as_states,
-            trackers_as_actions,
+            trackers_as_labels,
             _,
-        ) = self.training_states_actions_and_entities(
+        ) = self.training_states_labels_and_entities(
             trackers, domain, omit_unset_slots=omit_unset_slots
         )
-        return trackers_as_states, trackers_as_actions
+        return trackers_as_states, trackers_as_labels
+
+
+    def training_states_labels_and_entities(
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        omit_unset_slots: bool = False,
+    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
+        """Transforms list of trackers to lists of states, labels, and entity data.
+
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns:
+            A tuple of list of states, list of labels and list of entity data.
+        """
+        return self.training_states_actions_and_entities(
+            trackers,
+            domain,
+            omit_unset_slots=omit_unset_slots
+        )
+
 
     def featurize_trackers(
         self,
@@ -231,7 +290,7 @@ class TrackerFeaturizer:
             trackers_as_states,
             trackers_as_actions,
             trackers_as_entities,
-        ) = self.training_states_actions_and_entities(trackers, domain)
+        ) = self.training_states_labels_and_entities(trackers, domain)
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
@@ -382,7 +441,34 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         domain: Domain,
         omit_unset_slots: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of states, actions and entity data.
+        """Transforms list of trackers to lists of states, labels and entity data.
+
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns:
+            A tuple of list of states, list of labels and list of entity data.
+        """
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "'training_states_actions_and_entities' is being deprecated in "
+            "favor of 'training_states_labels_and_entities'."
+        )
+        return self.training_states_labels_and_entities(
+            trackers,
+            domain,
+            omit_unset_slots=omit_unset_slots
+        )
+
+
+    def training_states_labels_and_entities(
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        omit_unset_slots: bool = False,
+    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
+        """Transforms list of trackers to lists of states, action labels and entity data.
 
         Args:
             trackers: The trackers to transform
@@ -552,6 +638,33 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
 
     def training_states_actions_and_entities(
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        omit_unset_slots: bool = False,
+    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
+        """Transforms list of trackers to lists of states, labels and entity data.
+
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns:
+            A tuple of list of states, list of labels and list of entity data.
+        """
+        rasa.shared.utils.io.raise_deprecation_warning(
+            "'training_states_actions_and_entities' is being deprecated in "
+            "favor of 'training_states_labels_and_entities'."
+        )
+        return self.training_states_labels_and_entities(
+            trackers,
+            domain,
+            omit_unset_slots=omit_unset_slots
+        )
+
+
+    def training_states_labels_and_entities(
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
