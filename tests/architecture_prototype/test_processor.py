@@ -22,35 +22,11 @@ from rasa.shared.core.events import (
     BotUttered,
     UserUttered,
 )
+from tests.architecture_prototype import conftest
 from tests.architecture_prototype.graph_schema import (
     full_model_train_graph_schema,
     predict_graph_schema,
 )
-
-
-def clean_directory():
-    # clean up before testing persistence
-    cache_dir = Path("model")
-    shutil.rmtree(cache_dir, ignore_errors=True)
-    cache_dir.mkdir()
-
-
-@pytest.fixture
-def prediction_graph() -> Dict[Text, Any]:
-    clean_directory()
-    graph.fill_defaults(full_model_train_graph_schema)
-    graph.visualise_as_dask_graph(full_model_train_graph_schema, "full_train_graph.png")
-    core_targets = ["train_memoization_policy", "train_ted_policy", "train_rule_policy"]
-    nlu_targets = [
-        "train_classifier",
-        "train_response_selector",
-        "train_synonym_mapper",
-    ]
-    graph.run_as_dask_graph(full_model_train_graph_schema, core_targets + nlu_targets)
-
-    graph.fill_defaults(predict_graph_schema)
-
-    return predict_graph_schema
 
 
 async def test_handle_message(prediction_graph: Dict[Text, Any]):
