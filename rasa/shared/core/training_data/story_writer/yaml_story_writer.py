@@ -228,9 +228,7 @@ class YAMLStoryWriter(StoryWriter):
             entities = []
             for entity in user_utterance.entities:
                 if "value" in entity:
-                    from rasa.core.test import WronglyClassifiedUserUtterance
-
-                    if isinstance(user_utterance, WronglyClassifiedUserUtterance):
+                    if user_utterance.__dict__.get("predicted_entities"):
                         for predicted in user_utterance.predicted_entities:
                             if predicted["start"] == entity["start"]:
                                 entity_map = CommentedMap(
