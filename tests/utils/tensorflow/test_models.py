@@ -7,6 +7,8 @@ from rasa.utils.tensorflow.models import _merge_batch_outputs, RasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.utils.tensorflow.model_data import FeatureArray
+from rasa.utils.tensorflow.constants import LABEL, IDS, SENTENCE
+from rasa.shared.nlu.constants import TEXT
 
 
 @pytest.mark.parametrize(
@@ -40,7 +42,7 @@ def test_merging_batch_outputs(
     def test_equal_dicts(
         dict1: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
         dict2: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
-    ):
+    ) -> None:
         assert dict2.keys() == dict1.keys()
         for key in dict1:
             val_1 = dict1[key]
@@ -67,7 +69,9 @@ def test_batch_inference(
 ):
     model = RasaModel()
 
-    def batch_predict(batch_in: np.ndarray):
+    def _batch_predict(
+        batch_in: np.ndarray,
+    ) -> Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]]:
 
         dummy_output = batch_in[0]
         output = {
@@ -77,15 +81,15 @@ def test_batch_inference(
         return output
 
     # Monkeypatch batch predict so that run_inference interface can be tested
-    model.batch_predict = batch_predict
+    model.batch_predict = _batch_predict
 
     # Create dummy model data to pass to model
     model_data = RasaModelData(
-        label_key="label",
-        label_sub_key="ids",
+        label_key=LABEL,
+        label_sub_key=IDS,
         data={
-            "text": {
-                "sentence": [
+            TEXT: {
+                SENTENCE: [
                     FeatureArray(
                         np.random.rand(number_of_data_points, 2),
                         number_of_dimensions=2,

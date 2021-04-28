@@ -52,6 +52,18 @@ def _merge_batch_outputs(
     all_outputs: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
     batch_output: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
 ) -> Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]]:
+    """Merge a batch's output into the output for all batches.
+
+    Function assumes that the schema of batch output remains the same,
+    i.e. keys and their value types do not change from one batch's output to another.
+
+    Args:
+        all_outputs: Existing output for all previous batches.
+        batch_output: Output for a batch.
+
+    Returns:
+        Merged output with the output for current batch stacked below the output for all previous batches.
+    """
     if not all_outputs:
         return batch_output
     for key, val in batch_output.items():
@@ -305,7 +317,8 @@ class RasaModel(TmpKerasModel):
         data_iterator = iter(data_generator)
         while True:
             try:
-                # Only want x, since y is always None out of our data generators
+                # data_generator is a tuple of 2 elements - input and output.
+                # We only need input, since output is always None and not consumed by our TF graphs.
                 batch_in = next(data_iterator)[0]
                 batch_out = self.rasa_predict(batch_in)
                 outputs = _merge_batch_outputs(outputs, batch_out)
