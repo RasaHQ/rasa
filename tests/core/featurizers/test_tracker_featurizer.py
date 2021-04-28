@@ -842,3 +842,63 @@ def test_multilabels_with_intent_max_history_tracker_featurizer_no_dedupe(moodbo
 
     assert np.all(labels == expected_labels)
 
+
+def test_training_states_actions_and_entities_deprecated(moodbot_domain):
+    state_featurizer = SingleStateFeaturizer()
+    tracker = tracker_from_dialogue_file(
+        "data/test_dialogues/moodbot.json", moodbot_domain
+    )
+
+    with pytest.warns(FutureWarning):
+        tracker_featurizer = FullDialogueTrackerFeaturizer(
+            state_featurizer
+        )
+        tracker_featurizer.training_states_actions_and_entities(
+            [tracker], moodbot_domain, 
+        )
+
+    with pytest.warns(FutureWarning):
+        tracker_featurizer = MaxHistoryTrackerFeaturizer(
+            state_featurizer
+        )
+        tracker_featurizer.training_states_actions_and_entities(
+            [tracker], moodbot_domain, 
+        )
+
+    with pytest.warns(FutureWarning):
+        tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
+            state_featurizer
+        )
+        tracker_featurizer.training_states_actions_and_entities(
+            [tracker], moodbot_domain, 
+        )
+
+def test_training_states_and_actions_deprecated(moodbot_domain):
+    state_featurizer = SingleStateFeaturizer()
+    tracker = tracker_from_dialogue_file(
+        "data/test_dialogues/moodbot.json", moodbot_domain
+    )
+
+    with pytest.warns(FutureWarning):
+        tracker_featurizer = FullDialogueTrackerFeaturizer(
+            state_featurizer
+        )
+        tracker_featurizer.training_states_and_actions(
+            [tracker], moodbot_domain, 
+        )
+
+    with pytest.warns(FutureWarning):
+        tracker_featurizer = MaxHistoryTrackerFeaturizer(
+            state_featurizer
+        )
+        tracker_featurizer.training_states_and_actions(
+            [tracker], moodbot_domain, 
+        )
+
+    with pytest.warns(FutureWarning):
+        tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
+            state_featurizer
+        )
+        tracker_featurizer.training_states_and_actions(
+            [tracker], moodbot_domain, 
+        )
