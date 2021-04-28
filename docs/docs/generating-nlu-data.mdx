@@ -63,26 +63,32 @@ Automatically generated data can be noisy, we recommend to always
 manually check any generated paraphrases.
 :::
 
-Most importantly, data augmentation is not a replacement for real user data.
-It is intended as a way to rapidly generate additional training examples
-in order to help you to create a new intent despite not yet having enough
-real data. Once you have collected enough real data, we recommend you remove
-the generated data.
+When you are creating a new intent in your assistant, you may initially face the
+problem where you do not have enough training examples from your users to create a
+reliable model. In this situation you can use data augmentation to supplement the
+initial training dataset with synthetic examples. You should always remove the
+synthetic data once you have collected a sufficient amount of real user data to train
+an effective model. The process for adding augmented data to your model is:
+
 
 #### Recommended Use
 
-1. While reviewing conversations from your users in [Rasa X](https://rasa.com/docs/rasa-x/), you identify the need for a new intent. 
+1. While reviewing conversations from your users in
+[Rasa X](https://rasa.com/docs/rasa-x/), you identify the need for a new intent.
 2. You want to add this intent to your bot, but you don't have enough real user
 messages yet.
 3. You generate a small amount of paraphrases from the existing real user messages
 with the paraphraser from [https://github.com/RasaHQ/paraphraser](https://github.com/RasaHQ/paraphraser).
-4. You use the data augmentation CLI tool (`rasa data augment nlu`) to evaluate
+4. You manually inspect the generated paraphrases and discard the ones that do not
+express the new intent.
+5. You use the data augmentation CLI tool (`rasa data augment nlu`) to evaluate
 the performance impact of adding the generated data to your model.
-5. Once you are happy with the results, you store the additional generated data
+6. Once you are happy with the results, you store the additional generated data
 in a spearate file, e.g. `synthetic.yml`.
-6. Once you have put this intent live, and more and more users express this intent, you annotate more
-real user messages for it.
-7. When you have enough training data from real user messages, you delete the `synthetic.yml` file.
+7. Once you have put this intent live, and more and more users express this intent,
+you annotate more real user messages for it.
+8. When you have enough training data from real user messages, you delete the
+`synthetic.yml` file.
 
 
 ### Share with Test Users Early
