@@ -1104,7 +1104,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
     def call(
         self,
         batch_inputs_embed: tf.Tensor,  # (batch_size, 1, num_features)
-        batch_labels_embed: tf.Tensor,  # (batch_size, max_num_labels, num_features)
+        batch_labels_embed: tf.Tensor,  # (batch_size, max_num_labels_per_input, num_features)
         batch_labels_ids: tf.Tensor,  # (batch_size, max_num_labels, 1)
         all_labels_embed: tf.Tensor,  # (num_labels, num_features)
         all_labels_ids: tf.Tensor,  # (num_labels, 1)
@@ -1148,12 +1148,17 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
     def _sample_candidates(
         self,
-        batch_inputs_embed: tf.Tensor,
-        batch_labels_embed: tf.Tensor,
-        batch_labels_ids: tf.Tensor,
-        all_labels_embed: tf.Tensor,
-        all_labels_ids: tf.Tensor,
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+        batch_inputs_embed: tf.Tensor,  # (batch_size, 1, num_features)
+        batch_labels_embed: tf.Tensor,  # (batch_size, max_num_labels_per_input, num_features)
+        batch_labels_ids: tf.Tensor,  # (batch_size, max_num_labels_per_input, 1)
+        all_labels_embed: tf.Tensor,  # (num_labels, num_features)
+        all_labels_ids: tf.Tensor,  # (num_labels, 1)
+    ) -> Tuple[
+        tf.Tensor,  # (batch_size, 1, 1, num_features)
+        tf.Tensor,  # (batch_size, 1, num_features)
+        tf.Tensor,  # (batch_size, 1, num_candidates, num_features)
+        tf.Tensor,  # (batch_size, num_candidates)
+    ]:
         """Sample candidate examples.
         
         Args:
@@ -1198,15 +1203,14 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         # Determine how many distinct labels exist (highest label index)
         max_label_id = tf.cast(tf.math.reduce_max(all_labels_ids), dtype=tf.int32)
-        # dimension size is 1 indexed and hence 1 more than maximum label id
-        depth_needed = max_label_id + 1
 
         # Convert the positive label ids to their one_hot representation.
+        # Note: -1 indices yield a zeros-only vector
         batch_labels_one_hot = tf.one_hot(
             tf.cast(tf.squeeze(batch_labels_ids, axis=-1), tf.int32),
-            depth_needed,
+            max_label_id + 1,
             axis=-1,
-        )  # bs x num_pos_labels(varied) x depth_needed
+        )  # (batch_size, max_num_labels_per_input, depth_needed)
 
         # Collapse the extra dimension and convert to a multi-hot representation
         # by aggregating all ones in the one-hot representation.
@@ -1217,7 +1221,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         batch_labels_multi_hot = tf.cast(
             tf.math.reduce_any(tf.cast(batch_labels_one_hot, dtype=tf.bool), axis=-2),
             tf.float32,
-        )  # bs x num_pos_labels
+        )  # (batch_size, depth_needed)
 
         # Remove extra dimensions for gather
         candidate_labels_ids = tf.squeeze(tf.squeeze(candidate_labels_ids, 1), -1)
