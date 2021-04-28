@@ -42,6 +42,7 @@ import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import CONDITION
 
 
 if TYPE_CHECKING:
@@ -591,6 +592,17 @@ class Domain:
         action_names += overridden_form_actions
 
         self.responses = responses
+        # checks if responses contain conditions
+        for response_variations in self.responses.values():
+            for variation in response_variations:
+                if CONDITION in variation:
+                    import rasa.shared.utils.common
+
+                    rasa.shared.utils.common.mark_as_experimental_feature(
+                        "conditional response variation feature"
+                    )
+                    break
+
         self.action_texts = action_texts or []
         self.session_config = session_config
 
