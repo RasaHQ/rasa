@@ -1109,7 +1109,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         all_labels_embed: tf.Tensor,  # (num_labels, num_features)
         all_labels_ids: tf.Tensor,  # (num_labels, 1)
         mask: Optional[tf.Tensor] = None,  # (batch_size, 1)
-    ) -> Tuple[tf.Tensor, tf.Tensor]:
+    ) -> Tuple[tf.Tensor, tf.Tensor]:  # (), ()
         """Calculates loss and accuracy.
 
         Args:
@@ -1304,12 +1304,12 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
     def _loss_sigmoid(
         self,
-        sim_pos: tf.Tensor,
-        sim_candidates_il: tf.Tensor,
-        pos_neg_labels: tf.Tensor,
+        sim_pos: tf.Tensor,  # (batch_size, 1, 1)
+        sim_candidates_il: tf.Tensor,  # (batch_size, 1, num_candidates)
+        pos_neg_labels: tf.Tensor,  # (batch_size, num_candidates)
         mask: Optional[tf.Tensor],
-    ) -> tf.Tensor:
-        """Define sigmoid loss."""
+    ) -> tf.Tensor:  # ()
+        """Computes the sigmoid loss."""
         # Concatenate the one guaranteed positive example with the candidate examples,
         # some of which are positives and others are negatives. Which are which
         # is stored in `pos_neg_labels`.
@@ -1329,14 +1329,14 @@ class MultiLabelDotProductLoss(DotProductLoss):
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label_ids, logits=logits)
 
         if self.scale_loss:
-            # in case of cross entropy log_likelihood = -loss
+            # In case of cross entropy log_likelihood = -loss
             loss *= _scale_loss(-loss)
 
         if mask is not None:
             loss *= mask
 
         if len(loss.shape) == 2:
-            # average over the sequence
+            # Average over the sequence
             if mask is not None:
                 loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
             else:
@@ -1347,11 +1347,16 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
     @staticmethod
     def _calc_accuracy(
-        sim_pos: tf.Tensor, sim_neg: tf.Tensor, pos_neg_labels: tf.Tensor
-    ) -> tf.Tensor:
-        """Calculate accuracy."""
+        self,
+        sim_pos: tf.Tensor,  # (batch_size, 1, 1)
+        sim_candidates: tf.Tensor,  # (batch_size, 1, num_candidates)
+        pos_neg_labels: tf.Tensor,  # (batch_size, num_candidates)
+    ) -> tf.Tensor:  # ()
+        """Calculates the accuracy."""
 
-        all_preds = tf.concat([sim_pos, sim_neg], axis=-1, name="acc_concat_preds")
+        all_preds = tf.concat(
+            [sim_pos, sim_candidates], axis=-1, name="acc_concat_preds"
+        )
         all_preds_sigmoid = tf.nn.sigmoid(all_preds)
         all_pred_labels = tf.squeeze(tf.math.round(all_preds_sigmoid), 1)
 
@@ -1361,8 +1366,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
             name="acc_concat_gt",
         )
 
-        acc = tf.reduce_mean(
+        accuracy = tf.reduce_mean(
             tf.cast(tf.math.equal(all_pred_labels, complete_gt), tf.float32)
         )
 
-        return acc
+        return accuracy
