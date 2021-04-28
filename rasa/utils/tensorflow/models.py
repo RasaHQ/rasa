@@ -304,7 +304,7 @@ class RasaModel(TmpKerasModel):
         all_outputs: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
         batch_output: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
     ) -> Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]]:
-        """Merge a batch's output into the output for all batches.
+        """Merges a batch's output into the output for all batches.
 
         Function assumes that the schema of batch output remains the same,
         i.e. keys and their value types do not change from one batch's
