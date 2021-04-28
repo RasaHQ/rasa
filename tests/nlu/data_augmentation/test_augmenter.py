@@ -7,6 +7,7 @@ from rasa.nlu.constants import TOKENS_NAMES, VOCABULARY
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.constants import DEFAULT_RANDOM_SEED
 from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.data_augmentation import augmenter
 import rasa.nlu.config
 import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.components
@@ -44,10 +45,6 @@ def test_augmenter_create_tokenizer():
 def test_augmenter_intent_collection(
     intent_proportion: float, comparator_fn_1: Callable, comparator_fn_2: Callable
 ):
-    from rasa.nlu.data_augmentation.augmenter import (
-        _collect_intents_for_data_augmentation,
-    )
-
     report_file = (
         "data/test_nlu_paraphrasing/nlu_classification_report_no_augmentation.json"
     )
@@ -56,7 +53,7 @@ def test_augmenter_intent_collection(
         "data/test_nlu_paraphrasing/nlu_train.yml"
     )
 
-    intents_to_augment = _collect_intents_for_data_augmentation(
+    intents_to_augment = augmenter._collect_intents_for_data_augmentation(
         nlu_training_data=nlu_training_data,
         intent_proportion=intent_proportion,
         classification_report_no_augmentation=classification_report,
@@ -94,13 +91,11 @@ def test_augmenter_paraphrase_pool_thresholds(
     max_paraphrase_sim_score: float,
     expected_len: int,
 ):
-    from rasa.nlu.data_augmentation.augmenter import _create_paraphrase_pool
-
     paraphrases = rasa.shared.nlu.training_data.loading.load_data(
         "data/test_nlu_paraphrasing/paraphrases.yml"
     )
 
-    pool = _create_paraphrase_pool(
+    pool = augmenter._create_paraphrase_pool(
         paraphrases=paraphrases,
         intents_to_augment={intent_to_augment},
         min_paraphrase_sim_score=min_paraphrase_sim_score,
@@ -134,13 +129,11 @@ def test_augmenter_paraphrase_pool_thresholds(
     ],
 )
 def test_augmenter_paraphrase_pool_intents(intents_to_augment: Set[Text]):
-    from rasa.nlu.data_augmentation.augmenter import _create_paraphrase_pool
-
     paraphrases = rasa.shared.nlu.training_data.loading.load_data(
         "data/test_nlu_paraphrasing/paraphrases.yml"
     )
 
-    pool = _create_paraphrase_pool(
+    pool = augmenter._create_paraphrase_pool(
         paraphrases=paraphrases,
         intents_to_augment=intents_to_augment,
         min_paraphrase_sim_score=0.0,
@@ -189,13 +182,11 @@ def test_augmenter_paraphrase_pool_intents(intents_to_augment: Set[Text]):
 def test_augmenter_augmentation_factor_resolution(
     augmentation_factor: float, intent: Text, size_after_augmentation: int
 ):
-    from rasa.nlu.data_augmentation.augmenter import _resolve_augmentation_factor
-
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         "data/test_nlu_paraphrasing/nlu_train.yml"
     )
 
-    resolved_dict = _resolve_augmentation_factor(
+    resolved_dict = augmenter._resolve_augmentation_factor(
         nlu_training_data=nlu_training_data, augmentation_factor=augmentation_factor
     )
 
@@ -203,10 +194,6 @@ def test_augmenter_augmentation_factor_resolution(
 
 
 def test_augmenter_build_max_vocab_expansion_training_set():
-    from rasa.nlu.data_augmentation.augmenter import (
-        _create_augmented_training_data_max_vocab_expansion,
-    )
-
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         "data/test_nlu_paraphrasing/nlu_train.yml"
     )
@@ -253,7 +240,7 @@ def test_augmenter_build_max_vocab_expansion_training_set():
     augmented_data_should_contain = {three_new_words: False, two_new_words: False}
     augmented_data_should_not_contain = {one_new_word: False}
 
-    augmented_data = _create_augmented_training_data_max_vocab_expansion(
+    augmented_data = augmenter._create_augmented_training_data_max_vocab_expansion(
         nlu_training_data=nlu_training_data,
         paraphrase_pool=paraphrase_pool,
         intents_to_augment=intents_to_augment,
@@ -275,10 +262,6 @@ def test_augmenter_build_max_vocab_expansion_training_set():
 
 
 def test_augmenter_build_random_sampling_training_set():
-    from rasa.nlu.data_augmentation.augmenter import (
-        _create_augmented_training_data_random_sampling,
-    )
-
     nlu_training_data = rasa.shared.nlu.training_data.loading.load_data(
         "data/test_nlu_paraphrasing/nlu_train.yml"
     )
@@ -321,7 +304,7 @@ def test_augmenter_build_random_sampling_training_set():
         ]
     }
 
-    augmented_data = _create_augmented_training_data_random_sampling(
+    augmented_data = augmenter._create_augmented_training_data_random_sampling(
         nlu_training_data=nlu_training_data,
         paraphrase_pool=paraphrase_pool,
         intents_to_augment=intents_to_augment,
@@ -448,10 +431,6 @@ def test_get_intents_with_performance_changes(
     significant_figures: int,
     expected_changed_intents: Set[Text],
 ):
-    from rasa.nlu.data_augmentation.augmenter import (
-        _get_intents_with_performance_changes,
-    )
-
     classification_report_no_augmentation = rasa.shared.utils.io.read_json_file(
         "data/test_nlu_paraphrasing/nlu_classification_report_no_augmentation.json"
     )
@@ -459,7 +438,7 @@ def test_get_intents_with_performance_changes(
         "data/test_nlu_paraphrasing/intent_report_with_augmentation-01.json"
     )
 
-    changed_intents = _get_intents_with_performance_changes(
+    changed_intents = augmenter._get_intents_with_performance_changes(
         classification_report_no_augmentation=classification_report_no_augmentation,
         intent_report_with_augmentation=intent_report_with_augmentation,
         all_intents=all_intents,
@@ -470,8 +449,6 @@ def test_get_intents_with_performance_changes(
 
 
 def test_augmentation_summary_creation():
-    from rasa.nlu.data_augmentation.augmenter import _create_augmentation_summary
-
     classification_report_no_augmentation = rasa.shared.utils.io.read_json_file(
         "data/test_nlu_paraphrasing/nlu_classification_report_no_augmentation.json"
     )
@@ -485,7 +462,7 @@ def test_augmentation_summary_creation():
     (
         changed_intent_summary,
         augmented_classification_report,
-    ) = _create_augmentation_summary(
+    ) = augmenter._create_augmentation_summary(
         intents_to_augment,
         changed_intents,
         classification_report_no_augmentation,
@@ -552,8 +529,6 @@ def test_augmentation_summary_creation():
 
 
 def test_summary_report_creation():
-    from rasa.nlu.data_augmentation.augmenter import _create_summary_report
-
     classification_report_no_augmentation = rasa.shared.utils.io.read_json_file(
         "data/test_nlu_paraphrasing/nlu_classification_report_no_augmentation.json"
     )
@@ -584,7 +559,7 @@ def test_summary_report_creation():
     os.makedirs(out_path)
 
     # Contents of both reports tested by test_augmentation_summary_creation
-    _ = _create_summary_report(
+    _ = augmenter._create_summary_report(
         intent_report_with_augmentation=intent_report_with_augmentation,
         classification_report_no_augmentation=classification_report_no_augmentation,
         intents_to_augment=intents_to_augment,
@@ -596,8 +571,6 @@ def test_summary_report_creation():
 
 
 def test_summary_plot_creation():
-    from rasa.nlu.data_augmentation.augmenter import _plot_summary_report
-
     intent_summary = rasa.shared.utils.io.read_json_file(
         "data/test_nlu_paraphrasing/intent_summary.json"
     )
@@ -606,7 +579,7 @@ def test_summary_plot_creation():
     out_path = os.path.join(tmp_path, "augmentation_plot")
     os.makedirs(out_path)
 
-    _plot_summary_report(intent_summary=intent_summary, output_directory=out_path)
+    augmenter._plot_summary_report(intent_summary=intent_summary, output_directory=out_path)
 
     assert all(
         os.path.exists(os.path.join(out_path, output_file))
