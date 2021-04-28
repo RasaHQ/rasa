@@ -557,7 +557,9 @@ def test_summary_plot_creation(tmp_path: Path):
     out_path = Path(tmp_path / "augmentation_plot")
     out_path.mkdir()
 
-    augmenter._plot_summary_report(intent_summary=intent_summary, output_directory=out_path)
+    augmenter._plot_summary_report(
+        intent_summary=intent_summary, output_directory=out_path
+    )
 
     assert all(
         Path(out_path / output_file).exists()
