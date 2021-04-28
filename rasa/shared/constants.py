@@ -4,6 +4,8 @@ DOCS_URL_TRAINING_DATA = DOCS_BASE_URL + "/training-data-format"
 DOCS_URL_TRAINING_DATA_NLU = DOCS_URL_TRAINING_DATA + "#nlu-training-data"
 DOCS_URL_DOMAINS = DOCS_BASE_URL + "/domain"
 DOCS_URL_SLOTS = DOCS_URL_DOMAINS + "#slots"
+DOCS_URL_INTENTS = DOCS_URL_DOMAINS + "#intents"
+DOCS_URL_ENTITIES = DOCS_URL_DOMAINS + "#entities"
 DOCS_URL_RESPONSES = DOCS_BASE_URL + "/responses"
 DOCS_URL_STORIES = DOCS_BASE_URL + "/stories"
 DOCS_URL_RULES = DOCS_BASE_URL + "/rules"
@@ -25,6 +27,7 @@ DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION = (
 )
 DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/telemetry"
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
+DOCS_BASE_URL_ACTION_SERVER = "https://rasa.com/docs/action-server"
 
 INTENT_MESSAGE_PREFIX = "/"
 
@@ -65,6 +68,10 @@ CONFIG_MANDATORY_KEYS_CORE = []
 CONFIG_MANDATORY_KEYS_NLU = ["language"]
 CONFIG_MANDATORY_KEYS = CONFIG_MANDATORY_KEYS_CORE + CONFIG_MANDATORY_KEYS_NLU
 
+# Keys related to Forms (in the Domain)
+REQUIRED_SLOTS_KEY = "required_slots"
+IGNORED_INTENTS = "ignored_intents"
+
 # Constants for default Rasa Open Source project layout
 DEFAULT_ENDPOINTS_PATH = "endpoints.yml"
 DEFAULT_CREDENTIALS_PATH = "credentials.yml"
@@ -78,5 +85,6 @@ DEFAULT_RESULTS_PATH = "results"
 DEFAULT_NLU_RESULTS_PATH = "nlu_comparison_results"
 DEFAULT_CORE_SUBDIRECTORY_NAME = "core"
 DEFAULT_NLU_SUBDIRECTORY_NAME = "nlu"
+DEFAULT_CONVERSATION_TEST_PATH = "tests"
 
 DIAGNOSTIC_DATA = "diagnostic_data"

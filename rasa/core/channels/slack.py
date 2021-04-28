@@ -3,14 +3,13 @@ import hmac
 from http import HTTPStatus
 import json
 import logging
-import math
 import re
 import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Text
 
 from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 from rasa.shared.constants import DOCS_URL_CONNECTORS_SLACK
-from rasa.shared.exceptions import InvalidConfigException, RasaException
+from rasa.shared.exceptions import InvalidConfigException
 import rasa.shared.utils.io
 from sanic import Blueprint, response
 from sanic.request import Request
@@ -41,11 +40,7 @@ class SlackBot(OutputChannel):
         self.client = WebClient(token, run_async=True, proxy=proxy)
         super().__init__()
 
-    @staticmethod
-    def _get_text_from_slack_buttons(buttons: List[Dict]) -> Text:
-        return "".join([b.get("title", "") for b in buttons])
-
-    async def _post_message(self, channel, **kwargs: Any):
+    async def _post_message(self, channel: Text, **kwargs: Any) -> None:
         if self.thread_id:
             await self.client.chat_postMessage(
                 channel=channel, **kwargs, thread_ts=self.thread_id
@@ -336,7 +331,7 @@ class SlackInput(InputChannel):
         self,
         request: Request,
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
-        text,
+        text: Text,
         sender_id: Optional[Text],
         metadata: Optional[Dict],
     ) -> Any:

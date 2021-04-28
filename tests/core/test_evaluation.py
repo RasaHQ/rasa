@@ -22,25 +22,20 @@ from rasa.core.policies.memoization import MemoizationPolicy
 
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
-from rasa.nlu.test import evaluate_entities, run_evaluation
+from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
 from rasa.core.agent import Agent
-from tests.core.conftest import (
-    DEFAULT_STORIES_FILE,
-    E2E_STORY_FILE_UNKNOWN_ENTITY,
-    END_TO_END_STORY_FILE,
-    E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER,
-    STORY_FILE_TRIPS_CIRCUIT_BREAKER,
-)
 
 
-async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
+async def test_evaluation_file_creation(
+    tmpdir: Path, default_agent: Agent, stories_path: Text
+):
     failed_stories_path = str(tmpdir / FAILED_STORIES_FILE)
     success_stories_path = str(tmpdir / SUCCESSFUL_STORIES_FILE)
     report_path = str(tmpdir / REPORT_STORIES_FILE)
     confusion_matrix_path = str(tmpdir / CONFUSION_MATRIX_STORIES_FILE)
 
     await evaluate_stories(
-        stories=DEFAULT_STORIES_FILE,
+        stories=stories_path,
         agent=default_agent,
         out_directory=str(tmpdir),
         max_stories=None,
@@ -55,9 +50,11 @@ async def test_evaluation_file_creation(tmpdir: Path, default_agent: Agent):
     assert os.path.isfile(confusion_matrix_path)
 
 
-async def test_end_to_end_evaluation_script(default_agent: Agent):
+async def test_end_to_end_evaluation_script(
+    default_agent: Agent, end_to_end_story_path: Text
+):
     generator = await _create_data_generator(
-        END_TO_END_STORY_FILE, default_agent, use_e2e=True
+        end_to_end_story_path, default_agent, use_conversation_test_files=True
     )
     completed_trackers = generator.generate_story_trackers()
 
@@ -93,9 +90,13 @@ async def test_end_to_end_evaluation_script(default_agent: Agent):
     assert num_stories == 3
 
 
-async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent):
+async def test_end_to_end_evaluation_script_unknown_entity(
+    default_agent: Agent, e2e_story_file_unknown_entity_path: Text
+):
     generator = await _create_data_generator(
-        E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True
+        e2e_story_file_unknown_entity_path,
+        default_agent,
+        use_conversation_test_files=True,
     )
     completed_trackers = generator.generate_story_trackers()
 
@@ -108,12 +109,12 @@ async def test_end_to_end_evaluation_script_unknown_entity(default_agent: Agent)
     assert num_stories == 1
 
 
-@pytest.mark.timeout(300)
+@pytest.mark.timeout(300, func_only=True)
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     generator = await _create_data_generator(
-        "data/test_evaluations/form_end_to_end_stories.yml",
+        "data/test_evaluations/test_form_end_to_end_stories.yml",
         form_bot_agent,
-        use_e2e=True,
+        use_conversation_test_files=True,
     )
     test_stories = generator.generate_story_trackers()
 
@@ -124,17 +125,19 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
 
 
-async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
+async def test_source_in_failed_stories(
+    tmpdir: Path, default_agent: Agent, e2e_story_file_unknown_entity_path: Text
+):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
     await evaluate_stories(
-        stories=E2E_STORY_FILE_UNKNOWN_ENTITY,
+        stories=e2e_story_file_unknown_entity_path,
         agent=default_agent,
         out_directory=str(tmpdir),
         max_stories=None,
         e2e=False,
     )
-    story_file_unknown_entity = Path(E2E_STORY_FILE_UNKNOWN_ENTITY).absolute()
+    story_file_unknown_entity = Path(e2e_story_file_unknown_entity_path).absolute()
     failed_stories = rasa.shared.utils.io.read_file(stories_path)
 
     assert (
@@ -143,16 +146,20 @@ async def test_source_in_failed_stories(tmpdir: Path, default_agent: Agent):
     )
 
 
-async def test_end_to_evaluation_trips_circuit_breaker():
+async def test_end_to_evaluation_trips_circuit_breaker(
+    e2e_story_file_trips_circuit_breaker_path: Text,
+):
     agent = Agent(
         domain="data/test_domains/default.yml",
         policies=[MemoizationPolicy(max_history=11)],
     )
-    training_data = await agent.load_data(STORY_FILE_TRIPS_CIRCUIT_BREAKER)
+    training_data = await agent.load_data(e2e_story_file_trips_circuit_breaker_path)
     agent.train(training_data)
 
     generator = await _create_data_generator(
-        E2E_STORY_FILE_TRIPS_CIRCUIT_BREAKER, agent, use_e2e=True
+        e2e_story_file_trips_circuit_breaker_path,
+        agent,
+        use_conversation_test_files=True,
     )
     test_stories = generator.generate_story_trackers()
 
@@ -248,7 +255,7 @@ def test_event_has_proper_implementation(
     assert actual_entities[0] == expected_entity
 
 
-@pytest.mark.timeout(600)
+@pytest.mark.timeout(600, func_only=True)
 @pytest.mark.parametrize(
     "test_file",
     [
@@ -258,7 +265,7 @@ def test_event_has_proper_implementation(
 )
 async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
     generator = await _create_data_generator(
-        test_file, response_selector_agent, use_e2e=True,
+        test_file, response_selector_agent, use_conversation_test_files=True,
     )
     test_stories = generator.generate_story_trackers()
 
@@ -295,7 +302,7 @@ async def test_retrieval_intent_wrong_prediction(
     assert "# predicted: chitchat/ask_name" in failed_stories
 
 
-@pytest.mark.timeout(240)
+@pytest.mark.timeout(240, func_only=True)
 async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
     test_file = "data/test_e2ebot/tests/test_stories.yml"
 

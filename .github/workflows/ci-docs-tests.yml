@@ -1,0 +1,84 @@
+name: Docs Tests
+on:
+  push:
+    branches:
+    - main
+    tags:
+    - '*'
+  pull_request:
+    types: [opened, synchronize, labeled]
+
+env:
+  DEFAULT_PYTHON_VERSION: '3.7'
+
+jobs:
+  changes:
+    name: Check for file changes
+    runs-on: ubuntu-latest
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
+        id: filter
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: .github/change_filters.yml
+
+  test_documentation:
+    name: Test Documentation
+    runs-on: ubuntu-latest
+    needs: [ changes ]
+    if: needs.changes.outputs.docs == 'true'
+
+    steps:
+    - name: Checkout git repository 🕝
+      uses: actions/checkout@v2
+
+    - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+
+    - name: Set up Node 12.x 🦙
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+
+    - name: Read Poetry Version 🔢
+      run: |
+        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Install poetry 🦄
+      uses: Gr1N/setup-poetry@v4
+      with:
+        poetry-version: ${{ env.POETRY_VERSION }}
+
+    - name: Load Poetry Cached Libraries ⬇
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
+
+    - name: Load Yarn Cached Packages ⬇
+      uses: actions/cache@v2
+      with:
+        path: docs/node_modules
+        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
+        restore-keys: ${{ runner.os }}-yarn-12.x
+
+    - name: Install Dependencies 📦
+      run: |
+        sudo apt-get -y install libpq-dev
+        make install-full install-docs
+
+    - name: Run Swagger 🕵️‍♀️
+      run: |
+        npm install -g swagger-cli
+        swagger-cli validate docs/static/spec/action-server.yml
+        swagger-cli validate docs/static/spec/rasa.yml
+
+    - name: Test Docs 🕸
+      run: make test-docs

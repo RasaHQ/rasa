@@ -27,29 +27,9 @@ from tests.utilities import json_of_latest_request, latest_request
 logger = logging.getLogger(__name__)
 
 
-def fake_sanic_run(*args, **kwargs):
-    """Used to replace `run` method of a Sanic server to avoid hanging."""
-    logger.info("Rabatnic: Take this and find Sanic! I want him here by supper time.")
-
-
 def noop(*args, **kwargs):
     """Just do nothing."""
     pass
-
-
-def fake_telegram_me(*args, **kwargs):
-    """Return a fake telegram user."""
-    return {
-        "id": 0,
-        "first_name": "Test",
-        "is_bot": True,
-        "username": "YOUR_TELEGRAM_BOT",
-    }
-
-
-def fake_send_message(*args, **kwargs):
-    """Fake sending a message."""
-    return {"ok": True, "result": {}}
 
 
 async def test_send_response(default_channel, default_tracker):
@@ -451,7 +431,7 @@ async def test_callback_calls_endpoint():
 
 
 def test_botframework_attachments():
-    from rasa.core.channels.botframework import BotFrameworkInput, BotFramework
+    from rasa.core.channels.botframework import BotFrameworkInput
     from copy import deepcopy
 
     ch = BotFrameworkInput("app_id", "app_pass")

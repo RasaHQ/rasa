@@ -16,7 +16,6 @@ from typing import (
     ItemsView,
 )
 from collections import defaultdict, OrderedDict
-from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +62,9 @@ class FeatureArray(np.ndarray):
 
         return feature_array
 
-    def __init__(self, input_array: Any, number_of_dimensions: int, **kwargs):
+    def __init__(
+        self, input_array: Any, number_of_dimensions: int, **kwargs: Any
+    ) -> None:
         """Initialize. FeatureArray.
 
         Needed in order to avoid 'Invalid keyword argument number_of_dimensions
@@ -96,7 +97,9 @@ class FeatureArray(np.ndarray):
         self.__dict__.update(default_attributes)
 
     # pytype: disable=attribute-error
-    def __array_ufunc__(self, ufunc: Any, method: Text, *inputs, **kwargs) -> Any:
+    def __array_ufunc__(
+        self, ufunc: Any, method: Text, *inputs: Any, **kwargs: Any
+    ) -> Any:
         """Overwrite this method as we are subclassing numpy array.
 
         Args:
@@ -141,7 +144,7 @@ class FeatureArray(np.ndarray):
         )
         return pickled_state[0], pickled_state[1], new_state
 
-    def __setstate__(self, state, **kwargs) -> None:
+    def __setstate__(self, state: Any, **kwargs: Any) -> None:
         """Sets the state.
 
         Args:
@@ -315,7 +318,7 @@ class RasaModelData:
 
         return []
 
-    def sort(self):
+    def sort(self) -> None:
         """Sorts data according to its keys."""
         for key, attribute_data in self.data.items():
             self.data[key] = OrderedDict(sorted(attribute_data.items()))

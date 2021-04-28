@@ -18,9 +18,11 @@ from typing import (
     Text,
     Union,
     TYPE_CHECKING,
+    Generator,
 )
 
 from boto3.dynamodb.conditions import Key
+from pymongo.collection import Collection
 
 import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
@@ -50,9 +52,8 @@ if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm.session import Session
+    from sqlalchemy.orm import Session, Query
     from sqlalchemy import Sequence
-    from sqlalchemy.orm.query import Query
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +184,7 @@ class TrackerStore:
 
         return tracker
 
-    def save(self, tracker):
+    def save(self, tracker: DialogueStateTracker) -> None:
         """Save method that will be overridden by specific tracker."""
         raise NotImplementedError()
 
@@ -328,10 +329,10 @@ class RedisTrackerStore(TrackerStore):
 
     def __init__(
         self,
-        domain,
-        host="localhost",
-        port=6379,
-        db=0,
+        domain: Domain,
+        host: Text = "localhost",
+        port: int = 6379,
+        db: int = 0,
         password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
@@ -364,8 +365,10 @@ class RedisTrackerStore(TrackerStore):
     def _get_key_prefix(self) -> Text:
         return self.key_prefix
 
-    def save(self, tracker, timeout=None):
-        """Saves the current conversation state"""
+    def save(
+        self, tracker: DialogueStateTracker, timeout: Optional[float] = None
+    ) -> None:
+        """Saves the current conversation state."""
         if self.event_broker:
             self.stream_events(tracker)
 
@@ -466,7 +469,7 @@ class DynamoTrackerStore(TrackerStore):
 
         return table
 
-    def save(self, tracker):
+    def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
         from botocore.exceptions import ClientError
 
@@ -577,11 +580,11 @@ class MongoTrackerStore(TrackerStore):
         self._ensure_indices()
 
     @property
-    def conversations(self):
+    def conversations(self) -> Collection:
         """Returns the current conversation."""
         return self.db[self.collection]
 
-    def _ensure_indices(self):
+    def _ensure_indices(self) -> None:
         """Create an index on the sender_id."""
         self.conversations.create_index("sender_id")
 
@@ -594,7 +597,7 @@ class MongoTrackerStore(TrackerStore):
 
         return state
 
-    def save(self, tracker, timeout=None):
+    def save(self, tracker: DialogueStateTracker) -> None:
         """Saves the current conversation state."""
         if self.event_broker:
             self.stream_events(tracker)
@@ -625,9 +628,12 @@ class MongoTrackerStore(TrackerStore):
 
         stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
         all_events = self._events_from_serialized_tracker(stored)
-        number_events_since_last_session = len(
-            self._events_since_last_session_start(all_events)
-        )
+        if self.retrieve_events_from_previous_conversation_sessions:
+            number_events_since_last_session = len(all_events)
+        else:
+            number_events_since_last_session = len(
+                self._events_since_last_session_start(all_events)
+            )
 
         return itertools.islice(
             tracker.events, number_events_since_last_session, len(tracker.events)
@@ -810,12 +816,12 @@ def ensure_schema_exists(session: "Session") -> None:
 class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database."""
 
-    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
-    Base = declarative_base()
+    Base: DeclarativeMeta = declarative_base()
 
     class SQLEvent(Base):
-        """Represents an event in the SQL Tracker Store"""
+        """Represents an event in the SQL Tracker Store."""
 
         __tablename__ = "events"
 
@@ -942,7 +948,7 @@ class SQLTrackerStore(TrackerStore):
             query=query,
         )
 
-    def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
+    def _create_database_and_update_engine(self, db: Text, engine_url: "URL") -> None:
         """Creates database `db` and updates engine accordingly."""
         from sqlalchemy import create_engine
 
@@ -988,7 +994,7 @@ class SQLTrackerStore(TrackerStore):
         conn.close()
 
     @contextlib.contextmanager
-    def session_scope(self):
+    def session_scope(self) -> Generator["Session", None, None]:
         """Provide a transactional scope around a series of operations."""
         session = self.sessionmaker()
         try:
@@ -1126,10 +1132,12 @@ class SQLTrackerStore(TrackerStore):
         self, session: "Session", tracker: DialogueStateTracker
     ) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
-
         number_of_events_since_last_session = self._event_query(
-            session, tracker.sender_id, fetch_events_from_all_sessions=False
+            session,
+            tracker.sender_id,
+            fetch_events_from_all_sessions=self.retrieve_events_from_previous_conversation_sessions,
         ).count()
+
         return itertools.islice(
             tracker.events, number_of_events_since_last_session, len(tracker.events)
         )

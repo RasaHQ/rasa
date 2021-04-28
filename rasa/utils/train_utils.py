@@ -1,5 +1,4 @@
 from pathlib import Path
-import tensorflow as tf
 import copy
 import numpy as np
 from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
@@ -46,6 +45,7 @@ from rasa.shared.exceptions import InvalidConfigException
 if TYPE_CHECKING:
     from rasa.nlu.extractors.extractor import EntityTagSpec
     from rasa.nlu.tokenizers.tokenizer import Token
+    from tensorflow.keras.callbacks import Callback
 
 
 def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
@@ -180,7 +180,7 @@ def load_tf_hub_model(model_url: Text) -> Any:
 
     # needed to load the ConveRT model
     # noinspection PyUnresolvedReferences
-    import tensorflow_text
+    import tensorflow_text  # noqa: F401
     import os
 
     # required to take care of cases when other files are already
@@ -382,6 +382,7 @@ def create_data_generators(
     batch_strategy: Text = SEQUENCE,
     eval_num_examples: int = 0,
     random_seed: Optional[int] = None,
+    shuffle: bool = True,
 ) -> Tuple[RasaBatchDataGenerator, Optional[RasaBatchDataGenerator]]:
     """Create data generators for train and optional validation data.
 
@@ -392,6 +393,7 @@ def create_data_generators(
         batch_strategy: The batch strategy to use.
         eval_num_examples: Number of examples to use for validation data.
         random_seed: The random seed.
+        shuffle: Whether to shuffle data inside the data generator.
 
     Returns:
         The training data generator and optional validation data generator.
@@ -406,7 +408,7 @@ def create_data_generators(
             batch_size=batch_sizes,
             epochs=epochs,
             batch_strategy=batch_strategy,
-            shuffle=True,
+            shuffle=shuffle,
         )
 
     data_generator = RasaBatchDataGenerator(
@@ -414,7 +416,7 @@ def create_data_generators(
         batch_size=batch_sizes,
         epochs=epochs,
         batch_strategy=batch_strategy,
-        shuffle=True,
+        shuffle=shuffle,
     )
 
     return data_generator, validation_data_generator
@@ -425,7 +427,7 @@ def create_common_callbacks(
     tensorboard_log_dir: Optional[Text] = None,
     tensorboard_log_level: Optional[Text] = None,
     checkpoint_dir: Optional[Path] = None,
-) -> List[tf.keras.callbacks.Callback]:
+) -> List["Callback"]:
     """Create common callbacks.
 
     The following callbacks are created:
@@ -443,6 +445,8 @@ def create_common_callbacks(
     Returns:
         A list of callbacks.
     """
+    import tensorflow as tf
+
     callbacks = [RasaTrainingLogger(epochs, silent=False)]
 
     if tensorboard_log_dir:
@@ -583,7 +587,7 @@ def _check_similarity_loss_setting(component_config: Dict[Text, Any]) -> None:
 
 
 def init_split_entities(
-    split_entities_config, default_split_entity
+    split_entities_config: Union[bool, Dict[Text, Any]], default_split_entity: bool
 ) -> Dict[Text, bool]:
     """Initialise the behaviour for splitting entities by comma (or not).
 

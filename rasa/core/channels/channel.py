@@ -81,8 +81,10 @@ class UserMessage:
 def register(
     input_channels: List["InputChannel"], app: Sanic, route: Optional[Text]
 ) -> None:
-    async def handler(*args, **kwargs):
-        await app.agent.handle_message(*args, **kwargs)
+    """Registers input channel blueprints with Sanic."""
+
+    async def handler(message: UserMessage) -> None:
+        await app.agent.handle_message(message)
 
     for channel in input_channels:
         if route:

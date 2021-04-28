@@ -7,7 +7,7 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Optional, Any, List, Dict, Tuple, Type, Union
+from typing import Text, Optional, Any, List, Dict, Tuple, Type, Union, Callable
 
 import rasa.core
 import rasa.core.training.training
@@ -22,7 +22,6 @@ from rasa.shared.constants import (
     DOCS_URL_POLICIES,
     DOCS_URL_MIGRATION_GUIDE,
     DEFAULT_CONFIG_PATH,
-    DOCS_URL_ACTIONS,
     DOCS_URL_DEFAULT_ACTIONS,
 )
 from rasa.shared.core.constants import (
@@ -64,10 +63,22 @@ class PolicyEnsemble:
         self.policies = policies
         self.date_trained = None
 
-        self.action_fingerprints = action_fingerprints or []
+        self.action_fingerprints = action_fingerprints or {}
 
         self._check_priorities()
         self._check_for_important_policies()
+
+        self._set_rule_only_data()
+
+    def _set_rule_only_data(self) -> None:
+        rule_only_data = {}
+        for policy in self.policies:
+            if isinstance(policy, RulePolicy):
+                rule_only_data = policy.get_rule_only_data()
+                break
+
+        for policy in self.policies:
+            policy.set_shared_policy_states(rule_only_data=rule_only_data)
 
     def _check_for_important_policies(self) -> None:
         from rasa.core.policies.mapping_policy import MappingPolicy
@@ -204,6 +215,9 @@ class PolicyEnsemble:
             self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(
                 training_trackers, domain
             )
+            # set rule only data after training in order to make ensemble usable
+            # without loading
+            self._set_rule_only_data()
         else:
             logger.info("Skipped training, because there are no training samples.")
 
@@ -275,7 +289,7 @@ class PolicyEnsemble:
             policy.persist(policy_path)
 
     @classmethod
-    def load_metadata(cls, path) -> Any:
+    def load_metadata(cls, path: Text) -> Dict[Text, Any]:
         metadata_path = os.path.join(path, "metadata.json")
         metadata = json.loads(
             rasa.shared.utils.io.read_file(os.path.abspath(metadata_path))
@@ -283,7 +297,9 @@ class PolicyEnsemble:
         return metadata
 
     @staticmethod
-    def ensure_model_compatibility(metadata, version_to_check=None) -> None:
+    def ensure_model_compatibility(
+        metadata: Dict[Text, Any], version_to_check: Optional[Text] = None
+    ) -> None:
         from packaging import version
 
         if version_to_check is None:
@@ -303,7 +319,9 @@ class PolicyEnsemble:
             )
 
     @classmethod
-    def _ensure_loaded_policy(cls, policy, policy_cls, policy_name: Text):
+    def _ensure_loaded_policy(
+        cls, policy: Optional[Any], policy_cls: Type[Policy], policy_name: Text
+    ) -> None:
         if policy is None:
             logger.warning(f"Failed to load policy {policy_name}: load returned None")
         elif not isinstance(policy, policy_cls):
@@ -444,7 +462,7 @@ class PolicyEnsemble:
         return parsed_policies
 
     @classmethod
-    def get_featurizer_from_dict(cls, policy) -> Tuple[Any, Any]:
+    def get_featurizer_from_dict(cls, policy: Dict[Text, Any]) -> Tuple[Any, Any]:
         # policy can have only 1 featurizer
         if len(policy["featurizer"]) > 1:
             raise InvalidPolicyConfig(
@@ -459,7 +477,9 @@ class PolicyEnsemble:
         return featurizer_func, featurizer_config
 
     @classmethod
-    def get_state_featurizer_from_dict(cls, featurizer_config) -> Tuple[Any, Any]:
+    def get_state_featurizer_from_dict(
+        cls, featurizer_config: Dict[Text, Any]
+    ) -> Tuple[Callable, Dict[Text, Any]]:
         # featurizer can have only 1 state featurizer
         if len(featurizer_config["state_featurizer"]) > 1:
             raise InvalidPolicyConfig(
@@ -633,6 +653,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             is_end_to_end_prediction=best_prediction.is_end_to_end_prediction,
             is_no_user_prediction=best_prediction.is_no_user_prediction,
             diagnostic_data=best_prediction.diagnostic_data,
+            hide_rule_turn=best_prediction.hide_rule_turn,
         )
 
     def _best_policy_prediction(
