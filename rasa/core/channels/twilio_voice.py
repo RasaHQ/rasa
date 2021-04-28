@@ -162,7 +162,7 @@ class TwilioVoiceInput(InputChannel):
     def _raise_invalid_speech_model_timeout_exception(self) -> None:
         """Raises an error if incompatible speech_timeout and speech_model are provided."""
         raise InvalidConfigException(
-            f"If speech_time is 'auto' the speech_model must be 'numbers_and_commands'. Please update your "
+            f"If speech_timeout is 'auto' the speech_model must be 'numbers_and_commands'. Please update your "
             f"speech_model to be 'numbers_and_commands' if you would like to continue using the 'auto' speech_model."
         )
 
