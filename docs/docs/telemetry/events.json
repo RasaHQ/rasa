@@ -144,6 +144,14 @@
     "Telemetry Disabled": {
       "description": "Triggered when telemetry reporting gets disabled. Last event sent before disabling telemetry. This event is not sent, if the user never enabled telemetry reporting before deactivating it."
     },
+    "NLU Training Data Augment": {
+      "description": "NLU data augmentation got started. The event provides information that the data augmentation loop got triggered.",
+      "type": "object",
+      "section": "Data Handling",
+      "properties": {},
+      "additionalProperties": false,
+      "required": []
+    },
     "Training Data Split": {
       "description": "Triggered when training data gets split.",
       "type": "object",
