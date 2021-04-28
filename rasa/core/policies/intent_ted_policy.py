@@ -347,7 +347,7 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
         model_data = self._create_model_data(tracker_state_features)
-        output = self.model.rasa_predict(model_data)
+        output = self.model.run_inference(model_data)
 
         # take the last prediction in the sequence
         similarities = output["similarities"][:, -1, :]
@@ -457,9 +457,23 @@ class IntentTED(TED):
             if isinstance(self.config[BATCH_SIZES], int)
             else self.config[BATCH_SIZES][0]
         )
-        (data_generator, _) = rasa.utils.train_utils.create_data_generators(
-            model_data, batch_size, 1, SEQUENCE, 0,
-        )
-        while True:
-            batch_in = next(data_generator)
-            output = self.predict_step(batch_in)
+        outputs = self.model.run_inference(model_data, batch_size=batch_size)
+
+        thresholds = {}
+
+        # Collect all the probabilities for each label id
+        for index, all_pos_labels in enumerate(label_ids):
+            first_pos_label_id = all_pos_labels[0]
+
+            if first_pos_label_id not in thresholds:
+                thresholds[first_pos_label_id] = []
+
+            thresholds[first_pos_label_id].append(
+                outputs["similarities"][index, 0, first_pos_label_id]
+            )
+
+        # Pick the minimum of all similarities as the threshold
+        for label_id in thresholds:
+            thresholds[label_id] = min(thresholds[label_id])
+
+        return thresholds
