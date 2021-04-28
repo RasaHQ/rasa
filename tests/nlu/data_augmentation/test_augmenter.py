@@ -1,11 +1,9 @@
 import operator
-import os
 from pathlib import Path
 from typing import Callable, List, Set, Text
 
 import pytest
-from rasa.nlu.constants import TOKENS_NAMES, VOCABULARY
-from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.constants import VOCABULARY
 from rasa.constants import DEFAULT_RANDOM_SEED
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.data_augmentation import augmenter
@@ -14,25 +12,6 @@ import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.components
 import rasa.shared.utils.io
 from rasa.shared.nlu.constants import INTENT, TEXT, INTENT_REPORT_FILE_NAME
-
-
-def test_augmenter_create_tokenizer():
-    tokenizer_config = rasa.nlu.config.load("data/test_nlu_paraphrasing/config.yml")
-
-    tokenizer = rasa.shared.utils.components.get_tokenizer_from_nlu_config(
-        tokenizer_config
-    )
-
-    assert isinstance(tokenizer, Tokenizer)
-
-    # Test Config has a simple WhitespaceTokenizer
-    expected_tokens = ["xxx", "yyy", "zzz"]
-    message = Message(data={TEXT: "xxx yyy zzz", INTENT: "abc"})
-
-    tokenizer.process(message)
-    tokens = [token.text for token in message.get(TOKENS_NAMES[TEXT])]
-
-    assert tokens == expected_tokens
 
 
 @pytest.mark.parametrize(
