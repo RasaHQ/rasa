@@ -167,7 +167,7 @@ We cannot use `dict.update` method because configs contain nested dicts.
 #### create\_data\_generators
 
 ```python
-create_data_generators(model_data: RasaModelData, batch_sizes: Union[int, List[int]], epochs: int, batch_strategy: Text = SEQUENCE, eval_num_examples: int = 0, random_seed: Optional[int] = None) -> Tuple[RasaBatchDataGenerator, Optional[RasaBatchDataGenerator]]
+create_data_generators(model_data: RasaModelData, batch_sizes: Union[int, List[int]], epochs: int, batch_strategy: Text = SEQUENCE, eval_num_examples: int = 0, random_seed: Optional[int] = None, shuffle: bool = True) -> Tuple[RasaBatchDataGenerator, Optional[RasaBatchDataGenerator]]
 ```
 
 Create data generators for train and optional validation data.
@@ -180,6 +180,7 @@ Create data generators for train and optional validation data.
 - `batch_strategy` - The batch strategy to use.
 - `eval_num_examples` - Number of examples to use for validation data.
 - `random_seed` - The random seed.
+- `shuffle` - Whether to shuffle data inside the data generator.
   
 
 **Returns**:
