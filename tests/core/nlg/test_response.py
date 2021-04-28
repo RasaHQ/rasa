@@ -218,7 +218,6 @@ async def test_nlg_non_matching_channel():
     domain = Domain.from_yaml(
         """
     version: "2.0"
-    
     responses:
         utter_hi:
         - text: "Hello"
@@ -236,7 +235,6 @@ async def test_nlg_conditional_response_variations_with_none_slot():
     domain = Domain.from_yaml(
         """
         version: "2.0"
-        
         responses:
             utter_action:
             - text: "text A"
@@ -257,7 +255,6 @@ async def test_nlg_conditional_response_variations_with_slot_not_a_constraint():
     domain = Domain.from_yaml(
         """
             version: "2.0"
-            
             responses:
                 utter_action:
                 - text: "text A"
@@ -278,7 +275,6 @@ async def test_nlg_conditional_response_variations_with_null_slot():
     domain = Domain.from_yaml(
         """
                 version: "2.0"
-                
                 responses:
                     utter_action:
                     - text: "text for null"
