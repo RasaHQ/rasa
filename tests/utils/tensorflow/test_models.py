@@ -1,5 +1,5 @@
 import pytest
-from typing import Dict, Text, Union
+from typing import Dict, Text, Union, Tuple
 import numpy as np
 import tensorflow as tf
 
@@ -71,7 +71,7 @@ def test_batch_inference(
     model = RasaModel()
 
     def _batch_predict(
-        batch_in: np.ndarray,
+        batch_in: Tuple[np.ndarray],
     ) -> Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]]:
 
         dummy_output = batch_in[0]
