@@ -58,5 +58,15 @@ def test_multi_label_dot_product_loss__get_candidate_indices_shape():
     assert np.all(tf.shape(candidate_ids).numpy() == [batch_size, num_candidates])
 
 
-def test_multi_label_dot_product_loss__get_candidate_values_shape():
-    pass
+def test_multi_label_dot_product_loss__get_candidate_values():
+    x = tf.reshape(tf.range(3 * 3), [3, 3])
+    candidate_ids = tf.constant([[0, 1], [0, 0], [2, 0]])
+    candidate_values = MultiLabelDotProductLoss._get_candidate_values(
+        x, candidate_ids
+    ).numpy()
+    expected_candidate_values = np.array(
+        [[[0, 1, 2], [3, 4, 5]], [[0, 1, 2], [0, 1, 2]], [[6, 7, 8], [0, 1, 2]]]
+    )
+    expected_candidate_values = np.expand_dims(expected_candidate_values, axis=1)
+
+    assert np.all(candidate_values == expected_candidate_values)

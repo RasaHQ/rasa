@@ -1255,17 +1255,36 @@ class MultiLabelDotProductLoss(DotProductLoss):
         """
         return layers_utils.random_indices(batch_size, self.num_neg, total_candidates)
 
+    @staticmethod
     def _get_candidate_values(
-        self, x: tf.Tensor, candidate_ids: tf.Tensor
+        x: tf.Tensor,  # (batch_size, ...)
+        candidate_ids: tf.Tensor,  # (batch_size, num_candidates)
     ) -> tf.Tensor:
         """Gathers candidate values according to IDs.
         
         Args:
             x: Any tensor with at least one dimension
-            candidate_ids: Indicator ???
+            candidate_ids: Indicator for which candidates to gather
 
         Returns:
-            ???
+            A tensor of shape (batch_size, 1, num_candidates, tf.shape(x)[-1]), where
+            for each batch example, we generate a list of num_candidates vectors, and
+            each candidate is chosen from x according to the candidate id. For example:
+
+            x = [[0 1 2],
+                 [3 4 5],
+                 [6 7 8]]
+            candidate_ids = [[0, 1], [0, 0], [2, 0]]
+            gives
+            [
+                [[0 1 2],
+                 [3 4 5]],
+                [[0 1 2],
+                 [0 1 2]],
+                [[6 7 8],
+                 [0 1 2]]
+            ]
+            with one dimension added by tf.expand_dims(candidate_values, axis=1).
         """
         tensor_expanded = tf.tile(
             tf.expand_dims(layers_utils.batch_flatten(x), 0), (tf.shape(x)[0], 1, 1)
@@ -1273,7 +1292,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         candidate_values = tf.gather(tensor_expanded, candidate_ids, batch_dims=1)
         candidate_values = tf.expand_dims(candidate_values, axis=1)
 
-        return candidate_values  # (batch_size of x, 1, ...)
+        return candidate_values  # (batch_size, 1, num_candidates, tf.shape(x)[-1])
 
     def _loss_sigmoid(
         self,
