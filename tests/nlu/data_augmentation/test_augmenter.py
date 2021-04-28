@@ -1,5 +1,6 @@
 import operator
 import os
+from pathlib import Path
 from typing import Callable, List, Set, Text
 
 import pytest
@@ -528,7 +529,7 @@ def test_augmentation_summary_creation():
     assert "f1-score_change" in augmented_classification_report["macro avg"]
 
 
-def test_summary_report_creation():
+def test_summary_report_creation(tmp_path: Path):
     classification_report_no_augmentation = rasa.shared.utils.io.read_json_file(
         "data/test_nlu_paraphrasing/nlu_classification_report_no_augmentation.json"
     )
@@ -554,9 +555,8 @@ def test_summary_report_creation():
     ]
     intents_to_augment = {"check_recipients"}
 
-    tmp_path = rasa.utils.io.create_temporary_directory()
-    out_path = os.path.join(tmp_path, "augmentation_report")
-    os.makedirs(out_path)
+    out_path = Path(tmp_path / "augmentation_report")
+    out_path.mkdir()
 
     # Contents of both reports tested by test_augmentation_summary_creation
     _ = augmenter._create_summary_report(
@@ -567,22 +567,21 @@ def test_summary_report_creation():
         output_directory=out_path,
     )
 
-    assert os.path.exists(os.path.join(out_path, INTENT_REPORT_FILE_NAME))
+    assert Path(out_path / INTENT_REPORT_FILE_NAME).exists()
 
 
-def test_summary_plot_creation():
+def test_summary_plot_creation(tmp_path: Path):
     intent_summary = rasa.shared.utils.io.read_json_file(
         "data/test_nlu_paraphrasing/intent_summary.json"
     )
 
-    tmp_path = rasa.utils.io.create_temporary_directory()
-    out_path = os.path.join(tmp_path, "augmentation_plot")
-    os.makedirs(out_path)
+    out_path = Path(tmp_path / "augmentation_plot")
+    out_path.mkdir()
 
     augmenter._plot_summary_report(intent_summary=intent_summary, output_directory=out_path)
 
     assert all(
-        os.path.exists(os.path.join(out_path, output_file))
+        Path(out_path / output_file).exists()
         for output_file in [
             "precision_changes.png",
             "recall_changes.png",
