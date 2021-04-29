@@ -1194,16 +1194,19 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         # Pick random examples from the batch
         candidate_ids = self._get_candidate_indices(
-            tf.shape(batch_inputs_embed)[0], tf.shape(batch_inputs_embed)[0]
+            batch_size=tf.shape(batch_inputs_embed)[0],
+            total_candidates=tf.shape(all_labels_embed)[0],
         )
 
         # Get the label embeddings and ids corresponding to candidate indices
+        tf.print("all_labels_embed")
+        tf.print(all_labels_embed)
+        tf.print("candidate_ids")
+        tf.print(candidate_ids)
         candidate_labels_embed = self._get_candidate_values(
-            batch_labels_embed[:, 0, ...], candidate_ids
+            all_labels_embed, candidate_ids
         )
-        candidate_labels_ids = self._get_candidate_values(
-            batch_labels_ids[:, 0, ...], candidate_ids
-        )
+        candidate_labels_ids = self._get_candidate_values(all_labels_ids, candidate_ids)
 
         # Determine how many distinct labels exist (highest label index)
         max_label_id = tf.cast(tf.math.reduce_max(all_labels_ids), dtype=tf.int32)
@@ -1294,10 +1297,10 @@ class MultiLabelDotProductLoss(DotProductLoss):
             ]
             with one dimension added by tf.expand_dims(candidate_values, axis=1).
         """
-        tensor_expanded = tf.tile(
+        tiled_x = tf.tile(
             tf.expand_dims(layers_utils.batch_flatten(x), 0), (tf.shape(x)[0], 1, 1)
         )
-        candidate_values = tf.gather(tensor_expanded, candidate_ids, batch_dims=1)
+        candidate_values = tf.gather(tiled_x, candidate_ids, batch_dims=1)
         candidate_values = tf.expand_dims(candidate_values, axis=1)
 
         return candidate_values  # (batch_size, 1, num_candidates, tf.shape(x)[-1])

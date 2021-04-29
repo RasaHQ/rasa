@@ -30,9 +30,9 @@ def test_multi_label_dot_product_loss_call_shapes():
     batch_labels_embed = tf.constant(
         [[[0, 0, 1], [1, 0, 0]], [[0, 1, 0], [1, 0, 0]],], dtype=tf.float32
     )
-    batch_labels_ids = tf.constant([[[3], [2]], [[2], [1]],], dtype=tf.float32)
+    batch_labels_ids = tf.constant([[[2], [1]], [[1], [0]],], dtype=tf.float32)
     all_labels_embed = tf.constant([[1, 0, 0], [0, 1, 0], [0, 0, 1],], dtype=tf.float32)
-    all_labels_ids = tf.constant([[1], [2], [3],], dtype=tf.float32)
+    all_labels_ids = tf.constant([[0], [1], [2],], dtype=tf.float32)
     mask = None
 
     loss, accuracy = layer(

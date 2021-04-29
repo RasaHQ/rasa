@@ -1,5 +1,6 @@
 import tensorflow as tf
-from tensorflow import Tensor
+from tensorflow import Tensor, TensorShape
+from typing import Union
 
 
 def random_indices(batch_size: Tensor, n: Tensor, n_max: Tensor) -> Tensor:
@@ -26,3 +27,24 @@ def batch_flatten(x: Tensor) -> Tensor:
         The reshaped tensor
     """
     return tf.reshape(x, (-1, x.shape[-1]))
+
+
+def pad_right(
+    x: Tensor, target_shape: TensorShape, value: Union[int, float] = 0
+) -> Tensor:
+    """Creates a tensor of shape `target_shape` by padding it with `value` on the right.
+    
+    Args:
+        x: Any tensor
+        target_shape: Shape of the padded x; must be at least as large as the
+            shape of x in all dimensions
+
+    Returns:
+        A tensor like x, but padded with zeros
+    """
+    current_shape = tf.shape(x)
+    right_padding = tf.expand_dims(
+        tf.convert_to_tensor(target_shape - current_shape), -1
+    )
+    padding = tf.concat([tf.zeros_like(right_padding), right_padding], -1)
+    return tf.pad(x, padding, "CONSTANT", constant_values=value)
