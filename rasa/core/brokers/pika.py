@@ -10,7 +10,7 @@ from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple
 import aio_pika
 
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
-from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
+from rasa.shared.exceptions import RasaException
 from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
 from rasa.core.brokers.broker import EventBroker
 import rasa.shared.utils.io
