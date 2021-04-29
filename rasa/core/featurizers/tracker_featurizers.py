@@ -681,7 +681,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             A tuple of list of states, list of labels and list of entity data.
         """
 
-        self.setup_example_iterator()
+        self._setup_example_iterator()
 
         example_states = []
         example_labels = []
@@ -703,13 +703,13 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         )
         for tracker in pbar:
 
-            for states, label, entities in self.next_example(
+            for states, label, entities in self._example_iterator(
                 tracker,
                 domain,
                 omit_unset_slots=omit_unset_slots
             ):
 
-                if self.filter_example(tracker, states, label):
+                if self._check_example_cache(tracker, states, label):
                     continue
 
                 example_states.append(states)
@@ -720,22 +720,21 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                     f"# {self.LABEL_NAME}": f"{len(example_labels):d}"
                 })
 
-        self.cleanup_example_iterator(
-            example_states, example_labels, example_entities
-        )
+        self._cleanup_example_iterator()
+        self._remove_user_text_if_intent(example_states)
 
         logger.debug(f"Created {len(example_states)} {self.LABEL_NAME} examples.")
 
         return example_states, example_labels, example_entities
 
 
-    def setup_example_iterator(self) -> None:
+    def _setup_example_iterator(self) -> None:
         """Create set for filtering out duplicated training examples."""
         if self.remove_duplicates:
             self.hashed_examples = set()
 
 
-    def next_example(
+    def _example_iterator(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -778,7 +777,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 entity_data = {}
 
 
-    def filter_example(
+    def _check_example_cache(
         self,
         tracker: DialogueStateTracker,
         states: List[State],
@@ -798,18 +797,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 return True
 
 
-    def cleanup_example_iterator(
-        self,
-        example_states:  List[List[State]],
-        example_labels: List[List[Text]],
-        example_entities: List[List[Dict[Text, Any]]]
-    ) -> None:
+    def _cleanup_example_iterator(self) -> None:
         """Remove deduplication cache and remove intent text when intent label
         is used."""
         if self.remove_duplicates:
             self.hashed_examples = None
-
-        self._remove_user_text_if_intent(example_states)
 
 
     def prediction_states(
@@ -896,14 +888,16 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         new_label_ids = np.array(new_label_ids)
         return new_label_ids
 
-    def setup_example_iterator(self) -> None:
+
+    def _setup_example_iterator(self) -> None:
         """Create any data structures for deduplication and tracking multiple 
         intent labels.
         """
-        super().setup_example_iterator()
+        super()._setup_example_iterator()
         self._state_hash_to_labels = defaultdict(list)
 
-    def next_example(
+
+    def _example_iterator(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -937,36 +931,37 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 yield sliced_states, label, entities
 
 
-    def filter_example(
+    def _check_example_cache(
         self,
         tracker: DialogueStateTracker,
         states: List[State],
         label: List[Text],
     ) -> bool:
-        if not super().filter_example(tracker, states, label):
+        if not super()._check_example_cache(tracker, states, label):
             state_hash = self._hash_example(tracker, states)
             self._state_hash_to_labels[state_hash].append(label)
             return False
         else:
             return True
 
-    def cleanup_example_iterator(
-        self,
-        example_states: List[List[State]],
-        example_labels: List[List[Text]],
-        example_entities: List[List[Dict[Text, Any]]]
-    ) -> None:
-        """Clean up data structures and finalize any training examples."""
+    def _cleanup_example_iterator(self) -> None:
+        """Clean up cache data structures and finalize any training labels.
+
+        Collects all positive intent labels for a given state hash and adds
+        them to the original label for each state hash in the training data.
+        """
 
         for labelset in self._state_hash_to_labels.values():
+            # Get the set of labels associated with the state hash.
             codomain = set([labels[0] for labels in labelset])
             for labels in labelset:
-
+                # Remove the duplicate label in the first position 
+                # and update the positive labels.
                 filtered_codomain = filter(lambda label: label != labels[0], codomain)
                 labels.extend(filtered_codomain)
 
         self._state_hash_to_labels = None
-        self.hashed_examples = None
+        super()._cleanup_example_iterator()
 
 
     def prediction_states(
