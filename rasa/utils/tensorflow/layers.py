@@ -1017,7 +1017,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Calculate loss and accuracy.
 
-        Arguments:
+        Args:
             inputs_embed: Embedding tensor for the batch inputs.
             labels_embed: Embedding tensor for the batch labels.
             labels: Tensor representing batch labels.
@@ -1145,7 +1145,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             pos_inputs_embed, candidate_labels_embed, mask
         )  # (batch_size, 1, num_candidates)
 
-        accuracy = self._calc_accuracy(sim_pos, sim_candidate_il, pos_neg_labels)
+        accuracy = self._accuracy(sim_pos, sim_candidate_il, pos_neg_labels)
         loss = self._loss_sigmoid(sim_pos, sim_candidate_il, pos_neg_labels, mask)
 
         return loss, accuracy
@@ -1346,8 +1346,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         return tf.reduce_mean(loss)
 
     @staticmethod
-    def _calc_accuracy(
-        self,
+    def _accuracy(
         sim_pos: tf.Tensor,  # (batch_size, 1, 1)
         sim_candidates: tf.Tensor,  # (batch_size, 1, num_candidates)
         pos_neg_labels: tf.Tensor,  # (batch_size, num_candidates)
