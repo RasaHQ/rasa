@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Text
 from rasa.architecture_prototype import graph
 from rasa.architecture_prototype import graph_fingerprinting
 from rasa.architecture_prototype.graph import Model
-from rasa.architecture_prototype.graph_fingerprinting import Fingerprint, TrainingCache
+from rasa.architecture_prototype.graph_fingerprinting import FingerprintStatus, TrainingCache
 from rasa.architecture_prototype.graph_components import load_graph_component
 from rasa.core.channels import UserMessage
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
@@ -121,43 +121,45 @@ def test_model_prediction_with_and_without_nlu(prediction_graph: Dict[Text, Any]
 
     assert prediction_with_nlu == prediction_without_nlu
 
-# did you not throw me out????????
 class CachedComponent:
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self, *args, cached_value: Any, **kwargs):
+        self._cached_value = cached_value
 
-    def get_cached_value(self, *args, **kwargs):
-        return "get off my lawn!"
+    def get_cached_value(self, *args, **kwargs) -> Any:
+        return self._cached_value
 
 
 def walk_and_prune(
     graph_schema: Dict[Text, Any],
     node_name: Text,
-    fingerstatus: Dict[Text, Fingerprint],
+    fingerprint_statuses: Dict[Text, FingerprintStatus],
+    cache: "TrainingCache",
 ):
-    fingerprint = fingerstatus[node_name]
+    fingerprint = fingerprint_statuses[node_name]
     should_run = fingerprint.should_run
     if not should_run:
         graph_schema[node_name]["needs"] = {}
+        fingerprint_cache_key = fingerprint.fingerprint_key
         graph_schema[node_name] = {
             "uses": CachedComponent,
             "fn": "get_cached_value",
-            "config": {"fingerprint": fingerprint},
+            "config": {"cached_value": cache._outputs[fingerprint_cache_key]},
             "needs": {},
         }
     else:
         for node_dependency in graph_schema[node_name]["needs"].values():
-            walk_and_prune(graph_schema, node_dependency, fingerstatus)
+            walk_and_prune(graph_schema, node_dependency, fingerprint_statuses, cache)
 
 
 def prune_graph_schema(
     graph_schema: Dict[Text, Any],
     targets: List[Text],
-    fingerstatus: Dict[Text, Fingerprint],
-):
+    fingerprint_statuses: Dict[Text, FingerprintStatus],
+    cache: "TrainingCache"
+) -> Dict[Text, Any]:
     graph_to_prune = copy.deepcopy(graph_schema)
     for target in targets:
-        walk_and_prune(graph_to_prune, target, fingerstatus)
+        walk_and_prune(graph_to_prune, target, fingerprint_statuses, cache)
 
     return graph._minimal_graph_schema(graph_to_prune, targets)
 
@@ -179,11 +181,11 @@ def test_model_fingerprinting():
     fingerprint_graph = graph_fingerprinting.dask_graph_to_fingerprint_graph(
         dask_graph, cache
     )
-    fingerprint_status = graph.run_dask_graph(
+    fingerprint_statuses = graph.run_dask_graph(
         fingerprint_graph, core_targets + nlu_targets,
     )
 
-    for _, fingerprint in fingerprint_status.items():
+    for _, fingerprint in fingerprint_statuses.items():
         assert not fingerprint.should_run
 
     full_model_train_graph_schema["core_train_count_featurizer1"]["config"][
@@ -193,12 +195,17 @@ def test_model_fingerprinting():
     fingerprint_graph = graph_fingerprinting.dask_graph_to_fingerprint_graph(
         dask_graph, cache
     )
-    fingerprint_status = graph.run_dask_graph(fingerprint_graph, core_targets + nlu_targets)
+    fingerprint_statuses = graph.run_dask_graph(fingerprint_graph, core_targets + nlu_targets)
 
-    assert not fingerprint_status["train_classifier"].should_run
-    assert fingerprint_status["train_ted_policy"].should_run
+    assert not fingerprint_statuses["train_classifier"].should_run
+    assert fingerprint_statuses["train_ted_policy"].should_run
 
-    pruned_graph = prune_graph_schema(
-        full_model_train_graph_schema, core_targets + nlu_targets, fingerprint_status
+    pruned_graph_schema = prune_graph_schema(
+        full_model_train_graph_schema, core_targets + nlu_targets, fingerprint_statuses, cache
     )
-    graph.visualise_as_dask_graph(pruned_graph, "pruned_full_train_graph.png")
+    graph.visualise_as_dask_graph(pruned_graph_schema, "pruned_full_train_graph.png")
+
+    import ipdb; ipdb.set_trace()
+
+    graph.run_as_dask_graph(pruned_graph_schema, core_targets + nlu_targets)
+

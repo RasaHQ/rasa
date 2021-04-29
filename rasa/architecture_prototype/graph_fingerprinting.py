@@ -1,22 +1,11 @@
-import copy
 from collections import ChainMap
-import inspect
-from pathlib import Path
-from typing import Any, Text, Dict, List, Union, TYPE_CHECKING, Tuple, Optional
+from typing import Any, Text, Dict, List, Tuple, Optional
 
-import dask
-
-from rasa.core.channels import UserMessage
 from rasa.shared.constants import DEFAULT_DATA_PATH
 import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.core.training
-from rasa.shared.core.domain import Domain
-from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.shared.utils.io
-
-if TYPE_CHECKING:
-    from rasa.core.policies.policy import PolicyPrediction
 
 
 class FingerprintComponent:
@@ -33,21 +22,38 @@ class FingerprintComponent:
         self._cache = cache
 
     def __call__(self, *args: Any) -> Dict[Text, Any]:
-        received_inputs = dict(ChainMap(*args))
+        fingerprint_statuses = dict(ChainMap(*args))
 
         inputs_for_this_node = []
 
         for input, input_node in self._inputs.items():
-            inputs_for_this_node.append(received_inputs[input_node])
+            inputs_for_this_node.append(fingerprint_statuses[input_node])
 
-        fingerprint = self._cache.get_fingerprint(
+        current_fingerprint_key = self._cache.calculate_fingerprint_key(
             self._node_name, self._config, inputs_for_this_node
         )
 
-        # TODO: Return result if received inputs is empty
-        received_inputs[self._node_name] = fingerprint
+        fingerprint = self._cache.get_fingerprint(current_fingerprint_key)
 
-        return received_inputs
+        if fingerprint:
+            fingerprint_status = FingerprintStatus(
+                self._node_name,
+                fingerprint,
+                should_run=False,
+                fingerprint_key=current_fingerprint_key,
+            )
+
+        else:
+            fingerprint_status = FingerprintStatus(
+                self._node_name,
+                "no-fingerprint",
+                should_run=True,
+                fingerprint_key=current_fingerprint_key,
+            )
+
+        fingerprint_statuses[self._node_name] = fingerprint_status
+
+        return fingerprint_statuses
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, FingerprintComponent):
@@ -59,16 +65,21 @@ class FingerprintComponent:
         return f"Fingerprint: {self._node_name}"
 
 
-class Fingerprint:
+class FingerprintStatus:
     def __init__(
-        self, nodename: Text, value: str, should_run: Optional[bool] = None
+        self,
+        nodename: Text,
+        value: str,
+        should_run: Optional[bool] = None,
+        fingerprint_key: Optional[Text] = None,
     ) -> None:
         self._value = value
         self._nodename = nodename
         self.should_run = should_run
+        self.fingerprint_key = fingerprint_key
 
     def __eq__(self, other):
-        if not isinstance(other, Fingerprint):
+        if not isinstance(other, FingerprintStatus):
             return NotImplemented
         else:
             return self._value == other._value
@@ -80,11 +91,14 @@ class Fingerprint:
 class TrainingCache:
     def __init__(self) -> None:
         self._fingerprints = {}
+        self._outputs = {}
 
     def store_fingerprint(self, fingerprint_key: Text, output: Any) -> None:
         self._fingerprints[
             fingerprint_key
         ] = rasa.shared.utils.io.deep_container_fingerprint(output)
+
+        self._outputs[fingerprint_key] = output
 
     def calculate_fingerprint_key(
         self, node_name: Text, config: Dict, inputs: List[Any]
@@ -97,18 +111,8 @@ class TrainingCache:
 
         return f"{node_name}_{config_hash}_{inputs_hashes}"
 
-    def get_fingerprint(
-        self, node_name: Text, config: Dict, inputs: List[Any]
-    ) -> "Fingerprint":
-        current_fingerprint_key = self.calculate_fingerprint_key(
-            node_name, config, inputs
-        )
-
-        old_fingerprint = self._fingerprints.get(current_fingerprint_key)
-        if old_fingerprint:
-            return Fingerprint(node_name, old_fingerprint, should_run=False)
-
-        return Fingerprint(node_name, "no-fingerprint", should_run=True)
+    def get_fingerprint(self, current_fingerprint_key: Text) -> Optional[Text]:
+        return self._fingerprints.get(current_fingerprint_key)
 
 
 def dask_graph_to_fingerprint_graph(
@@ -125,4 +129,3 @@ def dask_graph_to_fingerprint_graph(
         )
         fingerprint_graph[node_name] = (fingerprint_component, *deps)
     return fingerprint_graph
-
