@@ -284,6 +284,31 @@ def _all_dependencies(
     return required
 
 
+def _minimal_graph_schema(
+    graph_schema: Dict[Text, Any], targets: List[Text]
+) -> Dict[Text, Tuple[RasaComponent, Text]]:
+    dependencies = _all_dependencies_schema(graph_schema, targets)
+
+    return {
+        step_name: step
+        for step_name, step in graph_schema.items()
+        if step_name in dependencies
+    }
+
+
+def _all_dependencies_schema(
+    graph_schema: Dict[Text, Any], targets: List[Text]
+) -> List[Text]:
+    required = []
+    for target in targets:
+        required.append(target)
+        target_dependencies = graph_schema[target]["needs"].values()
+        for dependency in target_dependencies:
+            required += _all_dependencies_schema(graph_schema, [dependency])
+
+    return required
+
+
 def convert_to_dask_graph(
     graph_schema: Dict[Text, Any],
     cache: Optional[TrainingCache] = None,
