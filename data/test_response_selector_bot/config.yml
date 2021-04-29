@@ -7,7 +7,7 @@ pipeline:
     entity_recognition: False
     epochs: 8
     learning_rate: 0.01
-    random_seed: 42
+    random_seed: 2021
   - name: ResponseSelector
     epochs: 5
     learning_rate: 0.01
