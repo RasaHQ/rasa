@@ -51,7 +51,7 @@ from rasa.utils.tensorflow.constants import (
     UNIDIRECTIONAL_ENCODER,
     DROP_RATE,
     DROP_RATE_ATTENTION,
-    WEIGHT_SPARSITY,
+    CONNECTION_DENSITY,
     NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -196,8 +196,8 @@ class ResponseSelector(DIETClassifier):
         # ## Regularization parameters
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.002,
-        # Sparsity of the weights in dense layers
-        WEIGHT_SPARSITY: 0.0,
+        # Fraction of trainable weights in internal layers.
+        CONNECTION_DENSITY: 1.0,
         # The scale of how important is to minimize the maximum similarity
         # between embeddings of different labels.
         NEGATIVE_MARGIN_SCALE: 0.8,

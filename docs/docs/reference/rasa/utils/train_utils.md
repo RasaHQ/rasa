@@ -44,6 +44,23 @@ Updates LOSS_TYPE to &#x27;cross_entropy&#x27; if it is set to &#x27;softmax&#x2
 
   updated model configuration
 
+#### update\_deprecated\_sparsity\_to\_density
+
+```python
+update_deprecated_sparsity_to_density(config: Dict[Text, Any]) -> Dict[Text, Any]
+```
+
+Updates `WEIGHT_SPARSITY` to `CONNECTION_DENSITY = 1 - WEIGHT_SPARSITY`.
+
+**Arguments**:
+
+- `config` - model configuration
+  
+
+**Returns**:
+
+  Updated model configuration
+
 #### align\_token\_features
 
 ```python

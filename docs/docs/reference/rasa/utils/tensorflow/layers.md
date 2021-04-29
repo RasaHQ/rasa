@@ -111,29 +111,53 @@ Apply dense layer to sparse inputs.
 
   A ValueError if inputs is not a sparse tensor
 
-## DenseWithSparseWeights Objects
+## RandomlyConnectedDense Objects
 
 ```python
-class DenseWithSparseWeights(tf.keras.layers.Dense)
+class RandomlyConnectedDense(tf.keras.layers.Dense)
 ```
 
-Just your regular densely-connected NN layer but with sparse weights.
+Layer with dense ouputs that are connected to a random subset of inputs.
 
-`Dense` implements the operation:
+`RandomlyConnectedDense` implements the operation:
 `output = activation(dot(input, kernel) + bias)`
 where `activation` is the element-wise activation function
 passed as the `activation` argument, `kernel` is a weights matrix
 created by the layer, and `bias` is a bias vector created by the layer
 (only applicable if `use_bias` is `True`).
-It creates `kernel_mask` to set fraction of the `kernel` weights to zero.
+It creates `kernel_mask` to set a fraction of the `kernel` weights to zero.
 
 Note: If the input to the layer has a rank greater than 2, then
 it is flattened prior to the initial dot product with `kernel`.
 
+The output is guaranteed to be dense (each output is connected to at least one
+input), and no input is disconnected (each input is connected to at least one
+output).
+
+At `density = 0.0` the number of trainable weights is `max(input_size, units)`. At
+`density = 1.0` this layer is equivalent to `tf.keras.layers.Dense`.
+
+Input shape:
+N-D tensor with shape: `(batch_size, ..., input_dim)`.
+The most common situation would be
+a 2D input with shape `(batch_size, input_dim)`.
+
+Output shape:
+N-D tensor with shape: `(batch_size, ..., units)`.
+For instance, for a 2D input with shape `(batch_size, input_dim)`,
+the output would have shape `(batch_size, units)`.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(density: float = 0.2, **kwargs: Any) -> None
+```
+
+Declares instance variables with default values.
+
 **Arguments**:
 
-- `sparsity` - Float between 0 and 1. Fraction of the `kernel`
-  weights to set to zero.
+- `density` - Float between 0 and 1. Approximate fraction of trainable weights.
 - `units` - Positive integer, dimensionality of the output space.
 - `activation` - Activation function to use.
   If you don&#x27;t specify anything, no activation is applied
@@ -149,16 +173,35 @@ it is flattened prior to the initial dot product with `kernel`.
 - `kernel_constraint` - Constraint function applied to
   the `kernel` weights matrix.
 - `bias_constraint` - Constraint function applied to the bias vector.
+
+#### build
+
+```python
+ | build(input_shape: tf.TensorShape) -> None
+```
+
+Prepares the kernel mask.
+
+**Arguments**:
+
+- `input_shape` - Shape of the inputs to this layer
+
+#### call
+
+```python
+ | call(inputs: tf.Tensor) -> tf.Tensor
+```
+
+Processes the given inputs.
+
+**Arguments**:
+
+- `inputs` - What goes into this layer
   
-  Input shape:
-  N-D tensor with shape: `(batch_size, ..., input_dim)`.
-  The most common situation would be
-  a 2D input with shape `(batch_size, input_dim)`.
-  
-  Output shape:
-  N-D tensor with shape: `(batch_size, ..., units)`.
-  For instance, for a 2D input with shape `(batch_size, input_dim)`,
-  the output would have shape `(batch_size, units)`.
+
+**Returns**:
+
+  The processed inputs.
 
 ## Ffnn Objects
 
@@ -173,8 +216,7 @@ Feed-forward network layer.
 - `layer_sizes` - List of integers with dimensionality of the layers.
 - `dropout_rate` - Float between 0 and 1; fraction of the input units to drop.
 - `reg_lambda` - Float, regularization factor.
-- `sparsity` - Float between 0 and 1. Fraction of the `kernel`
-  weights to set to zero.
+- `density` - Float between 0 and 1. Approximate fraction of trainable weights.
 - `layer_name_suffix` - Text added to the name of the layers.
   
   Input shape:
