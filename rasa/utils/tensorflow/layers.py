@@ -866,20 +866,39 @@ class DotProductLoss(tf.keras.layers.Layer):
         """
         # loss for maximizing similarity with correct label
         # we have 4 negative losses, so this serves as 4 anchors in triplet loss
-        loss = 4 * tf.maximum(0.0, self.mu_pos - tf.squeeze(sim_pos, axis=-1))
+        # minimize only maximum similarity over incorrect labels
 
         # loss for minimizing similarity with `num_neg` incorrect labels
-        # minimize only maximum similarity over incorrect labels
-        loss += tf.maximum(0.0, self.mu_neg + tf.reduce_max(sim_neg_il, axis=-1))
+        loss = tf.maximum(
+            0.0,
+            tf.reduce_max(sim_neg_il, axis=-1)
+            - tf.squeeze(sim_pos, axis=-1)
+            + self.mu_pos,
+        )
 
         # penalize max similarity between pos label and neg label embeddings
-        loss += tf.maximum(0.0, self.mu_neg + tf.reduce_max(sim_neg_ll, axis=-1))
+        loss += tf.maximum(
+            0.0,
+            tf.reduce_max(sim_neg_ll, axis=-1)
+            - tf.squeeze(sim_pos, axis=-1)
+            + self.mu_pos,
+        )
 
         # penalize max similarity between pos example and neg example embeddings
-        loss += tf.maximum(0.0, self.mu_neg + tf.reduce_max(sim_neg_ii, axis=-1))
+        loss += tf.maximum(
+            0.0,
+            tf.reduce_max(sim_neg_ii, axis=-1)
+            - tf.squeeze(sim_pos, axis=-1)
+            + self.mu_pos,
+        )
 
         # penalize max similarity between pos label and neg example embeddings
-        loss += tf.maximum(0.0, self.mu_neg + tf.reduce_max(sim_neg_li, axis=-1))
+        loss += tf.maximum(
+            0.0,
+            tf.reduce_max(sim_neg_li, axis=-1)
+            - tf.squeeze(sim_pos, axis=-1)
+            + self.mu_pos,
+        )
 
         if mask is not None:
             # mask loss for different length sequences
