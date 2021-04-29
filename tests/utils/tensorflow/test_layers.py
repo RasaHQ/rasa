@@ -109,7 +109,7 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
 
     # Inside `layer._sample_candidates` random indices will be generated for the
     # candidates. We mock them to have a deterministic output.
-    mock_indices = [0, 2, 0, 1, 0, 1]
+    mock_indices = [0, 2, 0, 1, 0, 3]
 
     def mock_random_indices(*args, **kwargs) -> tf.Tensor:
         return tf.reshape(tf.constant(mock_indices), [batch_size, num_neg])
@@ -139,7 +139,7 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
     # E.g. a 2 coming from `mock_indices` means that the first positive label (always) of
     # example 2 (`[l3, l0]`) is picked, i.e. `l3`.
     assert np.all(
-        candidate_labels_embed.numpy() == np.array([[[l0, l3]], [[l0, l2]], [[l0, l2]]])
+        candidate_labels_embed.numpy() == np.array([[[l0, l2]], [[l0, l1]], [[l0, l3]]])
     )
     # The `pos_neg_labels` contains `1`s wherever the vector in `candidate_labels_embed` of example `i` is actually in the
     # possible lables of example `i`
@@ -150,15 +150,15 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
                 [
                     1,
                     0,
-                ],  # l0 is an actual positive example in `batch_labels_embed[0]`, whereas l3 is not
+                ],  # l0 is an actual positive example in `batch_labels_embed[0]`, whereas l2 is not
                 [
                     0,
-                    1,
-                ],  # l0 is not a positive example in `batch_labels_embed[1]`, whereas l2 is
+                    0,
+                ],  # Neither l0 nor l3 are positive examples in `batch_labels_embed[1]`
                 [
                     1,
-                    0,
-                ],  # l0 is an actual positive example in `batch_labels_embed[2]`, whereas l2 is not
+                    1,
+                ],  # l0 and l3 are both positive examples in `batch_labels_embed[2]`
             ]
         )
     )
@@ -203,7 +203,7 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
 
     # Inside `layer._sample_candidates` random indices will be generated for the
     # candidates. We mock them to have a deterministic output.
-    mock_indices = [0, 2, 0, 1, 0, 1]
+    mock_indices = [0, 2, 0, 1, 3, 1]
 
     def mock_random_indices(*args, **kwargs) -> tf.Tensor:
         return tf.reshape(tf.constant(mock_indices), [batch_size, num_neg])
@@ -233,7 +233,7 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
     # E.g. a 2 coming from `mock_indices` means that the first positive label (always) of
     # example 2 (`[l3, l0, _]`) is picked, i.e. `l3`.
     assert np.all(
-        candidate_labels_embed.numpy() == np.array([[[l0, l3]], [[l0, l2]], [[l0, l2]]])
+        candidate_labels_embed.numpy() == np.array([[[l0, l2]], [[l0, l1]], [[l3, l1]]])
     )
     # The `pos_neg_labels` contains `1`s wherever the vector in `candidate_labels_embed` of example `i` is actually in the
     # possible lables of example `i`
@@ -243,16 +243,16 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
             [
                 [
                     1,
-                    1,
-                ],  # l0 and l3 are actual positive examples in `batch_labels_embed[0]`
+                    0,
+                ],  # l0 is an actual positive example in `batch_labels_embed[0]`, whereas l2 is not
                 [
                     0,
-                    1,
-                ],  # l0 is not a positive example in `batch_labels_embed[1]`, whereas l2 is
+                    0,
+                ],  # Neither l0 nor l1 are positive examples in `batch_labels_embed[1]`
                 [
                     1,
                     0,
-                ],  # l0 is an actual positive example in `batch_labels_embed[2]`, whereas l2 is not
+                ],  # l3 is an actual positive example in `batch_labels_embed[2]`, whereas l1 is not
             ]
         )
     )

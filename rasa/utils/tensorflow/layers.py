@@ -1199,10 +1199,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         # Get the label embeddings and ids corresponding to candidate indices
-        tf.print("all_labels_embed")
-        tf.print(all_labels_embed)
-        tf.print("candidate_ids")
-        tf.print(candidate_ids)
         candidate_labels_embed = self._get_candidate_values(
             all_labels_embed, candidate_ids
         )
@@ -1298,7 +1294,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
             with one dimension added by tf.expand_dims(candidate_values, axis=1).
         """
         tiled_x = tf.tile(
-            tf.expand_dims(layers_utils.batch_flatten(x), 0), (tf.shape(x)[0], 1, 1)
+            tf.expand_dims(layers_utils.batch_flatten(x), 0),
+            (tf.shape(candidate_ids)[0], 1, 1),
         )
         candidate_values = tf.gather(tiled_x, candidate_ids, batch_dims=1)
         candidate_values = tf.expand_dims(candidate_values, axis=1)

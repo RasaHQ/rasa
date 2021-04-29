@@ -24,7 +24,8 @@ def batch_flatten(x: Tensor) -> Tensor:
         x: Any tensor with at least 2 dimensions
         
     Returns:
-        The reshaped tensor
+        The reshaped tensor, where all but the last dimension
+        are flattened into the first dimension
     """
     return tf.reshape(x, (-1, x.shape[-1]))
 
