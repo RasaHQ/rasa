@@ -19,8 +19,7 @@ def test_dot_product_loss_inner_sim():
     b = tf.constant([[[1.0, 0.0, -2.0]], [[1.0, 0.0, -2.0]]])
     mask = tf.constant([[1.0, 0.0]])
     similarity = layer.sim(a, b, mask=mask).numpy()
-    assert np.all(similarity[0][0] == [-3.0])
-    assert np.all(similarity[0][1] == [0.0])
+    assert np.all(similarity == [[[-3.0], [0.0]]])
 
 
 def test_multi_label_dot_product_loss_call_shapes():
