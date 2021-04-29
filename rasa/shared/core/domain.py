@@ -362,26 +362,27 @@ class Domain:
         # label with the corresponding role or group label to make sure roles and
         # groups can also influence the dialogue predictions
         if properties[USE_ENTITIES_KEY] is True:
-            included_entities = include_all_entities(entities, roles, groups)
+            included_entities = set(entities)
+            included_entities.update(Domain.concatenate_entity_labels(roles))
+            included_entities.update(Domain.concatenate_entity_labels(groups))
         else:
-            included_entities = include_entities(entities, roles, group)
-
-        excluded_entities = remove_entities(roles, group)
+            included_entities = set(properties[USE_ENTITIES_KEY])
+            for entity in list(included_entities):
+                included_entities.update(
+                    Domain.concatenate_entity_labels(roles, entity)
+                )
+                included_entities.update(
+                    Domain.concatenate_entity_labels(groups, entity)
+                )
+        excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
+        for entity in list(excluded_entities):
+            excluded_entities.update(Domain.concatenate_entity_labels(roles, entity))
+            excluded_entities.update(Domain.concatenate_entity_labels(groups, entity))
+        used_entities = list(included_entities - excluded_entities)
+        used_entities.sort()
 
         # Only print warning for ambiguous configurations if entities were included
         # explicitly.
-        warn_if_ambigous_configuration(included_entities, excluded_entities)
-
-        properties[USED_ENTITIES_KEY] = used_entities
-        del properties[USE_ENTITIES_KEY]
-        del properties[IGNORE_ENTITIES_KEY]
-
-        return intent
-
-    @staticmethod
-    def warn_if_ambigous_configuration(
-        included_entities: List[Text], excluded_entities: List[Text], name: Text
-    ):
         explicitly_included = isinstance(properties[USE_ENTITIES_KEY], list)
         ambiguous_entities = included_entities.intersection(excluded_entities)
         if explicitly_included and ambiguous_entities:
@@ -393,46 +394,11 @@ class Domain:
                 docs=f"{rasa.shared.constants.DOCS_URL_DOMAINS}",
             )
 
-    @staticmethod
-    def remove_entities(
-        roles: Dict[Text, List[Text]],
-        groups: Dict[Text, List[Text]],
-    ):
+        properties[USED_ENTITIES_KEY] = used_entities
+        del properties[USE_ENTITIES_KEY]
+        del properties[IGNORE_ENTITIES_KEY]
 
-        excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
-        for entity in list(excluded_entities):
-            excluded_entities.update(Domain.concatenate_entity_labels(roles, entity))
-            excluded_entities.update(Domain.concatenate_entity_labels(groups, entity))
-        used_entities = list(included_entities - excluded_entities)
-        used_entities.sort()
-
-        return excluded_entities
-
-    @staticmethod
-    def include_entities(
-        entities: List[Text],
-        roles: Dict[Text, List[Text]],
-        groups: Dict[Text, List[Text]],
-    ):
-
-        included_entities = set(properties[USE_ENTITIES_KEY])
-        for entity in list(included_entities):
-            included_entities.update(Domain.concatenate_entity_labels(roles, entity))
-            included_entities.update(Domain.concatenate_entity_labels(groups, entity))
-        return included_entities
-
-    @staticmethod
-    def include_all_entities(
-        entities: List[Text],
-        roles: Dict[Text, List[Text]],
-        groups: Dict[Text, List[Text]],
-    ):
-        """List retrieval intents present in the domain."""
-        included_entities = set(entities)
-        included_entities.update(Domain.concatenate_entity_labels(roles))
-        included_entities.update(Domain.concatenate_entity_labels(groups))
-
-        return included_entities
+        return intent
 
     @rasa.shared.utils.common.lazy_property
     def retrieval_intents(self) -> List[Text]:
