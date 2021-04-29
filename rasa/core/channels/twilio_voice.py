@@ -5,7 +5,7 @@ from sanic.response import HTTPResponse
 from twilio.twiml.voice_response import VoiceResponse, Gather
 from typing import Text, Callable, Awaitable, List, Any, Dict, Optional
 
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.utils.io import get_emoji_regex
 from rasa.shared.utils.io import raise_warning
 from rasa.shared.core.events import BotUttered
 from rasa.shared.exceptions import InvalidConfigException
@@ -230,7 +230,7 @@ class TwilioVoiceInput(InputChannel):
                     )
                 )
 
-                twilio_response = self.build_twilio_voice_response(collector.messages)
+                twilio_response = self._build_twilio_voice_response(collector.messages)
             # If the user doesn't respond resend the last message.
             else:
                 # Get last user utterance from tracker.
@@ -246,14 +246,14 @@ class TwilioVoiceInput(InputChannel):
                 else:
                     last_response = last_response.text
 
-                twilio_response = self.build_twilio_voice_response(
+                twilio_response = self._build_twilio_voice_response(
                     [{"text": last_response}]
                 )
             return response.text(str(twilio_response), content_type="text/xml")
 
         return twilio_voice_webhook
 
-    def build_twilio_voice_response(
+    def _build_twilio_voice_response(
         self, messages: List[Dict[Text, Any]]
     ) -> VoiceResponse:
         """Builds the Twilio Voice Response object."""
@@ -292,12 +292,11 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         return "twilio_voice"
 
     @staticmethod
-    def emoji_warning(
+    def _emoji_warning(
         text: Text,
     ) -> None:
         """Raises a warning if text contains an emoji."""
-        tok = WhitespaceTokenizer()
-        emoji_regex = tok.get_emoji_regex()
+        emoji_regex = get_emoji_regex()
         if emoji_regex.findall(text):
             raise_warning(
                 "Text contains an emoji in a voice response. Review responses to provide a voice-friendly "
@@ -307,7 +306,7 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
-        self.emoji_warning(text)
+        self._emoji_warning(text)
         for message_part in text.strip().split("\n\n"):
             await self._persist_message(self._message(recipient_id, text=message_part))
 
@@ -319,11 +318,11 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         **kwargs: Any,
     ) -> None:
         """Convert buttons into a voice representation."""
-        self.emoji_warning(text)
+        self._emoji_warning(text)
         await self._persist_message(self._message(recipient_id, text=text))
 
         for b in buttons:
-            self.emoji_warning(b["title"])
+            self._emoji_warning(b["title"])
             await self._persist_message(self._message(recipient_id, text=b["title"]))
 
     async def send_image_url(

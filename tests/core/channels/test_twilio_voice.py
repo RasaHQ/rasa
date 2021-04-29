@@ -6,9 +6,10 @@ from sanic.request import Request
 
 import rasa.core
 from rasa.core import utils
-from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.core.channels.twilio_voice import TwilioVoiceInput
 from rasa.core.channels.twilio_voice import TwilioVoiceCollectingOutputChannel
+from typing import Text, Any, Dict, Type
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ async def test_twilio_voice_twiml_response_text():
     assert len(output_channel.messages) == 1
     assert output_channel.messages[0]["text"] == "Test:"
 
-    twiml = tv.build_twilio_voice_response(output_channel.messages)
+    twiml = tv._build_twilio_voice_response(output_channel.messages)
     assert (
         str(twiml)
         == '<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">Test:</Say></Gather></Response>'
@@ -65,7 +66,7 @@ async def test_twilio_voice_twiml_response_buttons():
     message_str = " ".join([m["text"] for m in output_channel.messages])
     assert message_str == "Buttons: Yes No"
 
-    twiml = tv.build_twilio_voice_response(output_channel.messages)
+    twiml = tv._build_twilio_voice_response(output_channel.messages)
     assert (
         str(twiml)
         == '<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="woman">Buttons:</Say><Pause length="1" /><Say voice="woman">Yes</Say><Pause length="1" /><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">No</Say></Gather></Response>'
@@ -114,10 +115,30 @@ async def test_twilio_voice_twiml_response_buttons():
                 "assistant_voice": "woman",
                 "enhanced": "true"
             }, InvalidConfigException
+        ),
+        (
+            {
+                "initial_prompt": "hello",
+                "reprompt_fallback_phrase": "i didn't get that",
+                "assistant_voice": "woman",
+                "enhanced": "true",
+                "speech_model": "default",
+                "speech_timeout": "auto"
+            }, InvalidConfigException
+        ),
+        (
+            {
+                "initial_prompt": "hello",
+                "reprompt_fallback_phrase": "i didn't get that",
+                "assistant_voice": "woman",
+                "enhanced": "true",
+                "speech_model": "phone_call",
+                "speech_timeout": "auto",
+            }, InvalidConfigException
         )
     ]
 )
-def test_invalid_configs(configs, expected):
+def test_invalid_configs(configs: Dict[Text, Any], expected: Type[RasaException]):
     with pytest.raises(expected):
         TwilioVoiceInput(**configs)
 
@@ -133,8 +154,20 @@ async def test_twilio_voice_remove_image():
                 "text": "Some text."
             }
         )
-        assert len(output_channel.messages) == 1
-        assert output_channel.messages[0]["text"] == "Some text."
+
+
+async def test_twilio_voice_keep_image_text():
+
+    output_channel = TwilioVoiceCollectingOutputChannel()
+    await output_channel.send_response(
+        recipient_id="Chuck Norris",
+        message={
+            "image": "https://i.imgur.com/nGF1K8f.jpg",
+            "text": "Some text."
+        }
+    )
+    assert len(output_channel.messages) == 1
+    assert output_channel.messages[0]["text"] == "Some text."
 
 
 async def test_twilio_emoji_warning():
@@ -147,33 +180,6 @@ async def test_twilio_emoji_warning():
                 "text": "Howdy 😀"
             }
         )
-
-
-def test_twilio_incompatible_speech_timeout_and_model():
-
-    input_default_model = {
-        "initial_prompt": "hello",
-        "reprompt_fallback_phrase": "i didn't get that",
-        "assistant_voice": "woman",
-        "enhanced": "true",
-        "speech_model": "default",
-        "speech_timeout": "auto",
-    }
-
-    with pytest.raises(InvalidConfigException):
-        TwilioVoiceInput(**input_default_model)
-
-    input_phone_model = {
-        "initial_prompt": "hello",
-        "reprompt_fallback_phrase": "i didn't get that",
-        "assistant_voice": "woman",
-        "enhanced": "true",
-        "speech_model": "phone_call",
-        "speech_timeout": "auto",
-    }
-
-    with pytest.raises(InvalidConfigException):
-        TwilioVoiceInput(**input_phone_model)
 
 
 async def test_twilio_voice_multiple_responses():
@@ -197,10 +203,9 @@ async def test_twilio_voice_multiple_responses():
     assert output_channel.messages[0]["text"] == "message 1"
     assert output_channel.messages[1]["text"] == "message 2"
 
-    twiml = tv.build_twilio_voice_response(output_channel.messages)
+    twiml = tv._build_twilio_voice_response(output_channel.messages)
 
     assert (
         str(twiml)
         == '<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="woman">message 1</Say><Pause length="1" /><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">message 2</Say></Gather></Response>'
     )
-
