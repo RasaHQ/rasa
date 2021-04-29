@@ -169,6 +169,10 @@ class PikaEventBroker(EventBroker):
         last_exception = None
         for _ in range(self._connection_attempts):
             try:
+
+                if not isinstance(self.port, int):
+                    raise RasaException("Port has to be a integer.")
+
                 return await aio_pika.connect_robust(
                     url=url,
                     host=self.host,
