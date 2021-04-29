@@ -6,6 +6,7 @@ from typing import Any, Text, Dict, List, Union, TYPE_CHECKING, Tuple, Optional
 
 import dask
 
+from rasa.architecture_prototype.graph_fingerprinting import TrainingCache
 from rasa.core.channels import UserMessage
 from rasa.shared.constants import DEFAULT_DATA_PATH
 import rasa.shared.utils.common
@@ -31,7 +32,6 @@ class RasaComponent:
         eager: bool = True,
         persist: bool = True,
         cache: Optional["TrainingCache"] = None,
-        mode: Text = "train",
     ) -> None:
         self._eager = eager
         self._inputs = inputs
@@ -44,7 +44,6 @@ class RasaComponent:
         self._node_name = node_name
         self._persist = persist
         self._cache = cache
-        self._mode = mode
 
         if self._constructor_name:
             self._constructor_fn = getattr(
@@ -75,9 +74,7 @@ class RasaComponent:
     def __call__(self, *args: Any) -> Dict[Text, Any]:
         received_inputs = dict(ChainMap(*args))
 
-        if self._mode == "fingerprint":
-            return self.fingerprint(received_inputs)
-
+        # TODO: make the cache stuff a decorator
         fingerprint_key = None
         if self._cache:
             fingerprint_key = self._cache.calculate_fingerprint_key(
@@ -134,21 +131,6 @@ class RasaComponent:
     def __repr__(self) -> Text:
         return f"{self._component_class}.{self._fn_name}"
 
-    def fingerprint(self, received_inputs: Dict[Text, Any]) -> Dict[Text, Any]:
-        inputs_for_this_node = []
-
-        for input, input_node in self._inputs.items():
-            inputs_for_this_node.append(received_inputs[input_node])
-
-        fingerprint = self._cache.get_fingerprint(
-            self._node_name, self._config, inputs_for_this_node
-        )
-
-        # TODO: Return result if received inputs is empty
-        received_inputs[self._node_name] = fingerprint
-
-        return received_inputs
-
 
 class Persistor:
     def __init__(self, node_name: Text, parent_dir: Path) -> None:
@@ -171,58 +153,6 @@ class Persistor:
 
     def resource_name(self) -> Text:
         return self._node_name
-
-
-class Fingerprint:
-    def __init__(
-        self, nodename: Text, value: str, should_run: Optional[bool] = None
-    ) -> None:
-        self._value = value
-        self._nodename = nodename
-        self.should_run = should_run
-
-    def __eq__(self, other):
-        if not isinstance(other, Fingerprint):
-            return NotImplemented
-        else:
-            return self._value == other._value
-
-    def fingerprint(self) -> Text:
-        return self._value
-
-
-class TrainingCache:
-    def __init__(self) -> None:
-        self._fingerprints = {}
-
-    def store_fingerprint(self, fingerprint_key: Text, output: Any) -> None:
-        self._fingerprints[
-            fingerprint_key
-        ] = rasa.shared.utils.io.deep_container_fingerprint(output)
-
-    def calculate_fingerprint_key(
-        self, node_name: Text, config: Dict, inputs: List[Any]
-    ) -> "Text":
-        config_hash = rasa.shared.utils.io.deep_container_fingerprint(config)
-        inputs_hashes = [
-            rasa.shared.utils.io.deep_container_fingerprint(i) for i in inputs
-        ]
-        inputs_hashes = "_".join(inputs_hashes)
-
-        return f"{node_name}_{config_hash}_{inputs_hashes}"
-
-    def get_fingerprint(
-        self, node_name: Text, config: Dict, inputs: List[Any]
-    ) -> "Fingerprint":
-        current_fingerprint_key = self.calculate_fingerprint_key(
-            node_name, config, inputs
-        )
-
-        old_fingerprint = self._fingerprints.get(current_fingerprint_key)
-        if old_fingerprint:
-            return Fingerprint(node_name, old_fingerprint, should_run=False)
-
-        return Fingerprint(node_name, "no-fingerprint", should_run=True)
 
 
 class Model:
@@ -310,14 +240,12 @@ def _all_dependencies_schema(
 
 
 def convert_to_dask_graph(
-    graph_schema: Dict[Text, Any],
-    cache: Optional[TrainingCache] = None,
-    mode: Text = "train",
+    graph_schema: Dict[Text, Any], cache: Optional[TrainingCache] = None,
 ) -> Dict[Text, Tuple[RasaComponent, Text]]:
     dsk = {}
     for step_name, step_config in graph_schema.items():
         dsk[step_name] = _graph_component_for_config(
-            step_name, step_config, cache=cache, mode=mode
+            step_name, step_config, cache=cache
         )
     return dsk
 
@@ -327,7 +255,6 @@ def _graph_component_for_config(
     step_config: Dict[Text, Any],
     config_overrides: Dict[Text, Any] = None,
     cache: Optional[TrainingCache] = None,
-    mode: Text = "train",
 ) -> Tuple[RasaComponent, Text]:
     component_config = step_config["config"].copy()
     if config_overrides:
@@ -344,7 +271,6 @@ def _graph_component_for_config(
             eager=step_config.get("eager", True),
             persist=step_config.get("persist", True),
             cache=cache,
-            mode=mode,
         ),
         *step_config["needs"].values(),
     )
@@ -365,9 +291,15 @@ def run_as_dask_graph(
     graph_schema: Dict[Text, Any],
     target_names: Union[Text, List[Text]],
     cache: Optional[TrainingCache] = None,
-    mode: Text = "train",
 ) -> Dict[Text, Any]:
-    dask_graph = convert_to_dask_graph(graph_schema, cache=cache, mode=mode)
+    dask_graph = convert_to_dask_graph(graph_schema, cache=cache)
+    return run_dask_graph(dask_graph, target_names)
+
+
+def run_dask_graph(
+    dask_graph: Dict[Text, Tuple[Union[RasaComponent, "FingerprintComponent"], Text]],
+    target_names: Union[Text, List[Text]],
+) -> Dict[Text, Any]:
     return dict(ChainMap(*dask.get(dask_graph, target_names)))
 
 
