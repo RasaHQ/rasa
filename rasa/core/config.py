@@ -2,7 +2,6 @@ import copy
 import os
 from typing import Optional, Text, List, Dict, Union, Tuple, Any, TYPE_CHECKING
 
-from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
 from rasa.core.constants import (
@@ -13,6 +12,11 @@ from rasa.core.constants import (
 from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
+    POLICY_NAME_RULE,
+    POLICY_NAME_FALLBACK,
+    POLICY_NAME_MAPPING,
+    POLICY_NAME_TWO_STAGE_FALLBACK,
+    CLASSIFIER_NAME_FALLBACK,
 )
 import rasa.utils.io
 from rasa.shared.constants import (
@@ -25,11 +29,6 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.core.policies.mapping_policy import MappingPolicy
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.fallback import FallbackPolicy
-from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 
 if TYPE_CHECKING:
     from rasa.core.policies.policy import Policy
@@ -37,15 +36,9 @@ if TYPE_CHECKING:
     from rasa.shared.core.training_data.structures import StoryStep
 
 
-def load(config_file: Optional[Union[Text, Dict]]) -> List["Policy"]:
+def load(config_file: Union[Text, Dict]) -> List["Policy"]:
     """Load policy data stored in the specified file."""
     from rasa.core.policies.ensemble import PolicyEnsemble
-
-    if not config_file:
-        raise FileNotFoundException(
-            f"The provided configuration file path does not seem to be valid. "
-            f"The file '{os.path.abspath(config_file)}' could not be found."
-        )
 
     config_data = {}
     if isinstance(config_file, str) and os.path.isfile(config_file):
@@ -69,8 +62,8 @@ def migrate_fallback_policies(config: Dict) -> Tuple[Dict, Optional["StoryStep"]
     policies = new_config.get("policies", [])
 
     fallback_config = _get_config_for_name(
-        FallbackPolicy.__name__, policies
-    ) or _get_config_for_name(TwoStageFallbackPolicy.__name__, policies)
+        POLICY_NAME_FALLBACK, policies
+    ) or _get_config_for_name(POLICY_NAME_TWO_STAGE_FALLBACK, policies)
 
     if not fallback_config:
         return config, None
@@ -83,7 +76,7 @@ def migrate_fallback_policies(config: Dict) -> Tuple[Dict, Optional["StoryStep"]
 
     # The triggered action is hardcoded for the Two-Stage Fallback`
     fallback_action_name = ACTION_TWO_STAGE_FALLBACK_NAME
-    if fallback_config.get("name") == FallbackPolicy.__name__:
+    if fallback_config.get("name") == POLICY_NAME_FALLBACK:
         fallback_action_name = fallback_config.get(
             "fallback_action_name", ACTION_DEFAULT_FALLBACK_NAME
         )
@@ -113,10 +106,10 @@ def _update_rule_policy_config_for_fallback(
         policies: The current list of configured policies.
         fallback_config: The configuration of the deprecated fallback configuration.
     """
-    rule_policy_config = _get_config_for_name(RulePolicy.__name__, policies)
+    rule_policy_config = _get_config_for_name(POLICY_NAME_RULE, policies)
 
     if not rule_policy_config:
-        rule_policy_config = {"name": RulePolicy.__name__}
+        rule_policy_config = {"name": POLICY_NAME_RULE}
         policies.append(rule_policy_config)
 
     core_threshold = fallback_config.get(
@@ -132,11 +125,11 @@ def _update_rule_policy_config_for_fallback(
 
 def _update_fallback_config(config: Dict, fallback_config: Dict) -> None:
     fallback_classifier_config = _get_config_for_name(
-        FallbackClassifier.__name__, config.get("pipeline", [])
+        CLASSIFIER_NAME_FALLBACK, config.get("pipeline", [])
     )
 
     if not fallback_classifier_config:
-        fallback_classifier_config = {"name": FallbackClassifier.__name__}
+        fallback_classifier_config = {"name": CLASSIFIER_NAME_FALLBACK}
         config["pipeline"].append(fallback_classifier_config)
 
     nlu_threshold = fallback_config.get("nlu_threshold", DEFAULT_NLU_FALLBACK_THRESHOLD)
@@ -188,15 +181,15 @@ def migrate_mapping_policy_to_rules(
     has_rule_policy = False
 
     for policy in policies:
-        if policy.get("name") == MappingPolicy.__name__:
+        if policy.get("name") == POLICY_NAME_MAPPING:
             has_mapping_policy = True
-        if policy.get("name") == RulePolicy.__name__:
+        if policy.get("name") == POLICY_NAME_RULE:
             has_rule_policy = True
 
     if not has_mapping_policy:
         return config, domain, []
 
-    rasa.shared.utils.cli.print_info(f"Migrating the '{MappingPolicy.__name__}'.")
+    rasa.shared.utils.cli.print_info(f"Migrating the '{POLICY_NAME_MAPPING}'.")
     new_config = copy.deepcopy(config)
     new_domain = copy.deepcopy(domain)
 
@@ -214,10 +207,10 @@ def migrate_mapping_policy_to_rules(
             new_rules.append(trigger_rule)
 
     # finally update the policies
-    policies = _drop_policy(MappingPolicy.__name__, policies)
+    policies = _drop_policy(POLICY_NAME_MAPPING, policies)
 
     if not has_rule_policy:
-        policies.append({"name": RulePolicy.__name__})
+        policies.append({"name": POLICY_NAME_RULE})
     new_config["policies"] = policies
 
     return new_config, new_domain, new_rules

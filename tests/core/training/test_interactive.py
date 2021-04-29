@@ -11,7 +11,6 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from mock import Mock
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -20,7 +19,7 @@ from rasa.core.training import interactive
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import BotUttered, ActionExecuted
+from rasa.shared.core.events import BotUttered, ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
     MarkdownStoryReader,
@@ -44,15 +43,15 @@ def mock_endpoint() -> EndpointConfig:
 
 @pytest.fixture
 def mock_file_importer(
-    default_stack_config: Text, default_nlu_data: Text, default_stories_file: Text
+    stack_config_path: Text, nlu_data_path: Text, stories_path: Text, domain_path: Text
 ):
-    domain_path = DEFAULT_DOMAIN_PATH_WITH_SLOTS
+    domain_path = domain_path
     return TrainingDataImporter.load_from_config(
-        default_stack_config, domain_path, [default_nlu_data, default_stories_file]
+        stack_config_path, domain_path, [nlu_data_path, stories_path]
     )
 
 
-async def test_send_message(mock_endpoint):
+async def test_send_message(mock_endpoint: EndpointConfig):
     sender_id = uuid.uuid4().hex
 
     url = f"{mock_endpoint.url}/conversations/{sender_id}/messages"
@@ -70,7 +69,7 @@ async def test_send_message(mock_endpoint):
         assert utilities.json_of_latest_request(r) == expected
 
 
-async def test_request_prediction(mock_endpoint):
+async def test_request_prediction(mock_endpoint: EndpointConfig):
     sender_id = uuid.uuid4().hex
 
     url = f"{mock_endpoint.url}/conversations/{sender_id}/predict"
@@ -167,14 +166,25 @@ def test_all_events_before_user_msg():
     tracker_json = json.loads(rasa.shared.utils.io.read_file(tracker_dump))
     evts = tracker_json.get("events")
 
-    m = interactive.all_events_before_latest_user_msg(evts)
+    m = all_events_before_latest_user_msg(evts)
 
     assert m is not None
     assert m == evts[:4]
 
 
+def all_events_before_latest_user_msg(
+    events: List[Dict[Text, Any]]
+) -> List[Dict[Text, Any]]:
+    """Return all events that happened before the most recent user message."""
+
+    for i, e in enumerate(reversed(events)):
+        if e.get("event") == UserUttered.type_name:
+            return events[: -(i + 1)]
+    return events
+
+
 def test_all_events_before_user_msg_on_no_events():
-    assert interactive.all_events_before_latest_user_msg([]) == []
+    assert all_events_before_latest_user_msg([]) == []
 
 
 async def test_print_history(mock_endpoint):
@@ -582,14 +592,15 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
     form_name = "my_form"
     old_domain = Domain.from_yaml(
         f"""
-    actions:
-    - utter_greet
-    - utter_goodbye
-    forms:
-    - {form_name}
-    intents:
-    - greet
-    """
+        version: "2.0"
+        actions:
+        - utter_greet
+        - utter_goodbye
+        forms:
+          {form_name}:
+        intents:
+        - greet
+        """
     )
 
     events = [ActionExecuted(form_name), ActionExecuted(ACTION_LISTEN_NAME)]
@@ -602,7 +613,7 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
     )
 
 
-async def test_filter_intents_before_save_nlu_file():
+async def test_filter_intents_before_save_nlu_file(domain_path: Text):
     # Test method interactive._filter_messages
     from random import choice
 
@@ -610,7 +621,7 @@ async def test_filter_intents_before_save_nlu_file():
     goodbye = {"text": "I am inevitable", "intent": "goodbye", "text_features": [0.5]}
     test_msgs = [Message(data=greet), Message(data=goodbye)]
 
-    domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
+    domain_file = domain_path
     domain = Domain.load(domain_file)
     intents = domain.intents
 

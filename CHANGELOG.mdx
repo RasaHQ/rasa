@@ -16,6 +16,147 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.5.1] - 2021-04-28
+                       
+
+### Bugfixes
+- [#8446](https://github.com/rasahq/rasa/issues/8446): Fixed prediction for rules with multiple entities.
+- [#8545](https://github.com/rasahq/rasa/issues/8545): Mitigated Matplotlib backend issue using lazy configuration
+  and added a more explicit error message to guide users.
+
+
+## [2.5.0] - 2021-04-12
+                       
+
+### Deprecations and Removals
+- [#8141](https://github.com/rasahq/rasa/issues/8141): The following import abbreviations were removed:
+  * `rasa.core.train`: Please use `rasa.core.train.train` instead.
+  * `rasa.core.visualize`: Please use `rasa.core.visualize.visualize` instead.
+  * `rasa.nlu.train`: Please use `rasa.nlu.train.train` instead.
+  * `rasa.nlu.test`: Please use `rasa.nlu.test.run_evaluation` instead.
+  * `rasa.nlu.cross_validate`: Please use `rasa.nlu.test.cross_validate` instead.
+
+### Features
+- [#7869](https://github.com/rasahq/rasa/issues/7869): Upgraded Rasa to be compatible with spaCy 3.0. 
+
+  This means that we can support more features for more languages but there are also a few changes. 
+
+  SpaCy 3.0 deprecated the `spacy link <language model>` command so that means that from now on [the 
+  full model name](https://spacy.io/models) needs to be used in the `config.yml` file. 
+
+  **Before** 
+
+  Before you could run `spacy link en en_core_web_md` and then we would be able
+  to pick up the correct model from the `language` parameter. 
+
+  ```yaml
+  language: en
+
+  pipeline:
+     - name: SpacyNLP
+  ```
+
+  **Now** 
+
+  This behavior will be deprecated and instead you'll want to be explicit in `config.yml`.
+
+  ```yaml
+  language: en
+
+  pipeline:
+     - name: SpacyNLP
+       model: en_core_web_md
+  ```
+
+  **Fallback** 
+
+  To make the transition easier, Rasa will try to fall back to a medium spaCy model when-ever 
+  a compatible language is configured for the entire pipeline in `config.yml` even if you don't
+  specify a `model`. This fallback behavior is temporary and will be deprecated in Rasa 3.0.0.  
+
+  We've updated our docs to reflect these changes. All examples now show a direct link to the 
+  correct spaCy model. We've also added a warning to the [SpaCyNLP](components.mdx#spacynlp) 
+  docs that explains the fallback behavior.
+
+### Improvements
+- [#4280](https://github.com/rasahq/rasa/issues/4280): Improved CLI startup time.
+- [#4596](https://github.com/rasahq/rasa/issues/4596): Add `augmentation` and `num_threads` arguments to API `POST /model/train`
+
+  Fix boolean casting issue for `force_training` and `save_to_default_model_directory` arguments
+- [#7477](https://github.com/rasahq/rasa/issues/7477): Add minimum compatible version to --version command
+- [#7660](https://github.com/rasahq/rasa/issues/7660): Updated warning for unexpected slot events during prediction time to Rasa Open Source
+  2.0 YAML training data format.
+- [#7701](https://github.com/rasahq/rasa/issues/7701): Hide dialogue turns predicted by `RulePolicy` in the tracker states
+  for ML-only policies like `TEDPolicy`
+  if those dialogue turns only appear as rules in the training data and do not appear in stories.
+
+  Add `set_shared_policy_states(...)` method to all policies.
+  This method sets `_rule_only_data` dict with keys:
+  - `rule_only_slots`: Slot names, which only occur in rules but not in stories.
+  - `rule_only_loops`: Loop names, which only occur in rules but not in stories.
+
+  This information is needed for correct featurization to hide dialogue turns that appear only in rules.
+- [#8208](https://github.com/rasahq/rasa/issues/8208): Faster reading of YAML NLU training data files.
+- [#8335](https://github.com/rasahq/rasa/issues/8335): Added partition_by_sender flag to [Kafka Producer](event-brokers.mdx#kafka-event-broker) to optionally associate events with Kafka partition based on sender_id.
+
+### Bugfixes
+- [#7260](https://github.com/rasahq/rasa/issues/7260): Fixed the 'loading model' message which was logged twice when using `rasa run`.
+- [#7379](https://github.com/rasahq/rasa/issues/7379): Change training data validation to only count nlu training examples.
+- [#7450](https://github.com/rasahq/rasa/issues/7450): Rule tracker states no longer include the initial value of slots.
+  Rules now only require slot values when explicitly stated in the rule.
+- [#7640](https://github.com/rasahq/rasa/issues/7640): `rasa test`, `rasa test core` and `rasa test nlu` no longer show temporary paths
+  in case there are issues in the test files.
+- [#7690](https://github.com/rasahq/rasa/issues/7690): Resolved memory problems with dense features and `CRFEntityExtractor`
+- [#7916](https://github.com/rasahq/rasa/issues/7916): Handle empty intent and entity mapping in the `domain`.
+
+  There is now an InvalidDomain exception raised if in the `domain.yml` file there are empty intent or entity mappings. 
+  An example of empty intent and entity mappings is the following :
+  ```yaml-rasa
+  intents:
+    - greet:
+    - goodbye:
+
+  entities:
+    - cuisine:
+    - number:
+  ```
+- [#8102](https://github.com/rasahq/rasa/issues/8102): Fixed a bug in a form where slot mapping doesn't work if the predicted intent name is substring for another intent name.
+- [#8114](https://github.com/rasahq/rasa/issues/8114): Fixes bug where stories could not be retrieved if entities had no start or end.
+- [#8178](https://github.com/rasahq/rasa/issues/8178): Catch ChannelNotFoundEntity exception coming from the pika broker and raise as ConnectionException.
+- [#8337](https://github.com/rasahq/rasa/issues/8337): Fix bug with NoReturn throwing an exception in Python 3.7.0 when running `rasa train`
+- [#8382](https://github.com/rasahq/rasa/issues/8382): Throw `RasaException` instead of `ValueError` in situations when environment variables 
+  specified in YAML cannot be expanded.
+- [#8343](https://github.com/rasahq/rasa/issues/8343): Updated python-engineio version for compatibility with python-socketio
+
+### Miscellaneous internal changes
+- [#6511](https://github.com/rasahq/rasa/issues/6511), [#7640](https://github.com/rasahq/rasa/issues/7640), [#7827](https://github.com/rasahq/rasa/issues/7827), [#8056](https://github.com/rasahq/rasa/issues/8056), [#8117](https://github.com/rasahq/rasa/issues/8117), [#8141](https://github.com/rasahq/rasa/issues/8141), [#8240](https://github.com/rasahq/rasa/issues/8240)
+
+
+## [2.4.3] - 2021-03-26
+                       
+
+### Bugfixes
+- [#8114](https://github.com/rasahq/rasa/issues/8114): Fixes bug where stories could not be retrieved if entities had no start or end.
+
+
+## [2.4.2] - 2021-03-25
+                       
+
+### Bugfixes
+- [#7835](https://github.com/rasahq/rasa/issues/7835): Fix `UnicodeException` in `is_key_in_yaml`.
+- [#8258](https://github.com/rasahq/rasa/issues/8258): Fixed the bug that events from previous conversation sessions would be re-saved in the [`SQLTrackerStore`](tracker-stores.mdx#sqltrackerstore) or [`MongoTrackerStore`](tracker-stores.mdx#mongotrackerstore) when `retrieve_events_from_previous_conversation_sessions` was true.
+
+
+## [2.4.1] - 2021-03-23
+                       
+
+### Bugfixes
+- [#8194](https://github.com/rasahq/rasa/issues/8194): Fix `TEDPolicy` training e2e entities when no entities are present in the stories
+  but there are entities in the domain.
+- [#8198](https://github.com/rasahq/rasa/issues/8198): Fixed missing model configuration file validation.
+- [#8223](https://github.com/rasahq/rasa/issues/8223): In Rasa 2.4.0, support for using `template` in `utter_message` when handling a custom action was wrongly deprecated. Both `template` and `response` are now supported, though note that `template` will be deprecated at Rasa 3.0.0.
+
+
 ## [2.4.0] - 2021-03-11
                        
 
@@ -119,8 +260,12 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 - [#96](https://github.com/rasahq/rasa/issues/96): Update the `LanguageModelFeaturizer` tests to reflect new default model weights for `bert`, and skip all `bert` tests 
   with default model weights on CI, run `bert` tests with `bert-base-uncased` on CI instead.
 
+### Improved Documentation
+- [#8080](https://github.com/rasahq/rasa/issues/8080): Update links to Sanic docs in the documentation.
+- [#8109](https://github.com/rasahq/rasa/issues/8109): Update Rasa Playground to correctly use `tracking_id` when calling API methods.
+
 ### Miscellaneous internal changes
-- [#6484](https://github.com/rasahq/rasa/issues/6484), [#7737](https://github.com/rasahq/rasa/issues/7737), [#7879](https://github.com/rasahq/rasa/issues/7879)
+- [#6484](https://github.com/rasahq/rasa/issues/6484), [#7737](https://github.com/rasahq/rasa/issues/7737), [#7879](https://github.com/rasahq/rasa/issues/7879), [#8016](https://github.com/rasahq/rasa/issues/8016)
 
 
 ## [2.3.4] - 2021-02-26

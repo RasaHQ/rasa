@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 # Type alias for the fingerprint
-Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
+Fingerprint = Dict[Text, Union[Optional[Text], List[Text], int, float]]
 
 FINGERPRINT_FILE_PATH = "fingerprint.json"
 
@@ -128,16 +128,19 @@ class FingerprintComparisonResult:
         return self.force_training or self.nlu
 
 
-def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
-    """Get a model and unpack it. Raises a `ModelNotFound` exception if
-    no model could be found at the provided path.
+def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
+    """Returns verified path to local model archive.
 
     Args:
         model_path: Path to the zipped model. If it's a directory, the latest
                     trained model is returned.
 
     Returns:
-        Path to the unpacked model.
+        Path to the zipped model. If it's a directory, the latest
+                    trained model is returned.
+
+    Raises:
+        ModelNotFound Exception: When no model could be found at the provided path.
 
     """
     if not model_path:
@@ -154,10 +157,30 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
     elif not model_path.endswith(".tar.gz"):
         raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
 
+    return model_path
+
+
+def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
+    """Gets a model and unpacks it.
+
+    Args:
+        model_path: Path to the zipped model. If it's a directory, the latest
+                    trained model is returned.
+
+    Returns:
+        Path to the unpacked model.
+
+    Raises:
+        ModelNotFound Exception: When no model could be found at the provided path.
+
+    """
+    model_path = get_local_model(model_path)
+
     try:
         model_relative_path = os.path.relpath(model_path)
     except ValueError:
         model_relative_path = model_path
+
     logger.info(f"Loading model {model_relative_path}...")
 
     return unpack_model(model_path)
@@ -398,7 +421,7 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
         return {}
 
 
-def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
+def persist_fingerprint(output_path: Text, fingerprint: Fingerprint) -> None:
     """Persist a model fingerprint.
 
     Args:
@@ -443,7 +466,7 @@ def move_model(source: Text, target: Text) -> bool:
 
 def should_retrain(
     new_fingerprint: Fingerprint,
-    old_model: Text,
+    old_model: Optional[Text],
     train_path: Text,
     has_e2e_examples: bool = False,
     force_training: bool = False,

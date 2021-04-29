@@ -26,9 +26,9 @@ from rasa.shared.importers.importer import TrainingDataImporter
             "examples/knowledgebasebot/data",
         ),
         (
-            "examples/moodbot/config.yml",
-            "examples/moodbot/domain.yml",
-            "examples/moodbot/data",
+            "data/test_moodbot/config.yml",
+            "data/test_moodbot/domain.yml",
+            "data/test_moodbot/data",
         ),
         (
             "examples/reminderbot/config.yml",

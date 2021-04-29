@@ -1,11 +1,11 @@
 import logging
-from typing import Text
+from typing import Text, Optional, Union
+from unittest.mock import Mock
 
 import pytest
 from aioresponses import aioresponses
 
 from tests.utilities import latest_request, json_of_latest_request
-from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 import rasa.utils.endpoints as endpoint_utils
 
 
@@ -125,7 +125,8 @@ async def test_request_non_json_response():
 
 
 @pytest.mark.parametrize(
-    "filename, endpoint_type", [(DEFAULT_ENDPOINTS_FILE, "tracker_store"),],
+    "filename, endpoint_type",
+    [("data/test_endpoints/example_endpoints.yml", "tracker_store"),],
 )
 def test_read_endpoint_config(filename: Text, endpoint_type: Text):
     conf = endpoint_utils.read_endpoint_config(filename, endpoint_type)
@@ -136,11 +137,56 @@ def test_read_endpoint_config(filename: Text, endpoint_type: Text):
     "filename, endpoint_type",
     [
         ("", "tracker_store"),
-        (DEFAULT_ENDPOINTS_FILE, "stuff"),
-        (DEFAULT_ENDPOINTS_FILE, "empty"),
+        ("data/test_endpoints/example_endpoints.yml", "stuff"),
+        ("data/test_endpoints/example_endpoints.yml", "empty"),
         ("/unknown/path.yml", "tracker_store"),
     ],
 )
 def test_read_endpoint_config_not_found(filename: Text, endpoint_type: Text):
     conf = endpoint_utils.read_endpoint_config(filename, endpoint_type)
     assert conf is None
+
+
+@pytest.mark.parametrize(
+    "value, default, expected_result",
+    [
+        (None, True, True),
+        (False, True, False),
+        ("false", True, False),
+        ("true", False, True),
+    ],
+)
+def test_bool_arg(
+    value: Optional[Union[bool, str]], default: bool, expected_result: bool
+):
+    request = Mock()
+    request.args = {}
+    if value is not None:
+        request.args = {"key": value}
+    assert endpoint_utils.bool_arg(request, "key", default) == expected_result
+
+
+@pytest.mark.parametrize(
+    "value, default, expected_result",
+    [(None, 0.5, 0.5), (0.5, None, 0.5), ("0.5", 0, 0.5), ("a", 0.5, 0.5)],
+)
+def test_float_arg(
+    value: Optional[Union[float, str]], default: float, expected_result: float
+):
+    request = Mock()
+    request.args = {}
+    if value is not None:
+        request.args = {"key": value}
+    assert endpoint_utils.float_arg(request, "key", default) == expected_result
+
+
+@pytest.mark.parametrize(
+    "value, default, expected_result",
+    [(None, 0, 0), (1, 0, 1), ("1", 0, 1), ("a", 0, 0)],
+)
+def test_int_arg(value: Optional[Union[int, str]], default: int, expected_result: int):
+    request = Mock()
+    request.args = {}
+    if value is not None:
+        request.args = {"key": value}
+    assert endpoint_utils.int_arg(request, "key", default) == expected_result
