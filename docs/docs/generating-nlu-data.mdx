@@ -54,21 +54,19 @@ much more effectively in real-world scenarios.
 
 ### Data Augmentation
 
-:::caution
-Data augmentation is not a replacement for messages from actual users.
-
-Always prefer data from real users over automatically generated ones.
-
-Automatically generated data can be noisy, we recommend to always
-manually check any generated paraphrases.
-:::
-
 When you are creating a new intent in your assistant, you may initially face the
 problem where you do not have enough training examples from your users to create a
 reliable model. In this situation you can use data augmentation to supplement the
-initial training dataset with synthetic examples. You should always remove the
+initial training dataset with synthetic examples.
+
+Data augmentation is different from generating data from a script because data
+augmenation is able to create the variability necessary to help a model generalise,
+which a static script cannot do. Nonetheless, messages from real users are *always*
+preferable to synthetic data of any kind. Therefore, you should always remove the
 synthetic data once you have collected a sufficient amount of real user data to train
-an effective model. The process for adding augmented data to your model is:
+an effective model.
+
+ The process for adding augmented data to your model is:
 
 
 #### Recommended Use
