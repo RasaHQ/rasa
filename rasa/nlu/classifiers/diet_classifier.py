@@ -875,7 +875,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         # create session data from message and convert it into a batch of 1
         model_data = self._create_model_data([message], training=False)
-        return self.model.rasa_predict(model_data)
+        return self.model.run_inference(model_data)
 
     def _predict_label(
         self, predict_out: Optional[Dict[Text, tf.Tensor]]

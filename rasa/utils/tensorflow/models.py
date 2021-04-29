@@ -35,6 +35,7 @@ from rasa.utils.tensorflow.constants import (
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
 )
+import rasa.utils.train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.temp_keras_modules import TmpKerasModel
@@ -230,13 +231,13 @@ class RasaModel(TmpKerasModel):
         # the list
         return [element_spec]
 
-    def rasa_predict(
-        self, model_data: RasaModelData
+    def _rasa_predict(
+        self, batch_in: Tuple[np.ndarray]
     ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
         """Custom prediction method that builds tf graph on the first call.
 
         Args:
-            model_data: The model data to use for prediction.
+            batch_in: Prepared batch ready for input to `predict_step` method of model.
 
         Return:
             Prediction output, including diagnostic data.
@@ -248,13 +249,12 @@ class RasaModel(TmpKerasModel):
             self.prepare_for_predict()
             self.prepared_for_prediction = True
 
-        batch_in = RasaBatchDataGenerator.prepare_batch(model_data.data)
-
         if self._run_eagerly:
             outputs = tf_utils.to_numpy_or_python_type(self.predict_step(batch_in))
-            outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
-                outputs[DIAGNOSTIC_DATA]
-            )
+            if DIAGNOSTIC_DATA in outputs:
+                outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
+                    outputs[DIAGNOSTIC_DATA]
+                )
             return outputs
 
         if self._tf_predict_step is None:
@@ -263,10 +263,74 @@ class RasaModel(TmpKerasModel):
             )
 
         outputs = tf_utils.to_numpy_or_python_type(self._tf_predict_step(batch_in))
-        outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
-            outputs[DIAGNOSTIC_DATA]
-        )
+        if DIAGNOSTIC_DATA in outputs:
+            outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
+                outputs[DIAGNOSTIC_DATA]
+            )
         return outputs
+
+    def run_inference(
+        self, model_data: RasaModelData, batch_size: Union[int, List[int]] = 1
+    ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
+        """Implements bulk inferencing through the model.
+
+        Args:
+            model_data: Input data to be fed to the model.
+            batch_size: Size of batches that the generator should create.
+
+        Returns:
+            Model outputs corresponding to the inputs fed.
+        """
+        outputs = {}
+        (data_generator, _,) = rasa.utils.train_utils.create_data_generators(
+            model_data=model_data, batch_sizes=batch_size, epochs=1, shuffle=False,
+        )
+        data_iterator = iter(data_generator)
+        while True:
+            try:
+                # data_generator is a tuple of 2 elements - input and output.
+                # We only need input, since output is always None and not
+                # consumed by our TF graphs.
+                batch_in = next(data_iterator)[0]
+                batch_out = self._rasa_predict(batch_in)
+                outputs = self._merge_batch_outputs(outputs, batch_out)
+            except StopIteration:
+                # Generator ran out of batches, time to finish inferencing
+                break
+        return outputs
+
+    @staticmethod
+    def _merge_batch_outputs(
+        all_outputs: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
+        batch_output: Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]],
+    ) -> Dict[Text, Union[np.ndarray, Dict[Text, np.ndarray]]]:
+        """Merges a batch's output into the output for all batches.
+
+        Function assumes that the schema of batch output remains the same,
+        i.e. keys and their value types do not change from one batch's
+        output to another.
+
+        Args:
+            all_outputs: Existing output for all previous batches.
+            batch_output: Output for a batch.
+
+        Returns:
+            Merged output with the output for current batch stacked
+            below the output for all previous batches.
+        """
+        if not all_outputs:
+            return batch_output
+        for key, val in batch_output.items():
+            if isinstance(val, np.ndarray):
+                all_outputs[key] = np.concatenate(
+                    [all_outputs[key], batch_output[key]], axis=0
+                )
+
+            elif isinstance(val, dict):
+                # recurse and merge the inner dict first
+                all_outputs[key] = RasaModel._merge_batch_outputs(all_outputs[key], val)
+
+        return all_outputs
 
     @staticmethod
     def _empty_lists_to_none_in_dict(input_dict: Dict[Text, Any]) -> Dict[Text, Any]:
@@ -339,7 +403,7 @@ class RasaModel(TmpKerasModel):
         # predict on one data example to speed up prediction during inference
         # the first prediction always takes a bit longer to trace tf function
         if not finetune_mode and predict_data_example:
-            model.rasa_predict(predict_data_example)
+            model.run_inference(predict_data_example)
 
         logger.debug("Finished loading the model.")
         return model
