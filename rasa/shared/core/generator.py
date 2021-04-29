@@ -99,7 +99,10 @@ class TrackerWithCachedStates(DialogueStateTracker):
         # we need to make sure this is the same domain, otherwise things will
         # go wrong. but really, the same tracker shouldn't be used across
         # domains
-        assert domain == self.domain
+
+        # This assert does no longer work as we deepcopy our graph output at every
+        # stage
+        # assert domain == self.domain
 
         # if don't have it cached, we use the domain to calculate the states
         # from the events

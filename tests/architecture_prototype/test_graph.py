@@ -145,3 +145,17 @@ def test_model_fingerprinting():
 
     for _, fingerprint in finger.items():
         assert not fingerprint.should_run
+
+    full_model_train_graph_schema["core_train_count_featurizer1"]["config"][
+        "some value"
+    ] = 42
+
+    finger = graph.run_as_dask_graph(
+        full_model_train_graph_schema,
+        core_targets + nlu_targets,
+        cache=cache,
+        mode="fingerprint",
+    )
+
+    assert not finger["train_classifier"].should_run
+    assert finger["train_ted_policy"].should_run

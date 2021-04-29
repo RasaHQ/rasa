@@ -1,3 +1,4 @@
+import copy
 from collections import ChainMap
 import inspect
 from pathlib import Path
@@ -80,7 +81,10 @@ class RasaComponent:
         fingerprint_key = None
         if self._cache:
             fingerprint_key = self._cache.calculate_fingerprint_key(
-                self._node_name, self._config, list(received_inputs.values())
+                # TODO: do list parts nicer
+                self._node_name,
+                self._config,
+                [list(v.values())[0] for v in args],
             )
 
         kwargs = {}
@@ -107,7 +111,7 @@ class RasaComponent:
                 fingerprint_key, output=result,
             )
 
-        return {self._node_name: result}
+        return {self._node_name: copy.deepcopy(result)}
 
     def create_component(self, **const_kwargs: Any) -> None:
         if self._persist:
@@ -200,7 +204,10 @@ class TrainingCache:
         self, node_name: Text, config: Dict, inputs: List[Any]
     ) -> "Text":
         config_hash = rasa.shared.utils.io.deep_container_fingerprint(config)
-        inputs_hashes = rasa.shared.utils.io.deep_container_fingerprint(inputs)
+        inputs_hashes = [
+            rasa.shared.utils.io.deep_container_fingerprint(i) for i in inputs
+        ]
+        inputs_hashes = "_".join(inputs_hashes)
 
         return f"{node_name}_{config_hash}_{inputs_hashes}"
 
@@ -210,6 +217,7 @@ class TrainingCache:
         current_fingerprint_key = self.calculate_fingerprint_key(
             node_name, config, inputs
         )
+
         old_fingerprint = self._fingerprints.get(current_fingerprint_key)
         if old_fingerprint:
             return Fingerprint(node_name, old_fingerprint, should_run=False)
