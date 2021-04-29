@@ -89,5 +89,5 @@ DEFAULT_CONVERSATION_TEST_PATH = "tests"
 
 DIAGNOSTIC_DATA = "diagnostic_data"
 
-CONDITION = "condition"
+RESPONSE_CONDITION = "condition"
 CHANNEL = "channel"

@@ -42,7 +42,7 @@ import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
-from rasa.shared.constants import CONDITION
+from rasa.shared.constants import RESPONSE_CONDITION
 
 
 if TYPE_CHECKING:
@@ -592,14 +592,8 @@ class Domain:
         action_names += overridden_form_actions
 
         self.responses = responses
-        # checks if responses contain conditions
-        for response_variations in self.responses.values():
-            for variation in response_variations:
-                if CONDITION in variation:
-                    rasa.shared.utils.common.mark_as_experimental_feature(
-                        "conditional response variation feature"
-                    )
-                    break
+        # if domain has conditions, logs experimental feature warning
+        _marks_conditional_response_variations_warning(self.responses)
 
         self.action_texts = action_texts or []
         self.session_config = session_config
@@ -648,7 +642,7 @@ class Domain:
         count = 0
         for response_variations in self.responses.values():
             for variation in response_variations:
-                if CONDITION in variation:
+                if RESPONSE_CONDITION in variation:
                     count += 1
 
         return count
@@ -1965,3 +1959,15 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
                 )
             for slot_mapping in slot_mappings:
                 SlotMapping.validate(slot_mapping, form_name, slot_name)
+
+
+def _mark_conditional_response_variations_warning(
+    responses: Dict[Text, List[Dict[Text, Any]]]
+) -> None:
+    for response_variations in responses.values():
+        for variation in response_variations:
+            if RESPONSE_CONDITION in variation:
+                rasa.shared.utils.common.mark_as_experimental_feature(
+                    "conditional response variation feature"
+                )
+                break

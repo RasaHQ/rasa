@@ -6,7 +6,7 @@ from typing import Text, Any, Dict, Optional, List
 
 from rasa.core.nlg import interpolator
 from rasa.core.nlg.generator import NaturalLanguageGenerator
-from rasa.shared.constants import CONDITION, CHANNEL
+from rasa.shared.constants import RESPONSE_CONDITION, CHANNEL
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         self, filled_slots: Dict[Text, Any], response: Dict[Text, Any],
     ) -> bool:
         """Checks if the conditional response variation matches the filled slots."""
-        constraints = response.get(CONDITION)
+        constraints = response.get(RESPONSE_CONDITION)
         for constraint in constraints:
             name = constraint["name"]
             value = constraint["value"]
@@ -47,7 +47,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         conditional_responses = []
 
         for response in self.responses[utter_action]:
-            if response.get(CONDITION) is None:
+            if response.get(RESPONSE_CONDITION) is None:
                 default_responses.append(response)
             else:
                 matched_response = self._matches_filled_slots(
