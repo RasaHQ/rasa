@@ -61,6 +61,9 @@ class Token:
             other.lemma,
         )
 
+    def fingerprint(self) -> Text:
+        return f"{self.text}{self.start}"
+
 
 class Tokenizer(Component):
     def __init__(self, **kwargs: Any) -> None:

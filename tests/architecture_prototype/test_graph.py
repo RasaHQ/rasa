@@ -3,7 +3,7 @@ import json
 from typing import Any, Dict, Text
 
 from rasa.architecture_prototype import graph
-from rasa.architecture_prototype.graph import Model
+from rasa.architecture_prototype.graph import Model, TrainingCache
 from rasa.architecture_prototype.graph_components import load_graph_component
 from rasa.core.channels import UserMessage
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
@@ -118,3 +118,30 @@ def test_model_prediction_with_and_without_nlu(prediction_graph: Dict[Text, Any]
     )
 
     assert prediction_with_nlu == prediction_without_nlu
+
+
+def test_model_fingerprinting():
+    conftest.clean_directory()
+    graph.fill_defaults(full_model_train_graph_schema)
+    graph.visualise_as_dask_graph(full_model_train_graph_schema, "full_train_graph.png")
+    core_targets = ["train_memoization_policy", "train_ted_policy", "train_rule_policy"]
+    nlu_targets = [
+        "train_classifier",
+        "train_response_selector",
+        "train_synonym_mapper",
+    ]
+
+    cache = TrainingCache()
+    _ = graph.run_as_dask_graph(
+        full_model_train_graph_schema, core_targets + nlu_targets, cache=cache
+    )
+
+    finger = graph.run_as_dask_graph(
+        full_model_train_graph_schema,
+        core_targets + nlu_targets,
+        cache=cache,
+        mode="fingerprint",
+    )
+
+    for _, fingerprint in finger.items():
+        assert not fingerprint.should_run

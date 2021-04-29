@@ -111,6 +111,11 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         return self._states_for_hashing
 
+    def fingerprint(self) -> Text:
+        return rasa.shared.utils.io.get_list_fingerprint(
+            [str(hash(e)) for e in self.events]
+        )
+
     @staticmethod
     def _unfreeze_states(frozen_states: Deque[FrozenState]) -> List[State]:
         return [
