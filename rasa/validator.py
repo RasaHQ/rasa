@@ -5,7 +5,6 @@ from typing import Set, Text, Optional, Dict, Any
 import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
 from rasa.shared.constants import (
-    DOCS_BASE_URL,
     DOCS_URL_DOMAINS,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
