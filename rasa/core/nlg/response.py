@@ -45,6 +45,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         """Returns array of responses that fit the channel, action and condition."""
         default_responses = []
         conditional_responses = []
+        has_condition = False
 
         for response in self.responses[utter_action]:
             if response.get(RESPONSE_CONDITION) is None:
@@ -58,6 +59,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         if conditional_responses:
             potential_responses = conditional_responses
+            has_condition = True
         else:
             potential_responses = default_responses
 
@@ -69,7 +71,17 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         if channel_responses:
             return channel_responses
 
-        # filter out any non-matching channel specific responses
+        # if no channel match in conditional responses, search in default responses
+        if len(output_channel) > 0:
+            if has_condition is True:
+                channel_default = list(
+                    filter(
+                        lambda x: (x.get(CHANNEL) == output_channel), default_responses
+                    )
+                )
+                return channel_default
+
+        # if no channel, filter out any non-matching channel specific responses
         return list(filter(lambda x: (x.get(CHANNEL) is None), potential_responses))
 
     # noinspection PyUnusedLocal

@@ -322,3 +322,26 @@ async def test_nlg_conditional_response_variations_channel_no_condition_met():
     tracker = DialogueStateTracker(sender_id="test", slots=[])
     r = await t.generate("utter_action", tracker, "os")
     assert r.get("text") == "default"
+
+
+async def test_nlg_conditional_response_variation_condition_met_channel_mismatch():
+    domain = Domain.from_yaml(
+        """
+        version: "2.0"
+        responses:
+           utter_action:
+             - text: "example with channel"
+               condition:
+                - type: slot
+                  name: test
+                  value: A
+               channel: os
+             - text: "app default"
+               channel: app
+        """
+    )
+    t = TemplatedNaturalLanguageGenerator(domain.responses)
+    slot = TextSlot("test", "A", influence_conversation=False)
+    tracker = DialogueStateTracker(sender_id="test", slots=[slot])
+    r = await t.generate("utter_action", tracker, "app")
+    assert r.get("text") == "app default"
