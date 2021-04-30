@@ -624,14 +624,7 @@ async def test_train_fails_with_zero_eval_num_epochs(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {
-                    "name": "CountVectorsFeaturizer",
-                    "analyzer": "char_wb",
-                    "min_ngram": 3,
-                    "max_ngram": 17,
-                    "max_features": 10,
-                    "min_df": 5,
-                },
+                {"name": "CountVectorsFeaturizer"},
                 {
                     "name": "DIETClassifier",
                     EPOCHS: 5,
@@ -668,14 +661,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {
-                    "name": "CountVectorsFeaturizer",
-                    "analyzer": "char_wb",
-                    "min_ngram": 3,
-                    "max_ngram": 17,
-                    "max_features": 10,
-                    "min_df": 5,
-                },
+                {"name": "CountVectorsFeaturizer"},
                 {
                     "name": "DIETClassifier",
                     EPOCHS: 2,
