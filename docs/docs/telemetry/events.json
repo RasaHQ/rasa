@@ -61,10 +61,6 @@
           "type": "integer",
           "description": "Number of conditional response variations defined in the domain."
         },
-        "has_conditional_response_variations": {
-          "type": "boolean",
-          "description": "True if conditional response variations are defined in the domain."
-        },
         "num_slots": {
           "type": "integer",
           "description": "Number of slots defined in the domain."
