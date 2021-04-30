@@ -10,8 +10,10 @@ import kafka
 import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
+from aiormq import ChannelNotFoundEntity
 
 from rasa.core.brokers import pika
+from tests.conftest import AsyncMock
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -93,6 +95,18 @@ def test_pika_queues_from_args(
         )
 
     assert pika_processor.queues == expected
+
+
+async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
+
+    monkeypatch.setattr(
+        PikaEventBroker, "connect", AsyncMock(side_effect=ChannelNotFoundEntity())
+    )
+
+    with pytest.raises(ConnectionException):
+        await EventBroker.create(
+            EndpointConfig(username="username", password="password", type="pika")
+        )
 
 
 async def test_no_broker_in_config(endpoints_path: Text):
@@ -205,9 +219,7 @@ async def test_load_custom_broker_name(tmp_path: Path):
 class CustomEventBrokerWithoutAsync(EventBroker):
     @classmethod
     def from_endpoint_config(
-        cls,
-        broker_config: EndpointConfig,
-        event_loop: Optional[AbstractEventLoop] = None,
+        cls, _: EndpointConfig, __: Optional[AbstractEventLoop] = None,
     ) -> "EventBroker":
         return FileEventBroker()
 
@@ -246,6 +258,7 @@ async def test_kafka_broker_from_config():
         sasl_username="username",
         sasl_password="password",
         topic="topic",
+        partition_by_sender=True,
         security_protocol="SASL_PLAINTEXT",
     )
 
@@ -253,6 +266,7 @@ async def test_kafka_broker_from_config():
     assert actual.sasl_username == expected.sasl_username
     assert actual.sasl_password == expected.sasl_password
     assert actual.topic == expected.topic
+    assert actual.partition_by_sender == expected.partition_by_sender
 
 
 @pytest.mark.parametrize(

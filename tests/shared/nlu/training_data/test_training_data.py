@@ -295,6 +295,80 @@ def test_train_test_split(filepaths: List[Text]):
         )
 
 
+def test_number_of_examples_per_intent():
+    message_action = Message(data={"action_name": "utter_greet"})
+    message_intent = Message(
+        data={"text": "I would like the newsletter", "intent": "subscribe"}
+    )
+    message_non_nlu_intent = Message(data={"intent": "subscribe"})
+    message_other_intent_one = Message(
+        data={"text": "What is the weather like today?", "intent": "ask_weather"}
+    )
+    message_other_intent_two = Message(
+        data={"text": "Will it rain today?", "intent": "ask_weather"}
+    )
+    message_non_nlu_other_intent_three = Message(data={"intent": "ask_weather"})
+
+    training_examples = [
+        message_action,
+        message_intent,
+        message_non_nlu_intent,
+        message_other_intent_one,
+        message_other_intent_two,
+        message_non_nlu_other_intent_three,
+    ]
+    training_data = TrainingData(training_examples=training_examples)
+
+    assert training_data.number_of_examples_per_intent["subscribe"] == 1
+    assert training_data.number_of_examples_per_intent["ask_weather"] == 2
+
+
+async def test_number_of_examples_per_intent_with_yaml(tmp_path: Path):
+    domain_path = tmp_path / "domain.yml"
+    domain_path.write_text(Domain.empty().as_yaml())
+
+    config_path = tmp_path / "config.yml"
+    config_path.touch()
+
+    importer = TrainingDataImporter.load_from_dict(
+        {},
+        str(config_path),
+        str(domain_path),
+        [
+            "data/test_number_nlu_examples/nlu.yml",
+            "data/test_number_nlu_examples/stories.yml",
+            "data/test_number_nlu_examples/rules.yml",
+        ],
+    )
+
+    training_data = await importer.get_nlu_data()
+    assert training_data.intents == {"greet", "ask_weather"}
+    assert training_data.number_of_examples_per_intent["greet"] == 2
+    assert training_data.number_of_examples_per_intent["ask_weather"] == 3
+
+
+def test_validate_number_of_examples_per_intent():
+    message_intent = Message(
+        data={"text": "I would like the newsletter", "intent": "subscribe"}
+    )
+    message_non_nlu_intent = Message(data={"intent": "subscribe"})
+
+    training_examples = [
+        message_intent,
+        message_non_nlu_intent,
+    ]
+    training_data = TrainingData(training_examples=training_examples)
+
+    with pytest.warns(Warning) as w:
+        training_data.validate()
+
+    assert len(w) == 1
+    assert (
+        w[0].message.args[0] == "Intent 'subscribe' has only 1 training examples! "
+        "Minimum is 2, training may fail."
+    )
+
+
 @pytest.mark.parametrize(
     "filepaths",
     [

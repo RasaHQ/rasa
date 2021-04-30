@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class WitReader(JsonTrainingDataReader):
-    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any):
+    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any) -> TrainingData:
         """Loads training data stored in the WIT.ai data format."""
         training_examples = []
 

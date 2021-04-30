@@ -299,16 +299,11 @@ async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: P
     )
 
 
-async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path):
+async def test_process_gives_diagnostic_data(
+    response_selector_interpreter: Interpreter,
+):
     """Tests if processing a message returns attention weights as numpy array."""
-
-    with rasa.model.unpack_model(
-        trained_response_selector_bot
-    ) as unpacked_model_directory:
-        _, nlu_model_directory = rasa.model.get_model_subdirectories(
-            unpacked_model_directory
-        )
-        interpreter = Interpreter.load(nlu_model_directory)
+    interpreter = response_selector_interpreter
 
     message = Message(data={TEXT: "hello"})
     for component in interpreter.pipeline:
@@ -325,19 +320,18 @@ async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path
     # The `attention_weights` key should exist, regardless of there being a transformer
     assert "attention_weights" in diagnostic_data[name]
     # By default, ResponseSelector has `number_of_transformer_layers = 0`
+    # in which case the attention weights should be None.
     assert diagnostic_data[name].get("attention_weights") is None
 
 
 @pytest.mark.parametrize(
-    "classifier_params, prediction_min, prediction_max, output_length",
-    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 0, 1, 9)],
+    "classifier_params, output_length",
+    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 9)],
 )
 async def test_cross_entropy_with_linear_norm(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
-    prediction_min: float,
-    prediction_max: float,
     output_length: int,
     monkeypatch: MonkeyPatch,
 ):

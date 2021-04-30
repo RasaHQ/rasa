@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-import sys
 import time
 import urllib.parse
 import uuid
@@ -107,6 +106,11 @@ def rasa_app(rasa_server: Sanic) -> SanicASGITestClient:
 
 
 @pytest.fixture
+def rasa_non_trained_app(rasa_non_trained_server: Sanic) -> SanicASGITestClient:
+    return rasa_non_trained_server.asgi_client
+
+
+@pytest.fixture
 def rasa_app_nlu(rasa_nlu_server: Sanic) -> SanicASGITestClient:
     return rasa_nlu_server.asgi_client
 
@@ -121,14 +125,21 @@ def rasa_secured_app(rasa_server_secured: Sanic) -> SanicASGITestClient:
     return rasa_server_secured.asgi_client
 
 
+@pytest.fixture
+def rasa_non_trained_secured_app(
+    rasa_non_trained_server_secured: Sanic,
+) -> SanicASGITestClient:
+    return rasa_non_trained_server_secured.asgi_client
+
+
 @pytest.fixture()
 async def tear_down_scheduler() -> Generator[None, None, None]:
     yield None
     rasa.core.jobs.__scheduler = None
 
 
-async def test_root(rasa_app: SanicASGITestClient):
-    _, response = await rasa_app.get("/")
+async def test_root(rasa_non_trained_app: SanicASGITestClient):
+    _, response = await rasa_non_trained_app.get("/")
     assert response.status == HTTPStatus.OK
     assert response.text.startswith("Hello from Rasa:")
 
@@ -139,14 +150,14 @@ async def test_root_without_enable_api(rasa_app_without_api: SanicASGITestClient
     assert response.text.startswith("Hello from Rasa:")
 
 
-async def test_root_secured(rasa_secured_app: SanicASGITestClient):
-    _, response = await rasa_secured_app.get("/")
+async def test_root_secured(rasa_non_trained_secured_app: SanicASGITestClient):
+    _, response = await rasa_non_trained_secured_app.get("/")
     assert response.status == HTTPStatus.OK
     assert response.text.startswith("Hello from Rasa:")
 
 
-async def test_version(rasa_app: SanicASGITestClient):
-    _, response = await rasa_app.get("/version")
+async def test_version(rasa_non_trained_app: SanicASGITestClient):
+    _, response = await rasa_non_trained_app.get("/version")
     content = response.json()
     assert response.status == HTTPStatus.OK
     assert content.get("version") == rasa.__version__
@@ -422,8 +433,10 @@ async def test_parse_without_nlu_model(rasa_app_core: SanicASGITestClient):
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
-async def test_parse_on_invalid_emulation_mode(rasa_app_nlu: SanicASGITestClient):
-    _, response = await rasa_app_nlu.post(
+async def test_parse_on_invalid_emulation_mode(
+    rasa_non_trained_app: SanicASGITestClient,
+):
+    _, response = await rasa_non_trained_app.post(
         "/model/parse?emulation_mode=ANYTHING", json={"text": "hello"}
     )
     assert response.status == HTTPStatus.BAD_REQUEST
@@ -592,6 +605,8 @@ def test_deprecation_warnings_json_payload(payload: Dict):
 
 async def test_train_with_yaml(rasa_app: SanicASGITestClient, tmp_path: Path):
     training_data = """
+version: "2.0"
+
 stories:
 - story: My story
   steps:
@@ -640,7 +655,7 @@ pipeline:
 )
 async def test_train_with_yaml_with_params(
     monkeypatch: MonkeyPatch,
-    rasa_app: SanicASGITestClient,
+    rasa_non_trained_app: SanicASGITestClient,
     tmp_path: Path,
     params: Dict,
 ):
@@ -662,7 +677,7 @@ language: en
 policies: []
 pipeline: []
 """
-    _, response = await rasa_app.post(
+    _, response = await rasa_non_trained_app.post(
         "/model/train",
         data=training_data,
         params=params,
@@ -681,13 +696,13 @@ pipeline: []
     assert kwargs["force_training"] == params.get("force_training", False)
 
 
-async def test_train_with_invalid_yaml(rasa_app: SanicASGITestClient):
+async def test_train_with_invalid_yaml(rasa_non_trained_app: SanicASGITestClient):
     invalid_yaml = """
 rules:
 rule my rule
 """
 
-    _, response = await rasa_app.post(
+    _, response = await rasa_non_trained_app.post(
         "/model/train",
         data=invalid_yaml,
         headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
@@ -733,10 +748,10 @@ def test_training_payload_from_yaml_save_to_default_model_directory(
     assert payload.get("output") == expected
 
 
-async def test_train_missing_config(rasa_app: SanicASGITestClient):
+async def test_train_missing_config(rasa_non_trained_app: SanicASGITestClient):
     payload = dict(domain="domain data", config=None)
 
-    _, response = await rasa_app.post("/model/train", json=payload)
+    _, response = await rasa_non_trained_app.post("/model/train", json=payload)
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
@@ -747,10 +762,10 @@ async def test_train_missing_training_data(rasa_app: SanicASGITestClient):
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
-async def test_train_internal_error(rasa_app: SanicASGITestClient):
+async def test_train_internal_error(rasa_non_trained_app: SanicASGITestClient):
     payload = dict(domain="domain data", config="config data", nlu="nlu data")
 
-    _, response = await rasa_app.post("/model/train", json=payload)
+    _, response = await rasa_non_trained_app.post("/model/train", json=payload)
     assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
@@ -785,11 +800,11 @@ async def test_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Tex
 
 
 async def test_evaluate_stories_not_ready_agent(
-    rasa_app_nlu: SanicASGITestClient, stories_path: Text
+    rasa_non_trained_app: SanicASGITestClient, stories_path: Text
 ):
     stories = rasa.shared.utils.io.read_file(stories_path)
 
-    _, response = await rasa_app_nlu.post("/model/test/stories", data=stories)
+    _, response = await rasa_non_trained_app.post("/model/test/stories", data=stories)
 
     assert response.status == HTTPStatus.CONFLICT
 
@@ -1004,13 +1019,15 @@ async def test_evaluate_intent_with_model_server(
 
 
 async def test_cross_validation(
-    rasa_app_nlu: SanicASGITestClient, nlu_data_path: Text, stack_config_path: Text
+    rasa_non_trained_app: SanicASGITestClient,
+    nlu_data_path: Text,
+    stack_config_path: Text,
 ):
     nlu_data = Path(nlu_data_path).read_text()
     config = Path(stack_config_path).read_text()
     payload = f"{nlu_data}\n{config}"
 
-    _, response = await rasa_app_nlu.post(
+    _, response = await rasa_non_trained_app.post(
         "/model/test/intents",
         data=payload,
         headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
@@ -1033,7 +1050,7 @@ async def test_cross_validation(
 
 
 async def test_cross_validation_with_md(
-    rasa_app_nlu: SanicASGITestClient, nlu_data_path: Text
+    rasa_non_trained_app: SanicASGITestClient, nlu_data_path: Text
 ):
     payload = """
     ## intent: greet
@@ -1041,7 +1058,7 @@ async def test_cross_validation_with_md(
     - Hello
         """
 
-    _, response = await rasa_app_nlu.post(
+    _, response = await rasa_non_trained_app.post(
         "/model/test/intents", data=payload, params={"cross_validation_folds": 3},
     )
 
@@ -1049,7 +1066,7 @@ async def test_cross_validation_with_md(
 
 
 async def test_cross_validation_with_callback_success(
-    rasa_app_nlu: SanicASGITestClient,
+    rasa_non_trained_app: SanicASGITestClient,
     nlu_data_path: Text,
     monkeypatch: MonkeyPatch,
     stack_config_path: Text,
@@ -1075,7 +1092,7 @@ async def test_cross_validation_with_callback_success(
             mocked_cross_validation,
         )
 
-        _, response = await rasa_app_nlu.post(
+        _, response = await rasa_non_trained_app.post(
             "/model/test/intents",
             data=payload,
             headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
@@ -1108,7 +1125,7 @@ async def test_cross_validation_with_callback_success(
 
 
 async def test_cross_validation_with_callback_error(
-    rasa_app_nlu: SanicASGITestClient,
+    rasa_non_trained_app: SanicASGITestClient,
     nlu_data_path: Text,
     monkeypatch: MonkeyPatch,
     stack_config_path: Text,
@@ -1127,7 +1144,7 @@ async def test_cross_validation_with_callback_error(
     with aioresponses() as mocked:
         mocked.post(callback_url, payload={})
 
-        _, response = await rasa_app_nlu.post(
+        _, response = await rasa_non_trained_app.post(
             "/model/test/intents",
             data=payload,
             headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
@@ -1146,7 +1163,7 @@ async def test_cross_validation_with_callback_error(
 
 
 async def test_callback_unexpected_error(
-    rasa_app_nlu: SanicASGITestClient,
+    rasa_non_trained_app: SanicASGITestClient,
     nlu_data_path: Text,
     monkeypatch: MonkeyPatch,
     stack_config_path: Text,
@@ -1168,7 +1185,7 @@ async def test_callback_unexpected_error(
     with aioresponses() as mocked:
         mocked.post(callback_url, payload={})
 
-        _, response = await rasa_app_nlu.post(
+        _, response = await rasa_non_trained_app.post(
             "/model/test/intents",
             data=payload,
             headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
@@ -1466,8 +1483,8 @@ async def test_get_tracker_with_jwt(rasa_secured_app: SanicASGITestClient):
     assert response.status == HTTPStatus.OK
 
 
-def test_list_routes(default_agent: Agent):
-    app = rasa.server.create_app(default_agent, auth_token=None)
+def test_list_routes(empty_agent: Agent):
+    app = rasa.server.create_app(empty_agent, auth_token=None)
 
     routes = utils.list_routes(app)
     assert set(routes.keys()) == {
@@ -1579,15 +1596,19 @@ async def test_load_model_from_model_server(
             assert old_fingerprint != response.json()["fingerprint"]
 
 
-async def test_load_model_invalid_request_body(rasa_app: SanicASGITestClient):
-    _, response = await rasa_app.put("/model")
+async def test_load_model_invalid_request_body(
+    rasa_non_trained_app: SanicASGITestClient,
+):
+    _, response = await rasa_non_trained_app.put("/model")
 
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
-async def test_load_model_invalid_configuration(rasa_app: SanicASGITestClient):
+async def test_load_model_invalid_configuration(
+    rasa_non_trained_app: SanicASGITestClient,
+):
     data = {"model_file": "some-random-path"}
-    _, response = await rasa_app.put("/model", json=data)
+    _, response = await rasa_non_trained_app.put("/model", json=data)
 
     assert response.status == HTTPStatus.BAD_REQUEST
 

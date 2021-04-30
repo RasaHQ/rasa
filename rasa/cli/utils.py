@@ -2,7 +2,8 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, NoReturn, Optional, TYPE_CHECKING, Text
+from types import FrameType
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
 
 from rasa.shared.constants import DEFAULT_MODELS_PATH
 import rasa.shared.utils.cli
@@ -196,6 +197,7 @@ def payload_from_button_question(button_question: "Question") -> Text:
     return response
 
 
-def signal_handler(sig, frame) -> NoReturn:
+def signal_handler(_: int, __: FrameType) -> None:
+    """Kills Rasa when OS signal is received."""
     print("Goodbye 👋")
     sys.exit(0)
