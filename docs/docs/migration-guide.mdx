@@ -69,6 +69,17 @@ forms:
 
 ### Machine Learning Components
 
+#### `DIET`, `TED`, and `ResponseSelector`
+
+The former `weight_sparsity` parameter of the `DIETClassifier`, `TEDPolicy`, and the `ResponseSelector`, 
+is now deprecated and superseded by the new `connection_density` parameter.
+The old `weight_sparsity` is roughly equivalent to `1 - connection_density`, except at very low densities 
+(high sparsities). 
+
+To avoid deprication issues, you should set `connection_density` to 
+`1 - your former weight_sparsity setting` throughout the config file. (If you left 
+`weight_sparsity` at its default setting, you don't need to do anything.)
+
 #### SpaCy 3.0
 
 Rasa now supports spaCy 3.0. This means that we can support more features for more

@@ -154,38 +154,26 @@ class DenseForSparse(tf.keras.layers.Dense):
         return outputs
 
 
-class DenseWithSparseWeights(tf.keras.layers.Dense):
-    """Just your regular densely-connected NN layer but with sparse weights.
+class RandomlyConnectedDense(tf.keras.layers.Dense):
+    """Layer with dense ouputs that are connected to a random subset of inputs.
 
-    `Dense` implements the operation:
+    `RandomlyConnectedDense` implements the operation:
     `output = activation(dot(input, kernel) + bias)`
     where `activation` is the element-wise activation function
     passed as the `activation` argument, `kernel` is a weights matrix
     created by the layer, and `bias` is a bias vector created by the layer
     (only applicable if `use_bias` is `True`).
-    It creates `kernel_mask` to set fraction of the `kernel` weights to zero.
+    It creates `kernel_mask` to set a fraction of the `kernel` weights to zero.
 
     Note: If the input to the layer has a rank greater than 2, then
     it is flattened prior to the initial dot product with `kernel`.
 
-    Arguments:
-        sparsity: Float between 0 and 1. Fraction of the `kernel`
-            weights to set to zero.
-        units: Positive integer, dimensionality of the output space.
-        activation: Activation function to use.
-            If you don't specify anything, no activation is applied
-            (ie. "linear" activation: `a(x) = x`).
-        use_bias: Boolean, whether the layer uses a bias vector.
-        kernel_initializer: Initializer for the `kernel` weights matrix.
-        bias_initializer: Initializer for the bias vector.
-        kernel_regularizer: Regularizer function applied to
-            the `kernel` weights matrix.
-        bias_regularizer: Regularizer function applied to the bias vector.
-        activity_regularizer: Regularizer function applied to
-            the output of the layer (its "activation")..
-        kernel_constraint: Constraint function applied to
-            the `kernel` weights matrix.
-        bias_constraint: Constraint function applied to the bias vector.
+    The output is guaranteed to be dense (each output is connected to at least one
+    input), and no input is disconnected (each input is connected to at least one
+    output).
+
+    At `density = 0.0` the number of trainable weights is `max(input_size, units)`. At
+    `density = 1.0` this layer is equivalent to `tf.keras.layers.Dense`.
 
     Input shape:
         N-D tensor with shape: `(batch_size, ..., input_dim)`.
@@ -198,24 +186,118 @@ class DenseWithSparseWeights(tf.keras.layers.Dense):
         the output would have shape `(batch_size, units)`.
     """
 
-    def __init__(self, sparsity: float = 0.8, **kwargs: Any) -> None:
+    def __init__(self, density: float = 0.2, **kwargs: Any) -> None:
+        """Declares instance variables with default values.
+
+        Args:
+            density: Float between 0 and 1. Approximate fraction of trainable weights.
+            units: Positive integer, dimensionality of the output space.
+            activation: Activation function to use.
+                If you don't specify anything, no activation is applied
+                (ie. "linear" activation: `a(x) = x`).
+            use_bias: Boolean, whether the layer uses a bias vector.
+            kernel_initializer: Initializer for the `kernel` weights matrix.
+            bias_initializer: Initializer for the bias vector.
+            kernel_regularizer: Regularizer function applied to
+                the `kernel` weights matrix.
+            bias_regularizer: Regularizer function applied to the bias vector.
+            activity_regularizer: Regularizer function applied to
+                the output of the layer (its "activation")..
+            kernel_constraint: Constraint function applied to
+                the `kernel` weights matrix.
+            bias_constraint: Constraint function applied to the bias vector.
+        """
         super().__init__(**kwargs)
-        self.sparsity = sparsity
+
+        if density < 0.0 or density > 1.0:
+            raise TFLayerConfigException("Layer density must be in [0, 1].")
+
+        self.density = density
 
     def build(self, input_shape: tf.TensorShape) -> None:
+        """Prepares the kernel mask.
+
+        Args:
+            input_shape: Shape of the inputs to this layer
+        """
         super().build(input_shape)
-        # create random mask to set fraction of the `kernel` weights to zero
-        kernel_mask = tf.random.uniform(tf.shape(self.kernel), 0, 1)
-        kernel_mask = tf.cast(
-            tf.greater_equal(kernel_mask, self.sparsity), self.kernel.dtype
-        )
+
+        if self.density == 1.0:
+            self.kernel_mask = None
+            return
+
+        # Construct mask with given density and guarantee that every output is
+        # connected to at least one input
+        kernel_mask = self._minimal_mask() + self._random_mask()
+
+        # We might accidently have added a random connection on top of
+        # a fixed connection
+        kernel_mask = tf.clip_by_value(kernel_mask, 0, 1)
+
         self.kernel_mask = tf.Variable(
             initial_value=kernel_mask, trainable=False, name="kernel_mask"
         )
 
+    def _random_mask(self) -> tf.Tensor:
+        """Creates a random matrix with `num_ones` 1s and 0s otherwise.
+
+        Returns:
+            A random mask matrix
+        """
+        mask = tf.random.uniform(tf.shape(self.kernel), 0, 1)
+        mask = tf.cast(tf.math.less(mask, self.density), self.kernel.dtype)
+        return mask
+
+    def _minimal_mask(self) -> tf.Tensor:
+        """Creates a matrix with a minimal number of 1s to connect everythinig.
+
+        If num_rows == num_cols, this creates the identity matrix.
+        If num_rows > num_cols, this creates
+            1 0 0 0
+            0 1 0 0
+            0 0 1 0
+            0 0 0 1
+            1 0 0 0
+            0 1 0 0
+            0 0 1 0
+            . . . .
+            . . . .
+            . . . .
+        If num_rows < num_cols, this creates
+            1 0 0 1 0 0 1 ...
+            0 1 0 0 1 0 0 ...
+            0 0 1 0 0 1 0 ...
+
+        Returns:
+            A tiled and croped identity matrix.
+        """
+        kernel_shape = tf.shape(self.kernel)
+        num_rows = kernel_shape[0]
+        num_cols = kernel_shape[1]
+        short_dimension = tf.minimum(num_rows, num_cols)
+
+        mask = tf.tile(
+            tf.eye(short_dimension, dtype=self.kernel.dtype),
+            [
+                tf.math.ceil(num_rows / short_dimension),
+                tf.math.ceil(num_cols / short_dimension),
+            ],
+        )[:num_rows, :num_cols]
+
+        return mask
+
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
-        # set fraction of the `kernel` weights to zero according to precomputed mask
-        self.kernel.assign(self.kernel * self.kernel_mask)
+        """Processes the given inputs.
+
+        Args:
+            inputs: What goes into this layer
+
+        Returns:
+            The processed inputs.
+        """
+        if self.density < 1.0:
+            # Set fraction of the `kernel` weights to zero according to precomputed mask
+            self.kernel.assign(self.kernel * self.kernel_mask)
         return super().call(inputs)
 
 
@@ -226,8 +308,7 @@ class Ffnn(tf.keras.layers.Layer):
         layer_sizes: List of integers with dimensionality of the layers.
         dropout_rate: Float between 0 and 1; fraction of the input units to drop.
         reg_lambda: Float, regularization factor.
-        sparsity: Float between 0 and 1. Fraction of the `kernel`
-            weights to set to zero.
+        density: Float between 0 and 1. Approximate fraction of trainable weights.
         layer_name_suffix: Text added to the name of the layers.
 
     Input shape:
@@ -246,7 +327,7 @@ class Ffnn(tf.keras.layers.Layer):
         layer_sizes: List[int],
         dropout_rate: float,
         reg_lambda: float,
-        sparsity: float,
+        density: float,
         layer_name_suffix: Text,
     ) -> None:
         super().__init__(name=f"ffnn_{layer_name_suffix}")
@@ -255,9 +336,9 @@ class Ffnn(tf.keras.layers.Layer):
         self._ffn_layers = []
         for i, layer_size in enumerate(layer_sizes):
             self._ffn_layers.append(
-                DenseWithSparseWeights(
+                RandomlyConnectedDense(
                     units=layer_size,
-                    sparsity=sparsity,
+                    density=density,
                     activation=tfa.activations.gelu,
                     kernel_regularizer=l2_regularizer,
                     name=f"hidden_layer_{layer_name_suffix}_{i}",
