@@ -154,16 +154,10 @@ class StateMachineAction(LoopAction):
             isinstance(event, ActionExecutionRejected) for event in validation_events
         )
 
-    async def _get_slot_fill_events(
-        self,
-        slots: List[Slot],
-        slot_fill_utterances: List[Utterance],
-        tracker: "DialogueStateTracker",
-        domain: Domain,
-        output_channel: OutputChannel,
-        nlg: NaturalLanguageGenerator,
-    ) -> List[Event]:
-
+    @staticmethod
+    def _get_slot_values(
+        slots: List[Slot], tracker: "DialogueStateTracker"
+    ) -> Dict[str, Any]:
         slot_values = {}
 
         # Fill slots from latest utterance
@@ -171,7 +165,7 @@ class StateMachineAction(LoopAction):
         for slot in unfilled_slots:
             # self.extract_requested_slot(tracker=tracker, domain=domain, slot_to_fill=slot.name)
             values_from_entities = [
-                self.get_entity_value(entity, tracker, None, None)
+                StateMachineAction.get_entity_value(entity, tracker, None, None)
                 for entity in slot.entities
             ]
 
@@ -181,6 +175,39 @@ class StateMachineAction(LoopAction):
             if len(values_from_entities) > 0:
                 # Take first entity extracted
                 slot_values.update({slot.name: values_from_entities[0]})
+
+        return slot_values
+
+    @staticmethod
+    def _get_response_action_names(
+        responses: List[Response], tracker: "DialogueStateTracker"
+    ) -> List[str]:
+        valid_responses = [
+            response
+            for response in responses
+            if response.condition.is_valid(tracker=tracker)
+        ]
+
+        valid_responses_action_names = [
+            valid_response.actions[
+                random.randint(0, len(valid_response.actions) - 1)
+            ].name
+            for valid_response in valid_responses
+            if len(valid_response.actions) > 0
+        ]
+
+        return valid_responses_action_names
+
+    async def _get_slot_fill_events(
+        self,
+        slots: List[Slot],
+        slot_fill_utterances: List[Utterance],
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
+    ) -> List[Event]:
+        slot_values = StateMachineAction._get_slot_values(slots=slots, tracker=tracker)
 
         # Convert slot values to events
         validation_events = await self.validate_slots(
@@ -231,19 +258,9 @@ class StateMachineAction(LoopAction):
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
     ) -> List[Event]:
-        valid_responses = [
-            response
-            for response in responses
-            if response.condition.is_valid(tracker=tracker)
-        ]
-
-        valid_responses_action_names = [
-            valid_response.actions[
-                random.randint(0, len(valid_response.actions) - 1)
-            ].name
-            for valid_response in valid_responses
-            if len(valid_response.actions) > 0
-        ]
+        valid_responses_action_names = StateMachineAction._get_response_action_names(
+            responses, tracker
+        )
 
         valid_responses_actions = [
             action.action_for_name_or_text(
@@ -351,15 +368,6 @@ class StateMachineAction(LoopAction):
             nlg=nlg,
         )
 
-        # Ask for next slot
-        events += await self._get_next_slot_events(
-            slots=state_machine_state.slots,
-            tracker=tracker_with_slots_set,
-            domain=domain,
-            output_channel=output_channel,
-            nlg=nlg,
-        )
-
         # Check if intent matches any Transitions
         events += await self._get_transitions_events(
             transitions=state_machine_state.transitions,
@@ -370,6 +378,15 @@ class StateMachineAction(LoopAction):
         )
 
         if len(events) > 0:
+            # Ask for next slot
+            events += await self._get_next_slot_events(
+                slots=state_machine_state.slots,
+                tracker=tracker_with_slots_set,
+                domain=domain,
+                output_channel=output_channel,
+                nlg=nlg,
+            )
+
             return events
         else:
             raise ActionExecutionRejection(

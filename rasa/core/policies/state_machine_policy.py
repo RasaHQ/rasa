@@ -52,6 +52,17 @@ from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
 import rasa.core.training.training
 
+from rasa.shared.nlu.state_machine.state_machine_state import (
+    Response,
+    StateMachineState,
+    Transition,
+)
+
+from rasa.shared.nlu.state_machine.student_life_state_machine import (
+    student_life_state_machine,
+)
+
+from rasa.core.actions.state_machine_action import StateMachineAction
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -158,296 +169,308 @@ class StateMachinePolicy(MemoizationPolicy):
             **kwargs,
         )
 
-    @classmethod
-    def validate_against_domain(
-        cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
-    ) -> None:
-        if ensemble is None:
-            return
+    # @classmethod
+    # def validate_against_domain(
+    #     cls, ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    # ) -> None:
+    #     if ensemble is None:
+    #         return
 
-        rule_policy = next(
-            (p for p in ensemble.policies if isinstance(p, StateMachinePolicy)),
-            None,
-        )
-        if not rule_policy or not rule_policy._enable_fallback_prediction:
-            return
+    #     rule_policy = next(
+    #         (
+    #             p
+    #             for p in ensemble.policies
+    #             if isinstance(p, StateMachinePolicy)
+    #         ),
+    #         None,
+    #     )
+    #     if not rule_policy or not rule_policy._enable_fallback_prediction:
+    #         return
 
-        if (
-            domain is None
-            or rule_policy._fallback_action_name not in domain.action_names_or_texts
-        ):
-            raise InvalidDomain(
-                f"The fallback action '{rule_policy._fallback_action_name}' which was "
-                f"configured for the {StateMachinePolicy.__name__} must be present in the "
-                f"domain."
-            )
+    #     if (
+    #         domain is None
+    #         or rule_policy._fallback_action_name
+    #         not in domain.action_names_or_texts
+    #     ):
+    #         raise InvalidDomain(
+    #             f"The fallback action '{rule_policy._fallback_action_name}' which was "
+    #             f"configured for the {StateMachinePolicy.__name__} must be present in the "
+    #             f"domain."
+    #         )
 
-    @staticmethod
-    def _is_rule_snippet_state(state: State) -> bool:
-        prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
-        return prev_action_name == RULE_SNIPPET_ACTION_NAME
+    # @staticmethod
+    # def _is_rule_snippet_state(state: State) -> bool:
+    #     prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
+    #     return prev_action_name == RULE_SNIPPET_ACTION_NAME
 
-    def _create_feature_key(self, states: List[State]) -> Optional[Text]:
-        new_states = []
-        for state in reversed(states):
-            if self._is_rule_snippet_state(state):
-                # remove all states before RULE_SNIPPET_ACTION_NAME
-                break
-            new_states.insert(0, state)
+    # def _create_feature_key(self, states: List[State]) -> Optional[Text]:
+    #     new_states = []
+    #     for state in reversed(states):
+    #         if self._is_rule_snippet_state(state):
+    #             # remove all states before RULE_SNIPPET_ACTION_NAME
+    #             break
+    #         new_states.insert(0, state)
 
-        if not new_states:
-            return
+    #     if not new_states:
+    #         return
 
-        # we sort keys to make sure that the same states
-        # represented as dictionaries have the same json strings
-        return json.dumps(new_states, sort_keys=True)
+    #     # we sort keys to make sure that the same states
+    #     # represented as dictionaries have the same json strings
+    #     return json.dumps(new_states, sort_keys=True)
 
-    @staticmethod
-    def _states_for_unhappy_loop_predictions(
-        states: List[State],
-    ) -> List[State]:
-        """Modifies the states to create feature keys for loop unhappy path conditions.
+    # @staticmethod
+    # def _states_for_unhappy_loop_predictions(
+    #     states: List[State],
+    # ) -> List[State]:
+    #     """Modifies the states to create feature keys for loop unhappy path conditions.
 
-        Args:
-            states: a representation of a tracker
-                as a list of dictionaries containing features
+    #     Args:
+    #         states: a representation of a tracker
+    #             as a list of dictionaries containing features
 
-        Returns:
-            modified states
-        """
-        # leave only last 2 dialogue turns to
-        # - capture previous meaningful action before action_listen
-        # - ignore previous intent
-        if len(states) == 1 or not states[-2].get(PREVIOUS_ACTION):
-            return [states[-1]]
-        else:
-            return [{PREVIOUS_ACTION: states[-2][PREVIOUS_ACTION]}, states[-1]]
+    #     Returns:
+    #         modified states
+    #     """
+    #     # leave only last 2 dialogue turns to
+    #     # - capture previous meaningful action before action_listen
+    #     # - ignore previous intent
+    #     if len(states) == 1 or not states[-2].get(PREVIOUS_ACTION):
+    #         return [states[-1]]
+    #     else:
+    #         return [{PREVIOUS_ACTION: states[-2][PREVIOUS_ACTION]}, states[-1]]
 
-    @staticmethod
-    def _remove_rule_snippet_predictions(lookup: Dict[Text, Text]) -> Dict[Text, Text]:
-        # Delete rules if it would predict the RULE_SNIPPET_ACTION_NAME action
-        return {
-            feature_key: action
-            for feature_key, action in lookup.items()
-            if action != RULE_SNIPPET_ACTION_NAME
-        }
+    # @staticmethod
+    # def _remove_rule_snippet_predictions(
+    #     lookup: Dict[Text, Text]
+    # ) -> Dict[Text, Text]:
+    #     # Delete rules if it would predict the RULE_SNIPPET_ACTION_NAME action
+    #     return {
+    #         feature_key: action
+    #         for feature_key, action in lookup.items()
+    #         if action != RULE_SNIPPET_ACTION_NAME
+    #     }
 
-    def _create_loop_unhappy_lookup_from_states(
-        self,
-        trackers_as_states: List[List[State]],
-        trackers_as_actions: List[List[Text]],
-    ) -> Dict[Text, Text]:
-        """Creates lookup dictionary from the tracker represented as states.
+    # def _create_loop_unhappy_lookup_from_states(
+    #     self,
+    #     trackers_as_states: List[List[State]],
+    #     trackers_as_actions: List[List[Text]],
+    # ) -> Dict[Text, Text]:
+    #     """Creates lookup dictionary from the tracker represented as states.
 
-        Args:
-            trackers_as_states: representation of the trackers as a list of states
-            trackers_as_actions: representation of the trackers as a list of actions
+    #     Args:
+    #         trackers_as_states: representation of the trackers as a list of states
+    #         trackers_as_actions: representation of the trackers as a list of actions
 
-        Returns:
-            lookup dictionary
-        """
-        lookup = {}
-        for states, actions in zip(trackers_as_states, trackers_as_actions):
-            action = actions[0]
-            active_loop = get_active_loop_name(states[-1])
-            # even if there are two identical feature keys
-            # their loop will be the same
-            if not active_loop:
-                continue
+    #     Returns:
+    #         lookup dictionary
+    #     """
+    #     lookup = {}
+    #     for states, actions in zip(trackers_as_states, trackers_as_actions):
+    #         action = actions[0]
+    #         active_loop = get_active_loop_name(states[-1])
+    #         # even if there are two identical feature keys
+    #         # their loop will be the same
+    #         if not active_loop:
+    #             continue
 
-            states = self._states_for_unhappy_loop_predictions(states)
-            feature_key = self._create_feature_key(states)
-            if not feature_key:
-                continue
+    #         states = self._states_for_unhappy_loop_predictions(states)
+    #         feature_key = self._create_feature_key(states)
+    #         if not feature_key:
+    #             continue
 
-            # Since rule snippets and stories inside the loop contain
-            # only unhappy paths, notify the loop that
-            # it was predicted after an answer to a different question and
-            # therefore it should not validate user input
-            if (
-                # loop is predicted after action_listen in unhappy path,
-                # therefore no validation is needed
-                is_prev_action_listen_in_state(states[-1])
-                and action == active_loop
-            ):
-                lookup[feature_key] = LOOP_WAS_INTERRUPTED
-            elif (
-                # some action other than active_loop is predicted in unhappy path,
-                # therefore active_loop shouldn't be predicted by the rule
-                not is_prev_action_listen_in_state(states[-1])
-                and action != active_loop
-            ):
-                lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
-        return lookup
+    #         # Since rule snippets and stories inside the loop contain
+    #         # only unhappy paths, notify the loop that
+    #         # it was predicted after an answer to a different question and
+    #         # therefore it should not validate user input
+    #         if (
+    #             # loop is predicted after action_listen in unhappy path,
+    #             # therefore no validation is needed
+    #             is_prev_action_listen_in_state(states[-1])
+    #             and action == active_loop
+    #         ):
+    #             lookup[feature_key] = LOOP_WAS_INTERRUPTED
+    #         elif (
+    #             # some action other than active_loop is predicted in unhappy path,
+    #             # therefore active_loop shouldn't be predicted by the rule
+    #             not is_prev_action_listen_in_state(states[-1])
+    #             and action != active_loop
+    #         ):
+    #             lookup[feature_key] = DO_NOT_PREDICT_LOOP_ACTION
+    #     return lookup
 
-    def _check_rule_restriction(
-        self, rule_trackers: List[TrackerWithCachedStates]
-    ) -> None:
-        rules_exceeding_max_user_turns = []
-        for tracker in rule_trackers:
-            number_of_user_uttered = sum(
-                isinstance(event, UserUttered) for event in tracker.events
-            )
-            if number_of_user_uttered > self.ALLOWED_NUMBER_OF_USER_INPUTS:
-                rules_exceeding_max_user_turns.append(tracker.sender_id)
+    # def _check_rule_restriction(
+    #     self, rule_trackers: List[TrackerWithCachedStates]
+    # ) -> None:
+    #     rules_exceeding_max_user_turns = []
+    #     for tracker in rule_trackers:
+    #         number_of_user_uttered = sum(
+    #             isinstance(event, UserUttered) for event in tracker.events
+    #         )
+    #         if number_of_user_uttered > self.ALLOWED_NUMBER_OF_USER_INPUTS:
+    #             rules_exceeding_max_user_turns.append(tracker.sender_id)
 
-        if rules_exceeding_max_user_turns:
-            raise InvalidRule(
-                f"Found rules '{', '.join(rules_exceeding_max_user_turns)}' "
-                f"that contain more than {self.ALLOWED_NUMBER_OF_USER_INPUTS} "
-                f"user message. Rules are not meant to hardcode a state machine. "
-                f"Please use stories for these cases."
-            )
+    #     if rules_exceeding_max_user_turns:
+    #         raise InvalidRule(
+    #             f"Found rules '{', '.join(rules_exceeding_max_user_turns)}' "
+    #             f"that contain more than {self.ALLOWED_NUMBER_OF_USER_INPUTS} "
+    #             f"user message. Rules are not meant to hardcode a state machine. "
+    #             f"Please use stories for these cases."
+    #         )
 
-    @staticmethod
-    def _expected_but_missing_slots(
-        fingerprint: Dict[Text, List[Text]], state: State
-    ) -> Set[Text]:
-        expected_slots = set(fingerprint.get(SLOTS, {}))
-        current_slots = set(state.get(SLOTS, {}).keys())
-        # report all slots that are expected but aren't set in current slots
-        return expected_slots.difference(current_slots)
+    # @staticmethod
+    # def _expected_but_missing_slots(
+    #     fingerprint: Dict[Text, List[Text]], state: State
+    # ) -> Set[Text]:
+    #     expected_slots = set(fingerprint.get(SLOTS, {}))
+    #     current_slots = set(state.get(SLOTS, {}).keys())
+    #     # report all slots that are expected but aren't set in current slots
+    #     return expected_slots.difference(current_slots)
 
-    @staticmethod
-    def _check_active_loops_fingerprint(
-        fingerprint: Dict[Text, List[Text]], state: State
-    ) -> Set[Text]:
-        expected_active_loops = set(fingerprint.get(ACTIVE_LOOP, {}))
-        # we don't use tracker.active_loop_name
-        # because we need to keep should_not_be_set
-        current_active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
-        if current_active_loop in expected_active_loops:
-            # one of expected active loops is set
-            return set()
+    # @staticmethod
+    # def _check_active_loops_fingerprint(
+    #     fingerprint: Dict[Text, List[Text]], state: State
+    # ) -> Set[Text]:
+    #     expected_active_loops = set(fingerprint.get(ACTIVE_LOOP, {}))
+    #     # we don't use tracker.active_loop_name
+    #     # because we need to keep should_not_be_set
+    #     current_active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+    #     if current_active_loop in expected_active_loops:
+    #         # one of expected active loops is set
+    #         return set()
 
-        return expected_active_loops
+    #     return expected_active_loops
 
-    @staticmethod
-    def _error_messages_from_fingerprints(
-        action_name: Text,
-        missing_fingerprint_slots: Set[Text],
-        fingerprint_active_loops: Set[Text],
-        rule_name: Text,
-    ) -> List[Text]:
-        error_messages = []
-        if action_name and missing_fingerprint_slots:
-            error_messages.append(
-                f"- the action '{action_name}' in rule '{rule_name}' does not set some "
-                f"of the slots that it sets in other rules. Slots not set in rule "
-                f"'{rule_name}': '{', '.join(missing_fingerprint_slots)}'. Please "
-                f"update the rule with an appropriate slot or if it is the last action "
-                f"add 'wait_for_user_input: false' after this action."
-            )
-        if action_name and fingerprint_active_loops:
-            # substitute `SHOULD_NOT_BE_SET` with `null` so that users
-            # know what to put in their rules
-            fingerprint_active_loops = set(
-                "null" if active_loop == SHOULD_NOT_BE_SET else active_loop
-                for active_loop in fingerprint_active_loops
-            )
-            # add action_name to active loop so that users
-            # know what to put in their rules
-            fingerprint_active_loops.add(action_name)
+    # @staticmethod
+    # def _error_messages_from_fingerprints(
+    #     action_name: Text,
+    #     missing_fingerprint_slots: Set[Text],
+    #     fingerprint_active_loops: Set[Text],
+    #     rule_name: Text,
+    # ) -> List[Text]:
+    #     error_messages = []
+    #     if action_name and missing_fingerprint_slots:
+    #         error_messages.append(
+    #             f"- the action '{action_name}' in rule '{rule_name}' does not set some "
+    #             f"of the slots that it sets in other rules. Slots not set in rule "
+    #             f"'{rule_name}': '{', '.join(missing_fingerprint_slots)}'. Please "
+    #             f"update the rule with an appropriate slot or if it is the last action "
+    #             f"add 'wait_for_user_input: false' after this action."
+    #         )
+    #     if action_name and fingerprint_active_loops:
+    #         # substitute `SHOULD_NOT_BE_SET` with `null` so that users
+    #         # know what to put in their rules
+    #         fingerprint_active_loops = set(
+    #             "null" if active_loop == SHOULD_NOT_BE_SET else active_loop
+    #             for active_loop in fingerprint_active_loops
+    #         )
+    #         # add action_name to active loop so that users
+    #         # know what to put in their rules
+    #         fingerprint_active_loops.add(action_name)
 
-            error_messages.append(
-                f"- the form '{action_name}' in rule '{rule_name}' does not set "
-                f"the 'active_loop', that it sets in other rules: "
-                f"'{', '.join(fingerprint_active_loops)}'. Please update the rule with "
-                f"the appropriate 'active loop' property or if it is the last action "
-                f"add 'wait_for_user_input: false' after this action."
-            )
-        return error_messages
+    #         error_messages.append(
+    #             f"- the form '{action_name}' in rule '{rule_name}' does not set "
+    #             f"the 'active_loop', that it sets in other rules: "
+    #             f"'{', '.join(fingerprint_active_loops)}'. Please update the rule with "
+    #             f"the appropriate 'active loop' property or if it is the last action "
+    #             f"add 'wait_for_user_input: false' after this action."
+    #         )
+    #     return error_messages
 
-    def _check_for_incomplete_rules(
-        self, rule_trackers: List[TrackerWithCachedStates], domain: Domain
-    ) -> None:
-        logger.debug("Started checking if some rules are incomplete.")
-        # we need to use only fingerprints from rules
-        rule_fingerprints = rasa.core.training.training.create_action_fingerprints(
-            rule_trackers, domain
-        )
-        if not rule_fingerprints:
-            return
+    # def _check_for_incomplete_rules(
+    #     self, rule_trackers: List[TrackerWithCachedStates], domain: Domain
+    # ) -> None:
+    #     logger.debug("Started checking if some rules are incomplete.")
+    #     # we need to use only fingerprints from rules
+    #     rule_fingerprints = (
+    #         rasa.core.training.training.create_action_fingerprints(
+    #             rule_trackers, domain
+    #         )
+    #     )
+    #     if not rule_fingerprints:
+    #         return
 
-        error_messages = []
-        for tracker in rule_trackers:
-            states = tracker.past_states(domain)
-            # the last action is always action listen
-            action_names = [
-                state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME) for state in states[1:]
-            ] + [ACTION_LISTEN_NAME]
+    #     error_messages = []
+    #     for tracker in rule_trackers:
+    #         states = tracker.past_states(domain)
+    #         # the last action is always action listen
+    #         action_names = [
+    #             state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
+    #             for state in states[1:]
+    #         ] + [ACTION_LISTEN_NAME]
 
-            for state, action_name in zip(states, action_names):
-                previous_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
-                fingerprint = rule_fingerprints.get(previous_action_name)
-                if (
-                    not previous_action_name
-                    or not fingerprint
-                    or action_name == RULE_SNIPPET_ACTION_NAME
-                    or previous_action_name == RULE_SNIPPET_ACTION_NAME
-                ):
-                    # do not check fingerprints for rule snippet action
-                    # and don't raise if fingerprints are not satisfied
-                    # for a previous action if current action is rule snippet action
-                    continue
+    #         for state, action_name in zip(states, action_names):
+    #             previous_action_name = state.get(PREVIOUS_ACTION, {}).get(
+    #                 ACTION_NAME
+    #             )
+    #             fingerprint = rule_fingerprints.get(previous_action_name)
+    #             if (
+    #                 not previous_action_name
+    #                 or not fingerprint
+    #                 or action_name == RULE_SNIPPET_ACTION_NAME
+    #                 or previous_action_name == RULE_SNIPPET_ACTION_NAME
+    #             ):
+    #                 # do not check fingerprints for rule snippet action
+    #                 # and don't raise if fingerprints are not satisfied
+    #                 # for a previous action if current action is rule snippet action
+    #                 continue
 
-                missing_expected_slots = self._expected_but_missing_slots(
-                    fingerprint, state
-                )
-                expected_active_loops = self._check_active_loops_fingerprint(
-                    fingerprint, state
-                )
-                error_messages.extend(
-                    self._error_messages_from_fingerprints(
-                        previous_action_name,
-                        missing_expected_slots,
-                        expected_active_loops,
-                        tracker.sender_id,
-                    )
-                )
+    #             missing_expected_slots = self._expected_but_missing_slots(
+    #                 fingerprint, state
+    #             )
+    #             expected_active_loops = self._check_active_loops_fingerprint(
+    #                 fingerprint, state
+    #             )
+    #             error_messages.extend(
+    #                 self._error_messages_from_fingerprints(
+    #                     previous_action_name,
+    #                     missing_expected_slots,
+    #                     expected_active_loops,
+    #                     tracker.sender_id,
+    #                 )
+    #             )
 
-        if error_messages:
-            error_messages = "\n".join(error_messages)
-            raise InvalidRule(
-                f"\nIncomplete rules found🚨\n\n{error_messages}\n"
-                f"Please note that if some slots or active loops should not be set "
-                f"during prediction you need to explicitly set them to 'null' in the "
-                f"rules."
-            )
+    #     if error_messages:
+    #         error_messages = "\n".join(error_messages)
+    #         raise InvalidRule(
+    #             f"\nIncomplete rules found🚨\n\n{error_messages}\n"
+    #             f"Please note that if some slots or active loops should not be set "
+    #             f"during prediction you need to explicitly set them to 'null' in the "
+    #             f"rules."
+    #         )
 
-        logger.debug("Found no incompletions in rules.")
+    #     logger.debug("Found no incompletions in rules.")
 
-    @staticmethod
-    def _get_slots_loops_from_states(
-        trackers_as_states: List[List[State]],
-    ) -> Tuple[Set[Text], Set[Text]]:
-        slots = set()
-        loops = set()
-        for states in trackers_as_states:
-            for state in states:
-                slots.update(set(state.get(SLOTS, {}).keys()))
-                active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
-                if active_loop:
-                    loops.add(active_loop)
-        return slots, loops
+    # @staticmethod
+    # def _get_slots_loops_from_states(
+    #     trackers_as_states: List[List[State]],
+    # ) -> Tuple[Set[Text], Set[Text]]:
+    #     slots = set()
+    #     loops = set()
+    #     for states in trackers_as_states:
+    #         for state in states:
+    #             slots.update(set(state.get(SLOTS, {}).keys()))
+    #             active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+    #             if active_loop:
+    #                 loops.add(active_loop)
+    #     return slots, loops
 
-    def _find_rule_only_slots_loops(
-        self,
-        rule_trackers_as_states: List[List[State]],
-        story_trackers_as_states: List[List[State]],
-    ) -> Tuple[List[Text], List[Text]]:
-        rule_slots, rule_loops = self._get_slots_loops_from_states(
-            rule_trackers_as_states
-        )
-        story_slots, story_loops = self._get_slots_loops_from_states(
-            story_trackers_as_states
-        )
+    # def _find_rule_only_slots_loops(
+    #     self,
+    #     rule_trackers_as_states: List[List[State]],
+    #     story_trackers_as_states: List[List[State]],
+    # ) -> Tuple[List[Text], List[Text]]:
+    #     rule_slots, rule_loops = self._get_slots_loops_from_states(
+    #         rule_trackers_as_states
+    #     )
+    #     story_slots, story_loops = self._get_slots_loops_from_states(
+    #         story_trackers_as_states
+    #     )
 
-        # set is not json serializable, so convert to list
-        return (
-            list(rule_slots - story_slots - {SHOULD_NOT_BE_SET}),
-            list(rule_loops - story_loops - {SHOULD_NOT_BE_SET}),
-        )
+    #     # set is not json serializable, so convert to list
+    #     return (
+    #         list(rule_slots - story_slots - {SHOULD_NOT_BE_SET}),
+    #         list(rule_loops - story_loops - {SHOULD_NOT_BE_SET}),
+    #     )
 
     def _predict_next_action(
         self, tracker: TrackerWithCachedStates, domain: Domain
@@ -786,31 +809,39 @@ class StateMachinePolicy(MemoizationPolicy):
             domain: The domain.
             interpreter: Interpreter which can be used by the polices for featurization.
         """
-        # only consider original trackers (no augmented ones)
-        training_trackers = [
-            t for t in training_trackers if not getattr(t, "is_augmented", False)
-        ]
-        # trackers from rule-based training data
-        rule_trackers = [t for t in training_trackers if t.is_rule_tracker]
-        if self._restrict_rules:
-            self._check_rule_restriction(rule_trackers)
-        if self._check_for_contradictions:
-            self._check_for_incomplete_rules(rule_trackers, domain)
+        pass
 
-        # trackers from ML-based training data
-        story_trackers = [t for t in training_trackers if not t.is_rule_tracker]
-
-        self._create_lookup_from_trackers(rule_trackers, story_trackers, domain)
-
-        # # make this configurable because checking might take a lot of time
+        # # only consider original trackers (no augmented ones)
+        # training_trackers = [
+        #     t
+        #     for t in training_trackers
+        #     if not getattr(t, "is_augmented", False)
+        # ]
+        # # trackers from rule-based training data
+        # rule_trackers = [t for t in training_trackers if t.is_rule_tracker]
+        # if self._restrict_rules:
+        #     self._check_rule_restriction(rule_trackers)
         # if self._check_for_contradictions:
-        #     # using trackers here might not be the most efficient way, however
-        #     # it allows us to directly test `predict_action_probabilities` method
-        #     self.lookup[RULES_NOT_IN_STORIES] = self._analyze_rules(
-        #         rule_trackers, training_trackers, domain
-        #     )
+        #     self._check_for_incomplete_rules(rule_trackers, domain)
 
-        logger.debug(f"Memorized '{len(self.lookup[RULES])}' unique rules.")
+        # # trackers from ML-based training data
+        # story_trackers = [
+        #     t for t in training_trackers if not t.is_rule_tracker
+        # ]
+
+        # self._create_lookup_from_trackers(
+        #     rule_trackers, story_trackers, domain
+        # )
+
+        # # # make this configurable because checking might take a lot of time
+        # # if self._check_for_contradictions:
+        # #     # using trackers here might not be the most efficient way, however
+        # #     # it allows us to directly test `predict_action_probabilities` method
+        # #     self.lookup[RULES_NOT_IN_STORIES] = self._analyze_rules(
+        # #         rule_trackers, training_trackers, domain
+        # #     )
+
+        # logger.debug(f"Memorized '{len(self.lookup[RULES])}' unique rules.")
 
     @staticmethod
     def _find_action_from_default_actions(
@@ -848,13 +879,45 @@ class StateMachinePolicy(MemoizationPolicy):
         prediction, _ = self._predict(tracker, domain)
         return prediction
 
+    def _check_if_current_state_has_actions(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> bool:
+        """
+        Predict StateMachineAction if any are true:
+        If any slots have been filled
+        If any response conditions are met
+        If any transitions conditions are met
+        """
+
+        # Get current state info
+        state_machine_state: StateMachineState = student_life_state_machine  # TODO
+
+        # Check if there are slots to fill
+        if StateMachineAction._get_slot_values(
+            slots=state_machine_state.slots, tracker=tracker
+        ):
+            return True
+
+        # Check if any response conditions are met
+        if StateMachineAction._get_response_action_names(
+            responses=state_machine_state.responses, tracker=tracker
+        ):
+            return True
+
+        # TODO: Check if any transitions conditions are met
+        # if StateMachineAction._get_response_action_names(
+        #     responses=state_machine_state.responses, tracker=tracker
+        # ):
+        #     return True
+
+        return False
+
     def _predict(
         self, tracker: DialogueStateTracker, domain: Domain
     ) -> Tuple[PolicyPrediction, Text]:
-        action_name: str
-        if tracker.latest_action_name == tracker.active_loop_name:
-            action_name = ACTION_LISTEN_NAME
-        else:
+        action_name: Optional[str] = None
+
+        if self._check_if_current_state_has_actions(tracker, domain):
             action_name = "action_state_machine_action"
 
         return (
@@ -862,7 +925,7 @@ class StateMachinePolicy(MemoizationPolicy):
                 self._prediction_result(action_name, tracker, domain),
                 None,
                 returning_from_unhappy_path=False,
-                is_end_to_end_prediction=True,
+                is_end_to_end_prediction=False,
             ),
             None,
         )
