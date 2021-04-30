@@ -182,7 +182,8 @@ def _extract_paired_histogram_specification(
     y_padding = 0.5 * bin_width + y_pad_fraction * bin_width
 
     if density:
-        # Get the maximum count across both histograms, and scale it with `x_pad_fraction`
+        # Get the maximum count across both histograms, and scale it
+        # with `x_pad_fraction`
         v = max([(1.0 + x_pad_fraction) * max(histogram) for histogram in histograms])
         # When we plot the PDF, let both x-axes run to the same value
         # so it's easier to compare visually
