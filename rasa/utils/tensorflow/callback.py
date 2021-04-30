@@ -72,7 +72,10 @@ class RasaModelCheckpoint(tf.keras.callbacks.Callback):
             )
 
     def _does_model_improve(self, current_results: Dict[Text, Any]) -> bool:
-        """Checks whether the model has improved.
+        """Checks whether the current results are better than the best so far.
+
+        Results are considered better if each metric is equal or better than the best so
+        far, and at least one is better.
 
         Args:
             current_results: The training metrics for this epoch.

@@ -78,7 +78,7 @@ def test_diagnostics():
 class TestTEDPolicy(PolicyTestCollection):
     def test_train_model_checkpointing(self, tmp_path: Path):
         model_name = "core-checkpointed-model"
-        best_model_file = tmp_path / (model_name + ".tar.gz")
+        best_model_file = Path(tmp_path, model_name)
         assert not best_model_file.exists()
 
         train_core(
@@ -93,8 +93,9 @@ class TestTEDPolicy(PolicyTestCollection):
 
     def test_doesnt_checkpoint_with_zero_eval_num_examples(self, tmp_path: Path):
         model_name = "core-checkpointed-model"
-        best_model_file = tmp_path / (model_name + ".tar.gz")
+        best_model_file = Path(tmp_path, model_name)
         assert not best_model_file.exists()
+
         train_core(
             domain="data/test_domains/default.yml",
             stories="data/test_yaml_stories/stories_defaultdomain.yaml",
@@ -102,14 +103,16 @@ class TestTEDPolicy(PolicyTestCollection):
             fixed_model_name=model_name,
             config="data/test_config/config_ted_policy_model_checkpointing_zero_eval_num_examples.yml",
         )
+
         assert not best_model_file.exists()
 
     def test_train_fails_with_checkpoint_zero_eval_every_num_epochs(
         self, tmp_path: Path
     ):
         model_name = "core-checkpointed-model"
-        best_model_file = tmp_path / (model_name + ".tar.gz")
+        best_model_file = Path(tmp_path, model_name)
         assert not best_model_file.exists()
+
         with pytest.raises(ValueError):
             train_core(
                 domain="data/test_domains/default.yml",
@@ -118,6 +121,7 @@ class TestTEDPolicy(PolicyTestCollection):
                 fixed_model_name=model_name,
                 config="data/test_config/config_ted_policy_model_checkpointing_zero_eval_every_num_epochs.yml",
             )
+
         assert not best_model_file.exists()
 
     def create_policy(
