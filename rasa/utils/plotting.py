@@ -145,7 +145,7 @@ def plot_confusion_matrix(
         fig.savefig(output_file, bbox_inches="tight")
 
 
-def _paired_histogram_specification(
+def _extract_paired_histogram_specification(
     histogram_data: List[List[float]],
     num_bins: int,
     density: bool,
@@ -167,26 +167,43 @@ def _paired_histogram_specification(
     min_data_value = np.min(np.concatenate(histogram_data))
     max_data_value = np.max(np.concatenate(histogram_data))
     bin_width = (max_data_value - min_data_value) / num_bins
-    bins = [min_data_value + i * bin_width for i in range(num_bins + 2)]
+    bins = [
+        min_data_value + i * bin_width
+        # `bins` describes the _boundaries_ of the bins, so we need
+        # 2 extra - one at the beginning and one at the end
+        for i in range(num_bins + 2)
+    ]
     histograms = [
-        np.histogram(data, bins=bins, density=density)[0] for data in histogram_data
+        # A list of counts - how often a value in `data` falls into a particular bin
+        np.histogram(data, bins=bins, density=density)[0]
+        for data in histogram_data
     ]
 
     y_padding = 0.5 * bin_width + y_pad_fraction * bin_width
 
     if density:
+        # Get the maximum count across both histograms, and scale it with `x_pad_fraction`
+        v = max([(1.0 + x_pad_fraction) * max(histogram) for histogram in histograms])
         # When we plot the PDF, let both x-axes run to the same value
         # so it's easier to compare visually
-        v = max([(1.0 + x_pad_fraction) * max(histogram) for histogram in histograms])
         x_ranges = [v, v]
     else:
+        # For the left and right histograms, get the largest counts and scale them
+        # by `x_pad_fraction` to get the maximum x-values displayed
         x_ranges = [(1.0 + x_pad_fraction) * max(histogram) for histogram in histograms]
 
     bin_of_first_non_zero_tally = min(
         [(histogram != 0).argmax(axis=0) for histogram in histograms]
     )
 
-    y_range = (bins[bin_of_first_non_zero_tally] - y_padding, bins[-2] + y_padding)
+    y_range = (
+        # Start plotting where the data starts (ignore empty bins at the low end)
+        bins[bin_of_first_non_zero_tally] - y_padding,
+        # The y_padding adds half a bin width, as we want the bars to be
+        # _centered_ on the bins. We take the next-to-last element of `bins`,
+        # because that is the beginning of the last bin.
+        bins[-2] + y_padding,
+    )
 
     return bins, histograms, x_ranges, y_range
 
@@ -226,7 +243,7 @@ def plot_paired_histogram(
         )
         return
 
-    bins, tallies, x_ranges, y_range = _paired_histogram_specification(
+    bins, tallies, x_ranges, y_range = _extract_paired_histogram_specification(
         histogram_data,
         num_bins,
         density=density,

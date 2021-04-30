@@ -7,6 +7,7 @@ import pytest
 @pytest.mark.parametrize(
     "data, num_bins, expected_bins",
     [
+        # We write `n + 1` to highlight that we include `n`
         ([[1, 3, 8], [2, 3, 3]], 7, list(range(1, 9 + 1))),
         ([[3, 8], [2, 3, 3]], 6, list(range(2, 9 + 1))),
         ([[3, 7], [2, 3, 3]], 5, list(range(2, 8 + 1))),
@@ -18,7 +19,7 @@ def test_paired_histogram_specification_bins(
 ):
     """Bin list should run from the lowest data value to the highest + bin_width"""
     for density in [False, True]:
-        bins, _, _, _, = rasa.utils.plotting._paired_histogram_specification(
+        bins, _, _, _, = rasa.utils.plotting._extract_paired_histogram_specification(
             data,
             num_bins=num_bins,
             density=density,
@@ -62,7 +63,7 @@ def test_paired_histogram_specification_histograms(
     density: bool,
     expected_histograms: List[List[float]],
 ):
-    _, histograms, _, _, = rasa.utils.plotting._paired_histogram_specification(
+    _, histograms, _, _, = rasa.utils.plotting._extract_paired_histogram_specification(
         data, num_bins=num_bins, density=density, x_pad_fraction=0, y_pad_fraction=0,
     )
     assert np.all(histograms[0] == expected_histograms[0])
@@ -75,6 +76,9 @@ def test_paired_histogram_specification_histograms(
         ([[1, 3, 8], [2, 3, 3]], 100, False, 0.0, [1.0, 2.0]),
         ([[1, 3, 8], [2, 3, 3, 3, 3]], 100, False, 0.0, [1.0, 4.0]),
         ([[1, 3, 8], [2, 3, 3]], 7, True, 0.0, [2 / 3, 2 / 3]),
+        ([[1, 3, 8], [2, 3, 3]], 100, False, 1.0, [2.0, 4.0]),
+        ([[1, 3, 8], [2, 3, 3, 3, 3]], 100, False, 1.0, [2.0, 8.0]),
+        ([[1, 3, 8], [2, 3, 3]], 7, True, 1.0, [4 / 3, 4 / 3]),
     ],
 )
 def test_paired_histogram_specification_x_ranges(
@@ -84,7 +88,7 @@ def test_paired_histogram_specification_x_ranges(
     x_pad_fraction: float,
     expected_ranges: List[float],
 ):
-    _, _, x_ranges, _ = rasa.utils.plotting._paired_histogram_specification(
+    _, _, x_ranges, _ = rasa.utils.plotting._extract_paired_histogram_specification(
         data,
         num_bins=num_bins,
         density=density,
@@ -99,6 +103,8 @@ def test_paired_histogram_specification_x_ranges(
     [
         ([[1, 3, 8], [2, 3, 3]], 7, 0.0, [0.5, 8.5]),
         ([[1, 3, 8], [2, 3, 3, 3, 3]], 7, 0.0, [0.5, 8.5]),
+        ([[1, 3, 8], [2, 3, 3]], 7, 1.0, [-0.5, 9.5]),
+        ([[1, 3, 8], [2, 3, 3, 3, 3]], 7, 1.0, [-0.5, 9.5]),
     ],
 )
 def test_paired_histogram_specification_y_range(
@@ -108,7 +114,12 @@ def test_paired_histogram_specification_y_range(
     expected_range: List[float],
 ):
     for density in [False, True]:
-        _, histograms, _, y_range = rasa.utils.plotting._paired_histogram_specification(
+        (
+            _,
+            histograms,
+            _,
+            y_range,
+        ) = rasa.utils.plotting._extract_paired_histogram_specification(
             data,
             num_bins=num_bins,
             density=density,
