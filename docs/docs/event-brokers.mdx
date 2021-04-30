@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     # start consumption of channel
     channel = connection.channel()
-    channel.basic_consume(queue="rasa_events", on_message_callback=_callback)
+    channel.basic_consume(queue="rasa_events", on_message_callback=_callback, auto_ack=True)
     channel.start_consuming()
 ```
 
