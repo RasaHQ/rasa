@@ -613,6 +613,94 @@ async def test_train_model_checkpointing(
     assert len(all_files) > 4
 
 
+async def test_train_fails_with_zero_eval_num_epochs(
+    component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
+):
+    model_name = "nlu-checkpoint"
+    best_model_file = Path(tmpdir, model_name)
+    assert not best_model_file.exists()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {
+                    "name": "CountVectorsFeaturizer",
+                    "analyzer": "char_wb",
+                    "min_ngram": 3,
+                    "max_ngram": 17,
+                    "max_features": 10,
+                    "min_df": 5,
+                },
+                {
+                    "name": "DIETClassifier",
+                    EPOCHS: 5,
+                    CONSTRAIN_SIMILARITIES: True,
+                    MODEL_CONFIDENCE: "linear_norm",
+                    CHECKPOINT_MODEL: True,
+                    EVAL_NUM_EPOCHS: 0,
+                    EVAL_NUM_EXAMPLES: 10,
+                },
+            ],
+            "language": "en",
+        }
+    )
+    with pytest.raises(ValueError):
+        await rasa.nlu.train.train(
+            _config,
+            path=str(tmpdir),
+            data=nlu_data_path,
+            component_builder=component_builder,
+            fixed_model_name=model_name,
+        )
+
+    assert not best_model_file.exists()
+
+
+async def test_doesnt_checkpoint_with_zero_eval_num_examples(
+    component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
+):
+    model_name = "nlu-checkpoint"
+    best_model_file = Path(tmpdir, model_name)
+    assert not best_model_file.exists()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {
+                    "name": "CountVectorsFeaturizer",
+                    "analyzer": "char_wb",
+                    "min_ngram": 3,
+                    "max_ngram": 17,
+                    "max_features": 10,
+                    "min_df": 5,
+                },
+                {
+                    "name": "DIETClassifier",
+                    EPOCHS: 2,
+                    CONSTRAIN_SIMILARITIES: True,
+                    MODEL_CONFIDENCE: "linear_norm",
+                    CHECKPOINT_MODEL: True,
+                    EVAL_NUM_EXAMPLES: 0,
+                    EVAL_NUM_EPOCHS: 1,
+                },
+            ],
+            "language": "en",
+        }
+    )
+
+    await rasa.nlu.train.train(
+        _config,
+        path=str(tmpdir),
+        data=nlu_data_path,
+        component_builder=component_builder,
+        fixed_model_name=model_name,
+    )
+
+    assert not best_model_file.exists()
+
+
 @pytest.mark.parametrize(
     "classifier_params",
     [

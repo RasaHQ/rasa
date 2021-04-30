@@ -72,29 +72,41 @@ class RasaModelCheckpoint(tf.keras.callbacks.Callback):
             )
 
     def _does_model_improve(self, current_results: Dict[Text, Any]) -> bool:
-        # Initialize best_metrics_so_far with the first results
-        if not self.best_metrics_so_far:
-            keys = filter(
-                lambda k: k.startswith("val")
-                and (k.endswith("_acc") or k.endswith("_f1")),
-                current_results.keys(),
-            )
-            if not keys:
-                return False
+        """Checks whether the model has improved.
 
-            for key in keys:
-                self.best_metrics_so_far[key] = float(current_results[key])
+        Args:
+            current_results: The training metrics for this epoch.
+        """
+        curr_metric_names = [
+            k
+            for k in current_results.keys()
+            if k.startswith("val") and (k.endswith("_acc") or k.endswith("_f1"))
+        ]
+        # the "val" prefix is prepended to metrics in fit if _should_eval returns true
+        # for this particular epoch
+        if len(curr_metric_names) == 0:
+            # the metrics are not validation metrics
+            return False
+        # initialize best_metrics_so_far with the first results
+        if not self.best_metrics_so_far:
+            for metric_name in curr_metric_names:
+                self.best_metrics_so_far[metric_name] = float(
+                    current_results[metric_name]
+                )
             return True
 
         at_least_one_improved = False
-        for key in self.best_metrics_so_far.keys():
-            if key not in current_results:
-                # current_results.keys is not a subset of best_metric_so_far.keys
-                return False
-            if float(current_results[key]) < self.best_metrics_so_far[key]:
+        for metric_name in self.best_metrics_so_far.keys():
+            if (
+                float(current_results[metric_name])
+                < self.best_metrics_so_far[metric_name]
+            ):
                 # at least one of the values is worse
                 return False
-            if float(current_results[key]) > self.best_metrics_so_far[key]:
+            if (
+                float(current_results[metric_name])
+                > self.best_metrics_so_far[metric_name]
+            ):
                 at_least_one_improved = True
 
         # all current values >= previous best and at least one is better

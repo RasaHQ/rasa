@@ -159,17 +159,33 @@ def test_update_confidence_type(
 @pytest.mark.parametrize(
     "component_config",
     [
-        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: -1, EVAL_NUM_EXAMPLES: 0}),
         ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: -1, EVAL_NUM_EXAMPLES: 10}),
-        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: 10, EVAL_NUM_EXAMPLES: 0}),
+        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: 0, EVAL_NUM_EXAMPLES: 10}),
     ],
 )
-def test_warning_incorrect_checkpoint_setting(component_config: Dict[Text, Text]):
+def test_warning_incorrect_eval_num_epochs(component_config: Dict[Text, Text]):
     with pytest.warns(UserWarning) as record:
         train_utils._check_checkpoint_setting(component_config)
         assert len(record) == 1
         assert (
-            f"{EVAL_NUM_EXAMPLES} or {EVAL_NUM_EPOCHS} is not greater than 0"
+            f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not greater"
+            in record[0].message.args[0]
+        )
+
+
+@pytest.mark.parametrize(
+    "component_config",
+    [
+        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: 10, EVAL_NUM_EXAMPLES: 0}),
+        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: 10, EVAL_NUM_EXAMPLES: -1}),
+    ],
+)
+def test_warning_incorrect_eval_num_examples(component_config: Dict[Text, Text]):
+    with pytest.warns(UserWarning) as record:
+        train_utils._check_checkpoint_setting(component_config)
+        assert len(record) == 1
+        assert (
+            f"You have opted to save the best model, {EVAL_NUM_EXAMPLES} is not greater"
             in record[0].message.args[0]
         )
 
