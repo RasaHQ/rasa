@@ -6,9 +6,11 @@ pipeline:
   - name: "DIETClassifier"
     entity_recognition: True
     epochs: 17
-    random_seed: 42
+    learning_rate: 0.01
+    random_seed: 2021
   - name: ResponseSelector
     epochs: 5
+    learning_rate: 0.01
     random_seed: 42
 
 policies:
