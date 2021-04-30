@@ -1,0 +1,6 @@
+stories:
+- story: test story
+  steps:
+  - user: |
+      i am looking for [greek](feedback) food
+    intent: request_restaurant
