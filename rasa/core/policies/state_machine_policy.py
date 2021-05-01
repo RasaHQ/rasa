@@ -41,10 +41,6 @@ from rasa.shared.nlu.state_machine.state_machine_state import (
     Transition,
 )
 
-from rasa.shared.nlu.state_machine.student_life_state_machine import (
-    student_life_state_machine,
-)
-
 from rasa.core.actions.state_machine_action import StateMachineAction
 
 if TYPE_CHECKING:
@@ -203,7 +199,7 @@ class StateMachinePolicy(MemoizationPolicy):
         """
 
         # Get current state info
-        state_machine_state: StateMachineState = student_life_state_machine  # TODO
+        state_machine_state: StateMachineState = StateMachineState()
 
         # Check if there are slots to fill
         if StateMachineAction._get_slot_values(

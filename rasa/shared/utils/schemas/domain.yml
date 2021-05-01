@@ -39,7 +39,10 @@ mapping:
   responses:
     # see utils/schemas/responses.yml
     include: responses
-
+  state_machine_files:
+    type: "seq"
+    sequence:
+    - type: "str"
   slots:
     type: "map"
     allowempty: True

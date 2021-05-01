@@ -36,9 +36,6 @@ from rasa.shared.nlu.state_machine.state_machine_state import (
     Transition,
 )
 
-from rasa.shared.nlu.state_machine.student_life_state_machine import (
-    student_life_state_machine,
-)
 
 import random
 

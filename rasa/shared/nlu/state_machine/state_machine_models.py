@@ -1,9 +1,15 @@
 import abc
-from typing import Optional, List
+from typing import Any, Dict, Optional, List, Union
+from rasa.shared.nlu.state_machine.yaml_convertible import YAMLConvertable
 
 
-class Intent:
-    def __init__(self, examples: List[str], name: Optional[str] = None):
+class Intent(YAMLConvertable):
+    def __init__(
+        self, examples: Union[str, List[str]] = [], name: Optional[str] = None
+    ):
+        if isinstance(examples, str):
+            examples = [examples]
+
         if len(examples) == 0:
             raise ValueError("No examples provided.")
 
@@ -16,6 +22,12 @@ class Intent:
                 e.lower() for e in examples[0] if e.isalnum() or e.isspace()
             )
             self.name = "_".join(text_stripped.split(" "))
+
+    def as_yaml(self) -> Dict[str, Any]:
+        return {
+            "intent": self.name,
+            "examples": "\n".join([f"- {example}" for example in self.examples]),
+        }
 
 
 class Action(abc.ABC):

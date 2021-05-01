@@ -7,6 +7,17 @@ from rasa.shared.nlu.state_machine.state_machine_models import (
 )
 from rasa.shared.nlu.state_machine.conditions import Condition, IntentCondition
 
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.slots import CategoricalSlot, TextSlot, AnySlot
+from rasa.shared.core.slots import Slot as RasaSlot
+from rasa.shared.utils.io import dump_obj_as_yaml_to_string, write_text_file
+
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+
+import rasa.shared.utils.validation
+import rasa.shared.constants
+import yaml
+
 
 class Response:
     condition: Condition
@@ -59,7 +70,7 @@ class StateMachineState:
         responses: List[Response],
     ):
         self.name = name
-        self.slots = slots  # [slot.name for slot in slots]
+        self.slots = slots
         self.slot_fill_utterances = slot_fill_utterances
         self.transitions = transitions
         self.responses = responses
@@ -134,3 +145,56 @@ class StateMachineState:
             slots.update(state.slots)
 
         return slots
+
+    # Write NLU
+    def persist(self, states_filename: str, domain_filename: str, nlu_filename: str):
+        domain, nlu_data = self.get_domain_nlu()
+
+        # Persist domain
+        rasa.shared.utils.validation.validate_yaml_schema(
+            domain.as_yaml(), rasa.shared.constants.DOMAIN_SCHEMA_FILE
+        )
+        domain.persist(domain_filename)
+
+        # Persist state
+        states_yaml = yaml.dump([self])
+        write_text_file(states_yaml, states_filename)
+
+        # Persist NLU
+        nlu_data["state_machine_files"] = states_filename
+        nlu_data_yaml = dump_obj_as_yaml_to_string(
+            nlu_data, should_preserve_key_order=True
+        )
+        RasaYAMLReader().validate(nlu_data_yaml)
+        write_text_file(nlu_data_yaml, nlu_filename)
+
+    def get_domain_nlu(self):
+        all_entity_names = self.all_entities()
+        all_intents: Set[Intent] = self.all_intents()
+        all_utterances: Set[Utterance] = [
+            action for action in self.all_actions() if isinstance(action, Utterance)
+        ]
+        all_actions: Set[Action] = self.all_actions()
+        all_slots: Set[Slot] = self.all_slots()
+
+        # Write domain
+        domain = Domain(
+            intents=[intent.name for intent in all_intents],
+            entities=all_entity_names,  # List of entity names
+            slots=[TextSlot(name=slot.name) for slot in all_slots],
+            responses={
+                utterance.name: [{"text": utterance.text}]
+                for utterance in all_utterances
+            },
+            action_names=[action.name for action in all_actions],
+            forms={},
+            action_texts=[],
+        )
+
+        # Write NLU
+        nlu_data = {
+            "version": "2.0",
+            "nlu": [intent.as_yaml() for intent in all_intents],
+        }
+
+        return domain, nlu_data
