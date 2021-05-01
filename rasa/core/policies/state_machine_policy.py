@@ -36,9 +36,7 @@ import rasa.core.test
 import rasa.core.training.training
 
 from rasa.shared.nlu.state_machine.state_machine_state import (
-    Response,
     StateMachineState,
-    Transition,
 )
 
 from rasa.core.actions.state_machine_action import StateMachineAction
@@ -199,7 +197,12 @@ class StateMachinePolicy(MemoizationPolicy):
         """
 
         # Get current state info
-        state_machine_state: StateMachineState = StateMachineState()
+        state_machine_state: StateMachineState = (
+            domain.active_state_machine_state
+        )
+
+        if not state_machine_state:
+            raise False
 
         # Check if there are slots to fill
         if StateMachineAction._get_slot_values(
@@ -251,12 +254,15 @@ class StateMachinePolicy(MemoizationPolicy):
             probabilities,
             self.__class__.__name__,
             self.priority,
-            events=[LoopInterrupted(True)] if returning_from_unhappy_path else [],
+            events=[LoopInterrupted(True)]
+            if returning_from_unhappy_path
+            else [],
             is_end_to_end_prediction=is_end_to_end_prediction,
             is_no_user_prediction=is_no_user_prediction,
             hide_rule_turn=(
                 True
-                if prediction_source in self.lookup.get(RULES_NOT_IN_STORIES, [])
+                if prediction_source
+                in self.lookup.get(RULES_NOT_IN_STORIES, [])
                 else False
             ),
         )

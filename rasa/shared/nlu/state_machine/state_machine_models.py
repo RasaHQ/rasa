@@ -26,7 +26,9 @@ class Intent(YAMLConvertable):
     def as_yaml(self) -> Dict[str, Any]:
         return {
             "intent": self.name,
-            "examples": "\n".join([f"- {example}" for example in self.examples]),
+            "examples": "\n".join(
+                [f"- {example}" for example in self.examples]
+            ),
         }
 
 

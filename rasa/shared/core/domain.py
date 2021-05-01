@@ -22,15 +22,19 @@ from typing import (
 
 import rasa.shared.constants
 import rasa.shared.core.constants
-from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
+from rasa.shared.exceptions import (
+    RasaException,
+    YamlException,
+    YamlSyntaxException,
+)
 import rasa.shared.nlu.constants
+from rasa.shared.nlu.state_machine.state_machine_state import StateMachineState
 import rasa.shared.utils.validation
 import rasa.shared.utils.io
 import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
-
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -51,6 +55,7 @@ KEY_ENTITIES = "entities"
 KEY_RESPONSES = "responses"
 KEY_ACTIONS = "actions"
 KEY_FORMS = "forms"
+KEY_STATE_MACHINE = "state_machine"
 KEY_E2E_ACTIONS = "e2e_actions"
 KEY_RESPONSES_TEXT = "text"
 
@@ -109,7 +114,9 @@ class Domain:
         return cls([], [], [], {}, [], {})
 
     @classmethod
-    def load(cls, paths: Union[List[Union[Path, Text]], Text, Path]) -> "Domain":
+    def load(
+        cls, paths: Union[List[Union[Path, Text]], Text, Path]
+    ) -> "Domain":
         if not paths:
             raise InvalidDomain(
                 "No domain file was specified. Please specify a path "
@@ -176,9 +183,12 @@ class Domain:
         responses = data.get(KEY_RESPONSES, {})
         slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
         additional_arguments = data.get("config", {})
-        session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
+        session_config = cls._get_session_config(
+            data.get(SESSION_CONFIG_KEY, {})
+        )
         intents = data.get(KEY_INTENTS, {})
         forms = data.get(KEY_FORMS, {})
+        state_machine = data.get(KEY_STATE_MACHINE, {})
 
         _validate_slot_mappings(forms)
 
@@ -190,13 +200,16 @@ class Domain:
             data.get(KEY_ACTIONS, []),
             data.get(KEY_FORMS, {}),
             data.get(KEY_E2E_ACTIONS, []),
+            state_machine,
             session_config=session_config,
             **additional_arguments,
         )
 
     @staticmethod
     def _get_session_config(session_config: Dict) -> SessionConfig:
-        session_expiration_time_min = session_config.get(SESSION_EXPIRATION_TIME_KEY)
+        session_expiration_time_min = session_config.get(
+            SESSION_EXPIRATION_TIME_KEY
+        )
 
         if session_expiration_time_min is None:
             session_expiration_time_min = (
@@ -224,7 +237,9 @@ class Domain:
 
         return domain
 
-    def merge(self, domain: Optional["Domain"], override: bool = False) -> "Domain":
+    def merge(
+        self, domain: Optional["Domain"], override: bool = False
+    ) -> "Domain":
         """Merge this domain with another one, combining their attributes.
 
         List attributes like ``intents`` and ``actions`` will be deduped
@@ -286,7 +301,15 @@ class Domain:
             combined[key] = merge_lists(combined[key], domain_dict[key])
 
         for key in [KEY_FORMS, KEY_RESPONSES, KEY_SLOTS]:
-            combined[key] = merge_dicts(combined[key], domain_dict[key], override)
+            combined[key] = merge_dicts(
+                combined[key], domain_dict[key], override
+            )
+
+        combined[KEY_STATE_MACHINE] = merge_dicts(
+            combined[KEY_STATE_MACHINE],
+            domain_dict[KEY_STATE_MACHINE],
+            override,
+        )
 
         return self.__class__.from_dict(combined)
 
@@ -373,8 +396,12 @@ class Domain:
                 )
         excluded_entities = set(properties[IGNORE_ENTITIES_KEY])
         for entity in list(excluded_entities):
-            excluded_entities.update(Domain.concatenate_entity_labels(roles, entity))
-            excluded_entities.update(Domain.concatenate_entity_labels(groups, entity))
+            excluded_entities.update(
+                Domain.concatenate_entity_labels(roles, entity)
+            )
+            excluded_entities.update(
+                Domain.concatenate_entity_labels(groups, entity)
+            )
         used_entities = list(included_entities - excluded_entities)
         used_entities.sort()
 
@@ -509,7 +536,9 @@ class Domain:
     ) -> Tuple[Text, Dict[Text, Any]]:
         if not isinstance(intent, dict):
             intent_name = intent
-            intent = {intent_name: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}}
+            intent = {
+                intent_name: {USE_ENTITIES_KEY: True, IGNORE_ENTITIES_KEY: []}
+            }
         else:
             intent_name = list(intent.keys())[0]
 
@@ -544,6 +573,7 @@ class Domain:
         action_names: List[Text],
         forms: Union[Dict[Text, Any], List[Text]],
         action_texts: Optional[List[Text]] = None,
+        state_machine: Optional[Dict] = None,
         store_entities_as_slots: bool = True,
         session_config: SessionConfig = SessionConfig.default(),
     ) -> None:
@@ -563,29 +593,46 @@ class Domain:
             session_config: Configuration for conversation sessions. Conversations are
                 restarted at the end of a session.
         """
-        self.entities, self.roles, self.groups = self.collect_entity_properties(
-            entities
-        )
+        (
+            self.entities,
+            self.roles,
+            self.groups,
+        ) = self.collect_entity_properties(entities)
         self.intent_properties = self.collect_intent_properties(
             intents, self.entities, self.roles, self.groups
         )
-        self.overridden_default_intents = self._collect_overridden_default_intents(
-            intents
+        self.overridden_default_intents = (
+            self._collect_overridden_default_intents(intents)
         )
 
-        self.form_names, self.forms, overridden_form_actions = self._initialize_forms(
-            forms
-        )
+        (
+            self.form_names,
+            self.forms,
+            overridden_form_actions,
+        ) = self._initialize_forms(forms)
         action_names += overridden_form_actions
 
         self.responses = responses
         self.action_texts = action_texts or []
+        self.state_machine = state_machine or {}
+
+        # Set the initial state
+        self.active_state_machine_state = None
+        if state_machine:
+            initial_state_name = state_machine.get("initial_state_name")
+            if initial_state_name:
+                self.active_state_machine_state = self.get_state_machine_state(
+                    initial_state_name
+                )
+
         self.session_config = session_config
 
         self._custom_actions = action_names
 
         # only includes custom actions and utterance actions
-        self.user_actions = self._combine_with_responses(action_names, responses)
+        self.user_actions = self._combine_with_responses(
+            action_names, responses
+        )
 
         # includes all action names (custom, utterance, default actions and forms)
         # and action texts from end-to-end bot utterances
@@ -638,7 +685,9 @@ class Domain:
             list(intent.keys())[0] if isinstance(intent, dict) else intent
             for intent in intents
         }
-        return sorted(intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS))
+        return sorted(
+            intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS)
+        )
 
     @staticmethod
     def _initialize_forms(
@@ -664,7 +713,9 @@ class Domain:
             # dict with slot mappings
             return list(forms.keys()), forms, []
 
-        if isinstance(forms, list) and (not forms or isinstance(forms[0], str)):
+        if isinstance(forms, list) and (
+            not forms or isinstance(forms[0], str)
+        ):
             # list of form names (Rasa Open Source 1 format)
             rasa.shared.utils.io.raise_warning(
                 "The `forms` section in the domain used the old Rasa Open Source 1 "
@@ -690,6 +741,18 @@ class Domain:
     def __hash__(self) -> int:
         """Returns a unique hash for the domain."""
         return int(self.fingerprint(), 16)
+
+    def get_state_machine_state(
+        self, state_name: str
+    ) -> Optional[StateMachineState]:
+        if self.state_machine:
+            import yaml
+
+            state_machine_map = {}
+            with open(self.state_machine.get("states_file")) as file:
+                state_machine_map = yaml.load(file, yaml.Loader)
+
+            return state_machine_map.get(state_name)
 
     def fingerprint(self) -> Text:
         """Returns a unique hash for the domain which is stable across python runs.
@@ -751,7 +814,8 @@ class Domain:
         """Return only the responses which are defined for retrieval intents."""
         return dict(
             filter(
-                lambda x: self.is_retrieval_intent_response(x), self.responses.items()
+                lambda x: self.is_retrieval_intent_response(x),
+                self.responses.items(),
             )
         )
 
@@ -777,7 +841,10 @@ class Domain:
             "The terminology 'template' is deprecated and replaced by 'response', call `is_retrieval_intent_response` instead of `is_retrieval_intent_template`.",
             docs=f"{rasa.shared.constants.DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
-        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
+        return (
+            rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER
+            in response[0]
+        )
 
     @staticmethod
     def is_retrieval_intent_response(
@@ -788,7 +855,10 @@ class Domain:
         These responses have a `/` symbol in their name. Use that to filter them from
         the rest.
         """
-        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
+        return (
+            rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER
+            in response[0]
+        )
 
     def _add_default_slots(self) -> None:
         """Sets up the default slots and slot values for the domain."""
@@ -822,9 +892,11 @@ class Domain:
         The value of this slot will hold the name of the slot which the user
         needs to fill in next (either explicitly or implicitly) as part of a form.
         """
-        if self.form_names and rasa.shared.core.constants.REQUESTED_SLOT not in [
-            s.name for s in self.slots
-        ]:
+        if (
+            self.form_names
+            and rasa.shared.core.constants.REQUESTED_SLOT
+            not in [s.name for s in self.slots]
+        ):
             self.slots.append(
                 TextSlot(
                     rasa.shared.core.constants.REQUESTED_SLOT,
@@ -868,7 +940,9 @@ class Domain:
             ]
             for s in knowledge_base_slots:
                 if s not in slot_names:
-                    self.slots.append(TextSlot(s, influence_conversation=False))
+                    self.slots.append(
+                        TextSlot(s, influence_conversation=False)
+                    )
 
     def add_knowledge_base_slots(self) -> None:
         """See `_add_categorical_slot_default_value` for docstring."""
@@ -882,7 +956,9 @@ class Domain:
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
+            AnySlot(
+                rasa.shared.core.constants.SESSION_START_METADATA_SLOT,
+            )
         )
 
     def index_for_action(self, action_name: Text) -> int:
@@ -892,7 +968,9 @@ class Domain:
         except ValueError:
             self.raise_action_not_found_exception(action_name)
 
-    def raise_action_not_found_exception(self, action_name_or_text: Text) -> NoReturn:
+    def raise_action_not_found_exception(
+        self, action_name_or_text: Text
+    ) -> NoReturn:
         """Raises exception if action name or text not part of the domain or stories.
 
         Args:
@@ -903,7 +981,9 @@ class Domain:
             ActionNotFoundException: If `action_name_or_text` are not part of this
                 domain.
         """
-        action_names = "\n".join([f"\t - {a}" for a in self.action_names_or_texts])
+        action_names = "\n".join(
+            [f"\t - {a}" for a in self.action_names_or_texts]
+        )
         raise ActionNotFoundException(
             f"Cannot access action '{action_name_or_text}', "
             f"as that name is not a registered "
@@ -911,7 +991,9 @@ class Domain:
             f"Available actions are: \n{action_names}"
         )
 
-    def random_template_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
+    def random_template_for(
+        self, utter_action: Text
+    ) -> Optional[Dict[Text, Any]]:
         """Returns a random response for an action name.
 
         Args:
@@ -1006,7 +1088,9 @@ class Domain:
             + self.form_names
         )
 
-    def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
+    def _get_featurized_entities(
+        self, latest_message: UserUttered
+    ) -> Set[Text]:
         intent_name = latest_message.intent.get(
             rasa.shared.nlu.constants.INTENT_NAME_KEY
         )
@@ -1018,7 +1102,11 @@ class Domain:
         # label using a special separator to make sure that the resulting label is
         # unique (as you can have the same role/group label for different entities).
         entity_names = (
-            set(entity["entity"] for entity in entities if "entity" in entity.keys())
+            set(
+                entity["entity"]
+                for entity in entities
+                if "entity" in entity.keys()
+            )
             | set(
                 f"{entity['entity']}"
                 f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
@@ -1035,7 +1123,9 @@ class Domain:
 
         # the USED_ENTITIES_KEY of an intent also contains the entity labels and the
         # concatenated entity labels with their corresponding roles and groups labels
-        wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
+        wanted_entities = set(
+            intent_config.get(USED_ENTITIES_KEY, entity_names)
+        )
 
         return entity_names & wanted_entities
 
@@ -1075,7 +1165,8 @@ class Domain:
 
     @staticmethod
     def _get_slots_sub_state(
-        tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+        tracker: "DialogueStateTracker",
+        omit_unset_slots: bool = False,
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
         """Sets all set slots with the featurization of the stored value.
 
@@ -1092,7 +1183,9 @@ class Domain:
                 if omit_unset_slots and not slot.has_been_set:
                     continue
                 if slot.value == rasa.shared.core.constants.SHOULD_NOT_BE_SET:
-                    slots[slot_name] = rasa.shared.core.constants.SHOULD_NOT_BE_SET
+                    slots[
+                        slot_name
+                    ] = rasa.shared.core.constants.SHOULD_NOT_BE_SET
                 elif any(slot.as_feature()):
                     # only add slot if some of the features are not zero
                     slots[slot_name] = tuple(slot.as_feature())
@@ -1141,7 +1234,9 @@ class Domain:
         }
 
     def get_active_states(
-        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+        self,
+        tracker: "DialogueStateTracker",
+        omit_unset_slots: bool = False,
     ) -> State:
         """Returns a bag of active states from the tracker state.
 
@@ -1167,7 +1262,8 @@ class Domain:
 
     @staticmethod
     def _remove_rule_only_features(
-        state: State, rule_only_data: Optional[Dict[Text, Any]],
+        state: State,
+        rule_only_data: Optional[Dict[Text, Any]],
     ) -> None:
         if not rule_only_data:
             return
@@ -1194,11 +1290,13 @@ class Domain:
             del state[rasa.shared.core.constants.ACTIVE_LOOP]
 
     @staticmethod
-    def _substitute_rule_only_user_input(state: State, last_ml_state: State) -> None:
+    def _substitute_rule_only_user_input(
+        state: State, last_ml_state: State
+    ) -> None:
         if not rasa.shared.core.trackers.is_prev_action_listen_in_state(state):
-            if not last_ml_state.get(rasa.shared.core.constants.USER) and state.get(
+            if not last_ml_state.get(
                 rasa.shared.core.constants.USER
-            ):
+            ) and state.get(rasa.shared.core.constants.USER):
                 del state[rasa.shared.core.constants.USER]
             elif last_ml_state.get(rasa.shared.core.constants.USER):
                 state[rasa.shared.core.constants.USER] = last_ml_state[
@@ -1233,7 +1331,9 @@ class Domain:
                 # remember previous ml action based on the last non hidden turn
                 # we need this to override previous action in the ml state
                 if not turn_was_hidden:
-                    last_ml_action_sub_state = self._get_prev_action_sub_state(tr)
+                    last_ml_action_sub_state = self._get_prev_action_sub_state(
+                        tr
+                    )
 
                 # followup action or happy path loop prediction
                 # don't change the fact whether dialogue turn should be hidden
@@ -1246,7 +1346,9 @@ class Domain:
                 if turn_was_hidden:
                     continue
 
-            state = self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
+            state = self.get_active_states(
+                tr, omit_unset_slots=omit_unset_slots
+            )
 
             if ignore_rule_only_turns:
                 # clean state from only rule features
@@ -1265,7 +1367,9 @@ class Domain:
 
         return states
 
-    def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
+    def slots_for_entities(
+        self, entities: List[Dict[Text, Any]]
+    ) -> List[SlotSet]:
         """Creates slot events for entities if auto-filling is enabled.
 
         Args:
@@ -1279,13 +1383,19 @@ class Domain:
             for s in self.slots:
                 if s.auto_fill:
                     matching_entities = [
-                        e.get("value") for e in entities if e.get("entity") == s.name
+                        e.get("value")
+                        for e in entities
+                        if e.get("entity") == s.name
                     ]
                     if matching_entities:
                         if s.type_name == "list":
-                            slot_events.append(SlotSet(s.name, matching_entities))
+                            slot_events.append(
+                                SlotSet(s.name, matching_entities)
+                            )
                         else:
-                            slot_events.append(SlotSet(s.name, matching_entities[-1]))
+                            slot_events.append(
+                                SlotSet(s.name, matching_entities[-1])
+                            )
             return slot_events
         else:
             return []
@@ -1296,7 +1406,9 @@ class Domain:
         rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
 
         metadata = {"states": self.input_states}
-        rasa.shared.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            domain_spec_path, metadata
+        )
 
     @classmethod
     def load_specification(cls, path: Text) -> Dict[Text, Any]:
@@ -1331,12 +1443,16 @@ class Domain:
     def _slot_definitions(self) -> Dict[Any, Dict[str, Any]]:
         # Only persist slots defined by the user. We add the default slots on the
         # fly when loading the domain.
-        return {slot.name: slot.persistence_info() for slot in self._user_slots}
+        return {
+            slot.name: slot.persistence_info() for slot in self._user_slots
+        }
 
     def as_dict(self) -> Dict[Text, Any]:
         """Return serialized `Domain`."""
         return {
-            "config": {"store_entities_as_slots": self.store_entities_as_slots},
+            "config": {
+                "store_entities_as_slots": self.store_entities_as_slots
+            },
             SESSION_CONFIG_KEY: {
                 SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
                 CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
@@ -1347,6 +1463,7 @@ class Domain:
             KEY_RESPONSES: self.responses,
             KEY_ACTIONS: self._custom_actions,
             KEY_FORMS: self.forms,
+            KEY_STATE_MACHINE: self.state_machine,
             KEY_E2E_ACTIONS: self.action_texts,
         }
 
@@ -1377,7 +1494,9 @@ class Domain:
 
         return final_responses
 
-    def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
+    def _transform_intents_for_file(
+        self,
+    ) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform intent properties for displaying or writing into a domain file.
 
         Internally, there is a property `used_entities` that lists all entities to be
@@ -1403,7 +1522,8 @@ class Domain:
             use_entities = set(
                 entity
                 for entity in intent_props[USED_ENTITIES_KEY]
-                if rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR not in entity
+                if rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR
+                not in entity
             )
             ignore_entities = set(self.entities) - use_entities
             if len(use_entities) == len(self.entities):
@@ -1417,7 +1537,9 @@ class Domain:
 
         return intents_for_file
 
-    def _transform_entities_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
+    def _transform_entities_for_file(
+        self,
+    ) -> List[Union[Text, Dict[Text, Any]]]:
         """Transform entity properties for displaying or writing to a domain file.
 
         Returns:
@@ -1578,9 +1700,14 @@ class Domain:
             training_data_elements = set()
 
         in_domain_diff = set(domain_elements) - set(training_data_elements)
-        in_training_data_diff = set(training_data_elements) - set(domain_elements)
+        in_training_data_diff = set(training_data_elements) - set(
+            domain_elements
+        )
 
-        return {"in_domain": in_domain_diff, "in_training_data": in_training_data_diff}
+        return {
+            "in_domain": in_domain_diff,
+            "in_training_data": in_training_data_diff,
+        }
 
     @staticmethod
     def _combine_with_responses(
@@ -1593,7 +1720,9 @@ class Domain:
         return actions + unique_utter_actions
 
     @staticmethod
-    def _combine_user_with_default_actions(user_actions: List[Text]) -> List[Text]:
+    def _combine_user_with_default_actions(
+        user_actions: List[Text],
+    ) -> List[Text]:
         # remove all user actions that overwrite default actions
         # this logic is a bit reversed, you'd think that we should remove
         # the action name from the default action names if the user overwrites
@@ -1606,7 +1735,10 @@ class Domain:
             for a in user_actions
             if a not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
         ]
-        return rasa.shared.core.constants.DEFAULT_ACTION_NAMES + unique_user_actions
+        return (
+            rasa.shared.core.constants.DEFAULT_ACTION_NAMES
+            + unique_user_actions
+        )
 
     def domain_warnings(
         self,
@@ -1623,7 +1755,9 @@ class Domain:
         """
 
         intent_warnings = self._get_symmetric_difference(self.intents, intents)
-        entity_warnings = self._get_symmetric_difference(self.entities, entities)
+        entity_warnings = self._get_symmetric_difference(
+            self.entities, entities
+        )
         action_warnings = self._get_symmetric_difference(
             self._actions_for_domain_warnings, actions
         )
@@ -1682,7 +1816,9 @@ class Domain:
                 message += get_mapping_exception_message(mappings)
             return message
 
-        def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]) -> Text:
+        def get_mapping_exception_message(
+            mappings: List[Tuple[Text, Text]]
+        ) -> Text:
             """Return a message given a list of duplicates."""
 
             message = ""
@@ -1750,7 +1886,9 @@ class Domain:
             if a.startswith(rasa.shared.constants.UTTER_PREFIX)
         ]
 
-        missing_responses = [t for t in utterances if t not in self.responses.keys()]
+        missing_responses = [
+            t for t in utterances if t not in self.responses.keys()
+        ]
 
         if missing_responses:
             for response in missing_responses:
@@ -1825,7 +1963,9 @@ class SlotMapping(Enum):
         return self.name.lower()
 
     @staticmethod
-    def validate(mapping: Dict[Text, Any], form_name: Text, slot_name: Text) -> None:
+    def validate(
+        mapping: Dict[Text, Any], form_name: Text, slot_name: Text
+    ) -> None:
         """Validates a slot mapping.
 
         Args:
@@ -1869,6 +2009,7 @@ class SlotMapping(Enum):
                     f"for slot '{slot_name}' in the form '{form_name}'. Please see "
                     f"{rasa.shared.constants.DOCS_URL_FORMS} for more information."
                 )
+
 
 def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
     if isinstance(forms, list):
