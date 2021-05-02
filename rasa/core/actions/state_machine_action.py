@@ -168,6 +168,15 @@ class StateMachineAction(LoopAction):
         unfilled_slots = [
             slot for slot in slots if tracker.get_slot(slot.name) == None
         ]
+
+        # Get slots that pass conditions
+        unfilled_slots = [
+            slot
+            for slot in unfilled_slots
+            if not slot.condition
+            or (slot.condition and slot.condition.is_valid(tracker))
+        ]
+
         for slot in unfilled_slots:
             # Extract values using entities
             values_for_slots = [

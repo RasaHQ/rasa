@@ -2,12 +2,7 @@ from typing import Any, List
 from rasa_sdk import Tracker
 import abc
 from rasa.shared.nlu.state_machine.state_machine_models import Intent, Slot
-
-
-class Condition(abc.ABC):
-    @abc.abstractmethod
-    def is_valid(self, tracker: Tracker):
-        raise NotImplementedError()
+from rasa.shared.nlu.state_machine.condition import Condition
 
 
 class OnEntryCondition(Condition):
@@ -33,7 +28,7 @@ class SlotsFilledCondition(Condition):
         self.slots = slots
 
     def is_valid(self, tracker: Tracker):
-        all([tracker.slots.get(slot.name) for slot in self.slots])
+        return all([tracker.slots.get(slot.name).value for slot in self.slots])
 
 
 class SlotEqualsCondition(Condition):
@@ -45,14 +40,40 @@ class SlotEqualsCondition(Condition):
         self.value = value
 
     def is_valid(self, tracker: Tracker):
-        tracker.slots.get(self.slot.name) == self.value
+        tracker_slot = tracker.slots.get(self.slot.name)
+
+        if tracker_slot:
+            return tracker_slot.value == self.value
+        else:
+            raise RuntimeError("Required slot not found in tracker")
 
 
-class AndCondition(Condition):
-    conditions: List[Condition]
+class ConditionWithConditions(abc.ABC):
+    @abc.abstractproperty
+    def conditions() -> List[Condition]:
+        pass
+
+    @property
+    def intents() -> List[Intent]:
+        all_intents: List[Intent] = []
+        for condition in conditions:
+            if isinstance(condition, OrCondition):
+                all_intents += condition.intents
+            elif isinstance(condition, AndCondition):
+                all_intents += condition.intents
+            elif isinstance(condition, IntentCondition):
+                all_intents += condition.intent
+
+        return all_intents
+
+
+class AndCondition(Condition, ConditionWithConditions):
+    @property
+    def conditions() -> List[Condition]:
+        return self._conditions
 
     def __init__(self, conditions: List[Condition]):
-        self.conditions = conditions
+        self._conditions = conditions
 
     def is_valid(self, tracker: Tracker):
         return all(
@@ -60,11 +81,13 @@ class AndCondition(Condition):
         )
 
 
-class OrCondition(Condition):
-    conditions: List[Condition]
+class OrCondition(Condition, ConditionWithConditions):
+    @property
+    def conditions() -> List[Condition]:
+        return self._conditions
 
     def __init__(self, conditions: List[Condition]):
-        self.conditions = conditions
+        self._conditions = conditions
 
     def is_valid(self, tracker: Tracker):
         return any(

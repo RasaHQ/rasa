@@ -1,6 +1,8 @@
 import abc
 from typing import Any, Dict, Optional, List, Union
 from rasa.shared.nlu.state_machine.yaml_convertible import YAMLConvertable
+from rasa.shared.nlu.state_machine.condition import Condition
+import rasa.shared.core.slots as rasa_slots
 
 
 class Intent(YAMLConvertable):
@@ -84,19 +86,64 @@ class Utterance(Action):
 
 
 class Slot:
-    name: str
-    entities: List[str]
-    intents: Dict[Union[Intent, str], Any]
-    prompt_actions: List[Action]
+    @abc.abstractproperty
+    def name() -> str:
+        pass
 
+    @abc.abstractproperty
+    def condition() -> Optional[Condition]:
+        pass
+
+    @abc.abstractproperty
+    def entities() -> List[str]:
+        pass
+
+    @abc.abstractproperty
+    def intents() -> Dict[Union[Intent, str], Any]:
+        pass
+
+    @abc.abstractproperty
+    def prompt_actions() -> List[Action]:
+        pass
+
+    @abc.abstractmethod
+    def as_rasa_slot(self) -> rasa_slots.Slot:
+        pass
+
+
+class TextSlot(abc.ABC):
     def __init__(
         self,
         name: str,
+        condition: Optional[Condition] = None,
         entities: List[str] = [],
         intents: Dict[Intent, Any] = {},
         prompt_actions: List[Action] = [],
     ):
         self.name = name
+        self.condition = condition
         self.entities = entities
         self.intents = intents
         self.prompt_actions = prompt_actions
+
+    def as_rasa_slot(self) -> rasa_slots.Slot:
+        return rasa_slots.TextSlot(name=self.name)
+
+
+class BooleanSlot(abc.ABC):
+    def __init__(
+        self,
+        name: str,
+        condition: Optional[Condition] = None,
+        entities: List[str] = [],
+        intents: Dict[Intent, Any] = {},
+        prompt_actions: List[Action] = [],
+    ):
+        self.name = name
+        self.condition = condition
+        self.entities = entities
+        self.intents = intents
+        self.prompt_actions = prompt_actions
+
+    def as_rasa_slot(self) -> rasa_slots.Slot:
+        return rasa_slots.BooleanSlot(name=self.name)
