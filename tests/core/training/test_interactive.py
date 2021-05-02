@@ -768,7 +768,10 @@ def test_calc_true_wrapping_width(
 
 
 def test_no_chat_history_overflow() -> None:
-    """Should run without crashing."""
+    """Should run without crashing.
+
+    originally the long chinese utterance lead to a table width overflow and
+    available width for new utterances being < 0."""
     events = [
         {
             "event": "action",
