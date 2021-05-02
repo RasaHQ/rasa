@@ -101,6 +101,10 @@ class StateMachineState:
                 ] = self.get_intents_from_condition(condition)
                 intents.update(intents_from_condition)
 
+            # Add intents from slots
+            for slot in state.slots:
+                intents.update(list(slot.intents.keys()))
+
         return intents
 
     def all_entities(self) -> Set[str]:

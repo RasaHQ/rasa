@@ -26,6 +26,16 @@ class IntentCondition(Condition):
         return self.intent.name == last_intent_name
 
 
+class SlotsFilledCondition(Condition):
+    slots: List[Slot]
+
+    def __init__(self, slots: [Slot]):
+        self.slots = slots
+
+    def is_valid(self, tracker: Tracker):
+        all([tracker.slots.get(slot.name) for slot in self.slots])
+
+
 class SlotEqualsCondition(Condition):
     slot: Slot
     value: Any
@@ -45,7 +55,9 @@ class AndCondition(Condition):
         self.conditions = conditions
 
     def is_valid(self, tracker: Tracker):
-        return all([condition.is_valid(tracker) for condition in self.conditions])
+        return all(
+            [condition.is_valid(tracker) for condition in self.conditions]
+        )
 
 
 class OrCondition(Condition):
@@ -55,4 +67,6 @@ class OrCondition(Condition):
         self.conditions = conditions
 
     def is_valid(self, tracker: Tracker):
-        return any([condition.is_valid(tracker) for condition in self.conditions])
+        return any(
+            [condition.is_valid(tracker) for condition in self.conditions]
+        )

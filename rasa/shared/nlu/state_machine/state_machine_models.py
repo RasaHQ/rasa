@@ -86,14 +86,17 @@ class Utterance(Action):
 class Slot:
     name: str
     entities: List[str]
+    intents: Dict[Union[Intent, str], Any]
     prompt_actions: List[Action]
 
     def __init__(
         self,
         name: str,
-        entities: List[str],
+        entities: List[str] = [],
+        intents: Dict[Intent, Any] = {},
         prompt_actions: List[Action] = [],
     ):
         self.name = name
         self.entities = entities
+        self.intents = intents
         self.prompt_actions = prompt_actions

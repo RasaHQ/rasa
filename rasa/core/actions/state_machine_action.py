@@ -26,6 +26,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
 from rasa.shared.nlu.state_machine.state_machine_models import (
+    Intent,
     Slot,
     Utterance,
 )
@@ -168,22 +169,31 @@ class StateMachineAction(LoopAction):
             slot for slot in slots if tracker.get_slot(slot.name) == None
         ]
         for slot in unfilled_slots:
-            # self.extract_requested_slot(tracker=tracker, domain=domain, slot_to_fill=slot.name)
-            values_from_entities = [
+            # Extract values using entities
+            values_for_slots = [
                 StateMachineAction.get_entity_value(
                     entity, tracker, None, None
                 )
                 for entity in slot.entities
             ]
 
-            # Filter out None's
-            values_from_entities = [
-                value for value in values_from_entities if value
-            ]
+            # Extract values using intents
+            last_intent_name = tracker.latest_message.intent.get("name")
+            if last_intent_name:
+                for slot_intent, value in slot.intents.items():
+                    if isinstance(slot_intent, Intent):
+                        if slot_intent.name == last_intent_name:
+                            values_for_slots.append(value)
+                    elif isinstance(slot_intent, str):
+                        if slot_intent == last_intent_name:
+                            values_for_slots.append(value)
 
-            if len(values_from_entities) > 0:
+            # Filter out None's
+            values_for_slots = [value for value in values_for_slots if value]
+
+            if len(values_for_slots) > 0:
                 # Take first entity extracted
-                slot_values.update({slot.name: values_from_entities[0]})
+                slot_values.update({slot.name: values_for_slots[0]})
 
         return slot_values
 
@@ -421,154 +431,6 @@ class StateMachineAction(LoopAction):
                 f"No actions found for action {self.name()}",
             )
 
-        # extract other slots that were not requested
-        # but set by corresponding entity or trigger intent mapping
-        slot_values = {}
-
-        # extract requested slot
-        slot_to_fill = self.get_slot_to_fill(tracker)
-        if slot_to_fill:
-            slot_values.update(
-                self.extract_requested_slot(tracker, domain, slot_to_fill)
-            )
-
-        validation_events = await self.validate_slots(
-            slot_values, tracker, domain, output_channel, nlg
-        )
-
-        some_slots_were_validated = any(
-            isinstance(event, SlotSet)
-            for event in validation_events
-            # Ignore `SlotSet`s  for `REQUESTED_SLOT` as that's not a slot which needs
-            # to be filled by the user.
-            if isinstance(event, SlotSet) and not event.key == REQUESTED_SLOT
-        )
-
-        if (
-            slot_to_fill
-            and not some_slots_were_validated
-            and not self._user_rejected_manually(validation_events)
-        ):
-            # reject to execute the form action
-            # if some slot was requested but nothing was extracted
-            # it will allow other policies to predict another action
-            #
-            # don't raise it here if the user rejected manually, to allow slots other
-            # than the requested slot to be filled.
-            #
-            raise ActionExecutionRejection(
-                self.name(),
-                f"Failed to extract slot {slot_to_fill} with action {self.name()}",
-            )
-
-        return validation_events + slot_filled_action_events
-
-    # async def request_next_slot(
-    #     self,
-    #     tracker: "DialogueStateTracker",
-    #     domain: Domain,
-    #     output_channel: OutputChannel,
-    #     nlg: NaturalLanguageGenerator,
-    #     events_so_far: List[Event],
-    # ) -> List[Event]:
-    #     """Request the next slot and response if needed, else return `None`."""
-    #     request_slot_events = []
-
-    #     if await self.is_done(output_channel, nlg, tracker, domain, events_so_far):
-    #         # The custom action for slot validation decided to stop the form early
-    #         return [SlotSet(REQUESTED_SLOT, None)]
-
-    #     slot_to_request = next(
-    #         (
-    #             event.value
-    #             for event in events_so_far
-    #             if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
-    #         ),
-    #         None,
-    #     )
-
-    #     temp_tracker = self._temporary_tracker(tracker, events_so_far, domain)
-
-    #     if not slot_to_request:
-    #         slot_to_request = self._find_next_slot_to_request(temp_tracker, domain)
-    #         request_slot_events.append(SlotSet(REQUESTED_SLOT, slot_to_request))
-
-    #     if slot_to_request:
-    #         bot_message_events = await self._ask_for_slot(
-    #             domain, nlg, output_channel, slot_to_request, temp_tracker
-    #         )
-    #         return request_slot_events + bot_message_events
-
-    #     # no more required slots to fill
-    #     return [SlotSet(REQUESTED_SLOT, None)]
-
-    # def _name_of_utterance(self, domain: Domain, slot_name: Text) -> Optional[Text]:
-    #     search_path = [
-    #         f"action_ask_{self._form_name}_{slot_name}",
-    #         f"{UTTER_PREFIX}ask_{self._form_name}_{slot_name}",
-    #         f"action_ask_{slot_name}",
-    #         f"{UTTER_PREFIX}ask_{slot_name}",
-    #     ]
-
-    #     found_actions = (
-    #         action_name
-    #         for action_name in search_path
-    #         if action_name in domain.action_names_or_texts
-    #     )
-
-    #     return next(found_actions, None)
-
-    # async def _ask_for_slot(
-    #     self,
-    #     domain: Domain,
-    #     nlg: NaturalLanguageGenerator,
-    #     output_channel: OutputChannel,
-    #     slot_name: Text,
-    #     tracker: DialogueStateTracker,
-    # ) -> List[Event]:
-    #     logger.debug(f"Request next slot '{slot_name}'")
-
-    #     action_to_ask_for_next_slot = self._name_of_utterance(domain, slot_name)
-    #     if not action_to_ask_for_next_slot:
-    #         # Use a debug log as the user might have asked as part of a custom action
-    #         logger.debug(
-    #             f"There was no action found to ask for slot '{slot_name}' "
-    #             f"name to be filled."
-    #         )
-    #         return []
-
-    #     action_to_ask_for_next_slot = action.action_for_name_or_text(
-    #         action_to_ask_for_next_slot, domain, self.action_endpoint
-    #     )
-    #     return await action_to_ask_for_next_slot.run(
-    #         output_channel, nlg, tracker, domain
-    #     )
-
-    # helpers
-    @staticmethod
-    def _to_list(x: Optional[Any]) -> List[Any]:
-        """Convert object to a list if it isn't."""
-        if x is None:
-            x = []
-        elif not isinstance(x, list):
-            x = [x]
-
-        return x
-
-    def _list_intents(
-        self,
-        intent: Optional[Union[Text, List[Text]]] = None,
-        not_intent: Optional[Union[Text, List[Text]]] = None,
-    ) -> Tuple[List[Text], List[Text]]:
-        """Check provided intent and not_intent"""
-        if intent and not_intent:
-            raise ValueError(
-                f"Providing  both intent '{intent}' and not_intent '{not_intent}' "
-                f"is not supported."
-            )
-
-        return self._to_list(intent), self._to_list(not_intent)
-
     async def _validate_if_required(
         self,
         tracker: "DialogueStateTracker",
@@ -662,11 +524,6 @@ class StateMachineAction(LoopAction):
         events = await self._validate_if_required(
             tracker, domain, output_channel, nlg
         )
-
-        # if not self._user_rejected_manually(events):
-        #     events += await self.request_next_slot(
-        #         tracker, domain, output_channel, nlg, events_so_far + events
-        #     )
 
         return events
 
