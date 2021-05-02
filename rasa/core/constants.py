@@ -20,21 +20,29 @@ BEARER_TOKEN_PREFIX = "Bearer "
 
 # the lowest priority intended to be used by machine learning policies
 DEFAULT_POLICY_PRIORITY = 1
+# the priority intended to be used by intent prediction policies.
+# This should be below all rule based policies but higher than ML
+# based policies. This enables a loop inside ensemble where if none
+# of the rule based policies predict an action and intent prediction
+# policy predicts one, it's prediction is chosen by the ensemble and
+# then the ML based policies are again run to get the prediction for
+# an actual action.
+UNLIKELY_INTENT_POLICY_PRIORITY = 2
 # the priority intended to be used by mapping policies
-MAPPING_POLICY_PRIORITY = 2
+MAPPING_POLICY_PRIORITY = 3
 # the priority intended to be used by memoization policies
 # it is higher than default and mapping to prioritize training stories
-MEMOIZATION_POLICY_PRIORITY = 3
+MEMOIZATION_POLICY_PRIORITY = 4
 # the priority intended to be used by fallback policies
 # it is higher than memoization to prioritize fallback
-FALLBACK_POLICY_PRIORITY = 4
+FALLBACK_POLICY_PRIORITY = 5
 # the priority intended to be used by form policies
 # it is the highest to prioritize form to the rest of the policies
-FORM_POLICY_PRIORITY = 5
+FORM_POLICY_PRIORITY = 6
 # The priority of the `RulePolicy` is higher than the priorities for `FallbackPolicy`,
 # `TwoStageFallbackPolicy` and `FormPolicy` to make it possible to use the
 # `RulePolicy` in conjunction with these deprecated policies.
-RULE_POLICY_PRIORITY = 6
+RULE_POLICY_PRIORITY = 7
 
 DIALOGUE = "dialogue"
 

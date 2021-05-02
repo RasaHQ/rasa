@@ -1070,7 +1070,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
         scale_loss: bool,
         similarity_type: Text,
         name: Optional[Text] = None,
-        constrain_similarities: bool = True,
         model_confidence: Text = SOFTMAX,
     ) -> None:
         """Declare instance variables with default values.
@@ -1081,10 +1080,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
                 the confidence of the correct prediction.
             similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
             name: Optional name of the layer.
-            constrain_similarities: Boolean, if 'True' applies sigmoid on all
-                similarity terms and adds to the loss function to
-                ensure that similarity values are approximately bounded.
-                Used inside _loss_cross_entropy() only.
             model_confidence: Model confidence to be returned during inference.
                 Possible values - 'softmax' and 'linear_norm'.
 
@@ -1097,7 +1092,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
             scale_loss=scale_loss,
             similarity_type=similarity_type,
             name=name,
-            constrain_similarities=constrain_similarities,
             model_confidence=model_confidence,
         )
 
