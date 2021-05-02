@@ -179,7 +179,7 @@ class StateMachineAction(LoopAction):
 
         for slot in unfilled_slots:
             # Extract values using entities
-            values_for_slots = [
+            values_for_slots: List[Any] = [
                 StateMachineAction.get_entity_value(
                     entity, tracker, None, None
                 )
@@ -198,7 +198,9 @@ class StateMachineAction(LoopAction):
                             values_for_slots.append(value)
 
             # Filter out None's
-            values_for_slots = [value for value in values_for_slots if value]
+            values_for_slots = [
+                value for value in values_for_slots if value is not None
+            ]
 
             if len(values_for_slots) > 0:
                 # Take first entity extracted
