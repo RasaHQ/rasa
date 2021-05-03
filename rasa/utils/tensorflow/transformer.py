@@ -630,6 +630,11 @@ class TransformerEncoder(tf.keras.layers.Layer):
         # a whole stack of unnormalized layer outputs.
         x = self._layer_norm(x)  # (batch_size, length, units)
 
+        # Keep the batch dimension on the first axis
+        attention_weights_as_output = tf.transpose(
+            tf.stack(layer_attention_weights), (1, 0, 2, 3, 4)
+        )
+
         # (batch_size, length, units),
-        # (num_layers, batch_size, num_heads, length, length)
-        return x, tf.stack(layer_attention_weights)
+        # (batch_size, num_layers, num_heads, length, length)
+        return x, attention_weights_as_output
