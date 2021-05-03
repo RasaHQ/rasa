@@ -333,9 +333,7 @@ def _create_augmented_training_data_random_sampling(
             ]
         )
 
-    augmented_training_data = TrainingData(new_training_data).merge(nlu_training_data)
-
-    return augmented_training_data
+    return TrainingData(new_training_data).merge(nlu_training_data)
 
 
 def _train_test_nlu_model(
