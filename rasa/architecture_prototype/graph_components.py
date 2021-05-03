@@ -1,6 +1,7 @@
+import asyncio
 import os.path
 from pathlib import Path
-from typing import Optional, Text, Dict, List
+from typing import Optional, Text, Dict, List, Union
 
 from rasa.architecture_prototype.graph import Persistor
 from rasa.core.channels import CollectingOutputChannel, UserMessage
@@ -126,16 +127,16 @@ class StoryToTrainingDataConverter(GraphComponent):
 
         return messages
 
-    def convert_for_inference(self, tracker: DialogueStateTracker) -> TrainingData:
-        messages = self._convert_tracker_to_messages(tracker.events)
-
-        return TrainingData(training_examples=messages)
+    def convert_for_inference(self, tracker: DialogueStateTracker) -> List[Message]:
+        return self._convert_tracker_to_messages(tracker.events)
 
 
 class MessageToE2EFeatureConverter(GraphComponent):
-    def convert(self, training_data: TrainingData) -> Dict[Text, Message]:
+    def convert(self, messages: Union[TrainingData, List[Message]]) -> Dict[Text, Message]:
+        if isinstance(messages, TrainingData):
+            messages = messages.training_examples
         additional_features = {}
-        for message in training_data.training_examples:
+        for message in messages:
             key = next(
                 k
                 for k in message.data.keys()
@@ -163,10 +164,10 @@ class TrackerLoader(GraphComponent):
 
 
 class NLUMessageConverter(GraphComponent):
-    def convert(self, message: Optional[UserMessage]) -> Optional[Message]:
+    def convert(self, message: Optional[UserMessage]) -> List[Message]:
         if message:
-            return Message.build(message.text)
-        return None
+            return [Message.build(message.text)]
+        return []
 
 
 class NLUPredictionToHistoryAdder(GraphComponent):
@@ -175,9 +176,9 @@ class NLUPredictionToHistoryAdder(GraphComponent):
         tracker: DialogueStateTracker,
         domain: Domain,
         initial_user_message: Optional[UserMessage] = None,
-        parsed_message: Optional[Message] = None,
+        parsed_messages: List[Message] = None,
     ) -> DialogueStateTracker:
-        if parsed_message:
+        for parsed_message in parsed_messages:
             parse_data = parsed_message.as_dict(only_output_properties=True)
 
             tracker.update(

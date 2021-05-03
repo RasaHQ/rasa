@@ -203,12 +203,10 @@ class RegexFeaturizer(SparseFeaturizer):
 
         return training_data
 
-    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
-        if message is None:
-            return None
-
-        self._text_features_with_regex(message, TEXT)
-        return message
+    def process(self, messages: List[Message], **kwargs: Any) -> List[Message]:
+        for message in messages:
+            self._text_features_with_regex(message, TEXT)
+        return messages
 
     def _text_features_with_regex(self, message: Message, attribute: Text) -> None:
         """Helper method to extract features and set them appropriately in the message.

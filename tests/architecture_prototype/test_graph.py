@@ -28,8 +28,8 @@ import rasa.core.registry
 def test_train_nlu():
     conftest.clean_directory()
     graph.fill_defaults(nlu_train_graph_schema)
-    serialized = json.dumps(nlu_train_graph_schema)
-    deserialized = json.loads(serialized)
+    serialized = serialize_graph_schema(nlu_train_graph_schema)
+    deserialized = deserialize_graph_schema(serialized)
     graph.visualise_as_dask_graph(deserialized, "nlu_train_graph.png")
     trained_components = graph.run_as_dask_graph(
         deserialized,
@@ -55,7 +55,7 @@ def test_train_load_predict(prediction_graph: Dict[Text, Any]):
 
 
 def serialize_graph_schema(graph_schema: Dict[Text, Any]) -> Text:
-    to_serialize = copy.copy(graph_schema)
+    to_serialize = copy.deepcopy(graph_schema)
     for step_name, step_config in to_serialize.items():
         component_class = step_config["uses"]
         step_config["uses"] = component_class.name
@@ -85,6 +85,7 @@ def deserialize_graph_schema(serialized_graph_schema: Text) -> Dict[Text, Any]:
 
 
 def test_serialize_graph_schema():
+    conftest.clean_directory()
     graph.fill_defaults(full_model_train_graph_schema)
     serialized = serialize_graph_schema(full_model_train_graph_schema)
     with open("graph_schema.json", "w") as f:

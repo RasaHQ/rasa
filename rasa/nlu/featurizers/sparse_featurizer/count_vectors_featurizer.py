@@ -754,16 +754,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         return self.persist()
 
     def process_training_data(self, training_data: TrainingData) -> TrainingData:
-
-        for message in training_data.training_examples:
-            self.process(message)
-
+        self.process(training_data.training_examples)
         return training_data
 
-    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
+    def process(self, messages: List[Message], **kwargs: Any) -> List[Message]:
         """Process incoming message and compute and set features"""
-        if message is None:
-            return None
 
         if self.vectorizers is None:
             logger.error(
@@ -771,24 +766,25 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 "component is either not trained or "
                 "didn't receive enough training data"
             )
-            return message
+            return messages
 
-        for attribute in self._attributes:
+        for message in messages:
+            for attribute in self._attributes:
 
-            message_tokens = self._get_processed_message_tokens_by_attribute(
-                message, attribute
-            )
+                message_tokens = self._get_processed_message_tokens_by_attribute(
+                    message, attribute
+                )
 
-            # features shape (1, seq, dim)
-            sequence_features, sentence_features = self._create_features(
-                attribute, [message_tokens]
-            )
+                # features shape (1, seq, dim)
+                sequence_features, sentence_features = self._create_features(
+                    attribute, [message_tokens]
+                )
 
-            self._set_attribute_features(
-                attribute, sequence_features, sentence_features, [message]
-            )
+                self._set_attribute_features(
+                    attribute, sequence_features, sentence_features, [message]
+                )
 
-        return message
+        return messages
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
         """Get vocabulary for all attributes"""

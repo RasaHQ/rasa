@@ -178,7 +178,7 @@ class Model:
             "load_history", self._rasa_graph["load_history"], {"tracker": tracker}
         )
 
-        result = dask.get(graph, "select_prediction")
+        result = run_dask_graph(graph, ["select_prediction"])
 
         return result["select_prediction"]
 

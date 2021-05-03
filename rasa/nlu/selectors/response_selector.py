@@ -415,7 +415,7 @@ class ResponseSelector(DIETClassifier):
                     return search_key
         return None
 
-    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
+    def process(self, messages: List[Message], **kwargs: Any) -> List[Message]:
         """Selects most like response for message.
 
         Args:
@@ -426,75 +426,73 @@ class ResponseSelector(DIETClassifier):
             the most likely response, the associated intent_response_key and its
             similarity to the input.
         """
-        if message is None:
-            return None
+        for message in messages:
+            out = self._predict(message)
+            top_label, label_ranking = self._predict_label(out)
 
-        out = self._predict(message)
-        top_label, label_ranking = self._predict_label(out)
-
-        # Get the exact intent_response_key and the associated
-        # responses for the top predicted label
-        label_intent_response_key = (
-            self._resolve_intent_response_key(top_label) or top_label[INTENT_NAME_KEY]
-        )
-        label_responses = self.responses.get(
-            util.intent_response_key_to_template_key(label_intent_response_key)
-        )
-
-        if label_intent_response_key and not label_responses:
-            # responses seem to be unavailable,
-            # likely an issue with the training data
-            # we'll use a fallback instead
-            rasa.shared.utils.io.raise_warning(
-                f"Unable to fetch responses for {label_intent_response_key} "
-                f"This means that there is likely an issue with the training data."
-                f"Please make sure you have added responses for this intent."
+            # Get the exact intent_response_key and the associated
+            # responses for the top predicted label
+            label_intent_response_key = (
+                self._resolve_intent_response_key(top_label) or top_label[INTENT_NAME_KEY]
             )
-            label_responses = [{TEXT: label_intent_response_key}]
-
-        for label in label_ranking:
-            label[INTENT_RESPONSE_KEY] = (
-                self._resolve_intent_response_key(label) or label[INTENT_NAME_KEY]
+            label_responses = self.responses.get(
+                util.intent_response_key_to_template_key(label_intent_response_key)
             )
-            # Remove the "name" key since it is either the same as
-            # "intent_response_key" or it is the response text which
-            # is not needed in the ranking.
-            label.pop(INTENT_NAME_KEY)
 
-        selector_key = (
-            self.retrieval_intent
-            if self.retrieval_intent
-            else RESPONSE_SELECTOR_DEFAULT_INTENT
-        )
+            if label_intent_response_key and not label_responses:
+                # responses seem to be unavailable,
+                # likely an issue with the training data
+                # we'll use a fallback instead
+                rasa.shared.utils.io.raise_warning(
+                    f"Unable to fetch responses for {label_intent_response_key} "
+                    f"This means that there is likely an issue with the training data."
+                    f"Please make sure you have added responses for this intent."
+                )
+                label_responses = [{TEXT: label_intent_response_key}]
 
-        logger.debug(
-            f"Adding following selector key to message property: {selector_key}"
-        )
+            for label in label_ranking:
+                label[INTENT_RESPONSE_KEY] = (
+                    self._resolve_intent_response_key(label) or label[INTENT_NAME_KEY]
+                )
+                # Remove the "name" key since it is either the same as
+                # "intent_response_key" or it is the response text which
+                # is not needed in the ranking.
+                label.pop(INTENT_NAME_KEY)
 
-        # TODO: remove `RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY` and
-        # `RESPONSE_SELECTOR_TEMPLATE_NAME_KEY` in Open Source 3.0.0
-        utter_action_key = util.intent_response_key_to_template_key(
-            label_intent_response_key
-        )
-        prediction_dict = {
-            RESPONSE_SELECTOR_PREDICTION_KEY: {
-                "id": top_label["id"],
-                RESPONSE_SELECTOR_RESPONSES_KEY: label_responses,
-                RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY: label_responses,
-                PREDICTED_CONFIDENCE_KEY: top_label[PREDICTED_CONFIDENCE_KEY],
-                INTENT_RESPONSE_KEY: label_intent_response_key,
-                RESPONSE_SELECTOR_UTTER_ACTION_KEY: utter_action_key,
-                RESPONSE_SELECTOR_TEMPLATE_NAME_KEY: utter_action_key,
-            },
-            RESPONSE_SELECTOR_RANKING_KEY: label_ranking,
-        }
+            selector_key = (
+                self.retrieval_intent
+                if self.retrieval_intent
+                else RESPONSE_SELECTOR_DEFAULT_INTENT
+            )
 
-        self._set_message_property(message, prediction_dict, selector_key)
+            logger.debug(
+                f"Adding following selector key to message property: {selector_key}"
+            )
 
-        if out and DIAGNOSTIC_DATA in out:
-            message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
+            # TODO: remove `RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY` and
+            # `RESPONSE_SELECTOR_TEMPLATE_NAME_KEY` in Open Source 3.0.0
+            utter_action_key = util.intent_response_key_to_template_key(
+                label_intent_response_key
+            )
+            prediction_dict = {
+                RESPONSE_SELECTOR_PREDICTION_KEY: {
+                    "id": top_label["id"],
+                    RESPONSE_SELECTOR_RESPONSES_KEY: label_responses,
+                    RESPONSE_SELECTOR_RESPONSE_TEMPLATES_KEY: label_responses,
+                    PREDICTED_CONFIDENCE_KEY: top_label[PREDICTED_CONFIDENCE_KEY],
+                    INTENT_RESPONSE_KEY: label_intent_response_key,
+                    RESPONSE_SELECTOR_UTTER_ACTION_KEY: utter_action_key,
+                    RESPONSE_SELECTOR_TEMPLATE_NAME_KEY: utter_action_key,
+                },
+                RESPONSE_SELECTOR_RANKING_KEY: label_ranking,
+            }
 
-        return message
+            self._set_message_property(message, prediction_dict, selector_key)
+
+            if out and DIAGNOSTIC_DATA in out:
+                message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
+
+        return messages
 
     def persist(self) -> Text:
         """Persist this model into the passed directory.

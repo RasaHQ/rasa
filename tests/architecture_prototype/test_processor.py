@@ -4,9 +4,6 @@ import tarfile
 from pathlib import Path
 from typing import Text, Dict, Any
 
-import pytest
-
-from rasa.architecture_prototype import graph
 from rasa.architecture_prototype.processor import GraphProcessor
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage, CollectingOutputChannel
@@ -21,11 +18,6 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
     BotUttered,
     UserUttered,
-)
-from tests.architecture_prototype import conftest
-from tests.architecture_prototype.graph_schema import (
-    full_model_train_graph_schema,
-    predict_graph_schema,
 )
 
 
