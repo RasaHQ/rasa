@@ -13,6 +13,7 @@ import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.core.training
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.shared.utils.io
 
@@ -163,7 +164,7 @@ class Model:
 
     def handle_message(
         self, tracker: DialogueStateTracker, message: Optional[UserMessage]
-    ) -> "PolicyPrediction":
+    ) -> Tuple["PolicyPrediction", Optional[UserUttered]]:
         graph = self._predict_graph.copy()
 
         # Insert user message into graph
@@ -178,11 +179,19 @@ class Model:
             "load_history", self._rasa_graph["load_history"], {"tracker": tracker}
         )
 
-        result = dask.get(graph, "select_prediction")
+        prediction, tracker_with_user_event = dask.get(
+            graph, ["select_prediction", "add_parsed_nlu_message"]
+        )
 
-        return result["select_prediction"]
+        user_event = None
+        if message:
+            user_event = tracker_with_user_event["add_parsed_nlu_message"].events[-1]
 
-    def predict_next_action(self, tracker: DialogueStateTracker,) -> "PolicyPrediction":
+        return prediction["select_prediction"], user_event
+
+    def predict_next_action(
+        self, tracker: DialogueStateTracker,
+    ) -> Tuple["PolicyPrediction", UserUttered]:
         return self.handle_message(tracker, message=None)
 
     def get_domain(self) -> Domain:

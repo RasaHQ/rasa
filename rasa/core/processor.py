@@ -185,7 +185,9 @@ class MessageProcessor:
             )
             return None
 
-        await self._predict_and_execute_next_action(message.output_channel, tracker)
+        await self._predict_and_execute_next_action(
+            message.output_channel, tracker, message
+        )
 
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -450,7 +452,9 @@ class MessageProcessor:
 
     def predict_next_action(
         self, tracker: DialogueStateTracker, message: UserMessage
-    ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
+    ) -> Tuple[
+        rasa.core.actions.action.Action, PolicyPrediction, Optional[UserUttered]
+    ]:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
@@ -467,7 +471,7 @@ class MessageProcessor:
             f"{prediction.max_confidence:.2f}."
         )
 
-        return action, prediction
+        return action, prediction, None
 
     @staticmethod
     def _is_reminder(e: Event, name: Text) -> bool:
@@ -737,9 +741,11 @@ class MessageProcessor:
         ):
             # this actually just calls the policy's method by the same name
 
-            action, prediction = self.predict_next_action(tracker, message)
-            # only predict with message once
-            message = None
+            action, prediction, user_event = self.predict_next_action(tracker, message)
+            if user_event:
+                tracker.update(user_event, domain=self.domain)
+                # only predict with message once
+                message = None
 
             should_predict_another_action = await self._run_action(
                 action, tracker, output_channel, self.nlg, prediction

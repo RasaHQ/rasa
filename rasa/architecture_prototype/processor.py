@@ -8,6 +8,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.core.actions.action
 from rasa.utils.endpoints import EndpointConfig
@@ -76,14 +77,16 @@ class GraphProcessor(MessageProcessor):
 
     def predict_next_action(
         self, tracker: DialogueStateTracker, message: Optional[UserMessage]
-    ) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]:
-        prediction = self.model.handle_message(tracker, message)
+    ) -> Tuple[
+        rasa.core.actions.action.Action, PolicyPrediction, Optional[UserUttered]
+    ]:
+        prediction, user_event = self.model.handle_message(tracker, message)
 
         action = rasa.core.actions.action.action_for_index(
             prediction.max_confidence_index, self.domain, self.action_endpoint
         )
 
-        return action, prediction
+        return action, prediction, user_event
 
     def is_core_ready(self) -> bool:
         return True
