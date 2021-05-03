@@ -368,6 +368,8 @@ jobs:
 
       - name: Analyse Performance 🔍
         id: performance
+        env:
+          THRESHOLD: -0.05
         run: |
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
 
@@ -376,17 +378,23 @@ jobs:
           echo "::set-output name=report_description::${OUTPUT}"
 
           # TODO remove the fake data later
-          OUTPUT='"$OUTPUT | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 | |---------------|-----------------|-----------------|-------------------| | `BERT + DIET(bow) + ResponseSelector(bow)`<br> test: `1m30s`, train: `4m16s`, total: `5m45s`|0.7942 (0.06)|0.7529 (0.00)|0.5563 (-0.00)|\n test: `2m46s`, train: `5m5s`, total: `7m51s`|0.8727 (0.00)|0.9113 (0.00)|0.8826 (-0.06)| | `Sparse + DIET(bow) + ResponseSelector(bow)`"'
+          OUTPUT="$OUTPUT | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 | |---------------|-----------------|-----------------|-------------------| | `BERT + DIET(bow) + ResponseSelector(bow)`<br> test: `1m30s`, train: `4m16s`, total: `5m45s`|0.7942 (0.06)|0.7529 (0.00)|0.5563 (-0.00)|\n test: `2m46s`, train: `5m5s`, total: `7m51s`|0.8727 (0.00)|0.9113 (0.00)|0.8826 (-0.06)| | `Sparse + DIET(bow) + ResponseSelector(bow)`"
 
-          # Match all negatives in brackets smaller than -0.05
-          # Alert performance drop if found any
-          if [[ "${OUTPUT}" =~  \(-[0-9]+.(0[6-9]|[1-9][0-9])\) ]]; then
-            echo "Some test performance scores decreased."
-            echo "::set-output name=is_dropped::true"
-          else
-            echo "No test performance drops."
-            echo "::set-output name=is_dropped::false"
-          fi
+
+          IS_DROPPED=false
+
+          # Loop through all negative values within parentheses
+          # Set IS_DROPPED to true if there is any value lower
+          # than the threshold
+          for x in $(grep -o '\(-[0-9.]\+\)' <<< $OUTPUT); do
+            if (( $(bc -l <<< "$THRESHOLD > $x") )); then
+              IS_DROPPED=true
+              echo "The decrease of some test performance is > $THRESHOLD. Executing the following steps..."
+              break
+            done
+          done
+
+          echo "::set-output name=is_dropped::$IS_DROPPED"
 
       - name: Check duplicate issue
         if: steps.performance.outputs.is_dropped == 'true'
