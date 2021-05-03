@@ -1412,7 +1412,8 @@ async def _plot_trackers(
 
     from networkx.drawing.nx_pydot import write_dot
 
-    write_dot(graph, output_file)
+    with open(output_file, "w", encoding="utf-8") as f:
+        write_dot(graph, f)
 
 
 def _print_help(skip_visualization: bool) -> None:
