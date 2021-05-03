@@ -371,7 +371,6 @@ def test_socketio_channel():
 
 async def test_socketio_channel_jwt_authentication():
     import jwt
-    import socketio
     from rasa.core.channels.socketio import SocketIOInput
 
     public_key = "random_key123"

@@ -2,7 +2,6 @@ import logging
 import uuid
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
 
-from rasa.core import constants
 from rasa.core.channels.channel import (
     InputChannel,
     OutputChannel,
@@ -14,7 +13,6 @@ from sanic import Blueprint, response, Sanic
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from socketio import AsyncServer
-import jwt
 
 logger = logging.getLogger(__name__)
 
@@ -194,11 +192,9 @@ class SocketIOInput(InputChannel):
         async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> None:
             if self.jwt_key:
                 jwt_payload = None
-                if environ.get("HTTP_AUTHORIZATION"):
+                if auth and auth.get("Authorization"):
                     jwt_payload = _decode_bearer_token(
-                        environ.get("HTTP_AUTHORIZATION"),
-                        self.jwt_key,
-                        self.jwt_algorithm,
+                        auth.get("Authorization"), self.jwt_key, self.jwt_algorithm,
                     )
 
                 if jwt_payload:

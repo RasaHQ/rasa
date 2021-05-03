@@ -17,7 +17,8 @@ from typing import (
 )
 
 from rasa.cli import utils as cli_utils
-from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID, BEARER_TOKEN_PREFIX
+from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
+from rasa.core.constants import BEARER_TOKEN_PREFIX
 from rasa.shared.exceptions import RasaException
 
 try:

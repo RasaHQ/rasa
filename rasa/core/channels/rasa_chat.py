@@ -7,11 +7,9 @@ from sanic.exceptions import abort
 import jwt
 import jwt.exceptions
 
-from rasa.core import constants
 from rasa.core.channels.channel import InputChannel, _decode_jwt
 from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.exceptions import ChannelConfigError
 from sanic.request import Request
 
 logger = logging.getLogger(__name__)
