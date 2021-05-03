@@ -4,13 +4,16 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
 from rasa.architecture_prototype.graph_components import (
     DomainReader,
+    MessageCreator,
     MessageToE2EFeatureConverter,
+    NLUMessageConverter,
     StoryGraphReader,
     StoryToTrainingDataConverter,
     TrackerGenerator,
     TrainingDataReader,
 )
 from rasa.architecture_prototype import graph
+from rasa.core.channels import UserMessage
 from rasa.nlu import registry
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.components import Component
@@ -177,6 +180,51 @@ def nlu_config_to_train_graph_schema(
     return nlu_train_graph, train_outputs if train_outputs else [last_component_out]
 
 
+def nlu_config_to_predict_graph_schema(
+    config: Dict[Text, Any],
+    input_task: Optional[Text],
+    component_namespace: Optional[Text] = None,
+    classify: bool = True,
+) -> Tuple[Dict[Text, Any], List[Text]]:
+    nlu_pipeline = deepcopy(config["pipeline"])
+    # TODO: get this information from the class?
+    meta: Dict[Type[Component], Text] = {
+        WhitespaceTokenizer: "process",
+        RegexFeaturizer: "process",
+        LexicalSyntacticFeaturizer: "process",
+        CountVectorsFeaturizer: "process",
+        DIETClassifier: "classify",
+        ResponseSelector: "classify",
+        EntitySynonymMapper: "classify",
+    }
+    last_component_out = input_task
+    nlu_predict_graph = {}
+    for i, component in enumerate(nlu_pipeline):
+        component_name = component.pop("name")
+        unique_component_name = f"{component_name}_{i}"
+        if component_namespace:
+            unique_component_name = f"{component_namespace}_{unique_component_name}"
+        resource_name = f"train_{unique_component_name}"
+        component_class = registry.get_component_class(component_name)
+        step_type = meta[component_class]
+        if step_type == "classify" and not classify:
+            continue
+        config = component
+        component_def = {
+            unique_component_name: {
+                "uses": component_class,
+                "constructor_name": "load",
+                "fn": "process",
+                "config": {"resource_name": resource_name, **config},
+                "needs": {"message": last_component_out,},
+            },
+        }
+        nlu_predict_graph.update(component_def)
+        last_component_out = unique_component_name
+
+    return nlu_predict_graph, [last_component_out]
+
+
 def core_config_to_train_graph_schema(
     project: Text, config: Dict[Text, Any]
 ) -> Tuple[Dict[Text, Any], List[Text]]:
@@ -255,7 +303,7 @@ def core_config_to_train_graph_schema(
     return core_train_graph, policy_names
 
 
-def old_config_to_graph_schema(
+def old_config_to_train_graph_schema(
     project: Text, config: Text
 ) -> Tuple[Dict[Text, Any], List[Text]]:
     config_dict = read_yaml(config)
@@ -265,4 +313,37 @@ def old_config_to_graph_schema(
     core_train_graph_schema, core_outs = core_config_to_train_graph_schema(
         project, config_dict
     )
-    return {**core_train_graph_schema, **nlu_train_graph_schema}, [*core_outs, *nlu_outs]
+    return (
+        {**core_train_graph_schema, **nlu_train_graph_schema},
+        [*core_outs, *nlu_outs],
+    )
+
+
+def old_config_to_predict_graph_schema(
+    config: Text
+) -> Tuple[Dict[Text, Any], List[Text]]:
+    config_dict = read_yaml(config)
+
+    predict_graph = {
+        "load_user_message": {
+            "uses": MessageCreator,
+            "fn": "create",
+            "config": {"message": None},
+            "needs": {},
+            "persist": False,
+        },
+        "convert_message_to_nlu": {
+            "uses": NLUMessageConverter,
+            "fn": "convert",
+            "config": {},
+            "needs": {"message": "load_user_message"},
+            "persist": False,
+        },
+    }
+
+    nlu_predict_graph_schema, nlu_outs = nlu_config_to_predict_graph_schema(
+        config_dict, input_task="convert_message_to_nlu", classify=True,
+    )
+
+    # targets = ["select_prediction"]
+    return {**predict_graph, **nlu_predict_graph_schema}, [*nlu_outs]

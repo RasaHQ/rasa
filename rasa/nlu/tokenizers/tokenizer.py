@@ -197,3 +197,10 @@ class Tokenizer(Component):
             tokens.append(Token(word, word_offset))
 
         return tokens
+
+    @classmethod
+    def load(
+        cls,
+        **kwargs: Any,
+    ) -> "Tokenizer":
+        return cls(**kwargs)
