@@ -13,7 +13,7 @@ from rasa.cli.arguments import data as arguments
 from rasa.cli.arguments import default_arguments
 import rasa.cli.utils
 import rasa.nlu.convert
-from rasa.nlu.data_augmentation.augmenter import augment_nlu_training_data
+import rasa.nlu.data_augmentation.augmenter
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DATA_PATH,
