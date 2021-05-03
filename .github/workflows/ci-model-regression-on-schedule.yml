@@ -251,7 +251,7 @@ jobs:
             return 'false'
 
       - name: Select a member from managers team randomly
-        if: failure()
+        if: failure() && steps.issue-exist.outputs.result == 'false'
         run: |
           # MEMBERS=$(curl \
           #             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
@@ -268,7 +268,7 @@ jobs:
 
       - name: Create GitHub Issue 📬
         id: create-issue
-        if: failure()
+        if: failure() && steps.issue-exist.outputs.result == 'false'
         uses: actions/github-script@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -284,7 +284,7 @@ jobs:
             return issue.data.number
 
       # - name: Notify Slack of Failure 😱
-      #   if: failure()
+      #   if: failure()  && steps.issue-exist.outputs.result == 'false'
       #   uses: 8398a7/action-slack@v3
       #   with:
       #     status: custom
@@ -455,7 +455,7 @@ jobs:
             return issue.data.number
 
       # - name: Notify Slack when Performance Drops 💬
-      #   if: steps.performance.outputs.is_dropped == 'true'
+      #   if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exist.outputs.result == 'false'
       #   uses: 8398a7/action-slack@v3
       #   with:
       #     status: custom
