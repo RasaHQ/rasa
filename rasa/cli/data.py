@@ -300,7 +300,7 @@ def augment_nlu_data(args: argparse.Namespace) -> None:
     classification_report = rasa.shared.utils.io.read_json_file(report_file)
 
     # Run augmentation
-    augment_nlu_training_data(
+    rasa.nlu.data_augmentation.augmenter.augment_nlu_training_data(
         nlu_training_data=nlu_training_data,
         nlu_evaluation_data=nlu_evaluation_data,
         paraphrases=paraphrases,
