@@ -390,7 +390,7 @@ jobs:
               IS_DROPPED=true
               echo "The decrease of some test performance is > $THRESHOLD. Executing the following steps..."
               break
-            done
+            fi
           done
 
           echo "::set-output name=is_dropped::$IS_DROPPED"
