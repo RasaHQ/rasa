@@ -6,6 +6,9 @@ from sanic.request import Request
 
 import rasa.core
 from rasa.core import utils
+from rasa import server
+from rasa.core.agent import Agent
+from rasa.core.channels import channel
 from rasa.shared.exceptions import InvalidConfigException, RasaException
 from rasa.core.channels.twilio_voice import TwilioVoiceInput
 from rasa.core.channels.twilio_voice import TwilioVoiceCollectingOutputChannel
@@ -209,3 +212,42 @@ async def test_twilio_voice_multiple_responses():
         str(twiml)
         == '<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="woman">message 1</Say><Pause length="1" /><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">message 2</Say></Gather></Response>'
     )
+
+
+async def test_twilio_receive(stack_agent: Agent):
+    app = server.create_app(agent=stack_agent)
+
+    inputs = {
+        "initial_prompt": "hello",
+        "reprompt_fallback_phrase": "i didn't get that",
+        "speech_model": "default",
+        "speech_timeout": "5",
+        "assistant_voice": "woman",
+        "enhanced": "false",
+    }
+
+    tv = TwilioVoiceInput(**inputs)
+    channel.register([tv], app, "/webhooks/")
+
+    client = app.asgi_client
+
+    body = {"From": "Tobias", "SpeechResult": None, "CallStatus": "ringing"}
+    _, response = await client.post(
+        "/webhooks/twilio_voice/webhook",
+        headers={"Content-type": "application/x-www-form-urlencoded"},
+        data=body,
+    )
+    assert response.status == 200
+    # Actual test xml content
+    assert response.body
+
+    body = {"From": "Tobias", "SpeechResult": None, "CallStatus": "answered"}
+    _, response = await client.post(
+        "/webhooks/twilio_voice/webhook",
+        headers={"Content-type": "application/x-www-form-urlencoded"},
+        data=body,
+    )
+
+    assert response.status == 200
+    assert response.body == \
+           b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">sorry, I didn\'t get that, can you rephrase it?</Say></Gather></Response>'
