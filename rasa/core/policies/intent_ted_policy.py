@@ -352,7 +352,6 @@ class IntentTEDPolicy(TEDPolicy):
     ) -> None:
 
         self.intent_thresholds = self.model.compute_thresholds(model_data, label_ids)
-        print(self.intent_thresholds)
 
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array
