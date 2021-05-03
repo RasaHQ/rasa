@@ -158,7 +158,7 @@ def find_story_conflicts(
     else:
         logger.info("Considering all preceding turns for conflict analysis.")
 
-    tokenizer = components.get_tokenizer_from_nlu_config(nlu_config)
+    tokenizer = rasa.shared.utils.components.get_tokenizer_from_nlu_config(nlu_config)
 
     # We do this in two steps, to reduce memory consumption:
 
