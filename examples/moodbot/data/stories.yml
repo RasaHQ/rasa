@@ -19,8 +19,8 @@ stories:
 
 - story: sad path 2
   steps:
-  - intent: greet
-  - action: utter_greet
+  - user: hi
+  - bot: hi, how are you?
   - intent: mood_unhappy
   - action: utter_cheer_up
   - action: utter_did_that_help
