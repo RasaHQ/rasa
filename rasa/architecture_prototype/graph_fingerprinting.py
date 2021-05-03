@@ -121,11 +121,17 @@ def dask_graph_to_fingerprint_graph(
     fingerprint_graph = {}
     for node_name, node in dask_graph.items():
         rasa_component, *deps = node
-        fingerprint_component = FingerprintComponent(
-            config=rasa_component._config,
-            node_name=rasa_component._node_name,
-            inputs=rasa_component._inputs,
-            cache=cache,
-        )
-        fingerprint_graph[node_name] = (fingerprint_component, *deps)
+
+        if not rasa_component._inputs:
+            # Input nodes should always run so that we can e.g. capture changes within
+            # files.
+            fingerprint_graph[node_name] = (rasa_component, *deps)
+        else:
+            fingerprint_component = FingerprintComponent(
+                config=rasa_component._config,
+                node_name=rasa_component._node_name,
+                inputs=rasa_component._inputs,
+                cache=cache,
+            )
+            fingerprint_graph[node_name] = (fingerprint_component, *deps)
     return fingerprint_graph
