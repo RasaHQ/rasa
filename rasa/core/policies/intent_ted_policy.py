@@ -288,7 +288,6 @@ class IntentTEDPolicy(TEDPolicy):
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         should_finetune: bool = False,
         intent_thresholds: Dict[int, float] = None,
-        all_labels: List[Text] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
@@ -308,7 +307,6 @@ class IntentTEDPolicy(TEDPolicy):
             **kwargs,
         )
 
-        self._all_labels = all_labels
         self.intent_thresholds = intent_thresholds
         self.ignore_intent_list = self.config[IGNORE_INTENTS_LIST]
 
@@ -354,6 +352,7 @@ class IntentTEDPolicy(TEDPolicy):
     ) -> None:
 
         self.intent_thresholds = self.model.compute_thresholds(model_data, label_ids)
+        print(self.intent_thresholds)
 
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array
@@ -518,9 +517,24 @@ class IntentTED(TED):
         # instead of processing labels again, gather embeddings from
         # all_labels_embed using label ids
 
-        # TODO: Replace -1 with >= 0
         indices = tf.cast(label_ids[:, :, 0], tf.int32)
-        labels_embed = tf.gather(all_labels_embed, indices)
+
+        # Find padding indices. They should have a value -1
+        padding_indices = tf.where(tf.equal(indices, -1))
+
+        # Create a tensor of ones which will serve as updates to original `indices`
+        updates_to_indices = tf.ones((tf.shape(padding_indices)[0]), dtype=tf.int32)
+
+        # Add the tensor of 1s to indices with padding.
+        # So, effectively -1s become 0. This is fine because
+        # we don't change the original label indices but only
+        # make them 'compatible' for the `tf.gather` op below.
+        indices_to_gather = tf.cast(
+            tf.tensor_scatter_nd_add(indices, padding_indices, updates_to_indices),
+            tf.int32,
+        )
+
+        labels_embed = tf.gather(all_labels_embed, indices_to_gather)
 
         return labels_embed
 
@@ -543,12 +557,17 @@ class IntentTED(TED):
             if isinstance(self.config[BATCH_SIZES], int)
             else self.config[BATCH_SIZES][0]
         )
-        outputs = self.model.run_inference(model_data, batch_size=batch_size)
+        outputs = self.run_inference(model_data, batch_size=batch_size)
 
         thresholds = {}
 
-        # Collect all the probabilities for each label id
+        # Collect scores across all data points
         for index, all_pos_labels in enumerate(label_ids):
+
+            # Take the contribution of only first label id
+            # because `model_data` will contain another
+            # data point where remaining label ids will
+            # be the first label id
             first_pos_label_id = all_pos_labels[0]
 
             if first_pos_label_id not in thresholds:

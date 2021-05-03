@@ -1109,9 +1109,9 @@ class MultiLabelDotProductLoss(DotProductLoss):
         Args:
             batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized trackers)
             batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents for IntentTED)
-            batch_label_ids: Batch label indices (e.g. indices of the intents)
+            batch_labels_ids: Batch label indices (e.g. indices of the intents)
             all_labels_embed: Embeddings for all labels in the domain
-            all_label_ids: Indices for all labels in the domain
+            all_labels_ids: Indices for all labels in the domain
             mask: Optional sequence mask, which contains `1` for inputs and `0` for padding.
 
         Returns:
@@ -1187,6 +1187,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         # Pick random examples from the batch
+        # TODO: can we use tf.uniform_candidate_sampler to ensure one label id is sampled only once?
         candidate_ids = self._get_candidate_indices(
             batch_size=tf.shape(batch_inputs_embed)[0],
             total_candidates=tf.shape(all_labels_embed)[0],

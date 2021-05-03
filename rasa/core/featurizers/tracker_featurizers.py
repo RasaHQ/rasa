@@ -278,12 +278,13 @@ class TrackerFeaturizer:
 
         (
             trackers_as_states,
-            trackers_as_actions,
+            trackers_as_labels,
             trackers_as_entities,
         ) = self.training_states_labels_and_entities(trackers, domain)
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
-        label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
+        label_ids = self._convert_labels_to_ids(trackers_as_labels, domain)
+
         entity_tags = self._create_entity_tags(
             trackers_as_entities, interpreter, bilou_tagging
         )
