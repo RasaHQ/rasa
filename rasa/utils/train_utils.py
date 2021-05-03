@@ -6,7 +6,10 @@ from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.nlu.utils.bilou_utils
-from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
+from rasa.shared.constants import (
+    NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+    DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY,
+)
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
@@ -28,6 +31,8 @@ from rasa.utils.tensorflow.constants import (
     DENSE_DIMENSION,
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
+    WEIGHT_SPARSITY,
+    CONNECTION_DENSITY,
 )
 from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
@@ -91,7 +96,6 @@ def update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
     Returns:
         updated model configuration
     """
-    # TODO: Completely deprecate this with 3.0
     if config.get(LOSS_TYPE) == SOFTMAX:
         rasa.shared.utils.io.raise_deprecation_warning(
             f"`{LOSS_TYPE}={SOFTMAX}` is deprecated. "
@@ -100,6 +104,28 @@ def update_deprecated_loss_type(config: Dict[Text, Any]) -> Dict[Text, Any]:
             warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
         )
         config[LOSS_TYPE] = CROSS_ENTROPY
+
+    return config
+
+
+def update_deprecated_sparsity_to_density(config: Dict[Text, Any]) -> Dict[Text, Any]:
+    """Updates `WEIGHT_SPARSITY` to `CONNECTION_DENSITY = 1 - WEIGHT_SPARSITY`.
+
+    Args:
+        config: model configuration
+
+    Returns:
+        Updated model configuration
+    """
+    if WEIGHT_SPARSITY in config:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"`{WEIGHT_SPARSITY}` is deprecated."
+            f"Please update your configuration file to use"
+            f"`{CONNECTION_DENSITY}` instead.",
+            warn_until_version=NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
+            docs=DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY,
+        )
+        config[CONNECTION_DENSITY] = 1.0 - config[WEIGHT_SPARSITY]
 
     return config
 
@@ -382,6 +408,7 @@ def create_data_generators(
     batch_strategy: Text = SEQUENCE,
     eval_num_examples: int = 0,
     random_seed: Optional[int] = None,
+    shuffle: bool = True,
 ) -> Tuple[RasaBatchDataGenerator, Optional[RasaBatchDataGenerator]]:
     """Create data generators for train and optional validation data.
 
@@ -392,6 +419,7 @@ def create_data_generators(
         batch_strategy: The batch strategy to use.
         eval_num_examples: Number of examples to use for validation data.
         random_seed: The random seed.
+        shuffle: Whether to shuffle data inside the data generator.
 
     Returns:
         The training data generator and optional validation data generator.
@@ -406,7 +434,7 @@ def create_data_generators(
             batch_size=batch_sizes,
             epochs=epochs,
             batch_strategy=batch_strategy,
-            shuffle=True,
+            shuffle=shuffle,
         )
 
     data_generator = RasaBatchDataGenerator(
@@ -414,7 +442,7 @@ def create_data_generators(
         batch_size=batch_sizes,
         epochs=epochs,
         batch_strategy=batch_strategy,
-        shuffle=True,
+        shuffle=shuffle,
     )
 
     return data_generator, validation_data_generator
