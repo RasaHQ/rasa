@@ -5,7 +5,7 @@ import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set, Union
 
 import rasa.shared.utils.io
-from rasa.architecture_prototype.graph import Persistor
+from rasa.architecture_prototype.graph import ComponentPersistor
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
 import rasa.utils.train_utils
@@ -213,7 +213,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self,
         vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None,
         finetune_mode: bool = False,
-        persistor: Optional[Persistor] = None,
+        persistor: Optional[ComponentPersistor] = None,
         **kwargs: Any,
     ) -> None:
         """Construct a new count vectorizer using the sklearn framework."""
@@ -891,7 +891,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     @classmethod
     def load(
         cls,
-        persistor: Persistor,
+        persistor: ComponentPersistor,
         resource_name: Text,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         should_finetune: bool = False,

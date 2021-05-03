@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Text, Optional, Dict, Any
 
-from rasa.architecture_prototype.graph import Persistor
+from rasa.architecture_prototype.graph import ComponentPersistor
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.components import Component
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
@@ -9,9 +9,7 @@ from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
 class Featurizer(Component):
     def __init__(
-        self,
-        persistor: Optional[Persistor] = None,
-        **kwargs: Any,
+        self, persistor: Optional[ComponentPersistor] = None, **kwargs: Any,
     ) -> None:
         super().__init__(persistor=persistor, **kwargs)
 

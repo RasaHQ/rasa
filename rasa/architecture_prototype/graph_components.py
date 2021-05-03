@@ -3,7 +3,7 @@ import os.path
 from pathlib import Path
 from typing import Optional, Text, Dict, List
 
-from rasa.architecture_prototype.graph import Persistor
+from rasa.architecture_prototype.graph import ComponentPersistor
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
 from rasa.shared.core.domain import Domain
@@ -65,7 +65,7 @@ class DomainReader(ProjectReader):
     def __init__(
         self,
         project: Optional[Text] = None,
-        persistor: Optional["Persistor"] = None,
+        persistor: Optional["ComponentPersistor"] = None,
         resource_name: Optional[Text] = None,
     ) -> None:
         super().__init__(project)

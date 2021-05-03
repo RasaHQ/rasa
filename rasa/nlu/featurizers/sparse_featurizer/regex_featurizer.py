@@ -9,7 +9,7 @@ import scipy.sparse
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
-from rasa.architecture_prototype.graph import Persistor
+from rasa.architecture_prototype.graph import ComponentPersistor
 from rasa.nlu import utils
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
@@ -61,7 +61,7 @@ class RegexFeaturizer(SparseFeaturizer):
         known_patterns: Optional[List[Dict[Text, Text]]] = None,
         pattern_vocabulary_stats: Optional[Dict[Text, int]] = None,
         finetune_mode: bool = False,
-        persistor: Optional[Persistor] = None,
+        persistor: Optional[ComponentPersistor] = None,
         **kwargs: Any,
     ) -> None:
         """Constructs new features for regexes and lookup table using regex expressions.
@@ -306,7 +306,7 @@ class RegexFeaturizer(SparseFeaturizer):
     @classmethod
     def load(
         cls,
-        persistor: Persistor,
+        persistor: ComponentPersistor,
         resource_name: Text,
         cached_component: Optional["RegexFeaturizer"] = None,
         should_finetune: bool = False,

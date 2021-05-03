@@ -5,7 +5,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from rasa.architecture_prototype.graph import Persistor
+from rasa.architecture_prototype.graph import ComponentPersistor
 import rasa.shared.utils.io
 import rasa.utils.train_utils
 import tensorflow as tf
@@ -305,7 +305,7 @@ class TEDPolicy(Policy):
 
     @staticmethod
     def _standard_featurizer(
-        persistor: Persistor, max_history: Optional[int] = None
+        persistor: ComponentPersistor, max_history: Optional[int] = None
     ) -> TrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
             SingleStateFeaturizer(), max_history=max_history, persistor=persistor
@@ -320,7 +320,7 @@ class TEDPolicy(Policy):
         fake_features: Optional[Dict[Text, List["Features"]]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         should_finetune: bool = False,
-        persistor: Optional[Persistor] = None,
+        persistor: Optional[ComponentPersistor] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
@@ -827,7 +827,7 @@ class TEDPolicy(Policy):
     @classmethod
     def load(
         cls,
-        persistor: Persistor,
+        persistor: ComponentPersistor,
         resource_name: Text,
         should_finetune: bool = False,
         epoch_override: int = defaults[EPOCHS],

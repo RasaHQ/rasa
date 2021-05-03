@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 import rasa.nlu.utils.bilou_utils as bilou_utils
-from rasa.architecture_prototype.graph import Persistor
+from rasa.architecture_prototype.graph import ComponentPersistor
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.components import Component
@@ -323,7 +323,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         finetune_mode: bool = False,
-        persistor: Optional[Persistor] = None,
+        persistor: Optional[ComponentPersistor] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
@@ -1026,7 +1026,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     @classmethod
     def load(
         cls,
-        persistor: Persistor,
+        persistor: ComponentPersistor,
         resource_name: Text,
         cached_component: Optional["DIETClassifier"] = None,
         should_finetune: bool = False,
@@ -1066,7 +1066,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @classmethod
     def _load_from_files(
-        cls, persistor: Persistor, resource_name: Text
+        cls, persistor: ComponentPersistor, resource_name: Text
     ) -> Tuple[
         Dict[int, Text],
         List[EntityTagSpec],
@@ -1119,7 +1119,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_data: RasaModelData,
         meta: Dict[Text, Any],
         data_example: Dict[Text, Dict[Text, List[FeatureArray]]],
-        persistor: Persistor,
+        persistor: ComponentPersistor,
         resource_name: Text,
         finetune_mode: bool = False,
     ) -> "RasaModel":

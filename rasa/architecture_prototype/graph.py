@@ -37,7 +37,7 @@ class RasaComponent:
         constructor_name: Text = None,
         eager: bool = True,
         cache: Optional["TrainingCache"] = None,
-        persistor: Optional["Persistor"] = None,
+        persistor: Optional["ComponentPersistor"] = None,
     ) -> None:
         self._eager = eager
         self._inputs = inputs
@@ -137,7 +137,7 @@ class RasaComponent:
         return f"{self._component_class}.{self._fn_name}"
 
 
-class Persistor:
+class ComponentPersistor:
     def __init__(self, node_name: Text, parent_dir: Path) -> None:
         self._node_name = node_name
         self._parent_dir = parent_dir
@@ -162,7 +162,7 @@ class Persistor:
 
 class AbstractModelPersistor(ABC):
     @abc.abstractmethod
-    def create_component_persistor(self, node_name: Text) -> "Persistor":
+    def create_component_persistor(self, node_name: Text) -> "ComponentPersistor":
         raise NotImplementedError("Please implement this.")
 
     @abc.abstractmethod
@@ -184,8 +184,8 @@ class LocalModelPersistor(AbstractModelPersistor):
     def __init__(self, local_path: Path = Path("model")) -> None:
         self._dir = local_path
 
-    def create_component_persistor(self, node_name: Text) -> "Persistor":
-        return Persistor(node_name, self._dir)
+    def create_component_persistor(self, node_name: Text) -> "ComponentPersistor":
+        return ComponentPersistor(node_name, self._dir)
 
     def persist_model(
         self, target: Text, predict_graph_schema: Dict[Text, Any],
