@@ -13,7 +13,7 @@ from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.utils import components
+import rasa.shared.utils.components
 
 logger = logging.getLogger(__name__)
 
