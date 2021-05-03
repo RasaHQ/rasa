@@ -1243,6 +1243,11 @@ class Domain:
         last_ml_action_sub_state = None
         turn_was_hidden = False
         for tr, hide_rule_turn in tracker.generate_all_prior_trackers():
+            state = self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
+
+            logger.debug(
+                f"input state {state}, followup action {tr.followup_action}, latest action name, {tr.latest_action_name}, hide_rule_turn, {hide_rule_turn}"
+            )
             if ignore_rule_only_turns:
                 # remember previous ml action based on the last non hidden turn
                 # we need this to override previous action in the ml state
@@ -1262,6 +1267,8 @@ class Domain:
 
             state = self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
 
+            logger.debug(f"filtered state {state}")
+
             if ignore_rule_only_turns:
                 # clean state from only rule features
                 self._remove_rule_only_features(state, rule_only_data)
@@ -1277,6 +1284,10 @@ class Domain:
 
             states.append(self._clean_state(state))
 
+        from rasa.core.policies.policy import Policy
+
+        formatted = Policy.format_tracker_states(states)
+        logger.debug(f"{formatted}")
         return states
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:

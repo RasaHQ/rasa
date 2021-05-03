@@ -361,6 +361,10 @@ class TEDPolicy(Policy):
     def model_class() -> Type[RasaModel]:
         return TED
 
+    @classmethod
+    def _metadata_filename(cls) -> Optional[Text]:
+        return SAVE_MODEL_FILE_NAME
+
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
         self.config = rasa.utils.train_utils.override_defaults(
@@ -743,7 +747,7 @@ class TEDPolicy(Policy):
 
         # take the last prediction in the sequence
         similarities = outputs["similarities"][:, -1, :]
-        confidences = outputs["action_scores"][:, -1, :]
+        confidences = outputs["scores"][:, -1, :]
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(
             confidences, similarities, domain
@@ -829,7 +833,7 @@ class TEDPolicy(Policy):
             return
 
         model_path = Path(path)
-        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
+        tf_model_file = model_path / f"{self._metadata_filename()}.tf_model"
 
         rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
@@ -839,31 +843,39 @@ class TEDPolicy(Policy):
             shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
         self.model.save(str(tf_model_file))
 
+        self.persist_model_utilities(model_path)
+
+    def persist_model_utilities(self, model_path: Path) -> None:
+        """Persist all utility attributes needed for inference.
+
+        Args:
+            model_path: Path where model is to be persisted
+        """
         io_utils.json_pickle(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl", self.priority
+            model_path / f"{self._metadata_filename()}.priority.pkl", self.priority
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl", self.config
+            model_path / f"{self._metadata_filename()}.meta.pkl", self.config
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
+            model_path / f"{self._metadata_filename()}.data_example.pkl",
+            self.data_example,
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.fake_features.pkl",
+            model_path / f"{self._metadata_filename()}.fake_features.pkl",
             self.fake_features,
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
+            model_path / f"{self._metadata_filename()}.label_data.pkl",
             dict(self._label_data.data),
         )
-
         entity_tag_specs = (
             [tag_spec._asdict() for tag_spec in self._entity_tag_specs]
             if self._entity_tag_specs
             else []
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.entity_tag_specs.json",
+            model_path / f"{self._metadata_filename()}.entity_tag_specs.json",
             entity_tag_specs,
         )
 
@@ -888,29 +900,29 @@ class TEDPolicy(Policy):
             )
             return
 
-        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
+        tf_model_file = model_path / f"{cls._metadata_filename()}.tf_model"
 
         featurizer = TrackerFeaturizer.load(path)
 
-        if not (model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl").is_file():
+        if not (model_path / f"{cls._metadata_filename()}.data_example.pkl").is_file():
             return cls(featurizer=featurizer)
 
         loaded_data = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl"
+            model_path / f"{cls._metadata_filename()}.data_example.pkl"
         )
         label_data = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
+            model_path / f"{cls._metadata_filename()}.label_data.pkl"
         )
         fake_features = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.fake_features.pkl"
+            model_path / f"{cls._metadata_filename()}.fake_features.pkl"
         )
         label_data = RasaModelData(data=label_data)
-        meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
+        meta = io_utils.pickle_load(model_path / f"{cls._metadata_filename()}.meta.pkl")
         priority = io_utils.json_unpickle(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
+            model_path / f"{cls._metadata_filename()}.priority.pkl"
         )
         entity_tag_specs = rasa.shared.utils.io.read_json_file(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.entity_tag_specs.json"
+            model_path / f"{cls._metadata_filename()}.entity_tag_specs.json"
         )
         entity_tag_specs = [
             EntityTagSpec(

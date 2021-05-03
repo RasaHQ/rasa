@@ -1,8 +1,7 @@
 import logging
-
 import numpy as np
 import tensorflow as tf
-
+from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
 import rasa.utils.io as io_utils
@@ -110,6 +109,7 @@ from rasa.utils.tensorflow.model_data import (
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
+from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 
 logger = logging.getLogger(__name__)
 
@@ -118,8 +118,6 @@ LABEL_FEATURES = f"{LABEL}_features"
 LABEL_IDS = f"{LABEL}_ids"
 LABEL_KEY = LABEL
 LABEL_SUB_KEY = "ids"
-
-SAVE_MODEL_FILE_NAME = "intent_ted_policy"
 
 
 class IntentTEDPolicy(TEDPolicy):
@@ -287,14 +285,14 @@ class IntentTEDPolicy(TEDPolicy):
         fake_features: Optional[Dict[Text, List["Features"]]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         should_finetune: bool = False,
-        intent_thresholds: Dict[int, float] = None,
+        label_thresholds: Dict[int, float] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
 
-        if not max_history:
-            # TODO: raise proper error. max_history should always be specified.
-            raise Exception
+        # if not max_history:
+        #     # TODO: raise proper error. max_history should always be specified.
+        #     raise Exception("Max history needs to be specified")
 
         super().__init__(
             featurizer,
@@ -307,7 +305,7 @@ class IntentTEDPolicy(TEDPolicy):
             **kwargs,
         )
 
-        self.intent_thresholds = intent_thresholds
+        self.label_thresholds = label_thresholds
         self.ignore_intent_list = self.config[IGNORE_INTENTS_LIST]
 
         # Set all invalid configuration parameters
@@ -318,10 +316,6 @@ class IntentTEDPolicy(TEDPolicy):
         self.config[MODEL_CONFIDENCE] = SOFTMAX
 
     @staticmethod
-    def supported_data() -> SupportedData:
-        return SupportedData.ML_DATA
-
-    @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
         return IntentMaxHistoryTrackerFeaturizer(
             IntentTokenizerSingleStateFeaturizer(), max_history=max_history
@@ -330,6 +324,10 @@ class IntentTEDPolicy(TEDPolicy):
     @staticmethod
     def model_class() -> Type[RasaModel]:
         return IntentTED
+
+    @classmethod
+    def _metadata_filename(cls) -> Optional[Text]:
+        return "intent_ted_policy"
 
     def _assemble_label_data(
         self, attribute_data: Data, domain: Domain
@@ -351,7 +349,7 @@ class IntentTEDPolicy(TEDPolicy):
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> None:
 
-        self.intent_thresholds = self.model.compute_thresholds(model_data, label_ids)
+        self.label_thresholds = self.model.compute_thresholds(model_data, label_ids)
 
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array
@@ -368,10 +366,12 @@ class IntentTEDPolicy(TEDPolicy):
         metadata = {}
         for intent in domain.intents:
             intent_index = domain.intents.index(intent)
-            metadata[intent] = {
-                "score": similarities[0][intent_index],
-                "threshold": self.intent_thresholds[intent_index],
-            }
+            if intent_index in self.label_thresholds:
+                metadata[intent] = {
+                    "score": similarities[0][intent_index],
+                    "threshold": self.label_thresholds[intent_index],
+                }
+
         return metadata
 
     def predict_action_probabilities(
@@ -421,8 +421,11 @@ class IntentTEDPolicy(TEDPolicy):
 
     def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
 
-        if domain.intents.index(intent) not in self.intent_thresholds:
+        if domain.intents.index(intent) not in self.label_thresholds:
             # This means the intent was never present in a story
+            logger.debug(
+                f"Query intent index {domain.intents.index(intent)} not found in label thresholds - {self.label_thresholds}"
+            )
             return False
         if intent in self.config[IGNORE_INTENTS_LIST]:
             return False
@@ -467,7 +470,7 @@ class IntentTEDPolicy(TEDPolicy):
 
                 logger.debug(
                     f"Score for user intent {query_label} likely to occur here is "
-                    f"{query_label_score}, while threshold is {self.intent_thresholds[query_label_id]}"
+                    f"{query_label_score}, while threshold is {self.label_thresholds[query_label_id]}"
                 )
                 logger.debug(
                     f"Top 5 intents(in ascending order) that are likely here are: {sorted_intent_scores[-5:]}"
@@ -476,10 +479,135 @@ class IntentTEDPolicy(TEDPolicy):
                 # If score for query intent is below threshold and
                 # the query intent is not the top likely intent
                 if (
-                    query_label_score < self.intent_thresholds[query_label_id]
+                    query_label_score < self.label_thresholds[query_label_id]
                     and query_label_id != sorted_intent_scores[-1][0]
                 ):
+                    logger.debug(
+                        f"Intent {query_label}-{query_label_id} unlikely to occur here."
+                    )
                     return True
+
+    def persist_model_utilities(self, model_path: Path) -> None:
+        """Persist all utility attributes needed for inference.
+
+        Args:
+            model_path: Path where model is to be persisted
+        """
+        super().persist_model_utilities(model_path)
+        io_utils.pickle_dump(
+            model_path / f"{self._metadata_filename()}.label_thresholds.pkl",
+            self.label_thresholds,
+        )
+
+    @classmethod
+    def load(
+        cls,
+        path: Union[Text, Path],
+        should_finetune: bool = False,
+        epoch_override: int = defaults[EPOCHS],
+        **kwargs: Any,
+    ) -> "TEDPolicy":
+        """Loads a policy from the storage.
+
+        **Needs to load its featurizer**
+        """
+        # TODO: refactor this method to reuse more code with TEDPolicy
+        model_path = Path(path)
+
+        if not model_path.exists():
+            logger.error(
+                f"Failed to load TED policy model. Path "
+                f"'{model_path.absolute()}' doesn't exist."
+            )
+            return
+
+        tf_model_file = model_path / f"{cls._metadata_filename()}.tf_model"
+
+        featurizer = TrackerFeaturizer.load(path)
+
+        if not (model_path / f"{cls._metadata_filename()}.data_example.pkl").is_file():
+            return cls(featurizer=featurizer)
+
+        loaded_data = io_utils.pickle_load(
+            model_path / f"{cls._metadata_filename()}.data_example.pkl"
+        )
+        label_data = io_utils.pickle_load(
+            model_path / f"{cls._metadata_filename()}.label_data.pkl"
+        )
+        fake_features = io_utils.pickle_load(
+            model_path / f"{cls._metadata_filename()}.fake_features.pkl"
+        )
+        label_data = RasaModelData(data=label_data)
+        meta = io_utils.pickle_load(model_path / f"{cls._metadata_filename()}.meta.pkl")
+        priority = io_utils.json_unpickle(
+            model_path / f"{cls._metadata_filename()}.priority.pkl"
+        )
+        label_thresholds = io_utils.pickle_load(
+            model_path / f"{cls._metadata_filename()}.label_thresholds.pkl"
+        )
+        entity_tag_specs = rasa.shared.utils.io.read_json_file(
+            model_path / f"{cls._metadata_filename()}.entity_tag_specs.json"
+        )
+        entity_tag_specs = [
+            EntityTagSpec(
+                tag_name=tag_spec["tag_name"],
+                ids_to_tags={
+                    int(key): value for key, value in tag_spec["ids_to_tags"].items()
+                },
+                tags_to_ids={
+                    key: int(value) for key, value in tag_spec["tags_to_ids"].items()
+                },
+                num_tags=tag_spec["num_tags"],
+            )
+            for tag_spec in entity_tag_specs
+        ]
+
+        model_data_example = RasaModelData(
+            label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
+        )
+        meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
+        meta = rasa.utils.train_utils.update_confidence_type(meta)
+        meta = rasa.utils.train_utils.update_similarity_type(meta)
+        meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
+
+        meta[EPOCHS] = epoch_override
+
+        predict_data_example = RasaModelData(
+            label_key=LABEL_KEY,
+            label_sub_key=LABEL_SUB_KEY,
+            data={
+                feature_name: features
+                for feature_name, features in model_data_example.items()
+                if feature_name
+                # we need to remove label features for prediction if they are present
+                in PREDICTION_FEATURES
+            },
+        )
+
+        model = cls.model_class().load(
+            str(tf_model_file),
+            model_data_example,
+            predict_data_example,
+            data_signature=model_data_example.get_signature(),
+            config=meta,
+            max_history_featurizer_is_used=True,
+            label_data=label_data,
+            entity_tag_specs=entity_tag_specs,
+            finetune_mode=should_finetune,
+        )
+
+        logger.debug("Initializing policy")
+
+        return cls(
+            featurizer=featurizer,
+            priority=priority,
+            model=model,
+            fake_features=fake_features,
+            entity_tag_specs=entity_tag_specs,
+            should_finetune=should_finetune,
+            label_thresholds=label_thresholds,
+            **meta,
+        )
 
 
 class IntentTED(TED):

@@ -945,13 +945,14 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         Returns:
             A list of states.
         """
-
         # Create a copy of trackers
         duplicate_trackers = [tracker.copy() for tracker in trackers]
 
         # Remove last user event
         for tracker in duplicate_trackers:
             tracker.update(UserUtteranceReverted(), domain)
+
+        logger.debug(f"{rule_only_data}, {ignore_rule_only_turns}")
 
         trackers_as_states = [
             self._create_states(
