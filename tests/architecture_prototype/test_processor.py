@@ -34,6 +34,7 @@ async def test_handle_message(prediction_graph: Dict[Text, Any]):
     nlg = TemplatedNaturalLanguageGenerator(placeholder_domain.responses)
     tracker_store = InMemoryTrackerStore(placeholder_domain)
     processor = GraphProcessor.create(
+        "model",
         tracker_store=tracker_store,
         lock_store=InMemoryLockStore(),
         generator=nlg,

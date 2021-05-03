@@ -1,6 +1,7 @@
+from pathlib import Path
 from typing import Dict, Text, Any, Optional, List, Tuple
 
-from rasa.architecture_prototype.graph import Model
+from rasa.architecture_prototype.graph import Model, LocalModelPersistor
 import rasa.core.tracker_store
 from rasa.core.channels import UserMessage, CollectingOutputChannel
 from rasa.core.lock_store import LockStore
@@ -38,13 +39,14 @@ class GraphProcessor(MessageProcessor):
     @classmethod
     def create(
         cls,
+        model_path: Text,
         tracker_store: rasa.core.tracker_store.TrackerStore,
         lock_store: LockStore,
         generator: Optional[NaturalLanguageGenerator],
         action_endpoint: Optional[EndpointConfig],
         rasa_graph: Dict[Text, Any],
     ) -> "GraphProcessor":
-        model = Model(rasa_graph)
+        model = Model(rasa_graph, LocalModelPersistor(Path(model_path)))
 
         domain = model.get_domain()
         tracker_store.domain = domain

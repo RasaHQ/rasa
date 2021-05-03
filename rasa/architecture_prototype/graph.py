@@ -1,4 +1,9 @@
+import abc
 import copy
+import json
+import os
+import tarfile
+from abc import ABC
 from collections import ChainMap
 import inspect
 from pathlib import Path
@@ -31,8 +36,8 @@ class RasaComponent:
         inputs: Dict[Text, Text],
         constructor_name: Text = None,
         eager: bool = True,
-        persist: bool = True,
         cache: Optional["TrainingCache"] = None,
+        persistor: Optional["Persistor"] = None,
     ) -> None:
         self._eager = eager
         self._inputs = inputs
@@ -43,7 +48,7 @@ class RasaComponent:
         self._run_fn = getattr(self._component_class, fn_name)
         self._component = None
         self._node_name = node_name
-        self._persist = persist
+        self._persistor = persistor
         self._cache = cache
 
         if self._constructor_name:
@@ -113,10 +118,8 @@ class RasaComponent:
         return {self._node_name: copy.deepcopy(result)}
 
     def create_component(self, **const_kwargs: Any) -> None:
-        if self._persist:
-            const_kwargs["persistor"] = Persistor(
-                self._node_name, parent_dir=Path("model")
-            )
+        if self._persistor:
+            const_kwargs["persistor"] = self._persistor
         self._component = self._constructor_fn(**const_kwargs)
 
     def __eq__(self, other: Any) -> bool:
@@ -157,10 +160,96 @@ class Persistor:
         return self._node_name
 
 
+class AbstractModelPersistor(ABC):
+    @abc.abstractmethod
+    def create_component_persistor(self, node_name: Text) -> "Persistor":
+        raise NotImplementedError("Please implement this.")
+
+    @abc.abstractmethod
+    def persist_model(
+        self, target: Text, predict_graph_schema: Dict[Text, Any],
+    ) -> None:
+        raise NotImplementedError("Please implement this.")
+
+    @abc.abstractmethod
+    def load_model(self, persisted_model: Text) -> "Model":
+        raise NotImplementedError("Please implement this.")
+
+    @classmethod
+    def default(cls) -> "AbstractModelPersistor":
+        return LocalModelPersistor(Path("model"))
+
+
+class LocalModelPersistor(AbstractModelPersistor):
+    def __init__(self, local_path: Path = Path("model")) -> None:
+        self._dir = local_path
+
+    def create_component_persistor(self, node_name: Text) -> "Persistor":
+        return Persistor(node_name, self._dir)
+
+    def persist_model(
+        self, target: Text, predict_graph_schema: Dict[Text, Any],
+    ) -> None:
+        graph = serialize_graph_schema(predict_graph_schema)
+        (self._dir / "predict_graph.json").write_text(graph)
+
+        with tarfile.open(target, "w:gz") as tar:
+            for elem in os.scandir(self._dir):
+                tar.add(elem.path, arcname=elem.name)
+
+    def load_model(self, persisted_model: Text) -> "Model":
+        with tarfile.open(persisted_model, mode="r:gz") as tar:
+            tar.extractall(self._dir)
+
+        graph = deserialize_graph_schema((self._dir / "predict_graph.json").read_text())
+
+        return Model(graph, self)
+
+
+class ModelTrainer:
+    def __init__(
+        self, model_persistor: AbstractModelPersistor, cache: TrainingCache,
+    ) -> None:
+        self._model_persistor = model_persistor
+        self._cache = cache
+
+    def train(
+        self,
+        # TODO: add "project"
+        train_graph_schema: Dict[Text, Any],
+        predict_graph_schema: Dict[Text, Any],
+    ) -> "Model":
+        fill_defaults(train_graph_schema)
+        core_targets = [
+            "train_memoization_policy",
+            "train_ted_policy",
+            "train_rule_policy",
+        ]
+        nlu_targets = [
+            "train_classifier",
+            "train_response_selector",
+            "train_synonym_mapper",
+        ]
+
+        run_as_dask_graph(
+            train_graph_schema,
+            core_targets + nlu_targets,
+            cache=self._cache,
+            model_persistor=self._model_persistor,
+        )
+
+        fill_defaults(predict_graph_schema)
+        return Model(predict_graph_schema, persistor_factory=self._model_persistor)
+
+
 class Model:
-    def __init__(self, rasa_graph: Dict[Text, Any]) -> None:
+    def __init__(
+        self, rasa_graph: Dict[Text, Any], persistor_factory: "AbstractModelPersistor"
+    ) -> None:
         self._rasa_graph = rasa_graph
-        self._predict_graph = convert_to_dask_graph(self._rasa_graph)
+        self._predict_graph = convert_to_dask_graph(
+            self._rasa_graph, model_persistor=persistor_factory
+        )
 
     def handle_message(
         self, tracker: DialogueStateTracker, message: Optional[UserMessage]
@@ -250,12 +339,16 @@ def _all_dependencies_schema(
 
 
 def convert_to_dask_graph(
-    graph_schema: Dict[Text, Any], cache: Optional[TrainingCache] = None,
+    graph_schema: Dict[Text, Any],
+    cache: Optional[TrainingCache] = None,
+    model_persistor: Optional[AbstractModelPersistor] = None,
 ) -> Dict[Text, Tuple[RasaComponent, Text]]:
+    model_persistor = model_persistor or AbstractModelPersistor.default()
+
     dsk = {}
     for step_name, step_config in graph_schema.items():
         dsk[step_name] = _graph_component_for_config(
-            step_name, step_config, cache=cache
+            step_name, step_config, cache=cache, model_persistor=model_persistor
         )
     return dsk
 
@@ -265,10 +358,15 @@ def _graph_component_for_config(
     step_config: Dict[Text, Any],
     config_overrides: Dict[Text, Any] = None,
     cache: Optional[TrainingCache] = None,
+    model_persistor: AbstractModelPersistor = None,
 ) -> Tuple[RasaComponent, Text]:
     component_config = step_config["config"].copy()
     if config_overrides:
         component_config.update(config_overrides)
+
+    persistor = None
+    if step_config.get("persist", True):
+        persistor = model_persistor.create_component_persistor(step_name)
 
     return (
         RasaComponent(
@@ -279,7 +377,7 @@ def _graph_component_for_config(
             inputs=step_config["needs"],
             constructor_name=step_config.get("constructor_name"),
             eager=step_config.get("eager", True),
-            persist=step_config.get("persist", True),
+            persistor=persistor,
             cache=cache,
         ),
         *step_config["needs"].values(),
@@ -301,8 +399,11 @@ def run_as_dask_graph(
     graph_schema: Dict[Text, Any],
     target_names: Union[Text, List[Text]],
     cache: Optional[TrainingCache] = None,
+    model_persistor: Optional[AbstractModelPersistor] = None,
 ) -> Dict[Text, Any]:
-    dask_graph = convert_to_dask_graph(graph_schema, cache=cache)
+    dask_graph = convert_to_dask_graph(
+        graph_schema, cache=cache, model_persistor=model_persistor
+    )
     return run_dask_graph(dask_graph, target_names)
 
 
@@ -316,3 +417,39 @@ def run_dask_graph(
 def visualise_as_dask_graph(graph_schema: Dict[Text, Any], filename: Text) -> None:
     dask_graph = convert_to_dask_graph(graph_schema)
     dask.visualize(dask_graph, filename=filename)
+
+
+def serialize_graph_schema(graph_schema: Dict[Text, Any]) -> Text:
+    to_serialize = copy.copy(graph_schema)
+    for step_name, step_config in to_serialize.items():
+        component_class = step_config["uses"]
+        step_config["uses"] = component_class.name
+    return json.dumps(to_serialize)
+
+
+def deserialize_graph_schema(
+    serialized_graph_schema: Union[Text, Path]
+) -> Dict[Text, Any]:
+    from rasa.architecture_prototype.graph_components import load_graph_component
+    import rasa.nlu.registry
+    import rasa.core.registry
+
+    schema = json.loads(serialized_graph_schema)
+    for step_name, step_config in schema.items():
+        component_class_name = step_config["uses"]
+        try:
+            step_config["uses"] = rasa.nlu.registry.get_component_class(
+                component_class_name
+            )
+        except Exception:
+            try:
+                step_config["uses"] = load_graph_component(component_class_name)
+            except Exception:
+                try:
+                    step_config["uses"] = rasa.core.registry.policy_from_module_path(
+                        component_class_name
+                    )
+                except:
+                    raise ValueError(f"Unknown component: {component_class_name}")
+
+    return schema

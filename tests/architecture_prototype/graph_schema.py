@@ -269,7 +269,7 @@ predict_graph_schema = {
     "load_user_message": {
         "uses": MessageCreator,
         "fn": "create",
-        "config": {"message": UserMessage(text="hi")},
+        "config": {"message": None},
         "needs": {},
         "persist": False,
     },
@@ -346,11 +346,7 @@ predict_graph_schema = {
         "uses": TrackerLoader,
         "fn": "load",
         "needs": {},
-        "config": {
-            "tracker": DialogueStateTracker.from_events(
-                "some_sender", [ActionExecuted(action_name=ACTION_LISTEN_NAME)]
-            )
-        },
+        "config": {"tracker": None},
         "persist": False,
     },
     "add_parsed_nlu_message": {

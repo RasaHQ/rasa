@@ -11,6 +11,7 @@ from typing import Text, Optional, Any, List, Dict, Tuple, Type, Union, Callable
 
 import rasa.core
 import rasa.core.training.training
+from rasa.architecture_prototype.graph_components import GraphComponentMetaclass
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
@@ -52,7 +53,7 @@ from rasa.utils.tensorflow.constants import EPOCHS
 logger = logging.getLogger(__name__)
 
 
-class PolicyEnsemble:
+class PolicyEnsemble(metaclass=GraphComponentMetaclass):
     versioned_packages = ["rasa", "tensorflow", "sklearn"]
 
     def __init__(

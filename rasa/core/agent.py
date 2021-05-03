@@ -492,6 +492,7 @@ class Agent:
             graph.fill_defaults(predict_graph_schema)
 
             processor = GraphProcessor.create(
+                model_path,
                 tracker_store=tracker_store,
                 lock_store=InMemoryLockStore(),
                 generator=generator,

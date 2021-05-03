@@ -1,3 +1,4 @@
+import inspect
 import os.path
 from pathlib import Path
 from typing import Optional, Text, Dict, List
@@ -19,6 +20,9 @@ import rasa.utils.common
 import rasa.core.training
 
 
+registry = {}
+
+
 class GraphComponentMetaclass(type):
     """Metaclass with `name` class property."""
 
@@ -26,6 +30,14 @@ class GraphComponentMetaclass(type):
     def name(cls) -> Text:
         """The name property is a function of the class - its __name__."""
         return cls.__name__
+
+    def __new__(cls, clsname, bases, attrs):
+        newclass = super().__new__(cls, clsname, bases, attrs)
+        # Every class using this metaclass will be registered automatically when
+        # it's imported
+        if not inspect.isabstract(newclass):
+            registry[newclass.name] = newclass
+        return newclass
 
 
 class GraphComponent(metaclass=GraphComponentMetaclass):
@@ -53,7 +65,7 @@ class DomainReader(ProjectReader):
     def __init__(
         self,
         project: Optional[Text] = None,
-        persistor: Optional[Persistor] = None,
+        persistor: Optional["Persistor"] = None,
         resource_name: Optional[Text] = None,
     ) -> None:
         super().__init__(project)
@@ -195,20 +207,21 @@ class NLUPredictionToHistoryAdder(GraphComponent):
         return tracker
 
 
-components = [
-    ProjectReader,
-    TrainingDataReader,
-    DomainReader,
-    StoryGraphReader,
-    TrackerGenerator,
-    StoryToTrainingDataConverter,
-    MessageToE2EFeatureConverter,
-    MessageCreator,
-    TrackerLoader,
-    NLUMessageConverter,
-    NLUPredictionToHistoryAdder,
-]
-registry = {c.name: c for c in components}
+# components = [
+#     ProjectReader,
+#     TrainingDataReader,
+#     DomainReader,
+#     StoryGraphReader,
+#     TrackerGenerator,
+#     StoryToTrainingDataConverter,
+#     MessageToE2EFeatureConverter,
+#     MessageCreator,
+#     TrackerLoader,
+#     NLUMessageConverter,
+#     NLUPredictionToHistoryAdder,
+#     SimplePolicyEnsemble
+# ]
+# registry = {c.name: c for c in components}
 
 
 class GraphComponentNotFound(Exception):

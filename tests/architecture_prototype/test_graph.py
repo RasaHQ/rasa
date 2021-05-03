@@ -4,12 +4,15 @@ from typing import Any, Dict, List, Text
 
 from rasa.architecture_prototype import graph
 from rasa.architecture_prototype import graph_fingerprinting
-from rasa.architecture_prototype.graph import Model
+from rasa.architecture_prototype.graph import (
+    Model,
+    serialize_graph_schema,
+    deserialize_graph_schema,
+)
 from rasa.architecture_prototype.graph_fingerprinting import (
     FingerprintStatus,
     TrainingCache,
 )
-from rasa.architecture_prototype.graph_components import load_graph_component
 from rasa.core.channels import UserMessage
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.events import ActionExecuted, UserUttered
@@ -21,8 +24,6 @@ from tests.architecture_prototype.graph_schema import (
     predict_graph_schema,
     nlu_train_graph_schema,
 )
-import rasa.nlu.registry
-import rasa.core.registry
 
 
 def test_train_nlu():
@@ -52,36 +53,6 @@ def test_train_load_predict(prediction_graph: Dict[Text, Any]):
     # TODO: should we be saving model_metadata?
     # TODO: stuff like rasa.utils.train_utils.update_deprecated_loss_type changing wont force re-train?
     # TODO: include more meta data e.g. rasa version etc.
-
-
-def serialize_graph_schema(graph_schema: Dict[Text, Any]) -> Text:
-    to_serialize = copy.copy(graph_schema)
-    for step_name, step_config in to_serialize.items():
-        component_class = step_config["uses"]
-        step_config["uses"] = component_class.name
-    return json.dumps(to_serialize)
-
-
-def deserialize_graph_schema(serialized_graph_schema: Text) -> Dict[Text, Any]:
-    schema = json.loads(serialized_graph_schema)
-    for step_name, step_config in schema.items():
-        component_class_name = step_config["uses"]
-        try:
-            step_config["uses"] = rasa.nlu.registry.get_component_class(
-                component_class_name
-            )
-        except Exception:
-            try:
-                step_config["uses"] = load_graph_component(component_class_name)
-            except Exception:
-                try:
-                    step_config["uses"] = rasa.core.registry.policy_from_module_path(
-                        component_class_name
-                    )
-                except:
-                    raise ValueError("Unknown component!")
-
-    return schema
 
 
 def test_serialize_graph_schema():
