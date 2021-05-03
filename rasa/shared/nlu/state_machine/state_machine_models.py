@@ -106,6 +106,10 @@ class Slot:
     def prompt_actions() -> List[Action]:
         pass
 
+    @abc.abstractproperty
+    def only_fill_when_prompted() -> bool:
+        pass
+
     @abc.abstractmethod
     def as_rasa_slot(self) -> rasa_slots.Slot:
         pass
@@ -116,6 +120,7 @@ class TextSlot(abc.ABC):
         self,
         name: str,
         condition: Optional[Condition] = None,
+        only_fill_when_prompted: bool = False,
         entities: List[str] = [],
         intents: Dict[Intent, Any] = {},
         prompt_actions: List[Action] = [],
@@ -124,6 +129,7 @@ class TextSlot(abc.ABC):
         self.condition = condition
         self.entities = entities
         self.intents = intents
+        self.only_fill_when_prompted = only_fill_when_prompted
         self.prompt_actions = prompt_actions
 
     def as_rasa_slot(self) -> rasa_slots.Slot:
@@ -135,12 +141,14 @@ class BooleanSlot(abc.ABC):
         self,
         name: str,
         condition: Optional[Condition] = None,
+        only_fill_when_prompted: bool = False,
         entities: List[str] = [],
         intents: Dict[Intent, Any] = {},
         prompt_actions: List[Action] = [],
     ):
         self.name = name
         self.condition = condition
+        self.only_fill_when_prompted = only_fill_when_prompted
         self.entities = entities
         self.intents = intents
         self.prompt_actions = prompt_actions

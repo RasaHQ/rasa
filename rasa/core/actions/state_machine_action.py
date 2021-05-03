@@ -159,25 +159,54 @@ class StateMachineAction(LoopAction):
         )
 
     @staticmethod
+    def _get_valid_slots(
+        slots: List[Slot],
+        tracker: DialogueStateTracker,
+        only_empty_slots: bool = False,
+    ) -> List[Slot]:
+        valid_slots = slots
+
+        # Get only unfilled slots
+        if only_empty_slots:
+            valid_slots = [
+                slot
+                for slot in valid_slots
+                if tracker.get_slot(slot.name) == None
+            ]
+
+        # Get slots that pass conditions
+        valid_slots = [
+            slot
+            for slot in valid_slots
+            if not slot.condition
+            or (slot.condition and slot.condition.is_valid(tracker))
+        ]
+
+        return valid_slots
+
+    @staticmethod
     def _get_slot_values(
         slots: List[Slot], tracker: "DialogueStateTracker"
     ) -> Dict[str, Any]:
         slot_values = {}
 
-        # Fill slots from latest utterance
-        unfilled_slots = [
-            slot for slot in slots if tracker.get_slot(slot.name) == None
-        ]
+        # Get valid slots from latest utterance
+        valid_slots = StateMachineAction._get_valid_slots(
+            slots=slots, tracker=tracker, only_empty_slots=False
+        )
 
-        # Get slots that pass conditions
-        unfilled_slots = [
-            slot
-            for slot in unfilled_slots
-            if not slot.condition
-            or (slot.condition and slot.condition.is_valid(tracker))
-        ]
+        for slot in valid_slots:
+            last_bot_uttered_action_name = (
+                tracker.latest_bot_utterance.metadata.get("utter_action")
+            )
 
-        for slot in unfilled_slots:
+            if slot.only_fill_when_prompted:
+                if not last_bot_uttered_action_name or (
+                    last_bot_uttered_action_name
+                    not in [action.name for action in slot.prompt_actions]
+                ):
+                    continue
+
             # Extract values using entities
             values_for_slots: List[Any] = [
                 StateMachineAction.get_entity_value(
@@ -218,12 +247,18 @@ class StateMachineAction(LoopAction):
             if response.condition.is_valid(tracker=tracker)
         ]
 
+        # valid_responses_action_names = [
+        #     valid_response.actions[
+        #         random.randint(0, len(valid_response.actions) - 1)
+        #     ].name
+        #     for valid_response in valid_responses
+        #     if len(valid_response.actions) > 0
+        # ]
+
         valid_responses_action_names = [
-            valid_response.actions[
-                random.randint(0, len(valid_response.actions) - 1)
-            ].name
+            action.name
             for valid_response in valid_responses
-            if len(valid_response.actions) > 0
+            for action in valid_response.actions
         ]
 
         return valid_responses_action_names
@@ -323,11 +358,9 @@ class StateMachineAction(LoopAction):
         nlg: NaturalLanguageGenerator,
     ) -> List[Event]:
         # Get non-filled slots
-        empty_slots = [
-            slot
-            for slot in slots
-            if tracker.slots.get(slot.name).value == None
-        ]
+        empty_slots = StateMachineAction._get_valid_slots(
+            slots=slots, tracker=tracker, only_empty_slots=True
+        )
 
         # Get next slot utterance
         next_slot_prompt_action: Optional[str] = None
