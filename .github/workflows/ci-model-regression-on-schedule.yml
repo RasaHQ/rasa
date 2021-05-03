@@ -374,7 +374,7 @@ jobs:
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
 
           # TODO remove the fake data later
-          OUTPUT='$OUTPUT | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 | |---------------|-----------------|-----------------|-------------------| | `BERT + DIET(bow) + ResponseSelector(bow)`<br> test: `1m30s`, train: `4m16s`, total: `5m45s`|0.7942 (0.06)|0.7529 (0.63)|0.5563 (-0.00)|\n test: `2m46s`, train: `5m5s`, total: `7m51s`|0.8727 (0.06)|0.9113 (-0.10)|0.8826 (-0.05)| | `Sparse + DIET(bow) + ResponseSelector(bow)`'
+          OUTPUT='$OUTPUT | Configuration | Intent Classification Micro F1 | Entity Recognition Micro F1 | Response Selection Micro F1 | |---------------|-----------------|-----------------|-------------------| | `BERT + DIET(bow) + ResponseSelector(bow)`<br> test: `1m30s`, train: `4m16s`, total: `5m45s`|0.7942 (0.06)|0.7529 (0.63)|0.5563 (-0.00)|\n test: `2m46s`, train: `5m5s`, total: `7m51s`|0.8727 (0.06)|0.9113 (0.10)|0.8826 (-0.05)| | `Sparse + DIET(bow) + ResponseSelector(bow)`'
 
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
