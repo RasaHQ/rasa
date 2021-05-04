@@ -91,7 +91,7 @@ class MultiProjectImporter(TrainingDataImporter):
     def _is_explicitly_imported(self, path: Text) -> bool:
         return not self.no_skills_selected() and self.is_imported(path)
 
-    def _init_from_directory(self, path: Text):
+    def _init_from_directory(self, path: Text) -> None:
         for parent, _, files in os.walk(path, followlinks=True):
             for file in files:
                 full_path = os.path.join(parent, file)
@@ -163,15 +163,13 @@ class MultiProjectImporter(TrainingDataImporter):
 
         return included
 
-    def _is_in_imported_paths(self, path) -> bool:
+    def _is_in_imported_paths(self, path: Text) -> bool:
         return any(
             [rasa.shared.utils.io.is_subdirectory(path, i) for i in self._imports]
         )
 
-    def add_import(self, path: Text) -> None:
-        self._imports.append(path)
-
     async def get_domain(self) -> Domain:
+        """Retrieves model domain (see parent class for full docstring)."""
         domains = [Domain.load(path) for path in self._domain_paths]
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
@@ -183,18 +181,25 @@ class MultiProjectImporter(TrainingDataImporter):
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
-        story_paths = self._story_paths if not use_e2e else self._e2e_story_paths
-
+        """Retrieves training stories / rules (see parent class for full docstring)."""
         return await utils.story_graph_from_paths(
-            story_paths,
+            self._story_paths,
             await self.get_domain(),
             template_variables,
             use_e2e,
             exclusion_percentage,
         )
 
+    async def get_conversation_tests(self) -> StoryGraph:
+        """Retrieves conversation test stories (see parent class for full docstring)."""
+        return await utils.story_graph_from_paths(
+            self._e2e_story_paths, await self.get_domain(), use_e2e=True,
+        )
+
     async def get_config(self) -> Dict:
+        """Retrieves model config (see parent class for full docstring)."""
         return self.config
 
     async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        """Retrieves NLU training data (see parent class for full docstring)."""
         return utils.training_data_from_paths(self._nlu_paths, language)

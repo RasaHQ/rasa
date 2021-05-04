@@ -1,12 +1,11 @@
 import functools
 import logging
-import os
 from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
 import rasa.shared.data
 from rasa.shared.core.slots import TextSlot, ListSlot
-from rasa.shared.exceptions import YamlException, FileNotFoundException
+from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
 from rasa.shared.nlu.constants import (
@@ -44,7 +43,6 @@ KEY_ENTITIES = "entities"
 KEY_USER_INTENT = "intent"
 KEY_USER_MESSAGE = "user"
 KEY_SLOT_NAME = "slot_was_set"
-KEY_SLOT_VALUE = "value"
 KEY_ACTIVE_LOOP = "active_loop"
 KEY_ACTION = "action"
 KEY_BOT_END_TO_END_MESSAGE = "bot"
@@ -83,11 +81,15 @@ class YAMLStoryReader(StoryReader):
             reader._is_used_for_training,
         )
 
-    def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
+    def read_from_file(
+        self, filename: Union[Text, Path], skip_validation: bool = False
+    ) -> List[StoryStep]:
         """Read stories or rules from file.
 
         Args:
             filename: Path to the story/rule file.
+            skip_validation: `True` if the file was already validated
+                e.g. when it was stored in the database.
 
         Returns:
             `StoryStep`s read from `filename`.
@@ -97,22 +99,29 @@ class YAMLStoryReader(StoryReader):
             return self.read_from_string(
                 rasa.shared.utils.io.read_file(
                     filename, rasa.shared.utils.io.DEFAULT_ENCODING
-                )
+                ),
+                skip_validation,
             )
         except YamlException as e:
             e.filename = filename
             raise e
 
-    def read_from_string(self, string: Text) -> List[StoryStep]:
+    def read_from_string(
+        self, string: Text, skip_validation: bool = False
+    ) -> List[StoryStep]:
         """Read stories or rules from a string.
 
         Args:
             string: Unprocessed YAML file content.
+            skip_validation: `True` if the string was already validated
+                e.g. when it was stored in the database.
 
         Returns:
             `StoryStep`s read from `string`.
         """
-        rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
+        if not skip_validation:
+            rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
+
         yaml_content = rasa.shared.utils.io.read_yaml(string)
 
         return self.read_from_parsed_yaml(yaml_content)
@@ -160,35 +169,9 @@ class YAMLStoryReader(StoryReader):
             YamlException: if the file seems to be a YAML file (extension) but
                 can not be read / parsed.
         """
-        return rasa.shared.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
-            file_path, KEY_STORIES, KEY_RULES
-        )
-
-    @classmethod
-    def is_key_in_yaml(cls, file_path: Union[Text, Path], *keys: Text) -> bool:
-        """Check if any of the keys is contained in the root object of the yaml file.
-
-        Arguments:
-            file_path: path to the yaml file
-            keys: keys to look for
-
-        Returns:
-              `True` if at least one of the keys is found, `False` otherwise.
-
-        Raises:
-            FileNotFoundException: if the file cannot be found.
-        """
-        try:
-            with open(file_path) as file:
-                return any(
-                    any(line.lstrip().startswith(f"{key}:") for key in keys)
-                    for line in file
-                )
-        except FileNotFoundError:
-            raise FileNotFoundException(
-                f"Failed to read file, "
-                f"'{os.path.abspath(file_path)}' does not exist."
-            )
+        return rasa.shared.data.is_likely_yaml_file(
+            file_path
+        ) and rasa.shared.utils.io.is_key_in_yaml(file_path, KEY_STORIES, KEY_RULES)
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:

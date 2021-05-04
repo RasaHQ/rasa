@@ -172,17 +172,6 @@ def create_validator(
     return FunctionValidator
 
 
-def zip_folder(folder: Text) -> Text:
-    """Create an archive from a folder."""
-    import shutil
-
-    zipped_path = tempfile.NamedTemporaryFile(delete=False)
-    zipped_path.close()
-
-    # WARN: not thread-safe!
-    return shutil.make_archive(zipped_path.name, "zip", folder)
-
-
 def json_unpickle(file_name: Union[Text, Path]) -> Any:
     """Unpickle an object from file using json.
 

@@ -123,9 +123,13 @@ class LockStore:
                 logger.debug(f"Acquired lock for conversation '{conversation_id}'.")
                 return lock
 
+            items_before_this = ticket - (lock.now_serving or 0)
+
             logger.debug(
-                f"Failed to acquire lock for conversation ID '{conversation_id}'. "
-                f"Retrying..."
+                f"Failed to acquire lock for conversation ID '{conversation_id}' "
+                f"because {items_before_this} other item(s) for this "
+                f"conversation ID have to be finished processing first. "
+                f"Retrying in {wait_time_in_seconds} seconds ..."
             )
 
             # sleep and update lock
@@ -245,10 +249,8 @@ class RedisLockStore(LockStore):
                 f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
             )
 
-    def _get_key_prefix(self) -> Text:
-        return self.key_prefix
-
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
+        """Retrieves lock (see parent docstring for more information)."""
         serialised_lock = self.red.get(self.key_prefix + conversation_id)
         if serialised_lock:
             return TicketLock.from_dict(json.loads(serialised_lock))

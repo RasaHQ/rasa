@@ -11,7 +11,7 @@ pipeline:
 - name: "DIETClassifier"
   epochs: 100
 - name: SpacyNLP
-  model: "en"
+  model: "en_core_web_md"
 - name: SpacyEntityExtractor
   dimensions: ["PERSON"]
 - name: "EntitySynonymMapper"

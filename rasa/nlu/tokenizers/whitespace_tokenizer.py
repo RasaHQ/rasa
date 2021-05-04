@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Pattern
 
 import regex
 

@@ -23,7 +23,7 @@ from rasa.shared.core.events import Event
 import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, State
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
@@ -34,9 +34,13 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.shared.core.constants import USER, SLOTS, PREVIOUS_ACTION, ACTIVE_LOOP
+from rasa.shared.core.constants import (
+    USER,
+    SLOTS,
+    PREVIOUS_ACTION,
+    ACTIVE_LOOP,
+)
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
-from rasa.utils.tensorflow.constants import EPOCHS
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -120,11 +124,16 @@ class Policy:
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
         self.finetune_mode = should_finetune
+        self._rule_only_data = {}
 
     @property
-    def featurizer(self):
+    def featurizer(self) -> TrackerFeaturizer:
         """Returns the policy's featurizer."""
         return self.__featurizer
+
+    def set_shared_policy_states(self, **kwargs: Any) -> None:
+        """Sets policy's shared states for correct featurization."""
+        self._rule_only_data = kwargs.get("rule_only_data", {})
 
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
@@ -145,7 +154,7 @@ class Policy:
         logger.debug(f"Parameters ignored by `model.fit(...)`: {ignored_params}")
         return params
 
-    def featurize_for_training(
+    def _featurize_for_training(
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
@@ -194,6 +203,66 @@ class Policy:
             entity_tags = entity_tags[:max_training_samples]
 
         return state_features, label_ids, entity_tags
+
+    def _prediction_states(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
+    ) -> List[State]:
+        """Transforms tracker to states for prediction.
+
+        Args:
+            tracker: The tracker to be featurized.
+            domain: The Domain.
+            use_text_for_last_user_input: Indicates whether to use text or intent label
+                for featurizing last user input.
+
+        Returns:
+            A list of states.
+        """
+        return self.featurizer.prediction_states(
+            [tracker],
+            domain,
+            use_text_for_last_user_input=use_text_for_last_user_input,
+            ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
+            rule_only_data=self._rule_only_data,
+        )[0]
+
+    def _featurize_for_prediction(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        use_text_for_last_user_input: bool = False,
+    ) -> List[List[Dict[Text, List["Features"]]]]:
+        """Transforms training tracker into a vector representation.
+
+        The trackers, consisting of multiple turns, will be transformed
+        into a float vector which can be used by a ML model.
+
+        Args:
+            tracker: The tracker to be featurized.
+            domain: The Domain.
+            interpreter: The NLU interpreter.
+            use_text_for_last_user_input: Indicates whether to use text or intent label
+                for featurizing last user input.
+
+        Returns:
+            A list (corresponds to the list of trackers)
+            of lists (corresponds to all dialogue turns)
+            of dictionaries of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+            ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
+            turns in all trackers.
+        """
+        return self.featurizer.create_state_features(
+            [tracker],
+            domain,
+            interpreter,
+            use_text_for_last_user_input=use_text_for_last_user_input,
+            ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
+            rule_only_data=self._rule_only_data,
+        )
 
     def train(
         self,
@@ -336,8 +405,7 @@ class Policy:
         )
         return cls()
 
-    @staticmethod
-    def _default_predictions(domain: Domain) -> List[float]:
+    def _default_predictions(self, domain: Domain) -> List[float]:
         """Creates a list of zeros.
 
         Args:
@@ -409,6 +477,7 @@ class PolicyPrediction:
         is_end_to_end_prediction: bool = False,
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
+        hide_rule_turn: bool = False,
     ) -> None:
         """Creates a `PolicyPrediction`.
 
@@ -432,6 +501,8 @@ class PolicyPrediction:
             diagnostic_data: Intermediate results or other information that is not
                 necessary for Rasa to function, but intended for debugging and
                 fine-tuning purposes.
+            hide_rule_turn: `True` if the prediction was made by the rules which
+                do not appear in the stories
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
@@ -441,6 +512,7 @@ class PolicyPrediction:
         self.is_end_to_end_prediction = is_end_to_end_prediction
         self.is_no_user_prediction = is_no_user_prediction
         self.diagnostic_data = diagnostic_data or {}
+        self.hide_rule_turn = hide_rule_turn
 
     @staticmethod
     def for_action_name(
@@ -484,6 +556,7 @@ class PolicyPrediction:
             and self.optional_events == other.events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
             and self.is_no_user_prediction == other.is_no_user_prediction
+            and self.hide_rule_turn == other.hide_rule_turn
             # We do not compare `diagnostic_data`, because it has no effect on the
             # action prediction.
         )

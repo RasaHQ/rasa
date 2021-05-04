@@ -24,7 +24,6 @@ PRETRAINED_EXTRACTORS = {
     "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
     "SpacyEntityExtractor",
 }
-TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 
 NUMBER_OF_SUB_TOKENS = "number_of_sub_tokens"
 
