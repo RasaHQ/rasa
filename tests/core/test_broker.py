@@ -318,8 +318,8 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
 
 def test_raise_exception_port(monkeypatch: MonkeyPatch):
 
-    with pytest.raises(RasaException) as e_info:
-        broker = PikaEventBroker(
+    with pytest.raises(RasaException):
+        PikaEventBroker(
             "host",
             "username",
             "password",
