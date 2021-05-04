@@ -228,7 +228,7 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
 
         # Construct mask with given density and guarantee that every output is
         # connected to at least one input
-        kernel_mask = self._minimal_mask() + self._random_mask()  # JOHANNES TEST
+        kernel_mask = self._random_mask()  # JOHANNES TEST self._minimal_mask()
 
         # We might accidently have added a random connection on top of
         # a fixed connection
