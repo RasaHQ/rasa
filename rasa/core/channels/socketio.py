@@ -150,7 +150,6 @@ class SocketIOInput(InputChannel):
         jwt_method: Optional[Text] = "HS256",
     ):
         """Creates a ``SocketIOInput`` object."""
-
         self.bot_message_evt = bot_message_evt
         self.session_persistence = session_persistence
         self.user_message_evt = user_message_evt
