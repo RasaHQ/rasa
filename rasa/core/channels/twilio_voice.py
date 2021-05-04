@@ -5,8 +5,8 @@ from sanic.response import HTTPResponse
 from twilio.twiml.voice_response import VoiceResponse, Gather
 from typing import Text, Callable, Awaitable, List, Any, Dict, Optional
 
-from rasa.utils.io import get_emoji_regex
-from rasa.shared.utils.io import raise_warning
+import rasa.utils.io
+import rasa.shared.utils.io
 from rasa.shared.core.events import BotUttered
 from rasa.shared.exceptions import InvalidConfigException
 from rasa.core.channels.channel import (
@@ -235,10 +235,12 @@ class TwilioVoiceInput(InputChannel):
             else:
                 # Get last user utterance from tracker.
                 tracker = request.app.agent.tracker_store.retrieve(sender_id)
-                last_response = next(
-                    (e for e in reversed(tracker.events) if isinstance(e, BotUttered)),
-                    None,
-                )
+                last_response = None
+                if tracker:
+                    last_response = next(
+                        (e for e in reversed(tracker.events) if isinstance(e, BotUttered)),
+                        None,
+                    )
 
                 # If no previous utterance found use the reprompt_fallback phrase.
                 if last_response is None:
@@ -270,11 +272,12 @@ class TwilioVoiceInput(InputChannel):
         # Add pauses between messages.
         # Add a listener to the last message to listen for user response.
         for i, message in enumerate(messages):
+            msg_text = message["text"]
             if i + 1 == len(messages):
-                gather.say(message["text"], voice=self.assistant_voice)
+                gather.say(msg_text, voice=self.assistant_voice)
                 voice_response.append(gather)
             else:
-                voice_response.say(message["text"], voice=self.assistant_voice)
+                voice_response.say(msg_text, voice=self.assistant_voice)
                 voice_response.pause(length=1)
 
         return voice_response
@@ -296,9 +299,9 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         text: Text,
     ) -> None:
         """Raises a warning if text contains an emoji."""
-        emoji_regex = get_emoji_regex()
+        emoji_regex = rasa.utils.io.get_emoji_regex()
         if emoji_regex.findall(text):
-            raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 "Text contains an emoji in a voice response. Review responses to provide a voice-friendly "
                 "alternative."
             )
@@ -329,6 +332,6 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         self, recipient_id: Text, image: Text, **kwargs: Any
     ) -> None:
         """For voice channel do not send images."""
-        raise_warning(
+        rasa.shared.utils.io.raise_warning(
             "Image removed from voice message. Only text of message is sent."
         )

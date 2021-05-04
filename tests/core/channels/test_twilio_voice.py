@@ -214,7 +214,7 @@ async def test_twilio_voice_multiple_responses():
     )
 
 
-async def test_twilio_receive(stack_agent: Agent):
+async def test_twilio_receive_answer(stack_agent: Agent):
     app = server.create_app(agent=stack_agent)
 
     inputs = {
@@ -231,7 +231,7 @@ async def test_twilio_receive(stack_agent: Agent):
 
     client = app.asgi_client
 
-    body = {"From": "Tobias", "SpeechResult": None, "CallStatus": "ringing"}
+    body = {"From": "Tobias", "CallStatus": "ringing"}
     _, response = await client.post(
         "/webhooks/twilio_voice/webhook",
         headers={"Content-type": "application/x-www-form-urlencoded"},
@@ -239,9 +239,37 @@ async def test_twilio_receive(stack_agent: Agent):
     )
     assert response.status == 200
     # Actual test xml content
+    assert response.body == \
+           b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">hey there None!</Say></Gather></Response>'
+
+
+async def test_twilio_receive_no_response(stack_agent: Agent):
+    app = server.create_app(agent=stack_agent)
+
+    inputs = {
+        "initial_prompt": "hello",
+        "reprompt_fallback_phrase": "i didn't get that",
+        "speech_model": "default",
+        "speech_timeout": "5",
+        "assistant_voice": "woman",
+        "enhanced": "false",
+    }
+
+    tv = TwilioVoiceInput(**inputs)
+    channel.register([tv], app, "/webhooks/")
+
+    client = app.asgi_client
+
+    body = {"From": "Matthew", "CallStatus": "ringing"}
+    _, response = await client.post(
+        "/webhooks/twilio_voice/webhook",
+        headers={"Content-type": "application/x-www-form-urlencoded"},
+        data=body,
+    )
+    assert response.status == 200
     assert response.body
 
-    body = {"From": "Tobias", "SpeechResult": None, "CallStatus": "answered"}
+    body = {"From": "Matthew", "CallStatus": "answered"}
     _, response = await client.post(
         "/webhooks/twilio_voice/webhook",
         headers={"Content-type": "application/x-www-form-urlencoded"},
@@ -250,4 +278,33 @@ async def test_twilio_receive(stack_agent: Agent):
 
     assert response.status == 200
     assert response.body == \
-           b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">sorry, I didn\'t get that, can you rephrase it?</Say></Gather></Response>'
+           b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">hey there None!</Say></Gather></Response>'
+
+
+async def test_twilio_receive_no_previous_response(stack_agent: Agent):
+    app = server.create_app(agent=stack_agent)
+
+    inputs = {
+        "initial_prompt": "hello",
+        "reprompt_fallback_phrase": "i didn't get that",
+        "speech_model": "default",
+        "speech_timeout": "5",
+        "assistant_voice": "woman",
+        "enhanced": "false",
+    }
+
+    tv = TwilioVoiceInput(**inputs)
+    channel.register([tv], app, "/webhooks/")
+
+    client = app.asgi_client
+
+    body = {"From": "Ray", "CallStatus": "answered"}
+    _, response = await client.post(
+        "/webhooks/twilio_voice/webhook",
+        headers={"Content-type": "application/x-www-form-urlencoded"},
+        data=body,
+    )
+
+    assert response.status == 200
+    assert response.body == \
+           b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">i didn\'t get that</Say></Gather></Response>'
