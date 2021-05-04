@@ -5,7 +5,6 @@ on:
   schedule:
     # Run once a week
     - cron:  '1 23 * * */7'
-  pull_request: # TODO remove later
 
 env:
   GKE_ZONE: us-central1
@@ -177,7 +176,6 @@ jobs:
           OMP_NUM_THREADS: 1
           TF_DETERMINISTIC_OPS: 1 # Run GPUs in a deterministic mode
         run: |-
-          exit 1  # TODO remove later
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
@@ -257,18 +255,16 @@ jobs:
       - name: Select a member from managers team randomly
         if: failure() && steps.issue-exist.outputs.result == 'false'
         run: |
-          # MEMBERS=$(curl \
-          #             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          #             -H "Accept: application/vnd.github.v3+json" \
-          #             https://api.github.com/orgs/RasaHQ/teams/research/members)
-          # # Make sure we get a list of members
-          # [[ -z "$MEMBERS" ]] && echo "Could not find any members from the team." || true
+          MEMBERS=$(curl \
+                      -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                      -H "Accept: application/vnd.github.v3+json" \
+                      https://api.github.com/orgs/RasaHQ/teams/research/members)
+          # Make sure we get a list of members
+          [[ -z "$MEMBERS" ]] && echo "Could not find any members from the team." || true
 
-          # # Shuffle the list, then select the first member as the assignee for the issue
-          # ASSIGNEE=$(echo $MEMBERS | jq -r '.[].login' | shuf | head -n1)
-          # echo ASSIGNEE="$ASSIGNEE" >> $GITHUB_ENV
-
-          echo ASSIGNEE="${{ github.actor }}" >> $GITHUB_ENV # TODO remove later
+          # Shuffle the list, then select the first member as the assignee for the issue
+          ASSIGNEE=$(echo $MEMBERS | jq -r '.[].login' | shuf | head -n1)
+          echo ASSIGNEE="$ASSIGNEE" >> $GITHUB_ENV
 
       - name: Create GitHub Issue 📬
         id: create-issue
@@ -325,7 +321,7 @@ jobs:
               }]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }}  # TODO ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
   analyse_performance:
     name: Analyse Performance
@@ -425,18 +421,16 @@ jobs:
       - name: Select a member from managers team randomly
         if:  steps.performance.outputs.is_dropped == 'true' && steps.issue-exist.outputs.result == 'false'
         run: |
-          # MEMBERS=$(curl \
-          #             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          #             -H "Accept: application/vnd.github.v3+json" \
-          #             https://api.github.com/orgs/RasaHQ/teams/research/members)
-          # # Make sure we get a list of members
-          # [[ -z "$MEMBERS" ]] && echo "Could not find any members from the team." || true
+          MEMBERS=$(curl \
+                      -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                      -H "Accept: application/vnd.github.v3+json" \
+                      https://api.github.com/orgs/RasaHQ/teams/research/members)
+          # Make sure we get a list of members
+          [[ -z "$MEMBERS" ]] && echo "Could not find any members from the team." || true
 
-          # # Shuffle the list, then select the first member as the assignee for the issue
-          # ASSIGNEE=$(echo $MEMBERS | jq -r '.[].login' | shuf | head -n1)
-          # echo ASSIGNEE="$ASSIGNEE" >> $GITHUB_ENV
-
-          echo ASSIGNEE="${{ github.actor }}" >> $GITHUB_ENV # TODO remove later
+          # Shuffle the list, then select the first member as the assignee for the issue
+          ASSIGNEE=$(echo $MEMBERS | jq -r '.[].login' | shuf | head -n1)
+          echo ASSIGNEE="$ASSIGNEE" >> $GITHUB_ENV
 
       - name: Create GitHub Issue 📬
         id: create-issue
@@ -483,7 +477,7 @@ jobs:
               }]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }}  # TODO ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
   remove_runner_gpu:
     name: Delete Github Runner - GPU
