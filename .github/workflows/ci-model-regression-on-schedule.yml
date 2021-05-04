@@ -283,45 +283,45 @@ jobs:
             })
             return issue.data.number
 
-      # - name: Notify Slack of Failure 😱
-      #   if: failure()  && steps.issue-exist.outputs.result == 'false'
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: custom
-      #     fields: workflow,job,commit,repo,ref,author,took
-      #     custom_payload: |
-      #       {
-      #         attachments: [{
-      #           fallback: 'fallback',
-      #           color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
-      #           title: `${process.env.AS_WORKFLOW}`,
-      #           text: 'Scheduled model regression test failed :no_entry:️',
-      #           fields: [{
-      #             title: 'Configuration',
-      #             value: '${{ matrix.config }}',
-      #             short: false
-      #           },
-      #           {
-      #             title: 'Dataset',
-      #             value: '${{ matrix.dataset }}',
-      #             short: false
-      #           },
-      #           {
-      #             title: 'GitHub Issue',
-      #             value: `https://github.com/${{ github.repository }}/issues/${{ steps.create-issue.outputs.result }}`,
-      #             short: false
-      #           },
-      #           {
-      #             title: 'GitHub Action',
-      #             value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
-      #             short: false
-      #           }],
-      #           actions: [{
-      #           }]
-      #         }]
-      #       }
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
+      - name: Notify Slack of Failure 😱
+        if: failure()  && steps.issue-exist.outputs.result == 'false'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow,job,commit,repo,ref,author,took
+          custom_payload: |
+            {
+              attachments: [{
+                fallback: 'fallback',
+                color: '${{ job.status }}' === 'success' ? 'good' : '${{ job.status }}' === 'failure' ? 'danger' : 'warning',
+                title: `${process.env.AS_WORKFLOW}`,
+                text: 'Scheduled model regression test failed :no_entry:️',
+                fields: [{
+                  title: 'Configuration',
+                  value: '${{ matrix.config }}',
+                  short: false
+                },
+                {
+                  title: 'Dataset',
+                  value: '${{ matrix.dataset }}',
+                  short: false
+                },
+                {
+                  title: 'GitHub Issue',
+                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.create-issue.outputs.result }}`,
+                  short: false
+                },
+                {
+                  title: 'GitHub Action',
+                  value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+                  short: false
+                }],
+                actions: [{
+                }]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }}  # TODO ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
   analyse_performance:
     name: Analyse Performance
@@ -454,35 +454,35 @@ jobs:
             })
             return issue.data.number
 
-      # - name: Notify Slack when Performance Drops 💬
-      #   if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exist.outputs.result == 'false'
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: custom
-      #     fields: workflow,job,commit,repo,ref,author,took
-      #     custom_payload: |
-      #       {
-      #         attachments: [{
-      #           fallback: 'fallback',
-      #           color: 'danger',
-      #           title: `${process.env.AS_WORKFLOW}`,
-      #           text: 'Scheduled model regression test performance drops :chart_with_downwards_trend:',
-      #           fields: [{
-      #             title: 'GitHub Issue',
-      #             value: `https://github.com/${{ github.repository }}/issues/${{ steps.create-issue.outputs.result }}`,
-      #             short: false
-      #           },
-      #           {
-      #             title: 'GitHub Action',
-      #             value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
-      #             short: false
-      #           }],
-      #           actions: [{
-      #           }]
-      #         }]
-      #       }
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
+      - name: Notify Slack when Performance Drops 💬
+        if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exist.outputs.result == 'false'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          fields: workflow,job,commit,repo,ref,author,took
+          custom_payload: |
+            {
+              attachments: [{
+                fallback: 'fallback',
+                color: 'danger',
+                title: `${process.env.AS_WORKFLOW}`,
+                text: 'Scheduled model regression test performance drops :chart_with_downwards_trend:',
+                fields: [{
+                  title: 'GitHub Issue',
+                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.create-issue.outputs.result }}`,
+                  short: false
+                },
+                {
+                  title: 'GitHub Action',
+                  value: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+                  short: false
+                }],
+                actions: [{
+                }]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TEST_WEBHOOK }}  # TODO ${{ secrets.SLACK_CI_MODEL_REGRESSION_TEST }}
 
   remove_runner_gpu:
     name: Delete Github Runner - GPU
