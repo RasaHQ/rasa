@@ -106,7 +106,7 @@ class RasaComponent:
                 fingerprint_key, output=result,
             )
 
-        return {self._node_name: copy.deepcopy(result)}
+        return {self._node_name: result}
 
     def create_component(self, **const_kwargs: Any) -> None:
         if self._persistor:
