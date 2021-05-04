@@ -1,15 +1,21 @@
-from typing import Dict, Text, Any, Optional, Tuple
+from typing import Dict, List, Text, Any, Optional, Tuple
 
 import dask
+import dask.threaded
 
 from rasa.architecture_prototype.graph import (
     run_as_dask_graph,
     convert_to_dask_graph,
     graph_component_for_config,
     minimal_dask_graph,
+    run_dask_graph,
 )
 from rasa.architecture_prototype.persistence import AbstractModelPersistor
-from rasa.architecture_prototype.graph_fingerprinting import TrainingCache
+from rasa.architecture_prototype.graph_fingerprinting import (
+    TrainingCache,
+    dask_graph_to_fingerprint_graph,
+    prune_graph_schema,
+)
 from rasa.core.channels import UserMessage
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.core.domain import Domain
@@ -28,67 +34,79 @@ class ModelTrainer:
         self,
         # TODO: add "project"
         train_graph_schema: Dict[Text, Any],
+        train_graph_targets: List[Text],
         predict_graph_schema: Dict[Text, Any],
     ) -> "Model":
         _fill_defaults(train_graph_schema)
-        core_targets = [
-            "train_memoization_policy",
-            "train_ted_policy",
-            "train_rule_policy",
-        ]
-        nlu_targets = [
-            "train_classifier",
-            "train_response_selector",
-            "train_synonym_mapper",
-        ]
+        dask_graph = convert_to_dask_graph(
+            train_graph_schema, cache=self._cache, model_persistor=self._model_persistor
+        )
+        fingerprint_graph = dask_graph_to_fingerprint_graph(dask_graph, self._cache)
+        fingerprint_statuses = run_dask_graph(fingerprint_graph, train_graph_targets)
+        pruned_graph_schema = prune_graph_schema(
+            train_graph_schema, train_graph_targets, fingerprint_statuses, self._cache,
+        )
 
         run_as_dask_graph(
-            train_graph_schema,
-            core_targets + nlu_targets,
+            pruned_graph_schema,
+            train_graph_targets,
             cache=self._cache,
             model_persistor=self._model_persistor,
         )
 
         _fill_defaults(predict_graph_schema)
-        return Model(predict_graph_schema, persistor=self._model_persistor)
+        # TODO: this loads the models again
+        return Model(
+            predict_graph_schema,
+            train_graph_schema,
+            train_graph_targets,
+            self._cache,
+            persistor=self._model_persistor
+        )
 
 
 class Model:
     def __init__(
-        self, rasa_graph: Dict[Text, Any], persistor: "AbstractModelPersistor"
+        self,
+        predict_graph_schema: Dict[Text, Any],
+        train_graph_schema: Dict[Text, Any],
+        train_graph_targets: List[Text],
+        cache: "TrainingCache",
+        persistor: "AbstractModelPersistor",
     ) -> None:
         self._persistor = persistor
-        self._rasa_graph = rasa_graph
-        self._predict_graph = convert_to_dask_graph(
-            self._rasa_graph, model_persistor=persistor
+        self._predict_graph_schema = predict_graph_schema
+        self._dask_graph = convert_to_dask_graph(
+            self._predict_graph_schema, model_persistor=persistor
         )
+        self._train_graph_schema = train_graph_schema
+        self._train_graph_targets = train_graph_targets
+        self._cache = cache
 
     def handle_message(
         self, tracker: DialogueStateTracker, message: Optional[UserMessage]
     ) -> Tuple["PolicyPrediction", Optional[UserUttered]]:
-        graph = self._predict_graph.copy()
+        graph = self._dask_graph.copy()
 
         # Insert user message into graph
         graph["load_user_message"] = graph_component_for_config(
             "load_user_message",
-            self._rasa_graph["load_user_message"],
+            self._predict_graph_schema["load_user_message"],
             {"message": message},
         )
 
         # Insert dialogue history into graph
         graph["load_history"] = graph_component_for_config(
-            "load_history", self._rasa_graph["load_history"], {"tracker": tracker}
+            "load_history", self._predict_graph_schema["load_history"], {"tracker": tracker}
         )
 
-        prediction, tracker_with_user_event = dask.get(
-            graph, ["select_prediction", "add_parsed_nlu_message"]
-        )
+        results = run_dask_graph(graph, ["select_prediction", "add_parsed_nlu_message"])
 
         user_event = None
         if message:
-            user_event = tracker_with_user_event["add_parsed_nlu_message"].events[-1]
+            user_event = results["add_parsed_nlu_message"].events[-1]
 
-        return prediction["select_prediction"], user_event
+        return results["select_prediction"], user_event
 
     def predict_next_action(
         self, tracker: DialogueStateTracker,
@@ -96,17 +114,25 @@ class Model:
         return self.handle_message(tracker, message=None)
 
     def get_domain(self) -> Domain:
-        domain_graph = minimal_dask_graph(self._predict_graph, targets=["load_domain"])
-        return dask.get(domain_graph, "load_domain")["load_domain"]
+        domain_graph = minimal_dask_graph(self._dask_graph, targets=["load_domain"])
+        return dask.threaded.get(domain_graph, "load_domain")["load_domain"]
 
     def persist(self, target: Text) -> None:
-        self._persistor.create_model_package(target, self._predict_graph)
+        self._persistor.create_model_package(
+            target,
+            self._predict_graph_schema,
+            self._train_graph_schema,
+            self._train_graph_targets,
+            self._cache,
+        )
 
     @classmethod
     def load(self, target: Text, persistor: AbstractModelPersistor) -> "Model":
-        graph = persistor.load_model_package(target)
+        return persistor.load_model_package(target)
 
-        return Model(graph, persistor)
+    def train(self) -> "Model":
+        trainer = ModelTrainer(self._persistor, self._cache)
+        return trainer.train(self._train_graph_schema, self._train_graph_targets, self._predict_graph_schema)
 
 
 def _fill_defaults(graph_schema: Dict[Text, Any]):

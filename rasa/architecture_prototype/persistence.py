@@ -2,10 +2,13 @@ import abc
 import copy
 import json
 import os
+import pickle
 import tarfile
 from abc import ABC
 from pathlib import Path
-from typing import Text, Dict, Any, Union
+from typing import List, Text, Dict, Any, Union
+
+from rasa.architecture_prototype.graph_fingerprinting import TrainingCache
 
 
 class ComponentPersistor:
@@ -38,12 +41,17 @@ class AbstractModelPersistor(ABC):
 
     @abc.abstractmethod
     def create_model_package(
-        self, target: Text, predict_graph_schema: Dict[Text, Any],
+        self,
+        target: Text,
+        predict_graph_schema: Dict[Text, Any],
+        train_graph_schema: Dict[Text, Any],
+        train_graph_targets: List[Text],
+        cache: "TrainingCache",
     ) -> None:
         raise NotImplementedError("Please implement this.")
 
     @abc.abstractmethod
-    def load_model_package(self, persisted_model: Text) -> Dict[Text, Any]:
+    def load_model_package(self, persisted_model: Text) -> "Model":
         raise NotImplementedError("Please implement this.")
 
     @classmethod
@@ -59,16 +67,30 @@ class LocalModelPersistor(AbstractModelPersistor):
         return ComponentPersistor(node_name, self._dir)
 
     def create_model_package(
-        self, target: Text, predict_graph_schema: Dict[Text, Any],
+        self,
+        target: Text,
+        predict_graph_schema: Dict[Text, Any],
+        train_graph_schema: Dict[Text, Any],
+        train_graph_targets: List[Text],
+        training_cache: "TrainingCache",
     ) -> None:
-        graph = serialize_graph_schema(predict_graph_schema)
-        (self._dir / "predict_graph.json").write_text(graph)
+        (self._dir / "predict_graph_schema.json").write_text(
+            serialize_graph_schema(predict_graph_schema)
+        )
+        (self._dir / "train_graph_schema.json").write_text(
+            serialize_graph_schema(train_graph_schema)
+        )
+        (self._dir / "train_graph_targets.json").write_text(
+            json.dumps(train_graph_targets)
+        )
+
+        (self._dir / "training_cache.pkl").write_bytes(training_cache.serialize())
 
         with tarfile.open(target, "w:gz") as tar:
             for elem in os.scandir(self._dir):
                 tar.add(elem.path, arcname=elem.name)
 
-    def load_model_package(self, persisted_model: Text) -> "Dict[Text, Any]":
+    def load_model_package(self, persisted_model: Text) -> "Model":
         if Path(persisted_model).is_file():
             with tarfile.open(persisted_model, mode="r:gz") as tar:
                 tar.extractall(self._dir)
@@ -76,7 +98,26 @@ class LocalModelPersistor(AbstractModelPersistor):
             self._dir = Path(persisted_model)
             # shutil.copytree(persisted_model, self._dir, dirs_exist_ok=True, symlinks=True)
 
-        return deserialize_graph_schema((self._dir / "predict_graph.json").read_text())
+        predict_graph_schema = deserialize_graph_schema(
+            (self._dir / "predict_graph_schema.json").read_text()
+        )
+        train_graph_schema = deserialize_graph_schema(
+            (self._dir / "train_graph_schema.json").read_text()
+        )
+        train_graph_targets = json.loads(
+            (self._dir / "train_graph_targets.json").read_text()
+        )
+        training_cache = TrainingCache.deserialize(
+            (self._dir / "training_cache.pkl").read_bytes()
+        )
+        from rasa.architecture_prototype.model import Model
+        return Model(
+            predict_graph_schema,
+            train_graph_schema,
+            train_graph_targets,
+            training_cache,
+            self,
+        )
 
 
 def serialize_graph_schema(graph_schema: Dict[Text, Any]) -> Text:

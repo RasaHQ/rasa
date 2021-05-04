@@ -8,7 +8,7 @@ from rasa.architecture_prototype import graph_fingerprinting
 from rasa.architecture_prototype.model import Model
 from rasa.architecture_prototype.graph_fingerprinting import (
     FingerprintStatus,
-    TrainingCache,
+    TrainingCache, prune_graph_schema,
 )
 from rasa.architecture_prototype.persistence import (
     deserialize_graph_schema,
@@ -83,49 +83,6 @@ def test_model_prediction_with_and_without_nlu(prediction_graph: Dict[Text, Any]
     )
 
     assert prediction_with_nlu == prediction_without_nlu
-
-
-class CachedComponent:
-    def __init__(self, *args, cached_value: Any, **kwargs):
-        self._cached_value = cached_value
-
-    def get_cached_value(self, *args, **kwargs) -> Any:
-        return self._cached_value
-
-
-def walk_and_prune(
-    graph_schema: Dict[Text, Any],
-    node_name: Text,
-    fingerprint_statuses: Dict[Text, FingerprintStatus],
-    cache: "TrainingCache",
-):
-    fingerprint = fingerprint_statuses[node_name]
-    should_run = fingerprint.should_run
-    if not should_run:
-        graph_schema[node_name]["needs"] = {}
-        fingerprint_cache_key = fingerprint.fingerprint_key
-        graph_schema[node_name] = {
-            "uses": CachedComponent,
-            "fn": "get_cached_value",
-            "config": {"cached_value": cache._outputs[fingerprint_cache_key]},
-            "needs": {},
-        }
-    else:
-        for node_dependency in graph_schema[node_name]["needs"].values():
-            walk_and_prune(graph_schema, node_dependency, fingerprint_statuses, cache)
-
-
-def prune_graph_schema(
-    graph_schema: Dict[Text, Any],
-    targets: List[Text],
-    fingerprint_statuses: Dict[Text, FingerprintStatus],
-    cache: "TrainingCache",
-) -> Dict[Text, Any]:
-    graph_to_prune = copy.deepcopy(graph_schema)
-    for target in targets:
-        walk_and_prune(graph_to_prune, target, fingerprint_statuses, cache)
-
-    return graph._minimal_graph_schema(graph_to_prune, targets)
 
 
 def test_model_fingerprinting():

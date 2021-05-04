@@ -298,7 +298,7 @@ def core_config_to_train_graph_schema(
             "uses": MessageToE2EFeatureConverter,
             "fn": "convert",
             "config": {},
-            "needs": {"training_data": nlu_outs[0]},
+            "needs": {"messages": nlu_outs[0]},
             "persist": False,
         }
 
@@ -365,7 +365,7 @@ def core_config_to_predict_graph_schema(
     return core_predict_graph, policy_names
 
 
-def old_config_to_train_graph_schema(
+def config_to_train_graph_schema(
     project: Text, config: Text
 ) -> Tuple[Dict[Text, Any], List[Text]]:
     config_dict = read_yaml(config)
@@ -381,7 +381,7 @@ def old_config_to_train_graph_schema(
     )
 
 
-def old_config_to_predict_graph_schema(
+def config_to_predict_graph_schema(
     config: Text,
 ) -> Tuple[Dict[Text, Any], List[Text]]:
     config_dict = read_yaml(config)

@@ -4,9 +4,8 @@ import inspect
 from typing import Any, Text, Dict, List, Union, TYPE_CHECKING, Tuple, Optional
 
 import dask
+import dask.threaded
 
-from rasa.architecture_prototype.graph_fingerprinting import TrainingCache
-from rasa.architecture_prototype.persistence import AbstractModelPersistor
 from rasa.shared.constants import DEFAULT_DATA_PATH
 import rasa.shared.utils.common
 import rasa.utils.common
@@ -153,7 +152,7 @@ def _all_dependencies(
     return required
 
 
-def _minimal_graph_schema(
+def minimal_graph_schema(
     graph_schema: Dict[Text, Any], targets: List[Text]
 ) -> Dict[Text, Tuple[RasaComponent, Text]]:
     dependencies = _all_dependencies_schema(graph_schema, targets)
@@ -180,11 +179,9 @@ def _all_dependencies_schema(
 
 def convert_to_dask_graph(
     graph_schema: Dict[Text, Any],
-    cache: Optional[TrainingCache] = None,
-    model_persistor: Optional[AbstractModelPersistor] = None,
+    cache: Optional["TrainingCache"] = None,
+    model_persistor: Optional["AbstractModelPersistor"] = None,
 ) -> Dict[Text, Tuple[RasaComponent, Text]]:
-    model_persistor = model_persistor or AbstractModelPersistor.default()
-
     dsk = {}
     for step_name, step_config in graph_schema.items():
         dsk[step_name] = graph_component_for_config(
@@ -197,8 +194,8 @@ def graph_component_for_config(
     step_name: Text,
     step_config: Dict[Text, Any],
     config_overrides: Dict[Text, Any] = None,
-    cache: Optional[TrainingCache] = None,
-    model_persistor: AbstractModelPersistor = None,
+    cache: Optional["TrainingCache"] = None,
+    model_persistor: "AbstractModelPersistor" = None,
 ) -> Tuple[RasaComponent, Text]:
     component_config = step_config["config"].copy()
     if config_overrides:
@@ -227,8 +224,8 @@ def graph_component_for_config(
 def run_as_dask_graph(
     graph_schema: Dict[Text, Any],
     target_names: Union[Text, List[Text]],
-    cache: Optional[TrainingCache] = None,
-    model_persistor: Optional[AbstractModelPersistor] = None,
+    cache: Optional["TrainingCache"] = None,
+    model_persistor: Optional["AbstractModelPersistor"] = None,
 ) -> Dict[Text, Any]:
     dask_graph = convert_to_dask_graph(
         graph_schema, cache=cache, model_persistor=model_persistor
@@ -240,7 +237,7 @@ def run_dask_graph(
     dask_graph: Dict[Text, Tuple[Union[RasaComponent, "FingerprintComponent"], Text]],
     target_names: Union[Text, List[Text]],
 ) -> Dict[Text, Any]:
-    return dict(ChainMap(*dask.get(dask_graph, target_names)))
+    return dict(ChainMap(*dask.threaded.get(dask_graph, target_names)))
 
 
 def visualise_as_dask_graph(graph_schema: Dict[Text, Any], filename: Text) -> None:

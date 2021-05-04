@@ -5,8 +5,9 @@ from rasa.architecture_prototype.persistence import LocalModelPersistor
 from rasa.architecture_prototype.model import Model
 import rasa.core.tracker_store
 from rasa.core.channels import UserMessage, CollectingOutputChannel
-from rasa.core.lock_store import LockStore
-from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.lock_store import InMemoryLockStore, LockStore
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
+from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.domain import Domain
@@ -55,6 +56,25 @@ class GraphProcessor(MessageProcessor):
 
         return GraphProcessor(
             domain, tracker_store, lock_store, generator, action_endpoint, model
+        )
+
+    @classmethod
+    def from_model(
+        cls,
+        model: Model,
+    ) -> "GraphProcessor":
+        placeholder_domain = Domain.empty()
+        generator = TemplatedNaturalLanguageGenerator(placeholder_domain.responses)
+        tracker_store = InMemoryTrackerStore(placeholder_domain)
+        lock_store = InMemoryLockStore()
+
+        domain = model.get_domain()
+        tracker_store.domain = domain
+        if hasattr(generator, "responses"):
+            generator.responses = domain.responses
+
+        return GraphProcessor(
+            domain, tracker_store, lock_store, generator, None, model
         )
 
     async def handle_message(

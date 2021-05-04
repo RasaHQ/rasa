@@ -5,8 +5,8 @@ import rasa.architecture_prototype.model
 import rasa.core.actions.action
 from rasa.architecture_prototype import graph
 from rasa.architecture_prototype.config_to_graph import (
-    old_config_to_predict_graph_schema,
-    old_config_to_train_graph_schema,
+    config_to_predict_graph_schema,
+    config_to_train_graph_schema,
 )
 from rasa.architecture_prototype.graph import graph_component_for_config
 from rasa.core.channels import UserMessage
@@ -54,7 +54,7 @@ project = "examples/moodbot"
 
 @pytest.mark.timeout(600)
 def test_generate_train_graph():
-    train_graph_schema, last_components_out = old_config_to_train_graph_schema(
+    train_graph_schema, last_components_out = config_to_train_graph_schema(
         project=project, config=default_config
     )
     rasa.architecture_prototype.model._fill_defaults(train_graph_schema)
@@ -70,7 +70,7 @@ def test_generate_train_graph():
 
 @pytest.mark.timeout(600)
 def test_generate_predict_graph():
-    predict_graph_schema, targets = old_config_to_predict_graph_schema(
+    predict_graph_schema, targets = config_to_predict_graph_schema(
         config=default_config
     )
     graph.fill_defaults(predict_graph_schema)
