@@ -890,6 +890,7 @@ class Domain:
         try:
             return self.action_names_or_texts.index(action_name)
         except ValueError:
+            print("ALWX 2")
             self.raise_action_not_found_exception(action_name)
 
     def raise_action_not_found_exception(self, action_name_or_text: Text) -> NoReturn:

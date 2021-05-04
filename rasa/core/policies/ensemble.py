@@ -208,6 +208,7 @@ class PolicyEnsemble:
                 trackers_to_train = SupportedData.trackers_for_policy(
                     policy, training_trackers
                 )
+                print("ALWX 1")
                 policy.train(
                     trackers_to_train, domain, interpreter=interpreter, **kwargs
                 )

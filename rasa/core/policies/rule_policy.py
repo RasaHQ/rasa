@@ -774,6 +774,7 @@ class RulePolicy(MemoizationPolicy):
             interpreter: Interpreter which can be used by the polices for featurization.
         """
         # only consider original trackers (no augmented ones)
+        print("ALWX rule")
         training_trackers = [
             t for t in training_trackers if not getattr(t, "is_augmented", False)
         ]
@@ -1192,6 +1193,7 @@ class RulePolicy(MemoizationPolicy):
     def _default_predictions(self, domain: Domain) -> List[float]:
         result = super()._default_predictions(domain)
 
+        print("ALWX 3")
         if self._enable_fallback_prediction:
             result[
                 domain.index_for_action(self._fallback_action_name)

@@ -505,7 +505,7 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
-
+        print("ALWX ted")
         if not training_trackers:
             logger.error(
                 f"Can not train '{self.__class__.__name__}'. No data was provided. "
@@ -576,6 +576,7 @@ class TEDPolicy(Policy):
             self.tmp_checkpoint_dir,
         )
 
+        print("ALWX pre-fit")
         self.model.fit(
             data_generator,
             epochs=self.config[EPOCHS],
@@ -671,6 +672,7 @@ class TEDPolicy(Policy):
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
         """
+        print("ALWX 4")
         if self.model is None:
             return self._prediction(self._default_predictions(domain))
 

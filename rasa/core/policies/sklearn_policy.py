@@ -241,6 +241,7 @@ class SklearnPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
+        print("ALWX sklearn")
         tracker_state_features, label_ids, _ = self._featurize_for_training(
             training_trackers, domain, interpreter, **kwargs
         )

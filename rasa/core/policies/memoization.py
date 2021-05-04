@@ -177,6 +177,7 @@ class MemoizationPolicy(Policy):
         **kwargs: Any,
     ) -> None:
         # only considers original trackers (no augmented ones)
+        print("ALWX memo")
         training_trackers = [
             t
             for t in training_trackers

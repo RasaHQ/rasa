@@ -250,3 +250,4 @@ class Validator:
         An empty domain is invalid."""
 
         return not self.domain.is_empty()
+
