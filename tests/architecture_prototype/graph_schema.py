@@ -388,6 +388,7 @@ predict_graph_schema = {
     },
     "load_domain": {
         "uses": DomainReader,
+        "constructor_name": "load",
         "fn": "provide",
         "config": {"resource_name": "load_domain"},
         "needs": {},

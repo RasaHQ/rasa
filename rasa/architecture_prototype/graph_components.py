@@ -66,11 +66,21 @@ class DomainReader(ProjectReader):
         self,
         project: Optional[Text] = None,
         persistor: Optional["ComponentPersistor"] = None,
-        resource_name: Optional[Text] = None,
+        domain: Optional[Domain] = None,
     ) -> None:
         super().__init__(project)
         self._persistor = persistor
-        self._resource_name = resource_name
+        self._domain = domain
+
+    @classmethod
+    def load(
+        cls,
+        persistor: Optional["ComponentPersistor"] = None,
+        resource_name: Optional[Text] = None,
+    ) -> "DomainReader":
+        filename = persistor.get_resource(resource_name, "domain.yml")
+        domain = Domain.load(filename)
+        return DomainReader(persistor=persistor, domain=domain)
 
     def read(self) -> Domain:
         importer = self.load_importer()
@@ -82,8 +92,7 @@ class DomainReader(ProjectReader):
         return domain
 
     def provide(self) -> Domain:
-        filename = self._persistor.get_resource(self._resource_name, "domain.yml")
-        return Domain.load(filename)
+        return self._domain
 
 
 class StoryGraphReader(ProjectReader):
