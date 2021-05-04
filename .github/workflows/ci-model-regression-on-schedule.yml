@@ -177,7 +177,6 @@ jobs:
           OMP_NUM_THREADS: 1
           TF_DETERMINISTIC_OPS: 1 # Run GPUs in a deterministic mode
         run: |-
-          exit 1 # TODO remove later
           poetry run rasa --version
 
           export NOW_TRAIN=$(gomplate -i '{{ (time.Now).Format time.RFC3339}}');
