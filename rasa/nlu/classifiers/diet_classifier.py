@@ -961,28 +961,26 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return entities
 
-    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
+    def process(self, messages: List[Message], **kwargs: Any) -> List[Message]:
         """Augments the message with intents, entities, and diagnostic data."""
-        if message is None:
-            return None
+        for message in messages:
+            out = self._predict(message)
 
-        out = self._predict(message)
+            if self.component_config[INTENT_CLASSIFICATION]:
+                label, label_ranking = self._predict_label(out)
 
-        if self.component_config[INTENT_CLASSIFICATION]:
-            label, label_ranking = self._predict_label(out)
+                message.set(INTENT, label, add_to_output=True)
+                message.set("intent_ranking", label_ranking, add_to_output=True)
 
-            message.set(INTENT, label, add_to_output=True)
-            message.set("intent_ranking", label_ranking, add_to_output=True)
+            if self.component_config[ENTITY_RECOGNITION]:
+                entities = self._predict_entities(out, message)
 
-        if self.component_config[ENTITY_RECOGNITION]:
-            entities = self._predict_entities(out, message)
+                message.set(ENTITIES, entities, add_to_output=True)
 
-            message.set(ENTITIES, entities, add_to_output=True)
+            if out and DIAGNOSTIC_DATA in out:
+                message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
 
-        if out and DIAGNOSTIC_DATA in out:
-            message.add_diagnostic_data(self.unique_name, out.get(DIAGNOSTIC_DATA))
-
-        return message
+        return messages
 
     def persist(self) -> Optional[Text]:
         """Persist this model into the passed directory.

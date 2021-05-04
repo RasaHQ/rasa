@@ -10,6 +10,10 @@ from rasa.architecture_prototype.graph_fingerprinting import (
     FingerprintStatus,
     TrainingCache,
 )
+from rasa.architecture_prototype.persistence import (
+    deserialize_graph_schema,
+    serialize_graph_schema,
+)
 from rasa.core.channels import UserMessage
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.events import ActionExecuted, UserUttered
@@ -26,8 +30,8 @@ from tests.architecture_prototype.graph_schema import (
 def test_train_nlu():
     conftest.clean_directory()
     rasa.architecture_prototype.model._fill_defaults(nlu_train_graph_schema)
-    serialized = json.dumps(nlu_train_graph_schema)
-    deserialized = json.loads(serialized)
+    serialized = serialize_graph_schema(nlu_train_graph_schema)
+    deserialized = deserialize_graph_schema(serialized)
     graph.visualise_as_dask_graph(deserialized, "nlu_train_graph.png")
     trained_components = graph.run_as_dask_graph(
         deserialized,
@@ -42,6 +46,12 @@ def test_train_full_model(trained_model: Dict):
 
 def test_train_load_predict(prediction_graph: Dict[Text, Any]):
     graph.visualise_as_dask_graph(prediction_graph, "predict_graph.png")
+
+    prediction_graph["load_history"]["config"][
+        "tracker"
+    ] = DialogueStateTracker.from_events(
+        "some_sender", [ActionExecuted(action_name=ACTION_LISTEN_NAME)]
+    )
 
     predictions = graph.run_as_dask_graph(predict_graph_schema, ["select_prediction"])
     for prediction in predictions.values():

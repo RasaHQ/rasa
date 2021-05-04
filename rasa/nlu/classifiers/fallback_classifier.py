@@ -39,7 +39,7 @@ class FallbackClassifier(IntentClassifier):
     def required_components(cls) -> List[Type[Component]]:
         return [IntentClassifier]
 
-    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
+    def process(self, messages: List[Message], **kwargs: Any) -> List[Message]:
         """Process an incoming message.
 
         This is the components chance to process an incoming
@@ -56,18 +56,17 @@ class FallbackClassifier(IntentClassifier):
             process.
 
         """
-        if message is None:
-            return None
+        for message in messages:
+            if not self._should_fallback(message):
+                continue
 
-        if not self._should_fallback(message):
-            return message
+            # we assume that the confidence of fallback is 1 - confidence of top intent
+            confidence = 1 - message.data[INTENT][PREDICTED_CONFIDENCE_KEY]
+            message.data[INTENT] = _fallback_intent(confidence)
+            message.data.setdefault(INTENT_RANKING_KEY, [])
+            message.data[INTENT_RANKING_KEY].insert(0, _fallback_intent(confidence))
 
-        # we assume that the confidence of fallback is 1 - confidence of top intent
-        confidence = 1 - message.data[INTENT][PREDICTED_CONFIDENCE_KEY]
-        message.data[INTENT] = _fallback_intent(confidence)
-        message.data.setdefault(INTENT_RANKING_KEY, [])
-        message.data[INTENT_RANKING_KEY].insert(0, _fallback_intent(confidence))
-        return message
+        return messages
 
     def _should_fallback(self, message: Message) -> bool:
         """Check if the fallback intent should be predicted.

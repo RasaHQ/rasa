@@ -307,7 +307,12 @@ def run_in_loop(
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-    result = loop.run_until_complete(f)
+    try:
+        result = loop.run_until_complete(f)
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(f)
 
     # Let's also finish all running tasks:
     pending = asyncio.Task.all_tasks()

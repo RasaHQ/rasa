@@ -2,7 +2,6 @@ import abc
 import copy
 import json
 import os
-import shutil
 import tarfile
 from abc import ABC
 from pathlib import Path
@@ -81,7 +80,7 @@ class LocalModelPersistor(AbstractModelPersistor):
 
 
 def serialize_graph_schema(graph_schema: Dict[Text, Any]) -> Text:
-    to_serialize = copy.copy(graph_schema)
+    to_serialize = copy.deepcopy(graph_schema)
     for step_name, step_config in to_serialize.items():
         component_class = step_config["uses"]
         step_config["uses"] = component_class.name

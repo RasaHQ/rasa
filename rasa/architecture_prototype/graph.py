@@ -246,3 +246,10 @@ def run_dask_graph(
 def visualise_as_dask_graph(graph_schema: Dict[Text, Any], filename: Text) -> None:
     dask_graph = convert_to_dask_graph(graph_schema)
     dask.visualize(dask_graph, filename=filename)
+
+
+def visualise_dask_graph(
+    dask_graph: Dict[Text, Tuple[Union[RasaComponent, "FingerprintComponent"], Text]],
+    filename: Text,
+) -> None:
+    dask.visualize(dask_graph, filename=filename)

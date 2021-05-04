@@ -109,12 +109,10 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
 
         return training_data
 
-    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
-        if message is None:
-            return None
-
-        self._create_sparse_features(message)
-        return message
+    def process(self, messages: List[Message], **kwargs: Any) -> List[Message]:
+        for message in messages:
+            self._create_sparse_features(message)
+        return messages
 
     def _create_feature_to_idx_dict(
         self, training_data: TrainingData

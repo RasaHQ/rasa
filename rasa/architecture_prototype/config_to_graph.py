@@ -1,16 +1,21 @@
-from copy import copy, deepcopy
+from copy import deepcopy
 import inspect
 from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
 from rasa.architecture_prototype.graph_components import (
     DomainReader,
+    MessageCreator,
     MessageToE2EFeatureConverter,
+    NLUMessageConverter,
+    NLUPredictionToHistoryAdder,
     StoryGraphReader,
     StoryToTrainingDataConverter,
     TrackerGenerator,
+    TrackerLoader,
     TrainingDataReader,
 )
-from rasa.architecture_prototype import graph
+from rasa.core.channels import UserMessage
+from rasa.core.policies import SimplePolicyEnsemble
 from rasa.nlu import registry
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.components import Component
@@ -177,6 +182,51 @@ def nlu_config_to_train_graph_schema(
     return nlu_train_graph, train_outputs if train_outputs else [last_component_out]
 
 
+def nlu_config_to_predict_graph_schema(
+    config: Dict[Text, Any],
+    input_task: Optional[Text],
+    component_namespace: Optional[Text] = None,
+    classify: bool = True,
+) -> Tuple[Dict[Text, Any], Text]:
+    nlu_pipeline = deepcopy(config["pipeline"])
+    # TODO: get this information from the class?
+    meta: Dict[Type[Component], Text] = {
+        WhitespaceTokenizer: "process",
+        RegexFeaturizer: "process",
+        LexicalSyntacticFeaturizer: "process",
+        CountVectorsFeaturizer: "process",
+        DIETClassifier: "classify",
+        ResponseSelector: "classify",
+        EntitySynonymMapper: "classify",
+    }
+    last_component_out = input_task
+    nlu_predict_graph = {}
+    for i, component in enumerate(nlu_pipeline):
+        component_name = component.pop("name")
+        unique_component_name = f"{component_name}_{i}"
+        if component_namespace:
+            unique_component_name = f"{component_namespace}_{unique_component_name}"
+        resource_name = f"train_{unique_component_name}"
+        component_class = registry.get_component_class(component_name)
+        step_type = meta[component_class]
+        if step_type == "classify" and not classify:
+            continue
+        config = component
+        component_def = {
+            unique_component_name: {
+                "uses": component_class,
+                "constructor_name": "load",
+                "fn": "process",
+                "config": {"resource_name": resource_name, **config},
+                "needs": {"messages": last_component_out,},
+            },
+        }
+        nlu_predict_graph.update(component_def)
+        last_component_out = unique_component_name
+
+    return nlu_predict_graph, last_component_out
+
+
 def core_config_to_train_graph_schema(
     project: Text, config: Dict[Text, Any]
 ) -> Tuple[Dict[Text, Any], List[Text]]:
@@ -255,7 +305,67 @@ def core_config_to_train_graph_schema(
     return core_train_graph, policy_names
 
 
-def old_config_to_graph_schema(
+def core_config_to_predict_graph_schema(
+    config: Dict[Text, Any]
+) -> Tuple[Dict[Text, Any], List[Text]]:
+    core_predict_graph = {}
+    policies = deepcopy(config["policies"])
+    policy_names = []
+    e2e = False
+    for i, policy in enumerate(policies):
+        policy_name = policy.pop("name")
+        unique_policy_name = f"{policy_name}_{i}"
+        policy_names.append(unique_policy_name)
+        policy_class = rasa.core.registry.policy_from_module_path(policy_name)
+        policy_step = {
+            unique_policy_name: {
+                "uses": policy_class,
+                "constructor_name": "load",
+                "fn": "predict_action_probabilities",
+                "config": {"resource_name": unique_policy_name, **policy},
+                "needs": {"tracker": "add_parsed_nlu_message", "domain": "load_domain"},
+            },
+        }
+        if (
+            "e2e_features"
+            in inspect.signature(policy_class.predict_action_probabilities).parameters
+        ):
+            policy_step[unique_policy_name]["needs"][
+                "e2e_features"
+            ] = "create_e2e_lookup"
+            e2e = True
+        core_predict_graph.update(policy_step)
+
+    if e2e:
+        nlu_e2e_predict_graph_schema, nlu_e2e_out = nlu_config_to_predict_graph_schema(
+            config,
+            input_task="convert_tracker_for_e2e",
+            classify=False,
+            component_namespace="core",
+        )
+        e2e_part = {
+            "convert_tracker_for_e2e": {
+                "uses": StoryToTrainingDataConverter,
+                "fn": "convert_for_inference",
+                "config": {},
+                "needs": {"tracker": "add_parsed_nlu_message"},
+                "persist": False,
+            },
+            "create_e2e_lookup": {
+                "uses": MessageToE2EFeatureConverter,
+                "fn": "convert",
+                "config": {},
+                "needs": {"messages": nlu_e2e_out,},
+                "persist": False,
+            },
+            **nlu_e2e_predict_graph_schema,
+        }
+        core_predict_graph.update(e2e_part)
+
+    return core_predict_graph, policy_names
+
+
+def old_config_to_train_graph_schema(
     project: Text, config: Text
 ) -> Tuple[Dict[Text, Any], List[Text]]:
     config_dict = read_yaml(config)
@@ -265,4 +375,78 @@ def old_config_to_graph_schema(
     core_train_graph_schema, core_outs = core_config_to_train_graph_schema(
         project, config_dict
     )
-    return {**core_train_graph_schema, **nlu_train_graph_schema}, [*core_outs, *nlu_outs]
+    return (
+        {**core_train_graph_schema, **nlu_train_graph_schema},
+        [*core_outs, *nlu_outs],
+    )
+
+
+def old_config_to_predict_graph_schema(
+    config: Text,
+) -> Tuple[Dict[Text, Any], List[Text]]:
+    config_dict = read_yaml(config)
+
+    nlu_predict_graph_schema, nlu_out = nlu_config_to_predict_graph_schema(
+        config_dict, input_task="convert_message_to_nlu", classify=True,
+    )
+    core_predict_graph_schema, core_outs = core_config_to_predict_graph_schema(
+        config_dict
+    )
+
+    predict_graph = {
+        "load_user_message": {
+            "uses": MessageCreator,
+            "fn": "create",
+            "config": {"message": None},
+            "needs": {},
+            "persist": False,
+        },
+        "convert_message_to_nlu": {
+            "uses": NLUMessageConverter,
+            "fn": "convert",
+            "config": {},
+            "needs": {"message": "load_user_message"},
+            "persist": False,
+        },
+        "load_history": {
+            "uses": TrackerLoader,
+            "fn": "load",
+            "needs": {},
+            "config": {"tracker": None,},
+            "persist": False,
+        },
+        "add_parsed_nlu_message": {
+            "uses": NLUPredictionToHistoryAdder,
+            "fn": "merge",
+            "needs": {
+                "tracker": "load_history",
+                "initial_user_message": "load_user_message",
+                "parsed_messages": nlu_out,
+                "domain": "load_domain",
+            },
+            "config": {},
+            "persist": False,
+        },
+        "load_domain": {
+            "uses": DomainReader,
+            "fn": "provide",
+            "config": {"resource_name": "load_domain"},
+            "needs": {},
+        },
+        "select_prediction": {
+            "uses": SimplePolicyEnsemble,
+            "fn": "probabilities_using_best_policy",
+            "config": {},
+            "persist": False,
+            "needs": {
+                "tracker": "add_parsed_nlu_message",
+                "domain": "load_domain",
+                **{f"{p}_prediction": p for p in core_outs},
+            },
+        },
+    }
+
+    return (
+        {**predict_graph, **nlu_predict_graph_schema, **core_predict_graph_schema},
+        ["select_prediction"],
+    )

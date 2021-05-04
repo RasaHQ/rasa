@@ -107,21 +107,20 @@ class Tokenizer(Component):
 
         return training_data
 
-    def process(self, message: Optional[Message], **kwargs: Any) -> Optional[Message]:
+    def process(self, messages: List[Message], **kwargs: Any) -> List[Message]:
         """Tokenize the incoming message."""
-        if message is None:
-            return None
 
-        for attribute in MESSAGE_ATTRIBUTES:
-            if isinstance(message.get(attribute), str):
-                if attribute in [INTENT, ACTION_NAME, RESPONSE_IDENTIFIER_DELIMITER]:
-                    tokens = self._split_name(message, attribute)
-                else:
-                    tokens = self.tokenize(message, attribute)
+        for message in messages:
+            for attribute in MESSAGE_ATTRIBUTES:
+                if isinstance(message.get(attribute), str):
+                    if attribute in [INTENT, ACTION_NAME, RESPONSE_IDENTIFIER_DELIMITER]:
+                        tokens = self._split_name(message, attribute)
+                    else:
+                        tokens = self.tokenize(message, attribute)
 
-                message.set(TOKENS_NAMES[attribute], tokens)
+                    message.set(TOKENS_NAMES[attribute], tokens)
 
-        return message
+        return messages
 
     def _tokenize_on_split_symbol(self, text: Text) -> List[Text]:
 
@@ -197,3 +196,10 @@ class Tokenizer(Component):
             tokens.append(Token(word, word_offset))
 
         return tokens
+
+    @classmethod
+    def load(
+        cls,
+        **kwargs: Any,
+    ) -> "Tokenizer":
+        return cls(**kwargs)
