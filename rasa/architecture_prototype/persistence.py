@@ -2,6 +2,7 @@ import abc
 import copy
 import json
 import os
+import shutil
 import tarfile
 from abc import ABC
 from pathlib import Path
@@ -69,8 +70,12 @@ class LocalModelPersistor(AbstractModelPersistor):
                 tar.add(elem.path, arcname=elem.name)
 
     def load_model_package(self, persisted_model: Text) -> "Dict[Text, Any]":
-        with tarfile.open(persisted_model, mode="r:gz") as tar:
-            tar.extractall(self._dir)
+        if Path(persisted_model).is_file():
+            with tarfile.open(persisted_model, mode="r:gz") as tar:
+                tar.extractall(self._dir)
+        elif Path(persisted_model).is_dir():
+            self._dir = Path(persisted_model)
+            # shutil.copytree(persisted_model, self._dir, dirs_exist_ok=True, symlinks=True)
 
         return deserialize_graph_schema((self._dir / "predict_graph.json").read_text())
 

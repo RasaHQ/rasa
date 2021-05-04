@@ -488,17 +488,12 @@ class Agent:
                 model_path, tracker_store, lock_store, generator, action_endpoint,
             )
         else:
-            from tests.architecture_prototype.test_processor import predict_graph_schema
-
-            rasa.architecture_prototype.model.fill_defaults(predict_graph_schema)
-
             processor = GraphProcessor.create(
                 model_path,
                 tracker_store=tracker_store,
                 lock_store=InMemoryLockStore(),
                 generator=generator,
                 action_endpoint=None,
-                rasa_graph=predict_graph_schema,
             )
         return cls(
             domain=None,

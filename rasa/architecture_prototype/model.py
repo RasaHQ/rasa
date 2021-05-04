@@ -30,7 +30,7 @@ class ModelTrainer:
         train_graph_schema: Dict[Text, Any],
         predict_graph_schema: Dict[Text, Any],
     ) -> "Model":
-        fill_defaults(train_graph_schema)
+        _fill_defaults(train_graph_schema)
         core_targets = [
             "train_memoization_policy",
             "train_ted_policy",
@@ -49,7 +49,7 @@ class ModelTrainer:
             model_persistor=self._model_persistor,
         )
 
-        fill_defaults(predict_graph_schema)
+        _fill_defaults(predict_graph_schema)
         return Model(predict_graph_schema, persistor=self._model_persistor)
 
 
@@ -109,7 +109,7 @@ class Model:
         return Model(graph, persistor)
 
 
-def fill_defaults(graph_schema: Dict[Text, Any]):
+def _fill_defaults(graph_schema: Dict[Text, Any]):
     for step_name, step_config in graph_schema.items():
         component_class = step_config["uses"]
 

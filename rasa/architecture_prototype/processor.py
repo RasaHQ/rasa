@@ -45,9 +45,8 @@ class GraphProcessor(MessageProcessor):
         lock_store: LockStore,
         generator: Optional[NaturalLanguageGenerator],
         action_endpoint: Optional[EndpointConfig],
-        rasa_graph: Dict[Text, Any],
     ) -> "GraphProcessor":
-        model = Model(rasa_graph, LocalModelPersistor(Path(model_path)))
+        model = Model.load(model_path, LocalModelPersistor(Path(model_path)))
 
         domain = model.get_domain()
         tracker_store.domain = domain

@@ -40,7 +40,7 @@ def test_generate_train_graph():
     train_graph_schema, last_components_out = old_config_to_graph_schema(
         project=project, config=default_config
     )
-    rasa.architecture_prototype.model.fill_defaults(train_graph_schema)
+    rasa.architecture_prototype.model._fill_defaults(train_graph_schema)
 
     dask_graph = graph.convert_to_dask_graph(train_graph_schema)
     dask.visualize(dask_graph, filename="generated_default_config_graph.png")

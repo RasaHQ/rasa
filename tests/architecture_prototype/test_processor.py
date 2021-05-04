@@ -1,12 +1,12 @@
-import os
-import shutil
 import tarfile
 from pathlib import Path
-from typing import Text, Dict, Any
+from typing import Text
 
 import pytest
 
-from rasa.architecture_prototype import graph
+from rasa.architecture_prototype.graph_fingerprinting import TrainingCache
+from rasa.architecture_prototype.model import ModelTrainer
+from rasa.architecture_prototype.persistence import LocalModelPersistor
 from rasa.architecture_prototype.processor import GraphProcessor
 from rasa.core.agent import Agent
 from rasa.core.channels import UserMessage, CollectingOutputChannel
@@ -22,24 +22,41 @@ from rasa.shared.core.events import (
     BotUttered,
     UserUttered,
 )
-from tests.architecture_prototype import conftest
 from tests.architecture_prototype.graph_schema import (
     full_model_train_graph_schema,
     predict_graph_schema,
 )
 
 
-async def test_handle_message(prediction_graph: Dict[Text, Any]):
+@pytest.fixture()
+def trained_graph_model(tmp_path: Path) -> Text:
+    # Train model
+    cache = TrainingCache()
+    persistor = LocalModelPersistor(tmp_path)
+    trainer = ModelTrainer(model_persistor=persistor, cache=cache)
+    trained_model = trainer.train(full_model_train_graph_schema, predict_graph_schema,)
+
+    # Persist model
+    persisted_model = "graph_model.tar.gz"
+    persistor.create_model_package(persisted_model, predict_graph_schema)
+
+    return persisted_model
+
+
+async def test_handle_message(trained_graph_model: Text, tmp_path: Path):
     placeholder_domain = Domain.empty()
     nlg = TemplatedNaturalLanguageGenerator(placeholder_domain.responses)
     tracker_store = InMemoryTrackerStore(placeholder_domain)
+
+    with tarfile.open(trained_graph_model, mode="r:gz") as tar:
+        tar.extractall(tmp_path)
+
     processor = GraphProcessor.create(
-        "model",
+        str(tmp_path),
         tracker_store=tracker_store,
         lock_store=InMemoryLockStore(),
         generator=nlg,
         action_endpoint=None,
-        rasa_graph=prediction_graph,
     )
 
     sender = "test_handle_message"
@@ -78,29 +95,19 @@ async def test_handle_message(prediction_graph: Dict[Text, Any]):
         assert event == expected
 
 
-async def test_agent_with_graph_processor(
-    prediction_graph: Dict[Text, Any], tmp_path: Path
-):
-    model_dir = tmp_path / "unpacked_model"
-
-    shutil.copytree("model", model_dir)
-
-    zipped_model = tmp_path / "graph_model.tar.gz"
-
-    # It only works when the graph model is zipped
-    with tarfile.open(zipped_model, "w:gz") as tar:
-        for elem in os.scandir(model_dir):
-            tar.add(elem.path, arcname=elem.name)
-
+async def test_agent_with_graph_processor(trained_graph_model: Text, tmp_path: Path):
+    # Load Agent with graph model
     placeholder_domain = Domain.empty()
     nlg = TemplatedNaturalLanguageGenerator(placeholder_domain.responses)
     tracker_store = InMemoryTrackerStore(placeholder_domain)
+
     agent = Agent.load_local_model(
-        str(zipped_model), generator=nlg, tracker_store=tracker_store
+        trained_graph_model, generator=nlg, tracker_store=tracker_store
     )
 
     assert isinstance(agent.processor, GraphProcessor)
 
+    # Test we can do predictions
     sender = "test_agent_with_graph_processor"
     responses = await agent.handle_message(
         UserMessage(

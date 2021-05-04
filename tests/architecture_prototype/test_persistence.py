@@ -8,7 +8,7 @@ from tests.architecture_prototype.graph_schema import full_model_train_graph_sch
 
 
 def test_serialize_graph_schema():
-    rasa.architecture_prototype.model.fill_defaults(full_model_train_graph_schema)
+    rasa.architecture_prototype.model._fill_defaults(full_model_train_graph_schema)
     serialized = serialize_graph_schema(full_model_train_graph_schema)
     with open("graph_schema.json", "w") as f:
         f.write(serialized)

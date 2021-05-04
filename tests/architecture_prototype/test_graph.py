@@ -25,7 +25,7 @@ from tests.architecture_prototype.graph_schema import (
 
 def test_train_nlu():
     conftest.clean_directory()
-    rasa.architecture_prototype.model.fill_defaults(nlu_train_graph_schema)
+    rasa.architecture_prototype.model._fill_defaults(nlu_train_graph_schema)
     serialized = json.dumps(nlu_train_graph_schema)
     deserialized = json.loads(serialized)
     graph.visualise_as_dask_graph(deserialized, "nlu_train_graph.png")
@@ -120,7 +120,7 @@ def prune_graph_schema(
 
 def test_model_fingerprinting():
     conftest.clean_directory()
-    rasa.architecture_prototype.model.fill_defaults(full_model_train_graph_schema)
+    rasa.architecture_prototype.model._fill_defaults(full_model_train_graph_schema)
     graph.visualise_as_dask_graph(full_model_train_graph_schema, "full_train_graph.png")
     core_targets = ["train_memoization_policy", "train_ted_policy", "train_rule_policy"]
     nlu_targets = [

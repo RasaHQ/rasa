@@ -117,7 +117,7 @@ nlu_train_graph_schema = {
     "train_classifier": {
         "uses": DIETClassifier,
         "fn": "train",
-        "config": {"epochs": 10},
+        "config": {"epochs": 100, "random_seed": 42},
         "needs": {"training_data": "add_count_features2"},
     },
     "train_response_selector": {
@@ -319,7 +319,7 @@ predict_graph_schema = {
         "uses": DIETClassifier,
         "fn": "process",
         "constructor_name": "load",
-        "config": {"resource_name": "train_classifier",},
+        "config": {"resource_name": "train_classifier"},
         "needs": {"message": "add_count_features2"},
     },
     "synonym_mapper": {
