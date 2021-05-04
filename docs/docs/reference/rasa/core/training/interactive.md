@@ -144,3 +144,28 @@ run_interactive_learning(file_importer: TrainingDataImporter, skip_visualization
 
 Start the interactive learning with the model of the agent.
 
+#### calc\_true\_wrapping\_width
+
+```python
+calc_true_wrapping_width(text: Text, monospace_wrapping_width: int) -> int
+```
+
+Calculates a wrapping width that also works for CJK characters.
+
+Chinese, Japanese and Korean characters are often broader than ascii
+characters:
+abcdefgh (8 chars)
+我要去北京 (5 chars, roughly same visible width)
+
+We need to account for that otherwise the wrapping doesn&#x27;t work
+appropriately for long strings and the table overflows and creates
+errors.
+
+params:
+    text: text sequence that should be wrapped into multiple lines
+    monospace_wrapping_width: the maximum width per line in number of
+        standard ascii characters
+returns:
+    The maximum line width for the given string that takes into account
+    the strings visible width, so that it won&#x27;t lead to table overflow.
+
