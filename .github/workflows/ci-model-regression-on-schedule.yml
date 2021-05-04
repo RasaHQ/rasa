@@ -105,6 +105,14 @@ jobs:
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
 
+      - name: Set dataset commit
+        id: set-dataset-commit
+        working-directory: dataset
+        run: |
+          DATASET_COMMIT=$(git rev-parse HEAD)
+          echo $DATASET_COMMIT
+          echo "::set-output name=dataset_commit::$DATASET_COMMIT"
+
       - name: Set DATASET and CONFIG variables
         id: set_dataset_config_vars
         env:
@@ -209,6 +217,7 @@ jobs:
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           PR_URL: ""
           DATASET_REPOSITORY_BRANCH: "main"
+          DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
