@@ -43,9 +43,8 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         self, utter_action: Text, output_channel: Text, filled_slots: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
         """Returns array of responses that fit the channel, action and condition."""
-        default_responses = []
         conditional_responses = []
-        has_condition = False
+        default_responses = []
 
         for response in self.responses[utter_action]:
             if response.get(RESPONSE_CONDITION) is None:
@@ -57,32 +56,37 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
                 if matched_response:
                     conditional_responses.append(response)
 
-        if conditional_responses:
-            potential_responses = conditional_responses
-            has_condition = True
-        else:
-            potential_responses = default_responses
-
-        channel_responses = list(
-            filter(lambda x: (x.get(CHANNEL) == output_channel), potential_responses)
+        conditional_channel = list(
+            filter(lambda x: (x.get(CHANNEL) == output_channel), conditional_responses)
+        )
+        conditional_no_channel = list(
+            filter(lambda x: (x.get(CHANNEL) is None), conditional_responses)
+        )
+        default_channel = list(
+            filter(lambda x: (x.get(CHANNEL) == output_channel), default_responses)
+        )
+        default_no_channel = list(
+            filter(lambda x: (x.get(CHANNEL) is None), default_responses)
         )
 
-        # always prefer channel specific responses over default ones
-        if channel_responses:
-            return channel_responses
+        if output_channel:
+            if conditional_responses:
+                if conditional_channel:
+                    return conditional_channel
 
-        # if no channel match in conditional responses, search in default responses
-        if len(output_channel) > 0:
-            if has_condition is True:
-                channel_default = list(
-                    filter(
-                        lambda x: (x.get(CHANNEL) == output_channel), default_responses
-                    )
-                )
-                return channel_default
+                if default_channel:
+                    return default_channel
 
-        # if no channel, filter out any non-matching channel specific responses
-        return list(filter(lambda x: (x.get(CHANNEL) is None), potential_responses))
+                if conditional_no_channel:
+                    return conditional_no_channel
+
+            if default_channel:
+                return default_channel
+
+        if conditional_no_channel:
+            return conditional_no_channel
+
+        return default_no_channel
 
     # noinspection PyUnusedLocal
     def _random_response_for(

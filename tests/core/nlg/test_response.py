@@ -345,3 +345,56 @@ async def test_nlg_conditional_response_variation_condition_met_channel_mismatch
     tracker = DialogueStateTracker(sender_id="test", slots=[slot])
     r = await t.generate("utter_action", tracker, "app")
     assert r.get("text") == "app default"
+
+
+@pytest.mark.parametrize(
+    "slots,channel,expected_response",
+    [
+        (
+            [TextSlot("test", "B", influence_conversation=False),],
+            "app",
+            "condition example B no channel",
+        ),
+        ([TextSlot("test", "C", influence_conversation=False),], "", "default"),
+        ([TextSlot("test", "D", influence_conversation=False),], "app", "default"),
+    ],
+)
+async def test_nlg_conditional_edgecases(slots, channel, expected_response):
+    domain = Domain.from_yaml(
+        """
+        version: "2.0"
+        responses:
+           utter_action:
+             - text: "condition example A with channel"
+               condition:
+                - type: slot
+                  name: test
+                  value: A
+               channel: app
+
+             - text: "condition example C with channel"
+               condition:
+                - type: slot
+                  name: test
+                  value: C
+               channel: app
+
+             - text: "condition example A no channel"
+               condition:
+                - type: slot
+                  name: test
+                  value: A
+
+             - text: "condition example B no channel"
+               condition:
+                - type: slot
+                  name: test
+                  value: B
+
+             - text: "default"
+        """
+    )
+    t = TemplatedNaturalLanguageGenerator(domain.responses)
+    tracker = DialogueStateTracker(sender_id="test", slots=slots)
+    r = await t.generate("utter_action", tracker, channel)
+    assert r.get("text") == expected_response
