@@ -316,17 +316,13 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
     )
 
 
-def test_raise_exception_port():
+async def test_create_pika_invalid_port():
 
+    cfg = EndpointConfig(
+        username="username", password="password", type="pika", port="PORT"
+    )
     with pytest.raises(RasaException):
-        PikaEventBroker(
-            "host",
-            "username",
-            "password",
-            "PORT",
-            retry_delay_in_seconds=1,
-            connection_attempts=1,
-        )
+        await EventBroker.create(cfg)
 
 
 def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):
