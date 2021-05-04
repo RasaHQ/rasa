@@ -22,6 +22,7 @@ from rasa.core.brokers.file import FileEventBroker
 from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
+from rasa.shared.exceptions import RasaException
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.shared.exceptions import ConnectionException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
@@ -309,6 +310,23 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         record.name in ["rasa.core.brokers.pika", "asyncio"]
         for record in caplog.records
     )
+
+    broker = PikaEventBroker(
+        "host", "username", "password", retry_delay_in_seconds=1, connection_attempts=1
+    )
+
+
+def test_raise_exception_port(monkeypatch: MonkeyPatch):
+
+    with pytest.raises(RasaException) as e_info:
+        broker = PikaEventBroker(
+            "host",
+            "username",
+            "password",
+            "PORT",
+            retry_delay_in_seconds=1,
+            connection_attempts=1,
+        )
 
 
 def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):

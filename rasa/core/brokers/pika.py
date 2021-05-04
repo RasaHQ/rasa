@@ -73,7 +73,12 @@ class PikaEventBroker(EventBroker):
         self.host = host
         self.username = username
         self.password = password
-        self.port = int(port)
+
+        try:
+            self.port = int(port)
+        except ValueError as e:
+            raise RasaException("Port could not be converted to integer.") from e
+
         self.queues = self._get_queues_from_args(queues)
         self.raise_on_failure = raise_on_failure
         self._connection_attempts = connection_attempts
@@ -170,10 +175,6 @@ class PikaEventBroker(EventBroker):
         last_exception = None
         for _ in range(self._connection_attempts):
             try:
-
-                if not isinstance(self.port, int):
-                    raise RasaException("Port has to be a integer.")
-
                 return await aio_pika.connect_robust(
                     url=url,
                     host=self.host,
