@@ -241,9 +241,11 @@ jobs:
               labels: ${{ env.GITHUB_ISSUE_LABELS }}
             });
             const issues = await github.paginate(opts)
-            // Check if issue exist
+            // Check if issue exist by comparing title and body
             for (const issue of issues) {
-              if (issue.title.includes('${{ env.GITHUB_ISSUE_TITLE }}') ) {
+              if (issue.title.includes('${{ env.GITHUB_ISSUE_TITLE }}') &&
+                  issue.body.includes('${{ matrix.dataset }}') &&
+                  issue.body.includes('${{ matrix.config }}')) {
                   console.log(`Found an exist issue \#${issue.number}. Skip the following steps.`);
                   return 'true'
                 }
