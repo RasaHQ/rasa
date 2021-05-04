@@ -43,18 +43,23 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         self, utter_action: Text, output_channel: Text, filled_slots: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
         """Returns array of responses that fit the channel, action and condition."""
-        conditional_responses = []
-        default_responses = []
-
-        for response in self.responses[utter_action]:
-            if response.get(RESPONSE_CONDITION) is None:
-                default_responses.append(response)
-            else:
-                matched_response = self._matches_filled_slots(
-                    filled_slots=filled_slots, response=response
-                )
-                if matched_response:
-                    conditional_responses.append(response)
+        default_responses = list(
+            filter(
+                lambda x: (x.get(RESPONSE_CONDITION) is None),
+                self.responses[utter_action],
+            )
+        )
+        conditional_responses = list(
+            filter(
+                lambda x: (
+                    x.get(RESPONSE_CONDITION)
+                    and self._matches_filled_slots(
+                        filled_slots=filled_slots, response=x
+                    )
+                ),
+                self.responses[utter_action],
+            )
+        )
 
         conditional_channel = list(
             filter(lambda x: (x.get(CHANNEL) == output_channel), conditional_responses)
@@ -69,19 +74,11 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             filter(lambda x: (x.get(CHANNEL) is None), default_responses)
         )
 
-        if output_channel:
-            if conditional_responses:
-                if conditional_channel:
-                    return conditional_channel
+        if conditional_channel:
+            return conditional_channel
 
-                if default_channel:
-                    return default_channel
-
-                if conditional_no_channel:
-                    return conditional_no_channel
-
-            if default_channel:
-                return default_channel
+        if default_channel:
+            return default_channel
 
         if conditional_no_channel:
             return conditional_no_channel
