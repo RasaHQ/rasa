@@ -371,7 +371,7 @@ def test_socketio_channel():
 
 async def test_socketio_channel_jwt_authentication():
     import jwt
-    from rasa.core.channels.channels import _decode_bearer_token
+    from rasa.core.channels.channel import _decode_bearer_token
     from rasa.core.channels.socketio import SocketIOInput
 
     public_key = "random_key123"
@@ -391,7 +391,7 @@ async def test_socketio_channel_jwt_authentication():
         jwt_method=jwt_algorithm,
     )
 
-    s = rasa.core.run.configure_app([input_channel], port=5004)
+    _ = rasa.core.run.configure_app([input_channel], port=5004)
     assert input_channel.jwt_key == public_key
     assert input_channel.jwt_algorithm == jwt_algorithm
     assert _decode_bearer_token(
@@ -401,7 +401,7 @@ async def test_socketio_channel_jwt_authentication():
 
 async def test_socketio_channel_jwt_authentication_invalid_key():
     import jwt
-    from rasa.core.channels.channels import _decode_bearer_token
+    from rasa.core.channels.channel import _decode_bearer_token
     from rasa.core.channels.socketio import SocketIOInput
 
     public_key = "random_key123"
@@ -424,7 +424,7 @@ async def test_socketio_channel_jwt_authentication_invalid_key():
         jwt_method=jwt_algorithm,
     )
 
-    s = rasa.core.run.configure_app([input_channel], port=5004)
+    _ = rasa.core.run.configure_app([input_channel], port=5004)
     assert input_channel.jwt_key == public_key
     assert input_channel.jwt_algorithm == jwt_algorithm
 
