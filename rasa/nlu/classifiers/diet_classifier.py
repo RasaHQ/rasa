@@ -1355,10 +1355,15 @@ class DIET(TransformerRasaModel):
         # and masked language modelling.
         if self.config[INTENT_CLASSIFICATION]:
             self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
+
+            label_config = self.config
+            label_config[SPARSE_INPUT_DROPOUT] = False
+            label_config[DENSE_INPUT_DROPOUT] = False
+
             self._tf_layers[
                 f"feature_combining_layer.{self.label_name}"
             ] = rasa_layers.RasaFeatureCombiningLayer(
-                self.label_name, self.label_signature[self.label_name], self.config
+                self.label_name, self.label_signature[self.label_name], label_config
             )
 
             self._prepare_ffnn_layer(
