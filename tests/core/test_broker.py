@@ -316,7 +316,7 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
     )
 
 
-def test_raise_exception_port(monkeypatch: MonkeyPatch):
+def test_raise_exception_port():
 
     with pytest.raises(RasaException):
         PikaEventBroker(
