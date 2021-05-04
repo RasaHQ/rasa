@@ -60,3 +60,7 @@ def test_model_training_with_timing():
 
     end = time.time()
     print(f"Finished model training at {end}. Total time: {end - start}")
+
+
+if __name__ == "__main__":
+    test_model_training_with_timing()
