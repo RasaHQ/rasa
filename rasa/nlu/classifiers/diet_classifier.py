@@ -72,7 +72,7 @@ from rasa.utils.tensorflow.constants import (
     UNIDIRECTIONAL_ENCODER,
     DROP_RATE,
     DROP_RATE_ATTENTION,
-    WEIGHT_SPARSITY,
+    CONNECTION_DENSITY,
     NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -207,8 +207,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         DROP_RATE: 0.2,
         # Dropout rate for attention
         DROP_RATE_ATTENTION: 0,
-        # Sparsity of the weights in dense layers
-        WEIGHT_SPARSITY: 0.8,
+        # Fraction of trainable weights in internal layers.
+        CONNECTION_DENSITY: 0.2,
         # If 'True' apply dropout to sparse input tensors
         SPARSE_INPUT_DROPOUT: True,
         # If 'True' apply dropout to dense input tensors
@@ -301,6 +301,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         train_utils.validate_configuration_settings(self.component_config)
 
         self.component_config = train_utils.update_deprecated_loss_type(
+            self.component_config
+        )
+
+        self.component_config = train_utils.update_deprecated_sparsity_to_density(
             self.component_config
         )
 
