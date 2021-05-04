@@ -3,7 +3,7 @@ import os.path
 from pathlib import Path
 from typing import Optional, Text, Dict, List
 
-from rasa.architecture_prototype.graph import ComponentPersistor
+from rasa.architecture_prototype.persistence import ComponentPersistor
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
 from rasa.shared.core.domain import Domain

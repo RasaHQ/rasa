@@ -1,6 +1,7 @@
 import dask
 import pytest
 
+import rasa.architecture_prototype.model
 from rasa.architecture_prototype import graph
 from rasa.architecture_prototype.config_to_graph import old_config_to_graph_schema
 from tests.architecture_prototype.conftest import clean_directory
@@ -36,8 +37,10 @@ project = "examples/moodbot"
 
 @pytest.mark.timeout(600)
 def test_generate_train_graph():
-    train_graph_schema, last_components_out = old_config_to_graph_schema(project=project, config=default_config)
-    graph.fill_defaults(train_graph_schema)
+    train_graph_schema, last_components_out = old_config_to_graph_schema(
+        project=project, config=default_config
+    )
+    rasa.architecture_prototype.model.fill_defaults(train_graph_schema)
 
     dask_graph = graph.convert_to_dask_graph(train_graph_schema)
     dask.visualize(dask_graph, filename="generated_default_config_graph.png")
@@ -46,4 +49,3 @@ def test_generate_train_graph():
     graph.run_as_dask_graph(
         train_graph_schema, last_components_out,
     )
-

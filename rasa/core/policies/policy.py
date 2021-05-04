@@ -17,7 +17,7 @@ from typing import (
 )
 import numpy as np
 
-from rasa.architecture_prototype.graph import ComponentPersistor
+from rasa.architecture_prototype.persistence import ComponentPersistor
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.shared.core.events import Event
 

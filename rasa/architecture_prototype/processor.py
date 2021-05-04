@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Dict, Text, Any, Optional, List, Tuple
 
-from rasa.architecture_prototype.graph import Model, LocalModelPersistor
+from rasa.architecture_prototype.persistence import LocalModelPersistor
+from rasa.architecture_prototype.model import Model
 import rasa.core.tracker_store
 from rasa.core.channels import UserMessage, CollectingOutputChannel
 from rasa.core.lock_store import LockStore

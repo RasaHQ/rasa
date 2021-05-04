@@ -7,7 +7,7 @@ import logging
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
-from rasa.architecture_prototype.graph import ComponentPersistor
+from rasa.architecture_prototype.persistence import ComponentPersistor
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_POLICIES

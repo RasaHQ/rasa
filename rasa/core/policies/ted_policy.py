@@ -5,7 +5,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from rasa.architecture_prototype.graph import ComponentPersistor
+from rasa.architecture_prototype.persistence import ComponentPersistor
 import rasa.shared.utils.io
 import rasa.utils.train_utils
 import tensorflow as tf

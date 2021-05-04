@@ -9,7 +9,7 @@ import scipy.sparse
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.nlu.utils.pattern_utils as pattern_utils
-from rasa.architecture_prototype.graph import ComponentPersistor
+from rasa.architecture_prototype.persistence import ComponentPersistor
 from rasa.nlu import utils
 from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig

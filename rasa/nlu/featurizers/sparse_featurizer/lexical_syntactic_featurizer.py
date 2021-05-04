@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 from typing import Any, Dict, Optional, Text, List, Type, Union, Callable
 
-from rasa.architecture_prototype.graph import ComponentPersistor
+from rasa.architecture_prototype.persistence import ComponentPersistor
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import Component

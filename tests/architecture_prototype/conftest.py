@@ -4,6 +4,7 @@ from typing import Dict, Text, Any
 
 import pytest
 
+import rasa.architecture_prototype.model
 from rasa.architecture_prototype import graph
 from tests.architecture_prototype.graph_schema import (
     full_model_train_graph_schema,
@@ -23,7 +24,7 @@ def clean_directory():
 @pytest.fixture
 def trained_model() -> Dict:
     clean_directory()
-    graph.fill_defaults(full_model_train_graph_schema)
+    rasa.architecture_prototype.model.fill_defaults(full_model_train_graph_schema)
     graph.visualise_as_dask_graph(full_model_train_graph_schema, "full_train_graph.png")
     core_targets = ["train_memoization_policy", "train_ted_policy", "train_rule_policy"]
     nlu_targets = [
@@ -40,6 +41,6 @@ def trained_model() -> Dict:
 
 @pytest.fixture
 def prediction_graph(trained_model: Dict) -> Dict[Text, Any]:
-    graph.fill_defaults(predict_graph_schema)
+    rasa.architecture_prototype.model.fill_defaults(predict_graph_schema)
 
     return predict_graph_schema

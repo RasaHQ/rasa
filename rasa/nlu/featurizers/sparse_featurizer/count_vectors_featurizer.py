@@ -5,7 +5,7 @@ import scipy.sparse
 from typing import Any, Dict, List, Optional, Text, Type, Tuple, Set, Union
 
 import rasa.shared.utils.io
-from rasa.architecture_prototype.graph import ComponentPersistor
+from rasa.architecture_prototype.persistence import ComponentPersistor
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 import rasa.utils.io as io_utils
 import rasa.utils.train_utils

@@ -2,13 +2,10 @@ import copy
 import json
 from typing import Any, Dict, List, Text
 
+import rasa.architecture_prototype.model
 from rasa.architecture_prototype import graph
 from rasa.architecture_prototype import graph_fingerprinting
-from rasa.architecture_prototype.graph import (
-    Model,
-    serialize_graph_schema,
-    deserialize_graph_schema,
-)
+from rasa.architecture_prototype.model import Model
 from rasa.architecture_prototype.graph_fingerprinting import (
     FingerprintStatus,
     TrainingCache,
@@ -28,7 +25,7 @@ from tests.architecture_prototype.graph_schema import (
 
 def test_train_nlu():
     conftest.clean_directory()
-    graph.fill_defaults(nlu_train_graph_schema)
+    rasa.architecture_prototype.model.fill_defaults(nlu_train_graph_schema)
     serialized = json.dumps(nlu_train_graph_schema)
     deserialized = json.loads(serialized)
     graph.visualise_as_dask_graph(deserialized, "nlu_train_graph.png")
@@ -53,24 +50,6 @@ def test_train_load_predict(prediction_graph: Dict[Text, Any]):
     # TODO: should we be saving model_metadata?
     # TODO: stuff like rasa.utils.train_utils.update_deprecated_loss_type changing wont force re-train?
     # TODO: include more meta data e.g. rasa version etc.
-
-
-def test_serialize_graph_schema():
-    graph.fill_defaults(full_model_train_graph_schema)
-    serialized = serialize_graph_schema(full_model_train_graph_schema)
-    with open("graph_schema.json", "w") as f:
-        f.write(serialized)
-
-    with open("graph_schema.json", "r") as f:
-        deserialized = deserialize_graph_schema(f.read())
-
-    core_targets = ["train_memoization_policy", "train_ted_policy", "train_rule_policy"]
-    nlu_targets = [
-        "train_classifier",
-        "train_response_selector",
-        "train_synonym_mapper",
-    ]
-    graph.run_as_dask_graph(deserialized, core_targets + nlu_targets)
 
 
 def test_model_prediction_with_and_without_nlu(prediction_graph: Dict[Text, Any]):
@@ -141,7 +120,7 @@ def prune_graph_schema(
 
 def test_model_fingerprinting():
     conftest.clean_directory()
-    graph.fill_defaults(full_model_train_graph_schema)
+    rasa.architecture_prototype.model.fill_defaults(full_model_train_graph_schema)
     graph.visualise_as_dask_graph(full_model_train_graph_schema, "full_train_graph.png")
     core_targets = ["train_memoization_policy", "train_ted_policy", "train_rule_policy"]
     nlu_targets = [

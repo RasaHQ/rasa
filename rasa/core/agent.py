@@ -11,6 +11,7 @@ import aiohttp
 from aiohttp import ClientError
 
 import rasa
+import rasa.architecture_prototype.model
 import rasa.utils
 from rasa.architecture_prototype import graph
 from rasa.architecture_prototype.processor import GraphProcessor
@@ -489,7 +490,7 @@ class Agent:
         else:
             from tests.architecture_prototype.test_processor import predict_graph_schema
 
-            graph.fill_defaults(predict_graph_schema)
+            rasa.architecture_prototype.model.fill_defaults(predict_graph_schema)
 
             processor = GraphProcessor.create(
                 model_path,

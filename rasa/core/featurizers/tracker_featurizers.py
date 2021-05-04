@@ -5,7 +5,7 @@ from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Any
 import numpy as np
 
-from rasa.architecture_prototype.graph import ComponentPersistor
+from rasa.architecture_prototype.persistence import ComponentPersistor
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered

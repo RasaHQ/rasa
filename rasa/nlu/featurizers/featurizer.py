@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Text, Optional, Dict, Any
 
-from rasa.architecture_prototype.graph import ComponentPersistor
+from rasa.architecture_prototype.persistence import ComponentPersistor
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.nlu.components import Component
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING

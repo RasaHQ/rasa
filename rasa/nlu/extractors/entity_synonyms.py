@@ -1,7 +1,7 @@
 import os
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.architecture_prototype.graph import ComponentPersistor
+from rasa.architecture_prototype.persistence import ComponentPersistor
 from rasa.nlu.components import Component
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA
 from rasa.shared.nlu.constants import ENTITIES, TEXT

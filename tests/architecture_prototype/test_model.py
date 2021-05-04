@@ -1,9 +1,7 @@
 from pathlib import Path
 
-from rasa.architecture_prototype.graph import (
-    ModelTrainer,
-    LocalModelPersistor,
-)
+from rasa.architecture_prototype.persistence import LocalModelPersistor
+from rasa.architecture_prototype.model import ModelTrainer, Model
 from rasa.architecture_prototype.graph_fingerprinting import TrainingCache
 from rasa.core.channels import UserMessage
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -23,12 +21,12 @@ def test_model_training():
 
     # Persist model
     persisted_model = "graph_model.tar.gz"
-    persistor.persist_model(persisted_model, predict_graph_schema)
+    persistor.create_model_package(persisted_model, predict_graph_schema)
 
     # Load model
     persistor = LocalModelPersistor(Path("loaded_model"))
     Path("loaded_model").mkdir()
-    model = persistor.load_model(persisted_model)
+    model = Model.load(persisted_model, persistor)
 
     # Make prediction
     tracker = DialogueStateTracker.from_events("test_graph_model", [])

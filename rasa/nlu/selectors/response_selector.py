@@ -6,7 +6,7 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
-from rasa.architecture_prototype.graph import ComponentPersistor
+from rasa.architecture_prototype.persistence import ComponentPersistor
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
