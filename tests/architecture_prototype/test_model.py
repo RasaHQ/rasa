@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 from pathlib import Path
@@ -12,6 +13,7 @@ from tests.architecture_prototype.graph_schema import (
     full_model_train_graph_schema,
     predict_graph_schema,
 )
+from tests.architecture_prototype.test_prediction_times import test_predictions
 
 
 def test_model_training():
@@ -46,11 +48,11 @@ def test_model_training_with_timing():
     # Train model
     trainer = ModelTrainer(model_persistor=persistor, cache=cache)
 
-    start = time.time()
     train_schema = graph_schema.train_schema_for(
         os.environ.get("PROJECT", graph_schema.default_project)
     )
 
+    start = time.time()
     print(f"Started model training at {start}")
     trained_model = trainer.train(train_schema, predict_graph_schema,)
 
