@@ -192,9 +192,9 @@ class SocketIOInput(InputChannel):
         async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> None:
             if self.jwt_key:
                 jwt_payload = None
-                if auth and auth.get("Authorization"):
+                if auth and auth.get("token"):
                     jwt_payload = _decode_bearer_token(
-                        auth.get("Authorization"), self.jwt_key, self.jwt_algorithm,
+                        auth.get("token"), self.jwt_key, self.jwt_algorithm,
                     )
 
                 if jwt_payload:
