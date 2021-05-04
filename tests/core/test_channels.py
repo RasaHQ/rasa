@@ -3,6 +3,7 @@ from typing import Dict
 from unittest.mock import patch, MagicMock
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aiohttp import ClientTimeout
 from aioresponses import aioresponses
@@ -399,7 +400,9 @@ async def test_socketio_channel_jwt_authentication():
     )
 
 
-async def test_socketio_channel_jwt_authentication_invalid_key():
+async def test_socketio_channel_jwt_authentication_invalid_key(
+    caplog: LogCaptureFixture,
+):
     import jwt
     from rasa.core.channels.channel import _decode_bearer_token
     from rasa.core.channels.socketio import SocketIOInput
@@ -428,10 +431,12 @@ async def test_socketio_channel_jwt_authentication_invalid_key():
     assert input_channel.jwt_key == public_key
     assert input_channel.jwt_algorithm == jwt_algorithm
 
-    with pytest.raises(jwt.exceptions.InvalidSignatureError):
+    with caplog.at_level(logging.ERROR):
         _decode_bearer_token(
             invalid_auth_token, input_channel.jwt_key, input_channel.jwt_algorithm
         )
+
+    assert any("JWT public key invalid." in message for message in caplog.messages)
 
 
 async def test_callback_calls_endpoint():

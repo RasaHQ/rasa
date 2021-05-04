@@ -149,6 +149,8 @@ class SocketIOInput(InputChannel):
         jwt_key: Optional[Text] = None,
         jwt_method: Optional[Text] = "HS256",
     ):
+        """Creates a ``SocketIOInput`` object."""
+
         self.bot_message_evt = bot_message_evt
         self.session_persistence = session_persistence
         self.user_message_evt = user_message_evt
@@ -160,6 +162,7 @@ class SocketIOInput(InputChannel):
         self.jwt_algorithm = jwt_method
 
     def get_output_channel(self) -> Optional["OutputChannel"]:
+        """Creates socket.io output channel object."""
         if self.sio is None:
             rasa.shared.utils.io.raise_warning(
                 "SocketIO output channel cannot be recreated. "

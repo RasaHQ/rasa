@@ -116,6 +116,8 @@ def _decode_bearer_token(
 
 
 class InputChannel:
+    """Input channel base class."""
+
     @classmethod
     def name(cls) -> Text:
         """Every input channel needs a name to identify it."""
