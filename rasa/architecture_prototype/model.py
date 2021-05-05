@@ -85,8 +85,8 @@ class Model:
         )
 
         user_event = None
-        if message:
-            user_event = tracker_with_user_event["add_parsed_nlu_message"].events[-1]
+        # if message:
+        #     user_event = tracker_with_user_event["add_parsed_nlu_message"].events[-1]
 
         return prediction["select_prediction"], user_event
 
