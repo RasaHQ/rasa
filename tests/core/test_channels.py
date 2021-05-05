@@ -1,4 +1,5 @@
 import logging
+import jwt
 from typing import Dict
 from unittest.mock import patch, MagicMock
 
@@ -10,6 +11,7 @@ from aioresponses import aioresponses
 from sanic import Sanic
 
 import rasa.core.run
+import rasa.core.channels.channel
 from rasa.core import utils
 from rasa.core.channels import RasaChatInput, console
 from rasa.core.channels.channel import UserMessage
@@ -371,8 +373,6 @@ def test_socketio_channel():
 
 
 async def test_socketio_channel_jwt_authentication():
-    import jwt
-    from rasa.core.channels.channel import _decode_bearer_token
     from rasa.core.channels.socketio import SocketIOInput
 
     public_key = "random_key123"
@@ -395,7 +395,7 @@ async def test_socketio_channel_jwt_authentication():
     _ = rasa.core.run.configure_app([input_channel], port=5004)
     assert input_channel.jwt_key == public_key
     assert input_channel.jwt_algorithm == jwt_algorithm
-    assert _decode_bearer_token(
+    assert input_channel._decode_bearer_token(
         auth_token, input_channel.jwt_key, input_channel.jwt_algorithm
     )
 
@@ -403,8 +403,6 @@ async def test_socketio_channel_jwt_authentication():
 async def test_socketio_channel_jwt_authentication_invalid_key(
     caplog: LogCaptureFixture,
 ):
-    import jwt
-    from rasa.core.channels.channel import _decode_bearer_token
     from rasa.core.channels.socketio import SocketIOInput
 
     public_key = "random_key123"
@@ -432,7 +430,7 @@ async def test_socketio_channel_jwt_authentication_invalid_key(
     assert input_channel.jwt_algorithm == jwt_algorithm
 
     with caplog.at_level(logging.ERROR):
-        _decode_bearer_token(
+        input_channel._decode_bearer_token(
             invalid_auth_token, input_channel.jwt_key, input_channel.jwt_algorithm
         )
 

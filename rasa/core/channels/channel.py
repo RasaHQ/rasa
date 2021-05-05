@@ -98,23 +98,6 @@ def register(
     app.input_channels = input_channels
 
 
-def _decode_jwt(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Dict:
-    authorization_header_value = bearer_token.replace(BEARER_TOKEN_PREFIX, "")
-    return jwt.decode(authorization_header_value, jwt_key, algorithms=jwt_algorithm)
-
-
-def _decode_bearer_token(
-    bearer_token: Text, jwt_key: Text, jwt_algorithm: Text
-) -> Optional[Dict]:
-    # noinspection PyBroadException
-    try:
-        return _decode_jwt(bearer_token, jwt_key, jwt_algorithm)
-    except jwt.exceptions.InvalidSignatureError:
-        logger.error("JWT public key invalid.")
-    except Exception:
-        logger.exception("Failed to decode bearer token.")
-
-
 class InputChannel:
     """Input channel base class."""
 
@@ -178,6 +161,23 @@ class InputChannel:
             Metadata which was extracted from the request.
         """
         pass
+
+    def _decode_jwt(
+        self, bearer_token: Text, jwt_key: Text, jwt_algorithm: Text
+    ) -> Dict:
+        authorization_header_value = bearer_token.replace(BEARER_TOKEN_PREFIX, "")
+        return jwt.decode(authorization_header_value, jwt_key, algorithms=jwt_algorithm)
+
+    def _decode_bearer_token(
+        self, bearer_token: Text, jwt_key: Text, jwt_algorithm: Text
+    ) -> Optional[Dict]:
+        # noinspection PyBroadException
+        try:
+            return self._decode_jwt(bearer_token, jwt_key, jwt_algorithm)
+        except jwt.exceptions.InvalidSignatureError:
+            logger.error("JWT public key invalid.")
+        except Exception:
+            logger.exception("Failed to decode bearer token.")
 
 
 class OutputChannel:

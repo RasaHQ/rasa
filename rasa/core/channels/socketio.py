@@ -6,7 +6,6 @@ from rasa.core.channels.channel import (
     InputChannel,
     OutputChannel,
     UserMessage,
-    _decode_bearer_token,
 )
 import rasa.shared.utils.io
 from sanic import Blueprint, response, Sanic
@@ -191,11 +190,13 @@ class SocketIOInput(InputChannel):
             return response.json({"status": "ok"})
 
         @sio.on("connect", namespace=self.namespace)
-        async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> None:
+        async def connect(
+            sid: Text, environ: Dict, auth: Optional[Dict]
+        ) -> Optional[bool]:
             if self.jwt_key:
                 jwt_payload = None
                 if auth and auth.get("token"):
-                    jwt_payload = _decode_bearer_token(
+                    jwt_payload = self._decode_bearer_token(
                         auth.get("token"), self.jwt_key, self.jwt_algorithm,
                     )
 
