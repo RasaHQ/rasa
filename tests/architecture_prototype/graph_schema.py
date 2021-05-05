@@ -344,7 +344,12 @@ predict_graph_schema = {
         "uses": DIETClassifier,
         "fn": "process",
         "constructor_name": "load",
-        "config": {"resource_name": "train_classifier"},
+        "config": {
+            "resource_name": "train_classifier",
+            "epochs": 100,
+            "random_seed": 42,
+            "constrain_similarities": True,
+        },
         "needs": {"message": "add_count_features2"},
     },
     "synonym_mapper": {
@@ -358,7 +363,10 @@ predict_graph_schema = {
         "uses": ResponseSelector,
         "constructor_name": "load",
         "fn": "process",
-        "config": {"resource_name": "train_response_selector",},
+        "config": {
+            "resource_name": "train_response_selector",
+            "constrain_similarities": True,
+        },
         "needs": {"message": "synonym_mapper"},
     },
     "fallback_classifier": {
@@ -467,8 +475,8 @@ predict_graph_schema = {
         "fn": "predict_action_probabilities",
         "config": {
             "max_history": 5,
-            "checkpoint_model": True,
             "resource_name": "train_ted_policy",
+            "constrain_similarities": True,
         },
         "needs": {
             "tracker": "add_parsed_nlu_message",
