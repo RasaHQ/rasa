@@ -184,7 +184,8 @@ class OutputChannel:
     """Output channel base class.
 
     Provides sane implementation of the send methods
-    for text only output channels."""
+    for text only output channels.
+    """
 
     @classmethod
     def name(cls) -> Text:
