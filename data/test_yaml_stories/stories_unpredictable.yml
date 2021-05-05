@@ -1,0 +1,11 @@
+stories:
+- story: "story 1"
+  steps:
+  - intent: greet
+  - action: action_unlikely_intent
+
+- story: "story 2"
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - action: action_unlikely_intent
