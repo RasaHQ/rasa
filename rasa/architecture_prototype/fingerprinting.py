@@ -17,6 +17,10 @@ import rasa.shared.utils.io
 
 
 class FingerprintComponent(GraphNodeComponent):
+    """Represents a fingerprinted node in a graph before re-running a cached graph.
+
+    This
+    """
     def __call__(self, *args: Any) -> Dict[Text, Any]:
         fingerprint_statuses = dict(ChainMap(*args))
 
