@@ -21,6 +21,7 @@ jobs:
         project-location: RasaHQ
         project-number: 40
         column-name: Inbox
+        skip-update: true
 
     - name: Assign model regression issues to Research
       if: contains(github.event.issue.labels.*.name, 'tool:model-regression-tests')
@@ -32,6 +33,7 @@ jobs:
         project-location: RasaHQ
         project-number: 21
         column-name: Inbox
+        skip-update: true
 
     - name: Notify slack on failure
       if: failure()
