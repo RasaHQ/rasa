@@ -164,7 +164,7 @@ class InputChannel:
 
 
 def _decode_jwt(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Dict:
-    """Decodes a JSON Web Token using the specific JWT key and algorithm. 
+    """Decodes a Bearer Token using the specific JWT key and algorithm.
 
     Args:
         bearer_token: Encoded Bearer token
@@ -172,7 +172,8 @@ def _decode_jwt(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Dict:
         jwt_algorithm: JWT algorithm used for decoding the Bearer token
 
     Returns:
-        `Dict` containing the decoded payload if successful or an exception if unsuccessful
+        `Dict` containing the decoded payload if successful or an exception
+        if unsuccessful
     """
     authorization_header_value = bearer_token.replace(BEARER_TOKEN_PREFIX, "")
     return jwt.decode(authorization_header_value, jwt_key, algorithms=jwt_algorithm)
@@ -181,7 +182,7 @@ def _decode_jwt(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Dict:
 def _decode_bearer_token(
     bearer_token: Text, jwt_key: Text, jwt_algorithm: Text
 ) -> Optional[Dict]:
-    """Decodes a Bearer Token using the specific JWT key and algorithm. 
+    """Decodes a Bearer Token using the specific JWT key and algorithm.
 
     Args:
         bearer_token: Encoded Bearer token
