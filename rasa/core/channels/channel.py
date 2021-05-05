@@ -162,22 +162,42 @@ class InputChannel:
         """
         pass
 
-    def _decode_jwt(
-        self, bearer_token: Text, jwt_key: Text, jwt_algorithm: Text
-    ) -> Dict:
-        authorization_header_value = bearer_token.replace(BEARER_TOKEN_PREFIX, "")
-        return jwt.decode(authorization_header_value, jwt_key, algorithms=jwt_algorithm)
 
-    def _decode_bearer_token(
-        self, bearer_token: Text, jwt_key: Text, jwt_algorithm: Text
-    ) -> Optional[Dict]:
-        # noinspection PyBroadException
-        try:
-            return self._decode_jwt(bearer_token, jwt_key, jwt_algorithm)
-        except jwt.exceptions.InvalidSignatureError:
-            logger.error("JWT public key invalid.")
-        except Exception:
-            logger.exception("Failed to decode bearer token.")
+def _decode_jwt(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Dict:
+    """Decodes a JSON Web Token using the specific JWT key and algorithm. 
+
+    Args:
+        bearer_token: Encoded Bearer token
+        jwt_key: Public JWT key for decoding the Bearer token
+        jwt_algorithm: JWT algorithm used for decoding the Bearer token
+
+    Returns:
+        `Dict` containing the decoded payload if successful or an exception if unsuccessful
+    """
+    authorization_header_value = bearer_token.replace(BEARER_TOKEN_PREFIX, "")
+    return jwt.decode(authorization_header_value, jwt_key, algorithms=jwt_algorithm)
+
+
+def _decode_bearer_token(
+    bearer_token: Text, jwt_key: Text, jwt_algorithm: Text
+) -> Optional[Dict]:
+    """Decodes a Bearer Token using the specific JWT key and algorithm. 
+
+    Args:
+        bearer_token: Encoded Bearer token
+        jwt_key: Public JWT key for decoding the Bearer token
+        jwt_algorithm: JWT algorithm used for decoding the Bearer token
+
+    Returns:
+        `Dict` containing the decoded payload if successful or `None` if unsuccessful
+    """
+    # noinspection PyBroadException
+    try:
+        return _decode_jwt(bearer_token, jwt_key, jwt_algorithm)
+    except jwt.exceptions.InvalidSignatureError:
+        logger.error("JWT public key invalid.")
+    except Exception:
+        logger.exception("Failed to decode bearer token.")
 
 
 class OutputChannel:

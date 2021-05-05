@@ -7,6 +7,7 @@ from sanic.exceptions import abort
 import jwt
 import jwt.exceptions
 
+import rasa.core.channels.channel
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -76,11 +77,15 @@ class RasaChatInput(RestInput):
             await self._fetch_public_key()
 
         try:
-            return self._decode_jwt(bearer_token, self.jwt_key, self.jwt_algorithm)
+            return rasa.core.channels.channel._decode_jwt(
+                bearer_token, self.jwt_key, self.jwt_algorithm
+            )
         except jwt.InvalidSignatureError:
             logger.error("JWT public key invalid, fetching new one.")
             await self._fetch_public_key()
-            return self._decode_jwt(bearer_token, self.jwt_key, self.jwt_algorithm)
+            return rasa.core.channels.channel._decode_jwt(
+                bearer_token, self.jwt_key, self.jwt_algorithm
+            )
 
     async def _extract_sender(self, req: Request) -> Optional[Text]:
         """Fetch user from the Rasa X Admin API."""
