@@ -119,6 +119,8 @@ class RasaComponent(GraphNodeComponent):
         if self._eager:
             self.create_component(**self.config)
 
+        self._run_args = rasa.shared.utils.common.arguments_of(self._run_fn)
+
     def validate_params_in_inputs(self, input_names, func) -> None:
         """ Validate that all required parameters for a function are provided by the
             graph inputs."""
@@ -135,7 +137,7 @@ class RasaComponent(GraphNodeComponent):
     def __call__(self, *args: Any) -> Dict[Text, Any]:
         """This is called when the node is executed."""
         result = self.run(*args)
-        return {self.node_name: copy.deepcopy(result)}
+        return {self.node_name: result}
 
     @fingerprint
     def run(self, *args: Any) -> Any:
@@ -152,12 +154,12 @@ class RasaComponent(GraphNodeComponent):
             self.create_component(**const_kwargs, **self.config)
 
         run_kwargs = kwargs
-        if "kwargs" not in rasa.shared.utils.common.arguments_of(self._run_fn):
-            run_kwargs = rasa.shared.utils.common.minimal_kwargs(kwargs, self._run_fn)
+        if "kwargs" not in self._run_args:
+            run_kwargs = {k: v for k, v in kwargs.items() if k in self._run_args}
 
-        print(
-            f"************** {self.node_name}: {self._component_class.__name__}.{self._run_fn.__name__}"
-        )
+        # print(
+        #     f"************** {self.node_name}: {self._component_class.__name__}.{self._run_fn.__name__}"
+        # )
         #  This alters the input
         return self._run_fn(self._component, **run_kwargs)
 

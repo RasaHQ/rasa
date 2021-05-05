@@ -112,8 +112,8 @@ class Model(ModelInterface):
         results = run_dask_graph(graph, ["select_prediction", "add_parsed_nlu_message"])
 
         user_event = None
-        if message:
-            user_event = results["add_parsed_nlu_message"].events[-1]
+        # if message:
+        #     user_event = results["add_parsed_nlu_message"].events[-1]
 
         return results["select_prediction"], user_event
 
