@@ -395,6 +395,13 @@ class IntentTEDPolicy(TEDPolicy):
         if self.model is None:
             return self._prediction(self._default_predictions(domain))
 
+        if tracker.events and not isinstance(tracker.events[-1], UserUttered):
+            logger.debug(
+                f"Skipping predictions for {self.__class__.__name__} "
+                f"as the last event in tracker is not of type `UserUttered`."
+            )
+            return self._prediction(self._default_predictions(domain))
+
         # create model data from tracker
         tracker_state_features = self._featurize_for_prediction(
             tracker, domain, interpreter

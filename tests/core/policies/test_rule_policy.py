@@ -2147,6 +2147,7 @@ def test_hide_rule_turn():
             PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
         },
     ]
+    assert False
 
 
 def test_hide_rule_turn_with_slots():

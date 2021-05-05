@@ -58,6 +58,7 @@ class TrackerFeaturizer:
         omit_unset_slots: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_last_action_listen_in_state: bool = False,
     ) -> List[State]:
         """Create states for the given tracker.
 
@@ -78,6 +79,7 @@ class TrackerFeaturizer:
             omit_unset_slots=omit_unset_slots,
             ignore_rule_only_turns=ignore_rule_only_turns,
             rule_only_data=rule_only_data,
+            ignore_last_action_listen_in_state=ignore_last_action_listen_in_state,
         )
 
     def _featurize_states(
@@ -960,6 +962,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 domain,
                 ignore_rule_only_turns=ignore_rule_only_turns,
                 rule_only_data=rule_only_data,
+                ignore_last_action_listen_in_state=True,
             )
             for tracker in duplicate_trackers
         ]

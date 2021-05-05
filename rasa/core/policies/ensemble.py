@@ -685,36 +685,17 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             None,
         )
 
-        last_action_name = last_action_event.action_name if last_action_event else None
-
-        logger.debug(f"--------------------last action name {last_action_name}")
-
         if len(tracker.events) > 0 and isinstance(
             last_action_event, ActionExecutionRejected
         ):
             rejected_action_name = last_action_event.action_name
 
-        # predictions = {
-        #     f"policy_{i}_{type(p).__name__}": self._get_prediction(
-        #         p, tracker, domain, interpreter
-        #     )
-        #     for i, p in enumerate(self.policies)
-        # }
-
-        predictions = {}
-
-        for i, p in enumerate(self.policies):
-
-            # very hacky to just prevent intent ted policy from being fired in a continuous loop.
-            if (
-                p._metadata_filename() == "intent_ted_policy"
-                and last_action_name
-                and last_action_name == "action_unlikely_intent"
-            ):
-                continue
-            predictions[f"policy_{i}_{type(p).__name__}"] = self._get_prediction(
+        predictions = {
+            f"policy_{i}_{type(p).__name__}": self._get_prediction(
                 p, tracker, domain, interpreter
             )
+            for i, p in enumerate(self.policies)
+        }
 
         if rejected_action_name:
             logger.debug(

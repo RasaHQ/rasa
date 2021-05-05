@@ -429,7 +429,6 @@ class Policy:
         """
         # empty string to insert line break before first state
         formatted_states = [""]
-        print(states)
         if states:
             for index, state in enumerate(states):
                 state_messages = []
