@@ -119,3 +119,11 @@ Pickle an object to a file using json.
 - `file_name` - the file to store the object to
 - `obj` - the object to store
 
+#### get\_emoji\_regex
+
+```python
+get_emoji_regex() -> Pattern
+```
+
+Returns regex to identify emojis.
+

@@ -60,6 +60,7 @@
         {
           "items": [
             "reference/rasa/core/channels/facebook",
+            "reference/rasa/core/channels/twilio_voice",
             "reference/rasa/core/channels/webexteams",
             "reference/rasa/core/channels/telegram",
             "reference/rasa/core/channels/channel",

@@ -16,15 +16,6 @@ class WhitespaceTokenizer(Tokenizer)
 
 Construct a new tokenizer using the WhitespaceTokenizer framework.
 
-#### get\_emoji\_regex
-
-```python
- | @staticmethod
- | get_emoji_regex() -> Pattern
-```
-
-Gets regex to detect emojis in the training data.
-
 #### remove\_emoji
 
 ```python
