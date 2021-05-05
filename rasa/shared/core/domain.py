@@ -28,7 +28,6 @@ from rasa.shared.constants import (
     DOCS_URL_FORMS,
     DOCS_URL_MIGRATION_GUIDE,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
-    UTTER_PREFIX,
     DOCS_URL_RESPONSES,
     REQUIRED_SLOTS_KEY,
     IGNORED_INTENTS,
@@ -902,9 +901,7 @@ class Domain:
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(
-                rasa.shared.core.constants.SESSION_START_METADATA_SLOT,
-            )
+            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
         )
 
     def index_for_action(self, action_name: Text) -> int:
@@ -1097,8 +1094,7 @@ class Domain:
 
     @staticmethod
     def _get_slots_sub_state(
-        tracker: "DialogueStateTracker",
-        omit_unset_slots: bool = False,
+        tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
         """Sets all set slots with the featurization of the stored value.
 
@@ -1164,9 +1160,7 @@ class Domain:
         }
 
     def get_active_states(
-        self,
-        tracker: "DialogueStateTracker",
-        omit_unset_slots: bool = False,
+        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
     ) -> State:
         """Returns a bag of active states from the tracker state.
 
@@ -1192,8 +1186,7 @@ class Domain:
 
     @staticmethod
     def _remove_rule_only_features(
-        state: State,
-        rule_only_data: Optional[Dict[Text, Any]],
+        state: State, rule_only_data: Optional[Dict[Text, Any]],
     ) -> None:
         if not rule_only_data:
             return
@@ -1775,8 +1768,9 @@ class Domain:
     def check_missing_responses(self) -> None:
         """Warn user of utterance names which have no specified response."""
         utterances = [
-
-            action for action in self.action_names_or_texts if action.startswith(rasa.shared.constants.UTTER_PREFIX)
+            action
+            for action in self.action_names_or_texts
+            if action.startswith(rasa.shared.constants.UTTER_PREFIX)
         ]
 
         missing_responses = [t for t in utterances if t not in self.responses.keys()]
