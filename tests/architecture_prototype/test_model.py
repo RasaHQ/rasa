@@ -1,3 +1,5 @@
+import os
+import time
 from pathlib import Path
 
 import pytest
@@ -38,3 +40,27 @@ def test_model_training(tmp_path: Path):
 
     assert prediction
     assert user_uttered
+
+
+def test_model_training_with_timing():
+    cache = TrainingCache()
+    persistor = LocalModelPersistor(Path("model"))
+
+    # Train model
+    trainer = ModelTrainer(model_persistor=persistor, cache=cache)
+    start = time.time()
+    print(f"Started model training at {start}")
+    trained_model = trainer.train(
+        os.environ.get("PROJECT", project), train_graph_schema, predict_graph_schema
+    )
+
+    # Persist model
+    persisted_model = "graph_model.tar.gz"
+    persistor.create_model_package(persisted_model, trained_model)
+
+    end = time.time()
+    print(f"Finished model training at {end}. Total time: {end - start}")
+
+
+if __name__ == "__main__":
+    test_model_training_with_timing()
