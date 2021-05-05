@@ -1,9 +1,16 @@
+import sys
 from pathlib import Path
 from typing import Text, List, Dict, Optional
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
+from unittest.mock import Mock
 
-from rasa.shared.exceptions import FileNotFoundException, YamlSyntaxException
+from rasa.shared.exceptions import (
+    FileNotFoundException,
+    YamlSyntaxException,
+    YamlException,
+)
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -588,3 +595,19 @@ def test_handles_mixed_steps_for_test_and_e2e_stories(is_conversation_test):
     assert events[0].text == "Hi"
     assert events[1].action_text == "Hello?"
     assert events[2].text == "Well..."
+
+
+def test_read_from_file_skip_validation(monkeypatch: MonkeyPatch):
+    yaml_file = "data/test_wrong_yaml_stories/wrong_yaml.yml"
+    reader = YAMLStoryReader()
+
+    monkeypatch.setattr(
+        sys.modules["rasa.shared.utils.io"],
+        rasa.shared.utils.io.read_yaml.__name__,
+        Mock(return_value={}),
+    )
+
+    with pytest.raises(YamlException):
+        _ = reader.read_from_file(yaml_file, skip_validation=False)
+
+    assert reader.read_from_file(yaml_file, skip_validation=True) == []
