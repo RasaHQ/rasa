@@ -123,7 +123,12 @@ class TwilioVoiceInput(InputChannel):
         """Creates a connection to Twilio voice.
 
         Args:
+            initial_prompt: text to use to prompt a conversation when call is answered.
+            reprompt_fallback_phrase: phrase to use if no user response.
             assistant_voice: name of the assistant voice to use.
+            speech_timeout: how long to pause when user finished speaking.
+            speech_model: type of transcription model to use from Twilio.
+            enhanced: toggle to use Twilio's premium speech transcription model.
         """
         self.initial_prompt = initial_prompt
         self.reprompt_fallback_phrase = reprompt_fallback_phrase
@@ -317,6 +322,7 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
     async def send_text_message(
         self, recipient_id: Text, text: Text, **kwargs: Any
     ) -> None:
+        """Sends the text message after removing emojis."""
         self._emoji_warning(text)
         for message_part in text.strip().split("\n\n"):
             await self._persist_message(self._message(recipient_id, text=message_part))
