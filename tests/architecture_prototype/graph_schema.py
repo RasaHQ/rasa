@@ -65,7 +65,7 @@ train_graph_schema = {
     "TEDPolicy_1": {
         "uses": TEDPolicy,
         "fn": "train",
-        "config": {"max_history": 5, "epochs": 1, "constrain_similarities": True},
+        "config": {"max_history": 5, "epochs": 100, "constrain_similarities": True},
         "needs": {
             "training_trackers": "generate_trackers",
             "domain": "load_domain",
@@ -236,7 +236,7 @@ train_graph_schema = {
     "train_DIETClassifier_5": {
         "uses": DIETClassifier,
         "fn": "train",
-        "config": {"epochs": 1, "constrain_similarities": True},
+        "config": {"epochs": 100, "constrain_similarities": True},
         "needs": {"training_data": "process_CountVectorsFeaturizer_4"},
     },
     "train_EntitySynonymMapper_6": {
@@ -248,7 +248,7 @@ train_graph_schema = {
     "train_ResponseSelector_7": {
         "uses": ResponseSelector,
         "fn": "train",
-        "config": {"epochs": 1, "constrain_similarities": True},
+        "config": {"epochs": 100, "constrain_similarities": True},
         "needs": {"training_data": "process_CountVectorsFeaturizer_4"},
     },
     "targets": [
