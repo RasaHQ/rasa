@@ -6,7 +6,7 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.utils.tensorflow.model_data import FeatureSignature
 from rasa.utils.tensorflow.constants import (
     REGULARIZATION_CONSTANT,
-    WEIGHT_SPARSITY,
+    CONNECTION_DENSITY,
     NUM_TRANSFORMER_LAYERS,
     TRANSFORMER_SIZE,
     NUM_HEADS,
@@ -347,7 +347,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
                         layer_sizes=[config[CONCAT_DIMENSION][attribute]],
                         dropout_rate=config[DROP_RATE],
                         reg_lambda=config[REGULARIZATION_CONSTANT],
-                        sparsity=config[WEIGHT_SPARSITY],
+                        density=config[CONNECTION_DENSITY],
                     )
 
     def _calculate_output_units(self, attribute: Text, config: Dict[Text, Any]) -> int:
@@ -635,7 +635,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
                 config[HIDDEN_LAYERS_SIZES][attribute],
                 config[DROP_RATE],
                 config[REGULARIZATION_CONSTANT],
-                config[WEIGHT_SPARSITY],
+                config[CONNECTION_DENSITY],
                 layer_name_suffix=attribute,
             ),
         }
@@ -940,7 +940,7 @@ def prepare_transformer_layer(
             config[REGULARIZATION_CONSTANT],
             dropout_rate=drop_rate,
             attention_dropout_rate=config[DROP_RATE_ATTENTION],
-            sparsity=config[WEIGHT_SPARSITY],
+            density=config[CONNECTION_DENSITY],
             unidirectional=unidirectional,
             use_key_relative_position=config[KEY_RELATIVE_ATTENTION],
             use_value_relative_position=config[VALUE_RELATIVE_ATTENTION],
