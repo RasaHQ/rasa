@@ -311,10 +311,6 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         for record in caplog.records
     )
 
-    broker = PikaEventBroker(
-        "host", "username", "password", retry_delay_in_seconds=1, connection_attempts=1
-    )
-
 
 async def test_create_pika_invalid_port():
 
