@@ -205,6 +205,14 @@ for more implementation.
 
   A deep copy of the current domain.
 
+#### count\_conditional\_response\_variations
+
+```python
+ | count_conditional_response_variations() -> int
+```
+
+Returns count of conditional response variations.
+
 #### \_\_hash\_\_
 
 ```python
