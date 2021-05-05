@@ -87,11 +87,7 @@ class TwilioVoiceInput(InputChannel):
         "Polly.Gwyneth",
     ]
 
-    SUPPORTED_SPEECH_MODELS = [
-        "default",
-        "numbers_and_commands",
-        "phone_call"
-    ]
+    SUPPORTED_SPEECH_MODELS = ["default", "numbers_and_commands", "phone_call"]
 
     @classmethod
     def name(cls) -> Text:
@@ -105,11 +101,14 @@ class TwilioVoiceInput(InputChannel):
 
         return cls(
             credentials.get("initial_prompt", "hello"),
-            credentials.get("reprompt_fallback_phrase", "I'm sorry I didn't get that could you rephrase."),
+            credentials.get(
+                "reprompt_fallback_phrase",
+                "I'm sorry I didn't get that could you rephrase.",
+            ),
             credentials.get("assistant_voice", "woman"),
             credentials.get("speech_timeout", "5"),
             credentials.get("speech_model", "default"),
-            credentials.get("enhanced", "false")
+            credentials.get("enhanced", "false"),
         )
 
     def __init__(
@@ -119,7 +118,7 @@ class TwilioVoiceInput(InputChannel):
         assistant_voice: Optional[Text],
         speech_timeout: Optional[Text],
         speech_model: Optional[Text],
-        enhanced: Optional[Text]
+        enhanced: Optional[Text],
     ) -> None:
         """Creates a connection to Twilio voice.
 
@@ -152,10 +151,14 @@ class TwilioVoiceInput(InputChannel):
         if self.enhanced.lower() not in ["true", "false"]:
             self._raise_invalid_enhanced_option_exception()
 
-        if (self.enhanced.lower() == "true") and (self.speech_model.lower() != "phone_call"):
+        if (self.enhanced.lower() == "true") and (
+            self.speech_model.lower() != "phone_call"
+        ):
             self._raise_invalid_enhanced_speech_model_exception()
 
-        if (self.speech_model.lower() != "numbers_and_commands") and (self.speech_timeout.lower() == "auto"):
+        if (self.speech_model.lower() != "numbers_and_commands") and (
+            self.speech_timeout.lower() == "auto"
+        ):
             self._raise_invalid_speech_model_timeout_exception()
 
     def _raise_invalid_speech_model_timeout_exception(self) -> None:
@@ -225,7 +228,10 @@ class TwilioVoiceInput(InputChannel):
             if text is not None:
                 await on_new_message(
                     UserMessage(
-                        text, collector, sender_id, input_channel=input_channel,
+                        text,
+                        collector,
+                        sender_id,
+                        input_channel=input_channel,
                     )
                 )
 
@@ -237,7 +243,11 @@ class TwilioVoiceInput(InputChannel):
                 last_response = None
                 if tracker:
                     last_response = next(
-                        (e for e in reversed(tracker.events) if isinstance(e, BotUttered)),
+                        (
+                            e
+                            for e in reversed(tracker.events)
+                            if isinstance(e, BotUttered)
+                        ),
                         None,
                     )
 

@@ -21,7 +21,7 @@ async def test_twilio_voice_twiml_response_text():
         "speech_model": "default",
         "speech_timeout": "5",
         "assistant_voice": "woman",
-        "enhanced": "false"
+        "enhanced": "false",
     }
 
     tv = TwilioVoiceInput(**inputs)
@@ -47,7 +47,7 @@ async def test_twilio_voice_twiml_response_buttons():
         "speech_model": "default",
         "speech_timeout": "5",
         "assistant_voice": "woman",
-        "enhanced": "false"
+        "enhanced": "false",
     }
 
     tv = TwilioVoiceInput(**inputs)
@@ -82,8 +82,9 @@ async def test_twilio_voice_twiml_response_buttons():
                 "speech_model": "default",
                 "speech_timeout": "5",
                 "assistant_voice": "alien",
-                "enhanced": "false"
-            }, InvalidConfigException
+                "enhanced": "false",
+            },
+            InvalidConfigException,
         ),
         (
             {
@@ -92,8 +93,9 @@ async def test_twilio_voice_twiml_response_buttons():
                 "speech_model": "default",
                 "speech_timeout": "not a number",
                 "assistant_voice": "woman",
-                "enhanced": "false"
-            }, InvalidConfigException
+                "enhanced": "false",
+            },
+            InvalidConfigException,
         ),
         (
             {
@@ -102,8 +104,9 @@ async def test_twilio_voice_twiml_response_buttons():
                 "speech_model": "default",
                 "speech_timeout": "auto",
                 "assistant_voice": "woman",
-                "enhanced": "wrong"
-            }, InvalidConfigException
+                "enhanced": "wrong",
+            },
+            InvalidConfigException,
         ),
         (
             {
@@ -112,8 +115,9 @@ async def test_twilio_voice_twiml_response_buttons():
                 "speech_model": "default",
                 "speech_timeout": "5",
                 "assistant_voice": "woman",
-                "enhanced": "true"
-            }, InvalidConfigException
+                "enhanced": "true",
+            },
+            InvalidConfigException,
         ),
         (
             {
@@ -122,8 +126,9 @@ async def test_twilio_voice_twiml_response_buttons():
                 "assistant_voice": "woman",
                 "enhanced": "true",
                 "speech_model": "default",
-                "speech_timeout": "auto"
-            }, InvalidConfigException
+                "speech_timeout": "auto",
+            },
+            InvalidConfigException,
         ),
         (
             {
@@ -133,9 +138,10 @@ async def test_twilio_voice_twiml_response_buttons():
                 "enhanced": "true",
                 "speech_model": "phone_call",
                 "speech_timeout": "auto",
-            }, InvalidConfigException
-        )
-    ]
+            },
+            InvalidConfigException,
+        ),
+    ],
 )
 def test_invalid_configs(configs: Dict[Text, Any], expected: Type[RasaException]):
     with pytest.raises(expected):
@@ -148,10 +154,7 @@ async def test_twilio_voice_remove_image():
         output_channel = TwilioVoiceCollectingOutputChannel()
         await output_channel.send_response(
             recipient_id="Chuck Norris",
-            message={
-                "image": "https://i.imgur.com/nGF1K8f.jpg",
-                "text": "Some text."
-            }
+            message={"image": "https://i.imgur.com/nGF1K8f.jpg", "text": "Some text."},
         )
 
 
@@ -160,10 +163,7 @@ async def test_twilio_voice_keep_image_text():
     output_channel = TwilioVoiceCollectingOutputChannel()
     await output_channel.send_response(
         recipient_id="Chuck Norris",
-        message={
-            "image": "https://i.imgur.com/nGF1K8f.jpg",
-            "text": "Some text."
-        }
+        message={"image": "https://i.imgur.com/nGF1K8f.jpg", "text": "Some text."},
     )
     assert len(output_channel.messages) == 1
     assert output_channel.messages[0]["text"] == "Some text."
@@ -174,10 +174,7 @@ async def test_twilio_emoji_warning():
     with pytest.warns(UserWarning):
         output_channel = TwilioVoiceCollectingOutputChannel()
         await output_channel.send_response(
-            recipient_id="User",
-            message={
-                "text": "Howdy 😀"
-            }
+            recipient_id="User", message={"text": "Howdy 😀"}
         )
 
 
@@ -189,15 +186,19 @@ async def test_twilio_voice_multiple_responses():
         "speech_model": "default",
         "speech_timeout": "5",
         "assistant_voice": "woman",
-        "enhanced": "false"
+        "enhanced": "false",
     }
 
     tv = TwilioVoiceInput(**inputs)
 
     output_channel = TwilioVoiceCollectingOutputChannel()
 
-    await output_channel.send_text_message(recipient_id="Chuck Norris", text="message 1")
-    await output_channel.send_text_message(recipient_id="Chuck Norris", text="message 2")
+    await output_channel.send_text_message(
+        recipient_id="Chuck Norris", text="message 1"
+    )
+    await output_channel.send_text_message(
+        recipient_id="Chuck Norris", text="message 2"
+    )
     assert len(output_channel.messages) == 2
     assert output_channel.messages[0]["text"] == "message 1"
     assert output_channel.messages[1]["text"] == "message 2"
@@ -235,8 +236,10 @@ async def test_twilio_receive_answer(stack_agent: Agent):
     )
     assert response.status == 200
     # Actual test xml content
-    assert response.body == \
-           b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">hey there None!</Say></Gather></Response>'
+    assert (
+        response.body
+        == b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">hey there None!</Say></Gather></Response>'
+    )
 
 
 async def test_twilio_receive_no_response(stack_agent: Agent):
@@ -273,8 +276,10 @@ async def test_twilio_receive_no_response(stack_agent: Agent):
     )
 
     assert response.status == 200
-    assert response.body == \
-           b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">hey there None!</Say></Gather></Response>'
+    assert (
+        response.body
+        == b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">hey there None!</Say></Gather></Response>'
+    )
 
 
 async def test_twilio_receive_no_previous_response(stack_agent: Agent):
@@ -302,5 +307,7 @@ async def test_twilio_receive_no_previous_response(stack_agent: Agent):
     )
 
     assert response.status == 200
-    assert response.body == \
-           b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">i didn\'t get that</Say></Gather></Response>'
+    assert (
+        response.body
+        == b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">i didn\'t get that</Say></Gather></Response>'
+    )
