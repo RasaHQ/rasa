@@ -91,7 +91,7 @@ class TwilioVoiceInput(InputChannel):
 
     @classmethod
     def name(cls) -> Text:
-        """Name of your custom channel."""
+        """Name of channel."""
         return "twilio_voice"
 
     @classmethod
@@ -171,27 +171,31 @@ class TwilioVoiceInput(InputChannel):
     def _raise_invalid_enhanced_option_exception(self) -> None:
         """Raises an error if an invalid value is passed to the enhanced parameter."""
         raise InvalidConfigException(
-            f"{self.enhanced} is invalid. You must provide either `true` or `false` for this value."
+            f"The value {self.enhanced} is invalid for the enhanced parameter. "
+            f"You must provide either `true` or `false` for this value."
         )
 
     def _raise_invalid_speech_model_exception(self) -> None:
         """Raises an error if an invalid speech_model is provided."""
         raise InvalidConfigException(
-            f"{self.speech_model} is invalid. You must choose one of 'default', 'numbers_and_commands', "
-            f"or 'phone_call'. Refer to the documentation for details about the selections."
+            f"The value {self.speech_model} for speech_model is invalid. "
+            f"You must choose one of 'default', 'numbers_and_commands', or 'phone_call'. "
+            f"Refer to the documentation for details about the selections."
         )
 
     def _raise_invalid_speech_timeout_exception(self) -> None:
         """Raises an error if an invalid speech_timeout is provided."""
         raise InvalidConfigException(
-            f"{self.speech_timeout} is an invalid value for speech timeout. Only integers and 'auto' are valid entries."
+            f"The vale {self.speech_timeout} is an invalid value for speech_timeout. "
+            f"Only integers and 'auto' are valid entries."
         )
 
     def _raise_invalid_voice_exception(self) -> None:
         """Raises an error if an invalid voice is provided."""
         raise InvalidConfigException(
-            f"{self.assistant_voice} is an invalid as an assistant voice. Please refer to the documentation for a list "
-            f"of valid voices you can use for your voice assistant."
+            f"The value {self.assistant_voice} is an invalid for assistant_voice. "
+            f"Please refer to the documentation for a list of valid voices you can use for "
+            f"your voice assistant."
         )
 
     def _raise_invalid_enhanced_speech_model_exception(self) -> None:
@@ -337,5 +341,7 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
     ) -> None:
         """For voice channel do not send images."""
         rasa.shared.utils.io.raise_warning(
-            "Image removed from voice message. Only text of message is sent."
+            "An image was removed from the voice message and only the text of message was sent. "
+            "It's recommended that you define voice-friendly alternatives for all responses "
+            "with a visual elements such as images and emojis that are used in your voice channel."
         )

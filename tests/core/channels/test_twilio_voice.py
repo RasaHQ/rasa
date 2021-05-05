@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+from http import HTTPStatus
 
 from rasa import server
 from rasa.core.agent import Agent
@@ -234,7 +235,7 @@ async def test_twilio_receive_answer(stack_agent: Agent):
         headers={"Content-type": "application/x-www-form-urlencoded"},
         data=body,
     )
-    assert response.status == 200
+    assert response.status == HTTPStatus.OK
     # Actual test xml content
     assert (
         response.body
@@ -265,7 +266,7 @@ async def test_twilio_receive_no_response(stack_agent: Agent):
         headers={"Content-type": "application/x-www-form-urlencoded"},
         data=body,
     )
-    assert response.status == 200
+    assert response.status == HTTPStatus.OK
     assert response.body
 
     body = {"From": "Matthew", "CallStatus": "answered"}
@@ -275,7 +276,7 @@ async def test_twilio_receive_no_response(stack_agent: Agent):
         data=body,
     )
 
-    assert response.status == 200
+    assert response.status == HTTPStatus.OK
     assert (
         response.body
         == b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">hey there None!</Say></Gather></Response>'
@@ -306,7 +307,7 @@ async def test_twilio_receive_no_previous_response(stack_agent: Agent):
         data=body,
     )
 
-    assert response.status == 200
+    assert response.status == HTTPStatus.OK
     assert (
         response.body
         == b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">i didn\'t get that</Say></Gather></Response>'
