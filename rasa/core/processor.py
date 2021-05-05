@@ -742,10 +742,10 @@ class MessageProcessor:
             # this actually just calls the policy's method by the same name
 
             action, prediction, user_event = self.predict_next_action(tracker, message)
-            # if user_event:
-            #     tracker.update(user_event, domain=self.domain)
-            #     # only predict with message once
-            message = None
+            if user_event:
+                tracker.update(user_event, domain=self.domain)
+                # only predict with message once
+                message = None
 
             should_predict_another_action = await self._run_action(
                 action, tracker, output_channel, self.nlg, prediction
