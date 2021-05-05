@@ -2,12 +2,14 @@ from copy import deepcopy
 import inspect
 from typing import Any, Dict, List, Optional, Text, Tuple, Type
 
+from rasa.architecture_prototype.graph import GraphSchema
 from rasa.architecture_prototype.graph_components import (
     DomainReader,
     MessageCreator,
     MessageToE2EFeatureConverter,
     NLUMessageConverter,
     NLUPredictionToHistoryAdder,
+    ProjectProvider,
     StoryGraphReader,
     StoryToTrainingDataConverter,
     TrackerGenerator,
@@ -18,6 +20,7 @@ from rasa.core.channels import UserMessage
 from rasa.core.policies import SimplePolicyEnsemble
 from rasa.nlu import registry
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
+from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.components import Component
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
@@ -32,8 +35,10 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.utils.io import read_yaml
 import rasa.core.registry
 
+# TODO: cleanup
 
-def train_and_process_component(
+
+def _train_and_process_component(
     component_class: Type[Component],
     input_task_name: Text,
     config: Optional[Dict[Text, Any]] = None,
@@ -69,7 +74,7 @@ def train_and_process_component(
     )
 
 
-def train_component(
+def _train_component(
     component_class: Type[Component],
     input_task_name: Text,
     config: Optional[Dict[Text, Any]] = None,
@@ -94,7 +99,7 @@ def train_component(
     )
 
 
-def process_component(
+def _process_component(
     component_class: Type[Component],
     input_task_name: Text,
     config: Optional[Dict[Text, Any]] = None,
@@ -112,7 +117,7 @@ def process_component(
                 "fn": process_function,
                 "config": config,
                 "needs": {input_data_param_name: input_task_name,},
-                "persist": False,
+                "persistor": False,
             },
         },
         [process_task_name],
@@ -120,8 +125,7 @@ def process_component(
     )
 
 
-def nlu_config_to_train_graph_schema(
-    project: Text,
+def _nlu_config_to_train_graph_schema(
     config: Dict[Text, Any],
     component_namespace: Optional[Text] = None,
     input_task: Optional[Text] = None,
@@ -137,6 +141,7 @@ def nlu_config_to_train_graph_schema(
         DIETClassifier: "train",
         ResponseSelector: "train",
         EntitySynonymMapper: "train",
+        FallbackClassifier: None,
     }
     if input_task:
         last_component_out = input_task
@@ -147,9 +152,9 @@ def nlu_config_to_train_graph_schema(
             "load_data": {
                 "uses": TrainingDataReader,
                 "fn": "read",
-                "config": {"project": project},
-                "needs": {},
-                "persist": False,
+                "config": {},
+                "needs": {"project": "get_project"},
+                "persistor": False,
             },
         }
 
@@ -165,10 +170,12 @@ def nlu_config_to_train_graph_schema(
             continue
         config = component
         builder = {
-            "process": process_component,
-            "train": train_component,
-            "train_process": train_and_process_component,
-        }[step_type]
+            "process": _process_component,
+            "train": _train_component,
+            "train_process": _train_and_process_component,
+        }.get(step_type)
+        if not builder:
+            continue
         component_def, task_names, last_component_out = builder(
             component_class=component_class,
             input_task_name=last_component_out,
@@ -182,7 +189,7 @@ def nlu_config_to_train_graph_schema(
     return nlu_train_graph, train_outputs if train_outputs else [last_component_out]
 
 
-def nlu_config_to_predict_graph_schema(
+def _nlu_config_to_predict_graph_schema(
     config: Dict[Text, Any],
     input_task: Optional[Text],
     component_namespace: Optional[Text] = None,
@@ -198,6 +205,7 @@ def nlu_config_to_predict_graph_schema(
         DIETClassifier: "classify",
         ResponseSelector: "classify",
         EntitySynonymMapper: "classify",
+        FallbackClassifier: "classify",
     }
     last_component_out = input_task
     nlu_predict_graph = {}
@@ -227,30 +235,30 @@ def nlu_config_to_predict_graph_schema(
     return nlu_predict_graph, last_component_out
 
 
-def core_config_to_train_graph_schema(
-    project: Text, config: Dict[Text, Any]
+def _core_config_to_train_graph_schema(
+    config: Dict[Text, Any]
 ) -> Tuple[Dict[Text, Any], List[Text]]:
     policies = deepcopy(config["policies"])
     core_train_graph = {
         "load_domain": {
             "uses": DomainReader,
             "fn": "read",
-            "config": {"project": project},
-            "needs": {},
+            "config": {},
+            "needs": {"project": "get_project"},
         },
         "load_stories": {
             "uses": StoryGraphReader,
             "fn": "read",
-            "config": {"project": project},
-            "needs": {},
-            "persist": False,
+            "config": {},
+            "needs": {"project": "get_project"},
+            "persistor": False,
         },
         "generate_trackers": {
             "uses": TrackerGenerator,
             "fn": "generate",
             "config": {},
             "needs": {"domain": "load_domain", "story_graph": "load_stories"},
-            "persist": False,
+            "persistor": False,
         },
     }
     policy_names = []
@@ -284,10 +292,9 @@ def core_config_to_train_graph_schema(
             "fn": "convert_for_training",
             "config": {},
             "needs": {"story_graph": "load_stories"},
-            "persist": False,
+            "persistor": False,
         }
-        nlu_train_graph_schema, nlu_outs = nlu_config_to_train_graph_schema(
-            project,
+        nlu_train_graph_schema, nlu_outs = _nlu_config_to_train_graph_schema(
             config,
             component_namespace="core",
             input_task="convert_stories_for_nlu",
@@ -299,13 +306,13 @@ def core_config_to_train_graph_schema(
             "fn": "convert",
             "config": {},
             "needs": {"messages": nlu_outs[0]},
-            "persist": False,
+            "persistor": False,
         }
 
     return core_train_graph, policy_names
 
 
-def core_config_to_predict_graph_schema(
+def _core_config_to_predict_graph_schema(
     config: Dict[Text, Any]
 ) -> Tuple[Dict[Text, Any], List[Text]]:
     core_predict_graph = {}
@@ -337,7 +344,7 @@ def core_config_to_predict_graph_schema(
         core_predict_graph.update(policy_step)
 
     if e2e:
-        nlu_e2e_predict_graph_schema, nlu_e2e_out = nlu_config_to_predict_graph_schema(
+        nlu_e2e_predict_graph_schema, nlu_e2e_out = _nlu_config_to_predict_graph_schema(
             config,
             input_task="convert_tracker_for_e2e",
             classify=False,
@@ -349,14 +356,14 @@ def core_config_to_predict_graph_schema(
                 "fn": "convert_for_inference",
                 "config": {},
                 "needs": {"tracker": "add_parsed_nlu_message"},
-                "persist": False,
+                "persistor": False,
             },
             "create_e2e_lookup": {
                 "uses": MessageToE2EFeatureConverter,
                 "fn": "convert",
                 "config": {},
                 "needs": {"messages": nlu_e2e_out,},
-                "persist": False,
+                "persistor": False,
             },
             **nlu_e2e_predict_graph_schema,
         }
@@ -365,31 +372,31 @@ def core_config_to_predict_graph_schema(
     return core_predict_graph, policy_names
 
 
-def config_to_train_graph_schema(
-    project: Text, config: Text
-) -> Tuple[Dict[Text, Any], List[Text]]:
+def config_to_train_graph_schema(config: Text) -> GraphSchema:
     config_dict = read_yaml(config)
-    nlu_train_graph_schema, nlu_outs = nlu_config_to_train_graph_schema(
-        project, config_dict
-    )
-    core_train_graph_schema, core_outs = core_config_to_train_graph_schema(
-        project, config_dict
-    )
-    return (
-        {**core_train_graph_schema, **nlu_train_graph_schema},
-        [*core_outs, *nlu_outs],
-    )
+    nlu_train_graph_schema, nlu_outs = _nlu_config_to_train_graph_schema(config_dict)
+    core_train_graph_schema, core_outs = _core_config_to_train_graph_schema(config_dict)
+    return {
+        "get_project": {
+            "uses": ProjectProvider,
+            "fn": "get",
+            "config": {"project": None},
+            "needs": {},
+            "persistor": False,
+        },
+        **core_train_graph_schema,
+        **nlu_train_graph_schema,
+        "targets": [*core_outs, *nlu_outs],
+    }
 
 
-def config_to_predict_graph_schema(
-    config: Text,
-) -> Tuple[Dict[Text, Any], List[Text]]:
+def config_to_predict_graph_schema(config: Text,) -> GraphSchema:
     config_dict = read_yaml(config)
 
-    nlu_predict_graph_schema, nlu_out = nlu_config_to_predict_graph_schema(
+    nlu_predict_graph_schema, nlu_out = _nlu_config_to_predict_graph_schema(
         config_dict, input_task="convert_message_to_nlu", classify=True,
     )
-    core_predict_graph_schema, core_outs = core_config_to_predict_graph_schema(
+    core_predict_graph_schema, core_outs = _core_config_to_predict_graph_schema(
         config_dict
     )
 
@@ -399,21 +406,21 @@ def config_to_predict_graph_schema(
             "fn": "create",
             "config": {"message": None},
             "needs": {},
-            "persist": False,
+            "persistor": False,
         },
         "convert_message_to_nlu": {
             "uses": NLUMessageConverter,
             "fn": "convert",
             "config": {},
             "needs": {"message": "load_user_message"},
-            "persist": False,
+            "persistor": False,
         },
         "load_history": {
             "uses": TrackerLoader,
             "fn": "load",
             "needs": {},
             "config": {"tracker": None,},
-            "persist": False,
+            "persistor": False,
         },
         "add_parsed_nlu_message": {
             "uses": NLUPredictionToHistoryAdder,
@@ -425,10 +432,11 @@ def config_to_predict_graph_schema(
                 "domain": "load_domain",
             },
             "config": {},
-            "persist": False,
+            "persistor": False,
         },
         "load_domain": {
             "uses": DomainReader,
+            "constructor_name": "load",
             "fn": "provide",
             "config": {"resource_name": "load_domain"},
             "needs": {},
@@ -437,7 +445,7 @@ def config_to_predict_graph_schema(
             "uses": SimplePolicyEnsemble,
             "fn": "probabilities_using_best_policy",
             "config": {},
-            "persist": False,
+            "persistor": False,
             "needs": {
                 "tracker": "add_parsed_nlu_message",
                 "domain": "load_domain",
@@ -446,7 +454,9 @@ def config_to_predict_graph_schema(
         },
     }
 
-    return (
-        {**predict_graph, **nlu_predict_graph_schema, **core_predict_graph_schema},
-        ["select_prediction"],
-    )
+    return {
+        **predict_graph,
+        **nlu_predict_graph_schema,
+        **core_predict_graph_schema,
+        "targets": ["select_prediction"],
+    }

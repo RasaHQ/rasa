@@ -5,7 +5,7 @@ from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Any
 import numpy as np
 
-from rasa.architecture_prototype.persistence import ComponentPersistor
+from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered
@@ -43,7 +43,7 @@ class TrackerFeaturizer:
     def __init__(
         self,
         state_featurizer: Optional[SingleStateFeaturizer] = None,
-        persistor: Optional[ComponentPersistor] = None,
+        persistor: Optional[ComponentPersistorInterface] = None,
     ) -> None:
         """Initialize the tracker featurizer.
 
@@ -357,7 +357,7 @@ class TrackerFeaturizer:
 
     @staticmethod
     def load(
-        persistor: ComponentPersistor, resource_name: Text
+        persistor: ComponentPersistorInterface, resource_name: Text
     ) -> Optional["TrackerFeaturizer"]:
         """Load the featurizer from file.
 
@@ -502,7 +502,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         state_featurizer: Optional[SingleStateFeaturizer] = None,
         max_history: Optional[int] = None,
         remove_duplicates: bool = True,
-        persistor: Optional[ComponentPersistor] = None,
+        persistor: Optional[ComponentPersistorInterface] = None,
     ) -> None:
 
         super().__init__(state_featurizer, persistor=persistor)

@@ -119,6 +119,10 @@ class FallbackClassifier(IntentClassifier):
             )
         return False, None
 
+    @classmethod
+    def load(cls, **kwargs: Any,) -> "FallbackClassifier":
+        return cls(**kwargs)
+
 
 def _fallback_intent(confidence: float) -> Dict[Text, Union[Text, float]]:
     return {

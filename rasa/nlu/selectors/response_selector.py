@@ -6,7 +6,7 @@ import tensorflow as tf
 
 from typing import Any, Dict, Optional, Text, Tuple, Union, List, Type
 
-from rasa.architecture_prototype.persistence import ComponentPersistor
+from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data import util
 import rasa.shared.utils.io
@@ -265,7 +265,7 @@ class ResponseSelector(DIETClassifier):
         all_retrieval_intents: Optional[List[Text]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
         finetune_mode: bool = False,
-        persistor: Optional[ComponentPersistor] = None,
+        persistor: Optional[ComponentPersistorInterface] = None,
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values.
@@ -433,7 +433,8 @@ class ResponseSelector(DIETClassifier):
             # Get the exact intent_response_key and the associated
             # responses for the top predicted label
             label_intent_response_key = (
-                self._resolve_intent_response_key(top_label) or top_label[INTENT_NAME_KEY]
+                self._resolve_intent_response_key(top_label)
+                or top_label[INTENT_NAME_KEY]
             )
             label_responses = self.responses.get(
                 util.intent_response_key_to_template_key(label_intent_response_key)
@@ -549,7 +550,7 @@ class ResponseSelector(DIETClassifier):
     @classmethod
     def load(
         cls,
-        persistor: ComponentPersistor,
+        persistor: ComponentPersistorInterface,
         resource_name: Text,
         cached_component: Optional["ResponseSelector"] = None,
         **kwargs: Any,

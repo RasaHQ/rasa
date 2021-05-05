@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 from typing import Any, Dict, Optional, Text, List, Type, Union, Callable
 
-from rasa.architecture_prototype.persistence import ComponentPersistor
+from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.components import Component
@@ -75,7 +75,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     def __init__(
         self,
         feature_to_idx_dict: Optional[Dict[Text, Any]] = None,
-        persistor: Optional[ComponentPersistor] = None,
+        persistor: Optional[ComponentPersistorInterface] = None,
         **kwargs: Any,
     ):
         super().__init__(persistor=persistor, **kwargs)
@@ -289,7 +289,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     @classmethod
     def load(
         cls,
-        persistor: ComponentPersistor,
+        persistor: ComponentPersistorInterface,
         resource_name: Text,
         cached_component: Optional["LexicalSyntacticFeaturizer"] = None,
         **kwargs: Any,

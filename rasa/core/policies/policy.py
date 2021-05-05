@@ -17,7 +17,7 @@ from typing import (
 )
 import numpy as np
 
-from rasa.architecture_prototype.persistence import ComponentPersistor
+from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.shared.core.events import Event
 
@@ -113,7 +113,7 @@ class Policy(metaclass=PolicyMetaclass):
 
     @staticmethod
     def _standard_featurizer(
-        persistor: ComponentPersistor,
+        persistor: ComponentPersistorInterface,
     ) -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), persistor=persistor)
 
@@ -131,7 +131,7 @@ class Policy(metaclass=PolicyMetaclass):
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
         should_finetune: bool = False,
-        persistor: Optional[ComponentPersistor] = None,
+        persistor: Optional[ComponentPersistorInterface] = None,
         **kwargs: Any,
     ) -> None:
         """Constructs a new Policy object."""
@@ -376,7 +376,10 @@ class Policy(metaclass=PolicyMetaclass):
 
     @classmethod
     def load(
-        cls, persistor: Optional[ComponentPersistor], resource_name: Text, **kwargs: Any
+        cls,
+        persistor: Optional[ComponentPersistorInterface],
+        resource_name: Text,
+        **kwargs: Any,
     ) -> "Policy":
         """Loads a policy from path.
 

@@ -5,7 +5,7 @@ import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple, Type, Iterable
 
 import rasa.utils.train_utils
-from rasa.architecture_prototype.persistence import ComponentPersistor
+from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
 from rasa.exceptions import MissingDependencyException
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import TRAINABLE_EXTRACTORS
@@ -450,7 +450,7 @@ class Component(metaclass=ComponentMetaclass):
     not_supported_language_list = None
 
     def __init__(
-        self, persistor: Optional[ComponentPersistor] = None, **kwargs: Any,
+        self, persistor: Optional[ComponentPersistorInterface] = None, **kwargs: Any,
     ) -> None:
 
         self.component_config = kwargs

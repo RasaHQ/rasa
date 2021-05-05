@@ -1,9 +1,14 @@
+from __future__ import annotations
 from collections import ChainMap
 import copy
 import pickle
-from typing import Any, Text, Dict, List, Tuple, Optional
+from typing import Any, Text, Dict, List, Optional
+from rasa.architecture_prototype.graph_utils import minimal_graph_schema
 
-from rasa.architecture_prototype import graph
+from rasa.architecture_prototype.interfaces import (
+    GraphNodeComponent,
+    GraphSchema, TrainingCacheInterface,
+)
 from rasa.shared.constants import DEFAULT_DATA_PATH
 import rasa.shared.utils.common
 import rasa.utils.common
@@ -11,36 +16,24 @@ import rasa.core.training
 import rasa.shared.utils.io
 
 
-class FingerprintComponent:
-    def __init__(
-        self,
-        config: Dict[Text, Any],
-        node_name: Text,
-        inputs: Dict[Text, Text],
-        cache: "TrainingCache",
-    ) -> None:
-        self._inputs = inputs
-        self._config = config
-        self._node_name = node_name
-        self._cache = cache
-
+class FingerprintComponent(GraphNodeComponent):
     def __call__(self, *args: Any) -> Dict[Text, Any]:
         fingerprint_statuses = dict(ChainMap(*args))
 
         inputs_for_this_node = []
 
-        for input, input_node in self._inputs.items():
+        for input, input_node in self.inputs.items():
             inputs_for_this_node.append(fingerprint_statuses[input_node])
 
-        current_fingerprint_key = self._cache.calculate_fingerprint_key(
-            self._node_name, self._config, inputs_for_this_node
+        current_fingerprint_key = self.cache.calculate_fingerprint_key(
+            self.node_name, self.config, inputs_for_this_node
         )
 
-        fingerprint = self._cache.get_fingerprint(current_fingerprint_key)
+        fingerprint = self.cache.get_fingerprint(current_fingerprint_key)
 
         if fingerprint:
             fingerprint_status = FingerprintStatus(
-                self._node_name,
+                self.node_name,
                 fingerprint,
                 should_run=False,
                 fingerprint_key=current_fingerprint_key,
@@ -48,24 +41,33 @@ class FingerprintComponent:
 
         else:
             fingerprint_status = FingerprintStatus(
-                self._node_name,
+                self.node_name,
                 "no-fingerprint",
                 should_run=True,
                 fingerprint_key=current_fingerprint_key,
             )
 
-        fingerprint_statuses[self._node_name] = fingerprint_status
+        fingerprint_statuses[self.node_name] = fingerprint_status
 
         return fingerprint_statuses
+
+    @classmethod
+    def from_rasa_component(cls, rasa_component) -> FingerprintComponent:
+        return cls(
+            config=rasa_component.config,
+            node_name=rasa_component.node_name,
+            inputs=rasa_component.inputs,
+            cache=rasa_component.cache,
+        )
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, FingerprintComponent):
             return NotImplemented
 
-        return self._node_name == other._node_name and self._config == other._config
+        return self.node_name == other.node_name and self.config == other.config
 
     def __repr__(self) -> Text:
-        return f"Fingerprint({self._node_name})"
+        return f"FingerprintComponent({self.node_name})"
 
 
 class FingerprintStatus:
@@ -91,7 +93,7 @@ class FingerprintStatus:
         return self._value
 
 
-class TrainingCache:
+class TrainingCache(TrainingCacheInterface):
     def __init__(self) -> None:
         self._fingerprints = {}
         self._outputs = {}
@@ -105,7 +107,7 @@ class TrainingCache:
 
     def calculate_fingerprint_key(
         self, node_name: Text, config: Dict, inputs: List[Any]
-    ) -> "Text":
+    ) -> Text:
         config_hash = rasa.shared.utils.io.deep_container_fingerprint(config)
         inputs_hashes = [
             rasa.shared.utils.io.deep_container_fingerprint(i) for i in inputs
@@ -117,11 +119,14 @@ class TrainingCache:
     def get_fingerprint(self, current_fingerprint_key: Text) -> Optional[Text]:
         return self._fingerprints.get(current_fingerprint_key)
 
+    def get_output(self, fingerprint_key: Text) -> Any:
+        return self._outputs[fingerprint_key]
+
     def serialize(self) -> bytes:
         return pickle.dumps((self._fingerprints, self._outputs))
 
     @classmethod
-    def deserialize(cls, data: bytes):
+    def deserialize(cls, data: bytes) -> TrainingCache:
         cache = cls()
         fingerprints, outputs = pickle.loads(data)
         cache._fingerprints = fingerprints
@@ -129,23 +134,18 @@ class TrainingCache:
         return cache
 
 
-def dask_graph_to_fingerprint_graph(
-    dask_graph: Dict[Text, Tuple["RasaComponent", Text]], cache: TrainingCache
-) -> Dict[Text, Tuple[FingerprintComponent, Text]]:
+def dask_graph_to_fingerprint_graph(dask_graph: DaskGraph) -> DaskGraph:
     fingerprint_graph = {}
     for node_name, node in dask_graph.items():
         rasa_component, *deps = node
 
-        if not rasa_component._inputs:
+        if not rasa_component.inputs:
             # Input nodes should always run so that we can e.g. capture changes within
             # files.
             fingerprint_graph[node_name] = (rasa_component, *deps)
         else:
-            fingerprint_component = FingerprintComponent(
-                config=rasa_component._config,
-                node_name=rasa_component._node_name,
-                inputs=rasa_component._inputs,
-                cache=cache,
+            fingerprint_component = FingerprintComponent.from_rasa_component(
+                rasa_component
             )
             fingerprint_graph[node_name] = (fingerprint_component, *deps)
     return fingerprint_graph
@@ -160,10 +160,10 @@ class CachedComponent:
 
 
 def walk_and_prune(
-    graph_schema: Dict[Text, Any],
+    graph_schema: GraphSchema,
     node_name: Text,
     fingerprint_statuses: Dict[Text, FingerprintStatus],
-    cache: "TrainingCache",
+    cache: TrainingCacheInterface,
 ):
     fingerprint = fingerprint_statuses[node_name]
     if not isinstance(fingerprint, FingerprintStatus):
@@ -175,7 +175,7 @@ def walk_and_prune(
         graph_schema[node_name] = {
             "uses": CachedComponent,
             "fn": "get_cached_value",
-            "config": {"cached_value": cache._outputs[fingerprint_cache_key]},
+            "config": {"cached_value": cache.get_output(fingerprint_cache_key)},
             "needs": {},
         }
     else:
@@ -184,14 +184,13 @@ def walk_and_prune(
 
 
 def prune_graph_schema(
-    graph_schema: Dict[Text, Any],
-    targets: List[Text],
+    graph_schema: GraphSchema,
     fingerprint_statuses: Dict[Text, FingerprintStatus],
-    cache: "TrainingCache",
-) -> Dict[Text, Any]:
+    cache: TrainingCacheInterface,
+) -> GraphSchema:
     graph_to_prune = copy.deepcopy(graph_schema)
+    targets = graph_to_prune.pop("targets")
     for target in targets:
         walk_and_prune(graph_to_prune, target, fingerprint_statuses, cache)
 
-    return graph.minimal_graph_schema(graph_to_prune, targets)
-
+    return minimal_graph_schema(graph_to_prune, targets)

@@ -1,7 +1,7 @@
 import os
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa.architecture_prototype.persistence import ComponentPersistor
+from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
 from rasa.nlu.components import Component
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA
 from rasa.shared.nlu.constants import ENTITIES, TEXT
@@ -24,7 +24,7 @@ class EntitySynonymMapper(EntityExtractor):
     def __init__(
         self,
         synonyms: Optional[Dict[Text, Any]] = None,
-        persistor: Optional[ComponentPersistor] = None,
+        persistor: Optional[ComponentPersistorInterface] = None,
         **kwargs: Any,
     ) -> None:
 
@@ -70,7 +70,7 @@ class EntitySynonymMapper(EntityExtractor):
     @classmethod
     def load(
         cls,
-        persistor: ComponentPersistor,
+        persistor: ComponentPersistorInterface,
         resource_name: Text,
         cached_component: Optional["EntitySynonymMapper"] = None,
         **kwargs: Any,

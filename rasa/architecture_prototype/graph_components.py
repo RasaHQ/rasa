@@ -1,9 +1,10 @@
+from __future__ import annotations
 import inspect
 import os.path
 from pathlib import Path
 from typing import Optional, Text, Dict, List, Union
 
-from rasa.architecture_prototype.persistence import ComponentPersistor
+from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
 from rasa.shared.core.domain import Domain
@@ -45,50 +46,53 @@ class GraphComponent(metaclass=GraphComponentMetaclass):
 
 
 class ProjectReader(GraphComponent):
-    def __init__(self, project: Text) -> None:
-        self._project = project
-
-    def load_importer(self) -> TrainingDataImporter:
+    def load_importer(self, project: Text) -> TrainingDataImporter:
         return TrainingDataImporter.load_from_dict(
-            domain_path=str(Path(self._project, DEFAULT_DOMAIN_PATH)),
-            training_data_paths=[os.path.join(self._project, DEFAULT_DATA_PATH)],
+            domain_path=str(Path(project, DEFAULT_DOMAIN_PATH)),
+            training_data_paths=[os.path.join(project, DEFAULT_DATA_PATH)],
         )
 
 
 class TrainingDataReader(ProjectReader):
-    def read(self) -> TrainingData:
-        importer = self.load_importer()
+    def read(self, project: Text) -> TrainingData:
+        importer = self.load_importer(project)
         return rasa.utils.common.run_in_loop(importer.get_nlu_data())
 
 
 class DomainReader(ProjectReader):
     def __init__(
         self,
-        project: Optional[Text] = None,
-        persistor: Optional["ComponentPersistor"] = None,
-        resource_name: Optional[Text] = None,
+        persistor: Optional[ComponentPersistorInterface] = None,
+        domain: Optional[Domain] = None,
     ) -> None:
-        super().__init__(project)
+        super().__init__()
         self._persistor = persistor
-        self._resource_name = resource_name
+        self._domain = domain
 
-    def read(self) -> Domain:
-        importer = self.load_importer()
+    @classmethod
+    def load(
+        cls,
+        persistor: Optional[ComponentPersistorInterface] = None,
+        resource_name: Optional[Text] = None,
+    ) -> DomainReader:
+        filename = persistor.get_resource(resource_name, "domain.yml")
+        domain = Domain.load(filename)
+        return DomainReader(persistor=persistor, domain=domain)
+
+    def read(self, project: Text) -> Domain:
+        importer = self.load_importer(project)
         domain = rasa.utils.common.run_in_loop(importer.get_domain())
-
         target_file = self._persistor.file_for("domain.yml")
         domain.persist(target_file)
-
         return domain
 
     def provide(self) -> Domain:
-        filename = self._persistor.get_resource(self._resource_name, "domain.yml")
-        return Domain.load(filename)
+        return self._domain
 
 
 class StoryGraphReader(ProjectReader):
-    def read(self) -> StoryGraph:
-        importer = self.load_importer()
+    def read(self, project: Text) -> StoryGraph:
+        importer = self.load_importer(project)
 
         return rasa.utils.common.run_in_loop(importer.get_stories())
 
@@ -143,7 +147,9 @@ class StoryToTrainingDataConverter(GraphComponent):
 
 
 class MessageToE2EFeatureConverter(GraphComponent):
-    def convert(self, messages: Union[TrainingData, List[Message]]) -> Dict[Text, Message]:
+    def convert(
+        self, messages: Union[TrainingData, List[Message]]
+    ) -> Dict[Text, Message]:
         if isinstance(messages, TrainingData):
             messages = messages.training_examples
         additional_features = {}
@@ -164,6 +170,14 @@ class MessageCreator(GraphComponent):
 
     def create(self) -> Optional[UserMessage]:
         return self._message
+
+
+class ProjectProvider(GraphComponent):
+    def __init__(self, project: Optional[Text]) -> None:
+        self._project = project
+
+    def get(self) -> Optional[Text]:
+        return self._project
 
 
 class TrackerLoader(GraphComponent):

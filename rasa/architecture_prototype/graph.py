@@ -1,22 +1,69 @@
 import copy
 from collections import ChainMap
+from functools import wraps
 import inspect
-from typing import Any, Text, Dict, List, Union, TYPE_CHECKING, Tuple, Optional
+from typing import (
+    Any,
+    Callable,
+    Text,
+    Dict,
+    List,
+    Tuple,
+    Optional,
+)
 
-import dask
-import dask.threaded
-
+from rasa.architecture_prototype.graph_utils import (
+    DaskGraph,
+    GraphSchema,
+    run_dask_graph,
+    visualise_dask_graph,
+)
+from rasa.architecture_prototype.interfaces import (
+    ComponentPersistorInterface,
+    DaskGraphNode,
+    GraphNodeComponent,
+    ModelPersistorInterface,
+    TrainingCacheInterface,
+)
 from rasa.shared.constants import DEFAULT_DATA_PATH
 import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.core.training
 import rasa.shared.utils.io
 
-if TYPE_CHECKING:
-    pass
+# TODO: docstrings
+# TODO: investigate persistence of metadata (especially ResponseSelector)
 
 
-class RasaComponent:
+def fingerprint(f: Callable) -> Callable:
+    """ Stores the fingerprint and caches the result of a node run."""
+    @wraps(f)
+    def decorated(self, *args: Any, **kwargs: Any) -> Any:
+        fingerprint_key = None
+        if self.cache:
+            fingerprint_key = self.cache.calculate_fingerprint_key(
+                self.node_name, self.config, [list(v.values())[0] for v in args],
+            )
+
+        result = f(self, *args, **kwargs)
+
+        if self.cache:
+            self.cache.store_fingerprint(
+                fingerprint_key, output=result,
+            )
+        return result
+
+    return decorated
+
+
+# TODO: cleanup
+class RasaComponent(GraphNodeComponent):
+    """Wraps nodes in a dask graph.
+
+     Provides reusable functionality such as class constructing, config passing,
+     caching etc.
+     """
+
     def __init__(
         self,
         component_class: Any,
@@ -26,20 +73,27 @@ class RasaComponent:
         inputs: Dict[Text, Text],
         constructor_name: Text = None,
         eager: bool = True,
-        cache: Optional["TrainingCache"] = None,
-        persistor: Optional["ComponentPersistor"] = None,
+        cache: Optional[TrainingCacheInterface] = None,
+        persistor: Optional[ComponentPersistorInterface] = None,
     ) -> None:
+        """Create a `RasaComponent`
+
+        Args:
+            component_class: The component class that will be instantiated and then
+                             called when the node is executed
+            config: Config to be passed to the component class constructor
+            fn_name: 
+
+
+        """
+        super().__init__(config, node_name, inputs, cache)
         self._eager = eager
-        self._inputs = inputs
         self._constructor_name = constructor_name
         self._component_class = component_class
-        self._config = config
         self._fn_name = fn_name
         self._run_fn = getattr(self._component_class, fn_name)
         self._component = None
-        self._node_name = node_name
         self._persistor = persistor
-        self._cache = cache
 
         if self._constructor_name:
             self._constructor_fn = getattr(
@@ -54,9 +108,9 @@ class RasaComponent:
             self.validate_params_in_inputs(input_names, self._constructor_fn)
 
         if self._eager:
-            self.create_component(**self._config)
+            self.create_component(**self.config)
 
-    def validate_params_in_inputs(self, input_names, func):
+    def validate_params_in_inputs(self, input_names, func) -> None:
         params = inspect.signature(func).parameters
         for param_name, param in params.items():
             if param_name in ["self", "args", "kwargs", "persistor"]:
@@ -68,141 +122,71 @@ class RasaComponent:
                     )
 
     def __call__(self, *args: Any) -> Dict[Text, Any]:
+        result = self.run(*args)
+        return {self.node_name: copy.deepcopy(result)}
+
+    @fingerprint
+    def run(self, *args: Any) -> Any:
         received_inputs = dict(ChainMap(*args))
-
-        # TODO: make the cache stuff a decorator
-        fingerprint_key = None
-        if self._cache:
-            fingerprint_key = self._cache.calculate_fingerprint_key(
-                # TODO: do list parts nicer
-                self._node_name,
-                self._config,
-                [list(v.values())[0] for v in args],
-            )
-
         kwargs = {}
-
-        for input, input_node in self._inputs.items():
+        for input, input_node in self.inputs.items():
             kwargs[input] = received_inputs[input_node]
 
         if not self._eager:
             const_kwargs = rasa.shared.utils.common.minimal_kwargs(
                 kwargs, self._constructor_fn
             )
-            self.create_component(**const_kwargs, **self._config)
+            self.create_component(**const_kwargs, **self.config)
 
         run_kwargs = kwargs
-
         if "kwargs" not in rasa.shared.utils.common.arguments_of(self._run_fn):
             run_kwargs = rasa.shared.utils.common.minimal_kwargs(kwargs, self._run_fn)
 
-        print(f"************** {self._node_name} ***************")
+        print(
+            f"************** {self.node_name}: {self._component_class.__name__}.{self._run_fn.__name__}"
+        )
         #  This alters the input
-        result = self._run_fn(self._component, **run_kwargs)
-
-        if self._cache:
-            self._cache.store_fingerprint(
-                fingerprint_key, output=result,
-            )
-
-        return {self._node_name: copy.deepcopy(result)}
+        return self._run_fn(self._component, **run_kwargs)
 
     def create_component(self, **const_kwargs: Any) -> None:
         if self._persistor:
             const_kwargs["persistor"] = self._persistor
         self._component = self._constructor_fn(**const_kwargs)
 
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, RasaComponent):
-            return NotImplemented
-
-        return (
-            self._node_name == other._node_name
-            and self._component_class == other._component_class
-            and self._config == other._config
-            and self._fn_name == other._fn_name
-        )
-
     def __repr__(self) -> Text:
-        return f"{self._component_class}.{self._fn_name}"
-
-
-def minimal_dask_graph(
-    dask_graph: Dict[Text, Tuple[RasaComponent, Text]], targets: List[Text]
-) -> Dict[Text, Tuple[RasaComponent, Text]]:
-    dependencies = _all_dependencies(dask_graph, targets)
-
-    return {
-        step_name: step
-        for step_name, step in dask_graph.items()
-        if step_name in dependencies
-    }
-
-
-def _all_dependencies(
-    dask_graph: Dict[Text, Tuple[RasaComponent, Text]], targets: List[Text]
-) -> List[Text]:
-    required = []
-    for target in targets:
-        required.append(target)
-        target_dependencies = dask_graph[target][1:]
-        for dependency in target_dependencies:
-            required += _all_dependencies(dask_graph, [dependency])
-
-    return required
-
-
-def minimal_graph_schema(
-    graph_schema: Dict[Text, Any], targets: List[Text]
-) -> Dict[Text, Tuple[RasaComponent, Text]]:
-    dependencies = _all_dependencies_schema(graph_schema, targets)
-
-    return {
-        step_name: step
-        for step_name, step in graph_schema.items()
-        if step_name in dependencies
-    }
-
-
-def _all_dependencies_schema(
-    graph_schema: Dict[Text, Any], targets: List[Text]
-) -> List[Text]:
-    required = []
-    for target in targets:
-        required.append(target)
-        target_dependencies = graph_schema[target]["needs"].values()
-        for dependency in target_dependencies:
-            required += _all_dependencies_schema(graph_schema, [dependency])
-
-    return required
+        return f"RasaComponent({self.node_name}, {self._component_class})"
 
 
 def convert_to_dask_graph(
-    graph_schema: Dict[Text, Any],
-    cache: Optional["TrainingCache"] = None,
-    model_persistor: Optional["AbstractModelPersistor"] = None,
-) -> Dict[Text, Tuple[RasaComponent, Text]]:
+    graph_schema: GraphSchema,
+    cache: Optional[TrainingCacheInterface] = None,
+    model_persistor: Optional[ModelPersistorInterface] = None,
+) -> Tuple[DaskGraph, List[Text]]:
     dsk = {}
+    targets = []
     for step_name, step_config in graph_schema.items():
-        dsk[step_name] = graph_component_for_config(
-            step_name, step_config, cache=cache, model_persistor=model_persistor
-        )
-    return dsk
+        if step_name == "targets":
+            targets = step_config
+        else:
+            dsk[step_name] = graph_component_for_config(
+                step_name, step_config, cache=cache, model_persistor=model_persistor
+            )
+    return dsk, targets
 
 
 def graph_component_for_config(
     step_name: Text,
     step_config: Dict[Text, Any],
     config_overrides: Dict[Text, Any] = None,
-    cache: Optional["TrainingCache"] = None,
-    model_persistor: "AbstractModelPersistor" = None,
-) -> Tuple[RasaComponent, Text]:
+    cache: Optional[TrainingCacheInterface] = None,
+    model_persistor: ModelPersistorInterface = None,
+) -> DaskGraphNode:
     component_config = step_config["config"].copy()
     if config_overrides:
         component_config.update(config_overrides)
 
     persistor = None
-    if step_config.get("persist", True):
+    if step_config.get("persistor", True):
         persistor = model_persistor.create_component_persistor(step_name)
 
     return (
@@ -222,31 +206,16 @@ def graph_component_for_config(
 
 
 def run_as_dask_graph(
-    graph_schema: Dict[Text, Any],
-    target_names: Union[Text, List[Text]],
-    cache: Optional["TrainingCache"] = None,
-    model_persistor: Optional["AbstractModelPersistor"] = None,
+    graph_schema: GraphSchema,
+    cache: Optional[TrainingCacheInterface] = None,
+    model_persistor: Optional[ModelPersistorInterface] = None,
 ) -> Dict[Text, Any]:
-    dask_graph = convert_to_dask_graph(
+    dask_graph, targets = convert_to_dask_graph(
         graph_schema, cache=cache, model_persistor=model_persistor
     )
-    return run_dask_graph(dask_graph, target_names)
-
-
-def run_dask_graph(
-    dask_graph: Dict[Text, Tuple[Union[RasaComponent, "FingerprintComponent"], Text]],
-    target_names: Union[Text, List[Text]],
-) -> Dict[Text, Any]:
-    return dict(ChainMap(*dask.threaded.get(dask_graph, target_names)))
+    return run_dask_graph(dask_graph, targets)
 
 
 def visualise_as_dask_graph(graph_schema: Dict[Text, Any], filename: Text) -> None:
-    dask_graph = convert_to_dask_graph(graph_schema)
-    dask.visualize(dask_graph, filename=filename)
-
-
-def visualise_dask_graph(
-    dask_graph: Dict[Text, Tuple[Union[RasaComponent, "FingerprintComponent"], Text]],
-    filename: Text,
-) -> None:
-    dask.visualize(dask_graph, filename=filename)
+    dask_graph, _ = convert_to_dask_graph(graph_schema)
+    visualise_dask_graph(dask_graph, filename)

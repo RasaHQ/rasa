@@ -113,7 +113,11 @@ class Tokenizer(Component):
         for message in messages:
             for attribute in MESSAGE_ATTRIBUTES:
                 if isinstance(message.get(attribute), str):
-                    if attribute in [INTENT, ACTION_NAME, RESPONSE_IDENTIFIER_DELIMITER]:
+                    if attribute in [
+                        INTENT,
+                        ACTION_NAME,
+                        RESPONSE_IDENTIFIER_DELIMITER,
+                    ]:
                         tokens = self._split_name(message, attribute)
                     else:
                         tokens = self.tokenize(message, attribute)
@@ -198,8 +202,5 @@ class Tokenizer(Component):
         return tokens
 
     @classmethod
-    def load(
-        cls,
-        **kwargs: Any,
-    ) -> "Tokenizer":
+    def load(cls, **kwargs: Any,) -> "Tokenizer":
         return cls(**kwargs)

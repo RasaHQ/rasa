@@ -7,7 +7,7 @@ import logging
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
-from rasa.architecture_prototype.persistence import ComponentPersistor
+from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
 import rasa.utils.io
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_POLICIES
@@ -58,7 +58,7 @@ class MemoizationPolicy(Policy):
 
     @staticmethod
     def _standard_featurizer(
-        persistor: ComponentPersistor, max_history: Optional[int] = None,
+        persistor: ComponentPersistorInterface, max_history: Optional[int] = None,
     ) -> MaxHistoryTrackerFeaturizer:
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
@@ -72,7 +72,7 @@ class MemoizationPolicy(Policy):
         priority: int = MEMOIZATION_POLICY_PRIORITY,
         max_history: Optional[int] = MAX_HISTORY_NOT_SET,
         lookup: Optional[Dict] = None,
-        persistor: Optional[ComponentPersistor] = None,
+        persistor: Optional[ComponentPersistorInterface] = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the policy.

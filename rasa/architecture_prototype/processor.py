@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pathlib import Path
 from typing import Dict, Text, Any, Optional, List, Tuple
 
@@ -15,6 +16,8 @@ from rasa.shared.core.events import UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.core.actions.action
 from rasa.utils.endpoints import EndpointConfig
+
+# TODO: glue comment
 
 
 class GraphProcessor(MessageProcessor):
@@ -46,7 +49,7 @@ class GraphProcessor(MessageProcessor):
         lock_store: LockStore,
         generator: Optional[NaturalLanguageGenerator],
         action_endpoint: Optional[EndpointConfig],
-    ) -> "GraphProcessor":
+    ) -> GraphProcessor:
         model = Model.load(model_path, LocalModelPersistor(Path(model_path)))
 
         domain = model.get_domain()
@@ -59,10 +62,7 @@ class GraphProcessor(MessageProcessor):
         )
 
     @classmethod
-    def from_model(
-        cls,
-        model: Model,
-    ) -> "GraphProcessor":
+    def from_model(cls, model: Model,) -> GraphProcessor:
         placeholder_domain = Domain.empty()
         generator = TemplatedNaturalLanguageGenerator(placeholder_domain.responses)
         tracker_store = InMemoryTrackerStore(placeholder_domain)
@@ -73,9 +73,7 @@ class GraphProcessor(MessageProcessor):
         if hasattr(generator, "responses"):
             generator.responses = domain.responses
 
-        return GraphProcessor(
-            domain, tracker_store, lock_store, generator, None, model
-        )
+        return GraphProcessor(domain, tracker_store, lock_store, generator, None, model)
 
     async def handle_message(
         self, message: UserMessage
