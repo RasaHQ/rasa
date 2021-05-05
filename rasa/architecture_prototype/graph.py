@@ -97,7 +97,7 @@ class RasaComponent:
         if "kwargs" not in rasa.shared.utils.common.arguments_of(self._run_fn):
             run_kwargs = rasa.shared.utils.common.minimal_kwargs(kwargs, self._run_fn)
 
-        print(f"************** {self._node_name} ***************")
+        # print(f"************** {self._node_name} ***************")
         #  This alters the input
         result = self._run_fn(self._component, **run_kwargs)
 
