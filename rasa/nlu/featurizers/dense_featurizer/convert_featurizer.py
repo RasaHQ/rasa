@@ -40,7 +40,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         super(ConveRTFeaturizer, self).__init__(component_config)
 
-        model_url = "http://models.poly-ai.com/convert/v1/model.tar.gz"
+        model_url = " https://github.com/connorbrinton/polyai-models/releases/download/v1.0/model.tar.gz"
         self.module = train_utils.load_tf_hub_model(model_url)
 
         self.sentence_encoding_signature = self.module.signatures["default"]
