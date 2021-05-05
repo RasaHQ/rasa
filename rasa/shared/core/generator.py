@@ -124,6 +124,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         omit_unset_slots: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_last_action_listen_in_state: bool = False,
     ) -> List[State]:
         """Generates the past states of this tracker based on the history.
 
