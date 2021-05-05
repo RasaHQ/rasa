@@ -451,15 +451,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return tag_id_dict
 
-    @staticmethod
-    def _find_example_for_label(
-        label: Text, examples: List[Message], attribute: Text
-    ) -> Optional[Message]:
-        for ex in examples:
-            if ex.get(attribute) == label:
-                return ex
-        return None
-
     def _check_labels_features_exist(
         self, labels_example: List[Message], attribute: Text
     ) -> bool:
@@ -599,13 +590,17 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         If the features are already computed, fetch them from the message object
         else compute a one hot encoding for the label as the feature vector.
         """
-        # Collect one example for each label
-        labels_idx_examples = []
-        for label_name, idx in label_id_dict.items():
-            label_example = self._find_example_for_label(
-                label_name, training_data.stream_featurized_messages(), attribute
-            )
-            labels_idx_examples.append((idx, label_example))
+        # collect one example per label
+        labels_examples = {}
+        for msg in training_data.stream_featurized_messages():
+            label = msg.get(attribute)
+            if label not in labels_examples:
+                labels_examples[label] = msg
+
+        labels_idx_examples = [
+            (label_id_dict[label], example)
+            for label, example in labels_examples.items()
+        ]
 
         # Sort the list of tuples based on label_idx
         labels_idx_examples = sorted(labels_idx_examples, key=lambda x: x[0])
