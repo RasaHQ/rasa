@@ -193,12 +193,13 @@ responses:
 
 ```yaml-rasa title="stories.yml"
 stories:
-  story: greet
-   - action: action_log_in
-   - slot_was_set:
+- story: greet
+  steps:
+  - action: action_log_in
+  - slot_was_set:
     - logged_in: true
-   - intent: greet
-   - action: utter_greet
+  - intent: greet
+  - action: utter_greet
 ```
 
 In the example above, the first response variation (``"Hey, {name}. Nice to see you again! How are you?"``)
@@ -260,7 +261,7 @@ responses:
     - text: "Welcome. How is your day going?"
 ```
 
-Rasa will prioritise the selection of responses in the following order:
+Rasa will prioritize the selection of responses in the following order:
 
 1. conditional response variations with matching channel
 2. default responses with matching channel
