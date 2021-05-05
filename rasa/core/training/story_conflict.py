@@ -170,14 +170,14 @@ def find_story_conflicts(
         trackers, domain, max_history, tokenizer
     )
 
-    unpredictable_events = _find_unpredictable_events(
+    unpredictable_state_action_mapping = _find_unpredictable_actions(
         trackers, domain, max_history, tokenizer
     )
 
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = _build_conflicts_from_states(
-        trackers, domain, max_history, {**conflicting_state_action_mapping, **unpredictable_events}, tokenizer,
+        trackers, domain, max_history, {**conflicting_state_action_mapping, **unpredictable_state_action_mapping}, tokenizer,
     )
 
     return conflicts
@@ -246,11 +246,11 @@ def _find_conflicting_states(
     }
 
 
-def _unpredictable_event(event: Event) -> bool:
-    """Identifies if the event cannot be predicted by policies that use story data.
+def _unpredictable_action(event: Event) -> bool:
+    """Identifies if the action cannot be predicted by policies that use story data.
 
     Args:
-        event: Event
+        event: An event to be checked.
 
     Returns:
         A boolean indicating if the event can be predicted or not.
@@ -258,7 +258,7 @@ def _unpredictable_event(event: Event) -> bool:
     return event.__str__() == ACTION_UNLIKELY_INTENT_NAME
 
 
-def _find_unpredictable_events(
+def _find_unpredictable_actions(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: Optional[int],
@@ -281,7 +281,7 @@ def _find_unpredictable_events(
     for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
         hashed_state = element.sliced_states_hash
         current_hash = hash(element.event)
-        if _unpredictable_event(element.event):
+        if _unpredictable_action(element.event):
             state_action_mapping[hashed_state] += [current_hash]
 
     return state_action_mapping
