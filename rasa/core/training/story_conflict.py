@@ -4,7 +4,7 @@ import json
 from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple
 
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, ACTION_UNLIKELY_INTENT_NAME, USER
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -170,10 +170,14 @@ def find_story_conflicts(
         trackers, domain, max_history, tokenizer
     )
 
+    unpredictable_events = _find_unpredictable_events(
+        trackers, domain, max_history, tokenizer
+    )
+
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = _build_conflicts_from_states(
-        trackers, domain, max_history, conflicting_state_action_mapping, tokenizer,
+        trackers, domain, max_history, {**conflicting_state_action_mapping, **unpredictable_events}, tokenizer,
     )
 
     return conflicts
@@ -240,6 +244,47 @@ def _find_conflicting_states(
         for (state_hash, actions) in state_action_mapping.items()
         if len(actions) > 1
     }
+
+
+def _unpredictable_event(event: Event) -> bool:
+    """Identifies if the event cannot be predicted by policies that use story data.
+
+    Args:
+        event: Event
+
+    Returns:
+        A boolean indicating if the event can be predicted or not.
+    """
+    return event.__str__() == ACTION_UNLIKELY_INTENT_NAME
+
+
+def _find_unpredictable_events(
+    trackers: List[TrackerWithCachedStates],
+    domain: Domain,
+    max_history: Optional[int],
+    tokenizer: Optional[Tokenizer],
+) -> Dict[int, Optional[List[Text]]]:
+    """Identifies all states that contain actions that cannot be predicted.
+
+    Args:
+        trackers: Trackers that contain the states.
+        domain: The domain object.
+        max_history: Number of turns to take into account for the state descriptions.
+        tokenizer: A tokenizer to tokenize the user messages.
+
+    Returns:
+        A dictionary mapping state-hashes to a list of actions that cannot be predicted.
+    """
+    # Create a 'state -> list of actions' dict, where the state is
+    # represented by its hash
+    state_action_mapping = defaultdict(list)
+    for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
+        hashed_state = element.sliced_states_hash
+        current_hash = hash(element.event)
+        if _unpredictable_event(element.event):
+            state_action_mapping[hashed_state] += [current_hash]
+
+    return state_action_mapping
 
 
 def _build_conflicts_from_states(
