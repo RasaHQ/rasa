@@ -57,6 +57,8 @@ class RasaComponent:
         if self._eager:
             self.create_component(**self._config)
 
+        self._run_args = rasa.shared.utils.common.arguments_of(self._run_fn)
+
     def validate_params_in_inputs(self, input_names, func):
         params = inspect.signature(func).parameters
         for param_name, param in params.items():
@@ -94,8 +96,8 @@ class RasaComponent:
 
         run_kwargs = kwargs
 
-        if "kwargs" not in rasa.shared.utils.common.arguments_of(self._run_fn):
-            run_kwargs = rasa.shared.utils.common.minimal_kwargs(kwargs, self._run_fn)
+        if "kwargs" not in self._run_args:
+            run_kwargs = {k: v for k, v in kwargs.items() if k in self._run_args}
 
         # print(f"************** {self._node_name} ***************")
         #  This alters the input
