@@ -317,7 +317,7 @@ async def test_create_pika_invalid_port():
     cfg = EndpointConfig(
         username="username", password="password", type="pika", port="PORT"
     )
-    with pytest.raises(RasaException):
+    with pytest.raises(RasaException) as e:
         await EventBroker.create(cfg)
         assert "Port could not be converted to integer." in str(e.value)
 
