@@ -323,6 +323,7 @@ async def test_create_pika_invalid_port():
     )
     with pytest.raises(RasaException):
         await EventBroker.create(cfg)
+        assert "Port could not be converted to integer." in str(e.value)
 
 
 def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):
