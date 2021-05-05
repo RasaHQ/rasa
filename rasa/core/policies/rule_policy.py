@@ -572,6 +572,9 @@ class RulePolicy(MemoizationPolicy):
             if action_name != gold_action_name
         }
 
+        if not contradicting_rules:
+            return []
+
         error_message = (
             f"- the prediction of the action '{gold_action_name}' in {tracker_type} "
             f"'{tracker.sender_id}' "
@@ -805,7 +808,7 @@ class RulePolicy(MemoizationPolicy):
             conversation_sub_state = conversation_state.get(state_type, {})
             for key, value_from_rules in rule_sub_state.items():
                 # json dumps and loads tuples as lists
-                if isinstance(value_from_rules, list):
+                if isinstance(value_from_rules, list) and state_type != SLOTS:
                     # sort values before comparing
                     # `sorted` returns a list
                     value_from_rules = sorted(value_from_rules)
