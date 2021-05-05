@@ -1,4 +1,3 @@
-import re
 from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
@@ -160,10 +159,10 @@ class TwilioVoiceInput(InputChannel):
             self._raise_invalid_speech_model_timeout_exception()
 
     def _raise_invalid_speech_model_timeout_exception(self) -> None:
-        """Raises an error if incompatible speech_timeout and speech_model are provided."""
+        """Raises an error if incompatible speech_timeout and speech_model used."""
         raise InvalidConfigException(
-            f"If speech_timeout is 'auto' the speech_model must be 'numbers_and_commands'. Please update your "
-            f"speech_model to be 'numbers_and_commands' if you would like to continue using the 'auto' speech_model."
+            "If speech_timeout is 'auto' the speech_model must be 'numbers_and_commands'. Please update your "
+            "speech_model to be 'numbers_and_commands' if you would like to continue using the 'auto' speech_model."
         )
 
     def _raise_invalid_enhanced_option_exception(self) -> None:
@@ -193,7 +192,7 @@ class TwilioVoiceInput(InputChannel):
         )
 
     def _raise_invalid_enhanced_speech_model_exception(self) -> None:
-        """Raises an error if enhanced is turned on and an incompatible speech_model is used."""
+        """Raises error if enhanced is used with an incompatible speech_model."""
         raise InvalidConfigException(
             f"If you set enhanced to 'true' then speech_model must be 'phone_call'. Current speech_model is: "
             f"{self.speech_model}."

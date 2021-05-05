@@ -1,11 +1,7 @@
-import json
 import logging
 
 import pytest
-from sanic.request import Request
 
-import rasa.core
-from rasa.core import utils
 from rasa import server
 from rasa.core.agent import Agent
 from rasa.core.channels import channel

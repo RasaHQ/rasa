@@ -10,9 +10,6 @@ from rasa.core.channels.channel import (  # noqa: F401
 # this prevents IDE's from optimizing the imports - we need to import the
 # above first, otherwise we will run into import cycles
 from rasa.core.channels.socketio import SocketIOInput
-
-pass
-
 from rasa.core.channels.botframework import BotFrameworkInput  # noqa: F401
 from rasa.core.channels.callback import CallbackInput  # noqa: F401
 from rasa.core.channels.console import CmdlineInput  # noqa: F401

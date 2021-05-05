@@ -10,7 +10,7 @@ import re
 from asyncio import AbstractEventLoop
 from io import BytesIO as IOReader
 from pathlib import Path
-from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING
+from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING, Pattern
 
 import rasa.shared.constants
 import rasa.shared.utils.io
@@ -204,7 +204,7 @@ def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
     rasa.shared.utils.io.write_text_file(jsonpickle.dumps(obj), file_name)
 
 
-def get_emoji_regex():
+def get_emoji_regex() -> Pattern:
     """Returns regex to identify emojis."""
     return re.compile(
         "["
