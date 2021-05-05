@@ -31,6 +31,8 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 
 class ModelTrainer:
+    """Handles the training of models using graph schema."""
+
     def __init__(
         self, model_persistor: ModelPersistorInterface, cache: TrainingCacheInterface,
     ) -> None:
@@ -75,6 +77,8 @@ class ModelTrainer:
 
 
 class Model(ModelInterface):
+    """A model uses a dask graph to predict actions based on user messages."""
+
     def __init__(
         self,
         predict_graph_schema: GraphSchema,
@@ -141,6 +145,8 @@ class Model(ModelInterface):
 
 
 def fill_defaults(graph_schema: GraphSchema):
+    """Fills a graph schema with default config values for each component."""
+
     for step_name, step_config in graph_schema.items():
         if step_name == "targets":
             continue

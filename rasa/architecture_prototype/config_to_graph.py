@@ -132,7 +132,6 @@ def _nlu_config_to_train_graph_schema(
     only_process: bool = False,
 ) -> Tuple[Dict[Text, Any], List[Text]]:
     nlu_pipeline = deepcopy(config["pipeline"])
-    # TODO: get this information from the class?
     meta: Dict[Type[Component], Text] = {
         WhitespaceTokenizer: "process",
         RegexFeaturizer: "train_process",
@@ -196,7 +195,6 @@ def _nlu_config_to_predict_graph_schema(
     classify: bool = True,
 ) -> Tuple[Dict[Text, Any], Text]:
     nlu_pipeline = deepcopy(config["pipeline"])
-    # TODO: get this information from the class?
     meta: Dict[Type[Component], Text] = {
         WhitespaceTokenizer: "process",
         RegexFeaturizer: "process",
@@ -373,6 +371,7 @@ def _core_config_to_predict_graph_schema(
 
 
 def config_to_train_graph_schema(config: Text) -> GraphSchema:
+    """Create a training graph schema from the current rasa config."""
     config_dict = read_yaml(config)
     nlu_train_graph_schema, nlu_outs = _nlu_config_to_train_graph_schema(config_dict)
     core_train_graph_schema, core_outs = _core_config_to_train_graph_schema(config_dict)
@@ -391,6 +390,7 @@ def config_to_train_graph_schema(config: Text) -> GraphSchema:
 
 
 def config_to_predict_graph_schema(config: Text,) -> GraphSchema:
+    """Create a prediction graph schema from the current rasa config."""
     config_dict = read_yaml(config)
 
     nlu_predict_graph_schema, nlu_out = _nlu_config_to_predict_graph_schema(

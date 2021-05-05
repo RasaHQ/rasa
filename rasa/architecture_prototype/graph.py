@@ -37,6 +37,7 @@ import rasa.shared.utils.io
 
 def fingerprint(f: Callable) -> Callable:
     """ Stores the fingerprint and caches the result of a node run."""
+
     @wraps(f)
     def decorated(self, *args: Any, **kwargs: Any) -> Any:
         fingerprint_key = None
@@ -80,11 +81,19 @@ class RasaComponent(GraphNodeComponent):
 
         Args:
             component_class: The component class that will be instantiated and then
-                             called when the node is executed
-            config: Config to be passed to the component class constructor
-            fn_name: 
-
-
+                called when the node is executed.
+            config: Config to be passed to the component class constructor.
+            fn_name: Name of the function to be called on the component when the node is
+                executed.
+            node_name: Name of the node. Used for building the edges in the graph.
+            inputs: A mapping of parameters to node_names that determines this nodes
+                graph dependencies.
+            constructor_name: The name of the constructor method for the component 
+                class.
+            eager: If true, will call the constructor on instantiation of this class.
+            cache: An optional cache to store fingerprints and results.
+            persistor: An optional persitor to be passed to the component so that it can
+                save state. 
         """
         super().__init__(config, node_name, inputs, cache)
         self._eager = eager
@@ -111,6 +120,8 @@ class RasaComponent(GraphNodeComponent):
             self.create_component(**self.config)
 
     def validate_params_in_inputs(self, input_names, func) -> None:
+        """ Validate that all required parameters for a function are provided by the
+            graph inputs."""
         params = inspect.signature(func).parameters
         for param_name, param in params.items():
             if param_name in ["self", "args", "kwargs", "persistor"]:
@@ -122,11 +133,13 @@ class RasaComponent(GraphNodeComponent):
                     )
 
     def __call__(self, *args: Any) -> Dict[Text, Any]:
+        """This is called when the node is executed."""
         result = self.run(*args)
         return {self.node_name: copy.deepcopy(result)}
 
     @fingerprint
     def run(self, *args: Any) -> Any:
+        """Call the run method of the component."""
         received_inputs = dict(ChainMap(*args))
         kwargs = {}
         for input, input_node in self.inputs.items():
@@ -149,6 +162,7 @@ class RasaComponent(GraphNodeComponent):
         return self._run_fn(self._component, **run_kwargs)
 
     def create_component(self, **const_kwargs: Any) -> None:
+        """Creates the component using the correct constructor method."""
         if self._persistor:
             const_kwargs["persistor"] = self._persistor
         self._component = self._constructor_fn(**const_kwargs)
@@ -162,6 +176,7 @@ def convert_to_dask_graph(
     cache: Optional[TrainingCacheInterface] = None,
     model_persistor: Optional[ModelPersistorInterface] = None,
 ) -> Tuple[DaskGraph, List[Text]]:
+    """Converts a graph schema into a loaded dask graph."""
     dsk = {}
     targets = []
     for step_name, step_config in graph_schema.items():
@@ -181,6 +196,7 @@ def graph_component_for_config(
     cache: Optional[TrainingCacheInterface] = None,
     model_persistor: ModelPersistorInterface = None,
 ) -> DaskGraphNode:
+    """Creates a dask graph node containing a RasaComponent from a node in a schema."""
     component_config = step_config["config"].copy()
     if config_overrides:
         component_config.update(config_overrides)
@@ -210,6 +226,7 @@ def run_as_dask_graph(
     cache: Optional[TrainingCacheInterface] = None,
     model_persistor: Optional[ModelPersistorInterface] = None,
 ) -> Dict[Text, Any]:
+    """Converts a schema to a dask graph and runs it."""
     dask_graph, targets = convert_to_dask_graph(
         graph_schema, cache=cache, model_persistor=model_persistor
     )
@@ -217,5 +234,6 @@ def run_as_dask_graph(
 
 
 def visualise_as_dask_graph(graph_schema: Dict[Text, Any], filename: Text) -> None:
+    """Converts a schema to a dask graph and visualises it."""
     dask_graph, _ = convert_to_dask_graph(graph_schema)
     visualise_dask_graph(dask_graph, filename)

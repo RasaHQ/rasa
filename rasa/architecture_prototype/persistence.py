@@ -14,7 +14,9 @@ from rasa.architecture_prototype.interfaces import (
 )
 
 
-class ComponentPersistor(ComponentPersistorInterface):
+class LocalComponentPersistor(ComponentPersistorInterface):
+    """Allows a RasaComponent to save and load to the local filesystem."""
+
     def __init__(self, node_name: Text, parent_dir: Path) -> None:
         self._node_name = node_name
         self._parent_dir = parent_dir
@@ -38,13 +40,15 @@ class ComponentPersistor(ComponentPersistorInterface):
 
 
 class LocalModelPersistor(ModelPersistorInterface):
+    """Persists and loads a Model to local filesystem."""
+
     def __init__(self, local_path: Path) -> None:
         self._dir = local_path
 
     def create_component_persistor(
         self, node_name: Text
     ) -> ComponentPersistorInterface:
-        return ComponentPersistor(node_name, self._dir)
+        return LocalComponentPersistor(node_name, self._dir)
 
     def create_model_package(self, target: Text, model: Model) -> None:
         (self._dir / "predict_graph_schema.json").write_text(

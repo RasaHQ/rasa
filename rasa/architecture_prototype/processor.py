@@ -17,7 +17,11 @@ from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.core.actions.action
 from rasa.utils.endpoints import EndpointConfig
 
-# TODO: glue comment
+
+"""
+All the code in this file to allow integration with the rest of Rasa.
+This is not how we envision this will be done in the future.
+"""
 
 
 class GraphProcessor(MessageProcessor):
