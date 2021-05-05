@@ -58,6 +58,7 @@ class TrackerFeaturizer:
         omit_unset_slots: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_last_action_listen_in_state: bool = False,
     ) -> List[State]:
         """Create states for the given tracker.
 
@@ -78,6 +79,7 @@ class TrackerFeaturizer:
             omit_unset_slots=omit_unset_slots,
             ignore_rule_only_turns=ignore_rule_only_turns,
             rule_only_data=rule_only_data,
+            ignore_last_action_listen_in_state=ignore_last_action_listen_in_state,
         )
 
     def _featurize_states(
@@ -162,7 +164,6 @@ class TrackerFeaturizer:
         rasa.shared.utils.io.raise_deprecation_warning(
             "'training_states_actions_and_entities' is being deprecated in favor of "
             "'training_states_labels_and_labels'."
-            #docs=DOCS_URL_COMPONENTS,
         )
         raise NotImplementedError(
             f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
@@ -192,11 +193,8 @@ class TrackerFeaturizer:
         )
 
         return self.training_states_and_labels(
-            trackers,
-            domain,
-            omit_unset_slots=omit_unset_slots
+            trackers, domain, omit_unset_slots=omit_unset_slots
         )
-
 
     def training_states_and_labels(
         self,
@@ -223,7 +221,6 @@ class TrackerFeaturizer:
         )
         return trackers_as_states, trackers_as_labels
 
-
     def training_states_labels_and_entities(
         self,
         trackers: List[DialogueStateTracker],
@@ -241,11 +238,8 @@ class TrackerFeaturizer:
             A tuple of list of states, list of labels and list of entity data.
         """
         return self.training_states_actions_and_entities(
-            trackers,
-            domain,
-            omit_unset_slots=omit_unset_slots
+            trackers, domain, omit_unset_slots=omit_unset_slots
         )
-
 
     def featurize_trackers(
         self,
@@ -288,12 +282,13 @@ class TrackerFeaturizer:
 
         (
             trackers_as_states,
-            trackers_as_actions,
+            trackers_as_labels,
             trackers_as_entities,
         ) = self.training_states_labels_and_entities(trackers, domain)
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
-        label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
+        label_ids = self._convert_labels_to_ids(trackers_as_labels, domain)
+
         entity_tags = self._create_entity_tags(
             trackers_as_entities, interpreter, bilou_tagging
         )
@@ -456,11 +451,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             "favor of 'training_states_labels_and_entities'."
         )
         return self.training_states_labels_and_entities(
-            trackers,
-            domain,
-            omit_unset_slots=omit_unset_slots
+            trackers, domain, omit_unset_slots=omit_unset_slots
         )
-
 
     def training_states_labels_and_entities(
         self,
@@ -583,7 +575,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     LABEL_NAME = "action"
 
-
     def __init__(
         self,
         state_featurizer: Optional[SingleStateFeaturizer] = None,
@@ -616,12 +607,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         return states[-slice_length:]
 
-
     @staticmethod
     def _hash_example(
         tracker: DialogueStateTracker,
         states: List[State],
-        labels: Optional[List[Text]]=None,
+        labels: Optional[List[Text]] = None,
     ) -> int:
         """Hash states (and optionally label) for efficient deduplication.
         If labels is None, labels is not hashed.
@@ -658,11 +648,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             "favor of 'training_states_labels_and_entities'."
         )
         return self.training_states_labels_and_entities(
-            trackers,
-            domain,
-            omit_unset_slots=omit_unset_slots
+            trackers, domain, omit_unset_slots=omit_unset_slots
         )
-
 
     def training_states_labels_and_entities(
         self,
@@ -692,8 +679,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             "collected trackers (by {}({}))..."
             "".format(
                 self.LABEL_NAME,
-                type(self).__name__, 
-                type(self.state_featurizer).__name__
+                type(self).__name__,
+                type(self.state_featurizer).__name__,
             )
         )
         pbar = tqdm(
@@ -704,9 +691,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         for tracker in pbar:
 
             for states, label, entities in self._example_iterator(
-                tracker,
-                domain,
-                omit_unset_slots=omit_unset_slots
+                tracker, domain, omit_unset_slots=omit_unset_slots
             ):
 
                 if self._check_example_cache(tracker, states, label):
@@ -716,9 +701,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 example_labels.append(label)
                 example_entities.append(entities)
 
-                pbar.set_postfix({
-                    f"# {self.LABEL_NAME}": f"{len(example_labels):d}"
-                })
+                pbar.set_postfix({f"# {self.LABEL_NAME}": f"{len(example_labels):d}"})
 
         self._cleanup_example_iterator()
         self._remove_user_text_if_intent(example_states)
@@ -727,18 +710,16 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         return example_states, example_labels, example_entities
 
-
     def _setup_example_iterator(self) -> None:
         """Create set for filtering out duplicated training examples."""
         if self.remove_duplicates:
             self.hashed_examples = set()
 
-
     def _example_iterator(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        omit_unset_slots: bool = False
+        omit_unset_slots: bool = False,
     ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
         """Create an iterator over the training examples that will be created
         from the provided tracker.
@@ -776,33 +757,25 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 # reset entity_data for the the next turn
                 entity_data = {}
 
-
     def _check_example_cache(
-        self,
-        tracker: DialogueStateTracker,
-        states: List[State],
-        label: List[Text],
+        self, tracker: DialogueStateTracker, states: List[State], label: List[Text],
     ) -> bool:
         """Returns True if training example is a duplicate."""
         if not self.remove_duplicates:
             return False
         else:
-            hashed = self._hash_example(
-                tracker, states, label
-            )
+            hashed = self._hash_example(tracker, states, label)
             if hashed not in self.hashed_examples:
                 self.hashed_examples.add(hashed)
                 return False
             else:
                 return True
 
-
     def _cleanup_example_iterator(self) -> None:
         """Remove deduplication cache and remove intent text when intent label
         is used."""
         if self.remove_duplicates:
             self.hashed_examples = None
-
 
     def prediction_states(
         self,
@@ -864,10 +837,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
         # store labels in numpy arrays so that it corresponds to np arrays of input features
         label_ids = [
-            [
-                domain.intents.index(intent)
-                for intent in tracker_intents
-            ]
+            [domain.intents.index(intent) for intent in tracker_intents]
             for tracker_intents in trackers_as_intents
         ]
 
@@ -888,7 +858,6 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         new_label_ids = np.array(new_label_ids)
         return new_label_ids
 
-
     def _setup_example_iterator(self) -> None:
         """Create any data structures for deduplication and tracking multiple 
         intent labels.
@@ -896,12 +865,11 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         super()._setup_example_iterator()
         self._state_hash_to_labels = defaultdict(list)
 
-
     def _example_iterator(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        omit_unset_slots: bool = False
+        omit_unset_slots: bool = False,
     ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
         """Create an iterator over the training examples that will be created
         from the provided tracker.
@@ -930,12 +898,8 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
                 yield sliced_states, label, entities
 
-
     def _check_example_cache(
-        self,
-        tracker: DialogueStateTracker,
-        states: List[State],
-        label: List[Text],
+        self, tracker: DialogueStateTracker, states: List[State], label: List[Text],
     ) -> bool:
         if not super()._check_example_cache(tracker, states, label):
             state_hash = self._hash_example(tracker, states)
@@ -955,14 +919,13 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             # Get the set of labels associated with the state hash.
             codomain = set([labels[0] for labels in labelset])
             for labels in labelset:
-                # Remove the duplicate label in the first position 
+                # Remove the duplicate label in the first position
                 # and update the positive labels.
                 filtered_codomain = filter(lambda label: label != labels[0], codomain)
                 labels.extend(filtered_codomain)
 
         self._state_hash_to_labels = None
         super()._cleanup_example_iterator()
-
 
     def prediction_states(
         self,
@@ -987,7 +950,6 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         Returns:
             A list of states.
         """
-
         # Create a copy of trackers
         duplicate_trackers = [tracker.copy() for tracker in trackers]
 
@@ -995,12 +957,15 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         for tracker in duplicate_trackers:
             tracker.update(UserUtteranceReverted(), domain)
 
+        logger.debug(f"{rule_only_data}, {ignore_rule_only_turns}")
+
         trackers_as_states = [
             self._create_states(
                 tracker,
                 domain,
                 ignore_rule_only_turns=ignore_rule_only_turns,
                 rule_only_data=rule_only_data,
+                ignore_last_action_listen_in_state=True,
             )
             for tracker in duplicate_trackers
         ]
