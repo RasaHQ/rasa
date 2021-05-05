@@ -228,10 +228,7 @@ class TwilioVoiceInput(InputChannel):
             if text is not None:
                 await on_new_message(
                     UserMessage(
-                        text,
-                        collector,
-                        sender_id,
-                        input_channel=input_channel,
+                        text, collector, sender_id, input_channel=input_channel,
                     )
                 )
 
@@ -304,9 +301,7 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         return "twilio_voice"
 
     @staticmethod
-    def _emoji_warning(
-        text: Text,
-    ) -> None:
+    def _emoji_warning(text: Text,) -> None:
         """Raises a warning if text contains an emoji."""
         emoji_regex = rasa.utils.io.get_emoji_regex()
         if emoji_regex.findall(text):
