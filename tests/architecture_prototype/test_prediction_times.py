@@ -1,4 +1,5 @@
 import asyncio
+import cProfile
 import os
 import time
 
@@ -17,12 +18,18 @@ async def test_predictions():
 
     start = time.time()
     print(f"Started model predictions at {start}")
+    profile = cProfile.Profile()
+    profile.enable()
+
     for i in range(1000):
         await agent.handle_message(
             UserMessage(text="can you help me to build a bot", sender_id=f"sender_{i}")
         )
 
     end = time.time()
+    profile.disable()
+
+    profile.dump_stats("./test_inference.prof")
     print(f"Finished model predictions at {end}. Total time: {end - start}")
 
 
