@@ -67,7 +67,7 @@ class ModelTrainer:
         )
 
         fill_defaults(predict_graph_schema)
-        # TODO: this loads the models again - could create with dask graph?
+
         return Model(
             predict_graph_schema,
             train_graph_schema,

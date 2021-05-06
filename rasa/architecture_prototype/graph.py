@@ -31,7 +31,6 @@ import rasa.utils.common
 import rasa.core.training
 import rasa.shared.utils.io
 
-# TODO: docstrings
 # TODO: investigate persistence of metadata (especially ResponseSelector)
 
 
@@ -57,7 +56,6 @@ def fingerprint(f: Callable) -> Callable:
     return decorated
 
 
-# TODO: cleanup
 class RasaComponent(GraphNodeComponent):
     """Wraps nodes in a dask graph.
 
