@@ -40,7 +40,6 @@ from rasa.shared.core.events import (
 )
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy, SupportedData, PolicyPrediction
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
@@ -199,7 +198,6 @@ class PolicyEnsemble(metaclass=GraphComponentMetaclass):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         if training_trackers:
@@ -210,7 +208,7 @@ class PolicyEnsemble(metaclass=GraphComponentMetaclass):
                     policy, training_trackers
                 )
                 policy.train(
-                    trackers_to_train, domain, interpreter=interpreter, **kwargs
+                    trackers_to_train, domain, **kwargs
                 )
 
             self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(
@@ -228,7 +226,6 @@ class PolicyEnsemble(metaclass=GraphComponentMetaclass):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> PolicyPrediction:
         raise NotImplementedError
@@ -661,7 +658,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         predictions: Dict[Text, PolicyPrediction],
     ) -> PolicyPrediction:
         """Finds the best policy prediction.
@@ -669,8 +665,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
 
         Returns:
             The winning policy prediction.
@@ -695,7 +689,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         if not predictions:
             predictions = {
                 f"policy_{i}_{type(p).__name__}": self._get_prediction(
-                    p, tracker, domain, interpreter
+                    p, tracker, domain
                 )
                 for i, p in enumerate(self.policies)
             }
@@ -717,7 +711,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         policy: Policy,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
     ) -> PolicyPrediction:
         number_of_arguments_in_rasa_1_0 = 2
         arguments = rasa.shared.utils.common.arguments_of(
@@ -726,10 +719,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         if (
             len(arguments) > number_of_arguments_in_rasa_1_0
-            and "interpreter" in arguments
         ):
             prediction = policy.predict_action_probabilities(
-                tracker, domain, interpreter
+                tracker, domain
             )
         else:
             rasa.shared.utils.io.raise_warning(
@@ -740,7 +732,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 category=DeprecationWarning,
             )
             prediction = policy.predict_action_probabilities(
-                tracker, domain, RegexInterpreter()
+                tracker, domain
             )
 
         if isinstance(prediction, list):
@@ -799,7 +791,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -810,8 +801,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
 
         Returns:
             The best policy prediction.
@@ -823,7 +812,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         }
 
         winning_prediction = self._best_policy_prediction(
-            tracker, domain, interpreter, predictions
+            tracker, domain, predictions
         )
 
         if (

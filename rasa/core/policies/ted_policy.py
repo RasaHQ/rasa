@@ -36,7 +36,6 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.constants import DIAGNOSTIC_DATA
@@ -374,13 +373,12 @@ class TEDPolicy(Policy):
     def _create_label_data(
         self,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_actions(
-            domain, interpreter, e2e_features
+            domain, e2e_features
         )
 
         attribute_data, _ = convert_to_data_format(
@@ -512,7 +510,6 @@ class TEDPolicy(Policy):
         training_trackers: List[TrackerWithCachedStates],
         e2e_features: Dict[Text, Message],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> Text:
         """Train the policy on given training trackers."""
@@ -529,14 +526,13 @@ class TEDPolicy(Policy):
         tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
             training_trackers,
             domain,
-            interpreter,
             bilou_tagging=self.config[BILOU_FLAG],
             e2e_features=e2e_features,
             **kwargs,
         )
 
         self._label_data, encoded_all_labels = self._create_label_data(
-            domain, interpreter, e2e_features
+            domain, e2e_features
         )
 
         # extract actual training data to feed to model
@@ -686,8 +682,7 @@ class TEDPolicy(Policy):
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
+            e2e_features: A mapping of message text to parsed message with e2e features
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).

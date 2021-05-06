@@ -16,7 +16,6 @@ from rasa.shared.core.events import (
     Event,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData, PolicyPrediction
 from rasa.shared.core.trackers import (
@@ -680,7 +679,6 @@ class RulePolicy(MemoizationPolicy):
             rule_trackers: The list of the rule trackers.
             all_trackers: The list of all trackers.
             domain: The domain.
-            interpreter: Interpreter which can be used by the polices for featurization.
 
         Returns:
              Rules that are not present in the stories.
@@ -764,7 +762,6 @@ class RulePolicy(MemoizationPolicy):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> Text:
         """Trains the policy on given training trackers.
@@ -772,7 +769,6 @@ class RulePolicy(MemoizationPolicy):
         Args:
             training_trackers: The list of the trackers.
             domain: The domain.
-            interpreter: Interpreter which can be used by the polices for featurization.
         """
         # only consider original trackers (no augmented ones)
         training_trackers = [
@@ -1067,7 +1063,6 @@ class RulePolicy(MemoizationPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> "PolicyPrediction":
         """Predicts the next action (see parent class for more information)."""

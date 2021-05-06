@@ -31,7 +31,6 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     FEATURIZER_FILE,
 )
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
@@ -173,7 +172,6 @@ class Policy(metaclass=PolicyMetaclass):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
         e2e_features: Optional[Dict[Text, Message]] = None,
         **kwargs: Any,
@@ -191,7 +189,6 @@ class Policy(metaclass=PolicyMetaclass):
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
             bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
@@ -205,7 +202,7 @@ class Policy(metaclass=PolicyMetaclass):
               for all dialogue turns in all training trackers
         """
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
-            training_trackers, domain, interpreter, bilou_tagging, e2e_features
+            training_trackers, domain, bilou_tagging, e2e_features
         )
 
         max_training_samples = kwargs.get("max_training_samples")
@@ -260,7 +257,6 @@ class Policy(metaclass=PolicyMetaclass):
         Args:
             tracker: The tracker to be featurized.
             domain: The Domain.
-            interpreter: The NLU interpreter.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
 
@@ -284,7 +280,6 @@ class Policy(metaclass=PolicyMetaclass):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers.
@@ -293,7 +288,6 @@ class Policy(metaclass=PolicyMetaclass):
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which can be used by the polices for featurization.
         """
         raise NotImplementedError("Policy must have the capacity to train.")
 
@@ -301,7 +295,6 @@ class Policy(metaclass=PolicyMetaclass):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> "PolicyPrediction":
         """Predicts the next action the bot should take after seeing the tracker.
@@ -309,8 +302,6 @@ class Policy(metaclass=PolicyMetaclass):
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
