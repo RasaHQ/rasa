@@ -17,6 +17,8 @@ def require_response_keys(responses: List[Dict[Text, Any]], _: Dict, __: Text) -
             continue
 
         if response.get("text") is None and not response.get("custom"):
-            raise SchemaError("Missing 'text' or 'custom' key in response.")
+            raise SchemaError(
+                "Missing 'text' or 'custom' key in response or null 'text' value in response."
+            )
 
     return True
