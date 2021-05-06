@@ -1,4 +1,3 @@
-import json
 from typing import Any, Optional, Tuple, Text, Dict, Set, List
 
 import typing
@@ -15,6 +14,8 @@ from rasa.shared.nlu.constants import (
     METADATA_INTENT,
     METADATA_EXAMPLE,
     ENTITIES,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_END,
     RESPONSE_IDENTIFIER_DELIMITER,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
@@ -80,7 +81,7 @@ class Message:
         if add_to_output:
             self.output_properties.add(prop)
 
-    def get(self, prop, default=None) -> Any:
+    def get(self, prop: Text, default: Optional[Any] = None) -> Any:
         return self.data.get(prop, default)
 
     def as_dict_nlu(self) -> dict:
@@ -93,7 +94,7 @@ class Message:
         d.pop(INTENT_RESPONSE_KEY, None)
         return d
 
-    def as_dict(self, only_output_properties=False) -> dict:
+    def as_dict(self, only_output_properties: bool = False) -> Dict:
         if only_output_properties:
             d = {
                 key: value
@@ -107,7 +108,7 @@ class Message:
         # Message object in markdown format
         return {key: value for key, value in d.items() if value is not None}
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Message):
             return False
         else:
@@ -179,11 +180,10 @@ class Message:
         )
 
     def get_combined_intent_response_key(self) -> Text:
-        """Get intent as it appears in training data"""
-
+        """Get intent as it appears in training data."""
         rasa.shared.utils.io.raise_warning(
             "`get_combined_intent_response_key` is deprecated and "
-            "will be removed in future versions. "
+            "will be removed in Rasa 3.0.0. "
             "Please use `get_full_intent` instead.",
             category=DeprecationWarning,
         )
@@ -398,3 +398,23 @@ class Message:
             (self.get(ACTION_TEXT) and not self.get(ACTION_NAME))
             or (self.get(TEXT) and not self.get(INTENT))
         )
+
+    def find_overlapping_entities(
+        self,
+    ) -> List[Tuple[Dict[Text, Any], Dict[Text, Any]]]:
+        """Finds any overlapping entity annotations."""
+        entities = self.get("entities", [])[:]
+        entities_with_location = [
+            e
+            for e in entities
+            if (ENTITY_ATTRIBUTE_START in e.keys() and ENTITY_ATTRIBUTE_END in e.keys())
+        ]
+        entities_with_location.sort(key=lambda e: e[ENTITY_ATTRIBUTE_START])
+        overlapping_pairs: List[Tuple[Dict[Text, Any], Dict[Text, Any]]] = []
+        for i, entity in enumerate(entities_with_location):
+            for other_entity in entities_with_location[i + 1 :]:
+                if other_entity[ENTITY_ATTRIBUTE_START] < entity[ENTITY_ATTRIBUTE_END]:
+                    overlapping_pairs.append((entity, other_entity))
+                else:
+                    break
+        return overlapping_pairs

@@ -120,7 +120,9 @@ class CRFEntityExtractor(EntityExtractor):
         "upper": lambda crf_token: crf_token.text.isupper(),
         "digit": lambda crf_token: crf_token.text.isdigit(),
         "pattern": lambda crf_token: crf_token.pattern,
-        "text_dense_features": lambda crf_token: crf_token.dense_features,
+        "text_dense_features": lambda crf_token: CRFEntityExtractor._convert_dense_features_for_crfsuite(
+            crf_token
+        ),
         "entity": lambda crf_token: crf_token.entity_tag,
     }
 
@@ -184,7 +186,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         self._train_model(dataset)
 
-    def _update_crf_order(self, training_data: TrainingData):
+    def _update_crf_order(self, training_data: TrainingData) -> None:
         """Train only CRFs we actually have training data for."""
         _crf_order = []
 
@@ -233,7 +235,7 @@ class CRFEntityExtractor(EntityExtractor):
         self,
         crf_tokens: List[CRFToken],
         predictions: Dict[Text, List[Dict[Text, float]]],
-    ):
+    ) -> None:
         """Add predicted entity tags to CRF tokens."""
         if ENTITY_ATTRIBUTE_TYPE in predictions:
             _tags, _ = self._most_likely_tag(predictions[ENTITY_ATTRIBUTE_TYPE])
@@ -389,7 +391,7 @@ class CRFEntityExtractor(EntityExtractor):
         half_window_size: int,
         window_range: range,
         include_tag_features: bool,
-    ):
+    ) -> Dict[Text, Any]:
         """Convert a token into discrete features including word before and word
         after."""
 
@@ -474,7 +476,7 @@ class CRFEntityExtractor(EntityExtractor):
             return message.get(TOKENS_NAMES[TEXT])[idx].get("pattern", {})
         return {}
 
-    def _get_dense_features(self, message: Message) -> Optional[List]:
+    def _get_dense_features(self, message: Message) -> Optional[np.ndarray]:
         """Convert dense features to python-crfsuite feature format."""
         features, _ = message.get_dense_features(
             TEXT, self.component_config["featurizers"]
@@ -492,21 +494,22 @@ class CRFEntityExtractor(EntityExtractor):
             )
             return None
 
-        # convert to python-crfsuite feature format
-        features_out = []
-        for feature in features.features:
-            feature_dict = {
-                str(index): token_features
-                for index, token_features in enumerate(feature)
-            }
-            converted = {"text_dense_features": feature_dict}
-            features_out.append(converted)
+        return features.features
 
-        return features_out
+    @staticmethod
+    def _convert_dense_features_for_crfsuite(
+        crf_token: CRFToken,
+    ) -> Dict[Text, Dict[Text, float]]:
+        """Converts dense features of CRFTokens to dicts for the crfsuite."""
+        feature_dict = {
+            str(index): token_features
+            for index, token_features in enumerate(crf_token.dense_features)
+        }
+        converted = {"text_dense_features": feature_dict}
+        return converted
 
     def _convert_to_crf_tokens(self, message: Message) -> List[CRFToken]:
         """Take a message and convert it to crfsuite format."""
-
         crf_format = []
         tokens = message.get(TOKENS_NAMES[TEXT])
 
@@ -571,13 +574,13 @@ class CRFEntityExtractor(EntityExtractor):
 
             # add entity tag features for second level CRFs
             include_tag_features = tag_name != ENTITY_ATTRIBUTE_TYPE
-            X_train = [
+            X_train = (
                 self._crf_tokens_to_features(sentence, include_tag_features)
                 for sentence in df_train
-            ]
-            y_train = [
+            )
+            y_train = (
                 self._crf_tokens_to_tags(sentence, tag_name) for sentence in df_train
-            ]
+            )
 
             entity_tagger = sklearn_crfsuite.CRF(
                 algorithm="lbfgs",

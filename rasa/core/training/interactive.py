@@ -1,17 +1,28 @@
-import asyncio
 import logging
 import os
-import tempfile
 import textwrap
 import uuid
 from functools import partial
 from multiprocessing import Process
-from typing import Any, Callable, Deque, Dict, List, Optional, Text, Tuple, Union, Set
-
+from typing import (
+    Any,
+    Callable,
+    Deque,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+    Set,
+)
 
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
+from sanic.request import Request
+from sanic.response import HTTPResponse
 from terminaltables import AsciiTable, SingleTable
+import terminaltables.width_and_alignment
 import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
@@ -73,8 +84,6 @@ from rasa.shared.nlu.training_data.message import Message
 import rasa.utils.io as io_utils
 
 logger = logging.getLogger(__name__)
-
-MAX_VISUAL_HISTORY = 3
 
 PATHS = {
     "stories": "data/stories.yml",
@@ -292,17 +301,6 @@ def latest_user_message(events: List[Dict[Text, Any]]) -> Optional[Dict[Text, An
     return None
 
 
-def all_events_before_latest_user_msg(
-    events: List[Dict[Text, Any]]
-) -> List[Dict[Text, Any]]:
-    """Return all events that happened before the most recent user message."""
-
-    for i, e in enumerate(reversed(events)):
-        if e.get("event") == UserUttered.type_name:
-            return events[: -(i + 1)]
-    return events
-
-
 async def _ask_questions(
     questions: Union[Form, Question],
     conversation_id: Text,
@@ -394,7 +392,7 @@ async def _request_fork_point_from_list(
 
 
 async def _request_fork_from_user(
-    conversation_id, endpoint
+    conversation_id: Text, endpoint: EndpointConfig
 ) -> Optional[List[Dict[Text, Any]]]:
     """Take in a conversation and ask at which point to fork the conversation.
 
@@ -421,7 +419,10 @@ async def _request_fork_from_user(
 
 
 async def _request_intent_from_user(
-    latest_message, intents, conversation_id, endpoint
+    latest_message: Dict[Text, Any],
+    intents: List[Text],
+    conversation_id: Text,
+    endpoint: EndpointConfig,
 ) -> Dict[Text, Any]:
     """Take in latest message and ask which intent it should have been.
 
@@ -486,7 +487,10 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
     prediction probabilities."""
 
     def wrap(txt: Text, max_width: int) -> Text:
-        return "\n".join(textwrap.wrap(txt, max_width, replace_whitespace=False))
+        true_wrapping_width = calc_true_wrapping_width(txt, max_width)
+        return "\n".join(
+            textwrap.wrap(txt, true_wrapping_width, replace_whitespace=False)
+        )
 
     def colored(txt: Text, color: Text) -> Text:
         return "{" + color + "}" + txt + "{/" + color + "}"
@@ -596,7 +600,7 @@ def _retry_on_error(
                 raise e
 
 
-async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig):
+async def _write_data_to_file(conversation_id: Text, endpoint: EndpointConfig) -> None:
     """Write stories and nlu data to file."""
 
     story_path, nlu_path, domain_path = _request_export_info()
@@ -791,9 +795,6 @@ def _write_stories_to_file(
     export_story_path: Text, events: List[Dict[Text, Any]], domain: Domain
 ) -> None:
     """Write the conversation of the conversation_id to the file paths."""
-    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-        YAMLStoryReader,
-    )
     from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
         YAMLStoryWriter,
     )
@@ -820,17 +821,19 @@ def _write_stories_to_file(
     with open(
         export_story_path, append_write, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
     ) as f:
-        i = 1
+        interactive_story_counter = 1
         for conversation in sub_conversations:
             parsed_events = rasa.shared.core.events.deserialise_events(conversation)
             tracker = DialogueStateTracker.from_events(
-                f"interactive_story_{i}", evts=parsed_events, slots=domain.slots
+                f"interactive_story_{interactive_story_counter}",
+                evts=parsed_events,
+                slots=domain.slots,
             )
 
             if any(
                 isinstance(event, UserUttered) for event in tracker.applied_events()
             ):
-                i += 1
+                interactive_story_counter += 1
                 f.write(
                     "\n"
                     + tracker.export_stories(
@@ -1062,7 +1065,10 @@ def _form_is_restored(action_name: Text, tracker: Dict[Text, Any]) -> bool:
 
 
 async def _confirm_form_validation(
-    action_name, tracker, endpoint, conversation_id
+    action_name: Text,
+    tracker: Dict[Text, Any],
+    endpoint: EndpointConfig,
+    conversation_id: Text,
 ) -> None:
     """Ask a user whether an input for a form should be validated.
 
@@ -1410,7 +1416,8 @@ async def _plot_trackers(
 
     from networkx.drawing.nx_pydot import write_dot
 
-    write_dot(graph, output_file)
+    with open(output_file, "w", encoding="utf-8") as f:
+        write_dot(graph, f)
 
 
 def _print_help(skip_visualization: bool) -> None:
@@ -1597,17 +1604,17 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     # noinspection PyUnusedLocal
     @app.exception(NotFound)
-    async def ignore_404s(request, exception):
+    async def ignore_404s(request: Request, exception: Exception) -> HTTPResponse:
         return response.text("Not found", status=404)
 
     # noinspection PyUnusedLocal
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
-    def visualisation_html(request):
+    def visualisation_html(request: Request) -> HTTPResponse:
         return response.file(visualization.visualization_html_path())
 
     # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png(request):
+    def visualisation_png(request: Request,) -> HTTPResponse:
         try:
             headers = {"Cache-Control": "no-cache"}
             return response.file(os.path.abspath(image_path), headers=headers)
@@ -1617,55 +1624,6 @@ def start_visualization(image_path: Text, port: int) -> None:
     update_sanic_log_level()
 
     app.run(host="0.0.0.0", port=port, access_log=False)
-
-
-# noinspection PyUnusedLocal
-async def train_agent_on_start(
-    args, endpoints, additional_arguments, app, loop
-) -> None:
-    _interpreter = rasa.core.interpreter.create_interpreter(
-        endpoints.nlu or args.get("nlu")
-    )
-
-    model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
-
-    _agent = await rasa.core.train.train(
-        args.get("domain"),
-        args.get("stories"),
-        model_directory,
-        _interpreter,
-        endpoints,
-        args.get("config")[0],
-        None,
-        additional_arguments,
-    )
-    app.agent = _agent
-
-
-async def wait_til_server_is_running(
-    endpoint, max_retries=30, sleep_between_retries=1
-) -> bool:
-    """Try to reach the server, retry a couple of times and sleep in between."""
-
-    while max_retries:
-        try:
-            r = await retrieve_status(endpoint)
-            logger.info(f"Reached core: {r}")
-            if not r.get("is_ready"):
-                # server did not finish loading the agent yet
-                # in this case, we need to wait till the model trained
-                # so we might be sleeping for a while...
-                await asyncio.sleep(sleep_between_retries)
-                continue
-            else:
-                # server is ready to go
-                return True
-        except ClientError:
-            max_retries -= 1
-            if max_retries:
-                await asyncio.sleep(sleep_between_retries)
-
-    return False
 
 
 def run_interactive_learning(
@@ -1696,8 +1654,8 @@ def run_interactive_learning(
         p = Process(
             target=start_visualization,
             args=(DEFAULT_STORY_GRAPH_FILE, visualisation_port),
+            daemon=True,
         )
-        p.daemon = True
         p.start()
     else:
         p = None
@@ -1719,3 +1677,42 @@ def run_interactive_learning(
     if not skip_visualization and p is not None:
         p.terminate()
         p.join()
+
+
+def calc_true_wrapping_width(text: Text, monospace_wrapping_width: int) -> int:
+    """Calculates a wrapping width that also works for CJK characters.
+
+    Chinese, Japanese and Korean characters are often broader than ascii
+    characters:
+    abcdefgh (8 chars)
+    我要去北京 (5 chars, roughly same visible width)
+
+    We need to account for that otherwise the wrapping doesn't work
+    appropriately for long strings and the table overflows and creates
+    errors.
+
+    params:
+        text: text sequence that should be wrapped into multiple lines
+        monospace_wrapping_width: the maximum width per line in number of
+            standard ascii characters
+    returns:
+        The maximum line width for the given string that takes into account
+        the strings visible width, so that it won't lead to table overflow.
+    """
+    true_wrapping_width = 0
+
+    # testing potential width from longest to shortest
+    for potential_width in range(monospace_wrapping_width, -1, -1):
+        lines = textwrap.wrap(text, potential_width)
+        # test whether all lines' visible width fits the available width
+        if all(
+            [
+                terminaltables.width_and_alignment.visible_width(line)
+                <= monospace_wrapping_width
+                for line in lines
+            ]
+        ):
+            true_wrapping_width = potential_width
+            break
+
+    return true_wrapping_width

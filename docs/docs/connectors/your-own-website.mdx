@@ -45,7 +45,7 @@ After making the `rest` input channel available, you can `POST` messages to
 ```json
 {
   "sender": "test_user",  // sender ID of the user sending the message
-  "message": "Hi there!",
+  "message": "Hi there!"
 }
 ```
 
@@ -85,7 +85,7 @@ After making the `callback` input available, you can `POST` messages to
 ```json
 {
   "sender": "test_user",  // sender ID of the user sending the message
-  "message": "Hi there!",
+  "message": "Hi there!"
 }
 ```
 
@@ -131,3 +131,27 @@ immediately after the `connect` event.
 The example [Webchat](https://github.com/botfront/rasa-webchat)
 implements this session creation mechanism (version >= 0.5.0).
 :::
+
+### JWT Authentication
+
+The SocketIO channel can be optionally configured to perform JWT authentication on connect
+by defining the `jwt_key` and optional `jwt_method` in the `credentials.yml` file. 
+
+```yaml-rasa
+socketio:
+  user_message_evt: user_uttered
+  bot_message_evt: bot_uttered
+  session_persistence: true
+  jwt_key: my_public_key
+  jwt_method: HS256
+```
+
+When initially requesting the connection, the client should pass in an encoded payload
+as a JSON object under the key `token`:
+
+```json
+{
+  "token": "jwt_encoded_payload"
+}
+```
+

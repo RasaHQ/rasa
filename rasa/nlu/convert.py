@@ -36,5 +36,5 @@ def convert_training_data(
     write_to_file(out_file, output)
 
 
-def main(args: argparse.Namespace):
+def main(args: argparse.Namespace) -> None:
     convert_training_data(args.data, args.out, args.format, args.language)
