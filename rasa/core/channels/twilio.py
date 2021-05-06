@@ -4,10 +4,13 @@ from sanic.request import Request
 from sanic.response import HTTPResponse
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
-from typing import Dict, Text, Any, Callable, Awaitable, Optional
+from typing import Dict, Text, Any, Callable, Awaitable, Optional, TYPE_CHECKING
 
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
+
+if TYPE_CHECKING:
+    from twilio.rest.api.v2010.account.message import MessageInstance
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +33,7 @@ class TwilioOutput(Client, OutputChannel):
         self.send_retry = 0
         self.max_retry = 5
 
-    async def _send_message(self, message_data: Dict[Text, Any]):
+    async def _send_message(self, message_data: Dict[Text, Any]) -> "MessageInstance":
         message = None
         try:
             while not message and self.send_retry < self.max_retry:

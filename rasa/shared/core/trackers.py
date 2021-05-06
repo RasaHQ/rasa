@@ -50,7 +50,6 @@ from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     Event,
-    SlotSet,
     Restarted,
     ActionReverted,
     UserUtteranceReverted,
@@ -114,11 +113,11 @@ class AnySlotDict(dict):
     This only uses the generic slot type! This means certain functionality wont work,
     e.g. properly featurizing the slot."""
 
-    def __missing__(self, key) -> Slot:
+    def __missing__(self, key: Text) -> Slot:
         value = self[key] = Slot(key)
         return value
 
-    def __contains__(self, key) -> bool:
+    def __contains__(self, key: Text) -> bool:
         return True
 
 
@@ -765,7 +764,7 @@ class DialogueStateTracker:
 
         to_exclude = action_names_to_exclude or []
 
-        def filter_function(e: Event):
+        def filter_function(e: Event) -> bool:
             has_instance = isinstance(e, event_type)
             excluded = isinstance(e, ActionExecuted) and e.action_name in to_exclude
             return has_instance and not excluded
@@ -834,13 +833,13 @@ class DialogueStateTracker:
             raise ValueError("events, if given, must be a list of events")
         return deque(evts, self._max_event_history)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if isinstance(self, type(other)):
             return other.events == self.events and self.sender_id == other.sender_id
         else:
             return False
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     def trigger_followup_action(self, action: Text) -> None:
@@ -852,23 +851,6 @@ class DialogueStateTracker:
         """Clears follow up action when it was executed."""
 
         self.followup_action = None
-
-    def _merge_slots(
-        self, entities: Optional[List[Dict[Text, Any]]] = None
-    ) -> List[SlotSet]:
-        """Take a list of entities and create tracker slot set events.
-
-        If an entity type matches a slots name, the entities value is set
-        as the slots value by creating a ``SlotSet`` event.
-        """
-
-        entities = entities if entities else self.latest_message.entities
-        new_slots = [
-            SlotSet(e["entity"], e["value"])
-            for e in entities
-            if e["entity"] in self.slots.keys()
-        ]
-        return new_slots
 
     @property
     def active_loop_name(self) -> Optional[Text]:

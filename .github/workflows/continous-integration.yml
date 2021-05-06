@@ -63,18 +63,21 @@ jobs:
     needs: [ changes ]
 
     steps:
-      - name: Checkout git repository 🕝
-        uses: actions/checkout@v2
-
       - name: Wait for doc tests
         uses: fountainhead/action-wait-for-check@4699210ccc66e2a13260803fadbb77085421b891
         id: wait-for-doc-tests
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: Test Documentation
-          ref: ${{ github.head_ref || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
           intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
+
+      - name: Fail the step if the doc tests run could not be found
+        if: ${{ steps.wait-for-doc-tests.outputs.conclusion == 'timed_out' }}
+        run: |
+          echo "Could not find the doc tests run."
+          exit 1
 
 
   quality:
@@ -153,6 +156,30 @@ jobs:
       # trying to run the `rasa` command once before the docs build.
       run: poetry run rasa --help
 
+
+  changelog:
+    name: Check for changelog
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v2
+
+      - name: Assert release includes all changelog entries
+        # check changelog folder only when we create pull request preparing release
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release')
+        working-directory: changelog
+        run: |
+          # List all unexpected files in changelog/
+          UNEXPECTED_FILES=$(ls -A --ignore={"README.md",".gitignore","_template.md.jinja2"})
+
+          # Exit with error if found any unexpected files
+          [[ "$UNEXPECTED_FILES" ]] && \
+          echo "Found the following unexpected files in changelogs/" && \
+          echo "$UNEXPECTED_FILES" && \
+          exit 1 || \
+          echo "Release includes all changelog entries."
+
   test:
     name: Run Tests
     runs-on: ${{ matrix.os }}
@@ -168,6 +195,7 @@ jobs:
         - test-nlu-predictors
         - test-full-model-training
         - test-other-unit-tests
+        - test-performance
         os: [ ubuntu-latest, windows-latest ]
         python-version: [ 3.6, 3.7, 3.8 ]
 
@@ -265,6 +293,7 @@ jobs:
 
     - name: Send Coverage Report 📊
       if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
+      continue-on-error: true
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github

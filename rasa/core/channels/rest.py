@@ -3,7 +3,7 @@ import inspect
 import json
 import logging
 from asyncio import Queue, CancelledError
-from sanic import Sanic, Blueprint, response
+from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from typing import Text, Dict, Any, Optional, Callable, Awaitable, NoReturn
@@ -157,5 +157,5 @@ class QueueOutputChannel(CollectingOutputChannel):
     def latest_output(self) -> NoReturn:
         raise NotImplementedError("A queue doesn't allow to peek at messages.")
 
-    async def _persist_message(self, message) -> None:
+    async def _persist_message(self, message: Dict[Text, Any]) -> None:
         await self.messages.put(message)
