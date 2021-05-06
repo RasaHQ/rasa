@@ -169,10 +169,12 @@ def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
     try:
         c.validate(raise_exception=True)
     except SchemaError as e:
-        if e not in c.errors:
-            validation_errors = c.errors + [e]
+        for error in c.errors:
+            if e.msg in error.msg:
+                validation_errors = c.errors
+                break
         else:
-            validation_errors = c.errors
+            validation_errors = c.errors + [e]
 
         raise YamlValidationException(
             "Please make sure the file is correct and all "
