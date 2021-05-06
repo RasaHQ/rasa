@@ -179,7 +179,7 @@ def decode_jwt(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Dict:
     return jwt.decode(authorization_header_value, jwt_key, algorithms=jwt_algorithm)
 
 
-def _decode_bearer_token(
+def decode_bearer_token(
     bearer_token: Text, jwt_key: Text, jwt_algorithm: Text
 ) -> Optional[Dict]:
     """Decodes a Bearer Token using the specific JWT key and algorithm.

@@ -394,7 +394,7 @@ async def test_socketio_channel_jwt_authentication():
 
     assert input_channel.jwt_key == public_key
     assert input_channel.jwt_algorithm == jwt_algorithm
-    assert rasa.core.channels.channel._decode_bearer_token(
+    assert rasa.core.channels.channel.decode_bearer_token(
         auth_token, input_channel.jwt_key, input_channel.jwt_algorithm
     )
 
@@ -428,7 +428,7 @@ async def test_socketio_channel_jwt_authentication_invalid_key(
     assert input_channel.jwt_algorithm == jwt_algorithm
 
     with caplog.at_level(logging.ERROR):
-        rasa.core.channels.channel._decode_bearer_token(
+        rasa.core.channels.channel.decode_bearer_token(
             invalid_auth_token, input_channel.jwt_key, input_channel.jwt_algorithm
         )
 
