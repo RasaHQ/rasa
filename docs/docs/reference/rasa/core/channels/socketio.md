@@ -64,3 +64,19 @@ class SocketIOInput(InputChannel)
 
 A socket.io input channel.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(user_message_evt: Text = "user_uttered", bot_message_evt: Text = "bot_uttered", namespace: Optional[Text] = None, session_persistence: bool = False, socketio_path: Optional[Text] = "/socket.io", jwt_key: Optional[Text] = None, jwt_method: Optional[Text] = "HS256")
+```
+
+Creates a ``SocketIOInput`` object.
+
+#### get\_output\_channel
+
+```python
+ | get_output_channel() -> Optional["OutputChannel"]
+```
+
+Creates socket.io output channel object.
+

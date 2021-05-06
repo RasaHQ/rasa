@@ -45,6 +45,8 @@ Registers input channel blueprints with Sanic.
 class InputChannel()
 ```
 
+Input channel base class.
+
 #### name
 
 ```python
@@ -103,6 +105,45 @@ metadata from the request. The return value is passed on to the
 **Returns**:
 
   Metadata which was extracted from the request.
+
+#### decode\_jwt
+
+```python
+decode_jwt(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Dict
+```
+
+Decodes a Bearer Token using the specific JWT key and algorithm.
+
+**Arguments**:
+
+- `bearer_token` - Encoded Bearer token
+- `jwt_key` - Public JWT key for decoding the Bearer token
+- `jwt_algorithm` - JWT algorithm used for decoding the Bearer token
+  
+
+**Returns**:
+
+  `Dict` containing the decoded payload if successful or an exception
+  if unsuccessful
+
+#### decode\_bearer\_token
+
+```python
+decode_bearer_token(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Optional[Dict]
+```
+
+Decodes a Bearer Token using the specific JWT key and algorithm.
+
+**Arguments**:
+
+- `bearer_token` - Encoded Bearer token
+- `jwt_key` - Public JWT key for decoding the Bearer token
+- `jwt_algorithm` - JWT algorithm used for decoding the Bearer token
+  
+
+**Returns**:
+
+  `Dict` containing the decoded payload if successful or `None` if unsuccessful
 
 ## OutputChannel Objects
 
