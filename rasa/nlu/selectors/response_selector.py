@@ -500,13 +500,15 @@ class ResponseSelector(DIETClassifier):
 
         Return the metadata necessary to load the model again.
         """
-        return super().persist()
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            self._persistor.file_for("responses.json"), self.responses
+        )
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            self._persistor.file_for("all_retrieval_intents.json"),
+            self.all_retrieval_intents,
+        )
 
-        # return {
-        #     "file": file_name,
-        #     "responses": self.responses,
-        #     "all_retrieval_intents": self.all_retrieval_intents,
-        # }
+        return super().persist()
 
     @classmethod
     def _load_model_class(
@@ -557,9 +559,13 @@ class ResponseSelector(DIETClassifier):
     ) -> "ResponseSelector":
         """Loads the trained model from the provided directory."""
         model = super().load(persistor, resource_name, cached_component, **kwargs)
-        component_config = kwargs
-        model.responses = component_config.get("responses", {})
-        model.all_retrieval_intents = component_config.get("all_retrieval_intents", [])
+
+        model.responses = rasa.shared.utils.io.read_json_file(
+            persistor.get_resource(resource_name, "responses.json")
+        )
+        model.all_retrieval_intents = rasa.shared.utils.io.read_json_file(
+            persistor.get_resource(resource_name, "all_retrieval_intents.json")
+        )
 
         return model
 
