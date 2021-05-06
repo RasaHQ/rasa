@@ -247,7 +247,8 @@ class Validator:
     def verify_domain_validity(self) -> bool:
         """Checks whether the domain returned by the importer is empty.
 
-        An empty domain or one that uses deprecated Mapping Policy is invalid."""
+        An empty domain or one that uses deprecated Mapping Policy is invalid.
+        """
         if self.domain.is_empty():
             return False
 
