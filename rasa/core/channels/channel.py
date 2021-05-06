@@ -163,7 +163,7 @@ class InputChannel:
         pass
 
 
-def _decode_jwt(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Dict:
+def decode_jwt(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Dict:
     """Decodes a Bearer Token using the specific JWT key and algorithm.
 
     Args:
@@ -194,7 +194,7 @@ def _decode_bearer_token(
     """
     # noinspection PyBroadException
     try:
-        return _decode_jwt(bearer_token, jwt_key, jwt_algorithm)
+        return decode_jwt(bearer_token, jwt_key, jwt_algorithm)
     except jwt.exceptions.InvalidSignatureError:
         logger.error("JWT public key invalid.")
     except Exception:

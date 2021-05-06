@@ -77,13 +77,13 @@ class RasaChatInput(RestInput):
             await self._fetch_public_key()
 
         try:
-            return rasa.core.channels.channel._decode_jwt(
+            return rasa.core.channels.channel.decode_jwt(
                 bearer_token, self.jwt_key, self.jwt_algorithm
             )
         except jwt.InvalidSignatureError:
             logger.error("JWT public key invalid, fetching new one.")
             await self._fetch_public_key()
-            return rasa.core.channels.channel._decode_jwt(
+            return rasa.core.channels.channel.decode_jwt(
                 bearer_token, self.jwt_key, self.jwt_algorithm
             )
 
