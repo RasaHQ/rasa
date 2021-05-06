@@ -147,6 +147,7 @@ class StoryToTrainingDataConverter(GraphComponent):
 
 
 class MessageToE2EFeatureConverter(GraphComponent):
+    """Collects featurised messages for use by an e2e policy."""
     def convert(
         self, messages: Union[TrainingData, List[Message]]
     ) -> Dict[Text, Message]:

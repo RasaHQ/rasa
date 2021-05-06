@@ -6,8 +6,10 @@ from typing import Any, Text, Dict, List, Optional
 from rasa.architecture_prototype.graph_utils import minimal_graph_schema
 
 from rasa.architecture_prototype.interfaces import (
+    DaskGraph,
     GraphNodeComponent,
-    GraphSchema, TrainingCacheInterface,
+    GraphSchema,
+    TrainingCacheInterface,
 )
 from rasa.shared.constants import DEFAULT_DATA_PATH
 import rasa.shared.utils.common
@@ -17,11 +19,15 @@ import rasa.shared.utils.io
 
 
 class FingerprintComponent(GraphNodeComponent):
-    """Represents a fingerprinted node in a graph before re-running a cached graph.
+    """A Fingerprinted node is used to determine what parts of the graph can be cached.
 
-    This
+    This replaces a `RasaComponent` when doing a fingerprint run of a dask graph.
+    This is when we use the fingerprints stored in the `TrainingCache` to determine
+    which parts of a graph need to be re-calculated on a subsequent run.
     """
+
     def __call__(self, *args: Any) -> Dict[Text, Any]:
+        """We compare the fingerprints of the node inputs with the cache."""
         fingerprint_statuses = dict(ChainMap(*args))
 
         inputs_for_this_node = []
@@ -29,12 +35,17 @@ class FingerprintComponent(GraphNodeComponent):
         for input, input_node in self.inputs.items():
             inputs_for_this_node.append(fingerprint_statuses[input_node])
 
+        # Fingerprint key is a combination of node name, config and inputs.
+        # This means that changing the config, or any upstream change, will result
+        # in the node being re-run.
         current_fingerprint_key = self.cache.calculate_fingerprint_key(
             self.node_name, self.config, inputs_for_this_node
         )
 
         fingerprint = self.cache.get_fingerprint(current_fingerprint_key)
 
+        # Fingerprint has matched. This means this component is potentially cachable
+        # or prunable
         if fingerprint:
             fingerprint_status = FingerprintStatus(
                 self.node_name,
@@ -43,6 +54,7 @@ class FingerprintComponent(GraphNodeComponent):
                 fingerprint_key=current_fingerprint_key,
             )
 
+        # No hit means that this node will need to be re-run.
         else:
             fingerprint_status = FingerprintStatus(
                 self.node_name,
@@ -51,6 +63,8 @@ class FingerprintComponent(GraphNodeComponent):
                 fingerprint_key=current_fingerprint_key,
             )
 
+        # Add to the fingerprint status results. The final dictionary is used to
+        # prune the graph.
         fingerprint_statuses[self.node_name] = fingerprint_status
 
         return fingerprint_statuses
@@ -75,6 +89,8 @@ class FingerprintComponent(GraphNodeComponent):
 
 
 class FingerprintStatus:
+    """Stores the result of the fingerprinting run for a specific node."""
+
     def __init__(
         self,
         nodename: Text,
@@ -98,6 +114,8 @@ class FingerprintStatus:
 
 
 class TrainingCache(TrainingCacheInterface):
+    """Stores the fingerprints and output values for a graph run."""
+
     def __init__(self) -> None:
         self._fingerprints = {}
         self._outputs = {}
@@ -156,6 +174,8 @@ def dask_graph_to_fingerprint_graph(dask_graph: DaskGraph) -> DaskGraph:
 
 
 class CachedComponent:
+    """If a component can be cached it is replaced with this."""
+
     def __init__(self, *args, cached_value: Any, **kwargs):
         self._cached_value = cached_value
 
@@ -169,6 +189,10 @@ def walk_and_prune(
     fingerprint_statuses: Dict[Text, FingerprintStatus],
     cache: TrainingCacheInterface,
 ):
+    """Any component that does not have to re-run can either be:
+        Pruned: if it no longer has dependencies;
+        Cached: if its output is needed by other nodes.
+    """
     fingerprint = fingerprint_statuses[node_name]
     if not isinstance(fingerprint, FingerprintStatus):
         return
@@ -192,6 +216,7 @@ def prune_graph_schema(
     fingerprint_statuses: Dict[Text, FingerprintStatus],
     cache: TrainingCacheInterface,
 ) -> GraphSchema:
+    """Keep, cache, or prune each node given a results of a fingerprint run."""
     graph_to_prune = copy.deepcopy(graph_schema)
     targets = graph_to_prune.pop("targets")
     for target in targets:

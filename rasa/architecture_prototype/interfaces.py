@@ -18,6 +18,8 @@ from rasa.shared.core.trackers import DialogueStateTracker
 
 
 class TrainingCacheInterface(ABC):
+    """Stores the fingerprints and output values for a graph run."""
+
     @abc.abstractmethod
     def store_fingerprint(self, fingerprint_key: Text, output: Any) -> None:
         raise NotImplementedError("Please implement this.")
@@ -47,6 +49,8 @@ class TrainingCacheInterface(ABC):
 
 
 class GraphNodeComponent(ABC):
+    """Node in a dask graph."""
+
     def __init__(
         self,
         config: Dict[Text, Any],
@@ -70,6 +74,8 @@ DaskGraph = Dict[Text, DaskGraphNode]
 
 
 class ModelInterface(ABC):
+    """A model uses a dask graph to predict actions based on user messages."""
+
     @abc.abstractmethod
     def handle_message(
         self, tracker: DialogueStateTracker, message: Optional[UserMessage]
@@ -96,6 +102,8 @@ class ModelInterface(ABC):
 
 
 class ModelPersistorInterface(ABC):
+    """Persists and loads a Model."""
+
     @abc.abstractmethod
     def create_component_persistor(
         self, node_name: Text
@@ -112,6 +120,8 @@ class ModelPersistorInterface(ABC):
 
 
 class ComponentPersistorInterface(ABC):
+    """Provides functionality for a RasaComponent to save and load artifacts."""
+
     @abc.abstractmethod
     def file_for(self, filename: Text) -> Text:
         raise NotImplementedError("Please implement this.")
