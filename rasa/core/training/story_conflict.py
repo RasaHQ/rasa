@@ -282,7 +282,8 @@ def _find_unpredictable_actions(
         tokenizer: A tokenizer to tokenize the user messages.
 
     Returns:
-        A dictionary mapping state-hashes to a list of action-hashes that cannot be predicted.
+        A dictionary mapping state-hashes to a list of action-hashes
+        that cannot be predicted.
     """
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
