@@ -1,0 +1,173 @@
+---
+id: chitchat-faqs
+sidebar_label: Chitchat and FAQs
+title: Chitchat and FAQs
+abstract: FAQ assistants are the simplest assistants to build and typically the first kind of assistant anyone builds. This page is a guide to the concepts and training data you need to handle non-contextual questions like FAQs and chitchat.
+---
+
+
+[FAQs](./glossary.mdx#faqs) and [chitchat](./glossary.mdx#chitchat) are two cases where the conversational assistant responds with a fixed set of messages, and the assistant should always answer the same way,
+no matter what has happened previously in the conversation.
+For example, in the following conversation, every question can be asked at any point in the conversation,
+with the answer being independent of anything the user has said previously.
+
+<Chat caption="Chitchat">
+<ChatUserText>What's your name</ChatUserText>
+<ChatBotText>My name is Sara!</ChatBotText>
+<ChatUserText>Which languages can I build assistants in?</ChatUserText>
+<ChatBotText>You can use Rasa to build assistants in any language you want!</ChatBotText>
+<ChatUserText>What’s Rasa X?</ChatUserText>
+<ChatBotText>Rasa X is a tool to learn from real conversations and improve your assistant.</ChatBotText>
+</Chat>
+
+
+## Step-by-step Guide on Using Response Selector for FAQs and Chitchat
+
+To handle FAQs and chitchat you'll need a rule-based dialogue management policy
+(the [RulePolicy](./policies.mdx#rule-policy)) and an easy way
+to return the appropriate response for a question (the [ResponseSelector](./components.mdx#responseselector)).
+
+### 1. Updating the configuration
+
+For FAQs and chitchat, you always want the assistant to respond the same way every time
+the same type of question is asked. [Rules](rules.mdx) allow you to do exactly that.
+To use rules, the you need to add the [RulePolicy](./policies.mdx#rule-policy) to your policies in your configuration file:
+
+```yaml-rasa title="config.yml"
+policies:
+# other policies
+- name: RulePolicy
+```
+
+Next, include the ResponseSelector in your NLU pipeline in your configuration file.
+The ResponseSelector requires a featurizer and intent classifier to work, so
+it should come after these components in your pipeline, for example:
+
+```yaml-rasa title="config.yml"
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+    epochs: 100
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+    epochs: 100
+```
+
+By default, the ResponseSelector will build a single retrieval model for all retrieval intents.
+To retrieve responses for FAQs and chitchat separately, use multiple ResponseSelector components
+and specify the `retrieval_intent` key:
+
+```yaml-rasa title="config.yml"
+pipeline:
+# Other components
+- name: ResponseSelector
+  epochs: 100
+  retrieval_intent: faq
+- name: ResponseSelector
+  epochs: 100
+  retrieval_intent: chitchat
+```
+
+
+
+### 2. Defining Retrieval Intents and the ResponseSelector
+
+Consider an example where you have 20 different FAQs. Although each question is represented as an individual intent, all FAQ intents are handled the same way in the dialogue. For each FAQ intent, the assistant **retrieves** the proper response depending on which question has been asked.
+
+Instead of writing 20 rules, you can use a single action, e.g. `utter_faq` to handle all FAQs with a single rule by grouping them together under a single [retrieval intent](glossary.mdx#retrieval-intent)
+called e.g. `faq`.
+
+The single action uses the output of the
+[ResponseSelector](./components.mdx#responseselector) to return
+the correct response for the specific FAQ that the user asked.
+
+
+### 3. Creating rules
+
+You need to write only one rule for each retrieval intent. All intents
+grouped under that retrieval intent will then be handled the same way.
+The action name starts with `utter_` and ends with the retrieval intent's name.
+Write rules for responding to FAQs and chitchat:
+
+```yaml-rasa title="rules.yml"
+rules:
+  - rule: respond to FAQs
+    steps:
+    - intent: faq
+    - action: utter_faq
+  - rule: respond to chitchat
+    steps:
+    - intent: chitchat
+    - action: utter_chitchat
+```
+
+The actions `utter_faq` and `utter_chitchat` will use the ResponseSelector's prediction to return the actual response message.
+
+### 4. Updating the NLU Training Data
+
+NLU training examples for the ResponseSelector look the same as
+regular training examples, except that their names must refer to the retrieval
+intent they are grouped under:
+
+```yaml-rasa title="nlu.yml"
+nlu:
+  - intent: chitchat/ask_name
+    examples: |
+      - What is your name?
+      - May I know your name?
+      - What do people call you?
+      - Do you have a name for yourself?
+  - intent: chitchat/ask_weather
+    examples: |
+      - What's the weather like today?
+      - Does it look sunny outside today?
+      - Oh, do you mind checking the weather for me please?
+      - I like sunny days in Berlin.
+```
+
+Be sure to update your domain file to include the added `chitchat` intent:
+
+```yaml-rasa title="domain.yml"
+intents:
+# other intents
+- chitchat
+```
+
+
+### 5. Defining the responses
+
+Responses for the ResponseSelector follow the same naming convention as
+retrieval intents. Besides this, they can have all the characteristics of
+normal bot [response](domain.mdx#responses). For the chitchat intents
+listed above, our responses could look like:
+
+```yaml-rasa title="domain.yml"
+responses:
+  utter_chitchat/ask_name:
+  - image: "https://i.imgur.com/zTvA58i.jpeg"
+    text: Hello, my name is Retrieval Bot.
+  - text: I am called Retrieval Bot!
+  utter_chitchat/ask_weather:
+  - text: Oh, it does look sunny right now in Berlin.
+    image: "https://i.imgur.com/vwv7aHN.png"
+  - text: I am not sure of the whole week but I can see the sun is out today.
+```
+
+## Summary
+
+Once you've done the following, you can train your bot and try it out!
+
+- [ ] Add RulePolicy to your policies and ResponseSelector to your pipeline in `config.yml`
+- [ ] Add at least one rule for responding to FAQs/chitchat
+- [ ] Add examples for your FAQs/chitchat intents
+- [ ] Add responses for your FAQs/chitchat intents
+- [ ] Update the intents in your domain
+
+Now, your assistant should be able to respond correctly and consistently to FAQs or chitchat, even if these interjections happen while your assistant is helping the user with another task.

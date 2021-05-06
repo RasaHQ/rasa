@@ -1,0 +1,23 @@
+language: "en"
+
+pipeline:
+  - name: ConveRTTokenizer
+  - name: ConveRTFeaturizer
+    alias: "convert"
+  - name: RegexFeaturizer
+    alias: "regex"
+  - name: LexicalSyntacticFeaturizer
+    alias: "lexical-syntactic"
+  - name: CountVectorsFeaturizer
+    alias: "cvf-word"
+  - name: CountVectorsFeaturizer
+    alias: "cvf-char"
+    analyzer: "char_wb"
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+    epochs: 100
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+    featurizers: ["convert", "cvf-word"]
+    epochs: 100

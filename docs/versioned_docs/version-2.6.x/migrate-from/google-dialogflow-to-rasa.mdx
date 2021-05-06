@@ -1,0 +1,94 @@
+---
+sidebar_label: Rasa as open source alternative to Google Dialogflow - Migration Guide
+title: Rasa as open source alternative to Google Dialogflow - Migration Guide
+description: Open source alternative to Google Dialogflow for conversational bots and NLP
+---
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+Let's get started with migrating your application from Dialogflow to Rasa (you can find a more detailed
+tutorial <a className="reference external" href="http://blog.rasa.com/how-to-migrate-your-existing-google-dialogflow-assistant-to-rasa/" target="_blank">here</a>):
+
+## Step 1: Export your data from Dialogflow
+
+Navigate to your agent's settings by clicking the gear icon.
+
+import dialogflowExport1 from './dialogflow_export.png';
+
+<Image img={dialogflowExport1} width="240" caption="Selecting settings" alt="In Dialogflow, the gear icon that indicates settings sits next to the dropdown menu for choosing between projects." />
+
+
+Click on the 'Export and Import' tab and click on the 'Export as ZIP' button.
+
+import dialogflowExport2 from './dialogflow_export_2.png';
+
+<Image img={dialogflowExport2} caption="Selecting Export and Import" alt="The Settings page will let you select from multiple headers, of which you want to select Export and Import." />
+
+This will download a file with a `.zip` extension. Unzip this file to create a folder.
+
+## Step 2: Create a Rasa Project
+
+To create a Rasa project, run:
+
+```bash
+rasa init
+```
+
+This will create a directory called `data`.
+Remove the files in this directory, and
+move your unzipped folder into this directory.
+
+```bash
+rm -r data/*
+mv testagent data/
+```
+
+## Step 3: Train your NLU model
+
+To train a model using your Dialogflow data, run:
+
+```bash
+rasa train nlu
+```
+
+## Step 4: Test your NLU model
+
+Let's see how your NLU model will interpret some test messages.
+To start a testing session, run:
+
+```bash
+rasa shell nlu
+```
+
+This will prompt your for input.
+Type a test message and press 'Enter'.
+The output of your NLU model will be printed to the screen.
+You can keep entering messages and test as many as you like.
+Press 'control + C' to quit.
+
+## Step 5: Start a Server with your NLU Model
+
+To start a server with your NLU model, run:
+
+```bash
+rasa run --enable-api
+```
+
+This will start a server listening on port 5005.
+
+To send a request to the server, run:
+
+```bash
+curl 'localhost:5005/model/parse?emulation_mode=dialogflow' -d '{"text": "hello"}'
+```
+
+The `emulation_mode` parameter tells Rasa that you want your JSON response to have the same format as you would
+get from the Dialogflow `sessions.detectIntent` endpoint (the format is
+described [here](https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse)).
+You can also leave it out to get the result in the usual Rasa format.
+
+## Terminology:
+
+The words `intent`, `entity`, and `utterance` have the same meaning in Rasa as they do in Dialogflow.
+In Dialogflow, there is a concept called `Fulfillment`. In Rasa we call this a [Custom Action](../actions.mdx#custom-actions).
+
+Join the [Rasa Community Forum](https://forum.rasa.com/) and let us know how your migration went!
