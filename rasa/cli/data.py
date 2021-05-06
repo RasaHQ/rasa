@@ -377,8 +377,11 @@ def _migrate_responses(args: argparse.Namespace) -> None:
 
 
 async def _convert_to_yaml(
-    out_path: Text, data_path: Text, converter: "TrainingDataConverter"
+    out_path: Text, data_path: Union[list, Text], converter: "TrainingDataConverter"
 ) -> None:
+
+    if isinstance(data_path, list):
+        data_path = data_path[0]
 
     output = Path(out_path)
     if not os.path.exists(output):

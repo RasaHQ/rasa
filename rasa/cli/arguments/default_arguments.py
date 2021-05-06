@@ -105,6 +105,7 @@ def add_data_param(
         "--data",
         default=default,
         nargs="+",
+        type=str,
         help=f"Paths to the files or directories containing {data_type} data.",
         required=required,
     )
