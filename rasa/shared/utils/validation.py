@@ -169,11 +169,16 @@ def validate_yaml_schema(yaml_file_content: Text, schema_path: Text) -> None:
     try:
         c.validate(raise_exception=True)
     except SchemaError as e:
+        if e not in c.errors:
+            validation_errors = c.errors + [e]
+        else:
+            validation_errors = c.errors
+
         raise YamlValidationException(
             "Please make sure the file is correct and all "
             "mandatory parameters are specified. Here are the errors "
             "found during validation",
-            c.errors + [e],
+            validation_errors,
             content=source_data,
         )
 
