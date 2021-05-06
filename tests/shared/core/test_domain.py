@@ -1371,3 +1371,11 @@ def test_form_with_no_required_slots_keyword():
         domain.forms["some_form"]["required_slots"]["some_slot"][0]["type"]
         == "from_text"
     )
+
+
+def test_domain_count_conditional_response_variations():
+    domain = Domain.from_file(
+        path="data/test_domains/conditional_response_variations.yml"
+    )
+    count_conditional_responses = domain.count_conditional_response_variations()
+    assert count_conditional_responses == 5
