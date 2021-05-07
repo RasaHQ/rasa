@@ -154,10 +154,21 @@ class MemoizationPolicy(Policy):
 
         return lookup
 
+    def _sort_states(self, states):
+        sorted_states = []
+        for state in states:
+            if state:
+                if "user" in state:
+                    if "entities" in state["user"]:
+                        state["user"]["entities"] = sorted(state["user"]["entities"])
+            sorted_states.append(state)
+        return sorted_states
+
     def _create_feature_key(self, states: List[State]) -> Text:
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
+        states = self._sort_states(states)
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(
