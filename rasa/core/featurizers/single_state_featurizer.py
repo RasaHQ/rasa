@@ -4,12 +4,12 @@ import scipy.sparse
 from typing import List, Optional, Dict, Text, Set, Any
 from collections import defaultdict
 
+from rasa.shared.nlu.interpreter import RegexInterpreter
 import rasa.shared.utils.io
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.utils import bilou_utils
 from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
 from rasa.shared.core.domain import SubState, State, Domain
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
 from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.trackers import is_prev_action_listen_in_state
@@ -43,11 +43,6 @@ class SingleStateFeaturizer:
 
     def __init__(self) -> None:
         """Initialize the single state featurizer."""
-        # rasa core can be trained separately, therefore interpreter during training
-        # will be `RegexInterpreter`. If the model is combined with a rasa nlu model
-        # during prediction the interpreter might be different.
-        # If that is the case, we need to make sure to "reset" the interpreter.
-        self._use_regex_interpreter = False
         self._default_feature_states = {}
         self.action_texts = []
         self.entity_tag_specs = []
@@ -96,20 +91,14 @@ class SingleStateFeaturizer:
     def prepare_for_training(
         self,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
     ) -> None:
         """Gets necessary information for featurization from domain.
 
         Args:
             domain: An instance of :class:`rasa.shared.core.domain.Domain`.
-            interpreter: The interpreter used to encode the state
             bilou_tagging: indicates whether BILOU tagging should be used or not
         """
-        if isinstance(interpreter, RegexInterpreter):
-            # this method is called during training,
-            # RegexInterpreter means that core was trained separately
-            self._use_regex_interpreter = True
 
         # store feature states for each attribute in order to create binary features
         def convert_to_dict(feature_states: List[Text]) -> Dict[Text, int]:
@@ -228,7 +217,6 @@ class SingleStateFeaturizer:
     def _extract_state_features(
         self,
         sub_state: SubState,
-        interpreter: NaturalLanguageInterpreter,
         sparse: bool = False,
         e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Dict[Text, List["Features"]]:
@@ -261,14 +249,13 @@ class SingleStateFeaturizer:
     def encode_state(
         self,
         state: State,
-        interpreter: NaturalLanguageInterpreter,
         e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Dict[Text, List["Features"]]:
-        """Encode the given state with the help of the given interpreter.
+        """Encode the given state.
 
         Args:
             state: The state to encode
-            interpreter: The interpreter used to encode the state
+            e2e_features: A mapping of message text to parsed message with e2e features
 
         Returns:
             A dictionary of state_type to list of features.
@@ -278,7 +265,7 @@ class SingleStateFeaturizer:
             if state_type == PREVIOUS_ACTION:
                 state_features.update(
                     self._extract_state_features(
-                        sub_state, interpreter, sparse=True, e2e_features=e2e_features
+                        sub_state, sparse=True, e2e_features=e2e_features
                     )
                 )
             # featurize user only if it is "real" user input,
@@ -286,7 +273,7 @@ class SingleStateFeaturizer:
             if state_type == USER and is_prev_action_listen_in_state(state):
                 state_features.update(
                     self._extract_state_features(
-                        sub_state, interpreter, sparse=True, e2e_features=e2e_features
+                        sub_state, sparse=True, e2e_features=e2e_features
                     )
                 )
                 if sub_state.get(ENTITIES):
@@ -304,16 +291,14 @@ class SingleStateFeaturizer:
     def encode_entities(
         self,
         entity_data: Dict[Text, Any],
-        interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
     ) -> Dict[Text, List["Features"]]:
-        """Encode the given entity data with the help of the given interpreter.
+        """Encode the given entity data.
 
         Produce numeric entity tags for tokens.
 
         Args:
             entity_data: The dict containing the text and entity labels and locations
-            interpreter: The interpreter used to encode the state
             bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
@@ -331,6 +316,8 @@ class SingleStateFeaturizer:
             # we cannot build a classifier with fewer than 2 classes
             return {}
 
+        # TODO: determine why an interpreter is needed.
+        interpreter = RegexInterpreter()
         message = interpreter.featurize_message(Message(entity_data))
 
         if not message:
@@ -350,7 +337,6 @@ class SingleStateFeaturizer:
     def _encode_action(
         self,
         action: Text,
-        interpreter: NaturalLanguageInterpreter,
         e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Dict[Text, List["Features"]]:
         if action in self.action_texts:
@@ -359,27 +345,26 @@ class SingleStateFeaturizer:
             action_as_sub_state = {ACTION_NAME: action}
 
         return self._extract_state_features(
-            action_as_sub_state, interpreter, e2e_features=e2e_features
+            action_as_sub_state, e2e_features=e2e_features
         )
 
     def encode_all_actions(
         self,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> List[Dict[Text, List["Features"]]]:
-        """Encode all action from the domain using the given interpreter.
+        """Encode all action from the domain.
 
         Args:
             domain: The domain that contains the actions.
-            interpreter: The interpreter used to encode the actions.
+            e2e_features: A mapping of message text to parsed message with e2e features
 
         Returns:
             A list of encoded actions.
         """
 
         return [
-            self._encode_action(action, interpreter, e2e_features)
+            self._encode_action(action, e2e_features)
             for action in domain.action_names_or_texts
         ]
 
@@ -398,7 +383,6 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
     def _extract_state_features(
         self,
         sub_state: SubState,
-        interpreter: NaturalLanguageInterpreter,
         sparse: bool = False,
     ) -> Dict[Text, List["Features"]]:
         # create a special method that doesn't use passed interpreter
