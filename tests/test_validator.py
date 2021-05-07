@@ -259,7 +259,7 @@ async def test_verify_there_is_not_example_repetition_in_intents():
     assert validator.verify_example_repetition_in_intents(False)
 
 
-async def test_response_selector_responses_in_domain_no_errors(tmp_path: Path):
+async def test_response_selector_responses_in_domain_no_errors():
     importer = RasaFileImporter(
         config_file="data/test_config/config_defaults.yml",
         domain_path="data/test_domains/response_selector_responses_in_domain.yml",
