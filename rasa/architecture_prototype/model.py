@@ -117,7 +117,8 @@ class Model(ModelInterface):
 
         user_event = None
         if message:
-            user_event = results["add_parsed_nlu_message"].events[-1]
+            updated_tracker: DialogueStateTracker = results["add_parsed_nlu_message"]
+            user_event = updated_tracker.get_last_event_for(event_type=UserUttered)
 
         return results["select_prediction"], user_event
 
