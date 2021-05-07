@@ -91,3 +91,6 @@ DEFAULT_NLU_SUBDIRECTORY_NAME = "nlu"
 DEFAULT_CONVERSATION_TEST_PATH = "tests"
 
 DIAGNOSTIC_DATA = "diagnostic_data"
+
+RESPONSE_CONDITION = "condition"
+CHANNEL = "channel"
