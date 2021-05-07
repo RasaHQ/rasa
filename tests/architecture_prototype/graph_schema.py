@@ -173,11 +173,26 @@ train_graph_schema = {
         "needs": {"training_data": "load_data"},
         "persistor": False,
     },
+    "train_LexicalSyntacticFeaturizer_2": {
+        "uses": LexicalSyntacticFeaturizer,
+        "fn": "train",
+        "config": {},
+        "needs": {"training_data": "process_WhitespaceTokenizer_0"},
+    },
+    "process_LexicalSyntacticFeaturizer_2": {
+        "uses": LexicalSyntacticFeaturizer,
+        "fn": "process_training_data",
+        "config": {},
+        "needs": {
+            "resource_name": "train_LexicalSyntacticFeaturizer_2",
+            "training_data": "process_WhitespaceTokenizer_0",
+        },
+    },
     "train_CountVectorsFeaturizer_3": {
         "uses": CountVectorsFeaturizer,
         "fn": "train",
         "config": {},
-        "needs": {"training_data": "process_WhitespaceTokenizer_0"},
+        "needs": {"training_data": "process_LexicalSyntacticFeaturizer_2"},
     },
     "process_CountVectorsFeaturizer_3": {
         "uses": CountVectorsFeaturizer,
@@ -185,7 +200,7 @@ train_graph_schema = {
         "config": {},
         "needs": {
             "resource_name": "train_CountVectorsFeaturizer_3",
-            "training_data": "process_WhitespaceTokenizer_0",
+            "training_data": "process_LexicalSyntacticFeaturizer_2",
         },
     },
     "train_CountVectorsFeaturizer_4": {
@@ -293,12 +308,19 @@ predict_graph_schema = {
         "config": {"resource_name": "train_WhitespaceTokenizer_0"},
         "needs": {"messages": "convert_message_to_nlu"},
     },
+    "LexicalSyntacticFeaturizer_2": {
+        "uses": LexicalSyntacticFeaturizer,
+        "constructor_name": "load",
+        "fn": "process",
+        "config": {"resource_name": "train_LexicalSyntacticFeaturizer_2"},
+        "needs": {"messages": "WhitespaceTokenizer_0"},
+    },
     "CountVectorsFeaturizer_3": {
         "uses": CountVectorsFeaturizer,
         "constructor_name": "load",
         "fn": "process",
         "config": {"resource_name": "train_CountVectorsFeaturizer_3"},
-        "needs": {"messages": "WhitespaceTokenizer_0"},
+        "needs": {"messages": "LexicalSyntacticFeaturizer_2"},
     },
     "CountVectorsFeaturizer_4": {
         "uses": CountVectorsFeaturizer,
