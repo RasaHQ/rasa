@@ -673,6 +673,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         Returns:
             The winning policy prediction.
         """
+        from rasa.shared.core.events import SlotSet
+
         # find rejected action before running the policies
         # because some of them might add events
         rejected_action_name = None
@@ -690,6 +692,16 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         ):
             rejected_action_name = last_action_event.action_name
 
+        print("passing to model")
+        print("passing partial tracker", [event for event in tracker.events])
+        print(
+            "slot types",
+            [
+                (event.key, event.value)
+                for event in tracker.events
+                if isinstance(event, SlotSet)
+            ],
+        )
         predictions = {
             f"policy_{i}_{type(p).__name__}": self._get_prediction(
                 p, tracker, domain, interpreter

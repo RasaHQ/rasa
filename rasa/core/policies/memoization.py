@@ -154,21 +154,10 @@ class MemoizationPolicy(Policy):
 
         return lookup
 
-    def _sort_states(self, states):
-        sorted_states = []
-        for state in states:
-            if state:
-                if "user" in state:
-                    if "entities" in state["user"]:
-                        state["user"]["entities"] = sorted(state["user"]["entities"])
-            sorted_states.append(state)
-        return sorted_states
-
     def _create_feature_key(self, states: List[State]) -> Text:
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
-        states = self._sort_states(states)
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(
@@ -197,6 +186,7 @@ class MemoizationPolicy(Policy):
             trackers_as_states,
             trackers_as_actions,
         ) = self.featurizer.training_states_and_actions(training_trackers, domain)
+        # print(trackers_as_states)
         self.lookup = self._create_lookup_from_states(
             trackers_as_states, trackers_as_actions
         )
@@ -257,6 +247,7 @@ class MemoizationPolicy(Policy):
         result = self._default_predictions(domain)
 
         states = self._prediction_states(tracker, domain)
+        # print(states)
         logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
         predicted_action_name = self.recall(states, tracker, domain)
         if predicted_action_name is not None:

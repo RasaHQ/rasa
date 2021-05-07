@@ -9,6 +9,18 @@ intents:
   - mood_unhappy
   - bot_challenge
 
+entities:
+  - card_1
+  - card_2
+
+slots:
+  card_1:
+    type: text
+    influence_conversation: false
+  card_2:
+    type: text
+    influence_conversation: false
+
 responses:
   utter_greet:
   - text: "Hey! How are you?"
