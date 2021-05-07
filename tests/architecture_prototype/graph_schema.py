@@ -188,23 +188,38 @@ train_graph_schema = {
             "training_data": "process_WhitespaceTokenizer_0",
         },
     },
+    "train_CountVectorsFeaturizer_4": {
+        "uses": CountVectorsFeaturizer,
+        "fn": "train",
+        "config": {"analyzer": "char_wb", "min_ngram": 1, "max_ngram": 4},
+        "needs": {"training_data": "process_CountVectorsFeaturizer_3"},
+    },
+    "process_CountVectorsFeaturizer_4": {
+        "uses": CountVectorsFeaturizer,
+        "fn": "process_training_data",
+        "config": {"analyzer": "char_wb", "min_ngram": 1, "max_ngram": 4},
+        "needs": {
+            "resource_name": "train_CountVectorsFeaturizer_4",
+            "training_data": "process_CountVectorsFeaturizer_3",
+        },
+    },
     "train_DIETClassifier_5": {
         "uses": DIETClassifier,
         "fn": "train",
         "config": {"epochs": 100, "constrain_similarities": True},
-        "needs": {"training_data": "process_CountVectorsFeaturizer_3"},
+        "needs": {"training_data": "process_CountVectorsFeaturizer_4"},
     },
     "train_EntitySynonymMapper_6": {
         "uses": EntitySynonymMapper,
         "fn": "train",
         "config": {},
-        "needs": {"training_data": "process_CountVectorsFeaturizer_3"},
+        "needs": {"training_data": "process_CountVectorsFeaturizer_4"},
     },
     "train_ResponseSelector_7": {
         "uses": ResponseSelector,
         "fn": "train",
         "config": {"epochs": 100, "constrain_similarities": True},
-        "needs": {"training_data": "process_CountVectorsFeaturizer_3"},
+        "needs": {"training_data": "process_CountVectorsFeaturizer_4"},
     },
     "targets": [
         "MemoizationPolicy_0",
@@ -285,6 +300,18 @@ predict_graph_schema = {
         "config": {"resource_name": "train_CountVectorsFeaturizer_3"},
         "needs": {"messages": "WhitespaceTokenizer_0"},
     },
+    "CountVectorsFeaturizer_4": {
+        "uses": CountVectorsFeaturizer,
+        "constructor_name": "load",
+        "fn": "process",
+        "config": {
+            "resource_name": "train_CountVectorsFeaturizer_4",
+            "analyzer": "char_wb",
+            "min_ngram": 1,
+            "max_ngram": 4,
+        },
+        "needs": {"messages": "CountVectorsFeaturizer_3"},
+    },
     "DIETClassifier_5": {
         "uses": DIETClassifier,
         "constructor_name": "load",
@@ -294,7 +321,7 @@ predict_graph_schema = {
             "epochs": 1,
             "constrain_similarities": True,
         },
-        "needs": {"messages": "CountVectorsFeaturizer_3"},
+        "needs": {"messages": "CountVectorsFeaturizer_4"},
     },
     "EntitySynonymMapper_6": {
         "uses": EntitySynonymMapper,
