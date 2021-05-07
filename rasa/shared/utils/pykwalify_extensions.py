@@ -4,7 +4,7 @@ loaded as an extension of the pykwalify library:
 
 https://pykwalify.readthedocs.io/en/latest/extensions.html#extensions
 """
-from typing import Any, List, Dict, Text, Optional, Union
+from typing import Any, List, Dict, Text, Union
 
 from pykwalify.errors import SchemaError
 
