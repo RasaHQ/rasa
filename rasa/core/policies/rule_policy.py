@@ -572,6 +572,9 @@ class RulePolicy(MemoizationPolicy):
             if action_name != gold_action_name
         }
 
+        if len(contradicting_rules) == 0:
+            return []
+
         error_message = (
             f"- the prediction of the action '{gold_action_name}' in {tracker_type} "
             f"'{tracker.sender_id}' "
