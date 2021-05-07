@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Dict, List, Text, TYPE_CHECKING
+from typing import Dict, Union, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
