@@ -262,7 +262,7 @@ def _unpredictable_action(event: Event) -> bool:
         event: An event to be checked.
 
     Returns:
-        A boolean indicating if the event can be predicted or not.
+        `True` if the event can be predicted, `False` otherwise.
     """
     return event.__str__() == ACTION_UNLIKELY_INTENT_NAME
 
