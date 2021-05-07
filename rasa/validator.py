@@ -139,17 +139,22 @@ class Validator:
         return everything_is_alright
 
     def _gather_utterance_actions(self) -> Set[Text]:
-        """Return all utterances which are actions."""
+        """Return all utterances which are actions.
 
-        responses = {
+        Returns:
+            A set of response names found in the domain and data files, with the
+            response key stripped in the case of response selector responses.
+        """
+        domain_responses = {
+            response.split(rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER)[0]
+            for response in self.domain.responses.keys()
+            if response in self.domain.action_names_or_texts
+        }
+        data_responses = {
             response.split(rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER)[0]
             for response in self.intents.responses.keys()
         }
-        return responses | {
-            utterance
-            for utterance in self.domain.responses.keys()
-            if utterance in self.domain.action_names_or_texts
-        }
+        return domain_responses.union(data_responses)
 
     def verify_utterances_in_stories(self, ignore_warnings: bool = True) -> bool:
         """Verifies usage of utterances in stories.

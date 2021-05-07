@@ -257,3 +257,16 @@ async def test_verify_there_is_not_example_repetition_in_intents():
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_example_repetition_in_intents(False)
+
+
+async def test_response_selector_responses_in_domain_no_errors(tmp_path: Path):
+    importer = RasaFileImporter(
+        config_file="data/test_config/config_defaults.yml",
+        domain_path="data/test_domains/response_selector_responses_in_domain.yml",
+        training_data_paths=[
+            "data/test_yaml_stories/test_base_retrieval_intent_story.yml"
+        ],
+        training_type=TrainingType.CORE,
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_utterances_in_stories(ignore_warnings=True)
