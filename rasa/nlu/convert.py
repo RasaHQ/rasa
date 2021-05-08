@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import Text
+from typing import Text, Union
 
 from rasa.shared.utils.cli import print_error
 import rasa.shared.nlu.training_data.loading
@@ -8,10 +8,11 @@ from rasa.nlu.utils import write_to_file
 
 
 def convert_training_data(
-    data_file: list, out_file: Text, output_format: Text, language: Text
+    data_file: Union[list, Text], out_file: Text, output_format: Text, language: Text
 ) -> None:
 
-    data_file = data_file[0]
+    if isinstance(data_file, list):
+        data_file = data_file[0]
 
     if not os.path.exists(data_file):
         print_error(
