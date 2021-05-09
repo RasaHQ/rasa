@@ -124,9 +124,9 @@ class RegexEntityExtractor(EntityExtractor):
 
         if os.path.exists(regex_file):
             patterns = rasa.shared.utils.io.read_json_file(regex_file)
-            return RegexEntityExtractor(meta, patterns=patterns)
+            return cls(meta, patterns=patterns)
 
-        return RegexEntityExtractor(meta)
+        return cls(meta)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
