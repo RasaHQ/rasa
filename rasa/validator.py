@@ -267,6 +267,25 @@ class Validator:
         stories_are_valid = self.verify_utterances_in_stories(ignore_warnings)
         return intents_are_valid and stories_are_valid and there_is_no_duplication
 
+    def verify_form_slots(self) -> bool:
+        """Verifies that form slots match the slot mappings in domain."""
+        domain_slot_names = [slot.name for slot in self.domain.slots]
+        everything_is_alright = True
+
+        for f in self.domain.form_names:
+            form_slots = self.domain.slot_mapping_for_form(f)
+            for slot in form_slots.keys():
+                if slot in domain_slot_names:
+                    continue
+                else:
+                    rasa.shared.utils.io.raise_warning(
+                        f"The form slot {slot} is not present in the domain slots."
+                        f"Please add the correct slot or check for typos."
+                    )
+                    everything_is_alright = False
+
+        return everything_is_alright
+
     def verify_domain_validity(self) -> bool:
         """Checks whether the domain returned by the importer is empty.
 

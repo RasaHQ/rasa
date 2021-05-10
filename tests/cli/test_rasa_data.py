@@ -169,7 +169,7 @@ def test_validate_files_action_not_found_exception_stories(tmp_path: Path):
 
 
 def test_validate_files_action_not_found_exception_rules(tmp_path: Path):
-    rules_file_name = tmp_path / "stories.yml"
+    rules_file_name = tmp_path / "rules.yml"
     rules_file_name.write_text(
         """
         version: "2.0"
@@ -190,6 +190,41 @@ def test_validate_files_action_not_found_exception_rules(tmp_path: Path):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
     assert "Cannot access action 'action_test_2'" in str(e.value)
+
+
+def test_validate_files_form_slots_not_matching(tmp_path: Path):
+    domain_file_name = tmp_path / "domain.yml"
+    domain_file_name.write_text(
+        """
+        version: "2.0"
+        forms:
+          name_form:
+             first_name:
+             - type: from_text
+             last_name:
+             - type: from_text
+             
+        slots:
+             first_name:
+                type: text
+             last_nam:
+                type: text
+        """
+    )
+    args = {
+        "domain": domain_file_name,
+        "data": None,
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+        with pytest.warns(UserWarning) as w:
+            assert (
+                w[0].message.args[0]
+                == "The form slot last_name is not present in the domain slots."
+                "Please add the correct slot or check for typos."
+            )
 
 
 def test_validate_files_exit_early():
