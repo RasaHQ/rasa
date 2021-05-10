@@ -16,7 +16,7 @@ from rasa.core.constants import (
     DEFAULT_CORE_FALLBACK_THRESHOLD,
 )
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, DEFAULT_DATA_PATH
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import Domain, ActionNotFoundException
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.validator import Validator
 import rasa.shared.utils.io
@@ -142,6 +142,54 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
 
     with pytest.raises(argparse.ArgumentTypeError):
         data.validate_files(args)
+
+
+def test_validate_files_action_not_found_exception_stories(tmp_path: Path):
+    story_file_name = tmp_path / "stories.yml"
+    story_file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+        - story: story path 1
+          steps:
+          - intent: bot_challenge
+          - action: action_test_1
+        """
+    )
+    args = {
+        "domain": "data/test_moodbot/domain.yml",
+        "data": [story_file_name],
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(ActionNotFoundException) as e:
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+    assert "Cannot access action 'action_test_1'" in str(e.value)
+
+
+def test_validate_files_action_not_found_exception_rules(tmp_path: Path):
+    rules_file_name = tmp_path / "stories.yml"
+    rules_file_name.write_text(
+        """
+        version: "2.0"
+        rules:
+        - rule: rule path 1
+          steps:
+          - intent: goodbye
+          - action: action_test_2
+        """
+    )
+    args = {
+        "domain": "data/test_moodbot/domain.yml",
+        "data": [rules_file_name],
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(ActionNotFoundException) as e:
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+    assert "Cannot access action 'action_test_2'" in str(e.value)
 
 
 def test_validate_files_exit_early():

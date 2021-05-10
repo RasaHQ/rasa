@@ -273,7 +273,10 @@ def validate_stories(args: argparse.Namespace) -> None:
 
 
 def _validate_domain(validator: "Validator") -> bool:
-    return validator.verify_domain_validity()
+    return (
+        validator.verify_domain_validity()
+        and validator.verify_actions_in_stories_rules()
+    )
 
 
 def _validate_nlu(validator: "Validator", args: argparse.Namespace) -> bool:

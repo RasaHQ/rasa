@@ -2,6 +2,7 @@ from typing import Text
 
 import pytest
 
+from rasa.shared.core.domain import ActionNotFoundException
 from rasa.validator import Validator
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.importers.autoconfig import TrainingType
@@ -257,3 +258,50 @@ async def test_verify_there_is_not_example_repetition_in_intents():
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_example_repetition_in_intents(False)
+
+
+async def test_verify_actions_in_stories_not_in_domain(tmp_path: Path):
+    story_file_name = tmp_path / "stories.yml"
+    story_file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+        - story: story path 1
+          steps:
+          - intent: bot_challenge
+          - action: action_test_1
+        """
+    )
+
+    importer = RasaFileImporter(
+        domain_path="data/test_moodbot/domain.yml",
+        training_data_paths=[story_file_name],
+    )
+    validator = await Validator.from_importer(importer)
+    with pytest.raises(ActionNotFoundException) as e:
+        validator.verify_actions_in_stories_rules()
+
+    assert "Cannot access action 'action_test_1'" in str(e.value)
+
+
+async def test_verify_actions_in_rules_not_in_domain(tmp_path: Path):
+    rules_file_name = tmp_path / "rules.yml"
+    rules_file_name.write_text(
+        """
+        version: "2.0"
+        rules:
+        - rule: rule path 1
+          steps:
+          - intent: goodbye
+          - action: action_test_2
+        """
+    )
+    importer = RasaFileImporter(
+        domain_path="data/test_moodbot/domain.yml",
+        training_data_paths=[rules_file_name],
+    )
+    validator = await Validator.from_importer(importer)
+    with pytest.raises(ActionNotFoundException) as e:
+        validator.verify_actions_in_stories_rules()
+
+    assert "Cannot access action 'action_test_2'" in str(e.value)
