@@ -6,7 +6,6 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from unittest.mock import Mock
 
-from rasa.core.featurizers.tracker_featurizers import InvalidStory
 from rasa.shared.exceptions import (
     FileNotFoundException,
     YamlSyntaxException,
@@ -615,7 +614,7 @@ def test_read_from_file_skip_validation(monkeypatch: MonkeyPatch):
     assert reader.read_from_file(yaml_file, skip_validation=True) == []
 
 
-def test_raises_exception_missing_intent(domain: Domain):
+def test_raises_exception_missing_intent_in_rules(domain: Domain):
     rules = "data/test_yaml_stories/rules_missing_intent.yml"
     reader = YAMLStoryReader(domain)
 
@@ -625,11 +624,11 @@ def test_raises_exception_missing_intent(domain: Domain):
     assert "Missing intent value" in str(e.value)
 
 
-def test_raises_invalid_story_missing_intent(domain: Domain):
+def test_raises_exception_missing_intent_in_stories(domain: Domain):
     stories = "data/test_yaml_stories/stories_missing_intent.yml"
     reader = YAMLStoryReader(domain)
 
-    with pytest.raises(InvalidStory) as e:
+    with pytest.raises(RasaException) as e:
         reader.read_from_file(stories)
 
     assert "Missing intent value" in str(e.value)

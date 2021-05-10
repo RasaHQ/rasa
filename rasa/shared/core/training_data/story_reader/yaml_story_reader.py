@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
 import rasa.shared.data
-from rasa.core.featurizers.tracker_featurizers import InvalidStory
 from rasa.shared.core.slots import TextSlot, ListSlot
 from rasa.shared.exceptions import YamlException, RasaException
 import rasa.shared.utils.io
@@ -366,17 +365,10 @@ class YAMLStoryReader(StoryReader):
         try:
             user_intent = step.get(KEY_USER_INTENT, "").strip()
         except AttributeError as e:
-            if isinstance(self, RuleParser):
-                # cannot raise InvalidRule because of circular import
-                raise RasaException(
-                    f"Missing intent value in {self._get_item_title()} step: {step} "
-                    f"in '{self.source_name}'"
-                ) from e
-            if isinstance(self, StoryParser):
-                raise InvalidStory(
-                    f"Missing intent value in {self._get_item_title()} step: {step} "
-                    f"in '{self.source_name}'"
-                ) from e
+            raise RasaException(
+                f"Missing intent value in {self._get_item_title()} step: {step} "
+                f"in '{self.source_name}'"
+            ) from e
 
         if not user_intent and KEY_USER_MESSAGE not in step:
             rasa.shared.utils.io.raise_warning(
