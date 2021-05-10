@@ -289,6 +289,6 @@ class Validator:
     def verify_domain_validity(self) -> bool:
         """Checks whether the domain returned by the importer is empty.
 
-        An empty domain is invalid."""
-
+        An empty domain is invalid.
+        """
         return not self.domain.is_empty()
