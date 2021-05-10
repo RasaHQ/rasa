@@ -861,7 +861,6 @@ async def test(
         Evaluation summary.
     """
     from rasa.model_testing import get_evaluation_metrics
-    from rasa.shared.core.events import SlotSet
 
     generator = await _create_data_generator(stories, agent, max_stories, e2e)
     completed_trackers = generator.generate_story_trackers()
