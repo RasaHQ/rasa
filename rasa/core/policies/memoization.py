@@ -186,7 +186,6 @@ class MemoizationPolicy(Policy):
             trackers_as_states,
             trackers_as_actions,
         ) = self.featurizer.training_states_and_actions(training_trackers, domain)
-        # print(trackers_as_states)
         self.lookup = self._create_lookup_from_states(
             trackers_as_states, trackers_as_actions
         )
@@ -247,7 +246,6 @@ class MemoizationPolicy(Policy):
         result = self._default_predictions(domain)
 
         states = self._prediction_states(tracker, domain)
-        # print(states)
         logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
         predicted_action_name = self.recall(states, tracker, domain)
         if predicted_action_name is not None:

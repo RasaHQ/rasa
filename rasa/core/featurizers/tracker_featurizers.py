@@ -655,7 +655,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             )
             for tracker in trackers
         ]
-        print(trackers_as_states)
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)
             for states in trackers_as_states

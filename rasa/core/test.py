@@ -556,8 +556,6 @@ def _collect_action_executed_predictions(
 ) -> Tuple[EvaluationStore, PolicyPrediction, Optional[EntityEvaluationResult]]:
     from rasa.core.policies.form_policy import FormPolicy
 
-    from rasa.shared.core.events import SlotSet
-
     action_executed_eval_store = EvaluationStore()
 
     gold_action_name = event.action_name
@@ -570,15 +568,6 @@ def _collect_action_executed_predictions(
         prediction = PolicyPrediction([], policy_name=None)
         predicted = "circuit breaker tripped"
     else:
-        print("passing partial tracker", [event for event in partial_tracker.events])
-        print(
-            "slot types",
-            [
-                (event.key, event.value)
-                for event in partial_tracker.events
-                if isinstance(event, SlotSet)
-            ],
-        )
         action, prediction = processor.predict_next_action(partial_tracker)
         predicted = action.name()
 
@@ -678,8 +667,6 @@ async def _predict_tracker_actions(
         agent.domain.slots,
         sender_source=tracker.sender_source,
     )
-
-    print("partial tracker events", [event for event in partial_tracker.events])
 
     tracker_actions = []
     should_predict_another_action = True
@@ -879,13 +866,6 @@ async def test(
     generator = await _create_data_generator(stories, agent, max_stories, e2e)
     completed_trackers = generator.generate_story_trackers()
 
-    print("=============")
-    for tracker in completed_trackers:
-        print([event for event in tracker.events])
-        for event in tracker.events:
-            if isinstance(event, SlotSet):
-                print(event.key, event.value)
-    print("=============")
     story_evaluation, _, entity_results = await _collect_story_predictions(
         completed_trackers, agent, fail_on_prediction_errors, e2e
     )

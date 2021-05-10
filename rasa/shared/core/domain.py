@@ -1073,8 +1073,6 @@ class Domain:
             )
         )
 
-        print("entities", entities, "entity_names", entity_names)
-
         # the USED_ENTITIES_KEY of an intent also contains the entity labels and the
         # concatenated entity labels with their corresponding roles and groups labels
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
@@ -1098,18 +1096,14 @@ class Domain:
             return {}
 
         sub_state = latest_message.as_sub_state()
-        print("sub_state", sub_state)
-        print("featurized entities", self._get_featurized_entities(latest_message))
-        print(
-            "sub state entities", sub_state.get(rasa.shared.nlu.constants.ENTITIES, ())
-        )
+
         # filter entities based on intent config
         # sub_state will be transformed to frozenset therefore we need to
         # convert the set to the tuple
         # sub_state is transformed to frozenset because we will later hash it
         # for deduplication
 
-        #### TODO: Uncomment this in the final PR and comment out the statement below because SORTING IS NEEDED!
+        #### TODO: Uncomment this in the final PR and remove the statement below without sorting because SORTING IS NEEDED!
         # entities = tuple(sorted(tuple(
         #     self._get_featurized_entities(latest_message)
         #     & set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
@@ -1280,16 +1274,6 @@ class Domain:
         states = []
         last_ml_action_sub_state = None
         turn_was_hidden = False
-        print("inside domain")
-        print("passing partial tracker", [event for event in tracker.events])
-        print(
-            "slot types",
-            [
-                (event.key, event.value)
-                for event in tracker.events
-                if isinstance(event, SlotSet)
-            ],
-        )
         for tr, hide_rule_turn in tracker.generate_all_prior_trackers():
             if ignore_rule_only_turns:
                 # remember previous ml action based on the last non hidden turn
@@ -1308,19 +1292,7 @@ class Domain:
                 if turn_was_hidden:
                     continue
 
-            print("yielded tracker", [event for event in tr.events])
-            print(
-                "slot types",
-                [
-                    (event.key, event.value, event.metadata, event.timestamp)
-                    for event in tr.events
-                    if isinstance(event, SlotSet)
-                ],
-            )
-
             state = self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
-
-            print("state", state)
 
             if ignore_rule_only_turns:
                 # clean state from only rule features
