@@ -318,7 +318,6 @@ async def test_verify_form_slots_invalid_domain(tmp_path: Path):
              - type: from_text
              last_name:
              - type: from_text
-             
         slots:
              first_name:
                 type: text

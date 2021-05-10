@@ -203,7 +203,6 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
              - type: from_text
              last_name:
              - type: from_text
-             
         slots:
              first_name:
                 type: text
