@@ -1097,15 +1097,18 @@ class Domain:
 
         sub_state = latest_message.as_sub_state()
 
-        # filter entities based on intent config
-        # sub_state will be transformed to frozenset therefore we need to
-        # convert the set to the tuple
-        # sub_state is transformed to frozenset because we will later hash it
-        # for deduplication
+        # Filter entities based on intent config. We need to convert the set into a
+        # tuple because sub_state will be later transformed into a frozenset (so it can
+        # be hashed for deduplication).
         entities = tuple(
             self._get_featurized_entities(latest_message)
             & set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
         )
+        # Sort entities so that any derived state representation is consistent across
+        # runs and invariant to the order in which the entities for an utterance are
+        # listed in data files.
+        # entities = tuple(sorted(entities))
+
         if entities:
             sub_state[rasa.shared.nlu.constants.ENTITIES] = entities
         else:
