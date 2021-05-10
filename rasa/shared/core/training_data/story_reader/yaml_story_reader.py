@@ -363,21 +363,20 @@ class YAMLStoryReader(StoryReader):
     def _user_intent_from_step(
         self, step: Dict[Text, Any]
     ) -> Tuple[Text, Optional[Text]]:
-        intent_value = step.get(KEY_USER_INTENT)
-        if not intent_value:
+        try:
+            user_intent = step.get(KEY_USER_INTENT, "").strip()
+        except AttributeError as e:
             if isinstance(self, RuleParser):
-                # cannot use InvalidRule because of circular import in rule_policy.py
+                # cannot raise InvalidRule because of circular import
                 raise RasaException(
                     f"Missing intent value in {self._get_item_title()} step: {step} "
                     f"in '{self.source_name}'"
-                )
+                ) from e
             if isinstance(self, StoryParser):
                 raise InvalidStory(
                     f"Missing intent value in {self._get_item_title()} step: {step} "
                     f"in '{self.source_name}'"
-                )
-
-        user_intent = step.get(KEY_USER_INTENT, "").strip()
+                ) from e
 
         if not user_intent and KEY_USER_MESSAGE not in step:
             rasa.shared.utils.io.raise_warning(
