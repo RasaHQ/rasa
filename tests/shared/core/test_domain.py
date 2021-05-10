@@ -1110,6 +1110,31 @@ def test_get_featurized_entities():
     assert featurized_entities == {"GPE", f"GPE{ENTITY_LABEL_SEPARATOR}destination"}
 
 
+def test_featurized_entities_ordered_consistently():
+    domain = Domain.load(
+        "data/test_domains/domain_with_multiple_featurized_entities.yml"
+    )
+    tracker = DialogueStateTracker.from_events(
+        "story123",
+        [
+            UserUttered(
+                text="I am Sam and I'm in Edinburgh",
+                intent={"name": "inform", "confidence": 1.0},
+                entities=[
+                    {"entity": "name", "value": "Sam"},
+                    {"entity": "city", "value": "Edinburgh"},
+                ],
+            )
+        ],
+    )
+    state = domain.get_active_states(tracker)
+    entities = state["user"]["entities"]
+
+    # without explicit ordering, this currently suceeds with PYTHONHASHSEED=1 and fails
+    # with PYTHONHASHSEED=4
+    assert entities == ("city", "name")  # require alphabetical ordering
+
+
 @pytest.mark.parametrize(
     "domain_as_dict",
     [
