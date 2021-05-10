@@ -35,6 +35,8 @@ from rasa.shared.core.domain import (
     Domain,
     KEY_FORMS,
     KEY_E2E_ACTIONS,
+    KEY_INTENTS,
+    KEY_ENTITIES,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
@@ -1111,9 +1113,8 @@ def test_get_featurized_entities():
 
 
 def test_featurized_entities_ordered_consistently():
-    domain = Domain.load(
-        "data/test_domains/domain_with_multiple_featurized_entities.yml"
-    )
+    domain = Domain.from_dict({KEY_INTENTS: ["inform"], KEY_ENTITIES: ["name", "city"]})
+
     tracker = DialogueStateTracker.from_events(
         "story123",
         [
