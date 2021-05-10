@@ -1101,16 +1101,14 @@ class Domain:
         # sub_state will be transformed to frozenset therefore we need to
         # convert the set to the tuple
         # sub_state is transformed to frozenset because we will later hash it
-        # for deduplication
-
-        #### TODO: Uncomment this in the final PR and remove the statement below without sorting because SORTING IS NEEDED!
-        # entities = tuple(sorted(tuple(
-        #     self._get_featurized_entities(latest_message)
-        #     & set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
-        # )))
+        # for deduplication. Also, sort them so that the featurization is order invariant.
         entities = tuple(
-            self._get_featurized_entities(latest_message)
-            & set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+            sorted(
+                tuple(
+                    self._get_featurized_entities(latest_message)
+                    & set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+                )
+            )
         )
         if entities:
             sub_state[rasa.shared.nlu.constants.ENTITIES] = entities
