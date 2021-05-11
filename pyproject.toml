@@ -151,6 +151,7 @@ mypy = "^0.812"
 bandit = "^1.6.3"
 typing-extensions = "^3.7.4"
 memory-profiler = "^0.58.0"
+psutil = "^5.8.0"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
