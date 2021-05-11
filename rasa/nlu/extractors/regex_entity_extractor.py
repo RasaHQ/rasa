@@ -130,7 +130,9 @@ class RegexEntityExtractor(EntityExtractor):
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
-        Return the metadata necessary to load the model again."""
+
+        Return the metadata necessary to load the model again.
+        """
         file_name = f"{file_name}.json"
         regex_file = os.path.join(model_dir, file_name)
         rasa.shared.utils.io.dump_obj_as_json_to_file(regex_file, self.patterns)
