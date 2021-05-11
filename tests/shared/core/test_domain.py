@@ -1,6 +1,7 @@
 import copy
 import json
 from pathlib import Path
+import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
@@ -1123,92 +1124,13 @@ def test_featurized_entities_ordered_consistently():
     ~0 the probability of correctly sorting the elements just by accident, without
     actually doing proper sorting.
     """
-    # This list is sorted alphabetically, the two other lists below differ only in their
-    # ordering (randomly shuffled).
-    entity_names_sorted = [
-        "a",
-        "b",
-        "c",
-        "d",
-        "e",
-        "f",
-        "g",
-        "h",
-        "i",
-        "j",
-        "k",
-        "l",
-        "m",
-        "n",
-        "o",
-        "p",
-        "q",
-        "r",
-        "s",
-        "t",
-        "u",
-        "v",
-        "w",
-        "x",
-        "y",
-        "z",
-    ]
-    entity_names_shuffled1 = [
-        "i",
-        "a",
-        "k",
-        "f",
-        "u",
-        "j",
-        "d",
-        "w",
-        "m",
-        "x",
-        "o",
-        "b",
-        "h",
-        "r",
-        "v",
-        "l",
-        "p",
-        "q",
-        "e",
-        "z",
-        "t",
-        "c",
-        "s",
-        "y",
-        "n",
-        "g",
-    ]
-    entity_names_shuffled2 = [
-        "d",
-        "l",
-        "p",
-        "c",
-        "i",
-        "u",
-        "n",
-        "b",
-        "y",
-        "j",
-        "z",
-        "m",
-        "k",
-        "w",
-        "f",
-        "e",
-        "q",
-        "x",
-        "h",
-        "v",
-        "s",
-        "o",
-        "a",
-        "t",
-        "g",
-        "r",
-    ]
+    # Create a sorted list of entity names from 'a' to 'z', and two randomly shuffled
+    # copies.
+    entity_names_sorted = [chr(i) for i in range(ord("a"), ord("z") + 1)]
+    entity_names_shuffled1 = entity_names_sorted.copy()
+    random.shuffle(entity_names_shuffled1)
+    entity_names_shuffled2 = entity_names_sorted.copy()
+    random.shuffle(entity_names_shuffled2)
 
     domain = Domain.from_dict(
         {KEY_INTENTS: ["inform"], KEY_ENTITIES: entity_names_shuffled1}
@@ -1229,7 +1151,7 @@ def test_featurized_entities_ordered_consistently():
     state = domain.get_active_state(tracker)
 
     # Whatever order the entities were listed in, they should get sorted alphabetically
-    # so the states representations are consistent and entity-order-agnostic.
+    # so the states' representations are consistent and entity-order-agnostic.
     assert state["user"]["entities"] == tuple(entity_names_sorted)
 
 
