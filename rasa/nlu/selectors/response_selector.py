@@ -308,11 +308,14 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent = config[RETRIEVAL_INTENT]
         self.use_text_as_label = config[USE_TEXT_AS_LABEL]
 
-    def _check_response_selector_params(self) -> None:
+    def _check_diet2diet_config_params(self) -> None:
+        """Checks & corrects component config when in the `use_text_as_label` mode."""
         if self.use_text_as_label:
             selector_name = "ResponseSelector" + (
                 f"({self.retrieval_intent})" if self.retrieval_intent else ""
             )
+
+            # DIET2DIET requires some transformer layers (default is 0).
             if self.component_config[NUM_TRANSFORMER_LAYERS] < 1:
                 rasa.shared.utils.io.raise_warning(
                     f"`{NUM_TRANSFORMER_LAYERS}` is set to "
@@ -324,6 +327,8 @@ class ResponseSelector(DIETClassifier):
                     category=UserWarning,
                 )
                 self.component_config[NUM_TRANSFORMER_LAYERS] = 1
+
+            # DIET2DIET requires positive transformer size (default is None).
             if (
                 self.component_config[TRANSFORMER_SIZE] is None
                 or self.component_config[TRANSFORMER_SIZE] < 1
@@ -340,9 +345,12 @@ class ResponseSelector(DIETClassifier):
                 self.component_config[TRANSFORMER_SIZE] = 128
 
     def _check_config_parameters(self) -> None:
+        """Checks that component configuration makes sense; corrects it where needed."""
         super()._check_config_parameters()
         self._load_selector_params(self.component_config)
-        self._check_response_selector_params()
+        # Once general DIET-related parameters have been checked, check also the ones
+        # specific to ResponseSelector.
+        self._check_diet2diet_config_params()
 
     def _set_message_property(
         self, message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
