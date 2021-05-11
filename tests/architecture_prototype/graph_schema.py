@@ -173,11 +173,26 @@ train_graph_schema = {
         "needs": {"training_data": "load_data"},
         "persistor": False,
     },
+    "train_RegexFeaturizer_1": {
+        "uses": RegexFeaturizer,
+        "fn": "train",
+        "config": {},
+        "needs": {"training_data": "process_WhitespaceTokenizer_0"},
+    },
+    "process_RegexFeaturizer_1": {
+        "uses": RegexFeaturizer,
+        "fn": "process_training_data",
+        "config": {},
+        "needs": {
+            "resource_name": "train_RegexFeaturizer_1",
+            "training_data": "process_WhitespaceTokenizer_0",
+        },
+    },
     "train_LexicalSyntacticFeaturizer_2": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "train",
         "config": {},
-        "needs": {"training_data": "process_WhitespaceTokenizer_0"},
+        "needs": {"training_data": "process_RegexFeaturizer_1"},
     },
     "process_LexicalSyntacticFeaturizer_2": {
         "uses": LexicalSyntacticFeaturizer,
@@ -185,7 +200,7 @@ train_graph_schema = {
         "config": {},
         "needs": {
             "resource_name": "train_LexicalSyntacticFeaturizer_2",
-            "training_data": "process_WhitespaceTokenizer_0",
+            "training_data": "process_RegexFeaturizer_1",
         },
     },
     "train_CountVectorsFeaturizer_3": {
@@ -221,7 +236,7 @@ train_graph_schema = {
     "train_DIETClassifier_5": {
         "uses": DIETClassifier,
         "fn": "train",
-        "config": {"epochs": 100, "constrain_similarities": True},
+        "config": {"epochs": 100, "constrain_similarities": True, "random_seed": 42},
         "needs": {"training_data": "process_CountVectorsFeaturizer_4"},
     },
     "train_EntitySynonymMapper_6": {
@@ -308,12 +323,19 @@ predict_graph_schema = {
         "config": {"resource_name": "train_WhitespaceTokenizer_0"},
         "needs": {"messages": "convert_message_to_nlu"},
     },
+    "RegexFeaturizer_1": {
+        "uses": RegexFeaturizer,
+        "constructor_name": "load",
+        "fn": "process",
+        "config": {"resource_name": "train_RegexFeaturizer_1"},
+        "needs": {"messages": "WhitespaceTokenizer_0"},
+    },
     "LexicalSyntacticFeaturizer_2": {
         "uses": LexicalSyntacticFeaturizer,
         "constructor_name": "load",
         "fn": "process",
         "config": {"resource_name": "train_LexicalSyntacticFeaturizer_2"},
-        "needs": {"messages": "WhitespaceTokenizer_0"},
+        "needs": {"messages": "RegexFeaturizer_1"},
     },
     "CountVectorsFeaturizer_3": {
         "uses": CountVectorsFeaturizer,
@@ -340,7 +362,7 @@ predict_graph_schema = {
         "fn": "process",
         "config": {
             "resource_name": "train_DIETClassifier_5",
-            "epochs": 1,
+            "epochs": 100,
             "constrain_similarities": True,
         },
         "needs": {"messages": "CountVectorsFeaturizer_4"},
@@ -358,7 +380,7 @@ predict_graph_schema = {
         "fn": "process",
         "config": {
             "resource_name": "train_ResponseSelector_7",
-            "epochs": 1,
+            "epochs": 100,
             "constrain_similarities": True,
         },
         "needs": {"messages": "EntitySynonymMapper_6"},
@@ -388,7 +410,7 @@ predict_graph_schema = {
         "config": {
             "resource_name": "TEDPolicy_1",
             "max_history": 5,
-            "epochs": 1,
+            "epochs": 100,
             "constrain_similarities": True,
         },
         "needs": {
