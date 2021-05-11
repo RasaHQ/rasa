@@ -446,20 +446,23 @@ Provide a mapping from state names to indices.
 
 Returns all available states.
 
-#### get\_active\_states
+#### get\_active\_state
 
 ```python
- | get_active_states(tracker: "DialogueStateTracker", omit_unset_slots: bool = False) -> State
+ | get_active_state(tracker: "DialogueStateTracker", omit_unset_slots: bool = False) -> State
 ```
 
-Returns a bag of active states from the tracker state.
+Given a dialogue tracker, makes a representation of current dialogue state.
 
 **Arguments**:
 
 - `tracker` - dialog state tracker containing the dialog so far
 - `omit_unset_slots` - If `True` do not include the initial values of slots.
   
-  Returns `State` containing all active states.
+
+**Returns**:
+
+  A representation of the dialogue&#x27;s current state.
 
 #### states\_for\_tracker\_history
 
