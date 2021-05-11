@@ -1183,16 +1183,17 @@ class Domain:
             if sub_state
         }
 
-    def get_active_states(
+    def get_active_state(
         self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
     ) -> State:
-        """Returns a bag of active states from the tracker state.
+        """Given a dialogue tracker, makes a representation of current dialogue state.
 
         Args:
             tracker: dialog state tracker containing the dialog so far
             omit_unset_slots: If `True` do not include the initial values of slots.
 
-        Returns `State` containing all active states.
+        Returns:
+            A representation of the dialogue's current state.
         """
         state = {
             rasa.shared.core.constants.USER: self._get_user_sub_state(tracker),
@@ -1289,7 +1290,7 @@ class Domain:
                 if turn_was_hidden:
                     continue
 
-            state = self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
+            state = self.get_active_state(tr, omit_unset_slots=omit_unset_slots)
 
             if ignore_rule_only_turns:
                 # clean state from only rule features
