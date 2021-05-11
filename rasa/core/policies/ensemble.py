@@ -48,6 +48,7 @@ from rasa.core.training import training
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core import registry
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.tensorflow.constants import EPOCHS
 
 logger = logging.getLogger(__name__)
@@ -192,8 +193,8 @@ class PolicyEnsemble:
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
+        e2e_features: Dict[Text, Message],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         if training_trackers:
@@ -203,9 +204,7 @@ class PolicyEnsemble:
                 trackers_to_train = SupportedData.trackers_for_policy(
                     policy, training_trackers
                 )
-                policy.train(
-                    trackers_to_train, domain, interpreter=interpreter, **kwargs
-                )
+                policy.train(trackers_to_train, e2e_features, domain, **kwargs)
 
             self.action_fingerprints = training.create_action_fingerprints(
                 training_trackers, domain
@@ -655,7 +654,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        predictions: Dict[Text, PolicyPrediction],
     ) -> PolicyPrediction:
         """Finds the best policy prediction.
 
@@ -685,12 +684,13 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         ):
             rejected_action_name = last_action_event.action_name
 
-        predictions = {
-            f"policy_{i}_{type(p).__name__}": self._get_prediction(
-                p, tracker, domain, interpreter
-            )
-            for i, p in enumerate(self.policies)
-        }
+        if not predictions:
+            predictions = {
+                f"policy_{i}_{type(p).__name__}": self._get_prediction(
+                    p, tracker, domain
+                )
+                for i, p in enumerate(self.policies)
+            }
 
         if rejected_action_name:
             logger.debug(
@@ -706,23 +706,15 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
     @staticmethod
     def _get_prediction(
-        policy: Policy,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        policy: Policy, tracker: DialogueStateTracker, domain: Domain,
     ) -> PolicyPrediction:
         number_of_arguments_in_rasa_1_0 = 2
         arguments = rasa.shared.utils.common.arguments_of(
             policy.predict_action_probabilities
         )
 
-        if (
-            len(arguments) > number_of_arguments_in_rasa_1_0
-            and "interpreter" in arguments
-        ):
-            prediction = policy.predict_action_probabilities(
-                tracker, domain, interpreter
-            )
+        if len(arguments) > number_of_arguments_in_rasa_1_0:
+            prediction = policy.predict_action_probabilities(tracker, domain)
         else:
             rasa.shared.utils.io.raise_warning(
                 "The function `predict_action_probabilities` of "
@@ -731,9 +723,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 "adapt your custom `Policy` implementation.",
                 category=DeprecationWarning,
             )
-            prediction = policy.predict_action_probabilities(
-                tracker, domain, RegexInterpreter()
-            )
+            prediction = policy.predict_action_probabilities(tracker, domain)
 
         if isinstance(prediction, list):
             rasa.shared.utils.io.raise_deprecation_warning(
@@ -788,11 +778,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         )
 
     def probabilities_using_best_policy(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
@@ -802,13 +788,17 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
 
         Returns:
             The best policy prediction.
         """
-        winning_prediction = self._best_policy_prediction(tracker, domain, interpreter)
+        predictions = {
+            f"policy_0_{prediction.policy_name}": prediction
+            for name, prediction in kwargs.items()
+            if name.endswith("_prediction")
+        }
+
+        winning_prediction = self._best_policy_prediction(tracker, domain, predictions)
 
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME

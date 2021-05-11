@@ -14,9 +14,9 @@ from rasa.shared.core.events import (
     LoopInterrupted,
     UserUttered,
     ActionExecuted,
+    Event,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData, PolicyPrediction
 from rasa.shared.core.trackers import (
@@ -767,7 +767,6 @@ class RulePolicy(MemoizationPolicy):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers.
@@ -775,7 +774,6 @@ class RulePolicy(MemoizationPolicy):
         Args:
             training_trackers: The list of the trackers.
             domain: The domain.
-            interpreter: Interpreter which can be used by the polices for featurization.
         """
         # only consider original trackers (no augmented ones)
         training_trackers = [
@@ -1068,11 +1066,7 @@ class RulePolicy(MemoizationPolicy):
         )
 
     def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
     ) -> "PolicyPrediction":
         """Predicts the next action (see parent class for more information)."""
         prediction, _ = self._predict(tracker, domain)

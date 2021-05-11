@@ -28,6 +28,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
     TEXT,
     ENTITIES,
+    VALID_FEATURE_TYPES,
     FEATURE_TYPE_SENTENCE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
@@ -35,7 +36,6 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.constants import DIAGNOSTIC_DATA
@@ -372,11 +372,11 @@ class TEDPolicy(Policy):
         )
 
     def _create_label_data(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+        self, domain: Domain, e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_actions(domain, interpreter)
+        encoded_all_labels = state_featurizer.encode_all_actions(domain, e2e_features)
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
@@ -505,8 +505,8 @@ class TEDPolicy(Policy):
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
+        e2e_features: Dict[Text, Message],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
@@ -518,17 +518,18 @@ class TEDPolicy(Policy):
             )
             return
 
+        training_trackers = [t for t in training_trackers if not t.is_rule_tracker]
         # dealing with training data
         tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
             training_trackers,
             domain,
-            interpreter,
             bilou_tagging=self.config[BILOU_FLAG],
+            e2e_features=e2e_features,
             **kwargs,
         )
 
         self._label_data, encoded_all_labels = self._create_label_data(
-            domain, interpreter
+            domain, e2e_features
         )
 
         # extract actual training data to feed to model
@@ -595,7 +596,7 @@ class TEDPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Dict[Text, Message],
     ) -> List[List[Dict[Text, List["Features"]]]]:
         # construct two examples in the batch to be fed to the model -
         # one by featurizing last user text
@@ -603,7 +604,10 @@ class TEDPolicy(Policy):
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
         tracker_state_features = self._featurize_for_prediction(
-            tracker, domain, interpreter, use_text_for_last_user_input=self.only_e2e,
+            tracker,
+            domain,
+            e2e_features=e2e_features,
+            use_text_for_last_user_input=self.only_e2e,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -612,7 +616,10 @@ class TEDPolicy(Policy):
             and not self.only_e2e
         ):
             tracker_state_features += self._featurize_for_prediction(
-                tracker, domain, interpreter, use_text_for_last_user_input=True,
+                tracker,
+                domain,
+                e2e_features=e2e_features,
+                use_text_for_last_user_input=True,
             )
         return tracker_state_features
 
@@ -662,7 +669,7 @@ class TEDPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Dict[Text, Message],
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -670,8 +677,7 @@ class TEDPolicy(Policy):
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
+            e2e_features: A mapping of message text to parsed message with e2e features
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
@@ -681,7 +687,7 @@ class TEDPolicy(Policy):
 
         # create model data from tracker
         tracker_state_features = self._featurize_tracker_for_e2e(
-            tracker, domain, interpreter
+            tracker, domain, e2e_features
         )
         model_data = self._create_model_data(tracker_state_features)
         outputs = self.model.run_inference(model_data)
@@ -702,7 +708,7 @@ class TEDPolicy(Policy):
             )
 
         optional_events = self._create_optional_event_for_entities(
-            outputs, is_e2e_prediction, interpreter, tracker
+            outputs, is_e2e_prediction, e2e_features, tracker
         )
 
         return self._prediction(
@@ -716,7 +722,7 @@ class TEDPolicy(Policy):
         self,
         prediction_output: Dict[Text, tf.Tensor],
         is_e2e_prediction: bool,
-        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Dict[Text, Message],
         tracker: DialogueStateTracker,
     ) -> Optional[List[Event]]:
         if tracker.latest_action_name != ACTION_LISTEN_NAME or not is_e2e_prediction:
@@ -748,7 +754,7 @@ class TEDPolicy(Policy):
         # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities
         text = tracker.latest_message.text
-        parsed_message = interpreter.featurize_message(Message(data={TEXT: text}))
+        parsed_message = e2e_features[text]
         tokens = parsed_message.get(TOKENS_NAMES[TEXT])
         entities = EntityExtractor.convert_predictions_into_entities(
             text,

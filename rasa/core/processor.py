@@ -13,8 +13,10 @@ from rasa.core.channels.channel import (
     OutputChannel,
     UserMessage,
 )
+import rasa.model
 import rasa.core.utils
-from rasa.core.policies.policy import PolicyPrediction
+import rasa.core.interpreter
+from rasa.core.policies.policy import PolicyPrediction, Policy
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -39,6 +41,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_SLOT_NAME,
     KEY_ACTION,
 )
+from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
@@ -47,10 +50,11 @@ from rasa.shared.constants import (
     DOCS_URL_POLICIES,
     UTTER_PREFIX,
     DOCS_URL_SLOTS,
+    DEFAULT_DOMAIN_PATH,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.lock_store import LockStore
-from rasa.core.policies.ensemble import PolicyEnsemble
+from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 import rasa.core.tracker_store
 import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
@@ -70,14 +74,15 @@ class MessageProcessor:
         domain: Domain,
         tracker_store: rasa.core.tracker_store.TrackerStore,
         lock_store: LockStore,
-        generator: NaturalLanguageGenerator,
+        generator: Optional[NaturalLanguageGenerator],
         action_endpoint: Optional[EndpointConfig] = None,
         max_number_of_predictions: int = MAX_NUMBER_OF_PREDICTIONS,
         message_preprocessor: Optional[LambdaType] = None,
         on_circuit_break: Optional[LambdaType] = None,
-    ):
+    ) -> None:
         self.interpreter = interpreter
-        self.nlg = generator
+
+        self.nlg = NaturalLanguageGenerator.create(generator, domain)
         self.policy_ensemble = policy_ensemble
         self.domain = domain
         self.tracker_store = tracker_store
@@ -86,6 +91,81 @@ class MessageProcessor:
         self.message_preprocessor = message_preprocessor
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
+
+    @classmethod
+    def create(
+        cls,
+        model_path: Text,
+        tracker_store: rasa.core.tracker_store.TrackerStore,
+        lock_store: LockStore,
+        generator: Optional[NaturalLanguageGenerator],
+        action_endpoint: Optional[EndpointConfig],
+        new_config: Optional[Dict] = None,
+        finetuning_epoch_fraction: float = 1.0,
+    ) -> "MessageProcessor":
+        core_model, nlu_model = rasa.model.get_model_subdirectories(model_path)
+
+        interpreter = rasa.core.interpreter.create_interpreter(nlu_model)
+
+        domain = None
+        ensemble = None
+
+        if core_model:
+            domain = Domain.load(os.path.join(core_model, DEFAULT_DOMAIN_PATH))
+            ensemble = (
+                PolicyEnsemble.load(
+                    core_model,
+                    new_config=new_config,
+                    finetuning_epoch_fraction=finetuning_epoch_fraction,
+                )
+                if core_model
+                else None
+            )
+
+            # ensures the domain hasn't changed between test and train
+            domain.compare_with_specification(core_model)
+
+        PolicyEnsemble.check_domain_ensemble_compatibility(ensemble, domain)
+
+        interpreter = rasa.core.interpreter.create_interpreter(interpreter)
+
+        return MessageProcessor(
+            interpreter,
+            ensemble,
+            domain,
+            tracker_store,
+            lock_store,
+            generator,
+            action_endpoint=action_endpoint,
+        )
+
+    @classmethod
+    def _create_ensemble(
+        cls, policies: Union[List[Policy], PolicyEnsemble, None]
+    ) -> Optional[PolicyEnsemble]:
+        if policies is None:
+            return None
+        if isinstance(policies, list):
+            return SimplePolicyEnsemble(policies)
+        elif isinstance(policies, PolicyEnsemble):
+            return policies
+        else:
+            passed_type = type(policies).__name__
+            raise InvalidParameterException(
+                f"Invalid param `policies`. Passed object is "
+                f"of type '{passed_type}', but should be policy, an array of "
+                f"policies, or a policy ensemble."
+            )
+
+    def is_core_ready(self) -> bool:
+        return self.is_ready() and self.policy_ensemble
+
+    def is_ready(self) -> bool:
+        """Check if all necessary components are instantiated to use agent.
+
+        Policies might not be available, if this is an NLU only agent."""
+
+        return self.tracker_store is not None and self.interpreter is not None
 
     async def handle_message(
         self, message: UserMessage

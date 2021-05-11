@@ -9,8 +9,15 @@ from typing import Dict, Optional, Text, Union, List
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
+from rasa.core import training
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered, Event, ActionExecuted
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.training_data.structures import StoryGraph
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT, INTENT, TEXT
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.common import TempDirectoryPath
 
 if typing.TYPE_CHECKING:
@@ -46,10 +53,9 @@ async def train(
 
     agent = Agent(
         domain_file,
+        policies=policies,
         generator=endpoints.nlg,
         action_endpoint=endpoints.action,
-        interpreter=interpreter,
-        policies=policies,
     )
 
     data_load_args, additional_arguments = utils.extract_args(
@@ -62,12 +68,21 @@ async def train(
             "debug_plots",
         },
     )
-    training_data = await agent.load_data(
+    trackers = await agent.load_data(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
+    story_to_training_data_converter = StoryToTrainingDataConverter()
+    message_to_e2e_features_converter = MessageToE2EFeatureConverter()
+    story_graph = await training.load_story_graph_from_resource(
+        training_resource, agent.domain, 0
+    )
+    training_data = story_to_training_data_converter.convert_for_training(story_graph)
+    for msg in training_data.training_examples:
+        interpreter.featurize_message(msg)
+    e2e_features = message_to_e2e_features_converter.convert(training_data)
     if model_to_finetune:
         agent.policy_ensemble = model_to_finetune.policy_ensemble
-    agent.train(training_data, **additional_arguments)
+    agent.train(trackers, e2e_features, **additional_arguments)
     agent.persist(output_path)
 
     return agent
@@ -182,3 +197,57 @@ def do_interactive_learning(
         conversation_id=args.conversation_id,
         server_args=args.__dict__,
     )
+
+
+class StoryToTrainingDataConverter:
+    def convert_for_training(self, story_graph: StoryGraph) -> TrainingData:
+        messages = []
+        for step in story_graph.story_steps:
+            messages += self._convert_tracker_to_messages(step.events)
+
+        # Workaround: add at least one end to end message to initialize
+        # the `CountVectorizer` for e2e. Alternatives: Store information or simply config
+        messages.append(
+            Message(
+                data=UserUttered(
+                    text="hi", use_text_for_featurization=True
+                ).as_sub_state()
+            )
+        )
+        return TrainingData(training_examples=messages)
+
+    def _convert_tracker_to_messages(self, events: List[Event]) -> List[Message]:
+        messages = []
+        for event in events:
+            if isinstance(event, ActionExecuted):
+                messages.append(Message(data=event.as_sub_state()))
+
+            if isinstance(event, UserUttered):
+                if event.use_text_for_featurization is None:
+                    event.use_text_for_featurization = False
+                    messages.append(Message(data=event.as_sub_state()))
+
+                    event.use_text_for_featurization = True
+                    messages.append(Message(data=event.as_sub_state()))
+
+                    event.use_text_for_featurization = None
+                else:
+                    messages.append(Message(data=event.as_sub_state()))
+
+        return messages
+
+    def convert_for_inference(self, tracker: DialogueStateTracker) -> TrainingData:
+        messages = self._convert_tracker_to_messages(tracker.events)
+
+        return TrainingData(training_examples=messages)
+
+
+class MessageToE2EFeatureConverter:
+    def convert(self, training_data: TrainingData) -> Dict[Text, Message]:
+        additional_features = {}
+        for message in training_data.training_examples:
+            texts = [v for k, v in message.data.items() if k in {ACTION_TEXT, TEXT}]
+            if len(texts) > 0:
+                additional_features[texts[0]] = message
+
+        return additional_features
