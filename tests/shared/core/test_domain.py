@@ -1113,7 +1113,106 @@ def test_get_featurized_entities():
 
 
 def test_featurized_entities_ordered_consistently():
-    domain = Domain.from_dict({KEY_INTENTS: ["inform"], KEY_ENTITIES: ["name", "city"]})
+    """Check that entities get ordered -- needed for consistent state representations.
+
+    Previously, no ordering was applied to entities, but they were ordered implicitly
+    due to how python sets work -- a set of all entity names was internally created,
+    which was ordered by the hashes of the entity names. Now, entities are sorted alpha-
+    betically. Since even sorting based on randomised hashing can produce alphabetical
+    ordering once in a while, we here check with a large number of entities, pushing to
+    ~0 the probability of correctly sorting the elements just by accident, without
+    actually doing proper sorting.
+    """
+    # This list is sorted alphabetically, the two other lists below differ only in their
+    # ordering (randomly shuffled).
+    entity_names_sorted = [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i",
+        "j",
+        "k",
+        "l",
+        "m",
+        "n",
+        "o",
+        "p",
+        "q",
+        "r",
+        "s",
+        "t",
+        "u",
+        "v",
+        "w",
+        "x",
+        "y",
+        "z",
+    ]
+    entity_names_shuffled1 = [
+        "i",
+        "a",
+        "k",
+        "f",
+        "u",
+        "j",
+        "d",
+        "w",
+        "m",
+        "x",
+        "o",
+        "b",
+        "h",
+        "r",
+        "v",
+        "l",
+        "p",
+        "q",
+        "e",
+        "z",
+        "t",
+        "c",
+        "s",
+        "y",
+        "n",
+        "g",
+    ]
+    entity_names_shuffled2 = [
+        "d",
+        "l",
+        "p",
+        "c",
+        "i",
+        "u",
+        "n",
+        "b",
+        "y",
+        "j",
+        "z",
+        "m",
+        "k",
+        "w",
+        "f",
+        "e",
+        "q",
+        "x",
+        "h",
+        "v",
+        "s",
+        "o",
+        "a",
+        "t",
+        "g",
+        "r",
+    ]
+
+    domain = Domain.from_dict(
+        {KEY_INTENTS: ["inform"], KEY_ENTITIES: entity_names_shuffled1}
+    )
 
     tracker = DialogueStateTracker.from_events(
         "story123",
@@ -1122,18 +1221,16 @@ def test_featurized_entities_ordered_consistently():
                 text="I am Sam and I'm in Edinburgh",
                 intent={"name": "inform", "confidence": 1.0},
                 entities=[
-                    {"entity": "name", "value": "Sam"},
-                    {"entity": "city", "value": "Edinburgh"},
+                    {"entity": e, "value": e.upper()} for e in entity_names_shuffled2
                 ],
             )
         ],
     )
     state = domain.get_active_states(tracker)
-    entities = state["user"]["entities"]
 
-    # without explicit ordering, this currently suceeds with PYTHONHASHSEED=1 and fails
-    # with PYTHONHASHSEED=4
-    assert entities == ("city", "name")  # require alphabetical ordering
+    # Whatever order the entities were listed in, they should get sorted alphabetically
+    # so the states representations are consistent and entity-order-agnostic.
+    assert state["user"]["entities"] == tuple(entity_names_sorted)
 
 
 @pytest.mark.parametrize(
