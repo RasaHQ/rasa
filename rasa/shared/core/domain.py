@@ -1118,7 +1118,7 @@ class Domain:
         # Sort entities so that any derived state representation is consistent across
         # runs and invariant to the order in which the entities for an utterance are
         # listed in data files.
-        # entities = tuple(sorted(entities))
+        entities = tuple(sorted(entities))
 
         if entities:
             sub_state[rasa.shared.nlu.constants.ENTITIES] = entities
