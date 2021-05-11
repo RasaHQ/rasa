@@ -5,9 +5,10 @@ import logging
 import os
 import pickle
 from datetime import datetime, timezone
+import firebase_admin
 from firebase_admin import db
 from firebase_admin import credentials
-
+from time import  time
 from time import sleep
 from typing import (
     Any,
@@ -732,10 +733,10 @@ class FirebaseRealtimeTrackerStore(TrackerStore):
 
     def __init__(
             self,
+            domain: Domain,
             firebase_key_file_path: Text,
-            db_storage_path: Text,
-            database_url: Text,
-            domain:Domain,
+            db_storage_path: Text = "/firebase-key.json",
+            database_url: Text = "url",
             event_broker: Optional[EndpointConfig] = None,
             **kwargs:Dict[Text,Any],
 
@@ -748,24 +749,30 @@ class FirebaseRealtimeTrackerStore(TrackerStore):
 
         self.cred = credentials.Certificate(self.key_file_path)
         init_app = firebase_admin.initialize_app(self.cred,{"databaseURL":self.database_url})
-
+        logging.info("LOG -1 ")
+        print("LOG - 1")
         super().__init__(domain,event_broker,**kwargs)
 
     def save(self,tracker:DialogueStateTracker) -> None:
         if self.event_broker:
             self.stream_events(tracker)
 
+        logging.info("SAVE LOG - 2")
+
         serialised_tracker = FirebaseRealtimeTrackerStore.serialise_tracker(tracker)
 
-        user_message_id = tracker.sender_id
+        user_message_id = "user_"+tracker.sender_id
         user_message = tracker.latest_message.text
 
-        bot_message_id = "bot"
+        logging.info("SAVE LOG - 3")
+        bot_message_id = f"bot_{int(time())}"
         bot_message = self.get_latest_bot_message(serialised_tracker)
 
+        logging.info("SAVE LOG - 4")
+
         if bot_message!=None:
-            self.push_conversation_db(ref_path=self.db_storage_path,message_id=user_message_id,message=user_message)
-            self.push_conversation_db(ref_path=self.db_storage_path,message_id=bot_message_id,message=bot_message)
+            self.push_conversation_db(ref_path=f"{self.db_storage_path}/{tracker.sender_id}",message_id=user_message_id,message=user_message)
+            self.push_conversation_db(ref_path=f"{self.db_storage_path}/{tracker.sender_id}",message_id=bot_message_id,message=bot_message)
 
         self.store[tracker.sender_id] = serialised_tracker
 
@@ -786,15 +793,21 @@ class FirebaseRealtimeTrackerStore(TrackerStore):
         serialised_tracker = json.loads(serialised_tracker)
         tracker_store = reversed(serialised_tracker["events"])
         bot_message = []
+        logging.info("GET BOT MESSAGE INTERNAL LOG 1")
         for event in tracker_store:
+
             if event["event"]=="bot":
                 bot_message.append(event["text"])
                 break
+        logging.info("GET INTERNAL BOT MESSAGE LOG 2")
 
-        if len(bot_message[0])!=0:
+        if len(bot_message)!=0:
+            logging.info("GET INTERNAL BOT MESSAGE LOG 3")
             return bot_message[0]
+
         else:
-            return None
+            logging.info("GET INTERNAL BOT MESSAGE LOG 4")
+            return "error"
 
     def push_conversation_db(self,ref_path,message_id,message):
 
@@ -802,12 +815,6 @@ class FirebaseRealtimeTrackerStore(TrackerStore):
         ref.update({
             message_id:message
         })
-
-
-
-
-
-    pass
 
 def _create_sequence(table_name: Text) -> "Sequence":
     """Creates a sequence object for a specific table name.
@@ -1346,6 +1353,15 @@ def _create_from_endpoint_config(
         tracker_store = DynamoTrackerStore(
             domain=domain, event_broker=event_broker, **endpoint_config.kwargs
         )
+    elif endpoint_config.type.lower() == "firebase-realtime":
+        tracker_store = FirebaseRealtimeTrackerStore(
+            database_url=endpoint_config.url,
+            domain=domain,
+            event_broker=event_broker,
+            **endpoint_config.kwargs
+
+        )
+
     else:
         tracker_store = _load_from_module_name_in_endpoint_config(
             domain, endpoint_config, event_broker
