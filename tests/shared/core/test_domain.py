@@ -1218,7 +1218,7 @@ def test_featurized_entities_ordered_consistently():
         "story123",
         [
             UserUttered(
-                text="I am Sam and I'm in Edinburgh",
+                text="hey there",
                 intent={"name": "inform", "confidence": 1.0},
                 entities=[
                     {"entity": e, "value": e.upper()} for e in entity_names_shuffled2
@@ -1226,7 +1226,7 @@ def test_featurized_entities_ordered_consistently():
             )
         ],
     )
-    state = domain.get_active_states(tracker)
+    state = domain.get_active_state(tracker)
 
     # Whatever order the entities were listed in, they should get sorted alphabetically
     # so the states representations are consistent and entity-order-agnostic.
