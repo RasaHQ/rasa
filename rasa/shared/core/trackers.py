@@ -293,7 +293,6 @@ class DialogueStateTracker:
         omit_unset_slots: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
-        ignore_last_action_listen_in_state: bool = False,
     ) -> List[State]:
         """Generates the past states of this tracker based on the history.
 
@@ -313,7 +312,6 @@ class DialogueStateTracker:
             omit_unset_slots=omit_unset_slots,
             ignore_rule_only_turns=ignore_rule_only_turns,
             rule_only_data=rule_only_data,
-            ignore_last_action_listen_in_state=ignore_last_action_listen_in_state,
         )
 
     def change_loop_to(self, loop_name: Optional[Text]) -> None:
@@ -461,7 +459,7 @@ class DialogueStateTracker:
 
     def generate_all_prior_trackers(
         self,
-    ) -> Generator[Tuple["DialogueStateTracker", bool, bool], None, None]:
+    ) -> Generator[Tuple["DialogueStateTracker", bool], None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
         Returns:
@@ -471,14 +469,20 @@ class DialogueStateTracker:
         """
         tracker = self.init_copy()
 
+        last_event_action_executed = False
         for event in self.applied_events():
 
+            last_event_action_executed = False
             if isinstance(event, ActionExecuted):
-                yield tracker, event.hide_rule_turn, False
+                last_event_action_executed = True
+                yield tracker, event.hide_rule_turn
 
             tracker.update(event)
 
-        yield tracker, False, True
+        # If the last event was of type action executed, we don't need to yield
+        # the tracker again. It must have been yielded inside the for loop already.
+        if not last_event_action_executed:
+            yield tracker, False
 
     def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events.
