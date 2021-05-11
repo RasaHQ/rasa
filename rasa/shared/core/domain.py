@@ -675,7 +675,9 @@ class Domain:
             list(intent.keys())[0] if isinstance(intent, dict) else intent
             for intent in intents
         }
-        return sorted(intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS))
+        return sorted(
+            intent_names.intersection(set(rasa.shared.core.constants.DEFAULT_INTENTS))
+        )
 
     @staticmethod
     def _initialize_forms(
@@ -1047,6 +1049,11 @@ class Domain:
         )
 
     def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
+        """Gets the names of all entities that are present and wanted in the message.
+
+        Wherever an entity has a role or group specified as well, an additional role-
+        or group-specific entity name is added.
+        """
         intent_name = latest_message.intent.get(
             rasa.shared.nlu.constants.INTENT_NAME_KEY
         )
@@ -1057,33 +1064,36 @@ class Domain:
         # groups get featurized. We concatenate the entity label with the role/group
         # label using a special separator to make sure that the resulting label is
         # unique (as you can have the same role/group label for different entities).
-        entity_names = (
-            set(entity["entity"] for entity in entities if "entity" in entity.keys())
-            | set(
-                f"{entity['entity']}"
-                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
-                for entity in entities
-                if "entity" in entity.keys() and "role" in entity.keys()
-            )
-            | set(
-                f"{entity['entity']}"
-                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
-                for entity in entities
-                if "entity" in entity.keys() and "group" in entity.keys()
-            )
+        entity_names_basic = set(
+            entity["entity"] for entity in entities if "entity" in entity.keys()
         )
+        entity_names_roles = set(
+            f"{entity['entity']}"
+            f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
+            for entity in entities
+            if "entity" in entity.keys() and "role" in entity.keys()
+        )
+        entity_names_groups = set(
+            f"{entity['entity']}"
+            f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
+            for entity in entities
+            if "entity" in entity.keys() and "group" in entity.keys()
+        )
+        entity_names = entity_names_basic.union(entity_names_roles, entity_names_groups)
 
         # the USED_ENTITIES_KEY of an intent also contains the entity labels and the
         # concatenated entity labels with their corresponding roles and groups labels
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
-        return entity_names & wanted_entities
+        return entity_names.intersection(wanted_entities)
 
     def _get_user_sub_state(
         self, tracker: "DialogueStateTracker"
     ) -> Dict[Text, Union[Text, Tuple[Text]]]:
-        """Turn latest UserUttered event into a substate containing intent,
-        text and set entities if present
+        """Turns latest UserUttered event into a substate.
+
+        The substate will contain intent, text, and entities (if any are present).
+
         Args:
             tracker: dialog state tracker containing the dialog so far
         Returns:
@@ -1101,8 +1111,9 @@ class Domain:
         # tuple because sub_state will be later transformed into a frozenset (so it can
         # be hashed for deduplication).
         entities = tuple(
-            self._get_featurized_entities(latest_message)
-            & set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+            self._get_featurized_entities(latest_message).intersection(
+                set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+            )
         )
         # Sort entities so that any derived state representation is consistent across
         # runs and invariant to the order in which the entities for an utterance are
