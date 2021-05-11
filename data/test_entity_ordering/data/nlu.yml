@@ -1,9 +1,0 @@
-version: "2.0"
-nlu:
-- intent: greet
-  examples: |
-    - hey, I'm [Sam](name) and I'm in [Edinburgh](city)
-    - hey, I'm [Tobi](name) and I'm in [Berlin](city)
-- intent: inform
-  examples: |
-    - I'm [Sam](name)
