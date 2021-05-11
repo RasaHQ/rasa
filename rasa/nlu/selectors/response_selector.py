@@ -308,9 +308,41 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent = config[RETRIEVAL_INTENT]
         self.use_text_as_label = config[USE_TEXT_AS_LABEL]
 
+    def _check_response_selector_params(self) -> None:
+        if self.use_text_as_label:
+            selector_name = "ResponseSelector" + (
+                f"({self.retrieval_intent})" if self.retrieval_intent else ""
+            )
+            if self.component_config[NUM_TRANSFORMER_LAYERS] < 1:
+                rasa.shared.utils.io.raise_warning(
+                    f"`{NUM_TRANSFORMER_LAYERS}` is set to "
+                    f"`{self.component_config[NUM_TRANSFORMER_LAYERS]}` for "
+                    f"{selector_name}, but a positive number of transformer layers is "
+                    f"required when using `{USE_TEXT_AS_LABEL}=True`. {selector_name} "
+                    f"will proceed, using `{NUM_TRANSFORMER_LAYERS}=1`. Alternatively, "
+                    f"specify a different number in the component's config.",
+                    category=UserWarning,
+                )
+                self.component_config[NUM_TRANSFORMER_LAYERS] = 1
+            if (
+                self.component_config[TRANSFORMER_SIZE] is None
+                or self.component_config[TRANSFORMER_SIZE] < 1
+            ):
+                rasa.shared.utils.io.raise_warning(
+                    f"`{TRANSFORMER_SIZE}` is set to "
+                    f"`{self.component_config[TRANSFORMER_SIZE]}` for "
+                    f"{selector_name}, but a positive size is required when using "
+                    f"`{USE_TEXT_AS_LABEL}=True`. {selector_name} will proceed, using "
+                    f"`{TRANSFORMER_SIZE}=128`. Alternatively, specify a different "
+                    f"number in the component's config.",
+                    category=UserWarning,
+                )
+                self.component_config[TRANSFORMER_SIZE] = 128
+
     def _check_config_parameters(self) -> None:
         super()._check_config_parameters()
         self._load_selector_params(self.component_config)
+        self._check_response_selector_params()
 
     def _set_message_property(
         self, message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
