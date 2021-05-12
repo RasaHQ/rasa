@@ -741,3 +741,79 @@ def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
         interactive._retry_on_error(m, "export_path", 1, a=2)
     c = mock.call("export_path", 1, a=2)
     m.assert_has_calls([c, c, c])
+
+
+@pytest.mark.parametrize(
+    "text,wrapping_width,true_wrapping_width",
+    [
+        ("abcdefgh", 8, 8),
+        ("abcdefgh", 4, 4),
+        ("abcdefgh", 50, 50),
+        ("Well, hello there my friend!", 20, 20),
+        ("我要去北京", 8, 4),
+        (
+            "牙龈出血的症状对应得疾病可能有：肥大性龈炎、骨髓增生异常综合征、口腔疾病、小儿出血性疾病、边缘性龈炎、获得性维生素K依赖性凝血因子异常、小儿白血病、回归热、坏死性龈口炎、青春期功能失调性子宫出血、郎-奥韦综合征、急性淋巴细胞白血病、感染性血小板减少性紫癜、单纯性牙周炎、单核细胞白血病、δ-贮存池病、小儿特发性血小板减少性紫癜、老年人真性红细胞增多症、急性根尖牙周炎、慢性根尖牙周炎、创伤性口炎、青少年牙周炎、慢性牙周炎",
+            119,
+            60,
+        ),
+    ],
+)
+def test_calc_true_wrapping_width(
+    text: Text, wrapping_width: int, true_wrapping_width: int
+) -> None:
+    assert (
+        interactive.calc_true_wrapping_width(text, wrapping_width)
+        == true_wrapping_width
+    )
+
+
+def test_no_chat_history_overflow() -> None:
+    """Should run without crashing.
+
+    originally the long chinese utterance lead to a table width overflow and
+    available width for new utterances being < 0."""
+    events = [
+        {
+            "event": "action",
+            "timestamp": 1619956299.2875981,
+            "name": "action_session_start",
+            "policy": None,
+            "confidence": 1.0,
+            "action_text": None,
+            "hide_rule_turn": False,
+        },
+        {"event": "session_started", "timestamp": 1619956299.287627},
+        {
+            "event": "bot",
+            "timestamp": 1619956324.2313201,
+            "metadata": {"utter_action": "utter_long_chinese"},
+            "text": "牙龈出血的症状对应得疾病可能有：肥大性龈炎、骨髓增生异常综合征、"
+            "口腔疾病、小儿出血性疾病、边缘性龈炎、获得性维生素K依赖性凝血因子异常、"
+            "小儿白血病、回归热、坏死性龈口炎、青春期功能失调性子宫出血、"
+            "郎-奥韦综合征、急性淋巴细胞白血病、感染性血小板减少性紫癜、"
+            "单纯性牙周炎、单核细胞白血病、δ-贮存池病、小儿特发性血小板减少性紫癜、"
+            "老年人真性红细胞增多症、急性根尖牙周炎、慢性根尖牙周炎、创伤性口炎、"
+            "青少年牙周炎、慢性牙周炎",
+        },
+        {
+            "event": "user",
+            "timestamp": 1619956299.509249,
+            "text": "hi",
+            "parse_data": {
+                "intent": {
+                    "id": -2517711783688260279,
+                    "name": "greet",
+                    "confidence": 1.0,
+                },
+                "entities": [],
+                "text": "hi",
+                "message_id": "4a95248b3c6b480c9550f9c19062e2bc",
+                "metadata": {},
+            },
+            "input_channel": None,
+            "message_id": "4a95248b3c6b480c9550f9c19062e2bc",
+            "metadata": {},
+        },
+    ]
+
+    rasa.core.training.interactive._chat_history_table(events)

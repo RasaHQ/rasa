@@ -10,6 +10,7 @@ import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
+    IGNORED_INTENTS,
 )
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -1333,3 +1334,48 @@ def test_domain_with_empty_entity_mapping():
 
     with pytest.raises(InvalidDomain):
         Domain.from_yaml(test_yaml).as_dict()
+
+
+def test_ignored_intents_slot_mappings_invalid_domain():
+    domain_as_dict = {
+        KEY_FORMS: {
+            "my_form": {
+                IGNORED_INTENTS: "some_not_intent",
+                "slot_x": [
+                    {
+                        "type": "from_entity",
+                        "entity": "name",
+                        "not_intent": "other_not_intent",
+                    }
+                ],
+            }
+        },
+    }
+    with pytest.raises(InvalidDomain):
+        Domain.from_dict(domain_as_dict)
+
+
+def test_form_with_no_required_slots_keyword():
+    with pytest.warns(FutureWarning):
+        domain = Domain.from_dict(
+            {
+                "forms": {
+                    "some_form": {
+                        "some_slot": [{"type": "from_text", "intent": "some_intent",}],
+                    }
+                }
+            }
+        )
+
+    assert (
+        domain.forms["some_form"]["required_slots"]["some_slot"][0]["type"]
+        == "from_text"
+    )
+
+
+def test_domain_count_conditional_response_variations():
+    domain = Domain.from_file(
+        path="data/test_domains/conditional_response_variations.yml"
+    )
+    count_conditional_responses = domain.count_conditional_response_variations()
+    assert count_conditional_responses == 5

@@ -16,6 +16,76 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.6.0] - 2021-05-06
+                       
+
+### Deprecations and Removals
+- [#261](https://github.com/rasahq/rasa/issues/261): In forms, the keyword `required_slots` should always precede the definition of slot mappings and the lack of it is deprecated.
+  Please see the [migration guide](migration-guide.mdx) for more information.
+- [#8428](https://github.com/rasahq/rasa/issues/8428): `rasa.data.get_test_directory`, `rasa.data.get_core_nlu_directories`, and
+  `rasa.shared.nlu.training_data.training_data.TrainingData::get_core_nlu_directories`
+  are deprecated and will be removed in Rasa Open Source 3.0.0.
+- [#8498](https://github.com/rasahq/rasa/issues/8498): Update the minimum compatible model version to "2.6.0".
+  This means all models trained with an earlier version will have to be retrained.
+
+### Features
+- [#8103](https://github.com/rasahq/rasa/issues/8103): Feature enhancement enabling JWT authentication for the Socket.IO channel. Users can define `jwt_key` and `jwt_method` as parameters in their credentials file for authentication.
+- [#8180](https://github.com/rasahq/rasa/issues/8180): Allows a Rasa bot to be connected to a Twilio Voice channel. More details in the [Twilio Voice docs](connectors/twilio-voice.mdx)
+- [#8532](https://github.com/rasahq/rasa/issues/8532): Conditional response variations are supported in the `domain.yml` without requiring users to write custom actions code.
+
+  A condition can be a list of slot-value mapping constraints.
+
+### Improvements
+- [#261](https://github.com/rasahq/rasa/issues/261): Added an optional `ignored_intents` parameter in forms.
+
+  - To use it, add the `ignored_intents` parameter  in your `domain.yml` file after the forms name and provide a list of intents to ignore. Please see [Forms](forms.mdx) for more information.
+  - This can be used in case the user never wants to fill any slots of a form with the specified intent, e.g. chitchat.
+- [#5786](https://github.com/rasahq/rasa/issues/5786): Add function to carry `max_history` to featurizer
+- [#7589](https://github.com/rasahq/rasa/issues/7589): Improved the machine learning models' codebase by factoring out shared feature-processing
+  logic into three custom layer classes:
+  - `ConcatenateSparseDenseFeatures` combines multiple sparse and dense feature tensors
+  into one.
+  - `RasaFeatureCombiningLayer` additionally combines sequence-level and sentence-level
+  features.
+  - `RasaSequenceLayer` is used for attributes with sequence-level features; it
+  additionally embeds the combined features with a transformer and facilitates masked
+  language modeling.
+- [#7685](https://github.com/rasahq/rasa/issues/7685): Added the following usability improvements with respect to entities getting extracted multiple times:
+  * Added warnings for competing entity extractors at training time and for overlapping entities at inference time
+  * Improved docs to help users handle overlapping entity problems.
+- [#7999](https://github.com/rasahq/rasa/issues/7999): Replace `weight_sparsity` with `connection_density` in all transformer-based models and add guarantees about internal layers.
+
+  We rename `DenseWithSparseWeights` into `RandomlyConnectedDense`, and guarantee that even at density zero the output is dense and every input is connected to at least one output. The former `weight_sparsity` parameter of DIET, TED, and the ResponseSelector, is now roughly equivalent to `1 - connection_density`, except at very low densities (high sparsities). 
+
+  All layers and components that used to have a `sparsity` argument (`Ffnn`, `TransformerRasaModel`, `MultiHeadAttention`, `TransformerEncoderLayer`, `TransformerEncoder`) now have a `density` argument instead.
+- [#8074](https://github.com/rasahq/rasa/issues/8074): Rasa test now prints a warning if the test stories contain bot utterances that are not part of the domain.
+- [#8263](https://github.com/rasahq/rasa/issues/8263): Updated `asyncio.Task.all_tasks` to `asyncio.all_tasks`, with a fallback for python 3.6, which raises an AttributeError for `asyncio.all_tasks`. This removes the deprecation warning for the `Task.all_tasks` usage.
+- [#8461](https://github.com/rasahq/rasa/issues/8461): Change variable name from `i` to `array_2D`
+- [#8560](https://github.com/rasahq/rasa/issues/8560): Implement a new interface `run_inference` inside `RasaModel` which performs batch inferencing through tensorflow models.
+
+  `rasa_predict` inside `RasaModel` has been made a private method now by changing it to `_rasa_predict`.
+
+### Bugfixes
+- [#7005](https://github.com/rasahq/rasa/issues/7005): Fixed a bug for plotting trackers with non-ascii texts during interactive training by enforcing utf-8 encoding
+- [#7589](https://github.com/rasahq/rasa/issues/7589): Fix masked language modeling in DIET to only apply masking to token-level
+  (sequence-level) features. Previously, masking was applied to both token-level and
+  sentence-level features.
+- [#8300](https://github.com/rasahq/rasa/issues/8300): Make it possible to use `null` entities in stories.
+- [#8333](https://github.com/rasahq/rasa/issues/8333): Introduce a `skip_validation` flag in order to speed up reading YAML files that were already validated.
+- [#8341](https://github.com/rasahq/rasa/issues/8341): Fixed a bug in interactive training that 
+  lead to crashes for long Chinese, Japanese, 
+  or Korean user or bot utterances.
+
+
+## [2.5.1] - 2021-04-28
+                       
+
+### Bugfixes
+- [#8446](https://github.com/rasahq/rasa/issues/8446): Fixed prediction for rules with multiple entities.
+- [#8545](https://github.com/rasahq/rasa/issues/8545): Mitigated Matplotlib backend issue using lazy configuration
+  and added a more explicit error message to guide users.
+
+
 ## [2.5.0] - 2021-04-12
                        
 
