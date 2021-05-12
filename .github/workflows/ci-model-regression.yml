@@ -202,14 +202,6 @@ jobs:
           path: 'dataset'
           ref: ${{ matrix.dataset_branch }}
 
-      - name: Set dataset commit
-        id: set-dataset-commit
-        working-directory: dataset
-        run: |
-          DATASET_COMMIT=$(git rev-parse HEAD)
-          echo $DATASET_COMMIT
-          echo "::set-output name=dataset_commit::$DATASET_COMMIT"
-
       - name: Set env variables
         id: set_dataset_config_vars
         env:
@@ -279,6 +271,14 @@ jobs:
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset_external'
           ref: ${{ env.EXTERNAL_DATASET_REPOSITORY_BRANCH }}
+
+      - name: Set dataset commit
+        id: set-dataset-commit
+        working-directory: ${{ env.DATASET_DIR }}
+        run: |
+          DATASET_COMMIT=$(git rev-parse HEAD)
+          echo $DATASET_COMMIT
+          echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@v2
@@ -417,14 +417,6 @@ jobs:
           path: 'dataset'
           ref: ${{ matrix.dataset_branch }}
 
-      - name: Set dataset commit
-        id: set-dataset-commit
-        working-directory: dataset
-        run: |
-          DATASET_COMMIT=$(git rev-parse HEAD)
-          echo $DATASET_COMMIT
-          echo "::set-output name=dataset_commit::$DATASET_COMMIT"
-
       - name: Download gomplate
         run: |-
           sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
@@ -499,6 +491,14 @@ jobs:
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset_external'
           ref: ${{ env.EXTERNAL_DATASET_REPOSITORY_BRANCH }}
+
+      - name: Set dataset commit
+        id: set-dataset-commit
+        working-directory: ${{ env.DATASET_DIR }}
+        run: |
+          DATASET_COMMIT=$(git rev-parse HEAD)
+          echo $DATASET_COMMIT
+          echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
       - name: Set up Python 3.8 🐍
         uses: actions/setup-python@v2
