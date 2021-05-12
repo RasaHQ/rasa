@@ -7,11 +7,10 @@ from sanic.exceptions import abort
 import jwt
 import jwt.exceptions
 
-from rasa.core import constants
+import rasa.core.channels.channel
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.exceptions import ChannelConfigError
 from sanic.request import Request
 
 logger = logging.getLogger(__name__)
@@ -73,30 +72,20 @@ class RasaChatInput(RestInput):
                         "".format(public_key_url, public_key_field, json.dumps(rjs))
                     )
 
-    def _decode_jwt(self, bearer_token: Text) -> Dict:
-        if self.jwt_key is None:
-            raise ChannelConfigError(
-                "JWT public key is `None`. This is likely caused "
-                "by an error when retrieving the public key from Rasa X."
-            )
-
-        authorization_header_value = bearer_token.replace(
-            constants.BEARER_TOKEN_PREFIX, ""
-        )
-        return jwt.decode(
-            authorization_header_value, self.jwt_key, algorithms=self.jwt_algorithm
-        )
-
     async def _decode_bearer_token(self, bearer_token: Text) -> Optional[Dict]:
         if self.jwt_key is None:
             await self._fetch_public_key()
 
         try:
-            return self._decode_jwt(bearer_token)
+            return rasa.core.channels.channel.decode_jwt(
+                bearer_token, self.jwt_key, self.jwt_algorithm
+            )
         except jwt.InvalidSignatureError:
             logger.error("JWT public key invalid, fetching new one.")
             await self._fetch_public_key()
-            return self._decode_jwt(bearer_token)
+            return rasa.core.channels.channel.decode_jwt(
+                bearer_token, self.jwt_key, self.jwt_algorithm
+            )
 
     async def _extract_sender(self, req: Request) -> Optional[Text]:
         """Fetch user from the Rasa X Admin API."""

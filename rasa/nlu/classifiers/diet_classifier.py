@@ -1355,14 +1355,23 @@ class DIET(TransformerRasaModel):
         if self.config[MASKED_LM]:
             self._prepare_mask_lm_loss(self.text_name)
 
-        # Intent labels are treated similarly to user text but without the transformer
-        # and masked language modelling.
+        # Intent labels are treated similarly to user text but without the transformer,
+        # without masked language modelling, and with no dropout applied to the
+        # individual features, only to the overall label embedding after all label
+        # features have been combined.
         if self.config[INTENT_CLASSIFICATION]:
             self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
+
+            # disable input dropout applied to sparse and dense label features
+            label_config = self.config.copy()
+            label_config.update(
+                {SPARSE_INPUT_DROPOUT: False, DENSE_INPUT_DROPOUT: False}
+            )
+
             self._tf_layers[
                 f"feature_combining_layer.{self.label_name}"
             ] = rasa_layers.RasaFeatureCombiningLayer(
-                self.label_name, self.label_signature[self.label_name], self.config
+                self.label_name, self.label_signature[self.label_name], label_config
             )
 
             self._prepare_ffnn_layer(
