@@ -140,6 +140,137 @@ in the shell and in interactive learning.
 :::
 
 
+### Conditional Response Variations (experimental)
+
+:::caution
+This feature is currently experimental and might change or be removed in the future.
+Share your feedback on it in the [forum](https://forum.rasa.com) to help
+us make this feature ready for production.
+:::
+
+Specific response variations can also be selected based on one or more slot values using a conditional
+response variation. A conditional response variation is defined in the domain or responses YAML files
+similarly to a standard response variation but with an additional `condition` key. This key specifies
+a list of slot `name` and `value` constraints.
+
+:::note
+Because the feature is currently experimental, it is recommended to set the `influence_conversation`
+slot setting to `False` for the slot mappings which are part of conditions.
+:::
+
+When a response is triggered during a dialogue, the constraints of each conditional response variation
+are checked against the current dialogue state. If all constraint slot values are equal to the corresponding
+slot values of the current dialogue state, the response variation is eligible to be used by your conversational
+assistant.
+
+:::note
+The comparison of dialogue state slot values and constraint slot values is performed by the
+equality "==" operator which requires the type of slot values to match too.
+For example, if the constraint is specified as `value: true`, then the slot needs to be filled
+with a boolean `true`, not the string `"true"`.
+:::
+
+In the following example, we will define one conditional response variation with one constraint,
+that the `logged_in` slot is set to `true`:
+
+```yaml-rasa title="domain.yml"
+slots:
+  logged_in:
+    type: bool
+    influence_conversation: False
+  name:
+    type: text
+    influence_conversation: False
+
+responses:
+  utter_greet:
+    - condition:
+        - type: slot
+          name: logged_in
+          value: true
+      text: "Hey, {name}. Nice to see you again! How are you?"
+
+    - text: "Welcome. How is your day going?"
+```
+
+```yaml-rasa title="stories.yml"
+stories:
+- story: greet
+  steps:
+  - action: action_log_in
+  - slot_was_set:
+    - logged_in: true
+  - intent: greet
+  - action: utter_greet
+```
+
+In the example above, the first response variation (``"Hey, {name}. Nice to see you again! How are you?"``)
+will be used whenever the `utter_greet` action is executed and the `logged_in` slot is set to `true`.
+The second variation, which has no condition, will be treated as the default and used whenever
+`logged_in` is not equal to `true`.
+
+:::caution
+It is highly recommended to always provide a default response variation without a condition
+to guard against those cases when no conditional response matches filled slots.
+:::
+
+During a dialogue, Rasa will choose from all conditional response variations whose constraints are satisfied.
+If there are multiple eligible conditional response variations, Rasa will pick one at random.
+For example, consider the following response:
+
+```yaml-rasa title="domain.yml"
+responses:
+  utter_greet:
+    - condition:
+        - type: slot
+          name: logged_in
+          value: true
+      text: "Hey, {name}. Nice to see you again! How are you?"
+
+    - condition:
+        - type: slot
+          name: eligible_for_upgrade
+          value: true
+      text: "Welcome, {name}. Did you know you are eligible for a free upgrade?"
+
+    - text: "Welcome. How is your day going?"
+```
+
+If `logged_in` and `eligible_for_upgrade` are both set to `true` then both the first and second response
+variations are eligible to be used, and will be chosen by the conversational assistant with equal probability.
+
+You can continue using channel-specific response variations alongside conditional response variations
+as shown in the example below.
+
+```yaml-rasa title="domain.yml"
+slots:
+  logged_in:
+    type: bool
+    influence_conversation: False
+  name:
+    type: text
+    influence_conversation: False
+
+responses:
+  utter_greet:
+    - condition:
+        - type: slot
+          name: logged_in
+          value: true
+      text: "Hey, {name}. Nice to see you again on Slack! How are you?"
+      channel: slack
+
+    - text: "Welcome. How is your day going?"
+```
+
+Rasa will prioritize the selection of responses in the following order:
+
+1. conditional response variations with matching channel
+2. default responses with matching channel
+3. conditional response variations with no matching channel
+4. default responses with no matching channel
+
+
 ## Rich Responses
 
 You can make responses rich by adding visual and interactive elements.
@@ -164,12 +295,45 @@ Each button in the list of `buttons` should have two keys:
 * `title`: The text displayed on the buttons that the user sees.
 * `payload`: The message sent from the user to the assistant when the button is clicked.
 
+If you would like the buttons to also pass entities to the assistant:
+
+```yaml-rasa {4-8} title="domain.yml"
+responses:
+  utter_greet:
+  - text: "Hey! Would you like to purchase motor or home insurance?"
+    buttons:
+    - title: "Motor insurance"
+      payload: '/inform{{"insurance":"motor"}}'
+    - title: "Home insurance"
+      payload: '/inform{{"insurance":"home"}}'
+```
+
+Passing multiple entities is also possible with:
+
+```
+'/intent_name{{"entity_type_1":"entity_value_1", "entity_type_2": "entity_value_2"}}'
+```
+
 :::note bypass nlu with buttons
-It's common to use buttons as a shortcut to bypass the machine-learning-based NLU interpreter.
+You can use buttons to bypass NLU prediction and trigger a specific intent and entities.
+
 Messages starting with `/` are sent straight to the
 `RegexInterpreter`, which expects NLU input in a shortened `/intent{entities}` format.
 In the example above, if the user clicks a button, the user input
 will be directly classified as either the `mood_great` or `mood_sad` intent.
+
+You can include entities with the intent to be passed to the `RegexInterpreter` using the following format:
+
+`/inform{"ORG":"Rasa", "GPE":"Germany"}`
+
+The `RegexInterpreter` will classify the message above with the intent `inform` and extract the entities
+`Rasa` and `Germany` which are of type `ORG` and `GPE` respectively.
+
+:::
+
+:::note escaping curly braces in domain.yml
+You need to write the `/intent{entities}` shorthand response with double curly braces in domain.yml so that the assistant does not
+treat it as a [variable in a response](#using-variables-in-responses) and interpolate the content within the curly braces. 
 :::
 
 :::caution Check your channel

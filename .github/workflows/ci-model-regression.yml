@@ -36,6 +36,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       configuration_id: ${{ steps.fc_config.outputs.comment-id }}
+
     steps:
     - name: Checkout main
       uses: actions/checkout@v2
@@ -200,6 +201,14 @@ jobs:
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
           ref: ${{ matrix.dataset_branch }}
+
+      - name: Set dataset commit
+        id: set-dataset-commit
+        working-directory: dataset
+        run: |
+          DATASET_COMMIT=$(git rev-parse HEAD)
+          echo $DATASET_COMMIT
+          echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
       - name: Set env variables
         id: set_dataset_config_vars
@@ -368,6 +377,7 @@ jobs:
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
+          DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python
@@ -406,6 +416,14 @@ jobs:
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
           ref: ${{ matrix.dataset_branch }}
+
+      - name: Set dataset commit
+        id: set-dataset-commit
+        working-directory: dataset
+        run: |
+          DATASET_COMMIT=$(git rev-parse HEAD)
+          echo $DATASET_COMMIT
+          echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
       - name: Download gomplate
         run: |-
@@ -573,6 +591,7 @@ jobs:
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           DATASET_REPOSITORY_BRANCH: ${{ matrix.dataset_branch }}
           TYPE: ${{ matrix.type }}
+          DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
         run: |-
           export PR_URL="https://github.com/${GITHUB_REPOSITORY}/pull/${{ github.event.number }}"
           poetry run pip install analytics-python

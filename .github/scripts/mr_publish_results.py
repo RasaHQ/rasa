@@ -47,6 +47,8 @@ def send_to_segment(context):
             "external_dataset_repository": IS_EXTERNAL,
             "config_repository": CONFIG_REPOSITORY,
             "config_repository_branch": CONFIG_REPOSITORY_BRANCH,
+            "dataset_repository_branch": os.environ["DATASET_REPOSITORY_BRANCH"],
+            "dataset_commit": os.environ["DATASET_COMMIT"],
             "workflow": os.environ["GITHUB_WORKFLOW"],
             "config": os.environ["CONFIG"],
             "pr_url": os.environ["PR_URL"],

@@ -40,6 +40,7 @@ def generate_json(file, task, data):
         "dataset_repository_branch": DATASET_REPOSITORY_BRANCH,
         "config_repository": CONFIG_REPOSITORY,
         "config_repository_branch": CONFIG_REPOSITORY_BRANCH,
+        "dataset_commit": os.environ["DATASET_COMMIT"],
         "accelerator_type": os.environ["ACCELERATOR_TYPE"],
         "test_run_time": os.environ["TEST_RUN_TIME"],
         "train_run_time": os.environ["TRAIN_RUN_TIME"],

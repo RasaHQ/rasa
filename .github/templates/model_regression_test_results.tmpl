@@ -148,10 +148,10 @@ The print_result_core template returns data depends on available fields.
 {{ range $dataset, $config := (datasource "data")}}
 {{ $dataset_main := (index $results_main $dataset) -}}
 {{- if (index $config (index (keys $config) 0)).external_dataset_repository -}}
-Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (keys $config) 0)).dataset_repository_branch }}` (external repository)
+Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (keys $config) 0)).dataset_repository_branch }}` (external repository), commit: `{{ (index $config (index (keys $config) 0)).dataset_commit
 Configuration repository branch: `{{ (index $config (index (keys $config) 0)).config_repository_branch }}`
 {{- else -}}
-Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (keys $config) 0)).dataset_repository_branch }}`
+Dataset: `{{$dataset}}`, Dataset repository branch: `{{ (index $config (index (keys $config) 0)).dataset_repository_branch }}`, commit: `{{ (index $config (index (keys $config) 0)).dataset_commit
 {{ end -}}
 {{ template "print_table_nlu" (dict "config" $config "dataset_main" $dataset_main) }}
 {{ template "print_table_core" (dict "config" $config "dataset_main" $dataset_main) }}
