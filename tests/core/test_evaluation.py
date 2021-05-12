@@ -502,13 +502,13 @@ def test_log_evaluation_table(caplog, skip_field, skip_value):
     [("data/test_yaml_stories/test_full_retrieval_entity_wrong_prediction.yml"),],
 )
 async def test_retrieval_entity_wrong_prediction(
-    tmpdir: Path, response_selector_agent: Agent, test_file: Text
+    tmpdir: Path, form_agent: Agent, test_file: Text
 ):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
     await evaluate_stories(
         stories=test_file,
-        agent=response_selector_agent,
+        agent=form_agent,
         out_directory=str(tmpdir),
         max_stories=None,
         e2e=True,
