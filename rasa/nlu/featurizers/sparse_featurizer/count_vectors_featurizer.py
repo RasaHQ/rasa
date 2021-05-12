@@ -737,6 +737,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         else:
             self._train_with_independent_vocab(attribute_texts)
 
+        return self.persist()
+
+    def process_training_data(self, training_data: TrainingData) -> TrainingData:
+        # process sentences and collect data for all attributes
+        processed_attribute_tokens = self._get_all_attributes_processed_tokens(
+            training_data
+        )
         # transform for all attributes
         for attribute in self._attributes:
             sequence_features, sentence_features = self._get_featurized_attribute(
@@ -750,11 +757,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                     sentence_features,
                     training_data.training_examples,
                 )
-
-        return self.persist()
-
-    def process_training_data(self, training_data: TrainingData) -> TrainingData:
-        self.process(training_data.training_examples)
         return training_data
 
     def process(self, messages: List[Message], **kwargs: Any) -> List[Message]:
