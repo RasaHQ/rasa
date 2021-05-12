@@ -146,7 +146,7 @@ class EntityExtractor(Component):
 
         filtered = []
         for message in entity_examples:
-            entities = extract_entities(message)
+            entities = self._check_entity_extractor(message)
             data = message.data.copy()
             data[ENTITIES] = entities
             filtered.append(
@@ -161,12 +161,12 @@ class EntityExtractor(Component):
 
         return filtered
 
-    def extract_entities(self, message: list) -> list:
+    def _check_entity_extractor(self, message: list) -> list:
         entities = []
         for entity in message.get(ENTITIES, []):
-            extractor = ent.get(EXTRACTOR)
+            extractor = entity.get(EXTRACTOR)
             if not extractor or extractor == self.name:
-                entities.append(ent)
+                entities.append(entity)
         return entities
 
     @staticmethod
@@ -417,6 +417,7 @@ class EntityExtractor(Component):
         confidences: Optional[Dict[Text, List[float]]] = None,
     ) -> Dict[Text, Any]:
         """Create a new entity.
+
         Args:
             tag_names: The tag names to include in the entity.
             entity_tag: The entity type value.
@@ -476,7 +477,7 @@ class EntityExtractor(Component):
             token_names_text = example.get(TOKENS_NAMES[TEXT])
             token_start_positions = [token.start for token in token_names_text]
             token_end_positions = [token.end for token in token_names_text]
-            EntityExtractor.check_entity_boundaries(
+            EntityExtractor._check_entity_boundaries(
                 example,
                 entity_boundaries,
                 token_start_positions,
@@ -485,7 +486,7 @@ class EntityExtractor(Component):
             )
 
     @staticmethod
-    def check_entity_boundaries(
+    def _check_entity_boundaries(
         example: list,
         entity_boundaries: list,
         token_start_positions: list,
