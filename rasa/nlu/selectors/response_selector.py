@@ -322,11 +322,11 @@ class ResponseSelector(DIETClassifier):
                     f"`{self.component_config[NUM_TRANSFORMER_LAYERS]}` for "
                     f"{selector_name}, but a positive number of transformer layers is "
                     f"required when using `{USE_TEXT_AS_LABEL}=True`. {selector_name} "
-                    f"will proceed, using `{NUM_TRANSFORMER_LAYERS}=1`. Alternatively, "
+                    f"will proceed, using `{NUM_TRANSFORMER_LAYERS}=2`. Alternatively, "
                     f"specify a different number in the component's config.",
                     category=UserWarning,
                 )
-                self.component_config[NUM_TRANSFORMER_LAYERS] = 1
+                self.component_config[NUM_TRANSFORMER_LAYERS] = 2
 
             # DIET2DIET requires positive transformer size (default is None).
             if (
@@ -338,11 +338,11 @@ class ResponseSelector(DIETClassifier):
                     f"`{self.component_config[TRANSFORMER_SIZE]}` for "
                     f"{selector_name}, but a positive size is required when using "
                     f"`{USE_TEXT_AS_LABEL}=True`. {selector_name} will proceed, using "
-                    f"`{TRANSFORMER_SIZE}=128`. Alternatively, specify a different "
+                    f"`{TRANSFORMER_SIZE}=256`. Alternatively, specify a different "
                     f"number in the component's config.",
                     category=UserWarning,
                 )
-                self.component_config[TRANSFORMER_SIZE] = 128
+                self.component_config[TRANSFORMER_SIZE] = 256
 
     def _check_config_parameters(self) -> None:
         """Checks that component configuration makes sense; corrects it where needed."""
