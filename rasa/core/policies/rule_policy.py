@@ -807,18 +807,11 @@ class RulePolicy(MemoizationPolicy):
         for state_type, rule_sub_state in rule_state.items():
             conversation_sub_state = conversation_state.get(state_type, {})
             for key, value_from_rules in rule_sub_state.items():
-                # json dumps and loads tuples as lists
-                if isinstance(value_from_rules, list) and state_type != SLOTS:
-                    # sort values before comparing
-                    # `sorted` returns a list
-                    value_from_rules = sorted(value_from_rules)
-
+                if isinstance(value_from_rules, list):
+                    # json dumps and loads tuples as lists,
+                    # so we need to convert them back
+                    value_from_rules = tuple(value_from_rules)
                 value_from_conversation = conversation_sub_state.get(key)
-                if isinstance(value_from_conversation, tuple):
-                    # sort values before comparing
-                    # `sorted` returns a list
-                    value_from_conversation = sorted(value_from_conversation)
-
                 if (
                     # value should be set, therefore
                     # check whether it is the same as in the state
