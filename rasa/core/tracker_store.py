@@ -735,8 +735,8 @@ class FirebaseRealtimeTrackerStore(TrackerStore):
             self,
             domain: Domain,
             firebase_key_file_path: Text,
-            db_storage_path: Text = "/firebase-key.json",
-            database_url: Text = "url",
+            db_storage_path: Text,
+            database_url: Text,
             event_broker: Optional[EndpointConfig] = None,
             **kwargs:Dict[Text,Any],
 
@@ -749,26 +749,20 @@ class FirebaseRealtimeTrackerStore(TrackerStore):
 
         self.cred = credentials.Certificate(self.key_file_path)
         init_app = firebase_admin.initialize_app(self.cred,{"databaseURL":self.database_url})
-        logging.info("LOG -1 ")
-        print("LOG - 1")
         super().__init__(domain,event_broker,**kwargs)
 
     def save(self,tracker:DialogueStateTracker) -> None:
         if self.event_broker:
             self.stream_events(tracker)
 
-        logging.info("SAVE LOG - 2")
-
         serialised_tracker = FirebaseRealtimeTrackerStore.serialise_tracker(tracker)
 
-        user_message_id = "user_"+tracker.sender_id
+        user_message_id = f"user_{int(time())}"
         user_message = tracker.latest_message.text
 
-        logging.info("SAVE LOG - 3")
         bot_message_id = f"bot_{int(time())}"
         bot_message = self.get_latest_bot_message(serialised_tracker)
 
-        logging.info("SAVE LOG - 4")
 
         if bot_message!=None:
             self.push_conversation_db(ref_path=f"{self.db_storage_path}/{tracker.sender_id}",message_id=user_message_id,message=user_message)
@@ -786,30 +780,26 @@ class FirebaseRealtimeTrackerStore(TrackerStore):
         return self.store.keys()
 
 
-    def get_latest_bot_message(self,serialised_tracker) -> Text:
+    def get_latest_bot_message(self,serialised_tracker) :
         """
         Supporting multiple outputs by bot dispatcher
         """
         serialised_tracker = json.loads(serialised_tracker)
         tracker_store = reversed(serialised_tracker["events"])
         bot_message = []
-        logging.info("GET BOT MESSAGE INTERNAL LOG 1")
         for event in tracker_store:
 
             if event["event"]=="bot":
                 bot_message.append(event["text"])
                 break
-        logging.info("GET INTERNAL BOT MESSAGE LOG 2")
 
         if len(bot_message)!=0:
-            logging.info("GET INTERNAL BOT MESSAGE LOG 3")
             return bot_message[0]
 
         else:
-            logging.info("GET INTERNAL BOT MESSAGE LOG 4")
-            return "error"
+            return None
 
-    def push_conversation_db(self,ref_path,message_id,message):
+    def push_conversation_db(self,ref_path,message_id,message)-> None:
 
         ref = db.reference(ref_path)
         ref.update({
