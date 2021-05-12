@@ -131,6 +131,20 @@ async def test_find_conflicts_multiple_stories():
     assert "and 2 other trackers" in str(conflicts[0])
 
 
+async def test_find_unpredictable_actions():
+    trackers, domain = await _setup_trackers_for_testing(
+        "data/test_domains/default.yml",
+        "data/test_yaml_stories/stories_unpredictable.yml",
+    )
+
+    # Create a list of `StoryConflict` objects
+    conflicts = find_story_conflicts(trackers, domain)
+
+    assert len(conflicts) == 2
+    assert "action_unlikely_intent" in str(conflicts[0])
+    assert "action_unlikely_intent" in str(conflicts[1])
+
+
 async def test_add_conflicting_action():
     sliced_states = [
         None,
