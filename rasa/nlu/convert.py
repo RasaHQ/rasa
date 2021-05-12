@@ -21,7 +21,6 @@ def convert_training_data(
             should be converted into.
         language (Text): Language of the data.
     """
-
     if isinstance(data_file, list):
         data_file = data_file[0]
 
