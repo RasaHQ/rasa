@@ -254,6 +254,7 @@
         },
         "reference/rasa/nlu/components",
         "reference/rasa/nlu/config",
+        "reference/rasa/nlu/convert",
         "reference/rasa/nlu/model",
         "reference/rasa/nlu/persistor",
         "reference/rasa/nlu/registry",

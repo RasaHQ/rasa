@@ -1,6 +1,7 @@
 usage: rasa data validate [-h] [-v] [-vv] [--quiet]
                           [--max-history MAX_HISTORY] [-c CONFIG]
-                          [--fail-on-warnings] [-d DOMAIN] [--data DATA]
+                          [--fail-on-warnings] [-d DOMAIN]
+                          [--data DATA [DATA ...]]
                           {stories} ...
 
 positional arguments:
@@ -23,8 +24,9 @@ optional arguments:
                         or a directory that contains several files with domain
                         specifications in it. The content of these files will
                         be read and merged together. (default: domain.yml)
-  --data DATA           Path to the file or directory containing Rasa data.
-                        (default: data)
+  --data DATA [DATA ...]
+                        Paths to the files or directories containing Rasa
+                        data. (default: data)
 
 Python Logging Options:
   -v, --verbose         Be verbose. Sets logging level to INFO. (default:

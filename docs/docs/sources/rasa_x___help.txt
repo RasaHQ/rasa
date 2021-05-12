@@ -1,5 +1,5 @@
-usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [-c CONFIG]
-              [-d DOMAIN] [--no-prompt] [--production]
+usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA [DATA ...]]
+              [-c CONFIG] [-d DOMAIN] [--no-prompt] [--production]
               [--rasa-x-port RASA_X_PORT] [--config-endpoint CONFIG_ENDPOINT]
               [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-p PORT]
               [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]] [--enable-api]
@@ -16,8 +16,9 @@ optional arguments:
                         Path to a trained Rasa model. If a directory is
                         specified, it will use the latest model in this
                         directory. (default: models)
-  --data DATA           Path to the file or directory containing stories and
-                        Rasa NLU data. (default: data)
+  --data DATA [DATA ...]
+                        Paths to the files or directories containing stories
+                        and Rasa NLU data. (default: data)
   -c CONFIG, --config CONFIG
                         The policy and NLU pipeline configuration of your bot.
                         (default: config.yml)
