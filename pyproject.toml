@@ -13,6 +13,7 @@ version = "2.6.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
+
 homepage = "https://rasa.com"
 repository = "https://github.com/rasahq/rasa"
 documentation = "https://rasa.com/docs"
@@ -152,6 +153,7 @@ mypy = "^0.812"
 bandit = "^1.6.3"
 typing-extensions = "^3.7.4"
 memory-profiler = "^0.58.0"
+psutil = "^5.8.0"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
