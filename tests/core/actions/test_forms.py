@@ -1383,12 +1383,12 @@ def test_extract_other_list_slot_from_entity(
         textwrap.dedent(
             f"""
     version: "2.0"
-    
+
     slots:
       {slot_name}:
         type: list
         influence_conversation: false
-        
+
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
