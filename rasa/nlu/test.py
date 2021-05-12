@@ -1254,17 +1254,11 @@ def get_eval_data(
         if e.get(INTENT_RESPONSE_KEY) is not None
     ]
     intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
-    should_eval_intents = (
-        is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
-    )
-    should_eval_response_selection = (
-        is_response_selector_present(interpreter) and len(set(response_labels)) >= 2
-    )
-    available_response_selector_types = get_available_response_selector_types(
-        interpreter
-    )
+    should_eval_intents = True
+    should_eval_response_selection = False
+    available_response_selector_types = []
 
-    should_eval_entities = is_entity_extractor_present(interpreter)
+    should_eval_entities = True
 
     for example in tqdm(test_data.nlu_examples):
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
@@ -1441,9 +1435,14 @@ async def run_evaluation(
     import rasa.shared.nlu.training_data.loading
 
     # get the metadata config from the package data
-    interpreter = Interpreter.load(model_path, component_builder)
+    if isinstance(model_path, str):
+        interpreter = Interpreter.load(model_path, component_builder)
+    elif isinstance(model_path, Interpreter):
+        interpreter = model_path
+    else:
+        raise ValueError("shouldn't happen")
 
-    interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
+    # interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path]
     )
@@ -1486,7 +1485,7 @@ async def run_evaluation(
 
     if any(entity_results):
         logger.info("Entity evaluation results:")
-        extractors = get_entity_extractors(interpreter)
+        extractors = {"DIETClassifier"}
         result["entity_evaluation"] = evaluate_entities(
             entity_results,
             extractors,

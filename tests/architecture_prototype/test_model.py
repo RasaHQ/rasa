@@ -7,7 +7,9 @@ import pytest
 from rasa.architecture_prototype.persistence import LocalModelPersistor
 from rasa.architecture_prototype.model import ModelTrainer, Model
 from rasa.architecture_prototype.fingerprinting import TrainingCache
+from rasa.architecture_prototype.processor import GraphInterpreter
 from rasa.core.channels import UserMessage
+from rasa.nlu.test import run_evaluation
 from rasa.shared.core.trackers import DialogueStateTracker
 from tests.architecture_prototype.conftest import project
 from tests.architecture_prototype.graph_schema import (
@@ -60,6 +62,17 @@ def test_model_training_with_timing():
 
     end = time.time()
     print(f"Finished model training at {end}. Total time: {end - start}")
+
+
+async def test_evaluate_nlu(tmp_path: Path):
+    # Load model
+    persistor = LocalModelPersistor(tmp_path)
+    model = Model.load("sara-model.tar.gz", persistor)
+    interpreter = GraphInterpreter(model)
+
+    await run_evaluation(
+        "/Users/tobias/Workspace/rasa-demo/data/nlu", interpreter, "graph_test_results"
+    )
 
 
 if __name__ == "__main__":

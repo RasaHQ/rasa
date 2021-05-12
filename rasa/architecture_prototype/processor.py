@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import datetime
 from pathlib import Path
 from typing import Dict, Text, Any, Optional, List, Tuple
 
@@ -11,9 +13,10 @@ from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGene
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
+from rasa.nlu.model import Interpreter
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered
-from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.trackers import DialogueStateTracker, AnySlotDict
 import rasa.core.actions.action
 from rasa.utils.endpoints import EndpointConfig
 
@@ -22,6 +25,23 @@ from rasa.utils.endpoints import EndpointConfig
 All the code in this file to allow integration with the rest of Rasa.
 This is not how we envision this will be done in the future.
 """
+
+
+class GraphInterpreter(Interpreter):
+    def __init__(self, model: Model) -> None:
+        self.model = model
+
+    def parse(
+        self,
+        text: Text,
+        time: Optional[datetime.datetime] = None,
+        only_output_properties: bool = True,
+    ) -> Dict[Text, Any]:
+        _, user_uttered = self.model.handle_message(
+            DialogueStateTracker.from_events("dasd", evts=[], slots=AnySlotDict()),
+            UserMessage(text=text),
+        )
+        return user_uttered.parse_data
 
 
 class GraphProcessor(MessageProcessor):
