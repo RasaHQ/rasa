@@ -265,6 +265,15 @@ class ListSlot(Slot):
             # we couldn't convert the value to a list - using default value
             return [0.0]
 
+    @Slot.value.setter
+    def value(self, value: Any) -> None:
+        """Sets the slot's value."""
+        if not isinstance(value, list):
+            # Make sure we always store list items
+            value = [value]
+
+        Slot.value.fset(self, value)
+
 
 class UnfeaturizedSlot(Slot):
     type_name = "unfeaturized"
