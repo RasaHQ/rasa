@@ -276,6 +276,8 @@ class ListSlot(Slot):
 
 
 class UnfeaturizedSlot(Slot):
+    """Deprecated slot type to represent slots which don't influence conversations."""
+
     type_name = "unfeaturized"
 
     def __init__(
