@@ -579,7 +579,7 @@ class TransformerRasaModel(RasaModel):
         name: Text,
         scale_loss: bool,
         prefix: Text = "loss",
-        loss_layer: tf.keras.layers.Layer = layers.DotProductLoss,
+        loss_layer: tf.keras.layers.Layer = layers.SingleLabelDotProductLoss,
     ) -> None:
         self._tf_layers[f"{prefix}.{name}"] = loss_layer(
             self.config[NUM_NEG],

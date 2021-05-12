@@ -366,7 +366,6 @@ class SingleStateFeaturizer:
         Returns:
             A list of encoded labels.
         """
-
         return [
             self._encode_action(action, interpreter)
             for action in domain.action_names_or_texts
@@ -401,6 +400,15 @@ class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     def _encode_intent(
         self, intent: Text, interpreter: NaturalLanguageInterpreter
     ) -> Dict[Text, List["Features"]]:
+        """Extract a numeric representation of an intent.
+
+        Args:
+            intent: Intent to be encoded.
+            interpreter: NLU Interpreter to be used for encoding.
+
+        Returns:
+            Encoded representation of intent.
+        """
         intent_as_sub_state = {INTENT: intent}
 
         return self._extract_state_features(intent_as_sub_state, interpreter)
@@ -408,7 +416,7 @@ class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     def encode_all_labels(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> List[Dict[Text, List["Features"]]]:
-        """Encode all labels from the domain using the given interpreter.
+        """Encode all relevant labels from the domain using the given interpreter.
 
         Args:
             domain: The domain that contains the labels.
@@ -417,7 +425,6 @@ class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         Returns:
             A list of encoded labels.
         """
-
         return [self._encode_intent(intent, interpreter) for intent in domain.intents]
 
 
