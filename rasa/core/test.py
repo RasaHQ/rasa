@@ -352,6 +352,11 @@ class WronglyClassifiedUserUtterance(UserUttered):
         )
         return f"predicted: {self.predicted_intent}: {predicted_message}"
 
+    @staticmethod
+    def inline_comment_for_entity(predicted: Dict[Text, Any]) -> Text:
+        """Returns the predicted entity which is then printed as a comment."""
+        return f"predicted: " + predicted["entity"] + ": " + predicted["value"]
+
     def as_story_string(self, e2e: bool = True) -> Text:
         """Returns text representation of event."""
         from rasa.shared.core.events import format_message
