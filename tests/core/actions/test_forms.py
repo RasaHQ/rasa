@@ -812,7 +812,7 @@ def test_extract_requested_slot_when_mapping_applies(
 @pytest.mark.parametrize(
     "entities, expected_slot_values",
     [
-        # Two entities were extracted for `ListSlot``
+        # Two entities were extracted for `ListSlot`
         (
             [
                 {"entity": "topping", "value": "mushrooms"},
@@ -820,7 +820,7 @@ def test_extract_requested_slot_when_mapping_applies(
             ],
             ["mushrooms", "kebab"],
         ),
-        # One entities was extracted for `ListSlot``
+        # Only one entity was extracted for `ListSlot`
         ([{"entity": "topping", "value": "kebab"},], ["kebab"],),
     ],
 )
@@ -1362,7 +1362,7 @@ def test_extract_other_slots_with_entity(
 @pytest.mark.parametrize(
     "entities, expected_slot_values",
     [
-        # Two entities were extracted for `ListSlot``
+        # Two entities were extracted for `ListSlot`
         (
             [
                 {"entity": "topping", "value": "mushrooms"},
@@ -1370,7 +1370,7 @@ def test_extract_other_slots_with_entity(
             ],
             ["mushrooms", "kebab"],
         ),
-        # One entities was extracted for `ListSlot``
+        # Only one entity was extracted for `ListSlot`
         ([{"entity": "topping", "value": "kebab"},], ["kebab"],),
     ],
 )
