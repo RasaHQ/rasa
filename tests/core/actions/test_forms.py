@@ -954,7 +954,8 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
 
 
 @pytest.mark.parametrize(
-    "mapping_not_intent, mapping_intent, mapping_role, mapping_group, entities, intent, expected_slot_values",
+    "mapping_not_intent, mapping_intent, mapping_role, "
+    "mapping_group, entities, intent, expected_slot_values",
     [
         (
             "some_intent",
@@ -1105,7 +1106,8 @@ def test_extract_requested_slot_from_entity(
 
 
 @pytest.mark.parametrize(
-    "some_other_slot_mapping, some_slot_mapping, entities, intent, expected_slot_values",
+    "some_other_slot_mapping, some_slot_mapping, entities, "
+    "intent, expected_slot_values",
     [
         (
             [

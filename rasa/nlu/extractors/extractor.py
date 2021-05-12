@@ -469,9 +469,10 @@ class EntityExtractor(Component):
                         for t in example.get(TOKENS_NAMES[TEXT])
                     ]
                     rasa.shared.utils.io.raise_warning(
-                        f"Misaligned entity annotation in message '{example.get(TEXT)}' "
-                        f"with intent '{example.get(INTENT)}'. Make sure the start and "
-                        f"end values of entities ({entities_repr}) in the training "
+                        f"Misaligned entity annotation in message "
+                        f"'{example.get(TEXT)}' with intent '{example.get(INTENT)}'. "
+                        f"Make sure the start and end values of entities "
+                        f"({entities_repr}) in the training "
                         f"data match the token boundaries ({tokens_repr}). "
                         "Common causes: \n  1) entities include trailing whitespaces "
                         "or punctuation"

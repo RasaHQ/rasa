@@ -45,7 +45,8 @@ ORIGINAL_TF_HUB_MODULE_URL = (
 
 # Warning: This URL is only intended for running pytests on ConveRT
 # related components. This URL should not be allowed to be used by the user.
-RESTRICTED_ACCESS_URL = "https://storage.googleapis.com/continuous-integration-model-storage/convert_tf2.tar.gz"
+RESTRICTED_ACCESS_URL = "https://storage.googleapis.com/continuous-integration\
+                        -model-storage/convert_tf2.tar.gz"
 
 
 class ConveRTFeaturizer(DenseFeaturizer):
@@ -127,7 +128,8 @@ class ConveRTFeaturizer(DenseFeaturizer):
         if not model_url:
             raise RasaException(
                 f"""Parameter "model_url" was not specified in the configuration
-                of "{ConveRTFeaturizer.__name__}". It is mandatory to pass a value for this parameter.
+                of "{ConveRTFeaturizer.__name__}".
+                It is mandatory to pass a value for this parameter.
                 You can either use a community hosted URL of the model
                 or if you have a local copy of the model, pass the
                 path to the directory containing the model files."""
@@ -147,8 +149,9 @@ class ConveRTFeaturizer(DenseFeaturizer):
             # Can't use the URL that is reserved for tests only
             raise RasaException(
                 f"""Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was
-                set to "{model_url}" which is strictly reserved for pytests of Rasa Open Source only.
-                Due to licensing issues you are not allowed to use the model from this URL.
+                set to "{model_url}" which is strictly reserved for pytests of
+                Rasa Open Source only. Due to licensing issues you are
+                not allowed to use the model from this URL.
                 You can either use a community hosted URL or if you have a
                 local copy of the model, pass the path to the directory
                 containing the model files."""

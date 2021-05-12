@@ -90,7 +90,8 @@ def run_core_test(args: argparse.Namespace) -> None:
 
     if args.model is None:
         rasa.shared.utils.cli.print_error(
-            "No model provided. Please make sure to specify the model to test with '--model'."
+            "No model provided. Please make sure to specify "
+            "the model to test with '--model'."
         )
         return
 

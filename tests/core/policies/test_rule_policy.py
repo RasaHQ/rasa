@@ -150,7 +150,7 @@ def test_potential_contradiction_resolved_by_conversation_start():
     )
 
 
-def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value():
+def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value():  # noqa: E501
     # Two rules that contradict each other except that one of them applies only at
     # conversation start -> ensure that this isn't flagged as a contradiction.
     # Specifically, this checks that the conversation-start-checking logic doesn't
@@ -221,7 +221,7 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
     assert_predicted_action(action_probabilities_1, domain, UTTER_GREET_ACTION)
 
 
-def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value_explicit():
+def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value_explicit():  # noqa: E501
     # Two rules that contradict each other except that one of them applies only at
     # conversation start -> ensure that this isn't flagged as a contradiction.
     # Specifically, this checks that the conversation-start-checking logic doesn't
@@ -710,8 +710,8 @@ async def test_rule_policy_finetune(
         == len(trained_rule_policy.lookup["rules"]) + 1
     )
     assert (
-        """[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "stopp"}}]"""
-        in loaded_policy.lookup["rules"]
+        """[{"prev_action": {"action_name": "action_listen"}, """
+        """"user": {"intent": "stopp"}}]""" in loaded_policy.lookup["rules"]
     )
 
 

@@ -167,14 +167,11 @@ class PolicyEnsemble:
         is_rules_consuming_policy_available = (
             self._policy_ensemble_contains_policy_with_rules_support()
         )
-        training_trackers_contain_rule_trackers = self._training_trackers_contain_rule_trackers(
+        contain_rule_trackers = self._training_trackers_contain_rule_trackers(
             training_trackers
         )
 
-        if (
-            is_rules_consuming_policy_available
-            and not training_trackers_contain_rule_trackers
-        ):
+        if is_rules_consuming_policy_available and not contain_rule_trackers:
             rasa.shared.utils.io.raise_warning(
                 f"Found a rule-based policy in your pipeline but "
                 f"no rule-based training data. Please add rule-based "
@@ -183,10 +180,7 @@ class PolicyEnsemble:
                 f"your pipeline.",
                 docs=DOCS_URL_RULES,
             )
-        elif (
-            not is_rules_consuming_policy_available
-            and training_trackers_contain_rule_trackers
-        ):
+        elif not is_rules_consuming_policy_available and contain_rule_trackers:
             rasa.shared.utils.io.raise_warning(
                 f"Found rule-based training data but no policy supporting rule-based "
                 f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
@@ -212,7 +206,8 @@ class PolicyEnsemble:
                     trackers_to_train, domain, interpreter=interpreter, **kwargs
                 )
 
-            self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(
+            training = rasa.core.training.training
+            self.action_fingerprints = training.create_action_fingerprints(
                 training_trackers, domain
             )
             # set rule only data after training in order to make ensemble usable

@@ -151,7 +151,8 @@ class PikaEventBroker(EventBroker):
 
         channel = await self._connection.channel()
         logger.debug(
-            f"RabbitMQ channel was opened. Declaring fanout exchange '{self.exchange_name}'."
+            f"RabbitMQ channel was opened. "
+            f"Declaring fanout exchange '{self.exchange_name}'."
         )
 
         self._exchange = await self._set_up_exchange(channel)

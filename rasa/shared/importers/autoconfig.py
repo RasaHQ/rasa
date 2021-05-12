@@ -107,9 +107,12 @@ def _auto_configure(
     import pkg_resources
 
     if keys_to_configure:
+        collection_sentence = rasa.shared.utils.common.transform_collection_to_sentence(
+            keys_to_configure
+        )
         logger.debug(
             f"The provided configuration does not contain the key(s) "
-            f"{rasa.shared.utils.common.transform_collection_to_sentence(keys_to_configure)}. "
+            f"{collection_sentence}. "
             f"Values will be provided from the default configuration."
         )
 
