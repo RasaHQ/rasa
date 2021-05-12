@@ -4,8 +4,8 @@ pipeline:
   - name: "WhitespaceTokenizer"
   - name: "CountVectorsFeaturizer"
   - name: "DIETClassifier"
-    entity_recognition: True
-    epochs: 17
+    entity_recognition: False
+    epochs: 8
     learning_rate: 0.01
     random_seed: 2021
   - name: ResponseSelector

@@ -9,12 +9,6 @@ intents:
   - mood_unhappy
   - bot_challenge
   - chitchat
-  - request_restaurant:
-      use_entities:
-        - cuisine
-
-entities:
-  - cuisine
 
 responses:
   utter_greet:
@@ -40,7 +34,6 @@ responses:
 
   utter_iamabot:
   - text: "I am a bot, powered by Rasa."
-
 
 session_config:
   session_expiration_time: 60  # value in minutes
