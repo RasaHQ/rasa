@@ -10,6 +10,14 @@ from rasa.nlu.utils import write_to_file
 def convert_training_data(
     data_file: Union[list, Text], out_file: Text, output_format: Text, language: Text
 ) -> None:
+    """Convert training data.
+
+    Args:
+        data_file (Union[list, Text]): Path to the file or directory containing Rasa data.
+        out_file (Text): File or existing path where to save training data in Rasa format.
+        output_format (Text): Output fortmat the training data should be converted into.
+        language (Text): Language of the data.
+    """
 
     if isinstance(data_file, list):
         data_file = data_file[0]
