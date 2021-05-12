@@ -194,7 +194,6 @@ class Validator:
 
     def verify_actions_in_stories_rules(self) -> bool:
         """Verifies that actions used in stories and rules are present in the domain."""
-        visited = set()
         everything_is_alright = True
 
         for story in self.story_graph.story_steps:
@@ -205,13 +204,8 @@ class Validator:
                 if not event.action_name.startswith("action_"):
                     continue
 
-                if event.action_name in visited:
-                    continue
-
                 if event.action_name not in self.domain.action_names_or_texts:
                     self.domain.raise_action_not_found_exception(event.action_name)
-
-                visited.add(event.action_name)
 
         return everything_is_alright
 
