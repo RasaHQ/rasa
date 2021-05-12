@@ -89,9 +89,7 @@ class SingleStateFeaturizer:
         ]
 
     def prepare_for_training(
-        self,
-        domain: Domain,
-        bilou_tagging: bool = False,
+        self, domain: Domain, bilou_tagging: bool = False,
     ) -> None:
         """Gets necessary information for featurization from domain.
 
@@ -221,10 +219,12 @@ class SingleStateFeaturizer:
         e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Dict[Text, List["Features"]]:
         key = next(
-            k for k in sub_state.keys() if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
+            v
+            for k, v in sub_state.items()
+            if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
         )
+        # TODO: We need a fallback for unexpected user texts during prediction time
         parsed_message = e2e_features[key]
-        assert parsed_message
 
         # remove entities from possible attributes
         attributes = set(
@@ -247,9 +247,7 @@ class SingleStateFeaturizer:
         return output
 
     def encode_state(
-        self,
-        state: State,
-        e2e_features: Optional[Dict[Text, Message]] = None,
+        self, state: State, e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Dict[Text, List["Features"]]:
         """Encode the given state.
 
@@ -289,9 +287,7 @@ class SingleStateFeaturizer:
         return state_features
 
     def encode_entities(
-        self,
-        entity_data: Dict[Text, Any],
-        bilou_tagging: bool = False,
+        self, entity_data: Dict[Text, Any], bilou_tagging: bool = False,
     ) -> Dict[Text, List["Features"]]:
         """Encode the given entity data.
 
@@ -335,9 +331,7 @@ class SingleStateFeaturizer:
         }
 
     def _encode_action(
-        self,
-        action: Text,
-        e2e_features: Optional[Dict[Text, Message]] = None,
+        self, action: Text, e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Dict[Text, List["Features"]]:
         if action in self.action_texts:
             action_as_sub_state = {ACTION_TEXT: action}
@@ -349,9 +343,7 @@ class SingleStateFeaturizer:
         )
 
     def encode_all_actions(
-        self,
-        domain: Domain,
-        e2e_features: Optional[Dict[Text, Message]] = None,
+        self, domain: Domain, e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> List[Dict[Text, List["Features"]]]:
         """Encode all action from the domain.
 
@@ -381,9 +373,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         )
 
     def _extract_state_features(
-        self,
-        sub_state: SubState,
-        sparse: bool = False,
+        self, sub_state: SubState, sparse: bool = False,
     ) -> Dict[Text, List["Features"]]:
         # create a special method that doesn't use passed interpreter
         name_attribute = self._get_name_attribute(set(sub_state.keys()))
