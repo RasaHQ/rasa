@@ -336,3 +336,11 @@ async def test_verify_form_slots_invalid_domain(tmp_path: Path):
         == "The form slot 'last_name' in form 'name_form' is not present in the domain slots."
         "Please add the correct slot or check for typos."
     )
+
+
+async def test_invalid_domain_mapping_policy():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default_with_mapping.yml"
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_domain_validity() is False

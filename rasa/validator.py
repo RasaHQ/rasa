@@ -289,6 +289,18 @@ class Validator:
     def verify_domain_validity(self) -> bool:
         """Checks whether the domain returned by the importer is empty.
 
-        An empty domain is invalid.
+        An empty domain or one that uses deprecated Mapping Policy is invalid.
         """
-        return not self.domain.is_empty()
+        if self.domain.is_empty():
+            return False
+
+        for intent_key, intent_dict in self.domain.intent_properties.items():
+            if "triggers" in intent_dict:
+                rasa.shared.utils.io.raise_warning(
+                    f"The intent {intent_key} in the domain file is using the MappingPolicy format "
+                    f"which has now been deprecated. "
+                    f"Please migrate to RulePolicy."
+                )
+                return False
+
+        return True

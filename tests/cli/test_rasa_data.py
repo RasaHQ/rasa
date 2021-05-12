@@ -240,6 +240,20 @@ def test_validate_files_exit_early():
     assert pytest_e.value.code == 1
 
 
+def test_validate_files_invalid_domain():
+    args = {
+        "domain": "data/test_domains/default_with_mapping.yml",
+        "data": None,
+        "max_history": None,
+        "config": None,
+    }
+
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+        with pytest.warns(UserWarning) as w:
+            assert "Please migrate to RulePolicy." in str(w[0].message)
+
+
 def test_rasa_data_convert_nlu_to_yaml(
     run_in_simple_project: Callable[..., RunResult],
 ):
