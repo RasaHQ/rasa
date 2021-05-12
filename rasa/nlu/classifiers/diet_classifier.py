@@ -1019,10 +1019,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self._persistor.file_for("entity_tag_specs.json"), entity_tag_specs
         )
 
-        io_utils.pickle_dump(
-            self._persistor.file_for("component_config.pkl"), self.component_config
-        )
-
         return self._persistor.resource_name()
 
     @classmethod
@@ -1042,11 +1038,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_example,
         ) = cls._load_from_files(persistor=persistor, resource_name=resource_name)
 
-        component_config = io_utils.pickle_load(
-            persistor.get_resource(resource_name, "component_config.pkl")
-        )
-
-        # component_config = kwargs
+        component_config = kwargs
         component_config = train_utils.update_confidence_type(component_config)
         component_config = train_utils.update_similarity_type(component_config)
         component_config = train_utils.update_deprecated_loss_type(component_config)
@@ -1067,7 +1059,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model=model,
             finetune_mode=should_finetune,
             persistor=persistor,
-            **component_config,
+            **kwargs,
         )
 
     @classmethod
