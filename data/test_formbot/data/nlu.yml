@@ -1,0 +1,24 @@
+version: "2.0"
+nlu:
+- intent: request_restaurant
+  examples: |
+    - how about [indian](cuisine) type of cuisine
+    - today is [greek](cuisine) food day
+    - i am looking for [indian](cuisine) cuisine
+    - im looking for [greek](cuisine) cuisine
+    - look for [italian](cuisine)
+    - looking for [greek](cuisine) food in the center of Athens
+    - [greek](cuisine) food
+    - i will order some [greek](cuisine) feta
+    - we could eat [andalusian](cuisine) tapas and some cerveza
+    - i want [vegetarian](cuisine) food
+    - i am up for [portuguese](cuisine) food
+    - i would like to eat [greek](cuisine) delicacies
+    - are there any [greek](cuisine) tapas around here
+    - [indonesian](cuisine) food is the best
+    - im in for [greek](cuisine) cuisine
+    - i am hungry for [french](cuisine) fries
+
+- intent: inform
+  examples: |
+    - looking forward to eat some [greek](cuisine) souvlaki

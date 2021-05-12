@@ -1,0 +1,11 @@
+language: en
+
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: CountVectorsFeaturizer
+  - name: DIETClassifier
+    epochs: 8
+    random_seed: 58
+
+policies:
+  - name: RulePolicy
