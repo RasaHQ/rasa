@@ -260,7 +260,9 @@ async def test_verify_there_is_not_example_repetition_in_intents():
     assert validator.verify_example_repetition_in_intents(False)
 
 
-async def test_verify_actions_in_stories_not_in_domain(tmp_path: Path):
+async def test_verify_actions_in_stories_not_in_domain(
+    tmp_path: Path, domain_path: Text
+):
     story_file_name = tmp_path / "stories.yml"
     story_file_name.write_text(
         """
@@ -268,14 +270,13 @@ async def test_verify_actions_in_stories_not_in_domain(tmp_path: Path):
         stories:
         - story: story path 1
           steps:
-          - intent: bot_challenge
+          - intent: greet
           - action: action_test_1
         """
     )
 
     importer = RasaFileImporter(
-        domain_path="data/test_moodbot/domain.yml",
-        training_data_paths=[story_file_name],
+        domain_path=domain_path, training_data_paths=[story_file_name],
     )
     validator = await Validator.from_importer(importer)
     with pytest.raises(ActionNotFoundException) as e:
@@ -284,7 +285,7 @@ async def test_verify_actions_in_stories_not_in_domain(tmp_path: Path):
     assert "Cannot access action 'action_test_1'" in str(e.value)
 
 
-async def test_verify_actions_in_rules_not_in_domain(tmp_path: Path):
+async def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text):
     rules_file_name = tmp_path / "rules.yml"
     rules_file_name.write_text(
         """
@@ -297,8 +298,7 @@ async def test_verify_actions_in_rules_not_in_domain(tmp_path: Path):
         """
     )
     importer = RasaFileImporter(
-        domain_path="data/test_moodbot/domain.yml",
-        training_data_paths=[rules_file_name],
+        domain_path=domain_path, training_data_paths=[rules_file_name],
     )
     validator = await Validator.from_importer(importer)
     with pytest.raises(ActionNotFoundException) as e:
@@ -344,3 +344,84 @@ async def test_invalid_domain_mapping_policy():
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_domain_validity() is False
+
+
+async def test_valid_stories_actions_in_domain(tmp_path: Path):
+    domain = tmp_path / "domain.yml"
+    domain.write_text(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        actions:
+        - action_greet
+        """
+    )
+    story_file_name = tmp_path / "stories.yml"
+    story_file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+        - story: story path 1
+          steps:
+          - intent: greet
+          - action: action_greet
+        """
+    )
+    importer = RasaFileImporter(
+        domain_path=domain, training_data_paths=[story_file_name],
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_actions_in_stories_rules()
+
+
+async def test_valid_rules_actions_in_domain(tmp_path: Path):
+    domain = tmp_path / "domain.yml"
+    domain.write_text(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        actions:
+        - action_greet
+        """
+    )
+    rules_file_name = tmp_path / "rules.yml"
+    rules_file_name.write_text(
+        """
+        version: "2.0"
+        rules:
+        - rule: rule path 1
+          steps:
+          - intent: greet
+          - action: action_greet
+        """
+    )
+    importer = RasaFileImporter(
+        domain_path=domain, training_data_paths=[rules_file_name],
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_actions_in_stories_rules()
+
+
+async def test_valid_form_slots_in_domain(tmp_path: Path):
+    domain = tmp_path / "domain.yml"
+    domain.write_text(
+        """
+        version: "2.0"
+        forms:
+          name_form:
+             first_name:
+             - type: from_text
+             last_name:
+             - type: from_text
+        slots:
+             first_name:
+                type: text
+             last_name:
+                type: text
+        """
+    )
+    importer = RasaFileImporter(domain_path=domain)
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_form_slots()
