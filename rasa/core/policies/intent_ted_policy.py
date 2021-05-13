@@ -6,6 +6,18 @@ from typing import Any, List, Optional, Text, Dict, Union, Type
 
 import rasa.utils.io as io_utils
 from rasa.shared.core.domain import Domain
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_UNLIKELY_INTENT_NAME
+from rasa.shared.core.events import UserUttered
+import rasa.shared.utils.io
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.constants import (
+    INTENT,
+    TEXT,
+    ENTITIES,
+    ACTION_NAME,
+)
+from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     IntentMaxHistoryTrackerFeaturizer,
@@ -13,15 +25,18 @@ from rasa.core.featurizers.tracker_featurizers import (
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.ted_policy import TEDPolicy, TED
 from rasa.core.constants import UNLIKELY_INTENT_POLICY_PRIORITY, DIALOGUE
-from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.utils import train_utils
-import rasa.shared.utils.io
-from rasa.utils.tensorflow.models import RasaModel
 from rasa.core.policies.policy import PolicyPrediction
-
+from rasa.core.policies.ted_policy import (
+    LABEL_KEY,
+    LABEL_SUB_KEY,
+    TEDPolicy,
+    TED,
+    SEQUENCE_LENGTH,
+    SEQUENCE,
+)
+from rasa.utils import train_utils
+from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.constants import (
     LABEL,
     DENSE_DIMENSION,
@@ -40,12 +55,8 @@ from rasa.utils.tensorflow.constants import (
     NUM_NEG,
     EVAL_NUM_EXAMPLES,
     EVAL_NUM_EPOCHS,
-    NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
-    USE_MAX_NEG_SIM,
-    MAX_NEG_SIM,
-    MAX_POS_SIM,
     EMBEDDING_DIMENSION,
     DROP_RATE_DIALOGUE,
     DROP_RATE_LABEL,
@@ -55,8 +66,7 @@ from rasa.utils.tensorflow.constants import (
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
-    SOFTMAX,
-    AUTO,
+    INNER,
     BALANCED,
     TENSORBOARD_LOG_DIR,
     TENSORBOARD_LOG_LEVEL,
@@ -65,51 +75,23 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     IGNORE_INTENTS_LIST,
     BILOU_FLAG,
-    CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
     LEARNING_RATE,
     CROSS_ENTROPY,
     SPARSE_INPUT_DROPOUT,
     DENSE_INPUT_DROPOUT,
     MASKED_LM,
+    HIDDEN_LAYERS_SIZES,
+    CONCAT_DIMENSION,
 )
-from rasa.core.policies.ted_policy import (
-    STATE_LEVEL_FEATURES,
-    SENTENCE_FEATURES_TO_ENCODE,
-    SEQUENCE_FEATURES_TO_ENCODE,
-    SEQUENCE_LENGTH,
-    SEQUENCE,
-)
-from rasa.shared.nlu.constants import (
-    INTENT,
-    TEXT,
-    ENTITIES,
-    ACTION_TEXT,
-    ACTION_NAME,
-    SPLIT_ENTITIES_BY_COMMA,
-    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
-)
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, SLOTS, ACTIVE_LOOP
-from rasa.shared.core.events import UserUttered
-from rasa.utils.tensorflow.constants import HIDDEN_LAYERS_SIZES, CONCAT_DIMENSION
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
-    FeatureSignature,
     FeatureArray,
     Data,
 )
-from rasa.nlu.extractors.extractor import EntityTagSpec
-from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
-from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 
 logger = logging.getLogger(__name__)
-
-DIALOGUE_FEATURES = f"{DIALOGUE}_features"
-LABEL_FEATURES = f"{LABEL}_features"
-LABEL_IDS = f"{LABEL}_ids"
-LABEL_KEY = LABEL
-LABEL_SUB_KEY = "ids"
 
 
 class IntentTEDPolicy(TEDPolicy):
@@ -117,46 +99,30 @@ class IntentTEDPolicy(TEDPolicy):
     TODO: add description
     """
 
-    SUPPORTS_ONLINE_TRAINING = True
-
     # please make sure to update the docs when changing a default parameter
     defaults = {
-        # TODO: Remove unnecessary params
         # ## Architecture of the used neural network
         # Hidden layer sizes for layers before the embedding layers for user message
         # and labels.
         # The number of hidden layers is equal to the length of the corresponding list.
-        HIDDEN_LAYERS_SIZES: {TEXT: [], ACTION_TEXT: [], f"{LABEL}_{ACTION_TEXT}": []},
+        HIDDEN_LAYERS_SIZES: {TEXT: []},
         # Dense dimension to use for sparse features.
         DENSE_DIMENSION: {
             TEXT: 128,
-            ACTION_TEXT: 128,
-            f"{LABEL}_{ACTION_TEXT}": 128,
             INTENT: 20,
             ACTION_NAME: 20,
-            f"{LABEL}_{ACTION_NAME}": 20,
             ENTITIES: 20,
             SLOTS: 20,
             ACTIVE_LOOP: 20,
         },
         # Default dimension to use for concatenating sequence and sentence features.
-        CONCAT_DIMENSION: {TEXT: 128, ACTION_TEXT: 128, f"{LABEL}_{ACTION_TEXT}": 128},
+        CONCAT_DIMENSION: {TEXT: 128},
         # Dimension size of embedding vectors before the dialogue transformer encoder.
         ENCODING_DIMENSION: 50,
         # Number of units in transformer encoders
-        TRANSFORMER_SIZE: {
-            TEXT: 128,
-            ACTION_TEXT: 128,
-            f"{LABEL}_{ACTION_TEXT}": 128,
-            DIALOGUE: 128,
-        },
+        TRANSFORMER_SIZE: {TEXT: 128, DIALOGUE: 128,},
         # Number of layers in transformer encoders
-        NUM_TRANSFORMER_LAYERS: {
-            TEXT: 1,
-            ACTION_TEXT: 1,
-            f"{LABEL}_{ACTION_TEXT}": 1,
-            DIALOGUE: 1,
-        },
+        NUM_TRANSFORMER_LAYERS: {TEXT: 1, DIALOGUE: 1,},
         # Number of attention heads in transformer
         NUM_HEADS: 4,
         # If 'True' use key relative embeddings in attention
@@ -187,35 +153,14 @@ class IntentTEDPolicy(TEDPolicy):
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
-        # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
-        # TODO: restrict to only inner. No need to support cosine with it.
-        SIMILARITY_TYPE: AUTO,
-        # The type of the loss function, either 'cross_entropy' or 'margin'.
-        LOSS_TYPE: CROSS_ENTROPY,
-        # Number of top actions to normalize scores for. Applicable with
-        # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
-        # to turn off normalization.
+        # Number of intents to store in predicted action metadata.
         RANKING_LENGTH: 10,
-        # Indicates how similar the algorithm should try to make embedding vectors
-        # for correct labels.
-        # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-        MAX_POS_SIM: 0.8,
-        # Maximum negative similarity for incorrect labels.
-        # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-        MAX_NEG_SIM: -0.2,
-        # If 'True' the algorithm only minimizes maximum similarity over
-        # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
-        USE_MAX_NEG_SIM: True,
         # If 'True' scale loss inverse proportionally to the confidence
         # of the correct prediction
         SCALE_LOSS: True,
         # ## Regularization parameters
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.001,
-        # The scale of how important is to minimize the maximum similarity
-        # between embeddings of different labels,
-        # used only if 'loss_type' is set to 'margin'.
-        NEGATIVE_MARGIN_SCALE: 0.8,
         # Dropout rate for embedding layers of dialogue features.
         DROP_RATE_DIALOGUE: 0.1,
         # Dropout rate for embedding layers of utterance level features.
@@ -253,17 +198,6 @@ class IntentTEDPolicy(TEDPolicy):
         # Specify what features to use as sequence and sentence features.
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
-        # Split entities by comma, this makes sense e.g. for a list of
-        # ingredients in a recipe, but it doesn't make sense for the parts of
-        # an address
-        SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
-        # if 'True' applies sigmoid on all similarity terms and adds
-        # it to the loss function to ensure that similarity values are
-        # approximately bounded. Used inside softmax loss only.
-        CONSTRAIN_SIMILARITIES: False,
-        # Model confidence to be returned during inference. Possible values -
-        # 'softmax' and 'linear_norm'.
-        MODEL_CONFIDENCE: SOFTMAX,
         # List of intents to ignore
         IGNORE_INTENTS_LIST: [],
     }
@@ -282,10 +216,6 @@ class IntentTEDPolicy(TEDPolicy):
     ) -> None:
         """Declare instance variables with default values."""
 
-        # if not max_history:
-        #     # TODO: raise proper error. max_history should always be specified.
-        #     raise Exception("Max history needs to be specified")
-
         super().__init__(
             featurizer,
             priority,
@@ -300,12 +230,11 @@ class IntentTEDPolicy(TEDPolicy):
         self.label_thresholds = label_thresholds
         self.ignore_intent_list = self.config[IGNORE_INTENTS_LIST]
 
-        # Set all invalid configuration parameters
+        # Set all invalid / non configurable parameters
         self.config[ENTITY_RECOGNITION] = False
         self.config[BILOU_FLAG] = False
-        self.config[SPLIT_ENTITIES_BY_COMMA] = SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
-        self.config[CONSTRAIN_SIMILARITIES] = False
-        self.config[MODEL_CONFIDENCE] = SOFTMAX
+        self.config[SIMILARITY_TYPE] = INNER
+        self.config[LOSS_TYPE] = CROSS_ENTROPY
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
@@ -316,6 +245,12 @@ class IntentTEDPolicy(TEDPolicy):
     @staticmethod
     def model_class() -> Type[RasaModel]:
         return IntentTED
+
+    def _auto_update_configuration(self):
+        self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
+        self.config = rasa.utils.train_utils.update_deprecated_sparsity_to_density(
+            self.config
+        )
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
@@ -491,112 +426,32 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     @classmethod
-    def load(
-        cls,
-        path: Union[Text, Path],
-        should_finetune: bool = False,
-        epoch_override: int = defaults[EPOCHS],
-        **kwargs: Any,
-    ) -> "TEDPolicy":
-        """Loads a policy from the storage.
-        **Needs to load its featurizer**
-        """
-        # TODO: refactor this method to reuse more code with TEDPolicy
-        model_path = Path(path)
-
-        if not model_path.exists():
-            logger.error(
-                f"Failed to load TED policy model. Path "
-                f"'{model_path.absolute()}' doesn't exist."
-            )
-            return
-
-        tf_model_file = model_path / f"{cls._metadata_filename()}.tf_model"
-
-        featurizer = TrackerFeaturizer.load(path)
-
-        if not (model_path / f"{cls._metadata_filename()}.data_example.pkl").is_file():
-            return cls(featurizer=featurizer)
-
-        loaded_data = io_utils.pickle_load(
-            model_path / f"{cls._metadata_filename()}.data_example.pkl"
-        )
-        label_data = io_utils.pickle_load(
-            model_path / f"{cls._metadata_filename()}.label_data.pkl"
-        )
-        fake_features = io_utils.pickle_load(
-            model_path / f"{cls._metadata_filename()}.fake_features.pkl"
-        )
-        label_data = RasaModelData(data=label_data)
-        meta = io_utils.pickle_load(model_path / f"{cls._metadata_filename()}.meta.pkl")
-        priority = io_utils.json_unpickle(
-            model_path / f"{cls._metadata_filename()}.priority.pkl"
-        )
+    def _load_model_utilities(cls, path: Union[Text, Path]):
+        model_utilties = super()._load_model_utilities(path)
         label_thresholds = io_utils.pickle_load(
-            model_path / f"{cls._metadata_filename()}.label_thresholds.pkl"
+            Path(path) / f"{cls._metadata_filename()}.label_thresholds.pkl"
         )
-        entity_tag_specs = rasa.shared.utils.io.read_json_file(
-            model_path / f"{cls._metadata_filename()}.entity_tag_specs.json"
-        )
-        entity_tag_specs = [
-            EntityTagSpec(
-                tag_name=tag_spec["tag_name"],
-                ids_to_tags={
-                    int(key): value for key, value in tag_spec["ids_to_tags"].items()
-                },
-                tags_to_ids={
-                    key: int(value) for key, value in tag_spec["tags_to_ids"].items()
-                },
-                num_tags=tag_spec["num_tags"],
-            )
-            for tag_spec in entity_tag_specs
-        ]
+        model_utilties.update({"label_thresholds": label_thresholds})
 
-        model_data_example = RasaModelData(
-            label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
-        )
+        return model_utilties
+
+    @classmethod
+    def _update_loaded_params(cls, meta):
         meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
-        meta = rasa.utils.train_utils.update_confidence_type(meta)
-        meta = rasa.utils.train_utils.update_similarity_type(meta)
-        meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
 
-        meta[EPOCHS] = epoch_override
+        return meta
 
-        predict_data_example = RasaModelData(
-            label_key=LABEL_KEY,
-            label_sub_key=LABEL_SUB_KEY,
-            data={
-                feature_name: features
-                for feature_name, features in model_data_example.items()
-                if feature_name
-                # we need to remove label features for prediction if they are present
-                in PREDICTION_FEATURES
-            },
-        )
-
-        model = cls.model_class().load(
-            str(tf_model_file),
-            model_data_example,
-            predict_data_example,
-            data_signature=model_data_example.get_signature(),
-            config=meta,
-            max_history_featurizer_is_used=True,
-            label_data=label_data,
-            entity_tag_specs=entity_tag_specs,
-            finetune_mode=should_finetune,
-        )
-
-        logger.debug("Initializing policy")
-
+    @classmethod
+    def _load_policy_from_model(cls, model, model_utilities, should_finetune):
         return cls(
-            featurizer=featurizer,
-            priority=priority,
+            featurizer=model_utilities["featurizer"],
+            priority=model_utilities["priority"],
             model=model,
-            fake_features=fake_features,
-            entity_tag_specs=entity_tag_specs,
+            fake_features=model_utilities["fake_features"],
+            entity_tag_specs=model_utilities["entity_tag_specs"],
             should_finetune=should_finetune,
-            label_thresholds=label_thresholds,
-            **meta,
+            label_thresholds=model_utilities["label_thresholds"],
+            **model_utilities["meta"],
         )
 
 
@@ -606,9 +461,6 @@ class IntentTED(TED):
         self._prepare_embed_layers(predictor_attribute)
         self._prepare_embed_layers(LABEL)
 
-        # TODO: check how to setup this in a better way between IntentTED
-        #  and TED. The main issue is that each of the loss functions
-        #  accept different arguments.
         self._prepare_dot_product_loss(
             LABEL, self.config[SCALE_LOSS], loss_layer=layers.MultiLabelDotProductLoss
         )
