@@ -49,6 +49,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_DEACTIVATE_LOOP_NAME,
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
+    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
@@ -111,6 +112,7 @@ def test_domain_action_instantiation():
         ACTION_DEFAULT_FALLBACK_NAME,
         ACTION_DEACTIVATE_LOOP_NAME,
         ACTION_REVERT_FALLBACK_EVENTS_NAME,
+        ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
         ACTION_DEFAULT_ASK_REPHRASE_NAME,
         ACTION_TWO_STAGE_FALLBACK_NAME,
         ACTION_BACK_NAME,
@@ -123,8 +125,7 @@ def test_domain_action_instantiation():
     instantiated_actions_len = len(instantiated_actions)
     assert instantiated_actions_len == 14
     for i in range(instantiated_actions_len):
-        assert instantiated_actions[i].name == name_test_array[i]
-
+        assert instantiated_actions[i].name() == name_test_array[i]
 
 async def test_remote_action_runs(
     default_channel: OutputChannel,
