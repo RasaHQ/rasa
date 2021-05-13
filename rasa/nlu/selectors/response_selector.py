@@ -51,7 +51,7 @@ from rasa.utils.tensorflow.constants import (
     UNIDIRECTIONAL_ENCODER,
     DROP_RATE,
     DROP_RATE_ATTENTION,
-    WEIGHT_SPARSITY,
+    CONNECTION_DENSITY,
     NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -196,8 +196,8 @@ class ResponseSelector(DIETClassifier):
         # ## Regularization parameters
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.002,
-        # Sparsity of the weights in dense layers
-        WEIGHT_SPARSITY: 0.0,
+        # Fraction of trainable weights in internal layers.
+        CONNECTION_DENSITY: 1.0,
         # The scale of how important is to minimize the maximum similarity
         # between embeddings of different labels.
         NEGATIVE_MARGIN_SCALE: 0.8,
@@ -657,12 +657,17 @@ class DIET2DIET(DIET):
 
         # For user text and response text, prepare layers that combine different feature
         # types, embed everything using a transformer and optionally also do masked
-        # language modeling.
-        for attribute in [self.text_name, self.label_name]:
+        # language modeling. Omit input dropout for label features.
+        label_config = self.config.copy()
+        label_config.update({SPARSE_INPUT_DROPOUT: False, DENSE_INPUT_DROPOUT: False})
+        for attribute, config in [
+            (self.text_name, self.config),
+            (self.label_name, label_config),
+        ]:
             self._tf_layers[
                 f"sequence_layer.{attribute}"
             ] = rasa_layers.RasaSequenceLayer(
-                attribute, self.data_signature[attribute], self.config
+                attribute, self.data_signature[attribute], config
             )
 
         if self.config[MASKED_LM]:

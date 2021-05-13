@@ -698,6 +698,7 @@ async def track_model_training(
     stories = await training_data.get_stories()
     nlu_data = await training_data.get_nlu_data()
     domain = await training_data.get_domain()
+    count_conditional_responses = domain.count_conditional_response_variations()
 
     training_id = uuid.uuid4().hex
 
@@ -717,6 +718,7 @@ async def track_model_training(
             # Old nomenclature from when 'responses' were still called
             # 'templates' in the domain
             "num_templates": len(domain.responses),
+            "num_conditional_response_variations": count_conditional_responses,
             "num_slots": len(domain.slots),
             "num_forms": len(domain.forms),
             "num_intents": len(domain.intents),

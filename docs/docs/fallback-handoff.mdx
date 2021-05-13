@@ -320,7 +320,7 @@ class ActionDefaultFallback(Action):
         dispatcher.utter_message(text="I am passing you to a human...")
         
         # assume there's a function to call customer service
-        # pass the tracker so that the agent has a record of the converstation between the user
+        # pass the tracker so that the agent has a record of the conversation between the user
         # and the bot for context
         call_customer_service(tracker)
      
@@ -331,9 +331,9 @@ class ActionDefaultFallback(Action):
   :::caution Events Returned By A Custom Ultimate Fallback Action
     You should include `UserUtteranceReverted()` as one of the events returned by your custom
     `action_default_fallback`. Not including this event will cause the tracker to include all events that happened
-    during the Two-Stage Fallback process which could intefere with subsequent action predictions from the bot's policy
-    pipeline. It is better to treat events that occured during the Two-Stage Fallback process as if they did not happen
-    so that your bot can apply its rules or memorised stories to correctly predict the next action. 
+    during the Two-Stage Fallback process which could interfere with subsequent action predictions from the bot's policy
+    pipeline. It is better to treat events that occurred during the Two-Stage Fallback process as if they did not happen
+    so that your bot can apply its rules or memorized stories to correctly predict the next action.
   :::
 
 
