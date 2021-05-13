@@ -16,6 +16,19 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.6.1] - 2021-05-11
+                       
+
+### Bugfixes
+- [#7908](https://github.com/rasahq/rasa/issues/7908): Made `SchemaError` message available to validator so that the reason why reason schema validation fails during `rasa data validate` is displayed when response `text` value is `null`.
+  Added warning message when deprecated MappingPolicy format is used in the domain.
+- [#8623](https://github.com/rasahq/rasa/issues/8623): When there are multiple entities in a user message, they will get sorted when creating a
+  representation of the current dialogue state.
+
+  Previously, the ordering was random, leading to inconsistent state representations. This
+  would sometimes lead to memoization policies failing to recall a memorised action.
+
+
 ## [2.6.0] - 2021-05-06
                        
 
