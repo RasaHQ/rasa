@@ -12,7 +12,7 @@ from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, ACTION_TEXT, ACTIO
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from tests.nlu.utilities import verify_sequence_not_none
+from tests.nlu.utilities import get_feature_vectors
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
@@ -433,19 +433,15 @@ def test_count_vector_featurizer_persist_load(tmp_path: Path):
     test_ftr.process(test_message2)
 
     test_seq_vec_1, test_sen_vec_1 = test_message1.get_sparse_features(TEXT, [])
-    test_seq_vec_1, test_sen_vec_1 = verify_sequence_not_none(
-        test_seq_vec_1, test_sen_vec_1
-    )
+    test_seq_vec_1, test_sen_vec_1 = get_feature_vectors(test_seq_vec_1, test_sen_vec_1)
     train_seq_vec_1, train_sen_vec_1 = train_message1.get_sparse_features(TEXT, [])
-    train_seq_vec_1, train_sen_vec_1 = verify_sequence_not_none(
+    train_seq_vec_1, train_sen_vec_1 = get_feature_vectors(
         train_seq_vec_1, train_sen_vec_1
     )
     test_seq_vec_2, test_sen_vec_2 = test_message2.get_sparse_features(TEXT, [])
-    test_seq_vec_2, test_sen_vec_2 = verify_sequence_not_none(
-        test_seq_vec_2, test_sen_vec_2
-    )
+    test_seq_vec_2, test_sen_vec_2 = get_feature_vectors(test_seq_vec_2, test_sen_vec_2)
     train_seq_vec_2, train_sen_vec_2 = train_message2.get_sparse_features(TEXT, [])
-    train_seq_vec_2, train_sen_vec_2 = verify_sequence_not_none(
+    train_seq_vec_2, train_sen_vec_2 = get_feature_vectors(
         train_seq_vec_2, train_sen_vec_2
     )
 

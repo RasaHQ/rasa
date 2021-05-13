@@ -11,13 +11,12 @@ def write_file_config(file_config):
         return f
 
 
-def verify_sequence_not_none(sequence, sentence):
-    if sequence and sentence:
-        return sequence.features, sentence.features
-    if sequence and not sentence:
-        return sequence.features, None
-    if not sequence and sentence:
-        return None, sentence.features
+# check if os sequences e sentences is loaded correctly
+def get_feature_vectors(sequence, sentence):
+    return (
+        sequence.features if sequence else None,
+        sentence.features if sentence else None,
+    )
 
 
 class ResponseTest:
