@@ -2903,3 +2903,68 @@ def test_rule_with_multiple_entities():
         RegexInterpreter(),
     )
     assert_predicted_action(prediction, domain, utter_1)
+
+
+def test_rule_with_multiple_slots():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    value_1 = "value_1"
+    value_2 = "value_2"
+    slot_1 = "slot_1"
+    slot_2 = "slot_2"
+    domain = Domain.from_yaml(
+        f"""
+            version: "2.0"
+            intents:
+            - {intent_1}
+            actions:
+            - {utter_1}
+            - {utter_2}
+
+            slots:
+              {slot_1}:
+                type: categorical
+                values:
+                 - {value_1}
+                 - {value_2}
+              {slot_2}:
+                type: categorical
+                values:
+                 - {value_1}
+                 - {value_2}
+            """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "rule without action_listen",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1},),
+            SlotSet(slot_1, value_1),
+            SlotSet(slot_2, value_2),
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    policy = RulePolicy()
+    policy.train([rule], domain, RegexInterpreter())
+
+    # the order of slots set doesn't matter for prediction
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", intent={"name": intent_1},),
+        SlotSet(slot_2, value_2),
+        SlotSet(slot_1, value_1),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, utter_1)
