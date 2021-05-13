@@ -3,10 +3,12 @@ import json
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Text, List, Tuple, Optional, Union
 
 import memory_profiler
+import psutil
 import pytest
 
 import rasa
@@ -75,6 +77,12 @@ class MemoryLeakTest(abc.ABC):
             # Force TensorFlow to use CPU so we can track the memory usage
             env={"CUDA_VISIBLE_DEVICES": "-1"},
         )
+
+        # Wait until process is running to avoid race conditions with the memory
+        # profiling
+        while not psutil.pid_exists(process.pid):
+            time.sleep(0.01)
+
         results = memory_profiler.memory_usage(
             process,
             interval=PROFILING_INTERVAL,
