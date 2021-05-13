@@ -14,16 +14,22 @@ from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 logger = logging.getLogger(__name__)
 
 CHANNEL_NAME = "hangouts"
-CERT_URI = "https://www.googleapis.com/service_accounts/v1/metadata\
-            /x509/chat@system.gserviceaccount.com"
+CERT_URI = (
+    "https://www.googleapis.com/service_accounts/"
+    "v1/metadata/x509/chat@system.gserviceaccount.com"
+)
 
 
 class HangoutsOutput(OutputChannel):
+    """A Hangouts communication channel."""
+
     @classmethod
     def name(cls) -> Text:
+        """Return channel name."""
         return CHANNEL_NAME
 
     def __init__(self) -> None:
+        """Starts messages as empty dictionary."""
         self.messages = {}
 
     @staticmethod

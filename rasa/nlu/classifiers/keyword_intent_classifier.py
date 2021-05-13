@@ -100,6 +100,7 @@ class KeywordIntentClassifier(IntentClassifier):
             )
 
     def process(self, message: Message, **kwargs: Any) -> None:
+        """Set the message intent and add it to the output is it exists."""
         intent_name = self._map_keyword_to_intent(message.get(TEXT))
 
         confidence = 0.0 if intent_name is None else 1.0
