@@ -367,8 +367,8 @@ def test_layer_gives_correct_output_units(
                 [batch_size, max_seq_length + 1, units_1],
                 [batch_size, max_seq_length + 1, 1],
                 [
-                    num_transformer_layers,
                     batch_size,
+                    num_transformer_layers,
                     num_transformer_heads,
                     max_seq_length + 1,
                     max_seq_length + 1,
@@ -381,8 +381,8 @@ def test_layer_gives_correct_output_units(
                 [0,],
                 [0,],
                 [
-                    num_transformer_layers,
                     batch_size,
+                    num_transformer_layers,
                     num_transformer_heads,
                     max_seq_length + 1,
                     max_seq_length + 1,
@@ -440,8 +440,8 @@ def test_layer_gives_correct_output_units(
                 [batch_size, max_seq_length, 2],
                 [batch_size, max_seq_length, 1],
                 [
-                    num_transformer_layers,
                     batch_size,
+                    num_transformer_layers,
                     num_transformer_heads,
                     max_seq_length,
                     max_seq_length,
@@ -454,8 +454,8 @@ def test_layer_gives_correct_output_units(
                 [0,],
                 [0,],
                 [
-                    num_transformer_layers,
                     batch_size,
+                    num_transformer_layers,
                     num_transformer_heads,
                     max_seq_length,
                     max_seq_length,
