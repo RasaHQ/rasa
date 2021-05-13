@@ -109,10 +109,10 @@ class ConveRTFeaturizer(DenseFeaturizer):
         for file_path in files_to_check:
             if not os.path.exists(file_path):
                 raise RasaException(
-                    f"""File {file_path} does not exist.
-                        Re-check the files inside the directory {model_directory}.
-                        It should contain the following model
-                        files - [{", ".join(files_to_check)}]"""
+                    f"File {file_path} does not exist. "
+                    f"Re-check the files inside the directory {model_directory}. "
+                    f"It should contain the following model "
+                    f'files - [{", ".join(files_to_check)}]'
                 )
 
     def _get_validated_model_url(self) -> Text:
@@ -129,44 +129,44 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         if not model_url:
             raise RasaException(
-                f"""Parameter "model_url" was not specified in the configuration
-                of "{ConveRTFeaturizer.__name__}".
-                It is mandatory to pass a value for this parameter.
-                You can either use a community hosted URL of the model
-                or if you have a local copy of the model, pass the
-                path to the directory containing the model files."""
+                f'Parameter "model_url" was not specified in the configuration '
+                f'of "{ConveRTFeaturizer.__name__}". '
+                f"It is mandatory to pass a value for this parameter. "
+                f"You can either use a community hosted URL of the model "
+                f"or if you have a local copy of the model, pass the "
+                f"path to the directory containing the model files."
             )
 
         if model_url == ORIGINAL_TF_HUB_MODULE_URL:
             # Can't use the originally hosted URL
             raise RasaException(
-                f"""Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was
-                set to "{model_url}" which does not contain the model any longer.
-                You can either use a community hosted URL or if you have a
-                local copy of the model, pass the path to the directory
-                containing the model files."""
+                f'Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was '
+                f'set to "{model_url}" which does not contain the model any longer. '
+                f"You can either use a community hosted URL or if you have a "
+                f"local copy of the model, pass the path to the directory "
+                f"containing the model files."
             )
 
         if model_url == RESTRICTED_ACCESS_URL:
             # Can't use the URL that is reserved for tests only
             raise RasaException(
-                f"""Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was
-                set to "{model_url}" which is strictly reserved for pytests of
-                Rasa Open Source only. Due to licensing issues you are
-                not allowed to use the model from this URL.
-                You can either use a community hosted URL or if you have a
-                local copy of the model, pass the path to the directory
-                containing the model files."""
+                f'Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was '
+                f'set to "{model_url}" which is strictly reserved for pytests of '
+                f"Rasa Open Source only. Due to licensing issues you are "
+                f"not allowed to use the model from this URL. "
+                f"You can either use a community hosted URL or if you have a "
+                f"local copy of the model, pass the path to the directory "
+                f"containing the model files."
             )
 
         if os.path.isfile(model_url):
             # Definitely invalid since the specified path should be a directory
             raise RasaException(
-                f"""Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was
-                set to the path of a file which is invalid. You
-                can either use a community hosted URL or if you have a
-                local copy of the model, pass the path to the directory
-                containing the model files."""
+                f'Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was '
+                f"set to the path of a file which is invalid. You "
+                f"can either use a community hosted URL or if you have a "
+                f"local copy of the model, pass the path to the directory "
+                f"containing the model files."
             )
 
         if rasa.nlu.utils.is_url(model_url):
@@ -181,10 +181,10 @@ class ConveRTFeaturizer(DenseFeaturizer):
             return os.path.abspath(model_url)
 
         raise RasaException(
-            f"""{model_url} is neither a valid remote URL nor a local directory.
-            You can either use a community hosted URL or if you have a
-            local copy of the model, pass the path to
-            the directory containing the model files."""
+            f"{model_url} is neither a valid remote URL nor a local directory. "
+            f"You can either use a community hosted URL or if you have a "
+            f"local copy of the model, pass the path to "
+            f"the directory containing the model files. "
         )
 
     @staticmethod
