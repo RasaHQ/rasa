@@ -8,4 +8,3 @@ event_broker:
   sasl_password: password
   sasl_mechanism: GSSAPI
   sasl_kerberos_service_name: kafka
-  
