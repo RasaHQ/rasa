@@ -105,6 +105,14 @@ jobs:
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
 
+      - name: Set dataset commit
+        id: set-dataset-commit
+        working-directory: dataset
+        run: |
+          DATASET_COMMIT=$(git rev-parse HEAD)
+          echo $DATASET_COMMIT
+          echo "::set-output name=dataset_commit::$DATASET_COMMIT"
+
       - name: Set DATASET and CONFIG variables
         id: set_dataset_config_vars
         env:
@@ -209,6 +217,7 @@ jobs:
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           PR_URL: ""
           DATASET_REPOSITORY_BRANCH: "main"
+          DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
@@ -236,7 +245,7 @@ jobs:
         uses: rishabhgupta/git-action-issue@v2
         id: open_issue
         with:
-            token: ${{ secrets.GITHUB_TOKEN }}
+            token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
             title: "Scheduled Model Regression Test Failed"
             body: "*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br> Scheduled Model Regression Test failed. <br> **Configuration**: ${{ matrix.config }} <br> **Dataset**: ${{ matrix.dataset}}"
             assignees: ${{ steps.pick_assignee.outputs.assignee }}
@@ -252,7 +261,7 @@ jobs:
           # Add label to the issue
           curl \
             -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.RASABOT_GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
             -d '{"labels": ${{ env.GITHUB_ISSUE_LABELS }}}'
@@ -374,7 +383,7 @@ jobs:
         uses: rishabhgupta/git-action-issue@v2
         id: open_issue
         with:
-            token: ${{ secrets.GITHUB_TOKEN }}
+            token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
             title: "Scheduled Model Regression Test Performance Drops"
             body: "*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br> ${{ steps.performance.outputs.report_description }}"
             assignees: ${{ steps.pick_assignee.outputs.assignee }}
@@ -390,7 +399,7 @@ jobs:
           # Add label to the issue
           curl \
             -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.RASABOT_GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
             -d '{"labels": ${{ env.GITHUB_ISSUE_LABELS }}}'
