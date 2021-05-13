@@ -48,6 +48,14 @@ class KafkaEventBroker(EventBroker):
                 sender_id or not
             sasl_username: Username for plain authentication.
             sasl_password: Password for plain authentication.
+            sasl_mechanism: Authentication mechanism when security_protocol is
+                configured for SASL_PLAINTEXT or SASL_SSL.
+                Valid values are: PLAIN, GSSAPI, OAUTHBEARER, SCRAM-SHA-256,
+                SCRAM-SHA-512. Default: `PLAIN`
+            sasl_kerberos_service_name: Service name to include in GSSAPI sasl
+                mechanism handshake. Default: ‘kafka’
+            sasl_kerberos_domain_name: kerberos domain name to use in GSSAPI
+                sasl mechanism handshake. Default: None
             ssl_cafile: Optional filename of ca file to use in certificate
                 verification.
             ssl_certfile: Optional filename of file in pem format containing
