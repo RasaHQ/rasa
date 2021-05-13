@@ -127,6 +127,7 @@ def test_domain_action_instantiation():
     for i in range(instantiated_actions_len):
         assert instantiated_actions[i].name() == name_test_array[i]
 
+
 async def test_remote_action_runs(
     default_channel: OutputChannel,
     default_nlg: NaturalLanguageGenerator,
