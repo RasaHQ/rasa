@@ -526,7 +526,10 @@ def test_mongo_additional_events(
     domain: Domain, retrieve_events_from_previous_conversation_sessions
 ):
     tracker_store = MockedMongoTrackerStore(
-        domain, retrieve_events_from_previous_conversation_sessions,
+        domain,
+        retrieve_events_from_previous_conversation_sessions=(
+            retrieve_events_from_previous_conversation_sessions
+        ),
     )
     events, tracker = create_tracker_with_partially_saved_events(tracker_store)
 
@@ -543,7 +546,10 @@ def test_mongo_additional_events_with_session_start(
 ):
     sender = "test_mongo_additional_events_with_session_start"
     tracker_store = MockedMongoTrackerStore(
-        domain, retrieve_events_from_previous_conversation_sessions,
+        domain,
+        retrieve_events_from_previous_conversation_sessions=(
+            retrieve_events_from_previous_conversation_sessions
+        ),
     )
     tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
 
@@ -565,7 +571,10 @@ def test_sql_additional_events(
     domain: Domain, retrieve_events_from_previous_conversation_sessions
 ):
     tracker_store = SQLTrackerStore(
-        domain, retrieve_events_from_previous_conversation_sessions,
+        domain,
+        retrieve_events_from_previous_conversation_sessions=(
+            retrieve_events_from_previous_conversation_sessions
+        ),
     )
     additional_events, tracker = create_tracker_with_partially_saved_events(
         tracker_store
@@ -588,7 +597,10 @@ def test_sql_additional_events_with_session_start(
 ):
     sender = "test_sql_additional_events_with_session_start"
     tracker_store = SQLTrackerStore(
-        domain, retrieve_events_from_previous_conversation_sessions,
+        domain,
+        retrieve_events_from_previous_conversation_sessions=(
+            retrieve_events_from_previous_conversation_sessions
+        ),
     )
     tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
 

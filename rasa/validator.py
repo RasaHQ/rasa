@@ -255,7 +255,8 @@ class Validator:
         for intent_key, intent_dict in self.domain.intent_properties.items():
             if "triggers" in intent_dict:
                 rasa.shared.utils.io.raise_warning(
-                    f"The intent {intent_key} in the domain file is using the MappingPolicy format "
+                    f"The intent {intent_key} in the domain file "
+                    f"is using the MappingPolicy format "
                     f"which has now been deprecated. "
                     f"Please migrate to RulePolicy."
                 )
