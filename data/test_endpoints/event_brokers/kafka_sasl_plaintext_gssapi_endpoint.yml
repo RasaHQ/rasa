@@ -6,4 +6,6 @@ event_broker:
   partition_by_sender: True
   sasl_username: username
   sasl_password: password
-  sasl_mechanism: PLAIN
+  sasl_mechanism: GSSAPI
+  sasl_kerberos_service_name: kafka
+  

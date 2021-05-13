@@ -276,8 +276,10 @@ async def test_kafka_broker_from_config():
         # which means that the configuration seems correct but a connection to
         # the broker cannot be established
         ("kafka_sasl_plaintext_endpoint.yml", kafka.errors.NoBrokersAvailable),
+        ("kafka_sasl_plaintext_gssapi_endpoint.yml", kafka.errors.NoBrokersAvailable),
         ("kafka_plaintext_endpoint.yml", kafka.errors.NoBrokersAvailable),
         ("kafka_sasl_ssl_endpoint.yml", kafka.errors.NoBrokersAvailable),
+        ("kafka_sasl_ssl_gssapi_endpoint.yml", kafka.errors.NoBrokersAvailable),
         ("kafka_ssl_endpoint.yml", kafka.errors.NoBrokersAvailable),
         # `ValueError` exception is raised when the `security_protocol` is incorrect
         ("kafka_invalid_security_protocol.yml", ValueError),
