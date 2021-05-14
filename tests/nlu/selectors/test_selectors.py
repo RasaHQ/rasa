@@ -24,6 +24,7 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     RANKING_LENGTH,
     LOSS_TYPE,
+    USE_TEXT_AS_LABEL,
 )
 from rasa.utils import train_utils
 from rasa.shared.nlu.constants import TEXT
@@ -440,3 +441,31 @@ async def test_softmax_ranking(
     response_ranking = parse_data.get("response_selector").get("default").get("ranking")
     # check that the output was correctly truncated after normalization
     assert len(response_ranking) == output_length
+
+
+def test_DIET2DIET_config_warning_transformer_with_hidden_layers():
+    # pipeline = [
+    #     {"name": "WhitespaceTokenizer"},
+    #     {"name": "CountVectorsFeaturizer"},
+    #     {"name": "ResponseSelector", EPOCHS: 1, USE_TEXT_AS_LABEL: True, NUM_TRANSFORMER_LAYERS: 1}
+    # ]
+    # _config = RasaNLUModelConfig({"pipeline": pipeline})
+
+    with pytest.warns(FutureWarning) as record:
+        response_selector = ResponseSelector(
+            component_config={USE_TEXT_AS_LABEL: True, NUM_TRANSFORMER_LAYERS: 1}
+        )
+        # response_selector.preprocess_train_data(training_data)
+        # (trained_model, _, persisted_path) = await rasa.nlu.train.train(
+        #     _config,
+        #     path=str(tmp_path),
+        #     data="data/test_selectors",
+        #     component_builder=component_builder,
+        # )
+
+    assert len(record) == 1
+    print(f"\n\n\n++++{record[0].message.args[0]}\n\n\n")
+    assert (
+        record[0].message.args[0]
+        == "This feature is deprecated and will be removed in 3.0.0!"
+    )
