@@ -9,6 +9,7 @@ on:
 env:
   GKE_ZONE: us-central1
   GCLOUD_VERSION: "318.0.0"
+  GITHUB_ISSUE_LABELS: '["type:bug :bug:", "tool:model-regression-tests"]'
 
 jobs:
   read_test_configuration:
@@ -72,7 +73,7 @@ jobs:
         if: failure()
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@v1
+        uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985
         with:
           channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
           status: FAILED
@@ -103,6 +104,14 @@ jobs:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
+
+      - name: Set dataset commit
+        id: set-dataset-commit
+        working-directory: dataset
+        run: |
+          DATASET_COMMIT=$(git rev-parse HEAD)
+          echo $DATASET_COMMIT
+          echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
       - name: Set DATASET and CONFIG variables
         id: set_dataset_config_vars
@@ -208,6 +217,7 @@ jobs:
           TOTAL_RUN_TIME: ${{ steps.run_test.outputs.total_run_time }}
           PR_URL: ""
           DATASET_REPOSITORY_BRANCH: "main"
+          DATASET_COMMIT: ${{ steps.set-dataset-commit.outputs.dataset_commit }}
         run: |-
           poetry run pip install analytics-python
           poetry run python .github/scripts/mr_publish_results.py
@@ -235,7 +245,7 @@ jobs:
         uses: rishabhgupta/git-action-issue@v2
         id: open_issue
         with:
-            token: ${{ secrets.GITHUB_TOKEN }}
+            token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
             title: "Scheduled Model Regression Test Failed"
             body: "*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br> Scheduled Model Regression Test failed. <br> **Configuration**: ${{ matrix.config }} <br> **Dataset**: ${{ matrix.dataset}}"
             assignees: ${{ steps.pick_assignee.outputs.assignee }}
@@ -243,8 +253,6 @@ jobs:
       - name: Add Label to the Issue
         if: failure()
         id: add_label
-        env:
-          LABEL: "type:bug :bug:"
         run: |
           # Get issue number
           ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.number')
@@ -253,23 +261,10 @@ jobs:
           # Add label to the issue
           curl \
             -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.RASABOT_GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
-            -d '{"labels":["${{ env.LABEL }}"]}'
-
-      - name: Assign Issue to Project Column
-        if: failure()
-        run: |
-          ISSUE_ID=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.id')
-
-          # Add this issue to a project column
-          curl \
-            -X POST \
-            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUE_RESEARCH_BOARD_TOKEN }}" \
-            -H 'Accept: application/vnd.github.inertia-preview+json' \
-            -d "{\"content_type\": \"Issue\", \"content_id\": $ISSUE_ID}" \
-            "https://api.github.com/projects/columns/${{ secrets.RESEARCH_BOARD_INBOX_COLUMN_ID }}/cards"
+            -d '{"labels": ${{ env.GITHUB_ISSUE_LABELS }}}'
 
       - name: Notify Slack of Failure 😱
         if: failure()
@@ -388,7 +383,7 @@ jobs:
         uses: rishabhgupta/git-action-issue@v2
         id: open_issue
         with:
-            token: ${{ secrets.GITHUB_TOKEN }}
+            token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
             title: "Scheduled Model Regression Test Performance Drops"
             body: "*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br> ${{ steps.performance.outputs.report_description }}"
             assignees: ${{ steps.pick_assignee.outputs.assignee }}
@@ -396,8 +391,6 @@ jobs:
       - name: Add Label to the Issue
         if: steps.performance.outputs.is_dropped == 'true'
         id: add_label
-        env:
-          LABEL: "type:bug :bug:"
         run: |
           # Get issue number
           ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.number')
@@ -406,23 +399,10 @@ jobs:
           # Add label to the issue
           curl \
             -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.RASABOT_GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
-            -d '{"labels":["${{ env.LABEL }}"]}'
-
-      - name: Assign Issue to Project Column
-        if: steps.performance.outputs.is_dropped == 'true'
-        run: |
-          ISSUE_ID=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.id')
-
-          # Add this issue to a project column
-          curl \
-            -X POST \
-            -s -H "Authorization: token ${{ secrets.RASABOT_ASSIGN_ISSUE_RESEARCH_BOARD_TOKEN }}" \
-            -H 'Accept: application/vnd.github.inertia-preview+json' \
-            -d "{\"content_type\": \"Issue\", \"content_id\": $ISSUE_ID}" \
-            "https://api.github.com/projects/columns/${{ secrets.RESEARCH_BOARD_INBOX_COLUMN_ID }}/cards"
+            -d '{"labels": ${{ env.GITHUB_ISSUE_LABELS }}}'
 
       - name: Notify Slack when Performance Drops 💬
         if: steps.performance.outputs.is_dropped == 'true'
