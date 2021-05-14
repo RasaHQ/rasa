@@ -315,21 +315,35 @@ class ResponseSelector(DIETClassifier):
                 f"({self.retrieval_intent})" if self.retrieval_intent else ""
             )
 
-            # DIET2DIET requires some transformer layers (default is 0).
-            if self.component_config[NUM_TRANSFORMER_LAYERS] < 1:
+            # ResponseSelector defaults specify considerable hidden layer sizes, but
+            # this is for cases where no transformer is used. If a transformer exists,
+            # then the best results are chieved with no hidden layers used between the
+            # feature-combining layers and the transformer.
+            hidden_layers_is_at_default_value = (
+                self.component_config[HIDDEN_LAYERS_SIZES]
+                == self.defaults[HIDDEN_LAYERS_SIZES]
+            )
+            if (
+                self.component_config[NUM_TRANSFORMER_LAYERS] > 0
+                and hidden_layers_is_at_default_value
+            ):
+                hidden_layers_disabled = {
+                    k: [] for k, _ in self.defaults[HIDDEN_LAYERS_SIZES].items()
+                }
                 rasa.shared.utils.io.raise_warning(
-                    f"`{NUM_TRANSFORMER_LAYERS}` is set to "
-                    f"`{self.component_config[NUM_TRANSFORMER_LAYERS]}` for "
-                    f"{selector_name}, but a positive number of transformer layers is "
-                    f"required when using `{USE_TEXT_AS_LABEL}=True`. {selector_name} "
-                    f"will proceed, using `{NUM_TRANSFORMER_LAYERS}=2`. Alternatively, "
-                    f"specify a different number in the component's config.",
+                    f"You have enabled a transformer inside {selector_name} by setting "
+                    f"a positive value for `{NUM_TRANSFORMER_LAYERS}`, but you left "
+                    f"the hidden layer sizes at their default value: "
+                    f"`{HIDDEN_LAYERS_SIZES}="
+                    f"{self.component_config[HIDDEN_LAYERS_SIZES]}`. We recommend to "
+                    f"disable the hidden layers when using a transformer "
+                    f"by specifying `{HIDDEN_LAYERS_SIZES}={hidden_layers_disabled}`.",
                     category=UserWarning,
                 )
-                self.component_config[NUM_TRANSFORMER_LAYERS] = 2
 
-            # DIET2DIET requires positive transformer size (default is None).
-            if (
+            # If a transformer is used, the default `transformer_size` breaks things.
+            # We need to set a reasonable default value so that the model works fine.
+            if self.component_config[NUM_TRANSFORMER_LAYERS] > 0 and (
                 self.component_config[TRANSFORMER_SIZE] is None
                 or self.component_config[TRANSFORMER_SIZE] < 1
             ):
@@ -337,9 +351,10 @@ class ResponseSelector(DIETClassifier):
                     f"`{TRANSFORMER_SIZE}` is set to "
                     f"`{self.component_config[TRANSFORMER_SIZE]}` for "
                     f"{selector_name}, but a positive size is required when using "
-                    f"`{USE_TEXT_AS_LABEL}=True`. {selector_name} will proceed, using "
-                    f"`{TRANSFORMER_SIZE}=256`. Alternatively, specify a different "
-                    f"number in the component's config.",
+                    f"`{USE_TEXT_AS_LABEL}=True` together with "
+                    f"`{NUM_TRANSFORMER_LAYERS} > 0`. {selector_name} will proceed, "
+                    f"using `{TRANSFORMER_SIZE}=256`. Alternatively, specify a "
+                    f"different value in the component's config.",
                     category=UserWarning,
                 )
                 self.component_config[TRANSFORMER_SIZE] = 256
