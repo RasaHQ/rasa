@@ -11,6 +11,7 @@ schema;responses:
       - type: "map"
         required: True
         allowempty: False
+        matching: any
         mapping:
           text:
             type: "str"
