@@ -986,11 +986,15 @@ class TED(TransformerRasaModel):
 
     def _prepare_layers(self) -> None:
         for name in self.data_signature.keys():
-            self._prepare_input_layers(name, self.data_signature[name])
+            self._prepare_input_layers(
+                name, self.data_signature[name], is_label_attribute=False
+            )
             self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
-            self._prepare_input_layers(name, self.label_signature[name])
+            self._prepare_input_layers(
+                name, self.label_signature[name], is_label_attribute=True
+            )
             self._prepare_encoding_layers(name)
 
         self._tf_layers[
@@ -1017,15 +1021,28 @@ class TED(TransformerRasaModel):
         self,
         attribute_name: Text,
         attribute_signature: Dict[Text, List[FeatureSignature]],
+        is_label_attribute: bool = False,
     ) -> None:
-        """Prepares feature processing layers for sentence/sequence-level features."""
+        """Prepares feature processing layers for sentence/sequence-level features.
+
+        Distinguishes between label features and other features, not applying input
+        dropout to the label ones.
+        """
+        # Disable input dropout in the config to be used if this is a label attribute.
+        if is_label_attribute:
+            config_to_use = self.config.copy()
+            config_to_use.update(
+                {SPARSE_INPUT_DROPOUT: False, DENSE_INPUT_DROPOUT: False}
+            )
+        else:
+            config_to_use = self.config
         # Attributes with sequence-level features also have sentence-level features,
         # all these need to be combined and further processed.
         if attribute_name in SEQUENCE_FEATURES_TO_ENCODE:
             self._tf_layers[
                 f"sequence_layer.{attribute_name}"
             ] = rasa_layers.RasaSequenceLayer(
-                attribute_name, attribute_signature, self.config
+                attribute_name, attribute_signature, config_to_use
             )
         # Attributes without sequence-level features require some actual feature
         # processing only if they have sentence-level features. Attributes with no
@@ -1038,7 +1055,7 @@ class TED(TransformerRasaModel):
                 attribute=attribute_name,
                 feature_type=SENTENCE,
                 feature_type_signature=attribute_signature[SENTENCE],
-                config=self.config,
+                config=config_to_use,
             )
 
     def _prepare_encoding_layers(self, name: Text) -> None:

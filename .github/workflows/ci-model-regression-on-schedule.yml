@@ -245,7 +245,7 @@ jobs:
         uses: rishabhgupta/git-action-issue@v2
         id: open_issue
         with:
-            token: ${{ secrets.GITHUB_TOKEN }}
+            token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
             title: "Scheduled Model Regression Test Failed"
             body: "*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br> Scheduled Model Regression Test failed. <br> **Configuration**: ${{ matrix.config }} <br> **Dataset**: ${{ matrix.dataset}}"
             assignees: ${{ steps.pick_assignee.outputs.assignee }}
@@ -261,7 +261,7 @@ jobs:
           # Add label to the issue
           curl \
             -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.RASABOT_GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
             -d '{"labels": ${{ env.GITHUB_ISSUE_LABELS }}}'
@@ -383,7 +383,7 @@ jobs:
         uses: rishabhgupta/git-action-issue@v2
         id: open_issue
         with:
-            token: ${{ secrets.GITHUB_TOKEN }}
+            token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
             title: "Scheduled Model Regression Test Performance Drops"
             body: "*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br> ${{ steps.performance.outputs.report_description }}"
             assignees: ${{ steps.pick_assignee.outputs.assignee }}
@@ -399,7 +399,7 @@ jobs:
           # Add label to the issue
           curl \
             -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.RASABOT_GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
             -d '{"labels": ${{ env.GITHUB_ISSUE_LABELS }}}'
