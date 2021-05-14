@@ -1242,7 +1242,8 @@ class Domain:
         states = []
         last_ml_action_sub_state = None
         turn_was_hidden = False
-        for tr, hide_rule_turn in tracker.generate_all_prior_trackers():
+        for (tr, hide_rule_turn) in tracker.generate_all_prior_trackers():
+
             if ignore_rule_only_turns:
                 # remember previous ml action based on the last non hidden turn
                 # we need this to override previous action in the ml state
@@ -1274,7 +1275,6 @@ class Domain:
                     state[
                         rasa.shared.core.constants.PREVIOUS_ACTION
                     ] = last_ml_action_sub_state
-
             states.append(self._clean_state(state))
 
         return states

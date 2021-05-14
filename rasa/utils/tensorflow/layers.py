@@ -1070,7 +1070,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
         scale_loss: bool,
         similarity_type: Text,
         name: Optional[Text] = None,
-        constrain_similarities: bool = True,
         model_confidence: Text = SOFTMAX,
     ) -> None:
         """Declare instance variables with default values.
@@ -1081,10 +1080,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
                 the confidence of the correct prediction.
             similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
             name: Optional name of the layer.
-            constrain_similarities: Boolean, if 'True' applies sigmoid on all
-                similarity terms and adds to the loss function to
-                ensure that similarity values are approximately bounded.
-                Used inside _loss_cross_entropy() only.
             model_confidence: Model confidence to be returned during inference.
                 Possible values - 'softmax' and 'linear_norm'.
 
@@ -1097,7 +1092,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
             scale_loss=scale_loss,
             similarity_type=similarity_type,
             name=name,
-            constrain_similarities=constrain_similarities,
             model_confidence=model_confidence,
         )
 
@@ -1115,9 +1109,9 @@ class MultiLabelDotProductLoss(DotProductLoss):
         Args:
             batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized trackers)
             batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents for IntentTED)
-            batch_label_ids: Batch label indices (e.g. indices of the intents)
+            batch_labels_ids: Batch label indices (e.g. indices of the intents)
             all_labels_embed: Embeddings for all labels in the domain
-            all_label_ids: Indices for all labels in the domain
+            all_labels_ids: Indices for all labels in the domain
             mask: Optional sequence mask, which contains `1` for inputs and `0` for padding.
 
         Returns:
@@ -1193,6 +1187,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         # Pick random examples from the batch
+        # TODO: can we use tf.uniform_candidate_sampler to ensure one label id is sampled only once?
         candidate_ids = self._get_candidate_indices(
             batch_size=tf.shape(batch_inputs_embed)[0],
             total_candidates=tf.shape(all_labels_embed)[0],

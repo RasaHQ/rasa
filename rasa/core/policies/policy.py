@@ -309,6 +309,7 @@ class Policy:
         is_end_to_end_prediction: bool = False,
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
+        action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> "PolicyPrediction":
         return PolicyPrediction(
             probabilities,
@@ -319,6 +320,7 @@ class Policy:
             is_end_to_end_prediction,
             is_no_user_prediction,
             diagnostic_data,
+            action_metadata=action_metadata,
         )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
