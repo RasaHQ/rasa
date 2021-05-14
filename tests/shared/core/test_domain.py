@@ -1,6 +1,7 @@
 import copy
 import json
 from pathlib import Path
+import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
@@ -10,6 +11,7 @@ import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
+    IGNORED_INTENTS,
 )
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -34,6 +36,8 @@ from rasa.shared.core.domain import (
     Domain,
     KEY_FORMS,
     KEY_E2E_ACTIONS,
+    KEY_INTENTS,
+    KEY_ENTITIES,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
@@ -1109,6 +1113,48 @@ def test_get_featurized_entities():
     assert featurized_entities == {"GPE", f"GPE{ENTITY_LABEL_SEPARATOR}destination"}
 
 
+def test_featurized_entities_ordered_consistently():
+    """Check that entities get ordered -- needed for consistent state representations.
+
+    Previously, no ordering was applied to entities, but they were ordered implicitly
+    due to how python sets work -- a set of all entity names was internally created,
+    which was ordered by the hashes of the entity names. Now, entities are sorted alpha-
+    betically. Since even sorting based on randomised hashing can produce alphabetical
+    ordering once in a while, we here check with a large number of entities, pushing to
+    ~0 the probability of correctly sorting the elements just by accident, without
+    actually doing proper sorting.
+    """
+    # Create a sorted list of entity names from 'a' to 'z', and two randomly shuffled
+    # copies.
+    entity_names_sorted = [chr(i) for i in range(ord("a"), ord("z") + 1)]
+    entity_names_shuffled1 = entity_names_sorted.copy()
+    random.shuffle(entity_names_shuffled1)
+    entity_names_shuffled2 = entity_names_sorted.copy()
+    random.shuffle(entity_names_shuffled2)
+
+    domain = Domain.from_dict(
+        {KEY_INTENTS: ["inform"], KEY_ENTITIES: entity_names_shuffled1}
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "story123",
+        [
+            UserUttered(
+                text="hey there",
+                intent={"name": "inform", "confidence": 1.0},
+                entities=[
+                    {"entity": e, "value": e.upper()} for e in entity_names_shuffled2
+                ],
+            )
+        ],
+    )
+    state = domain.get_active_state(tracker)
+
+    # Whatever order the entities were listed in, they should get sorted alphabetically
+    # so the states' representations are consistent and entity-order-agnostic.
+    assert state["user"]["entities"] == tuple(entity_names_sorted)
+
+
 @pytest.mark.parametrize(
     "domain_as_dict",
     [
@@ -1333,3 +1379,48 @@ def test_domain_with_empty_entity_mapping():
 
     with pytest.raises(InvalidDomain):
         Domain.from_yaml(test_yaml).as_dict()
+
+
+def test_ignored_intents_slot_mappings_invalid_domain():
+    domain_as_dict = {
+        KEY_FORMS: {
+            "my_form": {
+                IGNORED_INTENTS: "some_not_intent",
+                "slot_x": [
+                    {
+                        "type": "from_entity",
+                        "entity": "name",
+                        "not_intent": "other_not_intent",
+                    }
+                ],
+            }
+        },
+    }
+    with pytest.raises(InvalidDomain):
+        Domain.from_dict(domain_as_dict)
+
+
+def test_form_with_no_required_slots_keyword():
+    with pytest.warns(FutureWarning):
+        domain = Domain.from_dict(
+            {
+                "forms": {
+                    "some_form": {
+                        "some_slot": [{"type": "from_text", "intent": "some_intent",}],
+                    }
+                }
+            }
+        )
+
+    assert (
+        domain.forms["some_form"]["required_slots"]["some_slot"][0]["type"]
+        == "from_text"
+    )
+
+
+def test_domain_count_conditional_response_variations():
+    domain = Domain.from_file(
+        path="data/test_domains/conditional_response_variations.yml"
+    )
+    count_conditional_responses = domain.count_conditional_response_variations()
+    assert count_conditional_responses == 5
