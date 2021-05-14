@@ -23,7 +23,7 @@ from rasa.utils.tensorflow.constants import (
     EMBEDDING_DIMENSION,
     REGULARIZATION_CONSTANT,
     SIMILARITY_TYPE,
-    WEIGHT_SPARSITY,
+    CONNECTION_DENSITY,
     NUM_NEG,
     LOSS_TYPE,
     MAX_POS_SIM,
@@ -570,7 +570,7 @@ class TransformerRasaModel(RasaModel):
             layer_sizes,
             drop_rate,
             self.config[REGULARIZATION_CONSTANT],
-            self.config[WEIGHT_SPARSITY],
+            self.config[CONNECTION_DENSITY],
             layer_name_suffix=name,
         )
 

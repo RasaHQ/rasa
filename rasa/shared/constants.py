@@ -25,6 +25,9 @@ DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide"
 DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION = (
     f"{DOCS_URL_MIGRATION_GUIDE}#rasa-21-to-rasa-22"
 )
+DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY = (
+    f"{DOCS_URL_MIGRATION_GUIDE}#rasa-24-to-rasa-25"
+)
 DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/telemetry"
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
 DOCS_BASE_URL_ACTION_SERVER = "https://rasa.com/docs/action-server"
@@ -88,3 +91,6 @@ DEFAULT_NLU_SUBDIRECTORY_NAME = "nlu"
 DEFAULT_CONVERSATION_TEST_PATH = "tests"
 
 DIAGNOSTIC_DATA = "diagnostic_data"
+
+RESPONSE_CONDITION = "condition"
+CHANNEL = "channel"
