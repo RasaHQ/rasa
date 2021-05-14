@@ -105,9 +105,10 @@ def add_data_param(
 ) -> None:
     parser.add_argument(
         "--data",
-        type=str,
         default=default,
-        help=f"Path to the file or directory containing {data_type} data.",
+        nargs="+",
+        type=str,
+        help=f"Paths to the files or directories containing {data_type} data.",
         required=required,
     )
 

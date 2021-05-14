@@ -560,8 +560,8 @@ class TransformerEncoder(tf.keras.layers.Layer):
         self._layer_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
 
     def _get_angles(self) -> np.ndarray:
-        i = np.arange(self.units)[np.newaxis, :]
-        return 1 / np.power(10000, (2 * (i // 2)) / np.float32(self.units))
+        array_2d = np.arange(self.units)[np.newaxis, :]
+        return 1 / np.power(10000, (2 * (array_2d // 2)) / np.float32(self.units))
 
     def _positional_encoding(self, max_position: tf.Tensor) -> tf.Tensor:
         max_position = tf.cast(max_position, dtype=tf.float32)
@@ -630,6 +630,11 @@ class TransformerEncoder(tf.keras.layers.Layer):
         # a whole stack of unnormalized layer outputs.
         x = self._layer_norm(x)  # (batch_size, length, units)
 
+        # Keep the batch dimension on the first axis
+        attention_weights_as_output = tf.transpose(
+            tf.stack(layer_attention_weights), (1, 0, 2, 3, 4)
+        )
+
         # (batch_size, length, units),
-        # (num_layers, batch_size, num_heads, length, length)
-        return x, tf.stack(layer_attention_weights)
+        # (batch_size, num_layers, num_heads, length, length)
+        return x, attention_weights_as_output
