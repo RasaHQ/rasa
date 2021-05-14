@@ -6,7 +6,7 @@ from rasa.cli import SubParsersAction
 from rasa.cli.arguments import visualize as arguments
 from rasa.shared.constants import DEFAULT_DATA_PATH
 import rasa.shared.data
-import rasa.utils.common
+import rasa.utils.common  # noqa: F401
 
 
 def add_subparser(

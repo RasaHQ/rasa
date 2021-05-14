@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pytest
 import rasa.core.test
 from _pytest.capture import CaptureFixture
 from rasa.core.agent import Agent
