@@ -16,7 +16,7 @@ from rasa.core.constants import (
     DEFAULT_CORE_FALLBACK_THRESHOLD,
 )
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION, DEFAULT_DATA_PATH
-from rasa.shared.core.domain import Domain, ActionNotFoundException
+from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.validator import Validator
 import rasa.shared.utils.io
