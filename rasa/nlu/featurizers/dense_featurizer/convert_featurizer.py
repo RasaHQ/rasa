@@ -150,8 +150,8 @@ class ConveRTFeaturizer(DenseFeaturizer):
         if model_url == RESTRICTED_ACCESS_URL:
             # Can't use the URL that is reserved for tests only
             raise RasaException(
-                f'Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was '
-                f'set to "{model_url}" which is strictly reserved for pytests of '
+                f"Parameter 'model_url' of '{ConveRTFeaturizer.__name__}' was "
+                f"set to '{model_url}' which is strictly reserved for pytests of "
                 f"Rasa Open Source only. Due to licensing issues you are "
                 f"not allowed to use the model from this URL. "
                 f"You can either use a community hosted URL or if you have a "
