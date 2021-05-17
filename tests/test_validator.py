@@ -278,4 +278,3 @@ async def test_invalid_domain_mapping_policy():
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_domain_validity() is False
-
