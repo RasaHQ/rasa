@@ -279,10 +279,11 @@ async def test_verify_actions_in_stories_not_in_domain(
     )
     validator = await Validator.from_importer(importer)
     with pytest.warns(UserWarning) as warning:
-        validator.verify_actions_in_stories_rules()
+        validity = validator.verify_actions_in_stories_rules()
+        assert validity is False
 
     assert (
-        "The action 'action_test_1' is used in your stories, "
+        "The action 'action_test_1' is used in your stories or rules, "
         "but it is not listed in the domain file." in warning[0].message.args[0]
     )
 
@@ -304,10 +305,11 @@ async def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path
     )
     validator = await Validator.from_importer(importer)
     with pytest.warns(UserWarning) as warning:
-        validator.verify_actions_in_stories_rules()
+        validity = validator.verify_actions_in_stories_rules()
+        assert validity is False
 
     assert (
-        "The action 'action_test_2' is used in your stories, "
+        "The action 'action_test_2' is used in your stories or rules, "
         "but it is not listed in the domain file." in warning[0].message.args[0]
     )
 
