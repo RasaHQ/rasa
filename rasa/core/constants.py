@@ -20,7 +20,8 @@ BEARER_TOKEN_PREFIX = "Bearer "
 
 # the lowest priority intended to be used by machine learning policies
 DEFAULT_POLICY_PRIORITY = 1
-# "The priority of intent-prediction policies.
+
+# The priority of intent-prediction policies.
 # This should be below all rule based policies but higher than ML
 # based policies. This enables a loop inside ensemble where if none
 # of the rule based policies predict an action and intent prediction
@@ -32,6 +33,7 @@ DEFAULT_POLICY_PRIORITY = 1
 # one action prediction in each conversation turn. This allows other
 # policies to predict a winning action prediction.
 UNLIKELY_INTENT_POLICY_PRIORITY = 2
+
 # the priority intended to be used by mapping policies
 MAPPING_POLICY_PRIORITY = 3
 # the priority intended to be used by memoization policies
