@@ -10,6 +10,7 @@ env:
   GKE_ZONE: us-central1
   GCLOUD_VERSION: "318.0.0"
   GITHUB_ISSUE_LABELS: '["type:bug :bug:", "tool:model-regression-tests"]'
+  PERFORMANCE_DROP_THRESHOLD: -0.05
 
 jobs:
   read_test_configuration:
@@ -368,8 +369,6 @@ jobs:
 
       - name: Analyse Performance 🔍
         id: performance
-        env:
-          THRESHOLD: -0.05
         run: |
           OUTPUT="$(gomplate -d data=report.json -d results_main=report_main.json -f .github/templates/model_regression_test_results.tmpl)"
 
@@ -383,9 +382,9 @@ jobs:
           # Set IS_DROPPED to true if there is any value lower
           # than the threshold
           for x in $(grep -o '\(-[0-9.]\+\)' <<< $OUTPUT); do
-            if (( $(bc -l <<< "$THRESHOLD > $x") )); then
+            if (( $(bc -l <<< "${{ env.PERFORMANCE_DROP_THRESHOLD }} > $x") )); then
               IS_DROPPED=true
-              echo "The decrease of some test performance is > $THRESHOLD. Executing the following steps..."
+              echo "The decrease of some test performance is > ${{ env.PERFORMANCE_DROP_THRESHOLD }}. Executing the following steps..."
               break
             fi
           done
