@@ -10,7 +10,7 @@ import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted, UserUttered, UserUtteranceReverted
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     is_prev_action_listen_in_state,
@@ -166,7 +166,6 @@ class TrackerFeaturizer:
         raise NotImplementedError(
             f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
         )
-
 
     def training_states_and_actions(
         self,
@@ -458,7 +457,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         domain: Domain,
         omit_unset_slots: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of states, action labels and entity data.
+        """Transforms list of trackers to lists of state, action labels and entity data.
 
         Args:
             trackers: The trackers to transform
@@ -618,12 +617,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         frozen_states = tuple(
             s if s is None else tracker.freeze_current_state(s) for s in states
         )
-        if labels != None:
+        if labels is not None:
             frozen_labels = tuple(labels)
             return hash((frozen_states, frozen_labels))
         else:
             return hash(frozen_states)
-
 
     def training_states_actions_and_entities(
         self,
@@ -826,14 +824,15 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         """Convert a list of labels to an np.ndarray of label ids.
         The number of rows is equal to `len(trackers_as_intents)`.
         The number of columns is equal to the maximum number of labels
-        that any Labels item has. Rows are padded with -1 if not all Labels 
+        that any Labels item has. Rows are padded with -1 if not all Labels
         items have the same number of labels.
 
         Returns:
             A 2d np.ndarray of label ids.
         """
 
-        # store labels in numpy arrays so that it corresponds to np arrays of input features
+        # store labels in numpy arrays so that it corresponds to np arrays
+        # of input features
         label_ids = [
             [domain.intents.index(intent) for intent in tracker_intents]
             for tracker_intents in trackers_as_intents
@@ -857,7 +856,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         return new_label_ids
 
     def _setup_example_iterator(self) -> None:
-        """Create any data structures for deduplication and tracking multiple 
+        """Create any data structures for deduplication and tracking multiple
         intent labels.
         """
         super()._setup_example_iterator()
