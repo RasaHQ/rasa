@@ -288,6 +288,18 @@ class UnfeaturizedSlot(Slot):
         auto_fill: bool = True,
         influence_conversation: bool = False,
     ) -> None:
+        """Creates unfeaturized slot.
+
+        Args:
+            name: The name of the slot.
+            initial_value: Its initial value.
+            value_reset_delay: After how many turns the slot should be reset to the
+                initial_value. This is behavior is currently not implemented.
+            auto_fill: `True` if it should be auto-filled by entities with the same
+                name.
+            influence_conversation: `True` if it should be featurized. Only `False`
+                is allowed. Any other value will lead to a `InvalidSlotConfigError`.
+        """
         if influence_conversation:
             raise InvalidSlotConfigError(
                 f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
