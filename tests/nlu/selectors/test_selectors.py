@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-from typing import List, Dict, Text, Any
+from typing import List, Dict, Text, Any, Optional
 from mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -443,29 +443,81 @@ async def test_softmax_ranking(
     assert len(response_ranking) == output_length
 
 
-def test_DIET2DIET_config_warning_transformer_with_hidden_layers():
-    # pipeline = [
-    #     {"name": "WhitespaceTokenizer"},
-    #     {"name": "CountVectorsFeaturizer"},
-    #     {"name": "ResponseSelector", EPOCHS: 1, USE_TEXT_AS_LABEL: True, NUM_TRANSFORMER_LAYERS: 1}
-    # ]
-    # _config = RasaNLUModelConfig({"pipeline": pipeline})
-
-    with pytest.warns(FutureWarning) as record:
-        response_selector = ResponseSelector(
-            component_config={USE_TEXT_AS_LABEL: True, NUM_TRANSFORMER_LAYERS: 1}
+@pytest.mark.parametrize(
+    "num_transformer_layers, should_raise_warning",
+    [(5, True), (0, False), (-1, False)],
+)
+def test_DIET2DIET_config_warning_transformer_with_hidden_layers(
+    num_transformer_layers: int, should_raise_warning: bool
+):
+    """DIET2DIET recommends to disable hidden layers if transformer is enabled."""
+    with pytest.warns(UserWarning) as records:
+        _ = ResponseSelector(
+            component_config={
+                USE_TEXT_AS_LABEL: True,
+                NUM_TRANSFORMER_LAYERS: num_transformer_layers,
+            }
         )
-        # response_selector.preprocess_train_data(training_data)
-        # (trained_model, _, persisted_path) = await rasa.nlu.train.train(
-        #     _config,
-        #     path=str(tmp_path),
-        #     data="data/test_selectors",
-        #     component_builder=component_builder,
-        # )
 
-    assert len(record) == 1
-    print(f"\n\n\n++++{record[0].message.args[0]}\n\n\n")
-    assert (
-        record[0].message.args[0]
-        == "This feature is deprecated and will be removed in 3.0.0!"
-    )
+    if should_raise_warning:
+        assert len(records) > 0
+        # Check all warnings since there may be multiple other warnings we don't care
+        # about in this test case.
+        assert any(
+            "We recommend to disable the hidden layers when using a transformer"
+            in record.message.args[0]
+            for record in records
+        )
+    else:
+        # Check all warnings since there may be multiple other warnings we don't care
+        # about in this test case.
+        assert not any(
+            "We recommend to disable the hidden layers when using a transformer"
+            in record.message.args[0]
+            for record in records
+        )
+
+
+@pytest.mark.parametrize(
+    "transformer_config, should_set_default_transformer_size",
+    [
+        ({}, True),
+        ({TRANSFORMER_SIZE: 0}, True),
+        ({TRANSFORMER_SIZE: -1}, True),
+        ({TRANSFORMER_SIZE: None}, True),
+        ({TRANSFORMER_SIZE: 10}, False),
+    ],
+)
+def test_DIET2DIET_sets_transformer_size_when_needed(
+    transformer_config: Dict[Text, Optional[int]],
+    should_set_default_transformer_size: bool,
+):
+    """DIET2DIET ensures a sensible transformer size when transformer is enabled."""
+    diet2diet_default_transformer_size = 256
+    component_config = dict({USE_TEXT_AS_LABEL: True, NUM_TRANSFORMER_LAYERS: 5})
+    component_config.update(transformer_config)
+    with pytest.warns(UserWarning) as records:
+        selector = ResponseSelector(component_config=component_config)
+    if should_set_default_transformer_size:
+        assert len(records) > 0
+        assert any(
+            f"a positive size is required when using `{USE_TEXT_AS_LABEL}="
+            f"True` together with `{NUM_TRANSFORMER_LAYERS} > 0`"
+            in record.message.args[0]
+            for record in records
+        )
+        assert (
+            selector.component_config[TRANSFORMER_SIZE]
+            == diet2diet_default_transformer_size
+        )
+    else:
+        assert not any(
+            f"a positive size is required when using `{USE_TEXT_AS_LABEL}="
+            f"True` together with `{NUM_TRANSFORMER_LAYERS} > 0`"
+            in record.message.args[0]
+            for record in records
+        )
+        assert (
+            selector.component_config[TRANSFORMER_SIZE]
+            == transformer_config[TRANSFORMER_SIZE]
+        )
