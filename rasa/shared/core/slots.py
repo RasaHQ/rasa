@@ -268,11 +268,12 @@ class ListSlot(Slot):
     @Slot.value.setter
     def value(self, value: Any) -> None:
         """Sets the slot's value."""
-        if not isinstance(value, list):
+        if value and not isinstance(value, list):
             # Make sure we always store list items
             value = [value]
 
-        Slot.value.fset(self, value)
+        # Call property setter of superclass
+        super(ListSlot, self.__class__).value.fset(self, value)
 
 
 class UnfeaturizedSlot(Slot):
