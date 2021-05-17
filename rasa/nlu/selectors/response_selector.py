@@ -657,12 +657,17 @@ class DIET2DIET(DIET):
 
         # For user text and response text, prepare layers that combine different feature
         # types, embed everything using a transformer and optionally also do masked
-        # language modeling.
-        for attribute in [self.text_name, self.label_name]:
+        # language modeling. Omit input dropout for label features.
+        label_config = self.config.copy()
+        label_config.update({SPARSE_INPUT_DROPOUT: False, DENSE_INPUT_DROPOUT: False})
+        for attribute, config in [
+            (self.text_name, self.config),
+            (self.label_name, label_config),
+        ]:
             self._tf_layers[
                 f"sequence_layer.{attribute}"
             ] = rasa_layers.RasaSequenceLayer(
-                attribute, self.data_signature[attribute], self.config
+                attribute, self.data_signature[attribute], config
             )
 
         if self.config[MASKED_LM]:

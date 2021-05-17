@@ -41,6 +41,7 @@ import rasa.shared.utils.common
 from rasa.shared.core.events import SlotSet, UserUttered
 from rasa.shared.core.slots import Slot, CategoricalSlot, TextSlot, AnySlot
 from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
+from rasa.shared.constants import RESPONSE_CONDITION
 
 
 if TYPE_CHECKING:
@@ -84,6 +85,18 @@ SubState = Dict[Text, Union[Text, Tuple[Union[float, Text]]]]
 State = Dict[Text, SubState]
 
 logger = logging.getLogger(__name__)
+
+
+def _mark_conditional_response_variations_warning(
+    responses: Dict[Text, List[Dict[Text, Any]]]
+) -> None:
+    for response_variations in responses.values():
+        for variation in response_variations:
+            if RESPONSE_CONDITION in variation:
+                rasa.shared.utils.common.mark_as_experimental_feature(
+                    "conditional response variation feature"
+                )
+                break
 
 
 class InvalidDomain(RasaException):
@@ -593,6 +606,9 @@ class Domain:
         action_names += overridden_form_actions
 
         self.responses = responses
+        # if domain has conditions, logs experimental feature warning
+        _mark_conditional_response_variations_warning(self.responses)
+
         self.action_texts = action_texts or []
         self.session_config = session_config
 
@@ -635,6 +651,16 @@ class Domain:
         domain_dict = self.as_dict()
         return self.__class__.from_dict(copy.deepcopy(domain_dict, memo))
 
+    def count_conditional_response_variations(self) -> int:
+        """Returns count of conditional response variations."""
+        count = 0
+        for response_variations in self.responses.values():
+            for variation in response_variations:
+                if RESPONSE_CONDITION in variation:
+                    count += 1
+
+        return count
+
     @staticmethod
     def _collect_overridden_default_intents(
         intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]]
@@ -651,7 +677,9 @@ class Domain:
             list(intent.keys())[0] if isinstance(intent, dict) else intent
             for intent in intents
         }
-        return sorted(intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS))
+        return sorted(
+            intent_names.intersection(set(rasa.shared.core.constants.DEFAULT_INTENTS))
+        )
 
     @staticmethod
     def _initialize_forms(
@@ -1026,6 +1054,11 @@ class Domain:
         )
 
     def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
+        """Gets the names of all entities that are present and wanted in the message.
+
+        Wherever an entity has a role or group specified as well, an additional role-
+        or group-specific entity name is added.
+        """
         intent_name = latest_message.intent.get(
             rasa.shared.nlu.constants.INTENT_NAME_KEY
         )
@@ -1036,33 +1069,36 @@ class Domain:
         # groups get featurized. We concatenate the entity label with the role/group
         # label using a special separator to make sure that the resulting label is
         # unique (as you can have the same role/group label for different entities).
-        entity_names = (
-            set(entity["entity"] for entity in entities if "entity" in entity.keys())
-            | set(
-                f"{entity['entity']}"
-                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
-                for entity in entities
-                if "entity" in entity.keys() and "role" in entity.keys()
-            )
-            | set(
-                f"{entity['entity']}"
-                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
-                for entity in entities
-                if "entity" in entity.keys() and "group" in entity.keys()
-            )
+        entity_names_basic = set(
+            entity["entity"] for entity in entities if "entity" in entity.keys()
         )
+        entity_names_roles = set(
+            f"{entity['entity']}"
+            f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
+            for entity in entities
+            if "entity" in entity.keys() and "role" in entity.keys()
+        )
+        entity_names_groups = set(
+            f"{entity['entity']}"
+            f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
+            for entity in entities
+            if "entity" in entity.keys() and "group" in entity.keys()
+        )
+        entity_names = entity_names_basic.union(entity_names_roles, entity_names_groups)
 
         # the USED_ENTITIES_KEY of an intent also contains the entity labels and the
         # concatenated entity labels with their corresponding roles and groups labels
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
-        return entity_names & wanted_entities
+        return entity_names.intersection(wanted_entities)
 
     def _get_user_sub_state(
         self, tracker: "DialogueStateTracker"
     ) -> Dict[Text, Union[Text, Tuple[Text]]]:
-        """Turn latest UserUttered event into a substate containing intent,
-        text and set entities if present
+        """Turns latest UserUttered event into a substate.
+
+        The substate will contain intent, text, and entities (if any are present).
+
         Args:
             tracker: dialog state tracker containing the dialog so far
         Returns:
@@ -1076,15 +1112,19 @@ class Domain:
 
         sub_state = latest_message.as_sub_state()
 
-        # filter entities based on intent config
-        # sub_state will be transformed to frozenset therefore we need to
-        # convert the set to the tuple
-        # sub_state is transformed to frozenset because we will later hash it
-        # for deduplication
+        # Filter entities based on intent config. We need to convert the set into a
+        # tuple because sub_state will be later transformed into a frozenset (so it can
+        # be hashed for deduplication).
         entities = tuple(
-            self._get_featurized_entities(latest_message)
-            & set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+            self._get_featurized_entities(latest_message).intersection(
+                set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+            )
         )
+        # Sort entities so that any derived state representation is consistent across
+        # runs and invariant to the order in which the entities for an utterance are
+        # listed in data files.
+        entities = tuple(sorted(entities))
+
         if entities:
             sub_state[rasa.shared.nlu.constants.ENTITIES] = entities
         else:
@@ -1159,16 +1199,17 @@ class Domain:
             if sub_state
         }
 
-    def get_active_states(
+    def get_active_state(
         self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
     ) -> State:
-        """Returns a bag of active states from the tracker state.
+        """Given a dialogue tracker, makes a representation of current dialogue state.
 
         Args:
             tracker: dialog state tracker containing the dialog so far
             omit_unset_slots: If `True` do not include the initial values of slots.
 
-        Returns `State` containing all active states.
+        Returns:
+            A representation of the dialogue's current state.
         """
         state = {
             rasa.shared.core.constants.USER: self._get_user_sub_state(tracker),
@@ -1265,7 +1306,7 @@ class Domain:
                 if turn_was_hidden:
                     continue
 
-            state = self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
+            state = self.get_active_state(tr, omit_unset_slots=omit_unset_slots)
 
             if ignore_rule_only_turns:
                 # clean state from only rule features

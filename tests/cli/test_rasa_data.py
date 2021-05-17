@@ -95,7 +95,7 @@ def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("data", "convert", "nlu", "--help")
 
     help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,md,yaml}]
-                             --data DATA [--out OUT] [-l LANGUAGE]"""
+                             --data DATA [DATA ...] [--out OUT] [-l LANGUAGE]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -109,7 +109,9 @@ def test_data_validate_help(run: Callable[..., RunResult]):
 
     help_text = """usage: rasa data validate [-h] [-v] [-vv] [--quiet]
                           [--max-history MAX_HISTORY] [-c CONFIG]
-                          [--fail-on-warnings] [-d DOMAIN] [--data DATA]"""
+                          [--fail-on-warnings] [-d DOMAIN]
+                          [--data DATA [DATA ...]]
+                          {stories} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -156,6 +158,20 @@ def test_validate_files_exit_early():
 
     assert pytest_e.type == SystemExit
     assert pytest_e.value.code == 1
+
+
+def test_validate_files_invalid_domain():
+    args = {
+        "domain": "data/test_domains/default_with_mapping.yml",
+        "data": None,
+        "max_history": None,
+        "config": None,
+    }
+
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+        with pytest.warns(UserWarning) as w:
+            assert "Please migrate to RulePolicy." in str(w[0].message)
 
 
 def test_rasa_data_convert_nlu_to_yaml(
