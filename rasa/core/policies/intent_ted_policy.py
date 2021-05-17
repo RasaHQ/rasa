@@ -4,12 +4,10 @@ import tensorflow as tf
 from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
 
-import rasa.utils.io as io_utils
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.events import UserUttered
-import rasa.shared.utils.io
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -92,11 +90,15 @@ from rasa.utils.tensorflow.model_data import (
     Data,
 )
 
+import rasa.utils.io as io_utils
+
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
+
+SAVE_MODEL_FILE_NAME = "intent_ted_policy"
 
 
 class IntentTEDPolicy(TEDPolicy):
@@ -261,7 +263,7 @@ class IntentTEDPolicy(TEDPolicy):
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
-        return "intent_ted_policy"
+        return SAVE_MODEL_FILE_NAME
 
     def _assemble_label_data(
         self, attribute_data: Data, domain: Domain
@@ -502,7 +504,7 @@ class IntentTEDPolicy(TEDPolicy):
         return False
 
     def persist_model_utilities(self, model_path: Path) -> None:
-        """Persist all model's utility attributes like model weights, etc.
+        """Persist model's utility attributes like model weights, etc.
 
         Args:
             model_path: Path where model is to be persisted
@@ -515,7 +517,7 @@ class IntentTEDPolicy(TEDPolicy):
 
     @classmethod
     def _load_model_utilities(cls, model_path: Path) -> None:
-        """Load all model's utility attributes.
+        """Load model's utility attributes.
 
         Args:
             model_path: Path where model is to be persisted.

@@ -355,7 +355,7 @@ class TEDPolicy(Policy):
         self.only_e2e = TEXT in self.fake_features and INTENT not in self.fake_features
 
         self._label_data: Optional[RasaModelData] = None
-        self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
+        self.data_example: Optional[Dict[Text, Dict[Text, List[FeatureArray]]]] = None
 
         self.tmp_checkpoint_dir = None
         if self.config[CHECKPOINT_MODEL]:
@@ -377,7 +377,8 @@ class TEDPolicy(Policy):
 
         self._auto_update_configuration()
 
-    def _auto_update_configuration(self):
+    def _auto_update_configuration(self) -> None:
+        """Take care of deprecations and compatibility of parameters."""
         self.config = rasa.utils.train_utils.update_confidence_type(self.config)
         rasa.utils.train_utils.validate_configuration_settings(self.config)
         self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
@@ -405,6 +406,20 @@ class TEDPolicy(Policy):
     def _assemble_label_data(
         self, attribute_data: Data, domain: Domain
     ) -> RasaModelData:
+        """Construct data regarding labels to be fed to the model.
+
+        The resultant model data should contain the keys
+        `label_action_name`, `label_action_text` and `label`.
+        `label_action_*` will contain the sequence, sentence and mask features
+        for corresponding labels and `label` will contain the numerical label ids.
+
+        Args:
+            attribute_data: Feature data for all labels.
+            domain: Domain of the assistant.
+
+        Returns:
+            Features of labels ready to be fed to the model.
+        """
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
         label_data.add_lengths(
@@ -627,7 +642,7 @@ class TEDPolicy(Policy):
             model_data: Featurized data on which the model has been trained.
             label_ids: Label ids corresponding to the featurized data.
         """
-        # No post training procedure for TEDPolicy
+        # No post training procedure for `TEDPolicy`
         return
 
     def train(
@@ -640,7 +655,8 @@ class TEDPolicy(Policy):
         """Train the policy on given training trackers.
 
         Args:
-            training_trackers: List of training trackers to be used for training the model.
+            training_trackers: List of training trackers to be used
+                for training the model.
             domain: Domain of the assistant.
             interpreter: NLU Interpreter to be used for featurizing the states.
             **kwargs: Any other argument.
@@ -864,7 +880,7 @@ class TEDPolicy(Policy):
         self.persist_model_utilities(model_path)
 
     def persist_model_utilities(self, model_path: Path) -> None:
-        """Persist all model's utility attributes needed for inference.
+        """Persist model's utility attributes like model weights, etc.
 
         Args:
             model_path: Path where model is to be persisted
@@ -895,6 +911,11 @@ class TEDPolicy(Policy):
 
     @classmethod
     def _load_model_utilities(cls, model_path: Path) -> Dict[Text, Any]:
+        """Load model's utility attributes.
+
+        Args:
+            model_path: Path where model is to be persisted.
+        """
         tf_model_file = model_path / f"{cls._metadata_filename()}.tf_model"
         loaded_data = io_utils.pickle_load(
             model_path / f"{cls._metadata_filename()}.data_example.pkl"
@@ -946,7 +967,16 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> Optional["TEDPolicy"]:
         """Loads a policy from the storage.
-        **Needs to load its featurizer**
+
+        Args:
+            path: Path on disk where policy is persisted.
+            should_finetune: Whether to load the policy for finetuning.
+            epoch_override: Override the number of epochs in persisted
+                configuration for further finetuning.
+            **kwargs: Any other arguments
+
+        Returns:
+            Loaded policy
         """
         model_path = Path(path)
 
@@ -986,8 +1016,12 @@ class TEDPolicy(Policy):
 
     @classmethod
     def _load_policy_with_model(
-        cls, model, featurizer, model_utilities, should_finetune
-    ):
+        cls,
+        model: "TED",
+        featurizer: TrackerFeaturizer,
+        model_utilities: Dict[Text, Any],
+        should_finetune: bool,
+    ) -> "TEDPolicy":
         return cls(
             featurizer=featurizer,
             priority=model_utilities["priority"],
@@ -1001,11 +1035,11 @@ class TEDPolicy(Policy):
     @classmethod
     def _load_tf_model(
         cls,
-        model_utilities,
-        model_data_example,
-        predict_data_example,
-        featurizer,
-        should_finetune,
+        model_utilities: Dict[Text, Any],
+        model_data_example: RasaModelData,
+        predict_data_example: RasaModelData,
+        featurizer: TrackerFeaturizer,
+        should_finetune: bool,
     ):
         model = cls.model_class().load(
             str(model_utilities["tf_model_file"]),
@@ -1023,7 +1057,9 @@ class TEDPolicy(Policy):
         return model
 
     @classmethod
-    def _construct_model_initialization_data(cls, loaded_data):
+    def _construct_model_initialization_data(
+        cls, loaded_data: Dict[Text, Dict[Text, List[FeatureArray]]]
+    ) -> Tuple[RasaModelData, RasaModelData]:
         model_data_example = RasaModelData(
             label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
         )
@@ -1041,7 +1077,7 @@ class TEDPolicy(Policy):
         return model_data_example, predict_data_example
 
     @classmethod
-    def _update_loaded_params(cls, meta):
+    def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
         meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
         meta = rasa.utils.train_utils.update_confidence_type(meta)
         meta = rasa.utils.train_utils.update_similarity_type(meta)
