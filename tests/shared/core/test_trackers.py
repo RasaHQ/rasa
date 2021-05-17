@@ -350,7 +350,7 @@ def test_restart_event(domain: Domain):
 
     assert len(tracker.events) == 4
     assert tracker.latest_message.text == "/greet"
-    assert len(list(tracker.generate_all_prior_trackers())) == 4
+    assert len(list(tracker.generate_all_prior_trackers())) == 3
 
     tracker.update(Restarted())
 
@@ -399,18 +399,16 @@ def test_revert_action_event(domain: Domain):
 
     # Expecting count of 4:
     #   +3 executed actions
-    #   +1 final state
     assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
-    assert len(list(tracker.generate_all_prior_trackers())) == 4
+    assert len(list(tracker.generate_all_prior_trackers())) == 3
 
     tracker.update(ActionReverted())
 
     # Expecting count of 3:
     #   +3 executed actions
-    #   +1 final state
     #   -1 reverted action
     assert tracker.latest_action.get(ACTION_NAME) == "my_action"
-    assert len(list(tracker.generate_all_prior_trackers())) == 3
+    assert len(list(tracker.generate_all_prior_trackers())) == 2
 
     dialogue = tracker.as_dialogue()
 
@@ -419,7 +417,7 @@ def test_revert_action_event(domain: Domain):
 
     assert recovered.current_state() == tracker.current_state()
     assert tracker.latest_action.get(ACTION_NAME) == "my_action"
-    assert len(list(tracker.generate_all_prior_trackers())) == 3
+    assert len(list(tracker.generate_all_prior_trackers())) == 2
 
 
 def test_revert_user_utterance_event(domain: Domain):
@@ -440,19 +438,17 @@ def test_revert_user_utterance_event(domain: Domain):
 
     # Expecting count of 6:
     #   +5 executed actions
-    #   +1 final state
     assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
-    assert len(list(tracker.generate_all_prior_trackers())) == 6
+    assert len(list(tracker.generate_all_prior_trackers())) == 5
 
     tracker.update(UserUtteranceReverted())
 
     # Expecting count of 3:
     #   +5 executed actions
-    #   +1 final state
     #   -2 rewound actions associated with the /goodbye
     #   -1 rewound action from the listen right before /goodbye
     assert tracker.latest_action.get(ACTION_NAME) == "my_action_1"
-    assert len(list(tracker.generate_all_prior_trackers())) == 3
+    assert len(list(tracker.generate_all_prior_trackers())) == 2
 
     dialogue = tracker.as_dialogue()
 
@@ -461,7 +457,7 @@ def test_revert_user_utterance_event(domain: Domain):
 
     assert recovered.current_state() == tracker.current_state()
     assert tracker.latest_action.get(ACTION_NAME) == "my_action_1"
-    assert len(list(tracker.generate_all_prior_trackers())) == 3
+    assert len(list(tracker.generate_all_prior_trackers())) == 2
 
 
 def test_traveling_back_in_time(domain: Domain):
@@ -482,16 +478,14 @@ def test_traveling_back_in_time(domain: Domain):
 
     # Expecting count of 4:
     #   +3 executed actions
-    #   +1 final state
     assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
     assert len(tracker.events) == 4
-    assert len(list(tracker.generate_all_prior_trackers())) == 4
+    assert len(list(tracker.generate_all_prior_trackers())) == 3
 
     tracker = tracker.travel_back_in_time(time_for_timemachine)
 
     # Expecting count of 2:
     #   +1 executed actions
-    #   +1 final state
     assert tracker.latest_action.get(ACTION_NAME) == ACTION_LISTEN_NAME
     assert len(tracker.events) == 2
     assert len(list(tracker.generate_all_prior_trackers())) == 2
