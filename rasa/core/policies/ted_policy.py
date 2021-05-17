@@ -79,7 +79,7 @@ from rasa.utils.tensorflow.constants import (
     DROP_RATE_LABEL,
     DROP_RATE,
     DROP_RATE_ATTENTION,
-    WEIGHT_SPARSITY,
+    CONNECTION_DENSITY,
     KEY_RELATIVE_ATTENTION,
     VALUE_RELATIVE_ATTENTION,
     MAX_RELATIVE_POSITION,
@@ -252,8 +252,8 @@ class TEDPolicy(Policy):
         DROP_RATE_LABEL: 0.0,
         # Dropout rate for attention.
         DROP_RATE_ATTENTION: 0.0,
-        # Sparsity of the weights in dense layers
-        WEIGHT_SPARSITY: 0.8,
+        # Fraction of trainable weights in internal layers.
+        CONNECTION_DENSITY: 0.2,
         # If 'True' apply dropout to sparse input tensors
         SPARSE_INPUT_DROPOUT: True,
         # If 'True' apply dropout to dense input tensors
@@ -366,6 +366,9 @@ class TEDPolicy(Policy):
         self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
+        self.config = rasa.utils.train_utils.update_deprecated_sparsity_to_density(
+            self.config
+        )
 
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
@@ -680,11 +683,11 @@ class TEDPolicy(Policy):
             tracker, domain, interpreter
         )
         model_data = self._create_model_data(tracker_state_features)
-        output = self.model.rasa_predict(model_data)
+        outputs = self.model.run_inference(model_data)
 
         # take the last prediction in the sequence
-        similarities = output["similarities"][:, -1, :]
-        confidences = output["action_scores"][:, -1, :]
+        similarities = outputs["similarities"][:, -1, :]
+        confidences = outputs["action_scores"][:, -1, :]
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(
             confidences, similarities, domain
@@ -698,14 +701,14 @@ class TEDPolicy(Policy):
             )
 
         optional_events = self._create_optional_event_for_entities(
-            output, is_e2e_prediction, interpreter, tracker
+            outputs, is_e2e_prediction, interpreter, tracker
         )
 
         return self._prediction(
             confidence.tolist(),
             is_end_to_end_prediction=is_e2e_prediction,
             optional_events=optional_events,
-            diagnostic_data=output.get(DIAGNOSTIC_DATA),
+            diagnostic_data=outputs.get(DIAGNOSTIC_DATA),
         )
 
     def _create_optional_event_for_entities(
@@ -983,11 +986,15 @@ class TED(TransformerRasaModel):
 
     def _prepare_layers(self) -> None:
         for name in self.data_signature.keys():
-            self._prepare_input_layers(name, self.data_signature[name])
+            self._prepare_input_layers(
+                name, self.data_signature[name], is_label_attribute=False
+            )
             self._prepare_encoding_layers(name)
 
         for name in self.label_signature.keys():
-            self._prepare_input_layers(name, self.label_signature[name])
+            self._prepare_input_layers(
+                name, self.label_signature[name], is_label_attribute=True
+            )
             self._prepare_encoding_layers(name)
 
         self._tf_layers[
@@ -1014,15 +1021,28 @@ class TED(TransformerRasaModel):
         self,
         attribute_name: Text,
         attribute_signature: Dict[Text, List[FeatureSignature]],
+        is_label_attribute: bool = False,
     ) -> None:
-        """Prepares feature processing layers for sentence/sequence-level features."""
+        """Prepares feature processing layers for sentence/sequence-level features.
+
+        Distinguishes between label features and other features, not applying input
+        dropout to the label ones.
+        """
+        # Disable input dropout in the config to be used if this is a label attribute.
+        if is_label_attribute:
+            config_to_use = self.config.copy()
+            config_to_use.update(
+                {SPARSE_INPUT_DROPOUT: False, DENSE_INPUT_DROPOUT: False}
+            )
+        else:
+            config_to_use = self.config
         # Attributes with sequence-level features also have sentence-level features,
         # all these need to be combined and further processed.
         if attribute_name in SEQUENCE_FEATURES_TO_ENCODE:
             self._tf_layers[
                 f"sequence_layer.{attribute_name}"
             ] = rasa_layers.RasaSequenceLayer(
-                attribute_name, attribute_signature, self.config
+                attribute_name, attribute_signature, config_to_use
             )
         # Attributes without sequence-level features require some actual feature
         # processing only if they have sentence-level features. Attributes with no
@@ -1035,7 +1055,7 @@ class TED(TransformerRasaModel):
                 attribute=attribute_name,
                 feature_type=SENTENCE,
                 feature_type_signature=attribute_signature[SENTENCE],
-                config=self.config,
+                config=config_to_use,
             )
 
     def _prepare_encoding_layers(self, name: Text) -> None:

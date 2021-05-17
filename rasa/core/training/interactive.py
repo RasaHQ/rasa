@@ -22,6 +22,7 @@ from sanic.exceptions import NotFound
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from terminaltables import AsciiTable, SingleTable
+import terminaltables.width_and_alignment
 import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
@@ -486,7 +487,10 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
     prediction probabilities."""
 
     def wrap(txt: Text, max_width: int) -> Text:
-        return "\n".join(textwrap.wrap(txt, max_width, replace_whitespace=False))
+        true_wrapping_width = calc_true_wrapping_width(txt, max_width)
+        return "\n".join(
+            textwrap.wrap(txt, true_wrapping_width, replace_whitespace=False)
+        )
 
     def colored(txt: Text, color: Text) -> Text:
         return "{" + color + "}" + txt + "{/" + color + "}"
@@ -1412,7 +1416,8 @@ async def _plot_trackers(
 
     from networkx.drawing.nx_pydot import write_dot
 
-    write_dot(graph, output_file)
+    with open(output_file, "w", encoding="utf-8") as f:
+        write_dot(graph, f)
 
 
 def _print_help(skip_visualization: bool) -> None:
@@ -1672,3 +1677,42 @@ def run_interactive_learning(
     if not skip_visualization and p is not None:
         p.terminate()
         p.join()
+
+
+def calc_true_wrapping_width(text: Text, monospace_wrapping_width: int) -> int:
+    """Calculates a wrapping width that also works for CJK characters.
+
+    Chinese, Japanese and Korean characters are often broader than ascii
+    characters:
+    abcdefgh (8 chars)
+    我要去北京 (5 chars, roughly same visible width)
+
+    We need to account for that otherwise the wrapping doesn't work
+    appropriately for long strings and the table overflows and creates
+    errors.
+
+    params:
+        text: text sequence that should be wrapped into multiple lines
+        monospace_wrapping_width: the maximum width per line in number of
+            standard ascii characters
+    returns:
+        The maximum line width for the given string that takes into account
+        the strings visible width, so that it won't lead to table overflow.
+    """
+    true_wrapping_width = 0
+
+    # testing potential width from longest to shortest
+    for potential_width in range(monospace_wrapping_width, -1, -1):
+        lines = textwrap.wrap(text, potential_width)
+        # test whether all lines' visible width fits the available width
+        if all(
+            [
+                terminaltables.width_and_alignment.visible_width(line)
+                <= monospace_wrapping_width
+                for line in lines
+            ]
+        ):
+            true_wrapping_width = potential_width
+            break
+
+    return true_wrapping_width
