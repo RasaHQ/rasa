@@ -2,7 +2,6 @@ from typing import Text
 
 import pytest
 
-from rasa.shared.core.domain import ActionNotFoundException
 from rasa.validator import Validator
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.importers.autoconfig import TrainingType
