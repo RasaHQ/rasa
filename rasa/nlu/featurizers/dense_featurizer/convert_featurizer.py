@@ -162,7 +162,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
         if os.path.isfile(model_url):
             # Definitely invalid since the specified path should be a directory
             raise RasaException(
-                f'Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was '
+                f"Parameter 'model_url' of '{ConveRTFeaturizer.__name__}' was "
                 f"set to the path of a file which is invalid. You "
                 f"can either use a community hosted URL or if you have a "
                 f"local copy of the model, pass the path to the directory "
