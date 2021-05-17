@@ -28,7 +28,6 @@ from rasa.shared.constants import (
     DOCS_URL_FORMS,
     DOCS_URL_MIGRATION_GUIDE,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
-    UTTER_PREFIX,
     DOCS_URL_RESPONSES,
     REQUIRED_SLOTS_KEY,
     IGNORED_INTENTS,
@@ -266,19 +265,22 @@ class Domain:
         combined = self.as_dict()
 
         def merge_dicts(
-            d1: Dict[Text, Any],
-            d2: Dict[Text, Any],
+            tempDict1: Dict[Text, Any],
+            tempDict2: Dict[Text, Any],
             override_existing_values: bool = False,
         ) -> Dict[Text, Any]:
-            if override_existing_values:
-                a, b = d1.copy(), d2.copy()
-            else:
-                a, b = d2.copy(), d1.copy()
-            a.update(b)
-            return a
 
-        def merge_lists(l1: List[Any], l2: List[Any]) -> List[Any]:
-            return sorted(list(set(l1 + l2)))
+            if override_existing_values:
+                merge_dicts, b = tempDict1.copy(), tempDict2.copy()
+
+            else:
+                merge_dicts, b = tempDict2.copy(), tempDict1.copy()
+
+            merge_dicts.update(b)
+            return merge_dicts
+
+        def merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
+            return sorted(list(set(list1 + list2)))
 
         def merge_lists_of_dicts(
             dict_list1: List[Dict],
@@ -675,7 +677,9 @@ class Domain:
             list(intent.keys())[0] if isinstance(intent, dict) else intent
             for intent in intents
         }
-        return sorted(intent_names & set(rasa.shared.core.constants.DEFAULT_INTENTS))
+        return sorted(
+            intent_names.intersection(set(rasa.shared.core.constants.DEFAULT_INTENTS))
+        )
 
     @staticmethod
     def _initialize_forms(
@@ -791,7 +795,10 @@ class Domain:
         """Return only the responses which are defined for retrieval intents."""
         return dict(
             filter(
-                lambda x: self.is_retrieval_intent_response(x), self.responses.items()
+                lambda intent_response: self.is_retrieval_intent_response(
+                    intent_response
+                ),
+                self.responses.items(),
             )
         )
 
@@ -863,7 +870,7 @@ class Domain:
         needs to fill in next (either explicitly or implicitly) as part of a form.
         """
         if self.form_names and rasa.shared.core.constants.REQUESTED_SLOT not in [
-            s.name for s in self.slots
+            slot.name for slot in self.slots
         ]:
             self.slots.append(
                 TextSlot(
@@ -900,15 +907,15 @@ class Domain:
                     rasa.shared.core.constants.DEFAULT_KNOWLEDGE_BASE_ACTION
                 )
             )
-            slot_names = [s.name for s in self.slots]
+            slot_names = [slot.name for slot in self.slots]
             knowledge_base_slots = [
                 rasa.shared.core.constants.SLOT_LISTED_ITEMS,
                 rasa.shared.core.constants.SLOT_LAST_OBJECT,
                 rasa.shared.core.constants.SLOT_LAST_OBJECT_TYPE,
             ]
-            for s in knowledge_base_slots:
-                if s not in slot_names:
-                    self.slots.append(TextSlot(s, influence_conversation=False))
+            for slot in knowledge_base_slots:
+                if slot not in slot_names:
+                    self.slots.append(TextSlot(slot, influence_conversation=False))
 
     def add_knowledge_base_slots(self) -> None:
         """See `_add_categorical_slot_default_value` for docstring."""
@@ -1047,6 +1054,11 @@ class Domain:
         )
 
     def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
+        """Gets the names of all entities that are present and wanted in the message.
+
+        Wherever an entity has a role or group specified as well, an additional role-
+        or group-specific entity name is added.
+        """
         intent_name = latest_message.intent.get(
             rasa.shared.nlu.constants.INTENT_NAME_KEY
         )
@@ -1057,33 +1069,36 @@ class Domain:
         # groups get featurized. We concatenate the entity label with the role/group
         # label using a special separator to make sure that the resulting label is
         # unique (as you can have the same role/group label for different entities).
-        entity_names = (
-            set(entity["entity"] for entity in entities if "entity" in entity.keys())
-            | set(
-                f"{entity['entity']}"
-                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
-                for entity in entities
-                if "entity" in entity.keys() and "role" in entity.keys()
-            )
-            | set(
-                f"{entity['entity']}"
-                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
-                for entity in entities
-                if "entity" in entity.keys() and "group" in entity.keys()
-            )
+        entity_names_basic = set(
+            entity["entity"] for entity in entities if "entity" in entity.keys()
         )
+        entity_names_roles = set(
+            f"{entity['entity']}"
+            f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
+            for entity in entities
+            if "entity" in entity.keys() and "role" in entity.keys()
+        )
+        entity_names_groups = set(
+            f"{entity['entity']}"
+            f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
+            for entity in entities
+            if "entity" in entity.keys() and "group" in entity.keys()
+        )
+        entity_names = entity_names_basic.union(entity_names_roles, entity_names_groups)
 
         # the USED_ENTITIES_KEY of an intent also contains the entity labels and the
         # concatenated entity labels with their corresponding roles and groups labels
         wanted_entities = set(intent_config.get(USED_ENTITIES_KEY, entity_names))
 
-        return entity_names & wanted_entities
+        return entity_names.intersection(wanted_entities)
 
     def _get_user_sub_state(
         self, tracker: "DialogueStateTracker"
     ) -> Dict[Text, Union[Text, Tuple[Text]]]:
-        """Turn latest UserUttered event into a substate containing intent,
-        text and set entities if present
+        """Turns latest UserUttered event into a substate.
+
+        The substate will contain intent, text, and entities (if any are present).
+
         Args:
             tracker: dialog state tracker containing the dialog so far
         Returns:
@@ -1097,15 +1112,19 @@ class Domain:
 
         sub_state = latest_message.as_sub_state()
 
-        # filter entities based on intent config
-        # sub_state will be transformed to frozenset therefore we need to
-        # convert the set to the tuple
-        # sub_state is transformed to frozenset because we will later hash it
-        # for deduplication
+        # Filter entities based on intent config. We need to convert the set into a
+        # tuple because sub_state will be later transformed into a frozenset (so it can
+        # be hashed for deduplication).
         entities = tuple(
-            self._get_featurized_entities(latest_message)
-            & set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+            self._get_featurized_entities(latest_message).intersection(
+                set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+            )
         )
+        # Sort entities so that any derived state representation is consistent across
+        # runs and invariant to the order in which the entities for an utterance are
+        # listed in data files.
+        entities = tuple(sorted(entities))
+
         if entities:
             sub_state[rasa.shared.nlu.constants.ENTITIES] = entities
         else:
@@ -1180,16 +1199,17 @@ class Domain:
             if sub_state
         }
 
-    def get_active_states(
+    def get_active_state(
         self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
     ) -> State:
-        """Returns a bag of active states from the tracker state.
+        """Given a dialogue tracker, makes a representation of current dialogue state.
 
         Args:
             tracker: dialog state tracker containing the dialog so far
             omit_unset_slots: If `True` do not include the initial values of slots.
 
-        Returns `State` containing all active states.
+        Returns:
+            A representation of the dialogue's current state.
         """
         state = {
             rasa.shared.core.constants.USER: self._get_user_sub_state(tracker),
@@ -1286,7 +1306,7 @@ class Domain:
                 if turn_was_hidden:
                     continue
 
-            state = self.get_active_states(tr, omit_unset_slots=omit_unset_slots)
+            state = self.get_active_state(tr, omit_unset_slots=omit_unset_slots)
 
             if ignore_rule_only_turns:
                 # clean state from only rule features
@@ -1316,16 +1336,20 @@ class Domain:
         """
         if self.store_entities_as_slots:
             slot_events = []
-            for s in self.slots:
-                if s.auto_fill:
+            for slot in self.slots:
+                if slot.auto_fill:
                     matching_entities = [
-                        e.get("value") for e in entities if e.get("entity") == s.name
+                        entity.get("value")
+                        for entity in entities
+                        if entity.get("entity") == slot.name
                     ]
                     if matching_entities:
-                        if s.type_name == "list":
-                            slot_events.append(SlotSet(s.name, matching_entities))
+                        if slot.type_name == "list":
+                            slot_events.append(SlotSet(slot.name, matching_entities))
                         else:
-                            slot_events.append(SlotSet(s.name, matching_entities[-1]))
+                            slot_events.append(
+                                SlotSet(slot.name, matching_entities[-1])
+                            )
             return slot_events
         else:
             return []
@@ -1524,9 +1548,9 @@ class Domain:
 
         # clean empty keys
         return {
-            k: v
-            for k, v in domain_data.items()
-            if v != {} and v != [] and v is not None
+            key: val
+            for key, val in domain_data.items()
+            if val != {} and val != [] and val is not None
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:
@@ -1585,7 +1609,7 @@ class Domain:
         Excludes slots which aren't featurized.
         """
 
-        return [s.name for s in self._user_slots if s.influence_conversation]
+        return [slot.name for slot in self._user_slots if slot.influence_conversation]
 
     @property
     def _actions_for_domain_warnings(self) -> List[Text]:
@@ -1595,9 +1619,9 @@ class Domain:
         """
 
         return [
-            a
-            for a in self.user_actions_and_forms
-            if a not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
+            action
+            for action in self.user_actions_and_forms
+            if action not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
         ]
 
     @staticmethod
@@ -1628,7 +1652,7 @@ class Domain:
     ) -> List[Text]:
         """Combines actions with utter actions listed in responses section."""
         unique_utter_actions = [
-            a for a in sorted(list(responses.keys())) if a not in actions
+            action for action in sorted(list(responses.keys())) if action not in actions
         ]
         return actions + unique_utter_actions
 
@@ -1642,9 +1666,9 @@ class Domain:
         # 0 in this array. to keep it that way, we remove the duplicate
         # action names from the users list instead of the defaults
         unique_user_actions = [
-            a
-            for a in user_actions
-            if a not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
+            action
+            for action in user_actions
+            if action not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
         ]
         return rasa.shared.core.constants.DEFAULT_ACTION_NAMES + unique_user_actions
 
@@ -1785,7 +1809,9 @@ class Domain:
     def check_missing_responses(self) -> None:
         """Warn user of utterance names which have no specified response."""
         utterances = [
-            a for a in self.action_names_or_texts if a.startswith(UTTER_PREFIX)
+            action
+            for action in self.action_names_or_texts
+            if action.startswith(rasa.shared.constants.UTTER_PREFIX)
         ]
 
         missing_responses = [t for t in utterances if t not in self.responses.keys()]
