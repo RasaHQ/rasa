@@ -41,6 +41,7 @@ class InvalidModelError(RasaException):
     """
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
         super(InvalidModelError, self).__init__(message)
 
@@ -56,6 +57,7 @@ class UnsupportedModelError(RasaException):
     """
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
         super(UnsupportedModelError, self).__init__(message)
 
