@@ -37,7 +37,12 @@ from rasa.utils.tensorflow.constants import (
     COSINE,
     AUTO,
     LINEAR_NORM,
+    LABEL,
+    MASK,
+    SENTENCE,
+    IDS,
 )
+from rasa.shared.nlu.constants import ACTION_NAME
 from rasa.utils.tensorflow import model_data_utils
 from tests.core.test_policies import PolicyTestCollection
 from rasa.shared.constants import DEFAULT_SENDER_ID
@@ -146,17 +151,16 @@ class TestTEDPolicy(PolicyTestCollection):
         assembled_label_data_signature = assembled_label_data.get_signature()
 
         assert list(assembled_label_data_signature.keys()) == [
-            "label_action_name",
-            "label",
+            f"{LABEL}_{ACTION_NAME}",
+            f"{LABEL}",
         ]
         assert assembled_label_data.num_examples == default_domain.num_actions
-        assert list(assembled_label_data_signature["label_action_name"].keys()) == [
-            "mask",
-            "sentence",
-        ]
-        assert list(assembled_label_data_signature["label"].keys()) == ["ids"]
+        assert list(
+            assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"].keys()
+        ) == [MASK, SENTENCE,]
+        assert list(assembled_label_data_signature[LABEL].keys()) == [IDS]
         assert (
-            assembled_label_data_signature["label_action_name"]["sentence"][0].units
+            assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"][SENTENCE][0].units
             == default_domain.num_actions
         )
 
