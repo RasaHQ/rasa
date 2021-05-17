@@ -112,7 +112,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
                     f"File {file_path} does not exist. "
                     f"Re-check the files inside the directory {model_directory}. "
                     f"It should contain the following model "
-                    f'files - [{", ".join(files_to_check)}]'
+                    f"files - [{', '.join(files_to_check)}]"
                 )
 
     def _get_validated_model_url(self) -> Text:
