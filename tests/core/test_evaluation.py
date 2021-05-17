@@ -499,9 +499,9 @@ def test_log_evaluation_table(caplog, skip_field, skip_value):
 
 @pytest.mark.parametrize(
     "test_file",
-    [("data/test_yaml_stories/test_full_retrieval_entity_wrong_prediction.yml"),],
+    ["data/test_yaml_stories/test_prediction_with_correct_intent_wrong_entity.yml",],
 )
-async def test_retrieval_entity_wrong_prediction(
+async def test_prediction_correct_intent_wrong_entity(
     tmpdir: Path, form_agent: Agent, test_file: Text
 ):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
@@ -515,5 +515,58 @@ async def test_retrieval_entity_wrong_prediction(
     )
 
     failed_stories = rasa.shared.utils.io.read_file(stories_path)
-    # check if the predicted entry contains full retrieval entity
+
+    # check if there is no comment on the intent line
+    assert "- intent: request_restaurant  # predicted:" not in failed_stories
+    # check if there is a comment with the predicted entity on the entity line
+    assert "# predicted: cuisine: greek" in failed_stories
+
+
+@pytest.mark.parametrize(
+    "test_file",
+    ["data/test_yaml_stories/test_prediction_with_wrong_intent_correct_entity.yml",],
+)
+async def test_prediction_wrong_intent_correct_entity(
+    tmpdir: Path, form_agent: Agent, test_file: Text
+):
+    stories_path = str(tmpdir / FAILED_STORIES_FILE)
+
+    await evaluate_stories(
+        stories=test_file,
+        agent=form_agent,
+        out_directory=str(tmpdir),
+        max_stories=None,
+        e2e=True,
+    )
+
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
+
+    # check if there is a comment with the predicted intent on the intent line
+    assert "- intent: greet  # predicted: request_restaurant" in failed_stories
+    # check if there is no comment on the entity line
+    assert "# predicted: cuisine: greek" not in failed_stories
+
+
+@pytest.mark.parametrize(
+    "test_file",
+    ["data/test_yaml_stories/test_prediction_with_wrong_intent_wrong_entity.yml",],
+)
+async def test_prediction_wrong_intent_wrong_entity(
+    tmpdir: Path, form_agent: Agent, test_file: Text
+):
+    stories_path = str(tmpdir / FAILED_STORIES_FILE)
+
+    await evaluate_stories(
+        stories=test_file,
+        agent=form_agent,
+        out_directory=str(tmpdir),
+        max_stories=None,
+        e2e=True,
+    )
+
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
+
+    # check if there is a comment with the predicted intent on the intent line
+    assert "- intent: greet  # predicted: request_restaurant" in failed_stories
+    # check if there is a comment with the predicted entity on the entity line
     assert "# predicted: cuisine: greek" in failed_stories
