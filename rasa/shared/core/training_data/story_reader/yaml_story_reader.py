@@ -364,11 +364,12 @@ class YAMLStoryReader(StoryReader):
     ) -> Tuple[Text, Optional[Text]]:
         try:
             user_intent = step.get(KEY_USER_INTENT, "").strip()
-        except AttributeError as e:
-            raise RasaException(
-                f"Missing intent value in {self._get_item_title()} step: {step} "
-                f"in '{self.source_name}'"
-            ) from e
+        except AttributeError:
+            rasa.shared.utils.io.raise_warning(
+                f"Issue found in '{self.source_name}':\n"
+                f"Missing intent value in {self._get_item_title()} step: {step} ."
+            )
+            user_intent = ""
 
         if not user_intent and KEY_USER_MESSAGE not in step:
             rasa.shared.utils.io.raise_warning(

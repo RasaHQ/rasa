@@ -614,21 +614,17 @@ def test_read_from_file_skip_validation(monkeypatch: MonkeyPatch):
     assert reader.read_from_file(yaml_file, skip_validation=True) == []
 
 
-def test_raises_exception_missing_intent_in_rules(domain: Domain):
-    rules = "data/test_yaml_stories/rules_missing_intent.yml"
+@pytest.mark.parametrize(
+    "file",
+    [
+        "data/test_yaml_stories/rules_missing_intent.yml",
+        "data/test_yaml_stories/stories_missing_intent.yml",
+    ],
+)
+def test_raises_exception_missing_intent_in_rules(file: Text, domain: Domain):
     reader = YAMLStoryReader(domain)
 
-    with pytest.raises(RasaException) as e:
-        reader.read_from_file(rules)
+    with pytest.warns(UserWarning) as warning:
+        reader.read_from_file(file)
 
-    assert "Missing intent value" in str(e.value)
-
-
-def test_raises_exception_missing_intent_in_stories(domain: Domain):
-    stories = "data/test_yaml_stories/stories_missing_intent.yml"
-    reader = YAMLStoryReader(domain)
-
-    with pytest.raises(RasaException) as e:
-        reader.read_from_file(stories)
-
-    assert "Missing intent value" in str(e.value)
+    assert "Missing intent value" in warning[0].message.args[0]
