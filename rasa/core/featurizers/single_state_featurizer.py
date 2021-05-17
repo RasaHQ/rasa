@@ -359,6 +359,9 @@ class SingleStateFeaturizer:
     ) -> List[Dict[Text, List["Features"]]]:
         """Encode all labels from the domain using the given interpreter.
 
+        By default, this method encodes actions from the domain.
+        It can be overriden to encode any other label, like intents as well.
+
         Args:
             domain: The domain that contains the labels.
             interpreter: The interpreter used to encode the labels.
@@ -417,6 +420,8 @@ class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> List[Dict[Text, List["Features"]]]:
         """Encode all relevant labels from the domain using the given interpreter.
+
+        Relevant labels for this featurizer are all intents declared in the domain.
 
         Args:
             domain: The domain that contains the labels.

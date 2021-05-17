@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-from typing import Any, List, Optional, Text, Dict, Union, Type
+from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
 
 import rasa.utils.io as io_utils
 from rasa.shared.core.domain import Domain
@@ -92,12 +92,20 @@ from rasa.utils.tensorflow.model_data import (
     Data,
 )
 
+if TYPE_CHECKING:
+    from rasa.shared.nlu.training_data.features import Features
+
+
 logger = logging.getLogger(__name__)
 
 
 class IntentTEDPolicy(TEDPolicy):
     """
-    TODO: add description
+    `IntentTEDPolicy` has the same model architecture as `TEDPolicy`.
+    The difference is at a task level.
+    Instead of predicting the next probable action, this policy
+    predicts whether the last predicted intent is a likely intent
+    according to the training stories and conversation context.
     """
 
     # please make sure to update the docs when changing a default parameter
@@ -248,10 +256,8 @@ class IntentTEDPolicy(TEDPolicy):
         return IntentTED
 
     def _auto_update_configuration(self):
-        self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
-        self.config = rasa.utils.train_utils.update_deprecated_sparsity_to_density(
-            self.config
-        )
+        self.config = train_utils.update_evaluation_parameters(self.config)
+        self.config = train_utils.update_deprecated_sparsity_to_density(self.config)
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
@@ -260,6 +266,19 @@ class IntentTEDPolicy(TEDPolicy):
     def _assemble_label_data(
         self, attribute_data: Data, domain: Domain
     ) -> RasaModelData:
+        """Construct data regarding labels to be fed to the model.
+
+        The resultant model data should contain the keys `label_intent`, `label`.
+        `label_intent` will contain the sequence, sentence and mask features
+        for all intent labels and `label` will contain the numerical label ids.
+
+        Args:
+            attribute_data: Feature data for all intent labels.
+            domain: Domain of the assistant.
+
+        Returns:
+            Features of labels ready to be fed to the model.
+        """
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
         label_data.add_lengths(
@@ -275,6 +294,19 @@ class IntentTEDPolicy(TEDPolicy):
 
     @staticmethod
     def _prepare_data_for_prediction(model_data: RasaModelData) -> RasaModelData:
+        """Transform training model data to data usable for making model predictions.
+
+        Transformation involves filtering out all features which
+        are not useful at prediction time. This is important
+        because the prediction signature will not contain these
+        attributes and hence prediction will break.
+
+        Args:
+            model_data: Data used during model training.
+
+        Returns:
+            Transformed data usable for making predictions.
+        """
         filtered_data: Dict[Text, Dict[Text, Any]] = {
             key: features
             for key, features in model_data.data.items()
@@ -285,8 +317,18 @@ class IntentTEDPolicy(TEDPolicy):
     def run_post_training_procedures(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> None:
+        """Run any post training tasks.
 
-        # TODO: Add comment as to why filtering is needed.
+        Args:
+            model_data: Data used for training the model.
+            label_ids: Numerical IDs of labels for each data point used during training.
+        """
+        # `model_data` contains data attributes like `label` which were
+        # used during training. These attributes are not present in
+        # the `predict_data_signature`. Prediction through the model
+        # will break if `model_data` is passed as it is through the model.
+        # Hence, we first filter out the attributes inside `model_data`
+        # to keep only those which should be present during prediction.
         model_prediction_data = self._prepare_data_for_prediction(model_data)
         self.label_thresholds = self.model.compute_thresholds(
             model_prediction_data, label_ids
@@ -295,11 +337,16 @@ class IntentTEDPolicy(TEDPolicy):
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array
     ) -> Dict[Text, Dict[Text, float]]:
-        """
+        """Add any metadata to be attached to the predicted action.
+
+        Similarities for all intents and their thresholds are attached as metadata.
+
         Args:
-            domain:
-            similarities:
+            domain: Domain of the assistant.
+            similarities: Predicted similarities for each intent.
+
         Returns:
+            Metadata to be attached.
         """
         metadata = {}
         for intent in domain.intents:
@@ -320,17 +367,24 @@ class IntentTEDPolicy(TEDPolicy):
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
+
         Args:
-            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
+            tracker: Tracker containing past conversation events.
+            domain: Domain of the assistant.
             interpreter: Interpreter which may be used by the policies to create
                 additional features.
+
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
         """
         if self.model is None:
             return self._prediction(self._default_predictions(domain))
 
+        # Prediction through the policy is skipped if:
+        # 1. Last event in the tracker was not of type `UserUttered`.
+        # This is to prevent the ensemble of policies from being stuck
+        # in a loop.
+        # 2. If the tracker does not contain any event of type `UserUttered` till now.
         if not tracker.get_last_event_for(UserUttered) or (
             tracker.events and not isinstance(tracker.events[-1], UserUttered)
         ):
@@ -368,11 +422,20 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
+        """Check if the intent should raise `action_unlikely_intent`.
 
+        Args:
+            intent: Intent to be queried.
+            domain: Domain of the assistant.
+
+        Returns:
+            Whether intent should raise `action_unlikely_intent` or not.
+        """
         if domain.intents.index(intent) not in self.label_thresholds:
             # This means the intent was never present in a story
             logger.debug(
-                f"Query intent index {domain.intents.index(intent)} not found in label thresholds - {self.label_thresholds}"
+                f"Query intent index {domain.intents.index(intent)} not "
+                f"found in label thresholds - {self.label_thresholds}"
             )
             return False
         if intent in self.config[IGNORE_INTENTS_LIST]:
@@ -383,15 +446,20 @@ class IntentTEDPolicy(TEDPolicy):
     def _check_unlikely_intent(
         self, domain: Domain, similarities: np.array, query_intent: Text
     ) -> bool:
-        """Check if the latest user event is probable according to IntentTED predictions.
+        """Check if the query intent is probable according to model's predictions.
+
         If the similarity prediction for the intent of
-        latest user event is lower than the threshold
-        calculated for that intent during training, the
-        corresponding user intent is unlikely.
+        is lower than the threshold calculated for that
+        intent during training, the corresponding user
+        intent is unlikely.
+
         Args:
             domain: Domain of the assistant.
-            similarities: Predicted similarities for all labels.
-            tracker: Current conversation tracker
+            similarities: Predicted similarities for all intents.
+            query_intent: Intent to be queried.
+
+        Returns:
+            Whether query intent is likely or not.
         """
         predicted_intent_scores = {
             index: similarities[0][index] for index, intent in enumerate(domain.intents)
@@ -412,10 +480,12 @@ class IntentTEDPolicy(TEDPolicy):
 
             logger.debug(
                 f"Score for user intent {query_intent} likely to occur here is "
-                f"{query_intent_similarity}, while threshold is {self.label_thresholds[query_intent_id]}"
+                f"{query_intent_similarity}, while "
+                f"threshold is {self.label_thresholds[query_intent_id]}"
             )
             logger.debug(
-                f"Top 5 intents(in ascending order) that are likely here are: {sorted_intent_scores[-5:]}"
+                f"Top 5 intents(in ascending order) that "
+                f"are likely here are: {sorted_intent_scores[-5:]}"
             )
 
             # If score for query intent is below threshold and
@@ -432,7 +502,8 @@ class IntentTEDPolicy(TEDPolicy):
         return False
 
     def persist_model_utilities(self, model_path: Path) -> None:
-        """Persist all utility attributes needed for inference.
+        """Persist all model's utility attributes like model weights, etc.
+
         Args:
             model_path: Path where model is to be persisted
         """
@@ -443,7 +514,12 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     @classmethod
-    def _load_model_utilities(cls, model_path: Path):
+    def _load_model_utilities(cls, model_path: Path) -> None:
+        """Load all model's utility attributes.
+
+        Args:
+            model_path: Path where model is to be persisted.
+        """
         model_utilties = super()._load_model_utilities(model_path)
         label_thresholds = io_utils.pickle_load(
             model_path / f"{cls._metadata_filename()}.label_thresholds.pkl"
@@ -451,15 +527,19 @@ class IntentTEDPolicy(TEDPolicy):
         model_utilties.update({"label_thresholds": label_thresholds})
 
     @classmethod
-    def _update_loaded_params(cls, meta):
-        meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
+    def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
+        meta = train_utils.override_defaults(cls.defaults, meta)
 
         return meta
 
     @classmethod
     def _load_policy_with_model(
-        cls, model, featurizer, model_utilities, should_finetune
-    ):
+        cls,
+        model: "IntentTED",
+        featurizer: TrackerFeaturizer,
+        model_utilities: Dict[Text, Any],
+        should_finetune: bool,
+    ) -> "IntentTEDPolicy":
         return cls(
             featurizer=featurizer,
             priority=model_utilities["priority"],
@@ -527,11 +607,17 @@ class IntentTED(TED):
     def compute_thresholds(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> Dict[int, float]:
-        """
+        """Compute prediction thresholds for each intent.
+
+        These thresholds are used at inference time to predict
+        whether a query intent is likely or not.
+
         Args:
-            model_data:
-            label_ids:
+            model_data: Data used during model training.
+            label_ids: Numerical IDs of labels corresponding to data points used during training.
+
         Returns:
+            Computed thresholds for each intent label present in `label_ids`.
         """
         self._training = False
 
@@ -542,8 +628,6 @@ class IntentTED(TED):
         )
         outputs = self.run_inference(model_data, batch_size=batch_size)
 
-        thresholds = {}
-
         # Collect scores across all data points
         label_id_scores = self._collect_label_id_similarities_from_outputs(
             label_ids, outputs
@@ -553,16 +637,37 @@ class IntentTED(TED):
 
     @staticmethod
     def _pick_threshold_from_similarities(
-        label_id_scores: Dict[int, List[float]]
+        label_id_similarities: Dict[int, List[float]]
     ) -> Dict[int, float]:
+        """Compute threshold for predicted similarities.
+
+        The threshold for an intent is computed as the minimum
+        of all similarities predicted for that particular intent.
+
+        Args:
+            label_id_similarities: Similarities predicted for each label/
+
+        Returns:
+            Computed thresholds for each intent label.
+        """
         return {
-            label_id: min(label_id_scores[label_id]) for label_id in label_id_scores
+            label_id: min(label_id_similarities[label_id])
+            for label_id in label_id_similarities
         }
 
     @staticmethod
     def _collect_label_id_similarities_from_outputs(
-        label_ids, outputs
+        label_ids: np.ndarray, outputs: Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
     ) -> Dict[int, List[float]]:
+        """Collect similarities predicted for each label id.
+
+        Args:
+            label_ids: Numerical IDs of labels for each data point used during training.
+            outputs: Model's predictions for each data point.
+
+        Returns:
+            Similarities grouped by intent label id.
+        """
         label_id_scores = {}
         for index, all_pos_labels in enumerate(label_ids):
 
