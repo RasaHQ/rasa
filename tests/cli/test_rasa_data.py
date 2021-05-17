@@ -144,52 +144,31 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
         data.validate_files(args)
 
 
-def test_validate_files_action_not_found_exception_stories(tmp_path: Path):
-    story_file_name = tmp_path / "stories.yml"
-    story_file_name.write_text(
-        """
+@pytest.mark.parametrize(
+    ("file_type", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+def test_validate_files_action_not_found_invalid_domain(
+    file_type: Text, data_type: Text, tmp_path: Path
+):
+    file_name = tmp_path / f"{file_type}.yml"
+    file_name.write_text(
+        f"""
         version: "2.0"
-        stories:
-        - story: story path 1
-          steps:
-          - intent: bot_challenge
-          - action: action_test_1
-        """
-    )
-    args = {
-        "domain": "data/test_moodbot/domain.yml",
-        "data": [story_file_name],
-        "max_history": None,
-        "config": None,
-    }
-    with pytest.raises(ActionNotFoundException) as e:
-        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
-
-    assert "Cannot access action 'action_test_1'" in str(e.value)
-
-
-def test_validate_files_action_not_found_exception_rules(tmp_path: Path):
-    rules_file_name = tmp_path / "rules.yml"
-    rules_file_name.write_text(
-        """
-        version: "2.0"
-        rules:
-        - rule: rule path 1
+        {file_type}:
+        - {data_type}: test path
           steps:
           - intent: goodbye
-          - action: action_test_2
+          - action: action_test
         """
     )
     args = {
         "domain": "data/test_moodbot/domain.yml",
-        "data": [rules_file_name],
+        "data": [file_name],
         "max_history": None,
         "config": None,
     }
-    with pytest.raises(ActionNotFoundException) as e:
+    with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
-
-    assert "Cannot access action 'action_test_2'" in str(e.value)
 
 
 def test_validate_files_form_slots_not_matching(tmp_path: Path):
@@ -218,12 +197,6 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
     }
     with pytest.raises(SystemExit):
         data.validate_files(namedtuple("Args", args.keys())(*args.values()))
-        with pytest.warns(UserWarning) as w:
-            assert (
-                w[0].message.args[0]
-                == "The form slot last_name is not present in the domain slots."
-                "Please add the correct slot or check for typos."
-            )
 
 
 def test_validate_files_exit_early():
