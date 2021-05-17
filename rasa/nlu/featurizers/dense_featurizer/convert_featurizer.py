@@ -129,8 +129,8 @@ class ConveRTFeaturizer(DenseFeaturizer):
 
         if not model_url:
             raise RasaException(
-                f'Parameter "model_url" was not specified in the configuration '
-                f'of "{ConveRTFeaturizer.__name__}". '
+                f"Parameter 'model_url' was not specified in the configuration "
+                f"of '{ConveRTFeaturizer.__name__}'. "
                 f"It is mandatory to pass a value for this parameter. "
                 f"You can either use a community hosted URL of the model "
                 f"or if you have a local copy of the model, pass the "
