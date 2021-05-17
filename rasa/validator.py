@@ -195,6 +195,7 @@ class Validator:
     def verify_actions_in_stories_rules(self) -> bool:
         """Verifies that actions used in stories and rules are present in the domain."""
         everything_is_alright = True
+        visited = set()
 
         for story in self.story_graph.story_steps:
             for event in story.events:
@@ -204,8 +205,19 @@ class Validator:
                 if not event.action_name.startswith("action_"):
                     continue
 
+                if event.action_name in visited:
+                    # we already processed this one before, we only want to warn once
+                    continue
+
                 if event.action_name not in self.domain.action_names_or_texts:
-                    self.domain.raise_action_not_found_exception(event.action_name)
+                    rasa.shared.utils.io.raise_warning(
+                        f"The action '{event.action_name}' is used in your stories, but it "
+                        f"is not listed in the domain file. You should add it to your "
+                        f"domain file!",
+                        docs=DOCS_URL_DOMAINS,
+                    )
+                    everything_is_alright = False
+                visited.add(event.action_name)
 
         return everything_is_alright
 

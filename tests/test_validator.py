@@ -279,10 +279,13 @@ async def test_verify_actions_in_stories_not_in_domain(
         domain_path=domain_path, training_data_paths=[story_file_name],
     )
     validator = await Validator.from_importer(importer)
-    with pytest.raises(ActionNotFoundException) as e:
+    with pytest.warns(UserWarning) as warning:
         validator.verify_actions_in_stories_rules()
 
-    assert "Cannot access action 'action_test_1'" in str(e.value)
+    assert (
+        "The action 'action_test_1' is used in your stories, "
+        "but it is not listed in the domain file." in warning[0].message.args[0]
+    )
 
 
 async def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text):
@@ -301,10 +304,13 @@ async def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path
         domain_path=domain_path, training_data_paths=[rules_file_name],
     )
     validator = await Validator.from_importer(importer)
-    with pytest.raises(ActionNotFoundException) as e:
+    with pytest.warns(UserWarning) as warning:
         validator.verify_actions_in_stories_rules()
 
-    assert "Cannot access action 'action_test_2'" in str(e.value)
+    assert (
+        "The action 'action_test_2' is used in your stories, "
+        "but it is not listed in the domain file." in warning[0].message.args[0]
+    )
 
 
 async def test_verify_form_slots_invalid_domain(tmp_path: Path):
@@ -346,7 +352,12 @@ async def test_invalid_domain_mapping_policy():
     assert validator.verify_domain_validity() is False
 
 
-async def test_valid_stories_actions_in_domain(tmp_path: Path):
+@pytest.mark.parametrize(
+    ("file_name", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+async def test_valid_stories_rules_actions_in_domain(
+    file_name: Text, data_type: Text, tmp_path: Path
+):
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
@@ -357,49 +368,48 @@ async def test_valid_stories_actions_in_domain(tmp_path: Path):
         - action_greet
         """
     )
-    story_file_name = tmp_path / "stories.yml"
-    story_file_name.write_text(
-        """
+    file_name = tmp_path / f"{file_name}.yml"
+    file_name.write_text(
+        f"""
         version: "2.0"
-        stories:
-        - story: story path 1
+        {file_name}:
+        - {data_type}: test path
           steps:
           - intent: greet
           - action: action_greet
         """
     )
-    importer = RasaFileImporter(
-        domain_path=domain, training_data_paths=[story_file_name],
-    )
+    importer = RasaFileImporter(domain_path=domain, training_data_paths=[file_name],)
     validator = await Validator.from_importer(importer)
     assert validator.verify_actions_in_stories_rules()
 
 
-async def test_valid_rules_actions_in_domain(tmp_path: Path):
+@pytest.mark.parametrize(
+    ("file_name", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+async def test_valid_stories_rules_default_actions(
+    file_name: Text, data_type: Text, tmp_path: Path
+):
     domain = tmp_path / "domain.yml"
     domain.write_text(
         """
         version: "2.0"
         intents:
         - greet
-        actions:
-        - action_greet
         """
     )
-    rules_file_name = tmp_path / "rules.yml"
-    rules_file_name.write_text(
-        """
-        version: "2.0"
-        rules:
-        - rule: rule path 1
-          steps:
-          - intent: greet
-          - action: action_greet
-        """
+    file_name = tmp_path / f"{file_name}.yml"
+    file_name.write_text(
+        f"""
+            version: "2.0"
+            {file_name}:
+            - {data_type}: test path
+              steps:
+              - intent: greet
+              - action: action_restart
+            """
     )
-    importer = RasaFileImporter(
-        domain_path=domain, training_data_paths=[rules_file_name],
-    )
+    importer = RasaFileImporter(domain_path=domain, training_data_paths=[file_name],)
     validator = await Validator.from_importer(importer)
     assert validator.verify_actions_in_stories_rules()
 
