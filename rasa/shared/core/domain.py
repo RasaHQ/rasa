@@ -28,7 +28,6 @@ from rasa.shared.constants import (
     DOCS_URL_FORMS,
     DOCS_URL_MIGRATION_GUIDE,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
-    UTTER_PREFIX,
     DOCS_URL_RESPONSES,
     REQUIRED_SLOTS_KEY,
     IGNORED_INTENTS,
@@ -266,19 +265,22 @@ class Domain:
         combined = self.as_dict()
 
         def merge_dicts(
-            d1: Dict[Text, Any],
-            d2: Dict[Text, Any],
+            tempDict1: Dict[Text, Any],
+            tempDict2: Dict[Text, Any],
             override_existing_values: bool = False,
         ) -> Dict[Text, Any]:
-            if override_existing_values:
-                a, b = d1.copy(), d2.copy()
-            else:
-                a, b = d2.copy(), d1.copy()
-            a.update(b)
-            return a
 
-        def merge_lists(l1: List[Any], l2: List[Any]) -> List[Any]:
-            return sorted(list(set(l1 + l2)))
+            if override_existing_values:
+                merge_dicts, b = tempDict1.copy(), tempDict2.copy()
+
+            else:
+                merge_dicts, b = tempDict2.copy(), tempDict1.copy()
+
+            merge_dicts.update(b)
+            return merge_dicts
+
+        def merge_lists(list1: List[Any], list2: List[Any]) -> List[Any]:
+            return sorted(list(set(list1 + list2)))
 
         def merge_lists_of_dicts(
             dict_list1: List[Dict],
@@ -796,7 +798,10 @@ class Domain:
         """Return only the responses which are defined for retrieval intents."""
         return dict(
             filter(
-                lambda x: self.is_retrieval_intent_response(x), self.responses.items()
+                lambda intent_response: self.is_retrieval_intent_response(
+                    intent_response
+                ),
+                self.responses.items(),
             )
         )
 
@@ -873,7 +878,7 @@ class Domain:
         needs to fill in next (either explicitly or implicitly) as part of a form.
         """
         if self.form_names and rasa.shared.core.constants.REQUESTED_SLOT not in [
-            s.name for s in self.slots
+            slot.name for slot in self.slots
         ]:
             self.slots.append(
                 TextSlot(
@@ -910,15 +915,15 @@ class Domain:
                     rasa.shared.core.constants.DEFAULT_KNOWLEDGE_BASE_ACTION
                 )
             )
-            slot_names = [s.name for s in self.slots]
+            slot_names = [slot.name for slot in self.slots]
             knowledge_base_slots = [
                 rasa.shared.core.constants.SLOT_LISTED_ITEMS,
                 rasa.shared.core.constants.SLOT_LAST_OBJECT,
                 rasa.shared.core.constants.SLOT_LAST_OBJECT_TYPE,
             ]
-            for s in knowledge_base_slots:
-                if s not in slot_names:
-                    self.slots.append(TextSlot(s, influence_conversation=False))
+            for slot in knowledge_base_slots:
+                if slot not in slot_names:
+                    self.slots.append(TextSlot(slot, influence_conversation=False))
 
     def add_knowledge_base_slots(self) -> None:
         """See `_add_categorical_slot_default_value` for docstring."""
@@ -1343,16 +1348,20 @@ class Domain:
         """
         if self.store_entities_as_slots:
             slot_events = []
-            for s in self.slots:
-                if s.auto_fill:
+            for slot in self.slots:
+                if slot.auto_fill:
                     matching_entities = [
-                        e.get("value") for e in entities if e.get("entity") == s.name
+                        entity.get("value")
+                        for entity in entities
+                        if entity.get("entity") == slot.name
                     ]
                     if matching_entities:
-                        if s.type_name == "list":
-                            slot_events.append(SlotSet(s.name, matching_entities))
+                        if slot.type_name == "list":
+                            slot_events.append(SlotSet(slot.name, matching_entities))
                         else:
-                            slot_events.append(SlotSet(s.name, matching_entities[-1]))
+                            slot_events.append(
+                                SlotSet(slot.name, matching_entities[-1])
+                            )
             return slot_events
         else:
             return []
@@ -1553,9 +1562,9 @@ class Domain:
 
         # clean empty keys
         return {
-            k: v
-            for k, v in domain_data.items()
-            if v != {} and v != [] and v is not None
+            key: val
+            for key, val in domain_data.items()
+            if val != {} and val != [] and val is not None
         }
 
     def persist(self, filename: Union[Text, Path]) -> None:
@@ -1614,7 +1623,7 @@ class Domain:
         Excludes slots which aren't featurized.
         """
 
-        return [s.name for s in self._user_slots if s.influence_conversation]
+        return [slot.name for slot in self._user_slots if slot.influence_conversation]
 
     @property
     def _actions_for_domain_warnings(self) -> List[Text]:
@@ -1624,9 +1633,9 @@ class Domain:
         """
 
         return [
-            a
-            for a in self.user_actions_and_forms
-            if a not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
+            action
+            for action in self.user_actions_and_forms
+            if action not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
         ]
 
     @staticmethod
@@ -1657,7 +1666,7 @@ class Domain:
     ) -> List[Text]:
         """Combines actions with utter actions listed in responses section."""
         unique_utter_actions = [
-            a for a in sorted(list(responses.keys())) if a not in actions
+            action for action in sorted(list(responses.keys())) if action not in actions
         ]
         return actions + unique_utter_actions
 
@@ -1671,9 +1680,9 @@ class Domain:
         # 0 in this array. to keep it that way, we remove the duplicate
         # action names from the users list instead of the defaults
         unique_user_actions = [
-            a
-            for a in user_actions
-            if a not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
+            action
+            for action in user_actions
+            if action not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
         ]
         return rasa.shared.core.constants.DEFAULT_ACTION_NAMES + unique_user_actions
 
@@ -1817,7 +1826,9 @@ class Domain:
     def check_missing_responses(self) -> None:
         """Warn user of utterance names which have no specified response."""
         utterances = [
-            a for a in self.action_names_or_texts if a.startswith(UTTER_PREFIX)
+            action
+            for action in self.action_names_or_texts
+            if action.startswith(rasa.shared.constants.UTTER_PREFIX)
         ]
 
         missing_responses = [t for t in utterances if t not in self.responses.keys()]
