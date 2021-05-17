@@ -28,7 +28,7 @@ async def test_testing_does_not_warn_if_intent_in_domain(
     with pytest.warns(UserWarning) as record:
         await rasa.core.test.test(Path(stories_path), default_agent)
 
-    assert all("Found intent" not in r.message.args[0] for r in record)
+    assert not any("Found intent" in r.message.args[0] for r in record)
     assert all(
         "in stories which is not part of the domain" not in r.message.args[0]
         for r in record
