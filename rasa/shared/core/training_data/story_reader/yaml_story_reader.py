@@ -5,7 +5,7 @@ from typing import Dict, Text, List, Any, Optional, Union, Tuple
 
 import rasa.shared.data
 from rasa.shared.core.slots import TextSlot, ListSlot
-from rasa.shared.exceptions import YamlException, RasaException
+from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 from rasa.shared.core.constants import LOOP_NAME
 from rasa.shared.nlu.constants import (

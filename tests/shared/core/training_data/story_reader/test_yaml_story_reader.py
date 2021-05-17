@@ -10,7 +10,6 @@ from rasa.shared.exceptions import (
     FileNotFoundException,
     YamlSyntaxException,
     YamlException,
-    RasaException,
 )
 import rasa.shared.utils.io
 from rasa.shared.constants import LATEST_TRAINING_DATA_FORMAT_VERSION
