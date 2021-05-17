@@ -894,19 +894,8 @@ class TEDPolicy(Policy):
         )
 
     @classmethod
-    def _load_model_utilities(cls, path: Union[Text, Path]):
-        model_path = Path(path)
-
-        if not model_path.exists():
-            logger.error(
-                f"Failed to load TED policy model. Path "
-                f"'{model_path.absolute()}' doesn't exist."
-            )
-            return
+    def _load_model_utilities(cls, model_path: Path) -> Dict[Text, Any]:
         tf_model_file = model_path / f"{cls._metadata_filename()}.tf_model"
-        featurizer = TrackerFeaturizer.load(path)
-        if not (model_path / f"{cls._metadata_filename()}.data_example.pkl").is_file():
-            return cls(featurizer=featurizer)
         loaded_data = io_utils.pickle_load(
             model_path / f"{cls._metadata_filename()}.data_example.pkl"
         )
@@ -940,7 +929,6 @@ class TEDPolicy(Policy):
 
         return {
             "tf_model_file": tf_model_file,
-            "featurizer": featurizer,
             "loaded_data": loaded_data,
             "fake_features": fake_features,
             "label_data": label_data,
@@ -956,12 +944,25 @@ class TEDPolicy(Policy):
         should_finetune: bool = False,
         epoch_override: int = defaults[EPOCHS],
         **kwargs: Any,
-    ) -> "TEDPolicy":
+    ) -> Optional["TEDPolicy"]:
         """Loads a policy from the storage.
         **Needs to load its featurizer**
         """
+        model_path = Path(path)
 
-        model_utilities = cls._load_model_utilities(path)
+        if not model_path.exists():
+            logger.error(
+                f"Failed to load TED policy model. Path "
+                f"'{model_path.absolute()}' doesn't exist."
+            )
+            return
+
+        featurizer = TrackerFeaturizer.load(path)
+
+        if not (model_path / f"{cls._metadata_filename()}.data_example.pkl").is_file():
+            return cls(featurizer=featurizer)
+
+        model_utilities = cls._load_model_utilities(model_path)
 
         model_utilities["meta"] = cls._update_loaded_params(model_utilities["meta"])
         model_utilities["meta"][EPOCHS] = epoch_override
@@ -972,15 +973,23 @@ class TEDPolicy(Policy):
         ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
 
         model = cls._load_tf_model(
-            model_utilities, model_data_example, predict_data_example, should_finetune
+            model_utilities,
+            model_data_example,
+            predict_data_example,
+            featurizer,
+            should_finetune,
         )
 
-        return cls._load_policy_from_model(model, model_utilities, should_finetune)
+        return cls._load_policy_with_model(
+            model, featurizer, model_utilities, should_finetune
+        )
 
     @classmethod
-    def _load_policy_from_model(cls, model, model_utilities, should_finetune):
+    def _load_policy_with_model(
+        cls, model, featurizer, model_utilities, should_finetune
+    ):
         return cls(
-            featurizer=model_utilities["featurizer"],
+            featurizer=featurizer,
             priority=model_utilities["priority"],
             model=model,
             fake_features=model_utilities["fake_features"],
@@ -991,7 +1000,12 @@ class TEDPolicy(Policy):
 
     @classmethod
     def _load_tf_model(
-        cls, model_utilities, model_data_example, predict_data_example, should_finetune
+        cls,
+        model_utilities,
+        model_data_example,
+        predict_data_example,
+        featurizer,
+        should_finetune,
     ):
         model = cls.model_class().load(
             str(model_utilities["tf_model_file"]),
@@ -1000,7 +1014,7 @@ class TEDPolicy(Policy):
             data_signature=model_data_example.get_signature(),
             config=model_utilities["meta"],
             max_history_featurizer_is_used=isinstance(
-                model_utilities["featurizer"], MaxHistoryTrackerFeaturizer
+                featurizer, MaxHistoryTrackerFeaturizer
             ),
             label_data=model_utilities["label_data"],
             entity_tag_specs=model_utilities["entity_tag_specs"],

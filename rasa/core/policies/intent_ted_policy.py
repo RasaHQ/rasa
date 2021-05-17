@@ -34,6 +34,7 @@ from rasa.core.policies.ted_policy import (
     TED,
     SEQUENCE_LENGTH,
     SEQUENCE,
+    PREDICTION_FEATURES,
 )
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.models import RasaModel
@@ -272,11 +273,24 @@ class IntentTEDPolicy(TEDPolicy):
         )
         return label_data
 
+    @staticmethod
+    def _prepare_data_for_prediction(model_data: RasaModelData) -> RasaModelData:
+        filtered_data: Dict[Text, Dict[Text, Any]] = {
+            key: features
+            for key, features in model_data.data.items()
+            if key in PREDICTION_FEATURES
+        }
+        return RasaModelData(data=filtered_data)
+
     def run_post_training_procedures(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> None:
 
-        self.label_thresholds = self.model.compute_thresholds(model_data, label_ids)
+        # TODO: Add comment as to why filtering is needed.
+        model_prediction_data = self._prepare_data_for_prediction(model_data)
+        self.label_thresholds = self.model.compute_thresholds(
+            model_prediction_data, label_ids
+        )
 
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array
@@ -317,7 +331,9 @@ class IntentTEDPolicy(TEDPolicy):
         if self.model is None:
             return self._prediction(self._default_predictions(domain))
 
-        if tracker.events and not isinstance(tracker.events[-1], UserUttered):
+        if not tracker.get_last_event_for(UserUttered) or (
+            tracker.events and not isinstance(tracker.events[-1], UserUttered)
+        ):
             logger.debug(
                 f"Skipping predictions for {self.__class__.__name__} "
                 f"as the last event in tracker is not of type `UserUttered`."
@@ -336,7 +352,10 @@ class IntentTEDPolicy(TEDPolicy):
         similarities = output["similarities"][:, -1, :]
 
         # Check for unlikely intent
-        is_unlikely_intent = self._check_unlikely_intent(domain, similarities, tracker)
+        query_intent = tracker.get_last_event_for(UserUttered).intent_name
+        is_unlikely_intent = self._check_unlikely_intent(
+            domain, similarities, query_intent
+        )
 
         confidences = list(np.zeros(domain.num_actions))
 
@@ -362,7 +381,7 @@ class IntentTEDPolicy(TEDPolicy):
         return True
 
     def _check_unlikely_intent(
-        self, domain: Domain, similarities: np.array, tracker: DialogueStateTracker
+        self, domain: Domain, similarities: np.array, query_intent: Text
     ) -> bool:
         """Check if the latest user event is probable according to IntentTED predictions.
         If the similarity prediction for the intent of
@@ -384,35 +403,33 @@ class IntentTEDPolicy(TEDPolicy):
             ],
             key=lambda x: x[1],
         )
-        # Get the last intent prediction from tracker
-        last_user_event: Optional[UserUttered] = tracker.get_last_event_for(UserUttered)
-        if last_user_event:
-            query_label = last_user_event.intent_name
-            query_label_id = domain.intents.index(query_label)
-            query_label_score = similarities[0][query_label_id]
+        query_intent_id = domain.intents.index(query_intent)
+        query_intent_similarity = similarities[0][query_intent_id]
 
-            logger.debug(f"Querying for intent {query_label}")
+        logger.debug(f"Querying for intent {query_intent}")
 
-            if self._should_check_for_intent(query_label, domain):
+        if self._should_check_for_intent(query_intent, domain):
 
+            logger.debug(
+                f"Score for user intent {query_intent} likely to occur here is "
+                f"{query_intent_similarity}, while threshold is {self.label_thresholds[query_intent_id]}"
+            )
+            logger.debug(
+                f"Top 5 intents(in ascending order) that are likely here are: {sorted_intent_scores[-5:]}"
+            )
+
+            # If score for query intent is below threshold and
+            # the query intent is not the top likely intent
+            if (
+                query_intent_similarity < self.label_thresholds[query_intent_id]
+                and query_intent_id != sorted_intent_scores[-1][0]
+            ):
                 logger.debug(
-                    f"Score for user intent {query_label} likely to occur here is "
-                    f"{query_label_score}, while threshold is {self.label_thresholds[query_label_id]}"
+                    f"Intent {query_intent}-{query_intent_id} unlikely to occur here."
                 )
-                logger.debug(
-                    f"Top 5 intents(in ascending order) that are likely here are: {sorted_intent_scores[-5:]}"
-                )
+                return True
 
-                # If score for query intent is below threshold and
-                # the query intent is not the top likely intent
-                if (
-                    query_label_score < self.label_thresholds[query_label_id]
-                    and query_label_id != sorted_intent_scores[-1][0]
-                ):
-                    logger.debug(
-                        f"Intent {query_label}-{query_label_id} unlikely to occur here."
-                    )
-                    return True
+        return False
 
     def persist_model_utilities(self, model_path: Path) -> None:
         """Persist all utility attributes needed for inference.
@@ -426,14 +443,12 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     @classmethod
-    def _load_model_utilities(cls, path: Union[Text, Path]):
-        model_utilties = super()._load_model_utilities(path)
+    def _load_model_utilities(cls, model_path: Path):
+        model_utilties = super()._load_model_utilities(model_path)
         label_thresholds = io_utils.pickle_load(
-            Path(path) / f"{cls._metadata_filename()}.label_thresholds.pkl"
+            model_path / f"{cls._metadata_filename()}.label_thresholds.pkl"
         )
         model_utilties.update({"label_thresholds": label_thresholds})
-
-        return model_utilties
 
     @classmethod
     def _update_loaded_params(cls, meta):
@@ -442,9 +457,11 @@ class IntentTEDPolicy(TEDPolicy):
         return meta
 
     @classmethod
-    def _load_policy_from_model(cls, model, model_utilities, should_finetune):
+    def _load_policy_with_model(
+        cls, model, featurizer, model_utilities, should_finetune
+    ):
         return cls(
-            featurizer=model_utilities["featurizer"],
+            featurizer=featurizer,
             priority=model_utilities["priority"],
             model=model,
             fake_features=model_utilities["fake_features"],
@@ -528,23 +545,37 @@ class IntentTED(TED):
         thresholds = {}
 
         # Collect scores across all data points
+        label_id_scores = self._collect_label_id_similarities_from_outputs(
+            label_ids, outputs
+        )
+
+        return self._pick_threshold_from_similarities(label_id_scores)
+
+    @staticmethod
+    def _pick_threshold_from_similarities(
+        label_id_scores: Dict[int, List[float]]
+    ) -> Dict[int, float]:
+        return {
+            label_id: min(label_id_scores[label_id]) for label_id in label_id_scores
+        }
+
+    @staticmethod
+    def _collect_label_id_similarities_from_outputs(
+        label_ids, outputs
+    ) -> Dict[int, List[float]]:
+        label_id_scores = {}
         for index, all_pos_labels in enumerate(label_ids):
 
             # Take the contribution of only first label id
-            # because `model_data` will contain another
+            # because `outputs` will contain another
             # data point where remaining label ids will
             # be the first label id
             first_pos_label_id = all_pos_labels[0]
 
-            if first_pos_label_id not in thresholds:
-                thresholds[first_pos_label_id] = []
+            if first_pos_label_id not in label_id_scores:
+                label_id_scores[first_pos_label_id] = []
 
-            thresholds[first_pos_label_id].append(
+            label_id_scores[first_pos_label_id].append(
                 outputs["similarities"][index, 0, first_pos_label_id]
             )
-
-        # Pick the minimum of all similarities as the threshold
-        for label_id in thresholds:
-            thresholds[label_id] = min(thresholds[label_id])
-
-        return thresholds
+        return label_id_scores
