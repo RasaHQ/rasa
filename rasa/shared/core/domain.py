@@ -1862,7 +1862,7 @@ class Domain:
         """
         form = self.forms.get(form_name)
         if form:
-            return form.get(REQUIRED_SLOTS_KEY)
+            return form[REQUIRED_SLOTS_KEY]
 
         return {}
 
