@@ -109,11 +109,11 @@ Check whether slot should be filled by an entity in the input or not.
 
   True, if slot should be filled, false otherwise.
 
-#### get\_entity\_value
+#### get\_entity\_value\_for\_slot
 
 ```python
  | @staticmethod
- | get_entity_value(name: Text, tracker: "DialogueStateTracker", role: Optional[Text] = None, group: Optional[Text] = None) -> Any
+ | get_entity_value_for_slot(name: Text, tracker: "DialogueStateTracker", slot_to_be_filled: Text, role: Optional[Text] = None, group: Optional[Text] = None) -> Any
 ```
 
 Extract entities for given name and optional role and group.
@@ -122,6 +122,7 @@ Extract entities for given name and optional role and group.
 
 - `name` - entity type (name) of interest
 - `tracker` - the tracker
+- `slot_to_be_filled` - Slot which is supposed to be filled by this entity.
 - `role` - optional entity role of interest
 - `group` - optional entity group of interest
   

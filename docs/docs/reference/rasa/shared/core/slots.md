@@ -150,6 +150,48 @@ bool_from_any(x: Any) -> bool
 
 Converts bool/float/int/str to bool or raises error
 
+## ListSlot Objects
+
+```python
+class ListSlot(Slot)
+```
+
+#### value
+
+```python
+ | @Slot.value.setter
+ | value(value: Any) -> None
+```
+
+Sets the slot&#x27;s value.
+
+## UnfeaturizedSlot Objects
+
+```python
+class UnfeaturizedSlot(Slot)
+```
+
+Deprecated slot type to represent slots which don&#x27;t influence conversations.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(name: Text, initial_value: Any = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, influence_conversation: bool = False) -> None
+```
+
+Creates unfeaturized slot.
+
+**Arguments**:
+
+- `name` - The name of the slot.
+- `initial_value` - Its initial value.
+- `value_reset_delay` - After how many turns the slot should be reset to the
+  initial_value. This is behavior is currently not implemented.
+- `auto_fill` - `True` if it should be auto-filled by entities with the same
+  name.
+- `influence_conversation` - `True` if it should be featurized. Only `False`
+  is allowed. Any other value will lead to a `InvalidSlotConfigError`.
+
 ## CategoricalSlot Objects
 
 ```python
