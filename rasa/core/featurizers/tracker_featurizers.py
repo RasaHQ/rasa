@@ -187,6 +187,31 @@ class TrackerFeaturizer:
         )
         return trackers_as_states, trackers_as_actions
 
+    def prepare_for_training(
+        self,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        bilou_tagging: bool,
+    ) -> None:
+        """Makes sure that the featurizer is ready to be called during training.
+
+        State featurizer needs to build its vocabulary from the domain
+        for it to be ready to be used during training.
+
+        Args:
+            domain: Domain of the assistant.
+            interpreter: NLU Interpreter for featurizing states.
+            bilou_tagging: Whether to conside bilou tagging.
+        """
+        if self.state_featurizer is None:
+            raise ValueError(
+                f"Instance variable 'state_featurizer' is not set. "
+                f"During initialization set 'state_featurizer' to an instance of "
+                f"'{SingleStateFeaturizer.__class__.__name__}' class "
+                f"to get numerical features for trackers."
+            )
+        self.state_featurizer.prepare_for_training(domain, interpreter, bilou_tagging)
+
     def featurize_trackers(
         self,
         trackers: List[DialogueStateTracker],
@@ -216,14 +241,6 @@ class TrackerFeaturizer:
               containing entity tag ids for text user inputs otherwise empty dict
               for all dialogue turns in all training trackers
         """
-        if self.state_featurizer is None:
-            raise ValueError(
-                f"Instance variable 'state_featurizer' is not set. "
-                f"During initialization set 'state_featurizer' to an instance of "
-                f"'{SingleStateFeaturizer.__class__.__name__}' class "
-                f"to get numerical features for trackers."
-            )
-
         (
             trackers_as_states,
             trackers_as_actions,

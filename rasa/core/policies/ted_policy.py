@@ -556,7 +556,7 @@ class TEDPolicy(Policy):
         Returns:
             Featurized data to be fed to the model and corresponding label ids.
         """
-        self.featurizer.state_featurizer.prepare_for_training(
+        self.featurizer.prepare_for_training(
             domain, interpreter, bilou_tagging=self.config[BILOU_FLAG]
         )
 
