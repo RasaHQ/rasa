@@ -140,8 +140,8 @@ class ConveRTFeaturizer(DenseFeaturizer):
         if model_url == ORIGINAL_TF_HUB_MODULE_URL:
             # Can't use the originally hosted URL
             raise RasaException(
-                f'Parameter "model_url" of "{ConveRTFeaturizer.__name__}" was '
-                f'set to "{model_url}" which does not contain the model any longer. '
+                f"Parameter 'model_url' of '{ConveRTFeaturizer.__name__}' was "
+                f"set to '{model_url}' which does not contain the model any longer. "
                 f"You can either use a community hosted URL or if you have a "
                 f"local copy of the model, pass the path to the directory "
                 f"containing the model files."
