@@ -729,6 +729,91 @@ def test_prediction_states_with_max_history_tracker_featurizer(
 
 
 @pytest.mark.parametrize("max_history", [None, 2])
+def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
+    moodbot_tracker: DialogueStateTracker,
+    moodbot_domain: Domain,
+    max_history: Optional[int]
+):
+
+    state_featurizer = SingleStateFeaturizer()
+    tracker_featurizer = MaxHistoryTrackerFeaturizer(
+        state_featurizer, 
+        max_history=max_history
+    )
+
+    rule_tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActionExecuted("action_listen"),
+            user_uttered("greet"),
+            ActionExecuted("utter_greet", hide_rule_turn=True),
+            ActionExecuted("action_listen", hide_rule_turn=True),
+        ],
+        domain=moodbot_domain,
+    )
+   
+    actual_states = tracker_featurizer.prediction_states(
+        [rule_tracker], moodbot_domain, ignore_rule_only_turns=True,
+    )
+
+    expected_states = [[{}]]
+
+    assert actual_states is not None
+    assert len(actual_states) == len(expected_states)
+   
+    for actual, expected in zip(
+        actual_states, 
+        expected_states
+    ):
+        assert actual == expected
+
+    embedded_rule_tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActionExecuted("action_listen"),
+            user_uttered("greet"),
+            ActionExecuted("utter_greet", hide_rule_turn=True),
+            ActionExecuted("action_listen", hide_rule_turn=True),
+            user_uttered("mood_great"),
+            ActionExecuted("utter_happy"),
+            ActionExecuted("action_listen"),
+        ],
+        domain=moodbot_domain,
+    )
+   
+    actual_states = tracker_featurizer.prediction_states(
+        [embedded_rule_tracker], moodbot_domain, ignore_rule_only_turns=True,
+    )
+
+    expected_states = [
+        [
+            {},
+            {
+                'user': {'intent': 'mood_great'}, 
+                'prev_action': {'action_name': 'action_listen'}
+            },
+            {
+                'user': {'intent': 'mood_great'}, 
+                'prev_action': {'action_name': 'utter_happy'}
+            },
+
+        ]
+    ]
+ 
+    if max_history is not None:
+        expected_states = [x[-max_history:] for x in expected_states]
+
+    assert actual_states is not None
+    assert len(actual_states) == len(expected_states)
+ 
+    for actual, expected in zip(
+        actual_states, 
+        expected_states
+    ):
+        assert actual == expected
+
+
+@pytest.mark.parametrize("max_history", [None, 2])
 def test_featurize_trackers_with_intent_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
     moodbot_domain: Domain,
@@ -1001,6 +1086,76 @@ def test_prediction_states_with_intent_max_history_tracker_featurizer(
     ):
         assert actual == expected
 
+@pytest.mark.parametrize("max_history", [None, 2])
+def test_prediction_states_hide_rule_states_with_intent_max_history_tracker_featurizer(
+    moodbot_tracker: DialogueStateTracker,
+    moodbot_domain: Domain,
+    max_history: Optional[int]
+):
+
+    state_featurizer = SingleStateFeaturizer()
+    tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
+        state_featurizer, 
+        max_history=max_history
+    )
+
+    rule_tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActionExecuted("action_listen"),
+            user_uttered("greet"),
+            ActionExecuted("utter_greet", hide_rule_turn=True),
+            ActionExecuted("action_listen", hide_rule_turn=True),
+        ],
+        domain=moodbot_domain,
+    )
+   
+    actual_states = tracker_featurizer.prediction_states(
+        [rule_tracker], moodbot_domain, ignore_rule_only_turns=True,
+    )
+
+    expected_states = [[{}]]
+
+    assert actual_states is not None
+    assert len(actual_states) == len(expected_states)
+   
+    for actual, expected in zip(
+        actual_states, 
+        expected_states
+    ):
+        assert actual == expected
+
+    embedded_rule_tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActionExecuted("action_listen"),
+            user_uttered("greet"),
+            ActionExecuted("utter_greet", hide_rule_turn=True),
+            ActionExecuted("action_listen", hide_rule_turn=True),
+            user_uttered("mood_great"),
+        ],
+        domain=moodbot_domain,
+    )
+
+    actual_states = tracker_featurizer.prediction_states(
+        [embedded_rule_tracker], moodbot_domain, ignore_rule_only_turns=True,
+    )
+
+    expected_states = [
+        [
+            {},
+        ]
+    ]
+ 
+    assert actual_states is not None
+    assert len(actual_states) == len(expected_states)
+   
+    for actual, expected in zip(
+        actual_states, 
+        expected_states
+    ):
+        assert actual == expected
+
 
 @pytest.mark.parametrize("remove_duplicates", [True, False])
 @pytest.mark.parametrize("max_history", [None, 2])
@@ -1066,49 +1221,3 @@ def test_multilabels_with_intent_max_history_tracker_featurizer(
     assert actual_labels is not None
     assert actual_labels.shape == expected_labels.shape
     assert np.all(actual_labels == expected_labels)
-
-
-@pytest.mark.parametrize(
-    "tracker_featurizer_class", 
-    [
-        FullDialogueTrackerFeaturizer, 
-        MaxHistoryTrackerFeaturizer,
-        IntentMaxHistoryTrackerFeaturizer,
-    ]
-)
-def test_training_states_actions_and_entities_deprecated(
-    moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
-    tracker_featurizer_class: Type[TrackerFeaturizer]
-):
-    state_featurizer = SingleStateFeaturizer()
-    tracker_featurizer = tracker_featurizer_class(
-        state_featurizer
-    )
-    with pytest.warns(FutureWarning):
-        tracker_featurizer.training_states_actions_and_entities(
-            [moodbot_tracker], moodbot_domain, 
-        )
-
-
-@pytest.mark.parametrize(
-    "tracker_featurizer_class", 
-    [
-        FullDialogueTrackerFeaturizer, 
-        MaxHistoryTrackerFeaturizer,
-        IntentMaxHistoryTrackerFeaturizer,
-    ]
-)
-def test_training_states_and_actions_deprecated(
-    moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
-    tracker_featurizer_class: Type[TrackerFeaturizer]
-):
-    state_featurizer = SingleStateFeaturizer()
-    tracker_featurizer = tracker_featurizer_class(
-        state_featurizer
-    )
-    with pytest.warns(FutureWarning):
-        tracker_featurizer.training_states_and_actions(
-            [moodbot_tracker], moodbot_domain, 
-        )
