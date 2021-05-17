@@ -1031,8 +1031,8 @@ class Domain:
         if entity:
             return [
                 f"{entity}"
-                + f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}"
-                + f"{sub_label}"
+                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}"
+                f"{sub_label}"
                 for sub_label in entity_labels[entity]
             ]
 
