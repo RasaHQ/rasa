@@ -270,3 +270,12 @@ async def test_response_selector_responses_in_domain_no_errors():
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_utterances_in_stories(ignore_warnings=True)
+
+
+async def test_invalid_domain_mapping_policy():
+    importer = RasaFileImporter(
+        domain_path="data/test_domains/default_with_mapping.yml"
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_domain_validity() is False
+
