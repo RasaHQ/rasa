@@ -9,6 +9,12 @@ Comment with a help message is added if a PR doesn't contain a comment
 with a configuration for the model regression tests.
 
  */ -}}
+{{ define "check_available_configuration" -}}
+NLU
+{{- if has .dataset "domain" -}}
+, Core
+{{- end -}}
+{{- end -}}
 Hey @{{ .Env.GITHUB_ACTOR }}! :wave: To run model regression tests, comment with the `/modeltest` command and a configuration.
 
 _Tips :bulb:: The model regression test will be run on `push` events. You can re-run the tests by re-add `status:model-regression-tests` label or use a `Re-run jobs` button in Github Actions workflow._
@@ -23,12 +29,17 @@ You can copy this in your comment and customize:
 >##########
 >## Available datasets
 >##########
-{{range (coll.Keys (datasource "mapping").datasets)}}># - "{{.}}"{{"\n"}}{{ end -}}
+{{range (coll.Keys (datasource "mapping").datasets)}}># - "{{ . }}" ({{ template "check_available_configuration" (dict "dataset" (index (datasource "mapping").datasets .)) }}){{"\n"}}{{ end -}}
 >
 >##########
->## Available configurations
+>## Available NLU configurations
 >##########
-{{range (coll.Keys (datasource "mapping").configurations)}}># - "{{.}}"{{"\n"}}{{ end -}}
+{{range (coll.Keys (datasource "mapping").configurations.nlu)}}># - "{{.}}"{{"\n"}}{{ end -}}
+>
+>##########
+>## Available Core configurations
+>##########
+{{range (coll.Keys (datasource "mapping").configurations.core)}}># - "{{.}}"{{"\n"}}{{ end -}}
 >
 {{range split (file.Read ".github/configs/mr-test-example.yaml") "\n"}}>{{.}}{{"\n"}}{{ end -}}
 >```
