@@ -58,7 +58,6 @@ class TrackerFeaturizer:
         omit_unset_slots: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
-        ignore_last_action_listen_in_state: bool = False,
     ) -> List[State]:
         """Create states for the given tracker.
 
@@ -79,7 +78,6 @@ class TrackerFeaturizer:
             omit_unset_slots=omit_unset_slots,
             ignore_rule_only_turns=ignore_rule_only_turns,
             rule_only_data=rule_only_data,
-            ignore_last_action_listen_in_state=ignore_last_action_listen_in_state,
         )
 
     def _featurize_states(
@@ -927,6 +925,23 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         self._state_hash_to_labels = None
         super()._cleanup_example_iterator()
 
+    def _remove_last_user_event(
+        self, tracker: DialogueStateTracker
+    ) -> DialogueStateTracker:
+        """
+        Args:
+            tracker:
+        Returns:
+        """
+        # We don't use `UserUtteranceReverted` event here because
+        # it also reverts back the previous ActionExecuted(name=action_listen)
+        # event. A lot of other features like rule hiding become complex
+        # if we stick to `UserUtteredEvent`. Instead, we stick to a simple
+        # implementation of reverting back the last user event.
+        tracker_events = tracker.applied_events()
+        DialogueStateTracker._undo_till_previous(UserUttered, tracker_events)
+        return DialogueStateTracker.from_events(tracker.sender_id, tracker_events)
+
     def prediction_states(
         self,
         trackers: List[DialogueStateTracker],
@@ -950,12 +965,10 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         Returns:
             A list of states.
         """
-        # Create a copy of trackers
-        duplicate_trackers = [tracker.copy() for tracker in trackers]
-
-        # Remove last user event
-        for tracker in duplicate_trackers:
-            tracker.update(UserUtteranceReverted(), domain)
+        # Remove last user utterance event because that's what we need to predict.
+        updated_trackers_for_featurization = [
+            self._remove_last_user_event(tracker) for tracker in trackers
+        ]
 
         logger.debug(f"{rule_only_data}, {ignore_rule_only_turns}")
 
@@ -965,9 +978,8 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 domain,
                 ignore_rule_only_turns=ignore_rule_only_turns,
                 rule_only_data=rule_only_data,
-                ignore_last_action_listen_in_state=True,
             )
-            for tracker in duplicate_trackers
+            for tracker in updated_trackers_for_featurization
         ]
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)
