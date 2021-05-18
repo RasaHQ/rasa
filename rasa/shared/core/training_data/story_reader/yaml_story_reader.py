@@ -367,7 +367,8 @@ class YAMLStoryReader(StoryReader):
         except AttributeError:
             rasa.shared.utils.io.raise_warning(
                 f"Issue found in '{self.source_name}':\n"
-                f"Missing intent value in {self._get_item_title()} step: {step} ."
+                f"Missing intent value in {self._get_item_title()} step: {step} .",
+                docs=self._get_docs_link(),
             )
             user_intent = ""
 
