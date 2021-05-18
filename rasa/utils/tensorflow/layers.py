@@ -118,8 +118,31 @@ class DenseForSparse(tf.keras.layers.Dense):
             regularizer = tf.keras.regularizers.l2(reg_lambda)
         else:
             regularizer = None
-
         super().__init__(kernel_regularizer=regularizer, **kwargs)
+
+    # def allocate(self, num_rows):
+    #     import numpy as np
+    #     if num_rows > 0:
+    #         print('before', self.weights[0].shape)
+    #         additional = np.random.random((num_rows, self.weights[0].shape[1]))
+    #         additional = additional.astype(np.float32)
+    #         old_weights = self.weights[0].numpy()
+    #         bias = self.weights[1].numpy()
+    #         new_weights = np.vstack((old_weights, additional))
+    #         self = tf.keras.layers.Dense(kernel_regularizer=self.regularizer, **self.kwargs)
+    #         example = tf.zeros([1, new_weights.shape[0]], dtype=tf.dtypes.int32)
+    #         example = tf.sparse.from_dense(example)
+    #         self(example)
+    #         self.set_weights([new_weights, bias])
+    #         print('after', self.weights[0].shape)
+
+    def get_kernel(self):
+        return self.kernel
+
+    def get_bias(self):
+        if self.use_bias:
+            return self.bias
+        return None
 
     def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
         """Apply dense layer to sparse inputs.
@@ -135,7 +158,6 @@ class DenseForSparse(tf.keras.layers.Dense):
         """
         if not isinstance(inputs, tf.SparseTensor):
             raise ValueError("Input tensor should be sparse.")
-
         # outputs will be 2D
         outputs = tf.sparse.sparse_dense_matmul(
             tf.sparse.reshape(inputs, [-1, tf.shape(inputs)[-1]]), self.kernel

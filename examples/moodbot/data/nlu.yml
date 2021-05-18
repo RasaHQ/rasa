@@ -5,16 +5,17 @@ nlu:
     - hey
     - hello
     - hi
+    - hola
     - hello there
     - good morning
     - good evening
-    - moin
     - hey there
     - let's go
     - hey dude
-    - goodmorning
     - goodevening
+    - goodmorning
     - good afternoon
+    - kkll
 
 - intent: goodbye
   examples: |

@@ -20,7 +20,7 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import rasa_layers
+from rasa.utils.tensorflow import rasa_layers, layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
@@ -100,6 +100,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
 )
+
 
 logger = logging.getLogger(__name__)
 
@@ -812,6 +813,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ) -> None:
         """Train the embedding intent classifier on a data set."""
         model_data = self.preprocess_train_data(training_data)
+        print(len(training_data.nlu_examples))
         if model_data.is_empty():
             logger.debug(
                 f"Cannot train '{self.__class__.__name__}'. No data was provided. "
@@ -839,6 +841,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
+        else:
+            self.model.adjust_layers(self._data_example)
 
         data_generator, validation_data_generator = train_utils.create_data_generators(
             model_data,
@@ -1217,6 +1221,43 @@ class DIET(TransformerRasaModel):
         self.all_labels_embed: Optional[tf.Tensor] = None
 
         self._prepare_layers()
+
+    def adjust_layers(self, data_example):
+        my_layers = {}
+        features = self._tf_layers['sequence_layer.text']._tf_layers['feature_combining']
+        my_layers['sequence'] = features._tf_layers['sparse_dense.sequence']._tf_layers['sparse_to_dense']
+        my_layers['sentence'] = features._tf_layers['sparse_dense.sentence']._tf_layers['sparse_to_dense']
+        old_sequence_size = self.data_signature['text']['sequence'][0].units
+        new_sequence_size = data_example['text']['sequence'][0][0].shape[1]
+        old_sentence_size = self.data_signature['text']['sentence'][0].units
+        new_sentence_size = data_example['text']['sentence'][0][0].shape[1]
+        sequence_num = new_sequence_size - old_sequence_size
+        sentence_num = new_sentence_size - old_sentence_size
+        new_seq_layer = self._update_dense_layer(my_layers['sequence'], sequence_num)
+        new_sent_layer = self._update_dense_layer(my_layers['sentence'], sentence_num)
+        self._tf_layers['sequence_layer.text']._tf_layers['feature_combining']._tf_layers['sparse_dense.sequence']._tf_layers['sparse_to_dense'] = new_seq_layer
+        self._tf_layers['sequence_layer.text']._tf_layers['feature_combining']._tf_layers['sparse_dense.sentence']._tf_layers['sparse_to_dense'] = new_sent_layer
+
+    def _update_dense_layer(self, dense_layer, num_rows):
+        kernel = dense_layer.get_kernel().numpy()
+        bias = dense_layer.get_bias().numpy()
+        additional = np.random.random((num_rows, kernel.shape[1]))
+        additional = additional.astype(np.float32)
+        new_weights = np.vstack((kernel, additional))
+        kernel_init = tf.constant_initializer(new_weights)
+        bias_init = tf.constant_initializer(bias)
+        units = bias.shape[0]
+        new_layer = layers.DenseForSparse(
+            reg_lambda=self.config[REGULARIZATION_CONSTANT],
+            units=units,
+            kernel_initializer=kernel_init,
+            bias_initializer=bias_init
+        )
+        # example = tf.SparseTensor(indices=[[0, 0], [0, 10]], values=[1, 1], dense_shape=[1, new_weights.shape[0]])
+        # print(example)
+        # new_layer(example)
+        return new_layer
+
 
     @staticmethod
     def _ordered_tag_specs(
