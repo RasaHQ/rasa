@@ -25,6 +25,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
 )
 from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.shared.core.slots import ListSlot
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 
@@ -238,9 +239,10 @@ class FormAction(LoopAction):
         ) or entity_type_of_slot_to_fill != slot_mapping.get("entity"):
             slot_fulfils_entity_mapping = False
         else:
-            matching_values = self.get_entity_value(
+            matching_values = self.get_entity_value_for_slot(
                 slot_mapping.get("entity"),
                 tracker,
+                slot,
                 slot_mapping.get("role"),
                 slot_mapping.get("group"),
             )
@@ -253,9 +255,10 @@ class FormAction(LoopAction):
         )
 
     @staticmethod
-    def get_entity_value(
+    def get_entity_value_for_slot(
         name: Text,
         tracker: "DialogueStateTracker",
+        slot_to_be_filled: Text,
         role: Optional[Text] = None,
         group: Optional[Text] = None,
     ) -> Any:
@@ -264,6 +267,7 @@ class FormAction(LoopAction):
         Args:
             name: entity type (name) of interest
             tracker: the tracker
+            slot_to_be_filled: Slot which is supposed to be filled by this entity.
             role: optional entity role of interest
             group: optional entity group of interest
 
@@ -274,10 +278,16 @@ class FormAction(LoopAction):
         value = list(
             tracker.get_latest_entity_values(name, entity_group=group, entity_role=role)
         )
+
+        if isinstance(tracker.slots.get(slot_to_be_filled), ListSlot):
+            return value
+
         if len(value) == 0:
-            value = None
-        elif len(value) == 1:
-            value = value[0]
+            return None
+
+        if len(value) == 1:
+            return value[0]
+
         return value
 
     def extract_other_slots(
@@ -321,9 +331,10 @@ class FormAction(LoopAction):
                         and self.intent_is_desired(slot_mapping, tracker, domain)
                     )
                     if should_fill_entity_slot:
-                        value = self.get_entity_value(
+                        value = self.get_entity_value_for_slot(
                             slot_mapping["entity"],
                             tracker,
+                            slot,
                             slot_mapping.get("role"),
                             slot_mapping.get("group"),
                         )
@@ -380,9 +391,10 @@ class FormAction(LoopAction):
             if self.intent_is_desired(requested_slot_mapping, tracker, domain):
                 mapping_type = requested_slot_mapping["type"]
                 if mapping_type == str(SlotMapping.FROM_ENTITY):
-                    value = self.get_entity_value(
+                    value = self.get_entity_value_for_slot(
                         requested_slot_mapping.get("entity"),
                         tracker,
+                        slot_to_fill,
                         requested_slot_mapping.get("role"),
                         requested_slot_mapping.get("group"),
                     )
