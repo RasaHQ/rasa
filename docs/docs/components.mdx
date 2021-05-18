@@ -1542,7 +1542,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | or 'inner'.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
-|                                 |                  | or 'margin'.                                                 |
+|                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
+|                                 |                  | "model_confidence=cosine",                                   |
+|                                 |                  | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | ranking_length                  | 10               | Number of top intents to normalize scores for. Applicable    |
 |                                 |                  | only with loss type 'cross_entropy' and 'softmax'            |
@@ -1742,7 +1744,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 :::note
   If you use multiple entity extractors, we advise that each extractor targets an exclusive
-  set of entity types. For example, use [Duckling](components.mdx#ducklinghttpextractor) to extract dates and times, and
+  set of entity types. For example, use [Duckling](components.mdx#ducklingentityextractor) to extract dates and times, and
   [DIETClassifier](components.mdx#dietclassifier-1) to extract person names. Otherwise, if multiple extractors
   target the same entity types, it is very likely that entities will be extracted multiple times.
 
@@ -2032,7 +2034,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   :::
 
 
-### DucklingHTTPExtractor
+### DucklingEntityExtractor
 
 
 * **Short**
@@ -2064,7 +2066,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
           "start": 48,
           "value": "2017-04-10T00:00:00.000+02:00",
           "confidence": 1.0,
-          "extractor": "DucklingHTTPExtractor"
+          "extractor": "DucklingEntityExtractor"
       }]
   }
   ```
@@ -2104,7 +2106,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   ```yaml-rasa
   pipeline:
-  - name: "DucklingHTTPExtractor"
+  - name: "DucklingEntityExtractor"
     # url of the running duckling server
     url: "http://localhost:8000"
     # dimensions to extract
@@ -2465,7 +2467,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   | similarity_type                 | "auto"           | Type of similarity measure to use, either 'auto' or 'cosine' |
   |                                 |                  | or 'inner'.                                                  |
   +---------------------------------+------------------+--------------------------------------------------------------+
-  | loss_type                       | "softmax"        | The type of the loss function, either 'softmax' or 'margin'. |
+  | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
+  |                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
+  |                                 |                  | "model_confidence=cosine",                                   |
+  |                                 |                  | which is deprecated (see changelog for 2.3.4).               |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
   |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
@@ -2824,7 +2829,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | or 'inner'.                                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"   | The type of the loss function, either 'cross_entropy'        |
-|                                 |                   | or 'margin'.                                                 |
+|                                 |                   | or 'margin'. Type 'margin' is only compatible with           |
+|                                 |                   | "model_confidence=cosine",                                   |
+|                                 |                   | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | ranking_length                  | 10                | Number of top responses to normalize scores for. Applicable  |
 |                                 |                   | only with loss type 'cross_entropy' and 'softmax'            |

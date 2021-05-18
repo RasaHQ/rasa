@@ -192,6 +192,7 @@ async def _trained_default_agent(
     agent = Agent(
         "data/test_domains/default_with_slots.yml",
         policies=[AugmentedMemoizationPolicy(max_history=3), RulePolicy()],
+        model_directory=model_path,
     )
 
     training_data = await agent.load_data(stories_path)

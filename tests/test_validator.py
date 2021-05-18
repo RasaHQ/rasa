@@ -345,6 +345,19 @@ async def test_verify_form_slots_invalid_domain(tmp_path: Path):
     )
 
 
+async def test_response_selector_responses_in_domain_no_errors():
+    importer = RasaFileImporter(
+        config_file="data/test_config/config_defaults.yml",
+        domain_path="data/test_domains/response_selector_responses_in_domain.yml",
+        training_data_paths=[
+            "data/test_yaml_stories/test_base_retrieval_intent_story.yml"
+        ],
+        training_type=TrainingType.CORE,
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_utterances_in_stories(ignore_warnings=True)
+
+
 async def test_invalid_domain_mapping_policy():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default_with_mapping.yml"
