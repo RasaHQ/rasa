@@ -1742,7 +1742,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 :::note
   If you use multiple entity extractors, we advise that each extractor targets an exclusive
-  set of entity types. For example, use [Duckling](components.mdx#ducklinghttpextractor) to extract dates and times, and
+  set of entity types. For example, use [Duckling](components.mdx#ducklingentityextractor) to extract dates and times, and
   [DIETClassifier](components.mdx#dietclassifier-1) to extract person names. Otherwise, if multiple extractors
   target the same entity types, it is very likely that entities will be extracted multiple times.
 
@@ -2032,7 +2032,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   :::
 
 
-### DucklingHTTPExtractor
+### DucklingEntityExtractor
 
 
 * **Short**
@@ -2064,7 +2064,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
           "start": 48,
           "value": "2017-04-10T00:00:00.000+02:00",
           "confidence": 1.0,
-          "extractor": "DucklingHTTPExtractor"
+          "extractor": "DucklingEntityExtractor"
       }]
   }
   ```
@@ -2104,7 +2104,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   ```yaml-rasa
   pipeline:
-  - name: "DucklingHTTPExtractor"
+  - name: "DucklingEntityExtractor"
     # url of the running duckling server
     url: "http://localhost:8000"
     # dimensions to extract
