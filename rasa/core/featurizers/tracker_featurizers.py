@@ -988,12 +988,14 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             )
             for tracker in trackers
         ]
+
+        self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
+        self._cleanup_last_user_state_with_action_listen(trackers_as_states)
+
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)
             for states in trackers_as_states
         ]
-        self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
-        self._cleanup_last_user_state_with_action_listen(trackers_as_states)
 
         from rasa.core.policies.policy import Policy
 
