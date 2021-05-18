@@ -5,7 +5,10 @@ import logging
 import os
 import pickle
 from datetime import datetime, timezone
-
+import firebase_admin
+from firebase_admin import db
+from firebase_admin import credentials
+from time import time
 from time import sleep
 from typing import (
     Any,
@@ -720,6 +723,95 @@ class MongoTrackerStore(TrackerStore):
         return [c["sender_id"] for c in self.conversations.find()]
 
 
+class FirebaseRealtimeTrackerStore(TrackerStore):
+    """Stores conversation history in Firebase Realtime Database
+
+    Args:
+        db_root : root branch name to store conversations
+        firebase_key_file_path : path to firebase admin sdk key file
+
+    """
+
+    def __init__(
+        self,
+        domain: Domain,
+        firebase_key_file_path: Text,
+        db_storage_path: Text,
+        database_url: Text,
+        event_broker: Optional[EndpointConfig] = None,
+        **kwargs: Dict[Text, Any],
+    ) -> None:
+
+        self.store = {}
+        self.key_file_path = firebase_key_file_path
+        self.database_url = database_url
+        self.db_storage_path = db_storage_path
+
+        self.cred = credentials.Certificate(self.key_file_path)
+        init_app = firebase_admin.initialize_app(
+            self.cred, {"databaseURL": self.database_url}
+        )
+        super().__init__(domain, event_broker, **kwargs)
+
+    def save(self, tracker: DialogueStateTracker) -> None:
+        if self.event_broker:
+            self.stream_events(tracker)
+
+        serialised_tracker = FirebaseRealtimeTrackerStore.serialise_tracker(tracker)
+
+        user_message_id = f"user_{int(time())}"
+        user_message = tracker.latest_message.text
+
+        bot_message_id = f"bot_{int(time())}"
+        bot_message = self.get_latest_bot_message(serialised_tracker)
+
+        if bot_message != None:
+            self.push_conversation_db(
+                ref_path=f"{self.db_storage_path}/{tracker.sender_id}",
+                message_id=user_message_id,
+                message=user_message,
+            )
+            self.push_conversation_db(
+                ref_path=f"{self.db_storage_path}/{tracker.sender_id}",
+                message_id=bot_message_id,
+                message=bot_message,
+            )
+
+        self.store[tracker.sender_id] = serialised_tracker
+
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+        if sender_id in self.store:
+            return self.deserialise_tracker(sender_id, self.store[sender_id])
+
+    def keys(self) -> Iterable[Text]:
+        """ Returns sender ids of the tracker store in memory """
+        return self.store.keys()
+
+    def get_latest_bot_message(self, serialised_tracker):
+        """
+        Supporting multiple outputs by bot dispatcher
+        """
+        serialised_tracker = json.loads(serialised_tracker)
+        tracker_store = reversed(serialised_tracker["events"])
+        bot_message = []
+        for event in tracker_store:
+
+            if event["event"] == "bot":
+                bot_message.append(event["text"])
+                break
+
+        if len(bot_message) != 0:
+            return bot_message[0]
+
+        else:
+            return None
+
+    def push_conversation_db(self, ref_path, message_id, message) -> None:
+
+        ref = db.reference(ref_path)
+        ref.update({message_id: message})
+
+
 def _create_sequence(table_name: Text) -> "Sequence":
     """Creates a sequence object for a specific table name.
 
@@ -1257,6 +1349,14 @@ def _create_from_endpoint_config(
         tracker_store = DynamoTrackerStore(
             domain=domain, event_broker=event_broker, **endpoint_config.kwargs
         )
+    elif endpoint_config.type.lower() == "firebase-realtime":
+        tracker_store = FirebaseRealtimeTrackerStore(
+            database_url=endpoint_config.url,
+            domain=domain,
+            event_broker=event_broker,
+            **endpoint_config.kwargs,
+        )
+
     else:
         tracker_store = _load_from_module_name_in_endpoint_config(
             domain, endpoint_config, event_broker
