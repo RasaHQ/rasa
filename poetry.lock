@@ -1295,14 +1295,6 @@ pep8 = ["flake8"]
 tests = ["pandas", "pillow", "tensorflow", "keras", "pytest", "pytest-xdist", "pytest-cov"]
 
 [[package]]
-name = "kerberos"
-version = "1.3.1"
-description = "Kerberos high-level interface"
-category = "main"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "kiwisolver"
 version = "1.3.1"
 description = "A fast implementation of the Cassowary constraint solver"
@@ -3321,7 +3313,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6,<3.9"
-content-hash = "6121b011a2a392c056e3c73b52ecf949ec3cd3fb42cc088613f838cd26b51d5b"
+content-hash = "88f4eee7ae47260eb943fd5693c0bb7cd55c943bf1b847d9f5a54beb7cd93d3c"
 
 [metadata.files]
 absl-py = [
@@ -4047,12 +4039,6 @@ kafka-python = [
 keras-preprocessing = [
     {file = "Keras_Preprocessing-1.1.2-py2.py3-none-any.whl", hash = "sha256:7b82029b130ff61cc99b55f3bd27427df4838576838c5b2f65940e4fcec99a7b"},
     {file = "Keras_Preprocessing-1.1.2.tar.gz", hash = "sha256:add82567c50c8bc648c14195bf544a5ce7c1f76761536956c3d2978970179ef3"},
-]
-kerberos = [
-    {file = "kerberos-1.3.1-cp27-cp27m-macosx_11_1_x86_64.whl", hash = "sha256:98a695c072efef535cb2b5f98e474d00671588859a94ec96c2c1508a113ff3aa"},
-    {file = "kerberos-1.3.1-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:2e03c6a9d201d4aab5f899bfb8150de15335955bfce8ca43bfe9a41d7aae54dc"},
-    {file = "kerberos-1.3.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:2002b3b1541fc51e2c081ee7048f55e5d9ca63dd09f0d7b951c263920db3a0bb"},
-    {file = "kerberos-1.3.1.tar.gz", hash = "sha256:cdd046142a4e0060f96a00eb13d82a5d9ebc0f2d7934393ed559bac773460a2c"},
 ]
 kiwisolver = [
     {file = "kiwisolver-1.3.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:fd34fbbfbc40628200730bc1febe30631347103fc8d3d4fa012c21ab9c11eca9"},

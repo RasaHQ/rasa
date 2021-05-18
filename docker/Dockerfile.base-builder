@@ -17,7 +17,6 @@ RUN apt-get update -qq && \
   libffi7 \
   libffi-dev \
   libpng-dev \
-  libkrb5-dev \
   && apt-get autoremove -y
 
 # Make sure that all security updates are installed
