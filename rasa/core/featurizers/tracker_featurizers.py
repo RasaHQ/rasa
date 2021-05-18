@@ -10,7 +10,7 @@ import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted, UserUttered, UserUtteranceReverted
+from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     is_prev_action_listen_in_state,
@@ -301,6 +301,12 @@ class TrackerFeaturizer:
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_labels, domain)
+
+        from rasa.core.policies.policy import Policy
+
+        for tracker, label in zip(trackers_as_states, trackers_as_labels):
+            print(Policy.format_tracker_states(tracker))
+            print(label)
 
         entity_tags = self._create_entity_tags(
             trackers_as_entities, interpreter, bilou_tagging
@@ -939,25 +945,14 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         self._state_hash_to_labels = None
         super()._cleanup_example_iterator()
 
-    def _remove_last_user_event(
-        self, tracker: DialogueStateTracker
-    ) -> DialogueStateTracker:
-        """
+    @staticmethod
+    def _cleanup_last_user_state_with_action_listen(trackers_as_states):
+        for states in trackers_as_states:
+            last_state = states[-1]
+            if is_prev_action_listen_in_state(last_state):
+                del states[-1]
 
-        Args:
-            tracker:
-
-        Returns:
-
-        """
-        # We don't use `UserUtteranceReverted` event here because
-        # it also reverts back the previous ActionExecuted(name=action_listen)
-        # event. A lot of other features like rule hiding become complex
-        # if we stick to `UserUtteredEvent`. Instead, we stick to a simple
-        # implementation of reverting back the last user event.
-        tracker_events = tracker.applied_events()
-        DialogueStateTracker._undo_till_previous(UserUttered, tracker_events)
-        return DialogueStateTracker.from_events(tracker.sender_id, tracker_events)
+        return trackers_as_states
 
     def prediction_states(
         self,
@@ -982,11 +977,6 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         Returns:
             A list of states.
         """
-        # Remove last user utterance event because that's what we need to predict.
-        updated_trackers_for_featurization = [
-            self._remove_last_user_event(tracker) for tracker in trackers
-        ]
-
         logger.debug(f"{rule_only_data}, {ignore_rule_only_turns}")
 
         trackers_as_states = [
@@ -996,12 +986,20 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 ignore_rule_only_turns=ignore_rule_only_turns,
                 rule_only_data=rule_only_data,
             )
-            for tracker in updated_trackers_for_featurization
+            for tracker in trackers
         ]
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)
             for states in trackers_as_states
         ]
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
+        self._cleanup_last_user_state_with_action_listen(trackers_as_states)
 
+        from rasa.core.policies.policy import Policy
+
+        print(
+            "states inside intent featurizer",
+            Policy.format_tracker_states(trackers_as_states[0]),
+        )
+        print("vanilla states", trackers_as_states[0])
         return trackers_as_states

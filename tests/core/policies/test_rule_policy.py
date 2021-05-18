@@ -2145,7 +2145,6 @@ def test_hide_rule_turn():
             PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
         },
     ]
-    assert False
 
 
 def test_hide_rule_turn_with_slots():
@@ -2341,6 +2340,7 @@ def test_hide_rule_turn_no_last_action_listen():
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
+    print("Extracting states now -------------------")
     states = tracker.past_states(
         domain, ignore_rule_only_turns=True, rule_only_data=policy.get_rule_only_data()
     )
