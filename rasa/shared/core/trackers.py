@@ -469,20 +469,14 @@ class DialogueStateTracker:
         """
         tracker = self.init_copy()
 
-        last_event_action_executed = False
         for event in self.applied_events():
 
-            last_event_action_executed = False
             if isinstance(event, ActionExecuted):
-                last_event_action_executed = True
                 yield tracker, event.hide_rule_turn
 
             tracker.update(event)
 
-        # If the last event was of type action executed, we don't need to yield
-        # the tracker again. It must have been yielded inside the for loop already.
-        if not last_event_action_executed:
-            yield tracker, False
+        yield tracker, False
 
     def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events.

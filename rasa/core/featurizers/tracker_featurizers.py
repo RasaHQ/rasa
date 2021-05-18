@@ -924,22 +924,22 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         self._state_hash_to_labels = None
         super()._cleanup_example_iterator()
 
-    def _remove_last_user_event(
-        self, tracker: DialogueStateTracker
-    ) -> DialogueStateTracker:
-        """
+    @staticmethod
+    def _cleanup_last_user_state_with_action_listen(trackers_as_states):
+        """Clean up the last user state where previous action is `action_listen`.
+
         Args:
-            tracker:
+            trackers_as_states: Trackers converted to states
+
         Returns:
+            Filtered states with last `action_listen` removed.
         """
-        # We don't use `UserUtteranceReverted` event here because
-        # it also reverts back the previous ActionExecuted(name=action_listen)
-        # event. A lot of other features like rule hiding become complex
-        # if we stick to `UserUtteredEvent`. Instead, we stick to a simple
-        # implementation of reverting back the last user event.
-        tracker_events = tracker.applied_events()
-        DialogueStateTracker._undo_till_previous(UserUttered, tracker_events)
-        return DialogueStateTracker.from_events(tracker.sender_id, tracker_events)
+        for states in trackers_as_states:
+            last_state = states[-1]
+            if is_prev_action_listen_in_state(last_state):
+                del states[-1]
+
+        return trackers_as_states
 
     def prediction_states(
         self,
@@ -964,13 +964,6 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         Returns:
             A list of states.
         """
-        # Remove last user utterance event because that's what we need to predict.
-        updated_trackers_for_featurization = [
-            self._remove_last_user_event(tracker) for tracker in trackers
-        ]
-
-        logger.debug(f"{rule_only_data}, {ignore_rule_only_turns}")
-
         trackers_as_states = [
             self._create_states(
                 tracker,
@@ -978,12 +971,19 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 ignore_rule_only_turns=ignore_rule_only_turns,
                 rule_only_data=rule_only_data,
             )
-            for tracker in updated_trackers_for_featurization
+            for tracker in trackers
         ]
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)
             for states in trackers_as_states
         ]
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
+
+        # `tracker_as_states` contain a state with intent = last intent
+        # and previous action = action_listen. This state needs to be
+        # removed as it was not present during training as well because
+        # predicting the last intent is what the policies using this
+        # featurizer do.
+        self._cleanup_last_user_state_with_action_listen(trackers_as_states)
 
         return trackers_as_states
