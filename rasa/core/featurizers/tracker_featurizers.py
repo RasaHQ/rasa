@@ -973,17 +973,20 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             )
             for tracker in trackers
         ]
-        trackers_as_states = [
-            self.slice_state_history(states, self.max_history)
-            for states in trackers_as_states
-        ]
+
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
 
         # `tracker_as_states` contain a state with intent = last intent
         # and previous action = action_listen. This state needs to be
         # removed as it was not present during training as well because
         # predicting the last intent is what the policies using this
-        # featurizer do.
+        # featurizer do. This is specifically done before state history
+        # is sliced so that the number of past states is same as `max_history`.
         self._cleanup_last_user_state_with_action_listen(trackers_as_states)
+
+        trackers_as_states = [
+            self.slice_state_history(states, self.max_history)
+            for states in trackers_as_states
+        ]
 
         return trackers_as_states
