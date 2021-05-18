@@ -1871,7 +1871,11 @@ class Domain:
         Returns:
             The slot mapping or an empty dictionary in case no mapping was found.
         """
-        return self.forms.get(form_name, {})[REQUIRED_SLOTS_KEY]
+        form = self.forms.get(form_name)
+        if form:
+            return form[REQUIRED_SLOTS_KEY]
+
+        return {}
 
 
 class SlotMapping(Enum):
