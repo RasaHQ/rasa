@@ -1424,3 +1424,26 @@ def test_domain_count_conditional_response_variations():
     )
     count_conditional_responses = domain.count_conditional_response_variations()
     assert count_conditional_responses == 5
+
+
+def test_domain_with_no_form_slots():
+    domain = Domain.from_yaml(
+        """
+        version: "2.0"
+        forms:
+          contract_form:
+        """
+    )
+    assert domain.slot_mapping_for_form("contract_form") == {}
+
+
+def test_domain_with_empty_required_slots():
+    with pytest.raises(InvalidDomain):
+        Domain.from_yaml(
+            """
+            version: "2.0"
+            forms:
+              contract_form:
+                required_slots:
+            """
+        )
