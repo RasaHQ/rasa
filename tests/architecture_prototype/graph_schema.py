@@ -101,6 +101,8 @@ train_graph_schema = {
     "process_core_RegexFeaturizer_1": {
         "uses": RegexFeaturizer,
         "fn": "process_training_data",
+        "constructor_name": "load",
+        "eager": False,
         "config": {},
         "needs": {
             "resource_name": "train_core_RegexFeaturizer_1",
@@ -116,6 +118,8 @@ train_graph_schema = {
     "process_core_LexicalSyntacticFeaturizer_2": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "process_training_data",
+        "constructor_name": "load",
+        "eager": False,
         "config": {},
         "needs": {
             "resource_name": "train_core_LexicalSyntacticFeaturizer_2",
@@ -131,6 +135,8 @@ train_graph_schema = {
     "process_core_CountVectorsFeaturizer_3": {
         "uses": CountVectorsFeaturizer,
         "fn": "process_training_data",
+        "constructor_name": "load",
+        "eager": False,
         "config": {},
         "needs": {
             "resource_name": "train_core_CountVectorsFeaturizer_3",
@@ -146,6 +152,8 @@ train_graph_schema = {
     "process_core_CountVectorsFeaturizer_4": {
         "uses": CountVectorsFeaturizer,
         "fn": "process_training_data",
+        "constructor_name": "load",
+        "eager": False,
         "config": {"analyzer": "char_wb", "min_ngram": 1, "max_ngram": 4},
         "needs": {
             "resource_name": "train_core_CountVectorsFeaturizer_4",
@@ -182,6 +190,8 @@ train_graph_schema = {
     "process_RegexFeaturizer_1": {
         "uses": RegexFeaturizer,
         "fn": "process_training_data",
+        "constructor_name": "load",
+        "eager": False,
         "config": {},
         "needs": {
             "resource_name": "train_RegexFeaturizer_1",
@@ -197,6 +207,8 @@ train_graph_schema = {
     "process_LexicalSyntacticFeaturizer_2": {
         "uses": LexicalSyntacticFeaturizer,
         "fn": "process_training_data",
+        "constructor_name": "load",
+        "eager": False,
         "config": {},
         "needs": {
             "resource_name": "train_LexicalSyntacticFeaturizer_2",
@@ -212,6 +224,8 @@ train_graph_schema = {
     "process_CountVectorsFeaturizer_3": {
         "uses": CountVectorsFeaturizer,
         "fn": "process_training_data",
+        "constructor_name": "load",
+        "eager": False,
         "config": {},
         "needs": {
             "resource_name": "train_CountVectorsFeaturizer_3",
@@ -227,6 +241,8 @@ train_graph_schema = {
     "process_CountVectorsFeaturizer_4": {
         "uses": CountVectorsFeaturizer,
         "fn": "process_training_data",
+        "constructor_name": "load",
+        "eager": False,
         "config": {"analyzer": "char_wb", "min_ngram": 1, "max_ngram": 4},
         "needs": {
             "resource_name": "train_CountVectorsFeaturizer_4",
