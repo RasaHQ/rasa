@@ -62,6 +62,8 @@ def _train_and_process_component(
             process_task_name: {
                 "uses": component_class,
                 "fn": process_function,
+                "constructor_name": "load",
+                "eager": False,
                 "config": config,
                 "needs": {
                     "resource_name": train_task_name,
