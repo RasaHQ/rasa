@@ -285,57 +285,57 @@ def test_sentry_event_pii_removal():
                         "frames": [
                             {
                                 "filename": "rasa",
-                                "abs_path": "/Users/tmbo/Library/Caches/pypoetry/virtualenvs/rasa-U5VQkfdm-py3.6/bin/rasa",
+                                "abs_path": "/Users/tmbo/Library/Caches/pypoetry/virtualenvs/rasa-U5VQkfdm-py3.6/bin/rasa",  # noqa: E501
                                 "function": "<module>",
                                 "module": "__main__",
                                 "lineno": 33,
                                 "pre_context": [
-                                    "globals().setdefault('load_entry_point', importlib_load_entry_point)",
+                                    "globals().setdefault('load_entry_point', importlib_load_entry_point)",  # noqa: E501
                                     "",
                                     "",
                                     "if __name__ == '__main__':",
-                                    "    sys.argv[0] = re.sub(r'(-script\\.pyw?|\\.exe)?$', '', sys.argv[0])",
+                                    "    sys.argv[0] = re.sub(r'(-script\\.pyw?|\\.exe)?$', '', sys.argv[0])",  # noqa: E501
                                 ],
-                                "context_line": "    sys.exit(load_entry_point('rasa', 'console_scripts', 'rasa')())",
+                                "context_line": "    sys.exit(load_entry_point('rasa', 'console_scripts', 'rasa')())",  # noqa: E501
                                 "post_context": [],
                             },
                             {
                                 "filename": "rasa/__main__.py",
-                                "abs_path": "/Users/tmbo/lastmile/bot-ai/rasa/rasa/__main__.py",
+                                "abs_path": "/Users/tmbo/lastmile/bot-ai/rasa/rasa/__main__.py",  # noqa: E501
                                 "function": "main",
                                 "module": "rasa.__main__",
                                 "lineno": 113,
                                 "pre_context": [
                                     "",
                                     '    if hasattr(cmdline_arguments, "func"):',
-                                    "        rasa.utils.io.configure_colored_logging(log_level)",
+                                    "        rasa.utils.io.configure_colored_logging(log_level)",  # noqa: E501
                                     "        set_log_and_warnings_filters()",
-                                    "        rasa.telemetry.initialize_error_reporting()",
+                                    "        rasa.telemetry.initialize_error_reporting()",  # noqa: E501
                                 ],
-                                "context_line": "        cmdline_arguments.func(cmdline_arguments)",
+                                "context_line": "        cmdline_arguments.func(cmdline_arguments)",  # noqa: E501
                                 "post_context": [
                                     '    elif hasattr(cmdline_arguments, "version"):',
                                     "        print_version()",
                                     "    else:",
-                                    "        # user has not provided a subcommand, let's print the help",
+                                    "        # user has not provided a subcommand, let's print the help",  # noqa: E501
                                     '        logger.error("No command specified.")',
                                 ],
                                 "in_app": True,
                             },
                             {
                                 "filename": "rasa/cli/train.py",
-                                "abs_path": "/Users/tmbo/lastmile/bot-ai/rasa/rasa/cli/train.py",
+                                "abs_path": "/Users/tmbo/lastmile/bot-ai/rasa/rasa/cli/train.py",  # noqa: E501
                                 "function": "train",
                                 "module": "rasa.cli.train",
                                 "lineno": 69,
                                 "pre_context": [
                                     "    training_files = [",
-                                    '        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)',
+                                    '        get_validated_path(f, "data", DEFAULT_DATA_PATH, none_is_valid=True)',  # noqa: E501
                                     "        for f in args.data",
                                     "    ]",
                                     "",
                                 ],
-                                "context_line": '    raise Exception("Some unexpected exception.")',
+                                "context_line": '    raise Exception("Some unexpected exception.")',  # noqa: E501
                                 "post_context": [
                                     "",
                                     "    return rasa.train(",
@@ -395,18 +395,18 @@ def _create_exception_event_in_file(filename: Text) -> Dict[Text, Any]:
                         "frames": [
                             {
                                 "filename": filename,
-                                "abs_path": "/Users/tmbo/Library/Caches/pypoetry/virtualenvs/rasa-U5VQkfdm-py3.6/bin/rasa",
+                                "abs_path": "/Users/tmbo/Library/Caches/pypoetry/virtualenvs/rasa-U5VQkfdm-py3.6/bin/rasa",  # noqa: E501
                                 "function": "<module>",
                                 "module": "__main__",
                                 "lineno": 33,
                                 "pre_context": [
-                                    "globals().setdefault('load_entry_point', importlib_load_entry_point)",
+                                    "globals().setdefault('load_entry_point', importlib_load_entry_point)",  # noqa: E501
                                     "",
                                     "",
                                     "if __name__ == '__main__':",
-                                    "    sys.argv[0] = re.sub(r'(-script\\.pyw?|\\.exe)?$', '', sys.argv[0])",
+                                    "    sys.argv[0] = re.sub(r'(-script\\.pyw?|\\.exe)?$', '', sys.argv[0])",  # noqa: E501
                                 ],
-                                "context_line": "    sys.exit(load_entry_point('rasa', 'console_scripts', 'rasa')())",
+                                "context_line": "    sys.exit(load_entry_point('rasa', 'console_scripts', 'rasa')())",  # noqa: E501
                                 "post_context": [],
                             },
                         ]
@@ -449,7 +449,7 @@ def test_sentry_works_fine_with_relative_paths():
 
 def test_sentry_strips_absolute_path_from_site_packages():
     event = _create_exception_event_in_file(
-        "/Users/tmbo/Library/Caches/pypoetry/virtualenvs/rasa-U5VQkfdm-py3.7/lib/python3.7/site-packages/rasa/train.py"
+        "/Users/tmbo/Library/Caches/pypoetry/virtualenvs/rasa-U5VQkfdm-py3.7/lib/python3.7/site-packages/rasa/train.py"  # noqa: E501, W505
     )
     stripped = telemetry.strip_sensitive_data_from_sentry_event(event)
 
@@ -461,7 +461,7 @@ def test_sentry_strips_absolute_path_from_site_packages():
 
 def test_sentry_strips_absolute_path_from_dist_packages():
     event = _create_exception_event_in_file(
-        "C:\\Users\\tmbo\\AppData\\Roaming\\Python\\Python35\\dist-packages\\rasa\\train.py"
+        "C:\\Users\\tmbo\\AppData\\Roaming\\Python\\Python35\\dist-packages\\rasa\\train.py"  # noqa: E501, W505
     )
     stripped = telemetry.strip_sensitive_data_from_sentry_event(event)
 
