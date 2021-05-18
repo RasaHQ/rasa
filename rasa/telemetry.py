@@ -648,7 +648,7 @@ def initialize_error_reporting() -> None:
             asyncio.CancelledError,  # an async operation has been cancelled by the user
             # expected Rasa errors
             RasaException,
-            OSError,  # user has no space left on device
+            OSError,
         ],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
