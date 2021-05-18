@@ -16,6 +16,30 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.6.2] - 2021-05-18
+                       
+
+### Bugfixes
+- [#8364](https://github.com/rasahq/rasa/issues/8364): Fixed a bug where [`ListSlot`](domain.mdx#list-slot)s were filled with single items
+  in case only one matching entity was extracted for this slot.
+
+  Values applied to [`ListSlot`](domain.mdx#list-slot)s will be converted to a `List`
+  in case they aren't one.
+- [#8581](https://github.com/rasahq/rasa/issues/8581): Fix bug with false rule conflicts
+
+  This essentially reverts [PR 8446](https://github.com/RasaHQ/rasa/pull/8446/files), except for the tests. 
+  The PR is redundant due to [PR 8646](https://github.com/RasaHQ/rasa/pull/8646/files).
+- [#8590](https://github.com/rasahq/rasa/issues/8590): Handle `AttributeError ` thrown by empty slot mappings in domain form through refactoring.
+- [#8631](https://github.com/rasahq/rasa/issues/8631): Fixed incorrect `The action 'utter_<response selector intent>' is used in the stories, but is not a valid utterance action`
+  error when running `rasa data validate` with response selector responses in the domain file.
+
+### Improved Documentation
+- [#8079](https://github.com/rasahq/rasa/issues/8079): Added a note to clarify best practice for resetting all slots after form deactivation.
+
+### Miscellaneous internal changes
+- [#8587](https://github.com/rasahq/rasa/issues/8587)
+
+
 ## [2.6.1] - 2021-05-11
                        
 
