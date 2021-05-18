@@ -211,7 +211,7 @@ class Validator:
 
                 if event.action_name not in self.domain.action_names_or_texts:
                     rasa.shared.utils.io.raise_warning(
-                        f"The action '{event.action_name}' is used in your stories or rules, but it "
+                        f"The action '{event.action_name}' is used in the '{story.block_name}' block, but it "
                         f"is not listed in the domain file. You should add it to your "
                         f"domain file!",
                         docs=DOCS_URL_DOMAINS,

@@ -283,7 +283,7 @@ async def test_verify_actions_in_stories_not_in_domain(
         assert validity is False
 
     assert (
-        "The action 'action_test_1' is used in your stories or rules, "
+        "The action 'action_test_1' is used in the 'story path 1' block, "
         "but it is not listed in the domain file." in warning[0].message.args[0]
     )
 
@@ -309,7 +309,7 @@ async def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path
         assert validity is False
 
     assert (
-        "The action 'action_test_2' is used in your stories or rules, "
+        "The action 'action_test_2' is used in the 'rule path 1' block, "
         "but it is not listed in the domain file." in warning[0].message.args[0]
     )
 
