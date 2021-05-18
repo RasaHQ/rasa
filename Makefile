@@ -65,13 +65,13 @@ clean:
 
 install:
 	poetry run python -m pip install -U pip
-	poetry install
+	poetry install -vvv
 
 install-mitie:
 	poetry run python -m pip install -U git+https://github.com/tmbo/MITIE.git#egg=mitie
 
 install-full: install install-mitie
-	poetry install -E full
+	poetry install -E full -vvv
 
 install-docs:
 	cd docs/ && yarn install
