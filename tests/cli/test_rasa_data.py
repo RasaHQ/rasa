@@ -146,6 +146,61 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
         data.validate_files(args)
 
 
+@pytest.mark.parametrize(
+    ("file_type", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+def test_validate_files_action_not_found_invalid_domain(
+    file_type: Text, data_type: Text, tmp_path: Path
+):
+    file_name = tmp_path / f"{file_type}.yml"
+    file_name.write_text(
+        f"""
+        version: "2.0"
+        {file_type}:
+        - {data_type}: test path
+          steps:
+          - intent: goodbye
+          - action: action_test
+        """
+    )
+    args = {
+        "domain": "data/test_moodbot/domain.yml",
+        "data": [file_name],
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
+def test_validate_files_form_slots_not_matching(tmp_path: Path):
+    domain_file_name = tmp_path / "domain.yml"
+    domain_file_name.write_text(
+        """
+        version: "2.0"
+        forms:
+          name_form:
+             first_name:
+             - type: from_text
+             last_name:
+             - type: from_text
+        slots:
+             first_name:
+                type: text
+             last_nam:
+                type: text
+        """
+    )
+    args = {
+        "domain": domain_file_name,
+        "data": None,
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
 def test_validate_files_exit_early():
     with pytest.raises(SystemExit) as pytest_e:
         args = {
