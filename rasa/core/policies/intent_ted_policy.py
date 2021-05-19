@@ -130,6 +130,7 @@ class IntentTEDPolicy(TEDPolicy):
             ENTITIES: 20,
             SLOTS: 20,
             ACTIVE_LOOP: 20,
+            f"{LABEL}_{INTENT}": 20,
         },
         # Default dimension to use for concatenating sequence and sentence features.
         CONCAT_DIMENSION: {TEXT: 128},
