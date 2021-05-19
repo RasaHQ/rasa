@@ -101,6 +101,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
 )
 
+from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -1235,8 +1236,22 @@ class DIET(TransformerRasaModel):
         sentence_num = new_sentence_size - old_sentence_size
         new_seq_layer = self._update_dense_layer(my_layers['sequence'], sequence_num)
         new_sent_layer = self._update_dense_layer(my_layers['sentence'], sentence_num)
-        self._tf_layers['sequence_layer.text']._tf_layers['feature_combining']._tf_layers['sparse_dense.sequence']._tf_layers['sparse_to_dense'] = new_seq_layer
-        self._tf_layers['sequence_layer.text']._tf_layers['feature_combining']._tf_layers['sparse_dense.sentence']._tf_layers['sparse_to_dense'] = new_sent_layer
+        features._tf_layers['sparse_dense.sequence']._tf_layers['sparse_to_dense'] = new_seq_layer
+        features._tf_layers['sparse_dense.sentence']._tf_layers['sparse_to_dense'] = new_sent_layer
+        self.compile(
+            optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+        )
+        label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None
+        label_sub_key = LABEL_SUB_KEY if self.config[INTENT_CLASSIFICATION] else None
+
+        model_data_example = RasaModelData(
+            label_key=label_key, label_sub_key=label_sub_key, data=data_example
+        )
+        data_generator = RasaBatchDataGenerator(model_data_example, batch_size=1)
+        self.fit(data_generator, verbose=False)
+        print(new_seq_layer.kernel.shape, new_seq_layer.bias.shape)
+        exit(0)
+
 
     def _update_dense_layer(self, dense_layer, num_rows):
         kernel = dense_layer.get_kernel().numpy()
@@ -1253,6 +1268,13 @@ class DIET(TransformerRasaModel):
             kernel_initializer=kernel_init,
             bias_initializer=bias_init
         )
+        # new_layer = layers.DenseForSparse(
+        #     reg_lambda=self.config[REGULARIZATION_CONSTANT],
+        #     units=units,
+        #     kernel_initializer='random_normal',
+        #     bias_initializer='zeros'
+        # )
+
         # example = tf.SparseTensor(indices=[[0, 0], [0, 10]], values=[1, 1], dense_shape=[1, new_weights.shape[0]])
         # print(example)
         # new_layer(example)
