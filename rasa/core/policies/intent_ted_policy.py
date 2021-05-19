@@ -574,7 +574,9 @@ class IntentTED(TED):
             if isinstance(self.config[BATCH_SIZES], int)
             else self.config[BATCH_SIZES][0]
         )
-        outputs = self.run_inference(model_data, batch_size=batch_size)
+        outputs = self.run_inference(
+            model_data, batch_size=batch_size, output_keys_expected=["similarities"]
+        )
 
         # Collect scores across all data points
         label_id_scores = self._collect_label_id_similarities_from_outputs(
