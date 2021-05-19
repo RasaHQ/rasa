@@ -1225,33 +1225,83 @@ class DIET(TransformerRasaModel):
 
     def adjust_layers(self, data_example):
         my_layers = {}
-        features = self._tf_layers['sequence_layer.text']._tf_layers['feature_combining']
-        my_layers['sequence'] = features._tf_layers['sparse_dense.sequence']._tf_layers['sparse_to_dense']
-        my_layers['sentence'] = features._tf_layers['sparse_dense.sentence']._tf_layers['sparse_to_dense']
-        old_sequence_size = self.data_signature['text']['sequence'][0].units
-        new_sequence_size = data_example['text']['sequence'][0][0].shape[1]
-        old_sentence_size = self.data_signature['text']['sentence'][0].units
-        new_sentence_size = data_example['text']['sentence'][0][0].shape[1]
+        features = self._tf_layers["sequence_layer.text"]._tf_layers[
+            "feature_combining"
+        ]
+        my_layers["sequence"] = features._tf_layers["sparse_dense.sequence"]._tf_layers[
+            "sparse_to_dense"
+        ]
+        my_layers["sentence"] = features._tf_layers["sparse_dense.sentence"]._tf_layers[
+            "sparse_to_dense"
+        ]
+        old_sequence_size = self.data_signature["text"]["sequence"][0].units
+        new_sequence_size = data_example["text"]["sequence"][0][0].shape[1]
+        old_sentence_size = self.data_signature["text"]["sentence"][0].units
+        new_sentence_size = data_example["text"]["sentence"][0][0].shape[1]
         sequence_num = new_sequence_size - old_sequence_size
         sentence_num = new_sentence_size - old_sentence_size
-        new_seq_layer = self._update_dense_layer(my_layers['sequence'], sequence_num)
-        new_sent_layer = self._update_dense_layer(my_layers['sentence'], sentence_num)
-        features._tf_layers['sparse_dense.sequence']._tf_layers['sparse_to_dense'] = new_seq_layer
-        features._tf_layers['sparse_dense.sentence']._tf_layers['sparse_to_dense'] = new_sent_layer
-        self.compile(
-            optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+        new_seq_layer = self._update_dense_layer(my_layers["sequence"], sequence_num)
+        new_sent_layer = self._update_dense_layer(my_layers["sentence"], sentence_num)
+
+        del (
+            self._tf_layers["sequence_layer.text"]
+            ._tf_layers["feature_combining"]
+            ._tf_layers["sparse_dense.sequence"]
+            ._tf_layers["sparse_to_dense"]
         )
+        del (
+            self._tf_layers["sequence_layer.text"]
+            ._tf_layers["feature_combining"]
+            ._tf_layers["sparse_dense.sentence"]
+            ._tf_layers["sparse_to_dense"]
+        )
+
+        self._tf_layers["sequence_layer.text"]._tf_layers[
+            "feature_combining"
+        ]._tf_layers["sparse_dense.sequence"]._tf_layers[
+            "sparse_to_dense"
+        ] = new_seq_layer
+        self._tf_layers["sequence_layer.text"]._tf_layers[
+            "feature_combining"
+        ]._tf_layers["sparse_dense.sentence"]._tf_layers[
+            "sparse_to_dense"
+        ] = new_sent_layer
+
+        self.compile(optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]))
         label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None
         label_sub_key = LABEL_SUB_KEY if self.config[INTENT_CLASSIFICATION] else None
 
         model_data_example = RasaModelData(
             label_key=label_key, label_sub_key=label_sub_key, data=data_example
         )
+
+        self.data_signature = model_data_example.get_signature()
+        self.predict_data_signature = {
+            feature_name: features
+            for feature_name, features in self.data_signature.items()
+            if TEXT in feature_name
+        }
+
         data_generator = RasaBatchDataGenerator(model_data_example, batch_size=1)
+
+        print(
+            self._tf_layers["sequence_layer.text"]
+            ._tf_layers["feature_combining"]
+            ._tf_layers["sparse_dense.sequence"]
+            ._tf_layers["sparse_to_dense"]
+        )
+
+        print(
+            self._tf_layers["sequence_layer.text"]
+            ._tf_layers["feature_combining"]
+            ._tf_layers["sparse_dense.sentence"]
+            ._tf_layers["sparse_to_dense"]
+        )
+
+        # exit(0)
+
         self.fit(data_generator, verbose=False)
         print(new_seq_layer.kernel.shape, new_seq_layer.bias.shape)
-        exit(0)
-
 
     def _update_dense_layer(self, dense_layer, num_rows):
         kernel = dense_layer.get_kernel().numpy()
@@ -1266,7 +1316,7 @@ class DIET(TransformerRasaModel):
             reg_lambda=self.config[REGULARIZATION_CONSTANT],
             units=units,
             kernel_initializer=kernel_init,
-            bias_initializer=bias_init
+            bias_initializer=bias_init,
         )
         # new_layer = layers.DenseForSparse(
         #     reg_lambda=self.config[REGULARIZATION_CONSTANT],
@@ -1279,7 +1329,6 @@ class DIET(TransformerRasaModel):
         # print(example)
         # new_layer(example)
         return new_layer
-
 
     @staticmethod
     def _ordered_tag_specs(

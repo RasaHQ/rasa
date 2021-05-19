@@ -595,7 +595,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         print(self.vectorizers[attribute].vocabulary_)
         print(len(self.vectorizers[attribute].vocabulary_))
 
-
     def _fit_vectorizer_from_scratch(
         self, attribute: Text, attribute_texts: List[Text]
     ) -> None:
@@ -619,7 +618,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self._add_buffer_to_vocabulary(attribute)
         print(self.vectorizers[attribute].vocabulary_)
         print(len(self.vectorizers[attribute].vocabulary_))
-
 
     def _create_features(
         self, attribute: Text, all_tokens: List[List[Text]]
