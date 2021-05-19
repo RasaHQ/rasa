@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Union, Text, List, Optional, Type, Dict, Any
 
 import aio_pika.exceptions
+import aiormq.exceptions
+import pamqp.exceptions
 import kafka
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -102,6 +104,30 @@ async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(
         PikaEventBroker, "connect", AsyncMock(side_effect=ChannelNotFoundEntity())
     )
+
+    with pytest.raises(ConnectionException):
+        await EventBroker.create(
+            EndpointConfig(username="username", password="password", type="pika")
+        )
+
+
+@pytest.mark.parametrize(
+    "exception",
+    (
+        RuntimeError,
+        ConnectionError,
+        OSError,
+        aiormq.exceptions.AMQPError,
+        pamqp.exceptions.PAMQPException,
+        pamqp.specification.AMQPConnectionForced,
+        pamqp.specification.AMQPNotFound,
+        pamqp.specification.AMQPInternalError,
+    ),
+)
+async def test_aio_pika_exceptions_caught(
+    exception: Exception, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setattr(PikaEventBroker, "connect", AsyncMock(side_effect=exception))
 
     with pytest.raises(ConnectionException):
         await EventBroker.create(
