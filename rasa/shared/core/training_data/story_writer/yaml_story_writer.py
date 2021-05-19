@@ -206,7 +206,7 @@ class YAMLStoryWriter(StoryWriter):
             result[KEY_USER_INTENT] = user_utterance.intent_name
 
         if hasattr(user_utterance, "inline_comment"):
-            if user_utterance.predicted_intent != user_utterance.intent["name"]:
+            if user_utterance.inline_comment():
                 result.yaml_add_eol_comment(
                     user_utterance.inline_comment(), KEY_USER_INTENT
                 )
@@ -231,24 +231,23 @@ class YAMLStoryWriter(StoryWriter):
                 if "value" in entity:
                     if hasattr(user_utterance, "inline_comment_for_entity"):
                         for predicted in user_utterance.predicted_entities:
-                            if predicted["start"] == entity["start"]:
-                                if predicted["entity"] != entity["entity"]:
-                                    entity_map = CommentedMap(
-                                        [(entity["entity"], entity["value"])]
-                                    )
-                                    entity_map.yaml_add_eol_comment(
-                                        user_utterance.inline_comment_for_entity(
-                                            predicted
-                                        ),
-                                        entity["entity"],
-                                    )
-                                    entities.append(entity_map)
-                                else:
-                                    entities.append(
-                                        OrderedDict(
-                                            [(entity["entity"], entity["value"])]
-                                        )
-                                    )
+                            if user_utterance.inline_comment_for_entity(
+                                predicted, entity
+                            ):
+                                entity_map = CommentedMap(
+                                    [(entity["entity"], entity["value"])]
+                                )
+                                entity_map.yaml_add_eol_comment(
+                                    user_utterance.inline_comment_for_entity(
+                                        predicted, entity
+                                    ),
+                                    entity["entity"],
+                                )
+                                entities.append(entity_map)
+                            else:
+                                entities.append(
+                                    OrderedDict([(entity["entity"], entity["value"])])
+                                )
                     else:
                         entities.append(
                             OrderedDict([(entity["entity"], entity["value"])])
