@@ -556,7 +556,20 @@ def test_create_state_features_with_max_history_tracker_featurizer(
     assert actual_features is not None
     assert len(actual_features) == len(expected_features)
 
+    for event in moodbot_tracker.applied_events():
+        print(event)
     for actual, expected in zip(actual_features, expected_features):
+        print("ACTUAL")
+        for x in actual:
+            print(x)
+        print()
+        print("EXPECTED")
+        for y in expected:
+            print(y)
+        print()
+
+
+
         assert compare_featurized_states(actual, expected)
 
 
@@ -645,13 +658,28 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
         [rule_tracker], moodbot_domain, ignore_rule_only_turns=True,
     )
 
-    expected_states = [[{}]]
+    expected_states = [
+        [
+            {},
+            {"user": {"intent": "greet"}, "prev_action": {"action_name": "action_listen"}},
+        ],
+    ]
 
     assert actual_states is not None
     assert len(actual_states) == len(expected_states)
 
     for actual, expected in zip(actual_states, expected_states):
+        print("ACTUAL")
+        for x in actual:
+            print(x)
+        print()
+        print("EXPECTED")
+        for y in expected:
+            print(y)
+        print()
         assert actual == expected
+
+
 
     embedded_rule_tracker = DialogueStateTracker.from_events(
         "default",
@@ -675,12 +703,16 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
         [
             {},
             {
-                "user": {"intent": "mood_great"},
-                "prev_action": {"action_name": "action_listen"},
+                "user": {"intent": "mood_great"}, 
+                "prev_action": {"action_name": "action_listen"}
             },
             {
                 "user": {"intent": "mood_great"},
                 "prev_action": {"action_name": "utter_happy"},
+            },
+            {
+                "user": {"intent": "mood_great"},
+                "prev_action": {"action_name": "action_listen"},
             },
         ]
     ]
@@ -692,6 +724,15 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
     assert len(actual_states) == len(expected_states)
 
     for actual, expected in zip(actual_states, expected_states):
+        print("ACTUAL")
+        for x in actual:
+            print(x)
+        print()
+        print("EXPECTED")
+        for y in expected:
+            print(y)
+        print()
+
         assert actual == expected
 
 
@@ -863,6 +904,17 @@ def test_create_state_features_with_intent_max_history_tracker_featurizer(
     assert len(actual_features) == len(expected_features)
 
     for actual, expected in zip(actual_features, expected_features):
+        print("ACTUAL")
+        for x in actual:
+            print(x)
+        print()
+        print("EXPECTED")
+        for y in expected:
+            print(y)
+        print()
+
+
+
         assert compare_featurized_states(actual, expected)
 
 
@@ -912,7 +964,18 @@ def test_prediction_states_with_intent_max_history_tracker_featurizer(
     assert actual_states is not None
     assert len(actual_states) == len(expected_states)
 
+    for event in moodbot_tracker.applied_events():
+        print(event)
+
     for actual, expected in zip(actual_states, expected_states):
+        print("ACTUAL")
+        for x in actual:
+            print(x)
+        print()
+        print("EXPECTED")
+        for y in expected:
+            print(y)
+        print()
         assert actual == expected
 
 
