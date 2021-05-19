@@ -231,21 +231,24 @@ class YAMLStoryWriter(StoryWriter):
                 if "value" in entity:
                     if hasattr(user_utterance, "inline_comment_for_entity"):
                         for predicted in user_utterance.predicted_entities:
-                            commented_entity = user_utterance.inline_comment_for_entity(
-                                predicted, entity
-                            )
-                            if commented_entity:
-                                entity_map = CommentedMap(
-                                    [(entity["entity"], entity["value"])]
+                            if predicted["start"] == entity["start"]:
+                                commented_entity = user_utterance.inline_comment_for_entity(
+                                    predicted, entity
                                 )
-                                entity_map.yaml_add_eol_comment(
-                                    commented_entity, entity["entity"],
-                                )
-                                entities.append(entity_map)
-                            else:
-                                entities.append(
-                                    OrderedDict([(entity["entity"], entity["value"])])
-                                )
+                                if commented_entity:
+                                    entity_map = CommentedMap(
+                                        [(entity["entity"], entity["value"])]
+                                    )
+                                    entity_map.yaml_add_eol_comment(
+                                        commented_entity, entity["entity"],
+                                    )
+                                    entities.append(entity_map)
+                                else:
+                                    entities.append(
+                                        OrderedDict(
+                                            [(entity["entity"], entity["value"])]
+                                        )
+                                    )
                     else:
                         entities.append(
                             OrderedDict([(entity["entity"], entity["value"])])

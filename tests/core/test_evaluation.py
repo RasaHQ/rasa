@@ -536,6 +536,8 @@ async def test_wrong_predictions_with_intent_and_entities(
         assert "# predicted: cuisine: greek" in failed_stories
         # check that the correctly predicted entity is printed as well
         assert "- seating: outside\n" in failed_stories
+        # check that it does not double print entities
+        assert failed_stories.count("\n") == 8
 
     elif test_case == "wrong_intent_correct_entity":
         await evaluate_stories(
@@ -554,6 +556,8 @@ async def test_wrong_predictions_with_intent_and_entities(
         assert "# predicted: cuisine: greek" not in failed_stories
         # check that the correctly predicted entity is printed as well
         assert "- seating: outside\n" in failed_stories
+        # check that it does not double print entities
+        assert failed_stories.count("\n") == 9
 
     elif test_case == "wrong_intent_wrong_entity":
         await evaluate_stories(
@@ -572,3 +576,5 @@ async def test_wrong_predictions_with_intent_and_entities(
         assert "# predicted: cuisine: greek" in failed_stories
         # check that the correctly predicted entity is printed as well
         assert "- seating: outside\n" in failed_stories
+        # check that it does not double print entities
+        assert failed_stories.count("\n") == 9
