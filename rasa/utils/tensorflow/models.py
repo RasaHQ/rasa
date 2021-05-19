@@ -270,13 +270,19 @@ class RasaModel(TmpKerasModel):
         return outputs
 
     def run_inference(
-        self, model_data: RasaModelData, batch_size: Union[int, List[int]] = 1
+        self,
+        model_data: RasaModelData,
+        batch_size: Union[int, List[int]] = 1,
+        output_keys_expected: Optional[List[Text]] = None,
     ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
         """Implements bulk inferencing through the model.
 
         Args:
             model_data: Input data to be fed to the model.
             batch_size: Size of batches that the generator should create.
+            output_keys_expected: Keys which are expected in the output.
+                The output should be filtered to have only these keys before
+                merging it with the output across all batches.
 
         Returns:
             Model outputs corresponding to the inputs fed.
@@ -292,7 +298,15 @@ class RasaModel(TmpKerasModel):
                 # We only need input, since output is always None and not
                 # consumed by our TF graphs.
                 batch_in = next(data_iterator)[0]
-                batch_out = self._rasa_predict(batch_in)
+                batch_out: Dict[
+                    Text, Union[np.ndarray, Dict[Text, Any]]
+                ] = self._rasa_predict(batch_in)
+                if output_keys_expected:
+                    batch_out = {
+                        key: output
+                        for key, output in batch_out.items()
+                        if key in output_keys_expected
+                    }
                 outputs = self._merge_batch_outputs(outputs, batch_out)
             except StopIteration:
                 # Generator ran out of batches, time to finish inferencing
