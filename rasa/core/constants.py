@@ -32,23 +32,23 @@ DEFAULT_POLICY_PRIORITY = 1
 # the tracker is of type `UserUttered`. Hence, they make at most
 # one action prediction in each conversation turn. This allows other
 # policies to predict a winning action prediction.
-UNLIKELY_INTENT_POLICY_PRIORITY = 2
+UNLIKELY_INTENT_POLICY_PRIORITY = DEFAULT_POLICY_PRIORITY + 1
 
 # the priority intended to be used by mapping policies
-MAPPING_POLICY_PRIORITY = 3
+MAPPING_POLICY_PRIORITY = UNLIKELY_INTENT_POLICY_PRIORITY + 1
 # the priority intended to be used by memoization policies
 # it is higher than default and mapping to prioritize training stories
-MEMOIZATION_POLICY_PRIORITY = 4
+MEMOIZATION_POLICY_PRIORITY = MAPPING_POLICY_PRIORITY + 1
 # the priority intended to be used by fallback policies
 # it is higher than memoization to prioritize fallback
-FALLBACK_POLICY_PRIORITY = 5
+FALLBACK_POLICY_PRIORITY = MEMOIZATION_POLICY_PRIORITY + 1
 # the priority intended to be used by form policies
 # it is the highest to prioritize form to the rest of the policies
-FORM_POLICY_PRIORITY = 6
+FORM_POLICY_PRIORITY = FALLBACK_POLICY_PRIORITY + 1
 # The priority of the `RulePolicy` is higher than the priorities for `FallbackPolicy`,
 # `TwoStageFallbackPolicy` and `FormPolicy` to make it possible to use the
 # `RulePolicy` in conjunction with these deprecated policies.
-RULE_POLICY_PRIORITY = 7
+RULE_POLICY_PRIORITY = FORM_POLICY_PRIORITY + 1
 
 DIALOGUE = "dialogue"
 
