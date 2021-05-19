@@ -502,14 +502,14 @@ async def trained_response_selector_bot(trained_async: Callable) -> Path:
 
 
 @pytest.fixture(scope="session")
-async def trained_formbot(trained_async: Callable) -> Path:
+async def trained_restaurantbot(trained_async: Callable) -> Path:
     zipped_model = await trained_async(
-        domain="data/test_formbot/domain.yml",
-        config="data/test_formbot/config.yml",
+        domain="data/test_restaurantbot/domain.yml",
+        config="data/test_restaurantbot/config.yml",
         training_files=[
-            "data/test_formbot/data/rules.yml",
-            "data/test_formbot/data/stories.yml",
-            "data/test_formbot/data/nlu.yml",
+            "data/test_restaurantbot/data/rules.yml",
+            "data/test_restaurantbot/data/stories.yml",
+            "data/test_restaurantbot/data/nlu.yml",
         ],
     )
 
@@ -570,8 +570,8 @@ async def response_selector_agent(
 
 
 @pytest.fixture(scope="session")
-async def form_agent(trained_formbot: Optional[Path],) -> Agent:
-    return Agent.load_local_model(trained_formbot)
+async def restaurantbot_agent(trained_restaurantbot: Optional[Path],) -> Agent:
+    return Agent.load_local_model(trained_restaurantbot)
 
 
 @pytest.fixture(scope="session")

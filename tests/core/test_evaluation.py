@@ -515,14 +515,14 @@ def test_log_evaluation_table(caplog, skip_field, skip_value):
     ],
 )
 async def test_wrong_predictions_with_intent_and_entities(
-    tmpdir: Path, form_agent: Agent, test_file: Text, test_case: Text,
+    tmpdir: Path, restaurantbot_agent: Agent, test_file: Text, test_case: Text,
 ):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
     if test_case == "correct_intent_wrong_entity":
         await evaluate_stories(
             stories=test_file,
-            agent=form_agent,
+            agent=restaurantbot_agent,
             out_directory=str(tmpdir),
             max_stories=None,
             e2e=True,
@@ -540,7 +540,7 @@ async def test_wrong_predictions_with_intent_and_entities(
     elif test_case == "wrong_intent_correct_entity":
         await evaluate_stories(
             stories=test_file,
-            agent=form_agent,
+            agent=restaurantbot_agent,
             out_directory=str(tmpdir),
             max_stories=None,
             e2e=True,
@@ -558,7 +558,7 @@ async def test_wrong_predictions_with_intent_and_entities(
     elif test_case == "wrong_intent_wrong_entity":
         await evaluate_stories(
             stories=test_file,
-            agent=form_agent,
+            agent=restaurantbot_agent,
             out_directory=str(tmpdir),
             max_stories=None,
             e2e=True,
