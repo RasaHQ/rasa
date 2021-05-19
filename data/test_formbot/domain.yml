@@ -4,12 +4,13 @@ intents:
   - request_restaurant:
       use_entities:
         - cuisine
-        - feedback
+        - seating
   - inform
 
 entities:
   - cuisine
   - feedback
+  - seating
 
 session_config:
   session_expiration_time: 60  # value in minutes
