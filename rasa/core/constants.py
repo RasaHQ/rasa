@@ -25,7 +25,7 @@ DEFAULT_POLICY_PRIORITY = 1
 # This should be below all rule based policies but higher than ML
 # based policies. This enables a loop inside ensemble where if none
 # of the rule based policies predict an action and intent prediction
-# policy predicts one, it's prediction is chosen by the ensemble and
+# policy predicts one, its prediction is chosen by the ensemble and
 # then the ML based policies are again run to get the prediction for
 # an actual action. To prevent an infinite loop, intent prediction
 # policies only predict an action if the last event in
