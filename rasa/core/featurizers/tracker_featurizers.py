@@ -163,8 +163,8 @@ class TrackerFeaturizer:
             "'training_states_actions_and_entities' is being deprecated in favor of "
             "'training_states_labels_and_entities'."
         )
-        raise NotImplementedError(
-            f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
+        return self.training_states_actions_and_entities(
+            trackers, domain, omit_unset_slots=omit_unset_slots
         )
 
     def training_states_and_actions(
@@ -234,8 +234,8 @@ class TrackerFeaturizer:
         Returns:
             A tuple of list of states, list of labels and list of entity data.
         """
-        return self.training_states_actions_and_entities(
-            trackers, domain, omit_unset_slots=omit_unset_slots
+        raise NotImplementedError(
+            f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
         )
 
     def featurize_trackers(
@@ -427,30 +427,6 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the length of the longest dialogue with -1.
     """
 
-    def training_states_actions_and_entities(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain,
-        omit_unset_slots: bool = False,
-    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of states, labels and entity data.
-
-        Args:
-            trackers: The trackers to transform
-            domain: The domain
-            omit_unset_slots: If `True` do not include the initial values of slots.
-
-        Returns:
-            A tuple of list of states, list of labels and list of entity data.
-        """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "'training_states_actions_and_entities' is being deprecated in "
-            "favor of 'training_states_labels_and_entities'."
-        )
-        return self.training_states_labels_and_entities(
-            trackers, domain, omit_unset_slots=omit_unset_slots
-        )
-
     def training_states_labels_and_entities(
         self,
         trackers: List[DialogueStateTracker],
@@ -613,7 +589,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         """Hash states (and optionally label) for efficient deduplication.
         If labels is None, labels is not hashed.
         """
-
         frozen_states = tuple(
             s if s is None else tracker.freeze_current_state(s) for s in states
         )
@@ -622,30 +597,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             return hash((frozen_states, frozen_labels))
         else:
             return hash(frozen_states)
-
-    def training_states_actions_and_entities(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain,
-        omit_unset_slots: bool = False,
-    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of states, labels and entity data.
-
-        Args:
-            trackers: The trackers to transform
-            domain: The domain
-            omit_unset_slots: If `True` do not include the initial values of slots.
-
-        Returns:
-            A tuple of list of states, list of labels and list of entity data.
-        """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "'training_states_actions_and_entities' is being deprecated in "
-            "favor of 'training_states_labels_and_entities'."
-        )
-        return self.training_states_labels_and_entities(
-            trackers, domain, omit_unset_slots=omit_unset_slots
-        )
 
     def training_states_labels_and_entities(
         self,
@@ -663,7 +614,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         Returns:
             A tuple of list of states, list of labels and list of entity data.
         """
-
         self._setup_example_iterator()
 
         example_states = []
@@ -723,7 +673,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         Returns:
             An iterator over state, labels, entity tag tuples
         """
-
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
         )
@@ -769,7 +718,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     def _cleanup_example_iterator(self) -> None:
         """Remove deduplication cache and remove intent text when intent label
-        is used."""
+        is used.
+        """
         if self.remove_duplicates:
             self.hashed_examples = None
 
@@ -830,7 +780,6 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         Returns:
             A 2d np.ndarray of label ids.
         """
-
         # store labels in numpy arrays so that it corresponds to np arrays
         # of input features
         label_ids = [
@@ -874,7 +823,6 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         Returns:
             An iterator over state, labels, entity tag tuples
         """
-
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
         )
@@ -911,7 +859,6 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         Collects all positive intent labels for a given state hash and adds
         them to the original label for each state hash in the training data.
         """
-
         for labelset in self._state_hash_to_labels.values():
             # Get the set of labels associated with the state hash.
             codomain = set([labels[0] for labels in labelset])
