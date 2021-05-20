@@ -22,6 +22,7 @@ from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import rasa_layers, layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
+from rasa.shared.nlu.training_data.features import Features
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
     FeatureSignature,
@@ -714,13 +715,21 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._add_label_features(
             model_data, training_data, label_attribute, label_id_dict, training
         )
-
+        print(model_data.data['text'].keys())
+        self._add_text_feature_sizes(training_data[0])
+        # model_data.first_data_example()
         # make sure all keys are in the same order during training and prediction
         # as we rely on the order of key and sub-key when constructing the actual
         # tensors from the model data
         model_data.sort()
 
         return model_data
+
+    def _add_text_feature_sizes(self, message):
+        # extracts and stores current feature sizes
+        feature_sizes = message.get_sparse_feature_sizes(attribute='text',
+                                                    featurizers=self.component_config[FEATURIZERS])
+        self._feature_sizes = {'text': feature_sizes}
 
     def _add_label_features(
         self,
@@ -813,8 +822,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
+        # for feature in training_data.nlu_examples[0].__dict__['features']:
+        #     print(feature.type, feature.attribute, feature.origin, feature.features.shape)
         model_data = self.preprocess_train_data(training_data)
-        print(len(training_data.nlu_examples))
         if model_data.is_empty():
             logger.debug(
                 f"Cannot train '{self.__class__.__name__}'. No data was provided. "
@@ -843,7 +853,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
         else:
-            self.model.adjust_layers(self._data_example)
+            self.model.adjust_layers(self._data_example, self._feature_sizes, self._old_feature_sizes)
 
         data_generator, validation_data_generator = train_utils.create_data_generators(
             model_data,
@@ -1007,6 +1017,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.data_example.pkl", self._data_example
         )
         io_utils.pickle_dump(
+            model_dir / f"{file_name}.feature_sizes.pkl", self._feature_sizes
+        )
+
+        io_utils.pickle_dump(
             model_dir / f"{file_name}.label_data.pkl", dict(self._label_data.data)
         )
         io_utils.json_pickle(
@@ -1050,8 +1064,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_data,
             meta,
             data_example,
+            old_feature_sizes
         ) = cls._load_from_files(meta, model_dir)
-
+        cls._old_feature_sizes = old_feature_sizes
         meta = train_utils.override_defaults(cls.defaults, meta)
         meta = train_utils.update_confidence_type(meta)
         meta = train_utils.update_similarity_type(meta)
@@ -1083,6 +1098,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         RasaModelData,
         Dict[Text, Any],
         Dict[Text, Dict[Text, List[FeatureArray]]],
+        Dict[Text, Dict[Text, List[int]]]
     ]:
         file_name = meta.get("file")
 
@@ -1090,6 +1106,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
         label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
+        old_feature_sizes = io_utils.pickle_load(model_dir / f"{file_name}.feature_sizes.pkl")
         label_data = RasaModelData(data=label_data)
         index_label_id_mapping = io_utils.json_unpickle(
             model_dir / f"{file_name}.index_label_id_mapping.json"
@@ -1122,6 +1139,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_data,
             meta,
             data_example,
+            old_feature_sizes
         )
 
     @classmethod
@@ -1223,7 +1241,7 @@ class DIET(TransformerRasaModel):
 
         self._prepare_layers()
 
-    def adjust_layers(self, data_example):
+    def adjust_layers(self, data_example, new_feature_sizes, old_feature_sizes):
         my_layers = {}
         features = self._tf_layers["sequence_layer.text"]._tf_layers[
             "feature_combining"
@@ -1234,81 +1252,67 @@ class DIET(TransformerRasaModel):
         my_layers["sentence"] = features._tf_layers["sparse_dense.sentence"]._tf_layers[
             "sparse_to_dense"
         ]
-        old_sequence_size = self.data_signature["text"]["sequence"][0].units
-        new_sequence_size = data_example["text"]["sequence"][0][0].shape[1]
-        old_sentence_size = self.data_signature["text"]["sentence"][0].units
-        new_sentence_size = data_example["text"]["sentence"][0][0].shape[1]
-        sequence_num = new_sequence_size - old_sequence_size
-        sentence_num = new_sentence_size - old_sentence_size
-        new_seq_layer = self._update_dense_layer(my_layers["sequence"], sequence_num)
-        new_sent_layer = self._update_dense_layer(my_layers["sentence"], sentence_num)
-
-        del (
-            self._tf_layers["sequence_layer.text"]
-            ._tf_layers["feature_combining"]
-            ._tf_layers["sparse_dense.sequence"]
-            ._tf_layers["sparse_to_dense"]
-        )
-        del (
-            self._tf_layers["sequence_layer.text"]
-            ._tf_layers["feature_combining"]
-            ._tf_layers["sparse_dense.sentence"]
-            ._tf_layers["sparse_to_dense"]
-        )
-
-        self._tf_layers["sequence_layer.text"]._tf_layers[
-            "feature_combining"
-        ]._tf_layers["sparse_dense.sequence"]._tf_layers[
-            "sparse_to_dense"
-        ] = new_seq_layer
-        self._tf_layers["sequence_layer.text"]._tf_layers[
-            "feature_combining"
-        ]._tf_layers["sparse_dense.sentence"]._tf_layers[
-            "sparse_to_dense"
-        ] = new_sent_layer
+        old_sequence_size = old_feature_sizes['text']['sequence']
+        new_sequence_size = new_feature_sizes['text']['sequence']
+        old_sentence_size = old_feature_sizes['text']['sentence']
+        new_sentence_size = new_feature_sizes['text']['sentence']
+        if sum(old_sequence_size) < sum(new_sequence_size):
+            new_seq_layer = self._update_dense_layer(my_layers["sequence"], old_sequence_size, new_sequence_size)
+            self._tf_layers["sequence_layer.text"]._tf_layers[
+                "feature_combining"
+            ]._tf_layers["sparse_dense.sequence"]._tf_layers[
+                "sparse_to_dense"
+            ] = new_seq_layer
+            print(new_seq_layer.kernel.shape)
+        if sum(old_sentence_size) < sum(new_sentence_size):
+            new_sent_layer = self._update_dense_layer(my_layers["sentence"], old_sentence_size, new_sentence_size)
+            self._tf_layers["sequence_layer.text"]._tf_layers[
+                "feature_combining"
+            ]._tf_layers["sparse_dense.sentence"]._tf_layers[
+                "sparse_to_dense"
+            ] = new_sent_layer
+            print(new_sent_layer.kernel.shape)
 
         self.compile(optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]))
         label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None
         label_sub_key = LABEL_SUB_KEY if self.config[INTENT_CLASSIFICATION] else None
 
-        model_data_example = RasaModelData(
+        model_data = RasaModelData(
             label_key=label_key, label_sub_key=label_sub_key, data=data_example
         )
+        self._update_data_signatures(model_data)
+        data_generator = RasaBatchDataGenerator(model_data, batch_size=1)
+        self.fit(data_generator, verbose=False)
 
-        self.data_signature = model_data_example.get_signature()
+    def _update_data_signatures(self, model_data):
+        self.data_signature = model_data.get_signature()
         self.predict_data_signature = {
             feature_name: features
             for feature_name, features in self.data_signature.items()
             if TEXT in feature_name
         }
 
-        data_generator = RasaBatchDataGenerator(model_data_example, batch_size=1)
-
-        print(
-            self._tf_layers["sequence_layer.text"]
-            ._tf_layers["feature_combining"]
-            ._tf_layers["sparse_dense.sequence"]
-            ._tf_layers["sparse_to_dense"]
-        )
-
-        print(
-            self._tf_layers["sequence_layer.text"]
-            ._tf_layers["feature_combining"]
-            ._tf_layers["sparse_dense.sentence"]
-            ._tf_layers["sparse_to_dense"]
-        )
-
-        # exit(0)
-
-        self.fit(data_generator, verbose=False)
-        print(new_seq_layer.kernel.shape, new_seq_layer.bias.shape)
-
-    def _update_dense_layer(self, dense_layer, num_rows):
+    def _update_dense_layer(self, dense_layer, old_sizes, new_sizes):
+        # get kernel, bias and output units of the existing layer
         kernel = dense_layer.get_kernel().numpy()
         bias = dense_layer.get_bias().numpy()
-        additional = np.random.random((num_rows, kernel.shape[1]))
-        additional = additional.astype(np.float32)
-        new_weights = np.vstack((kernel, additional))
+        units = dense_layer.units
+        # split kernel by feature sizes
+        kernel_splits = []
+        start = 0
+        for end in old_sizes:
+            kernel_splits.append(kernel[start:start+end, :])
+            start = end
+        # calculate how many features are added to each split
+        additional_sizes = [new_size-old_size for new_size, old_size in zip(new_sizes, old_sizes)]
+        # initialize weights according to those sizes
+        additional_weights = [np.random.random((num_rows, units)).astype(np.float32) for num_rows in additional_sizes]
+        # merge existing weight splits with additional ones
+        merged_weights = [np.vstack((existing, new)) for existing, new in zip(kernel_splits, additional_weights)]
+        # stack each split to form a new weight tensors
+        new_weights = merged_weights[0]
+        for weights in merged_weights[1:]:
+            new_weights = np.vstack((new_weights, weights))
         kernel_init = tf.constant_initializer(new_weights)
         bias_init = tf.constant_initializer(bias)
         units = bias.shape[0]
@@ -1318,16 +1322,6 @@ class DIET(TransformerRasaModel):
             kernel_initializer=kernel_init,
             bias_initializer=bias_init,
         )
-        # new_layer = layers.DenseForSparse(
-        #     reg_lambda=self.config[REGULARIZATION_CONSTANT],
-        #     units=units,
-        #     kernel_initializer='random_normal',
-        #     bias_initializer='zeros'
-        # )
-
-        # example = tf.SparseTensor(indices=[[0, 0], [0, 10]], values=[1, 1], dense_shape=[1, new_weights.shape[0]])
-        # print(example)
-        # new_layer(example)
         return new_layer
 
     @staticmethod

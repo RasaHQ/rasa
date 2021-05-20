@@ -225,11 +225,25 @@ class Message:
         sequence_features, sentence_features = self._filter_sparse_features(
             attribute, featurizers
         )
-
         sequence_features = self._combine_features(sequence_features, featurizers)
         sentence_features = self._combine_features(sentence_features, featurizers)
 
         return sequence_features, sentence_features
+
+    def get_sparse_feature_sizes(
+        self, attribute: Text, featurizers: Optional[List[Text]] = None
+    ):
+        if featurizers is None:
+            featurizers = []
+
+        sequence_features, sentence_features = self._filter_sparse_features(
+            attribute, featurizers
+        )
+        sequence_features = [f.features.shape[1] for f in sequence_features]
+        sentence_features = [f.features.shape[1] for f in sentence_features]
+
+        return {'sequence': sequence_features, 'sentence': sentence_features}
+
 
     def get_dense_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None

@@ -592,8 +592,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         )
         # update the vocabulary of vectorizer with new vocabulary
         self._update_vectorizer_vocabulary(attribute, new_vocabulary)
-        print(self.vectorizers[attribute].vocabulary_)
-        print(len(self.vectorizers[attribute].vocabulary_))
+        ls = [k for k,v in self.vectorizers[attribute].vocabulary_.items()]
+        print(ls[:100])
+        print(attribute)
+        print('loaded / size -', len(self.vectorizers[attribute].vocabulary_))
 
     def _fit_vectorizer_from_scratch(
         self, attribute: Text, attribute_texts: List[Text]
@@ -616,8 +618,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # Add buffer for extra vocabulary tokens
         # that come in during incremental training.
         self._add_buffer_to_vocabulary(attribute)
-        print(self.vectorizers[attribute].vocabulary_)
-        print(len(self.vectorizers[attribute].vocabulary_))
+        ls = [k for k,v in self.vectorizers[attribute].vocabulary_.items()]
+        print(ls[:100])
+        print(attribute)
+        print('from scratch / size -', len(self.vectorizers[attribute].vocabulary_))
 
     def _create_features(
         self, attribute: Text, all_tokens: List[List[Text]]
