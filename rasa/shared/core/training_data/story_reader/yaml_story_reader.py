@@ -362,7 +362,15 @@ class YAMLStoryReader(StoryReader):
     def _user_intent_from_step(
         self, step: Dict[Text, Any]
     ) -> Tuple[Text, Optional[Text]]:
-        user_intent = step.get(KEY_USER_INTENT, "").strip()
+        try:
+            user_intent = step.get(KEY_USER_INTENT, "").strip()
+        except AttributeError:
+            rasa.shared.utils.io.raise_warning(
+                f"Issue found in '{self.source_name}':\n"
+                f"Missing intent value in {self._get_item_title()} step: {step} .",
+                docs=self._get_docs_link(),
+            )
+            user_intent = ""
 
         if not user_intent and KEY_USER_MESSAGE not in step:
             rasa.shared.utils.io.raise_warning(
