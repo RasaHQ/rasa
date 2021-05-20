@@ -7,7 +7,7 @@ from rasa.utils.tensorflow.layers import (
     MultiLabelDotProductLoss,
     RandomlyConnectedDense,
 )
-from rasa.utils.tensorflow.constants import INNER, CROSS_ENTROPY, SOFTMAX
+from rasa.utils.tensorflow.constants import INNER, SOFTMAX
 import rasa.utils.tensorflow.layers_utils as layers_utils
 
 
@@ -81,8 +81,6 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
     # List all the labels and ids in play
     all_labels_embed = tf.constant([l0, l1, l2, l3], dtype=tf.float32)
     all_labels_ids = tf.constant([[0], [1], [2], [3]], dtype=tf.float32)
-    # Forget about masks for now
-    mask = None
 
     # Inside `layer._sample_candidates` random indices will be generated for the
     # candidates. We mock them to have a deterministic output.
@@ -112,14 +110,14 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
     )
     # The first example labels of each batch are in `pos_labels_embed`
     assert np.all(pos_labels_embed.numpy() == np.array([[[l0]], [[l2]], [[l3]]]))
-    # The candidate label embeddings are picked according to the `mock_indices` above. -- ToDo: J: Pick candidates from ALL labels
-    # E.g. a 2 coming from `mock_indices` means that the first positive label (always) of
-    # example 2 (`[l3, l0]`) is picked, i.e. `l3`.
+    # The candidate label embeddings are picked according to the `mock_indices` above.
+    # E.g. a 2 coming from `mock_indices` means that the first positive label (always)
+    # of example 2 (`[l3, l0]`) is picked, i.e. `l3`.
     assert np.all(
         candidate_labels_embed.numpy() == np.array([[[l0, l2]], [[l0, l1]], [[l0, l3]]])
     )
-    # The `pos_neg_labels` contains `1`s wherever the vector in `candidate_labels_embed` of example `i` is actually in the
-    # possible lables of example `i`
+    # The `pos_neg_labels` contains `1`s wherever the vector in `candidate_labels_embed`
+    # of example `i` is actually in the possible lables of example `i`
     assert np.all(
         pos_neg_labels.numpy()
         == np.array(
@@ -175,8 +173,6 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
     # List all the labels and ids in play
     all_labels_embed = tf.constant([l0, l1, l2, l3], dtype=tf.float32)
     all_labels_ids = tf.constant([[0], [1], [2], [3]], dtype=tf.float32)
-    # Forget about masks for now
-    mask = None
 
     # Inside `layer._sample_candidates` random indices will be generated for the
     # candidates. We mock them to have a deterministic output.
@@ -206,14 +202,14 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
     )
     # The first example labels of each batch are in `pos_labels_embed`
     assert np.all(pos_labels_embed.numpy() == np.array([[[l0]], [[l2]], [[l3]]]))
-    # The candidate label embeddings are picked according to the `mock_indices` above. -- ToDo: J: Pick candidates from ALL labels
-    # E.g. a 2 coming from `mock_indices` means that the first positive label (always) of
-    # example 2 (`[l3, l0, _]`) is picked, i.e. `l3`.
+    # The candidate label embeddings are picked according to the `mock_indices` above.
+    # E.g. a 2 coming from `mock_indices` means that the first positive label (always)
+    # of example 2 (`[l3, l0, _]`) is picked, i.e. `l3`.
     assert np.all(
         candidate_labels_embed.numpy() == np.array([[[l0, l2]], [[l0, l1]], [[l3, l1]]])
     )
-    # The `pos_neg_labels` contains `1`s wherever the vector in `candidate_labels_embed` of example `i` is actually in the
-    # possible lables of example `i`
+    # The `pos_neg_labels` contains `1`s wherever the vector in `candidate_labels_embed`
+    # of example `i` is actually in the possible lables of example `i`
     assert np.all(
         pos_neg_labels.numpy()
         == np.array(

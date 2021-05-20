@@ -620,7 +620,7 @@ class CRF(tf.keras.layers.Layer):
 
 class DotProductLoss(tf.keras.layers.Layer):
     """Abstract dot-product loss layer class.
-    
+
     Idea based on StarSpace paper: http://arxiv.org/abs/1709.03856
     """
 
@@ -636,8 +636,9 @@ class DotProductLoss(tf.keras.layers.Layer):
         """Declare instance variables with default values.
 
         Args:
-            num_candidates: Positive integer, the number of incorrect or candidate labels;
-                the algorithm will minimize the similarity of negative labels to the input.
+            num_candidates: Positive integer, the number of incorrect or candidate
+                labels; the algorithm will minimize the similarity of negative labels
+                to the input.
             scale_loss: Boolean, if 'True' scale loss inverse proportionally to
                 the confidence of the correct prediction.
             constrain_similarities: Boolean, if 'True' applies sigmoid on all
@@ -714,19 +715,20 @@ class DotProductLoss(tf.keras.layers.Layer):
         return similarities, confidences
 
     def call(self, *args, **kwargs):
+        """Layer's logic - to be implemented in child class."""
         raise NotImplementedError
 
     def apply_mask_and_scaling(
         self, loss: tf.Tensor, mask: Optional[tf.Tensor]
     ) -> tf.Tensor:
         """Scales the loss and applies the mask if necessary.
-        
+
         Args:
             loss: The loss tensor
             mask: (Optional) A mask to multiply with the loss
-        
+
         Returns:
-            The scaled loss, potentially averaged over the sequence 
+            The scaled loss, potentially averaged over the sequence
             dimension.
         """
         if self.scale_loss:
@@ -816,10 +818,8 @@ class SingleLabelDotProductLoss(DotProductLoss):
 
     @staticmethod
     def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:
-        """Sample negative examples for given indices"""
-
+        """Sample negative examples for given indices."""
         tiled = tf.tile(tf.expand_dims(x, 0), (batch_size, 1, 1))
-
         return tf.gather(tiled, idxs, batch_dims=1)
 
     def _get_bad_mask(
@@ -829,7 +829,6 @@ class SingleLabelDotProductLoss(DotProductLoss):
 
         Checks that input features are different for positive negative samples.
         """
-
         pos_labels = tf.expand_dims(target_labels, axis=-2)
         neg_labels = layers_utils.get_candidate_values(labels, idxs)
 
@@ -841,7 +840,6 @@ class SingleLabelDotProductLoss(DotProductLoss):
         self, embeds: tf.Tensor, labels: tf.Tensor, target_labels: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Get negative examples from given tensor."""
-
         embeds_flat = layers_utils.batch_flatten(embeds)
         labels_flat = layers_utils.batch_flatten(labels)
         target_labels_flat = layers_utils.batch_flatten(target_labels)
@@ -1190,12 +1188,15 @@ class MultiLabelDotProductLoss(DotProductLoss):
         """Calculates loss and accuracy.
 
         Args:
-            batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized trackers)
-            batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents for IntentTED)
+            batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized
+                trackers)
+            batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents
+                for IntentTED)
             batch_label_ids: Batch label indices (e.g. indices of the intents)
             all_labels_embed: Embeddings for all labels in the domain
             all_label_ids: Indices for all labels in the domain
-            mask: Optional sequence mask, which contains `1` for inputs and `0` for padding.
+            mask: Optional sequence mask, which contains `1` for inputs and `0` for
+                padding.
 
         Returns:
             loss: Total loss (based on StarSpace http://arxiv.org/abs/1709.03856)
@@ -1241,10 +1242,12 @@ class MultiLabelDotProductLoss(DotProductLoss):
         tf.Tensor,  # (batch_size, num_candidates)
     ]:
         """Sample candidate examples.
-        
+
         Args:
-            batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized trackers)
-            batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents for IntentTED)
+            batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized
+                trackers)
+            batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents
+                for IntentTED)
             batch_labels_ids: Batch label indices (e.g. indices of the intents)
             all_labels_embed: Embeddings for all labels in the domain
             all_labels_ids: Indices for all labels in the domain
@@ -1252,17 +1255,20 @@ class MultiLabelDotProductLoss(DotProductLoss):
         Returns:
             pos_inputs_embed: Embeddings of the batch inputs
             pos_labels_embed: First example of the embedding of a positive label
-            candidate_labels_embed: More examples of embeddings of labels, some positive some negative
-            pos_neg_labels: Indicator for which candidates are positives and which are negatives
+            candidate_labels_embed: More examples of embeddings of labels, some positive
+                some negative
+            pos_neg_labels: Indicator for which candidates are positives and which are
+                negatives
         """
         pos_inputs_embed = tf.expand_dims(
             batch_inputs_embed, axis=-2, name="expand_pos_input"
         )
 
         # We want to guarantee that we return at least one positive example. All labels
-        # in `batch_labels_embed` are positive examples, but their number can be different
-        # in each example. So we take the first positive one here as our guarantee, and
-        # we may or may not capture more positive examples with the candidate sampling below.
+        # in `batch_labels_embed` are positive examples, but their number can be
+        # different in each example. So we take the first positive one here as our
+        # guarantee, and we may or may not capture more positive examples with the
+        # candidate sampling below.
         pos_labels_embed = tf.expand_dims(
             tf.expand_dims(batch_labels_embed[:, 0, ...], axis=-2),
             axis=1,
@@ -1367,7 +1373,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
         pos_neg_labels: tf.Tensor,  # (batch_size, num_candidates)
     ) -> tf.Tensor:  # ()
         """Calculates the accuracy."""
-
         all_preds = tf.concat(
             [sim_pos, sim_candidates], axis=-1, name="acc_concat_preds"
         )

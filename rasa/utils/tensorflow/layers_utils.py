@@ -5,7 +5,7 @@ from typing import Union
 
 def random_indices(batch_size: Tensor, n: Tensor, n_max: Tensor) -> Tensor:
     """Creates batch_size * n random indices that run from 0 to n_max.
-    
+
     Args:
         batch_size: Number of items in each batch
         n: Number of random indices in each example
@@ -19,10 +19,10 @@ def random_indices(batch_size: Tensor, n: Tensor, n_max: Tensor) -> Tensor:
 
 def batch_flatten(x: Tensor) -> Tensor:
     """Makes a tensor 2D.
-    
+
     Args:
         x: Any tensor with at least 2 dimensions
-        
+
     Returns:
         The reshaped tensor, where all but the last dimension
         are flattened into the first dimension
@@ -34,7 +34,7 @@ def pad_right(
     x: Tensor, target_shape: TensorShape, value: Union[int, float] = 0
 ) -> Tensor:
     """Creates a tensor of shape `target_shape` by padding it with `value` on the right.
-    
+
     Args:
         x: Any tensor
         target_shape: Shape of the padded x; must be at least as large as the
@@ -56,30 +56,30 @@ def get_candidate_values(
     candidate_ids: tf.Tensor,  # (batch_size, num_candidates)
 ) -> tf.Tensor:
     """Gathers candidate values according to IDs.
-        
-        Args:
-            x: Any tensor with at least one dimension
-            candidate_ids: Indicator for which candidates to gather
 
-        Returns:
-            A tensor of shape (batch_size, 1, num_candidates, tf.shape(x)[-1]), where
-            for each batch example, we generate a list of num_candidates vectors, and
-            each candidate is chosen from x according to the candidate id. For example:
+    Args:
+        x: Any tensor with at least one dimension
+        candidate_ids: Indicator for which candidates to gather
 
-            x = [[0 1 2],
-                 [3 4 5],
-                 [6 7 8]]
-            candidate_ids = [[0, 1], [0, 0], [2, 0]]
-            gives
-            [
-                [[0 1 2],
-                 [3 4 5]],
-                [[0 1 2],
-                 [0 1 2]],
-                [[6 7 8],
-                 [0 1 2]]
-            ]
-        """
+    Returns:
+        A tensor of shape (batch_size, 1, num_candidates, tf.shape(x)[-1]), where
+        for each batch example, we generate a list of num_candidates vectors, and
+        each candidate is chosen from x according to the candidate id. For example:
+
+        x = [[0 1 2],
+                [3 4 5],
+                [6 7 8]]
+        candidate_ids = [[0, 1], [0, 0], [2, 0]]
+        gives
+        [
+            [[0 1 2],
+             [3 4 5]],
+            [[0 1 2],
+             [0 1 2]],
+            [[6 7 8],
+             [0 1 2]]
+        ]
+    """
     tiled_x = tf.tile(
         tf.expand_dims(batch_flatten(x), 0), (tf.shape(candidate_ids)[0], 1, 1),
     )
@@ -90,10 +90,11 @@ def get_candidate_values(
 
 def reduce_mean_equal(x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
     """Computes the mean number of matches between x and y.
+
     Args:
         x: Any numeric tensor
         y: Another tensor with same shape and type as x
-    
+
     Returns:
         The mean of "x == y"
     """
