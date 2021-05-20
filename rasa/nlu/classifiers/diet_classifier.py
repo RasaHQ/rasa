@@ -715,7 +715,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._add_label_features(
             model_data, training_data, label_attribute, label_id_dict, training
         )
-        print(model_data.data['text'].keys())
         self._add_text_feature_sizes(training_data[0])
         # model_data.first_data_example()
         # make sure all keys are in the same order during training and prediction
@@ -1305,7 +1304,8 @@ class DIET(TransformerRasaModel):
         additional_sizes = [new_size-old_size for new_size, old_size in zip(new_sizes, old_sizes)]
         # initialize weights according to those sizes
         std, mean = np.std(kernel), np.mean(kernel)
-        additional_weights = [np.random.normal(mean, std, size=(num_rows, units)).astype(np.float32) for num_rows in additional_sizes]
+        additional_weights = [np.random.normal(mean, std, size=(num_rows, units)).astype(np.float32)
+                              for num_rows in additional_sizes]
         # merge existing weight splits with additional ones
         merged_weights = [np.vstack((existing, new)) for existing, new in zip(kernel_splits, additional_weights)]
         # stack each split to form a new weight tensors
@@ -1314,7 +1314,6 @@ class DIET(TransformerRasaModel):
             new_weights = np.vstack((new_weights, weights))
         kernel_init = tf.constant_initializer(new_weights)
         bias_init = tf.constant_initializer(bias)
-        units = bias.shape[0]
         new_layer = layers.DenseForSparse(
             reg_lambda=self.config[REGULARIZATION_CONSTANT],
             units=units,
