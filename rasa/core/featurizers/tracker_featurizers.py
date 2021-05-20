@@ -161,7 +161,7 @@ class TrackerFeaturizer:
         """
         rasa.shared.utils.io.raise_deprecation_warning(
             "'training_states_actions_and_entities' is being deprecated in favor of "
-            "'training_states_labels_and_labels'."
+            "'training_states_labels_and_entities'."
         )
         raise NotImplementedError(
             f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
