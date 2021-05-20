@@ -1263,7 +1263,6 @@ class DIET(TransformerRasaModel):
             ]._tf_layers["sparse_dense.sequence"]._tf_layers[
                 "sparse_to_dense"
             ] = new_seq_layer
-            print(new_seq_layer.kernel.shape)
         if sum(old_sentence_size) < sum(new_sentence_size):
             new_sent_layer = self._update_dense_layer(my_layers["sentence"], old_sentence_size, new_sentence_size)
             self._tf_layers["sequence_layer.text"]._tf_layers[
@@ -1271,7 +1270,6 @@ class DIET(TransformerRasaModel):
             ]._tf_layers["sparse_dense.sentence"]._tf_layers[
                 "sparse_to_dense"
             ] = new_sent_layer
-            print(new_sent_layer.kernel.shape)
 
         self.compile(optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]))
         label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None
@@ -1306,7 +1304,8 @@ class DIET(TransformerRasaModel):
         # calculate how many features are added to each split
         additional_sizes = [new_size-old_size for new_size, old_size in zip(new_sizes, old_sizes)]
         # initialize weights according to those sizes
-        additional_weights = [np.random.random((num_rows, units)).astype(np.float32) for num_rows in additional_sizes]
+        std, mean = np.std(kernel), np.mean(kernel)
+        additional_weights = [np.random.normal(mean, std, size=(num_rows, units)).astype(np.float32) for num_rows in additional_sizes]
         # merge existing weight splits with additional ones
         merged_weights = [np.vstack((existing, new)) for existing, new in zip(kernel_splits, additional_weights)]
         # stack each split to form a new weight tensors
