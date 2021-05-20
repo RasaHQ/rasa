@@ -638,34 +638,19 @@ class DotProductLoss(tf.keras.layers.Layer):
         Args:
             num_candidates: Positive integer, the number of incorrect or candidate labels;
                 the algorithm will minimize the similarity of negative labels to the input.
-            loss_type: The type of the loss function, either 'cross_entropy' or
-                'margin'.
-            mu_pos: Float, indicates how similar the algorithm should
-                try to make embedding vectors for correct labels;
-                should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-            mu_neg: Float, maximum negative similarity for incorrect labels,
-                should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-            use_max_sim_neg: Boolean, if 'True' the algorithm only minimizes
-                maximum similarity over incorrect intent labels,
-                used only if 'loss_type' is set to 'margin'.
-            neg_lambda: Float, the scale of how important is to minimize
-                the maximum similarity between embeddings of different labels,
-                used only if 'loss_type' is set to 'margin'.
             scale_loss: Boolean, if 'True' scale loss inverse proportionally to
                 the confidence of the correct prediction.
-            similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
-            name: Optional name of the layer.
-            same_sampling: Boolean, if 'True' sample same negative labels
-                for the whole batch.
             constrain_similarities: Boolean, if 'True' applies sigmoid on all
                 similarity terms and adds to the loss function to
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
             model_confidence: Model confidence to be returned during inference.
                 Possible values - 'softmax' and 'linear_norm'.
+            similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
+            name: Optional name of the layer.
 
         Raises:
-            LayerConfigException: When `similarity_type` is not one of 'cosine' or
+            TFLayerConfigException: When `similarity_type` is not one of 'cosine' or
                 'inner'.
         """
         super().__init__(name=name)
@@ -730,6 +715,35 @@ class DotProductLoss(tf.keras.layers.Layer):
 
     def call(self, *args, **kwargs):
         raise NotImplementedError
+
+    def apply_mask_and_scaling(
+        self, loss: tf.Tensor, mask: Optional[tf.Tensor]
+    ) -> tf.Tensor:
+        """Scales the loss and applies the mask if necessary.
+        
+        Args:
+            loss: The loss tensor
+            mask: (Optional) A mask to multiply with the loss
+        
+        Returns:
+            The scaled loss, potentially averaged over the sequence 
+            dimension.
+        """
+        if self.scale_loss:
+            # in case of cross entropy log_likelihood = -loss
+            loss *= _scale_loss(-loss)
+
+        if mask is not None:
+            loss *= mask
+
+        if len(loss.shape) == 2:
+            # average over the sequence
+            if mask is not None:
+                loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
+            else:
+                loss = tf.reduce_mean(loss, axis=-1)
+
+        return loss
 
 
 class SingleLabelDotProductLoss(DotProductLoss):
@@ -801,9 +815,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
         self.same_sampling = same_sampling
 
     @staticmethod
-    def _sample_idxs(
-        batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor
-    ) -> tf.Tensor:  # ToDo: abstract this together with _get_candidate_values
+    def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:
         """Sample negative examples for given indices"""
 
         tiled = tf.tile(tf.expand_dims(x, 0), (batch_size, 1, 1))
@@ -819,7 +831,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
         """
 
         pos_labels = tf.expand_dims(target_labels, axis=-2)
-        neg_labels = self._sample_idxs(tf.shape(target_labels)[0], labels, idxs)
+        neg_labels = layers_utils.get_candidate_values(labels, idxs)
 
         return tf.cast(
             tf.reduce_all(tf.equal(neg_labels, pos_labels), axis=-1), pos_labels.dtype
@@ -841,7 +853,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
             target_size, self.num_neg, total_candidates
         )
 
-        neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
+        neg_embeds = layers_utils.get_candidate_values(embeds_flat, neg_ids)
         bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
 
         # check if inputs have sequence dimension
@@ -925,13 +937,9 @@ class SingleLabelDotProductLoss(DotProductLoss):
     @staticmethod
     def _calc_accuracy(sim_pos: tf.Tensor, sim_neg: tf.Tensor) -> tf.Tensor:
         """Calculate accuracy."""
-
         max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], axis=-1), axis=-1)
-        return tf.reduce_mean(
-            tf.cast(
-                tf.math.equal(max_all_sim, tf.squeeze(sim_pos, axis=-1)), tf.float32
-            )
-        )
+        sim_pos = tf.squeeze(sim_pos, axis=-1)
+        return layers_utils.reduce_mean_equal(max_all_sim, sim_pos)
 
     def _loss_margin(
         self,
@@ -1005,19 +1013,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
                 sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li
             )
 
-        if self.scale_loss:
-            # in case of cross entropy log_likelihood = -loss
-            loss *= _scale_loss(-loss)
-
-        if mask is not None:
-            loss *= mask
-
-        if len(loss.shape) == 2:
-            # average over the sequence
-            if mask is not None:
-                loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
-            else:
-                loss = tf.reduce_mean(loss, axis=-1)
+        loss = self.apply_mask_and_scaling(loss, mask)
 
         # average the loss over the batch
         return tf.reduce_mean(loss)
@@ -1274,22 +1270,29 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         # Pick random examples from the batch
-        candidate_ids = self._get_candidate_indices(
+        candidate_ids = layers_utils.random_indices(
             batch_size=tf.shape(batch_inputs_embed)[0],
-            total_candidates=tf.shape(all_labels_embed)[0],
+            n=self.num_neg,
+            n_max=tf.shape(all_labels_embed)[0],
         )
 
         # Get the label embeddings and ids corresponding to candidate indices
-        candidate_labels_embed = self._get_candidate_values(
+        candidate_labels_embed = layers_utils.get_candidate_values(
             all_labels_embed, candidate_ids
         )
-        candidate_labels_ids = self._get_candidate_values(all_labels_ids, candidate_ids)
+        candidate_labels_embed = tf.expand_dims(candidate_labels_embed, axis=1)
+        candidate_labels_ids = layers_utils.get_candidate_values(
+            all_labels_ids, candidate_ids
+        )
+        candidate_labels_ids = tf.expand_dims(candidate_labels_ids, axis=1)
 
         # Determine how many distinct labels exist (highest label index)
         max_label_id = tf.cast(tf.math.reduce_max(all_labels_ids), dtype=tf.int32)
 
         # Convert the positive label ids to their one_hot representation.
-        # Note: -1 indices yield a zeros-only vector
+        # Note: -1 indices yield a zeros-only vector. We use -1 as a padding token,
+        # as the number of positive labels in each example can differ. The padding is
+        # added in the TrackerFeaturizer.
         batch_labels_one_hot = tf.one_hot(
             tf.cast(tf.squeeze(batch_labels_ids, axis=-1), tf.int32),
             max_label_id + 1,
@@ -1298,10 +1301,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         # Collapse the extra dimension and convert to a multi-hot representation
         # by aggregating all ones in the one-hot representation.
-        # Here tf.reduce_any is important and tf.reduce_sum
-        # cannot be used. Reason being that due to padding in label_ids,
-        # there can be more than one 1's at the 0'th index of the last dimension.
-        # Otherwise the loss function will be highly unstable.
+        # We use tf.reduce_any instead of tf.reduce_sum because several examples can
+        # have the same postivie label.
         batch_labels_multi_hot = tf.cast(
             tf.math.reduce_any(tf.cast(batch_labels_one_hot, dtype=tf.bool), axis=-2),
             tf.float32,
@@ -1327,61 +1328,6 @@ class MultiLabelDotProductLoss(DotProductLoss):
             candidate_labels_embed,
             pos_neg_labels,
         )
-
-    def _get_candidate_indices(
-        self, batch_size: tf.Tensor, total_candidates: tf.Tensor
-    ) -> tf.Tensor:
-        """Returns batch of random candidate indices
-        
-        Args:
-            batch_size: Size of zero'th dimension
-            total_candidates: Size of first dimension
-
-        Returns:
-            tf.int32 tensor of shape (target_size, total_candidates) with values 
-            in [0, self.num_neg).
-        """
-        return layers_utils.random_indices(batch_size, self.num_neg, total_candidates)
-
-    @staticmethod
-    def _get_candidate_values(
-        x: tf.Tensor,  # (batch_size, ...)
-        candidate_ids: tf.Tensor,  # (batch_size, num_candidates)
-    ) -> tf.Tensor:
-        """Gathers candidate values according to IDs.
-        
-        Args:
-            x: Any tensor with at least one dimension
-            candidate_ids: Indicator for which candidates to gather
-
-        Returns:
-            A tensor of shape (batch_size, 1, num_candidates, tf.shape(x)[-1]), where
-            for each batch example, we generate a list of num_candidates vectors, and
-            each candidate is chosen from x according to the candidate id. For example:
-
-            x = [[0 1 2],
-                 [3 4 5],
-                 [6 7 8]]
-            candidate_ids = [[0, 1], [0, 0], [2, 0]]
-            gives
-            [
-                [[0 1 2],
-                 [3 4 5]],
-                [[0 1 2],
-                 [0 1 2]],
-                [[6 7 8],
-                 [0 1 2]]
-            ]
-            with one dimension added by tf.expand_dims(candidate_values, axis=1).
-        """
-        tiled_x = tf.tile(
-            tf.expand_dims(layers_utils.batch_flatten(x), 0),
-            (tf.shape(candidate_ids)[0], 1, 1),
-        )
-        candidate_values = tf.gather(tiled_x, candidate_ids, batch_dims=1)
-        candidate_values = tf.expand_dims(candidate_values, axis=1)
-
-        return candidate_values  # (batch_size, 1, num_candidates, tf.shape(x)[-1])
 
     def _loss_sigmoid(
         self,
@@ -1409,19 +1355,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         # (featurized tracker) corresponds to more than one label (intent).
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label_ids, logits=logits)
 
-        if self.scale_loss:
-            # In case of cross entropy log_likelihood = -loss
-            loss *= _scale_loss(-loss)
-
-        if mask is not None:
-            loss *= mask
-
-        if len(loss.shape) == 2:
-            # Average over the sequence
-            if mask is not None:
-                loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
-            else:
-                loss = tf.reduce_mean(loss, axis=-1)
+        loss = self.apply_mask_and_scaling(loss, mask)
 
         # Average the loss over the batch
         return tf.reduce_mean(loss)
@@ -1445,9 +1379,4 @@ class MultiLabelDotProductLoss(DotProductLoss):
             axis=-1,
             name="acc_concat_gt",
         )
-
-        accuracy = tf.reduce_mean(
-            tf.cast(tf.math.equal(all_pred_labels, complete_gt), tf.float32)
-        )
-
-        return accuracy
+        return layers_utils.reduce_mean_equal(all_pred_labels, complete_gt)

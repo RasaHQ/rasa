@@ -30,3 +30,23 @@ def test_pad_right():
             [0, 0, 0, 0, 0, 0, 0],
         ]
     )
+
+
+def test_get_candidate_values():
+    x = tf.constant([[0, 1, 2], [3, 4, 5], [6, 7, 8]], dtype=tf.float32)
+    candidate_ids = tf.constant([[0, 1], [0, 0], [2, 0]])
+    expected_result = [
+        [[0, 1, 2], [3, 4, 5]],
+        [[0, 1, 2], [0, 1, 2]],
+        [[6, 7, 8], [0, 1, 2]],
+    ]
+    actual_result = layers_utils.get_candidate_values(x, candidate_ids)
+    assert np.all(expected_result == actual_result)
+
+
+@pytest.mark.parametrize(
+    "x, y, expected_output",
+    [([1, 2, 3], [2, 1, 3], 1 / 3), ([[1, 2], [1, 2]], [[0, 0], [1, 2]], 0.5)],
+)
+def test_reduce_mean_equal(x, y, expected_output):
+    assert expected_output == layers_utils.reduce_mean_equal(x, y)

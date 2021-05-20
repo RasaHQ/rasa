@@ -2,7 +2,11 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 import numpy as np
 import tensorflow as tf
-from rasa.utils.tensorflow.layers import DotProductLoss, MultiLabelDotProductLoss, RandomlyConnectedDense
+from rasa.utils.tensorflow.layers import (
+    DotProductLoss,
+    MultiLabelDotProductLoss,
+    RandomlyConnectedDense,
+)
 from rasa.utils.tensorflow.constants import INNER, CROSS_ENTROPY, SOFTMAX
 import rasa.utils.tensorflow.layers_utils as layers_utils
 
@@ -45,32 +49,6 @@ def test_multi_label_dot_product_loss_call_shapes():
 
     assert len(tf.shape(loss)) == 0
     assert len(tf.shape(accuracy)) == 0
-
-
-def test_multi_label_dot_product_loss__get_candidate_indices_shape():
-    batch_size = 3
-    num_candidates = 4
-    total_candidates = 5
-    layer = MultiLabelDotProductLoss(
-        num_candidates, scale_loss=False, similarity_type=INNER
-    )
-    candidate_ids = layer._get_candidate_indices(batch_size, total_candidates)
-
-    assert np.all(tf.shape(candidate_ids).numpy() == [batch_size, num_candidates])
-
-
-def test_multi_label_dot_product_loss__get_candidate_values():
-    x = tf.reshape(tf.range(3 * 3), [3, 3])
-    candidate_ids = tf.constant([[0, 1], [0, 0], [2, 0]])
-    candidate_values = MultiLabelDotProductLoss._get_candidate_values(
-        x, candidate_ids
-    ).numpy()
-    expected_candidate_values = np.array(
-        [[[0, 1, 2], [3, 4, 5]], [[0, 1, 2], [0, 1, 2]], [[6, 7, 8], [0, 1, 2]]]
-    )
-    expected_candidate_values = np.expand_dims(expected_candidate_values, axis=1)
-
-    assert np.all(candidate_values == expected_candidate_values)
 
 
 def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of_labels(
