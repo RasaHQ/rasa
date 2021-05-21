@@ -4,10 +4,14 @@ import numpy as np
 import rasa.utils.tensorflow.layers_utils as layers_utils
 
 
-def test_random_indices():
-    indices = layers_utils.random_indices(10, 4, 100)
-    assert np.all(tf.shape(indices).numpy() == [10, 4])
-    assert np.max(indices.numpy()) <= 100
+@pytest.mark.parametrize(
+    "batch_size, n, n_max", [(10, 4, 100), (10, 4, 0)],
+)
+def test_random_indices(batch_size, n, n_max):
+    indices = layers_utils.random_indices(batch_size, n, n_max)
+    assert np.all(tf.shape(indices).numpy() == [batch_size, n])
+    assert np.max(indices.numpy()) <= n_max
+    assert np.max(indices.numpy()) >= 0
 
 
 def test_batch_flatten():
@@ -16,20 +20,38 @@ def test_batch_flatten():
     assert np.all(tf.shape(x_flat).numpy() == [5 * 6 * 7 * 8, 9])
 
 
-def test_pad_right():
+@pytest.mark.parametrize(
+    "shape, padding, expected_result",
+    [
+        (
+            [5, 7],
+            0,
+            [
+                [1, 1, 0, 0, 0, 0, 0],
+                [1, 1, 0, 0, 0, 0, 0],
+                [1, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0],
+            ],
+        ),
+        (
+            [5, 7],
+            42,
+            [
+                [1, 1, 42, 42, 42, 42, 42],
+                [1, 1, 42, 42, 42, 42, 42],
+                [1, 1, 42, 42, 42, 42, 42],
+                [42, 42, 42, 42, 42, 42, 42],
+                [42, 42, 42, 42, 42, 42, 42],
+            ],
+        ),
+    ],
+)
+def test_pad_right(shape, padding, expected_result):
     x = tf.ones([3, 2])
-    x_padded = layers_utils.pad_right(x, [5, 7])
-    assert np.all(tf.shape(x_padded).numpy() == [5, 7])
-    assert np.all(
-        x_padded.numpy()
-        == [
-            [1, 1, 0, 0, 0, 0, 0],
-            [1, 1, 0, 0, 0, 0, 0],
-            [1, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0],
-        ]
-    )
+    x_padded = layers_utils.pad_right(x, shape, value=padding)
+    assert np.all(tf.shape(x_padded).numpy() == shape)
+    assert np.all(x_padded.numpy() == expected_result)
 
 
 def test_get_candidate_values():

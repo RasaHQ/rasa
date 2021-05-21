@@ -14,11 +14,15 @@ def random_indices(batch_size: Tensor, n: Tensor, n_max: Tensor) -> Tensor:
     Returns:
         A uniformly distributed integer tensor of indices
     """
-    return tf.random.uniform(shape=(batch_size, n), maxval=n_max, dtype=tf.int32)
+    return (
+        tf.random.uniform(shape=(batch_size, n), maxval=n_max, dtype=tf.int32)
+        if n_max > 0
+        else tf.zeros((batch_size, n))
+    )
 
 
 def batch_flatten(x: Tensor) -> Tensor:
-    """Makes a tensor 2D.
+    """Flattens all but last dimension of `x` so it becomes 2D.
 
     Args:
         x: Any tensor with at least 2 dimensions
@@ -41,7 +45,7 @@ def pad_right(
             shape of x in all dimensions
 
     Returns:
-        A tensor like x, but padded with zeros
+        A tensor like x, but padded with `value`
     """
     current_shape = tf.shape(x)
     right_padding = tf.expand_dims(
