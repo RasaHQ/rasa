@@ -86,11 +86,12 @@ class TrackerFeaturizer:
         )
 
     @staticmethod
-    def _remove_action_unlikely_intent(states):
+    def _remove_action_unlikely_intent(states: List[State]) -> List[State]:
         """Remove `action_unlikely_intent` from tracker state history.
 
         Args:
-            states: Tracker converted to states
+            states: A list of states produced by a `DialogueStateTracker`
+                instance.
 
         Returns:
             Filtered states with last `action_listen` removed.
@@ -105,7 +106,18 @@ class TrackerFeaturizer:
         self,
         trackers_as_states: List[List[State]],
         interpreter: NaturalLanguageInterpreter,
-    ) -> List[List[Dict[Text, List["Features"]]]]:
+    ) -> List[List[Dict[Text, List[Features]]]]:
+        """Featurizes state histories with `state_featurizer`.
+
+        Args:
+            trackers_as_states: List of lists of `State` instances produced by a
+                `DialogueStateTracker` instance.
+            interpreter: A `NaturalLanguageInterpreter` for the `state_featurizer`
+                to use.
+
+        Returns:
+            Trackers as lists of state features.
+        """
         return [
             [
                 self.state_featurizer.encode_state(state, interpreter)
@@ -118,6 +130,14 @@ class TrackerFeaturizer:
     def _convert_labels_to_ids(
         trackers_as_actions: List[List[Text]], domain: Domain
     ) -> np.ndarray:
+        """Convert list of action label strings to list of action label `int` ids.
+
+        Args:
+            trackers_as_actions: A list of tracker labels.
+
+        Returns:
+            Trackers as lists of label ids.
+        """
         # store labels in numpy arrays so that it corresponds to np arrays of input
         # features
         return np.array(
@@ -134,8 +154,18 @@ class TrackerFeaturizer:
         trackers_as_entities: List[List[Dict[Text, Any]]],
         interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
-    ) -> List[List[Dict[Text, List["Features"]]]]:
+    ) -> List[List[Dict[Text, List[Features]]]]:
+        """Featurizes extracted entities with `state_featurizer`.
 
+        Args:
+            trackers_as_entities: List of lists of entity dictionaries.
+            interpreter: A `NaturalLanguageInterpreter` for the `state_featurizer`
+                to use.
+            bilou_tagging: When `True` use the BILOU tagging scheme.
+
+        Returns:
+            Trackers as lists of entity features.
+        """
         return [
             [
                 self.state_featurizer.encode_entities(
@@ -148,6 +178,15 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _entity_data(event: UserUttered) -> Dict[Text, Any]:
+        """Extract entities from `UserUttered` event if not using intents.
+
+        Args:
+            event: The `UserUttered` event from which to extract entities.
+
+        Returns:
+            A dictionary with intent text and entities if no intent is present
+                otherwise and empty dictionary.
+        """
         # train stories support both text and intent,
         # but if intent is present, the text is ignored
         if event.text and not event.intent_name:
@@ -158,6 +197,15 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _remove_user_text_if_intent(trackers_as_states: List[List[State]]) -> None:
+        """Delete user text from state dictionaries if intent is present.
+
+        Args:
+            trackers_as_states: List of lists of `State` instances produced by a
+                `DialogueStateTracker` instance.
+
+        Returns:
+            Returns None, `trackers_as_states` is modified in place.
+        """
         for states in trackers_as_states:
             for state in states:
                 # remove text features to only use intent
@@ -204,7 +252,6 @@ class TrackerFeaturizer:
         Returns:
             A tuple of list of states and list of actions.
         """
-
         rasa.shared.utils.io.raise_deprecation_warning(
             "'training_states_and_actions' is being deprecated in favor of "
             "'training_states_and_labels'."
@@ -266,9 +313,9 @@ class TrackerFeaturizer:
         interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
     ) -> Tuple[
-        List[List[Dict[Text, List["Features"]]]],
+        List[List[Dict[Text, List[Features]]]],
         np.ndarray,
-        List[List[Dict[Text, List["Features"]]]],
+        List[List[Dict[Text, List[Features]]]],
     ]:
         """Featurize the training trackers.
 
@@ -279,6 +326,8 @@ class TrackerFeaturizer:
             bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
+            A tuple of a list of state features, a list of labels, and a list of entity
+              data. The elements of each list respectively are:
             - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
               ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
               turns in all training trackers
@@ -445,7 +494,6 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     """Creates full dialogue training data for time distributed architectures.
 
     Creates training data that uses each time output for prediction.
-    Training data is padded up to the length of the longest dialogue with -1.
     """
 
     def training_states_labels_and_entities(
@@ -462,7 +510,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             omit_unset_slots: If `True` do not include the initial values of slots.
 
         Returns:
-            A tuple of list of states, list of actions and list of entity data.
+            A tuple of list of states, list of action labels and list of entity data.
         """
         trackers_as_states = []
         trackers_as_actions = []
@@ -564,10 +612,11 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
 
 
 class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
-    """Slices the tracker history into max_history batches.
+    """Truncates the tracker history into `max_history` long sequences.
 
-    Creates training data that uses last output for prediction.
-    Training data is padded up to the max_history with -1.
+    Creates training data from trackers where actions are the output prediction
+    labels. Tracker state sequences which represent policy input are truncated
+    to not excede `max_history` states.
     """
 
     LABEL_NAME = "action"
@@ -578,7 +627,13 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         max_history: Optional[int] = None,
         remove_duplicates: bool = True,
     ) -> None:
+        """Initialize the tracker featurizer.
 
+        Args:
+            state_featurizer: The state featurizer used to encode the states.
+            max_history: The maximum length of an extracted state sequence.
+            remove_duplicates: Keep only unique training state sequence/label pairs.
+        """
         super().__init__(state_featurizer)
         self.max_history = max_history
         self.remove_duplicates = remove_duplicates
@@ -588,9 +643,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         states: List[State], slice_length: Optional[int]
     ) -> List[State]:
         """Slice states from the trackers history.
-
-        If the slice is at the array borders, padding will be added to ensure
-        the slice length.
 
         Args:
             states: The states
@@ -610,8 +662,18 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         states: List[State],
         labels: Optional[List[Text]] = None,
     ) -> int:
-        """Hash states (and optionally label) for efficient deduplication.
+        """Hash states (and optionally label).
+
+        Produces an integer hash of the tracker states (and optionally the label).
         If labels is None, labels is not hashed.
+
+        Args:
+            tracker: The `DialogueStateTracker` that produced `states`.
+            states: A list of tracker `State` instances.
+            labels: A list of label strings associated with this state sequence.
+
+        Returns:
+            The hash of the states and (optionally) the label.
         """
         frozen_states = tuple(
             s if s is None else tracker.freeze_current_state(s) for s in states
@@ -686,11 +748,19 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         domain: Domain,
         omit_unset_slots: bool = False,
     ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
-        """Create an iterator over the training examples that will be created
+        """Create an iterator over training examples from a tracker.
+
+        Create an iterator over the training examples that will be created
         from the provided tracker.
 
+        Args:
+            trackers: The tracker from which to extract training examples.
+            domain: The domain of the training data.
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
         Returns:
-            An iterator over state, labels, entity tag tuples
+            An iterator over tuples of list of states, list of labels and list of
+                entity data.
         """
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
@@ -731,7 +801,20 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         label: List[Text],
         hashed_examples: Set[int],
     ) -> bool:
-        """Returns True if training example is a duplicate."""
+        """Returns True if training example is a duplicate.
+
+        If `states` and `label` have not been seen before, their hash is added to
+        `hashed_examples`.
+
+        Args:
+            tracker: The `DialogueStateTracker` that produced `states`.
+            states: A list of tracker `State` instances.
+            labels: A list of label strings associated with this state sequence.
+            hashed_examples: The set of previously seen training example hashes.
+
+        Returns:
+            True if hash of `states` and `label` is in `hased_examples`.
+        """
         if self.remove_duplicates:
             hashed = self._hash_example(tracker, states, label)
             if hashed in hashed_examples:
@@ -783,6 +866,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
 
 class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
+    """Truncates the tracker history into `max_history` long sequences.
+
+    Creates training data from trackers where intents are the output prediction
+    labels. Tracker state sequences which represent policy input are truncated
+    to not excede `max_history` states.
+    """
 
     LABEL_NAME = "intent"
 
@@ -790,11 +879,17 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     def _convert_labels_to_ids(
         cls, trackers_as_intents: List[List[Text]], domain: Domain
     ) -> np.ndarray:
-        """Convert a list of labels to an np.ndarray of label ids.
-        The number of rows is equal to `len(trackers_as_intents)`.
-        The number of columns is equal to the maximum number of labels
-        that any Labels item has. Rows are padded with -1 if not all Labels
-        items have the same number of labels.
+        """Convert a list of labels to a 2d numpy array of label ids.
+
+        The number of rows is equal to `len(trackers_as_intents)`. The number of
+        columns is equal to the maximum number of positive labels that any training
+        example is associated with. Rows are padded with `LABEL_PAD_ID` if not all rows
+        the same number of labels.
+
+        Args:
+            trackers_as_intents: A list of positive example label ids
+                associated with each training example.
+            domain: The domain of the training data.
 
         Returns:
             A 2d np.ndarray of label ids.
@@ -810,6 +905,16 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
     @staticmethod
     def _pad_label_ids(label_ids: List[List[int]]) -> List[List[int]]:
+        """Pads list of lists of labels so that all inner lists are of the same length.
+
+        The pad value LABEL_PAD_ID is set in `rasa.utils.tensorflow.constants`.
+
+        Args:
+            label_ids: A list of lists of label ids of varying lengths
+
+        Returns:
+            A list of lists of label ids padded to be of uniform length.
+        """
         # Add `LABEL_PAD_ID` padding to labels array so that
         # each example has equal number of labels
         multiple_labels_count = [len(a) for a in label_ids]
@@ -910,11 +1015,19 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         domain: Domain,
         omit_unset_slots: bool = False,
     ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
-        """Create an iterator over the training examples that will be created
+        """Create an iterator over training examples from a tracker.
+
+        Create an iterator over the training examples that will be created
         from the provided tracker.
 
+        Args:
+            trackers: The tracker from which to extract training examples.
+            domain: The domain of the training data.
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
         Returns:
-            An iterator over state, labels, entity tag tuples
+            An iterator over tuples of list of states, list of labels and list of
+                entity data.
         """
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
@@ -940,7 +1053,9 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 yield sliced_states, label, entities
 
     @staticmethod
-    def _cleanup_last_user_state_with_action_listen(trackers_as_states):
+    def _cleanup_last_user_state_with_action_listen(
+        trackers_as_states: List[List[State]],
+    ) -> List[List[State]]:
         """Clean up the last user state where previous action is `action_listen`.
 
         Args:

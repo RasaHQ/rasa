@@ -397,6 +397,8 @@ class SingleStateFeaturizer:
 
 
 class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
+    """A SingleStateFeaturizer for use with polcies that predict intent labels."""
+
     def _encode_intent(
         self, intent: Text, interpreter: NaturalLanguageInterpreter
     ) -> Dict[Text, List["Features"]]:
