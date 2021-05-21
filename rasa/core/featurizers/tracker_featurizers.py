@@ -925,9 +925,9 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         hashed_examples = set()
         # Mapping of example state hash to list of positive labels associated with
         # the state. Note that each individual 'label' instance is a list of ints.
-        state_hash_to_label_list_instances: defaultdict[List[List[int]]] = defaultdict(
-            list
-        )
+        state_hash_to_label_list_instances: defaultdict[
+            int, List[List[int]]
+        ] = defaultdict(list)
 
         logger.debug(
             "Creating states and {} label examples from "
