@@ -16,8 +16,10 @@ from rasa.shared.nlu.interpreter import RegexInterpreter
 from tests.core.utilities import tracker_from_dialogue_file, user_uttered
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import INTENT, ACTION_NAME, FEATURE_TYPE_SENTENCE
+from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.utils.tensorflow.constants import LABEL_PAD_ID
 
 
 def test_fail_to_load_non_existent_featurizer():
@@ -67,7 +69,7 @@ def test_convert_intent_labels_to_ids(domain: Domain):
         trackers_as_intents, domain
     )
 
-    expected_labels = np.array([[7, 8, 9, 10], [5, 6, 0, -1]])
+    expected_labels = np.array([[7, 8, 9, 10], [5, 6, 0, LABEL_PAD_ID]])
     assert expected_labels.size == actual_labels.size
     assert expected_labels.shape == actual_labels.shape
     assert np.all(expected_labels == actual_labels)
@@ -160,19 +162,19 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
-            {"action_name": [moodbot_features["actions"]["utter_did_that_help"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
             {
-                "intent": [moodbot_features["intents"]["deny"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["deny"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
         ]
     ]
@@ -210,21 +212,21 @@ def test_create_state_features_with_full_dialogue_tracker_featurizer(
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
-            {"action_name": [moodbot_features["actions"]["utter_did_that_help"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
             {
-                "intent": [moodbot_features["intents"]["deny"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["deny"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_goodbye"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_goodbye"]]},
         ]
     ]
 
@@ -248,32 +250,32 @@ def test_prediction_states_with_full_dialogue_tracker_featurizer(
         [
             {},
             {
-                "user": {"intent": "greet"},
-                "prev_action": {"action_name": "action_listen"},
+                "user": {INTENT: "greet"},
+                "prev_action": {ACTION_NAME: ACTION_LISTEN_NAME},
             },
             {
-                "user": {"intent": "greet"},
-                "prev_action": {"action_name": "utter_greet"},
+                "user": {INTENT: "greet"},
+                "prev_action": {ACTION_NAME: "utter_greet"},
             },
             {
-                "user": {"intent": "mood_unhappy"},
-                "prev_action": {"action_name": "action_listen"},
+                "user": {INTENT: "mood_unhappy"},
+                "prev_action": {ACTION_NAME: ACTION_LISTEN_NAME},
             },
             {
-                "user": {"intent": "mood_unhappy"},
-                "prev_action": {"action_name": "utter_cheer_up"},
+                "user": {INTENT: "mood_unhappy"},
+                "prev_action": {ACTION_NAME: "utter_cheer_up"},
             },
             {
-                "user": {"intent": "mood_unhappy"},
-                "prev_action": {"action_name": "utter_did_that_help"},
+                "user": {INTENT: "mood_unhappy"},
+                "prev_action": {ACTION_NAME: "utter_did_that_help"},
             },
             {
-                "user": {"intent": "deny"},
-                "prev_action": {"action_name": "action_listen"},
+                "user": {INTENT: "deny"},
+                "prev_action": {ACTION_NAME: ACTION_LISTEN_NAME},
             },
             {
-                "user": {"intent": "deny"},
-                "prev_action": {"action_name": "utter_goodbye"},
+                "user": {INTENT: "deny"},
+                "prev_action": {ACTION_NAME: "utter_goodbye"},
             },
         ]
     ]
@@ -306,73 +308,73 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
-            {"action_name": [moodbot_features["actions"]["utter_did_that_help"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
-            {"action_name": [moodbot_features["actions"]["utter_did_that_help"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
             {
-                "intent": [moodbot_features["intents"]["deny"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["deny"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
         ],
     ]
@@ -395,8 +397,15 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(
     assert not any([any(turn_tags) for turn_tags in entity_tags])
 
 
-@pytest.mark.parametrize("remove_duplicates", [True, False])
-@pytest.mark.parametrize("max_history", [None, 2])
+@pytest.mark.parametrize(
+    "remove_duplicates,max_history", 
+    [
+        [True, None],
+        [True, 2],
+        [False, None],
+        [False, 2],
+    ]
+)
 def test_deduplicate_featurize_trackers_with_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
     moodbot_domain: Domain,
@@ -419,73 +428,73 @@ def test_deduplicate_featurize_trackers_with_max_history_tracker_featurizer(
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
-            {"action_name": [moodbot_features["actions"]["utter_did_that_help"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
-            {"action_name": [moodbot_features["actions"]["utter_did_that_help"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
             {
-                "intent": [moodbot_features["intents"]["deny"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["deny"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
         ],
     ]
@@ -533,21 +542,21 @@ def test_create_state_features_with_max_history_tracker_featurizer(
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
-            {"action_name": [moodbot_features["actions"]["utter_did_that_help"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
             {
-                "intent": [moodbot_features["intents"]["deny"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["deny"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_goodbye"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_goodbye"]]},
         ]
     ]
     if max_history is not None:
@@ -579,32 +588,32 @@ def test_prediction_states_with_max_history_tracker_featurizer(
         [
             {},
             {
-                "user": {"intent": "greet"},
-                "prev_action": {"action_name": "action_listen"},
+                "user": {INTENT: "greet"},
+                "prev_action": {ACTION_NAME: ACTION_LISTEN_NAME},
             },
             {
-                "user": {"intent": "greet"},
-                "prev_action": {"action_name": "utter_greet"},
+                "user": {INTENT: "greet"},
+                "prev_action": {ACTION_NAME: "utter_greet"},
             },
             {
-                "user": {"intent": "mood_unhappy"},
-                "prev_action": {"action_name": "action_listen"},
+                "user": {INTENT: "mood_unhappy"},
+                "prev_action": {ACTION_NAME: ACTION_LISTEN_NAME},
             },
             {
-                "user": {"intent": "mood_unhappy"},
-                "prev_action": {"action_name": "utter_cheer_up"},
+                "user": {INTENT: "mood_unhappy"},
+                "prev_action": {ACTION_NAME: "utter_cheer_up"},
             },
             {
-                "user": {"intent": "mood_unhappy"},
-                "prev_action": {"action_name": "utter_did_that_help"},
+                "user": {INTENT: "mood_unhappy"},
+                "prev_action": {ACTION_NAME: "utter_did_that_help"},
             },
             {
-                "user": {"intent": "deny"},
-                "prev_action": {"action_name": "action_listen"},
+                "user": {INTENT: "deny"},
+                "prev_action": {ACTION_NAME: ACTION_LISTEN_NAME},
             },
             {
-                "user": {"intent": "deny"},
-                "prev_action": {"action_name": "utter_goodbye"},
+                "user": {INTENT: "deny"},
+                "prev_action": {ACTION_NAME: "utter_goodbye"},
             },
         ]
     ]
@@ -633,10 +642,10 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
     rule_tracker = DialogueStateTracker.from_events(
         "default",
         [
-            ActionExecuted("action_listen"),
+            ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("greet"),
             ActionExecuted("utter_greet", hide_rule_turn=True),
-            ActionExecuted("action_listen", hide_rule_turn=True),
+            ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=True),
         ],
         domain=moodbot_domain,
     )
@@ -648,7 +657,10 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
     expected_states = [
         [
             {},
-            {"user": {"intent": "greet"}, "prev_action": {"action_name": "action_listen"}},
+            {
+                "user": {INTENT: "greet"},
+                "prev_action": {ACTION_NAME: ACTION_LISTEN_NAME},
+            },
         ],
     ]
 
@@ -658,18 +670,16 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
     for actual, expected in zip(actual_states, expected_states):
         assert actual == expected
 
-
-
     embedded_rule_tracker = DialogueStateTracker.from_events(
         "default",
         [
-            ActionExecuted("action_listen"),
+            ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("greet"),
             ActionExecuted("utter_greet", hide_rule_turn=True),
-            ActionExecuted("action_listen", hide_rule_turn=True),
+            ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=True),
             user_uttered("mood_great"),
             ActionExecuted("utter_happy"),
-            ActionExecuted("action_listen"),
+            ActionExecuted(ACTION_LISTEN_NAME),
         ],
         domain=moodbot_domain,
     )
@@ -682,16 +692,16 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
         [
             {},
             {
-                "user": {"intent": "mood_great"}, 
-                "prev_action": {"action_name": "action_listen"}
+                "user": {INTENT: "mood_great"},
+                "prev_action": {ACTION_NAME: ACTION_LISTEN_NAME},
             },
             {
-                "user": {"intent": "mood_great"},
-                "prev_action": {"action_name": "utter_happy"},
+                "user": {INTENT: "mood_great"},
+                "prev_action": {ACTION_NAME: "utter_happy"},
             },
             {
-                "user": {"intent": "mood_great"},
-                "prev_action": {"action_name": "action_listen"},
+                "user": {INTENT: "mood_great"},
+                "prev_action": {ACTION_NAME: ACTION_LISTEN_NAME},
             },
         ]
     ]
@@ -727,24 +737,24 @@ def test_featurize_trackers_with_intent_max_history_tracker_featurizer(
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
-            {"action_name": [moodbot_features["actions"]["utter_did_that_help"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
         ],
     ]
     if max_history is not None:
@@ -790,24 +800,24 @@ def test_deduplicate_featurize_trackers_with_intent_max_history_tracker_featuriz
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
         ],
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
-            {"action_name": [moodbot_features["actions"]["utter_did_that_help"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
         ],
     ]
 
@@ -843,7 +853,7 @@ def test_create_state_features_with_intent_max_history_tracker_featurizer(
 ):
 
     # IntentMaxHistoryTrackerFeaturizer prediction is only done after
-    # a UserUttered event so remove the last BotUttered and 
+    # a UserUttered event so remove the last BotUttered and
     # ActionExecuted events.
     moodbot_tracker = moodbot_tracker.copy()
     moodbot_tracker.events.pop()
@@ -863,16 +873,16 @@ def test_create_state_features_with_intent_max_history_tracker_featurizer(
         [
             {},
             {
-                "intent": [moodbot_features["intents"]["greet"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_greet"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                "intent": [moodbot_features["intents"]["mood_unhappy"]],
-                "action_name": [moodbot_features["actions"]["action_listen"]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
-            {"action_name": [moodbot_features["actions"]["utter_cheer_up"]]},
-            {"action_name": [moodbot_features["actions"]["utter_did_that_help"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
         ],
     ]
     if max_history is not None:
@@ -893,7 +903,7 @@ def test_prediction_states_with_intent_max_history_tracker_featurizer(
 ):
 
     # IntentMaxHistoryTrackerFeaturizer prediction is only done after
-    # a UserUttered event so remove the last BotUttered and 
+    # a UserUttered event so remove the last BotUttered and
     # ActionExecuted events.
     moodbot_tracker = moodbot_tracker.copy()
     moodbot_tracker.events.pop()
@@ -911,24 +921,24 @@ def test_prediction_states_with_intent_max_history_tracker_featurizer(
         [
             {},
             {
-                "user": {"intent": "greet"},
-                "prev_action": {"action_name": "action_listen"},
+                "user": {INTENT: "greet"},
+                "prev_action": {ACTION_NAME: ACTION_LISTEN_NAME},
             },
             {
-                "user": {"intent": "greet"},
-                "prev_action": {"action_name": "utter_greet"},
+                "user": {INTENT: "greet"},
+                "prev_action": {ACTION_NAME: "utter_greet"},
             },
             {
-                "user": {"intent": "mood_unhappy"},
-                "prev_action": {"action_name": "action_listen"},
+                "user": {INTENT: "mood_unhappy"},
+                "prev_action": {ACTION_NAME: ACTION_LISTEN_NAME},
             },
             {
-                "user": {"intent": "mood_unhappy"},
-                "prev_action": {"action_name": "utter_cheer_up"},
+                "user": {INTENT: "mood_unhappy"},
+                "prev_action": {ACTION_NAME: "utter_cheer_up"},
             },
             {
-                "user": {"intent": "mood_unhappy"},
-                "prev_action": {"action_name": "utter_did_that_help"},
+                "user": {INTENT: "mood_unhappy"},
+                "prev_action": {ACTION_NAME: "utter_did_that_help"},
             },
         ]
     ]
@@ -957,10 +967,10 @@ def test_prediction_states_hide_rule_states_with_intent_max_history_tracker_feat
     rule_tracker = DialogueStateTracker.from_events(
         "default",
         [
-            ActionExecuted("action_listen"),
+            ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("greet"),
             ActionExecuted("utter_greet", hide_rule_turn=True),
-            ActionExecuted("action_listen", hide_rule_turn=True),
+            ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=True),
         ],
         domain=moodbot_domain,
     )
@@ -980,10 +990,10 @@ def test_prediction_states_hide_rule_states_with_intent_max_history_tracker_feat
     embedded_rule_tracker = DialogueStateTracker.from_events(
         "default",
         [
-            ActionExecuted("action_listen"),
+            ActionExecuted(ACTION_LISTEN_NAME),
             user_uttered("greet"),
             ActionExecuted("utter_greet", hide_rule_turn=True),
-            ActionExecuted("action_listen", hide_rule_turn=True),
+            ActionExecuted(ACTION_LISTEN_NAME, hide_rule_turn=True),
             user_uttered("mood_great"),
         ],
         domain=moodbot_domain,
@@ -1013,20 +1023,20 @@ def test_multilabels_with_intent_max_history_tracker_featurizer(
     )
 
     event_list1 = [
-        ActionExecuted("action_listen"),
+        ActionExecuted(ACTION_LISTEN_NAME),
         user_uttered("greet"),
         ActionExecuted("utter_greet"),
-        ActionExecuted("action_listen"),
+        ActionExecuted(ACTION_LISTEN_NAME),
         user_uttered("mood_great"),
     ]
     tracker1 = DialogueStateTracker.from_events(
         "default", event_list1, domain=moodbot_domain
     )
     event_list2 = [
-        ActionExecuted("action_listen"),
+        ActionExecuted(ACTION_LISTEN_NAME),
         user_uttered("greet"),
         ActionExecuted("utter_greet"),
-        ActionExecuted("action_listen"),
+        ActionExecuted(ACTION_LISTEN_NAME),
         user_uttered("mood_unhappy"),
     ]
     tracker2 = DialogueStateTracker.from_events(
