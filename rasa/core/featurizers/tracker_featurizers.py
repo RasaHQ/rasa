@@ -5,7 +5,7 @@ import jsonpickle
 import logging
 
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
+from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator
 import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -727,8 +727,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 tracker, domain, omit_unset_slots=omit_unset_slots
             ):
 
-                if self._is_duplicate_example(tracker, states, label, hashed_examples):
-                    continue
+                if self.remove_duplicates:
+                    hashed = self._hash_example(tracker, states, label)
+                    if hashed in hashed_examples:
+                        continue
+                    hashed_examples.add(hashed)
 
                 example_states.append(states)
                 example_labels.append(label)
@@ -793,35 +796,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
                 # reset entity_data for the the next turn
                 entity_data = {}
-
-    def _is_duplicate_example(
-        self,
-        tracker: DialogueStateTracker,
-        states: List[State],
-        label: List[Text],
-        hashed_examples: Set[int],
-    ) -> bool:
-        """Returns True if training example is a duplicate.
-
-        If `states` and `label` have not been seen before, their hash is added to
-        `hashed_examples`.
-
-        Args:
-            tracker: The `DialogueStateTracker` that produced `states`.
-            states: A list of tracker `State` instances.
-            labels: A list of label strings associated with this state sequence.
-            hashed_examples: The set of previously seen training example hashes.
-
-        Returns:
-            True if hash of `states` and `label` is in `hased_examples`.
-        """
-        if self.remove_duplicates:
-            hashed = self._hash_example(tracker, states, label)
-            if hashed in hashed_examples:
-                return True
-            hashed_examples.add(hashed)
-
-        return False
 
     def prediction_states(
         self,
@@ -975,8 +949,11 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 tracker, domain, omit_unset_slots=omit_unset_slots
             ):
 
-                if self._is_duplicate_example(tracker, states, label, hashed_examples):
-                    continue
+                if self.remove_duplicates:
+                    hashed = self._hash_example(tracker, states, label)
+                    if hashed in hashed_examples:
+                        continue
+                    hashed_examples.add(hashed)
 
                 # Store all positive labels associated with a training state.
                 state_hash = self._hash_example(tracker, states)
