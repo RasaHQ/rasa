@@ -2,6 +2,7 @@
 
 LABEL = "label"
 IDS = "ids"
+LABEL_PAD_ID = -1
 HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
 SHARE_HIDDEN_LAYERS = "share_hidden_layers"
 

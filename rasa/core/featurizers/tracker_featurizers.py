@@ -5,7 +5,7 @@ import jsonpickle
 import logging
 
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator
+from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
 import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -18,6 +18,7 @@ from rasa.shared.core.trackers import (
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import USER
 from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
+from rasa.utils.tensorflow.constants import LABEL_PAD_ID
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
@@ -614,11 +615,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         Returns:
             A tuple of list of states, list of labels and list of entity data.
         """
-        self._setup_example_iterator()
-
         example_states = []
         example_labels = []
         example_entities = []
+
+        # Store of example hashes for removing duplicate training examples.
+        hashed_examples = set()
 
         logger.debug(
             "Creating states and {} label examples from "
@@ -636,11 +638,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         )
         for tracker in pbar:
 
-            for states, label, entities in self._example_iterator(
+            for states, label, entities in self._extract_examples(
                 tracker, domain, omit_unset_slots=omit_unset_slots
             ):
 
-                if self._check_example_cache(tracker, states, label):
+                if self._is_duplicate_example(tracker, states, label, hashed_examples):
                     continue
 
                 example_states.append(states)
@@ -649,19 +651,13 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
                 pbar.set_postfix({f"# {self.LABEL_NAME}": f"{len(example_labels):d}"})
 
-        self._cleanup_example_iterator()
         self._remove_user_text_if_intent(example_states)
 
         logger.debug(f"Created {len(example_states)} {self.LABEL_NAME} examples.")
 
         return example_states, example_labels, example_entities
 
-    def _setup_example_iterator(self) -> None:
-        """Create set for filtering out duplicated training examples."""
-        if self.remove_duplicates:
-            self.hashed_examples = set()
-
-    def _example_iterator(
+    def _extract_examples(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -702,26 +698,21 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 # reset entity_data for the the next turn
                 entity_data = {}
 
-    def _check_example_cache(
-        self, tracker: DialogueStateTracker, states: List[State], label: List[Text],
+    def _is_duplicate_example(
+        self, 
+        tracker: DialogueStateTracker, 
+        states: List[State], 
+        label: List[Text],
+        hashed_examples: Set[int],
     ) -> bool:
         """Returns True if training example is a duplicate."""
-        if not self.remove_duplicates:
-            return False
-        else:
-            hashed = self._hash_example(tracker, states, label)
-            if hashed not in self.hashed_examples:
-                self.hashed_examples.add(hashed)
-                return False
-            else:
-                return True
-
-    def _cleanup_example_iterator(self) -> None:
-        """Remove deduplication cache and remove intent text when intent label
-        is used.
-        """
         if self.remove_duplicates:
-            self.hashed_examples = None
+            hashed = self._hash_example(tracker, states, label)
+            if hashed in hashed_examples:
+                return True
+            hashed_examples.add(hashed)
+        
+        return False
 
     def prediction_states(
         self,
@@ -768,8 +759,9 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
     LABEL_NAME = "intent"
 
+    @classmethod
     def _convert_labels_to_ids(
-        self, trackers_as_intents: List[List[Text]], domain: Domain
+        cls, trackers_as_intents: List[List[Text]], domain: Domain
     ) -> np.ndarray:
         """Convert a list of labels to an np.ndarray of label ids.
         The number of rows is equal to `len(trackers_as_intents)`.
@@ -787,31 +779,103 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             for tracker_intents in trackers_as_intents
         ]
 
-        pad_val = -1
+        return np.array(cls._pad_label_ids(label_ids))
 
-        # Add -1 padding to labels array so that
+    @staticmethod
+    def _pad_label_ids(label_ids: List[List[int]]) -> List[List[int]]:
+        # Add `LABEL_PAD_ID` padding to labels array so that
         # each example has equal number of labels
         multiple_labels_count = [len(a) for a in label_ids]
         max_labels_count = max(multiple_labels_count)
         num_padding_needed = [max_labels_count - len(a) for a in label_ids]
 
-        new_label_ids = []
+        padded_label_ids = []
         for ids, num_pads in zip(label_ids, num_padding_needed):
-            if num_pads:
-                ids.extend([pad_val] * num_pads)
-            new_label_ids.append(ids)
+            padded_row = list(ids) + [LABEL_PAD_ID] * num_pads
+            padded_label_ids.append(padded_row)
+        return padded_label_ids
 
-        new_label_ids = np.array(new_label_ids)
-        return new_label_ids
+    def training_states_labels_and_entities(
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        omit_unset_slots: bool = False,
+    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
+        """Transforms list of trackers to lists of states, labels and entity data.
 
-    def _setup_example_iterator(self) -> None:
-        """Create any data structures for deduplication and tracking multiple
-        intent labels.
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns:
+            A tuple of list of states, list of labels and list of entity data.
         """
-        super()._setup_example_iterator()
-        self._state_hash_to_labels = defaultdict(list)
+        example_states = []
+        example_labels = []
+        example_entities = []
 
-    def _example_iterator(
+        # Store of example hashes for removing duplicate training examples.
+        hashed_examples = set()
+        # Mapping of example state hash to list of positive labels associated with
+        # the state. Note that each individual 'label' instance is a list of ints.
+        state_hash_to_label_list_instances: defaultdict[List[List[int]]] = defaultdict(list)
+
+        logger.debug(
+            "Creating states and {} label examples from "
+            "collected trackers (by {}({}))..."
+            "".format(
+                self.LABEL_NAME,
+                type(self).__name__,
+                type(self.state_featurizer).__name__,
+            )
+        )
+        pbar = tqdm(
+            trackers,
+            desc="Processed trackers",
+            disable=rasa.shared.utils.io.is_logging_disabled(),
+        )
+        for tracker in pbar:
+
+            for states, label, entities in self._extract_examples(
+                tracker, domain, omit_unset_slots=omit_unset_slots
+            ):
+
+                if self._is_duplicate_example(tracker, states, label, hashed_examples):
+                    continue
+
+                # Store all positive labels associated with a training state.
+                state_hash = self._hash_example(tracker, states)
+                state_hash_to_label_list_instances[state_hash].append(label)
+
+                example_states.append(states)
+                example_labels.append(label)
+                example_entities.append(entities)
+
+                pbar.set_postfix({f"# {self.LABEL_NAME}": f"{len(example_labels):d}"})
+
+        self._remove_user_text_if_intent(example_states)
+
+        # Collect all positive intent labels for a given state hash and add
+        # the set back to the singleton labels.
+        for positive_label_list in state_hash_to_label_list_instances.values():
+            # Get the set of positive labels associated with each state hash.
+            positive_label_set = set([labels[0] for labels in positive_label_list])
+
+            for labels in positive_label_list:
+                # Extend the singletone `labels` with the `positive_label_set`.
+                # Note that we need to filter out the redundant label `labels[0]` 
+                # from `positive_label_set` so as not to add it twice.
+                filtered_label_set = filter(
+                    lambda label: label != labels[0], positive_label_set
+                )
+                labels.extend(filtered_label_set)
+
+        logger.debug(f"Created {len(example_states)} {self.LABEL_NAME} examples.")
+
+        return example_states, example_labels, example_entities
+
+    def _extract_examples(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
@@ -838,38 +902,10 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 sliced_states = self.slice_state_history(
                     tracker_states[:label_index], self.max_history
                 )
-                label = [event.intent_name or event.intent_text]
+                label = [event.intent_name or event.text]
                 entities = [{}]
 
                 yield sliced_states, label, entities
-
-    def _check_example_cache(
-        self, tracker: DialogueStateTracker, states: List[State], label: List[Text],
-    ) -> bool:
-        if not super()._check_example_cache(tracker, states, label):
-            state_hash = self._hash_example(tracker, states)
-            self._state_hash_to_labels[state_hash].append(label)
-            return False
-        else:
-            return True
-
-    def _cleanup_example_iterator(self) -> None:
-        """Clean up cache data structures and finalize any training labels.
-
-        Collects all positive intent labels for a given state hash and adds
-        them to the original label for each state hash in the training data.
-        """
-        for labelset in self._state_hash_to_labels.values():
-            # Get the set of labels associated with the state hash.
-            codomain = set([labels[0] for labels in labelset])
-            for labels in labelset:
-                # Remove the duplicate label in the first position
-                # and update the positive labels.
-                filtered_codomain = filter(lambda label: label != labels[0], codomain)
-                labels.extend(filtered_codomain)
-
-        self._state_hash_to_labels = None
-        super()._cleanup_example_iterator()
 
     @staticmethod
     def _cleanup_last_user_state_with_action_listen(trackers_as_states):
