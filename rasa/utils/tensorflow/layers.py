@@ -1193,9 +1193,9 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
     def call(
         self,
-        batch_inputs_embed: tf.Tensor,  # (batch_size, 1, num_features)
-        batch_labels_embed: tf.Tensor,  # (batch_size, max_num_labels_per_input, num_features)
-        batch_labels_ids: tf.Tensor,  # (batch_size, max_num_labels, 1)
+        batch_inputs_embed: tf.Tensor,  # (batch_size, 1, num_features) or (batch_size, num_features)
+        batch_labels_embed: tf.Tensor,  # (batch_size, max_num_labels_per_input, num_features) or (batch_size, num_features)
+        batch_labels_ids: tf.Tensor,  # (batch_size, max_num_labels, 1) or (batch_size, ?)
         all_labels_embed: tf.Tensor,  # (num_labels, num_features)
         all_labels_ids: tf.Tensor,  # (num_labels, 1)
         mask: Optional[tf.Tensor] = None,  # (batch_size, 1)
@@ -1317,7 +1317,17 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
     def _get_pos_neg_indicators(
         self, all_labels_ids, batch_labels_ids, candidate_ids,
-    ):
+    ) -> tf.Tensor:
+        """Computes indicators for which candidates are positive labels.
+        
+        Args:
+            all_labels_ids: Indices of all the labels
+            batch_labels_ids: Indices of the labels in the examples
+            candidate_ids: Indices of labels that may or may not appear in the examples
+
+        Returns:
+            Binary indicators of whether or not a label is positive
+        """
         candidate_labels_ids = layers_utils.get_candidate_values(
             all_labels_ids, candidate_ids
         )
