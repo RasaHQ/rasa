@@ -17,7 +17,7 @@ def random_indices(batch_size: Tensor, n: Tensor, n_max: Tensor) -> Tensor:
     return (
         tf.random.uniform(shape=(batch_size, n), maxval=n_max, dtype=tf.int32)
         if n_max > 0
-        else tf.zeros((batch_size, n))
+        else tf.zeros((batch_size, n), dtype=tf.int32)
     )
 
 
