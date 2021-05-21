@@ -5,7 +5,9 @@ from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Generator, Callable
+from typing import Generator, Callable, Dict, Text
+
+from scipy import sparse
 
 import pytest
 
@@ -21,6 +23,9 @@ from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.constants import INTENT, ACTION_NAME, FEATURE_TYPE_SENTENCE
+from tests.core.utilities import tracker_from_dialogue_file
 
 
 class CustomSlot(Slot):
@@ -159,3 +164,42 @@ async def form_bot_agent(trained_async: Callable) -> Agent:
     )
 
     return Agent.load_local_model(zipped_model, action_endpoint=endpoint)
+
+
+@pytest.fixture
+def moodbot_features(
+    request, moodbot_domain: Domain
+) -> Dict[Text, Dict[Text, Features]]:
+    """Makes intent and action features for the moodbot domain to faciliate
+    making expected state features.
+
+    Returns:
+      A dict containing dicts for mapping action and intent names to features.
+    """
+    origin = getattr(request, "param", "SingleStateFeaturizer")
+    action_shape = (1, len(moodbot_domain.action_names_or_texts))
+    actions = {}
+    for index, action in enumerate(moodbot_domain.action_names_or_texts):
+        actions[action] = Features(
+            sparse.coo_matrix(([1.0], [[0], [index]]), shape=action_shape),
+            FEATURE_TYPE_SENTENCE,
+            ACTION_NAME,
+            origin,
+        )
+    intent_shape = (1, len(moodbot_domain.intents))
+    intents = {}
+    for index, intent in enumerate(moodbot_domain.intents):
+        intents[intent] = Features(
+            sparse.coo_matrix(([1.0], [[0], [index]]), shape=intent_shape),
+            FEATURE_TYPE_SENTENCE,
+            INTENT,
+            origin,
+        )
+    return {"intents": intents, "actions": actions}
+
+
+@pytest.fixture
+def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
+    return tracker_from_dialogue_file(
+        "data/test_dialogues/moodbot.json", moodbot_domain
+    )

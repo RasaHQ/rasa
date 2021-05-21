@@ -1,7 +1,6 @@
 from typing import Text, Dict, List, Optional
 
 import numpy as np
-from scipy import sparse
 import pytest
 
 from rasa.core.featurizers.single_state_featurizer import (
@@ -16,9 +15,9 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from tests.core.utilities import tracker_from_dialogue_file, user_uttered
+from tests.core.utilities import user_uttered
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.constants import INTENT, ACTION_NAME, FEATURE_TYPE_SENTENCE
+from rasa.shared.nlu.constants import INTENT, ACTION_NAME
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
@@ -90,38 +89,6 @@ def test_featurize_trackers_raises_on_missing_state_featurizer(domain: Domain):
         tracker_featurizer.featurize_trackers([], domain, RegexInterpreter())
 
 
-@pytest.fixture
-def moodbot_features(
-    request, moodbot_domain: Domain
-) -> Dict[Text, Dict[Text, Features]]:
-    """Makes intent and action features for the moodbot domain to faciliate
-    making expected state features.
-
-    Returns:
-      A dict containing dicts for mapping action and intent names to features.
-    """
-    origin = getattr(request, "param", "SingleStateFeaturizer")
-    action_shape = (1, len(moodbot_domain.action_names_or_texts))
-    actions = {}
-    for index, action in enumerate(moodbot_domain.action_names_or_texts):
-        actions[action] = Features(
-            sparse.coo_matrix(([1.0], [[0], [index]]), shape=action_shape),
-            FEATURE_TYPE_SENTENCE,
-            ACTION_NAME,
-            origin,
-        )
-    intent_shape = (1, len(moodbot_domain.intents))
-    intents = {}
-    for index, intent in enumerate(moodbot_domain.intents):
-        intents[intent] = Features(
-            sparse.coo_matrix(([1.0], [[0], [index]]), shape=intent_shape),
-            FEATURE_TYPE_SENTENCE,
-            INTENT,
-            origin,
-        )
-    return {"intents": intents, "actions": actions}
-
-
 def compare_featurized_states(
     states1: List[Dict[Text, List[Features]]], states2: List[Dict[Text, List[Features]]]
 ) -> bool:
@@ -146,13 +113,6 @@ def compare_featurized_states(
                 if feature1.type != feature2.type:
                     return False
     return True
-
-
-@pytest.fixture
-def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
-    return tracker_from_dialogue_file(
-        "data/test_dialogues/moodbot.json", moodbot_domain
-    )
 
 
 @pytest.mark.parametrize("insert_action_unlikely_intent", [False, True])
