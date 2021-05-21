@@ -648,7 +648,25 @@ class RemoteAction(Action):
                                     "value": {},
                                 }
                             },
-                            {"properties": {"event": {"const": "entities"}}},
+                            {
+                                "properties": {
+                                    "event": {"const": "entities"},
+                                    "entities": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "start": {"type": "integer"},
+                                                "end": {"type": "integer"},
+                                                "name": {"type": "string"},
+                                                "confidence": {"type": "number"},
+                                                "extractor": {"type": "string"},
+                                                "value": {"type": "object"},
+                                            },
+                                        },
+                                    },
+                                }
+                            },
                             {"properties": {"event": {"const": "user_featurization"}}},
                             {"properties": {"event": {"const": "cancel_reminder"}}},
                             {"properties": {"event": {"const": "reminder"}}},

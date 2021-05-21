@@ -441,23 +441,29 @@ async def test_remote_action_valid_payload_all_events(
     assert isinstance(events[0], expected_event)
 
 
+@pytest.mark.parametrize(
+    "event",
+    (
+        {
+            "event": "user",
+            "timestamp": 1621590172.3872123,
+            "parse_data": {"entities": {}},
+        },
+        {"event": "entities", "timestamp": 1621604905.647361, "entities": {}},
+    ),
+)
 async def test_remote_action_invalid_entities_payload(
     default_channel: OutputChannel,
     default_nlg: NaturalLanguageGenerator,
     default_tracker: DialogueStateTracker,
     domain: Domain,
+    event: Event,
 ):
 
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
     response = {
-        "events": [
-            {
-                "event": "user",
-                "timestamp": 1621590172.3872123,
-                "parse_data": {"entities": {}},
-            }
-        ],
+        "events": [event],
         "responses": [],
     }
     with aioresponses() as mocked:
