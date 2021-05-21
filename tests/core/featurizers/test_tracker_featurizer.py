@@ -4,7 +4,10 @@ import numpy as np
 from scipy import sparse
 import pytest
 
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer, 
+    IntentTokenizerSingleStateFeaturizer,
+)
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
@@ -81,16 +84,15 @@ def test_featurize_trackers_raises_on_missing_state_featurizer(domain: Domain):
     with pytest.raises(ValueError):
         tracker_featurizer.featurize_trackers([], domain, RegexInterpreter())
 
-
 @pytest.fixture
-def moodbot_features(moodbot_domain: Domain) -> Dict[Text, Dict[Text, Features]]:
+def moodbot_features(request, moodbot_domain: Domain) -> Dict[Text, Dict[Text, Features]]:
     """Makes intent and action features for the moodbot domain to faciliate
     making expected state features.
 
     Returns:
       A dict containing dicts for mapping action and intent names to features.
     """
-
+    origin = getattr(request, "param", "SingleStateFeaturizer")
     action_shape = (1, len(moodbot_domain.action_names_or_texts))
     actions = {}
     for index, action in enumerate(moodbot_domain.action_names_or_texts):
@@ -98,7 +100,7 @@ def moodbot_features(moodbot_domain: Domain) -> Dict[Text, Dict[Text, Features]]
             sparse.coo_matrix(([1.0], [[0], [index]]), shape=action_shape),
             FEATURE_TYPE_SENTENCE,
             ACTION_NAME,
-            "SingleStateFeaturizer",
+            origin,
         )
     intent_shape = (1, len(moodbot_domain.intents))
     intents = {}
@@ -107,7 +109,7 @@ def moodbot_features(moodbot_domain: Domain) -> Dict[Text, Dict[Text, Features]]
             sparse.coo_matrix(([1.0], [[0], [index]]), shape=intent_shape),
             FEATURE_TYPE_SENTENCE,
             INTENT,
-            "SingleStateFeaturizer",
+            origin,
         )
     return {"intents": intents, "actions": actions}
 
@@ -123,10 +125,18 @@ def compare_featurized_states(
         return False
 
     for state1, state2 in zip(states1, states2):
+        print(state1.keys())
+        print(state2.keys())
         if state1.keys() != state2.keys():
             return False
         for key in state1.keys():
             for feature1, feature2 in zip(state1[key], state2[key]):
+                print(key)
+                print(feature1.features)
+                print(feature2.features)
+                print(feature1.origin)
+                print(feature2.origin)
+                
                 if np.any((feature1.features != feature2.features).toarray()):
                     return False
                 if feature1.origin != feature2.origin:
@@ -396,7 +406,6 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(
     # moodbot doesn't contain e2e entities
     assert not any([any(turn_tags) for turn_tags in entity_tags])
 
-
 @pytest.mark.parametrize(
     "remove_duplicates,max_history", 
     [
@@ -404,7 +413,7 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(
         [True, 2],
         [False, None],
         [False, 2],
-    ]
+    ],
 )
 def test_deduplicate_featurize_trackers_with_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
@@ -716,14 +725,21 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
         assert actual == expected
 
 
-@pytest.mark.parametrize("max_history", [None, 2])
+@pytest.mark.parametrize(
+    "max_history,moodbot_features", 
+    [
+        [None, "IntentTokenizerSingleStateFeaturizer"], 
+        [2, "IntentTokenizerSingleStateFeaturizer"],
+    ],
+    indirect=["moodbot_features"],
+)
 def test_featurize_trackers_with_intent_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
     moodbot_domain: Domain,
     moodbot_features: Dict[Text, Dict[Text, Features]],
     max_history: Optional[int],
 ):
-    state_featurizer = SingleStateFeaturizer()
+    state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
     )
@@ -776,8 +792,16 @@ def test_featurize_trackers_with_intent_max_history_tracker_featurizer(
     assert not any([any(turn_tags) for turn_tags in entity_tags])
 
 
-@pytest.mark.parametrize("remove_duplicates", [True, False])
-@pytest.mark.parametrize("max_history", [None, 2])
+@pytest.mark.parametrize(
+    "remove_duplicates,max_history,moodbot_features", 
+    [
+        [True, None, "IntentTokenizerSingleStateFeaturizer"],
+        [True, 2, "IntentTokenizerSingleStateFeaturizer"],
+        [False, None, "IntentTokenizerSingleStateFeaturizer"],
+        [False, 2, "IntentTokenizerSingleStateFeaturizer"],
+    ],
+    indirect=["moodbot_features"],
+)
 def test_deduplicate_featurize_trackers_with_intent_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
     moodbot_domain: Domain,
@@ -785,7 +809,7 @@ def test_deduplicate_featurize_trackers_with_intent_max_history_tracker_featuriz
     remove_duplicates: bool,
     max_history: Optional[int],
 ):
-    state_featurizer = SingleStateFeaturizer()
+    state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history, remove_duplicates=remove_duplicates
     )
@@ -844,7 +868,14 @@ def test_deduplicate_featurize_trackers_with_intent_max_history_tracker_featuriz
     assert not any([any(turn_tags) for turn_tags in entity_tags])
 
 
-@pytest.mark.parametrize("max_history", [None, 2])
+@pytest.mark.parametrize(
+    "max_history,moodbot_features", 
+    [
+        [None, "IntentTokenizerSingleStateFeaturizer"], 
+        [2, "IntentTokenizerSingleStateFeaturizer"],
+    ],
+    indirect=["moodbot_features"],
+)
 def test_create_state_features_with_intent_max_history_tracker_featurizer(
     moodbot_tracker: DialogueStateTracker,
     moodbot_domain: Domain,
@@ -859,7 +890,7 @@ def test_create_state_features_with_intent_max_history_tracker_featurizer(
     moodbot_tracker.events.pop()
     moodbot_tracker.events.pop()
 
-    state_featurizer = SingleStateFeaturizer()
+    state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
     )
@@ -909,7 +940,7 @@ def test_prediction_states_with_intent_max_history_tracker_featurizer(
     moodbot_tracker.events.pop()
     moodbot_tracker.events.pop()
 
-    state_featurizer = SingleStateFeaturizer()
+    state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
     )
@@ -959,7 +990,7 @@ def test_prediction_states_hide_rule_states_with_intent_max_history_tracker_feat
     max_history: Optional[int],
 ):
 
-    state_featurizer = SingleStateFeaturizer()
+    state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history
     )
@@ -1017,7 +1048,7 @@ def test_prediction_states_hide_rule_states_with_intent_max_history_tracker_feat
 def test_multilabels_with_intent_max_history_tracker_featurizer(
     moodbot_domain: Domain, max_history: Optional[int], remove_duplicates: bool
 ):
-    state_featurizer = SingleStateFeaturizer()
+    state_featurizer = IntentTokenizerSingleStateFeaturizer()
     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
         state_featurizer, max_history=max_history, remove_duplicates=remove_duplicates,
     )
