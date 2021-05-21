@@ -14,9 +14,10 @@ from rasa.shared.core.events import ActionExecuted, UserUttered
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     is_prev_action_listen_in_state,
+    is_prev_action_unlikely_intent_in_state,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.shared.core.constants import USER
+from rasa.shared.core.constants import USER, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
 from rasa.shared.exceptions import RasaException
@@ -52,8 +53,9 @@ class TrackerFeaturizer:
         """
         self.state_featurizer = state_featurizer
 
-    @staticmethod
+    @classmethod
     def _create_states(
+        cls,
         tracker: DialogueStateTracker,
         domain: Domain,
         omit_unset_slots: bool = False,
@@ -74,12 +76,30 @@ class TrackerFeaturizer:
         Returns:
             a list of states
         """
-        return tracker.past_states(
-            domain,
-            omit_unset_slots=omit_unset_slots,
-            ignore_rule_only_turns=ignore_rule_only_turns,
-            rule_only_data=rule_only_data,
+        return cls._remove_action_unlikely_intent(
+            tracker.past_states(
+                domain,
+                omit_unset_slots=omit_unset_slots,
+                ignore_rule_only_turns=ignore_rule_only_turns,
+                rule_only_data=rule_only_data,
+            )
         )
+
+    @staticmethod
+    def _remove_action_unlikely_intent(states):
+        """Remove `action_unlikely_intent` from tracker state history.
+
+        Args:
+            states: Tracker converted to states
+
+        Returns:
+            Filtered states with last `action_listen` removed.
+        """
+        return [
+            state
+            for state in states
+            if not is_prev_action_unlikely_intent_in_state(state)
+        ]
 
     def _featurize_states(
         self,
@@ -474,6 +494,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                 if not isinstance(event, ActionExecuted):
                     continue
 
+                if event.action_name == ACTION_UNLIKELY_INTENT_NAME:
+                    continue
+
                 if not event.unpredictable:
                     # only actions which can be
                     # predicted at a stories start
@@ -679,7 +702,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             if isinstance(event, UserUttered):
                 entity_data = self._entity_data(event)
 
-            elif isinstance(event, ActionExecuted):
+            elif (
+                isinstance(event, ActionExecuted)
+                and event.action_name != ACTION_UNLIKELY_INTENT_NAME
+            ):
 
                 label_index += 1
 
@@ -699,9 +725,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 entity_data = {}
 
     def _is_duplicate_example(
-        self, 
-        tracker: DialogueStateTracker, 
-        states: List[State], 
+        self,
+        tracker: DialogueStateTracker,
+        states: List[State],
         label: List[Text],
         hashed_examples: Set[int],
     ) -> bool:
@@ -711,7 +737,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             if hashed in hashed_examples:
                 return True
             hashed_examples.add(hashed)
-        
+
         return False
 
     def prediction_states(
@@ -746,6 +772,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             )
             for tracker in trackers
         ]
+
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)
             for states in trackers_as_states
@@ -819,7 +846,9 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         hashed_examples = set()
         # Mapping of example state hash to list of positive labels associated with
         # the state. Note that each individual 'label' instance is a list of ints.
-        state_hash_to_label_list_instances: defaultdict[List[List[int]]] = defaultdict(list)
+        state_hash_to_label_list_instances: defaultdict[List[List[int]]] = defaultdict(
+            list
+        )
 
         logger.debug(
             "Creating states and {} label examples from "
@@ -864,7 +893,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
             for labels in positive_label_list:
                 # Extend the singletone `labels` with the `positive_label_set`.
-                # Note that we need to filter out the redundant label `labels[0]` 
+                # Note that we need to filter out the redundant label `labels[0]`
                 # from `positive_label_set` so as not to add it twice.
                 filtered_label_set = filter(
                     lambda label: label != labels[0], positive_label_set
@@ -894,7 +923,10 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         label_index = 0
         for event in tracker.applied_events():
 
-            if isinstance(event, ActionExecuted):
+            if (
+                isinstance(event, ActionExecuted)
+                and event.action_name != ACTION_UNLIKELY_INTENT_NAME
+            ):
                 label_index += 1
 
             elif isinstance(event, UserUttered):
