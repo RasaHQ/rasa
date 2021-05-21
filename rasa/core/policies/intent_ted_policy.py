@@ -352,8 +352,7 @@ class IntentTEDPolicy(TEDPolicy):
             Metadata to be attached.
         """
         metadata = {}
-        for intent in domain.intents:
-            intent_index = domain.intents.index(intent)
+        for intent_index, intent in domain.intents:
             if intent_index in self.label_thresholds:
                 metadata[intent] = {
                     "score": similarities[0][intent_index],
