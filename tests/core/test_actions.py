@@ -270,10 +270,14 @@ async def test_remote_action_utterances_with_none_values(
 
     response = {
         "events": [
-            {"event": "form", "name": "restaurant_form", "timestamp": None},
+            {
+                "event": "form",
+                "name": "restaurant_form",
+                "timestamp": 1621601121.6691904,
+            },
             {
                 "event": "slot",
-                "timestamp": None,
+                "timestamp": 1621601139.8977633,
                 "name": "requested_slot",
                 "value": "cuisine",
             },
@@ -318,10 +322,14 @@ async def test_remote_action_with_template_param(
 
     response = {
         "events": [
-            {"event": "form", "name": "restaurant_form", "timestamp": None},
+            {
+                "event": "form",
+                "name": "restaurant_form",
+                "timestamp": 1621601121.6691904,
+            },
             {
                 "event": "slot",
-                "timestamp": None,
+                "timestamp": 1621601139.8977633,
                 "name": "requested_slot",
                 "value": "cuisine",
             },

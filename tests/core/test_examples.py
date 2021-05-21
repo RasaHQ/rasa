@@ -56,10 +56,10 @@ async def test_formbot_example(form_bot_agent: Agent):
 
         return {
             "events": [
-                {"event": "form", "name": form, "timestamp": None},
+                {"event": "form", "name": form, "timestamp": 1621600605.1721776},
                 {
                     "event": "slot",
-                    "timestamp": None,
+                    "timestamp": 1621600627.30903,
                     "name": "requested_slot",
                     "value": slot,
                 },
