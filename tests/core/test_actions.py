@@ -1,8 +1,10 @@
 import textwrap
-from typing import List, Text
+from datetime import datetime
+from typing import List, Text, Any, Dict
 
 import pytest
 from aioresponses import aioresponses
+from jsonschema import ValidationError
 
 import rasa.core
 from rasa.core.actions import action
@@ -39,6 +41,19 @@ from rasa.shared.core.events import (
     ActionExecuted,
     Event,
     UserUttered,
+    EntitiesAdded,
+    DefinePrevUserUtteredFeaturization,
+    AllSlotsReset,
+    ReminderScheduled,
+    ReminderCancelled,
+    ActionReverted,
+    StoryExported,
+    FollowupAction,
+    ConversationPaused,
+    ConversationResumed,
+    AgentUttered,
+    LoopInterrupted,
+    ActionExecutionRejected,
 )
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import (
@@ -342,6 +357,110 @@ async def test_remote_action_with_template_param(
         ActiveLoop("restaurant_form"),
         SlotSet("requested_slot", "cuisine"),
     ]
+
+
+@pytest.mark.parametrize(
+    ("event", "expected_event"),
+    (
+        ({"event": "entities", "timestamp": 1621590172.3872123}, EntitiesAdded),
+        (
+            {"event": "user_featurization", "timestamp": 1621590172.3872123},
+            DefinePrevUserUtteredFeaturization,
+        ),
+        (
+            {"event": "cancel_reminder", "timestamp": 1621590172.3872123},
+            ReminderCancelled,
+        ),
+        (
+            {
+                "event": "reminder",
+                "timestamp": 1621590172.3872123,
+                "date_time": datetime.now().isoformat(),
+            },
+            ReminderScheduled,
+        ),
+        (
+            {"event": "action_execution_rejected", "timestamp": 1621590172.3872123},
+            ActionExecutionRejected,
+        ),
+        (
+            {"event": "form_validation", "timestamp": 1621590172.3872123},
+            LoopInterrupted,
+        ),
+        (
+            {"event": "loop_interrupted", "timestamp": 1621590172.3872123},
+            LoopInterrupted,
+        ),
+        ({"event": "form", "timestamp": 1621590172.3872123}, ActiveLoop),
+        ({"event": "active_loop", "timestamp": 1621590172.3872123}, ActiveLoop),
+        ({"event": "reset_slots", "timestamp": 1621590172.3872123}, AllSlotsReset),
+        ({"event": "slot", "timestamp": 1621590172.3872123}, SlotSet),
+        ({"event": "resume", "timestamp": 1621590172.3872123}, ConversationResumed),
+        ({"event": "pause", "timestamp": 1621590172.3872123}, ConversationPaused),
+        ({"event": "followup", "timestamp": 1621590172.3872123}, FollowupAction),
+        ({"event": "export", "timestamp": 1621590172.3872123}, StoryExported),
+        ({"event": "restart", "timestamp": 1621590172.3872123}, Restarted),
+        ({"event": "undo", "timestamp": 1621590172.3872123}, ActionReverted),
+        ({"event": "rewind", "timestamp": 1621590172.3872123}, UserUtteranceReverted),
+        ({"event": "bot", "timestamp": 1621590172.3872123}, BotUttered),
+        (
+            {"event": "user", "timestamp": 1621590172.3872123, "parse_data": {}},
+            UserUttered,
+        ),
+        ({"event": "session_started", "timestamp": 1621590172.3872123}, SessionStarted),
+        ({"event": "action", "timestamp": 1621590172.3872123}, ActionExecuted),
+        ({"event": "agent", "timestamp": 1621590172.3872123}, AgentUttered),
+    ),
+)
+async def test_remote_action_valid_payload_all_events(
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+    event: Dict[Text, Any],
+    expected_event: Event,
+):
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+    response = {"events": [event], "responses": []}
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", payload=response)
+
+        events = await remote_action.run(
+            default_channel, default_nlg, default_tracker, domain
+        )
+
+    assert isinstance(events[0], expected_event)
+
+
+async def test_remote_action_invalid_entities_payload(
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+):
+
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+    response = {
+        "events": [
+            {
+                "event": "user",
+                "timestamp": 1621590172.3872123,
+                "parse_data": {"entities": {}},
+            }
+        ],
+        "responses": [],
+    }
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", payload=response)
+
+        with pytest.raises(ValidationError) as e:
+            await remote_action.run(
+                default_channel, default_nlg, default_tracker, domain
+            )
+
+    assert "Failed to validate Action server response from API" in str(e.value)
 
 
 async def test_remote_action_without_endpoint(
