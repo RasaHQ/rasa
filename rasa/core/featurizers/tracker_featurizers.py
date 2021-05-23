@@ -188,6 +188,33 @@ class TrackerFeaturizer:
         )
         return trackers_as_states, trackers_as_actions
 
+    def create_tracker_states_actions_entity_tags(
+        self, trackers, domain, interpreter, bilou_tagging=False
+    ):
+
+        if self.state_featurizer is None:
+            raise ValueError(
+                f"Instance variable 'state_featurizer' is not set. "
+                f"During initialization set 'state_featurizer' to an instance of "
+                f"'{SingleStateFeaturizer.__class__.__name__}' class "
+                f"to get numerical features for trackers."
+            )
+
+        self.state_featurizer.prepare_for_training(domain, interpreter, bilou_tagging)
+
+        (
+            trackers_as_states,
+            trackers_as_actions,
+            trackers_as_entities,
+        ) = self.training_states_actions_and_entities(trackers, domain)
+
+        label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
+        entity_tags = self._create_entity_tags(
+            trackers_as_entities, interpreter, bilou_tagging
+        )
+
+        return trackers_as_states, label_ids, entity_tags
+
     def featurize_trackers(
         self,
         trackers: List[DialogueStateTracker],
