@@ -126,6 +126,7 @@ class TrackerStore:
             BotoCoreError,
             pymongo.errors.ConnectionFailure,
             sqlalchemy.exc.OperationalError,
+            ConnectionError,
         ) as error:
             raise ConnectionException("Cannot connect to tracker store.") from error
 
