@@ -5,10 +5,11 @@ from typing import Any, Dict, Optional, Text
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.utils.cli import print_error, print_success
+from rasa.core.agent import create_agent 
 import rasa.utils.common
 
 if typing.TYPE_CHECKING:
-    from rasa.core.agent import Agent, create_agent
+    from rasa.core.agent import Agent
 
 
 def pprint(obj: Any) -> None:
