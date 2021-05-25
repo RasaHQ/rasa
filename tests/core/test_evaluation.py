@@ -498,38 +498,45 @@ def test_log_evaluation_table(caplog, skip_field, skip_value):
 
 
 @pytest.mark.parametrize(
-    "test_file, test_case",
+    "test_file, correct_intent, correct_entity",
     [
         [
             "data/test_yaml_stories/test_prediction_with_correct_intent_wrong_entity.yml",
-            "correct_intent_wrong_entity",
+            True,
+            False,
         ],
         [
             "data/test_yaml_stories/test_prediction_with_wrong_intent_correct_entity.yml",
-            "wrong_intent_correct_entity",
+            False,
+            True,
         ],
         [
             "data/test_yaml_stories/test_prediction_with_wrong_intent_wrong_entity.yml",
-            "wrong_intent_wrong_entity",
+            False,
+            False,
         ],
     ],
 )
 async def test_wrong_predictions_with_intent_and_entities(
-    tmpdir: Path, restaurantbot_agent: Agent, test_file: Text, test_case: Text,
+    tmpdir: Path,
+    restaurantbot_agent: Agent,
+    test_file: Text,
+    correct_intent: bool,
+    correct_entity: bool,
 ):
     stories_path = str(tmpdir / FAILED_STORIES_FILE)
 
-    if test_case == "correct_intent_wrong_entity":
-        await evaluate_stories(
-            stories=test_file,
-            agent=restaurantbot_agent,
-            out_directory=str(tmpdir),
-            max_stories=None,
-            e2e=True,
-        )
+    await evaluate_stories(
+        stories=test_file,
+        agent=restaurantbot_agent,
+        out_directory=str(tmpdir),
+        max_stories=None,
+        e2e=True,
+    )
 
-        failed_stories = rasa.shared.utils.io.read_file(stories_path)
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
 
+    if correct_intent and not correct_entity:
         # check if there is no comment on the intent line
         assert "- intent: request_restaurant  # predicted:" not in failed_stories
         # check if there is a comment with the predicted entity on the entity line
@@ -539,17 +546,7 @@ async def test_wrong_predictions_with_intent_and_entities(
         # check that it does not double print entities
         assert failed_stories.count("\n") == 8
 
-    elif test_case == "wrong_intent_correct_entity":
-        await evaluate_stories(
-            stories=test_file,
-            agent=restaurantbot_agent,
-            out_directory=str(tmpdir),
-            max_stories=None,
-            e2e=True,
-        )
-
-        failed_stories = rasa.shared.utils.io.read_file(stories_path)
-
+    elif not correct_intent and correct_entity:
         # check if there is a comment with the predicted intent on the intent line
         assert "- intent: greet  # predicted: request_restaurant" in failed_stories
         # check if there is no comment on the entity line
@@ -559,17 +556,7 @@ async def test_wrong_predictions_with_intent_and_entities(
         # check that it does not double print entities
         assert failed_stories.count("\n") == 9
 
-    elif test_case == "wrong_intent_wrong_entity":
-        await evaluate_stories(
-            stories=test_file,
-            agent=restaurantbot_agent,
-            out_directory=str(tmpdir),
-            max_stories=None,
-            e2e=True,
-        )
-
-        failed_stories = rasa.shared.utils.io.read_file(stories_path)
-
+    elif not correct_intent and not correct_entity:
         # check if there is a comment with the predicted intent on the intent line
         assert "- intent: greet  # predicted: request_restaurant" in failed_stories
         # check if there is a comment with the predicted entity on the entity line
