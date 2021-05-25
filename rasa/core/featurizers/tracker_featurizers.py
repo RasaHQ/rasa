@@ -606,8 +606,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             for tracker in trackers
         ]
         trackers_as_states = [
-            self._remove_action_unlikely_intent(states)
-            for states in trackers_as_states
+            self._remove_action_unlikely_intent(states) for states in trackers_as_states
         ]
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
 
@@ -838,8 +837,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         # This must be done before state history slicing to ensure the
         # max history of the sliced states matches training time.
         trackers_as_states = [
-            self._remove_action_unlikely_intent(states)
-            for states in trackers_as_states
+            self._remove_action_unlikely_intent(states) for states in trackers_as_states
         ]
 
         trackers_as_states = [
@@ -1098,8 +1096,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         # This must be done before state history slicing to ensure the
         # max history of the sliced states matches training time.
         trackers_as_states = [
-            self._remove_action_unlikely_intent(states)
-            for states in trackers_as_states
+            self._remove_action_unlikely_intent(states) for states in trackers_as_states
         ]
 
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
