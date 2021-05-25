@@ -201,7 +201,7 @@ class TrackerFeaturizer:
         Args:
             domain: Domain of the assistant.
             interpreter: NLU Interpreter for featurizing states.
-            bilou_tagging: Whether to conside bilou tagging.
+            bilou_tagging: Whether to consider bilou tagging.
         """
         if self.state_featurizer is None:
             raise ValueError(

@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
+from collections import defaultdict
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -150,7 +151,7 @@ class IntentTEDPolicy(TEDPolicy):
         # Initial and final batch sizes:
         # Batch size will be linearly increased for each epoch.
         BATCH_SIZES: [64, 256],
-        # Strategy used whenc creating batches.
+        # Strategy used when creating batches.
         # Can be either 'sequence' or 'balanced'.
         BATCH_STRATEGY: BALANCED,
         # Number of epochs to train
@@ -672,17 +673,19 @@ class IntentTED(TED):
         Returns:
             Similarities grouped by intent label id.
         """
-        label_id_scores = {}
+        label_id_scores: Dict[int, List[float]] = defaultdict(list)
         for index, all_pos_labels in enumerate(label_ids):
 
-            # Take the contribution of only first label id
-            # because `outputs` will contain another
-            # data point where remaining label ids will
-            # be the first label id
+            # If a data point (tracker) has multiple label ids
+            # assigned to it, the tracker featurizer distributes
+            # those multiple label ids across multiple data points,
+            # one for each label id. Hence, here when we iterate over
+            # all data points, we consider only the first label id.
+            # Other positive label ids will be taken care of as part of
+            # some other data point, where the input tracker is the same
+            # as this one but first positive label id is different.
+            # This prevents over-counting across label ids.
             first_pos_label_id = all_pos_labels[0]
-
-            if first_pos_label_id not in label_id_scores:
-                label_id_scores[first_pos_label_id] = []
 
             label_id_scores[first_pos_label_id].append(
                 outputs["similarities"][index, 0, first_pos_label_id]

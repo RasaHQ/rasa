@@ -108,9 +108,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             training_model_data
         )
 
-        assert all(
-            [key in PREDICTION_FEATURES for key in data_for_prediction.data.keys()]
-        )
+        assert set(data_for_prediction.data.keys()).issubset(PREDICTION_FEATURES)
 
     def test_similarities_collection_for_label_ids(self):
         label_ids = np.ndarray([[0, 1], [1, -1], [1, 0], [2, -1]])

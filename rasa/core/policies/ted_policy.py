@@ -408,8 +408,9 @@ class TEDPolicy(Policy):
     ) -> RasaModelData:
         """Construct data regarding labels to be fed to the model.
 
-        The resultant model data should contain the keys
-        `label_action_name`, `label_action_text` and `label`.
+        The resultant model data can possibly contain one or both of the
+        keys - [`label_action_name`, `label_action_text`] but will definitely
+        contain the `label` key.
         `label_action_*` will contain the sequence, sentence and mask features
         for corresponding labels and `label` will contain the numerical label ids.
 
