@@ -377,6 +377,131 @@ def validate_request_body(request: Request, error_message: Text) -> None:
         raise ErrorResponse(HTTPStatus.BAD_REQUEST, "BadRequest", error_message)
 
 
+def events_request_format_spec() -> Dict[Text, Any]:
+    """Expected request body schema used for validation."""
+    return {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "event": {"type": "string"},
+                "timestamp": {"type": "number"},
+            },
+            "oneOf": [
+                {
+                    "properties": {
+                        "event": {"const": "user"},
+                        "text": {"type": "string"},
+                        "input_channel": {},
+                        "message_id": {},
+                        "parse_data": {
+                            "type": "object",
+                            "properties": {
+                                "text": {"type": "string"},
+                                "intent": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "confidence": {"type": "number"},
+                                    },
+                                },
+                                "entities": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "start": {"type": "integer"},
+                                            "end": {"type": "integer"},
+                                            "name": {"type": "string"},
+                                            "confidence": {"type": "number"},
+                                            "extractor": {"type": "string"},
+                                            "value": {"type": "object"},
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    }
+                },
+                {
+                    "properties": {
+                        "event": {"const": "action"},
+                        "policy": {"type": "string"},
+                        "confidence": {"type": "number"},
+                        "name": {"type": "string"},
+                    }
+                },
+                {
+                    "properties": {
+                        "event": {"const": "slot"},
+                        "name": {"type": "string"},
+                        "value": {},
+                    }
+                },
+                {
+                    "properties": {
+                        "event": {"const": "entities"},
+                        "entities": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "start": {"type": "integer"},
+                                    "end": {"type": "integer"},
+                                    "name": {"type": "string"},
+                                    "confidence": {"type": "number"},
+                                    "extractor": {"type": "string"},
+                                    "value": {"type": "object"},
+                                },
+                            },
+                        },
+                    }
+                },
+                {"properties": {"event": {"const": "user_featurization"}}},
+                {"properties": {"event": {"const": "cancel_reminder"}}},
+                {"properties": {"event": {"const": "reminder"}}},
+                {"properties": {"event": {"const": "action_execution_rejected"}}},
+                {"properties": {"event": {"const": "form_validation"}}},
+                {"properties": {"event": {"const": "loop_interrupted"}}},
+                {"properties": {"event": {"const": "form"}}},
+                {"properties": {"event": {"const": "active_loop"}}},
+                {"properties": {"event": {"const": "reset_slots"}}},
+                {"properties": {"event": {"const": "resume"}}},
+                {"properties": {"event": {"const": "pause"}}},
+                {"properties": {"event": {"const": "followup"}}},
+                {"properties": {"event": {"const": "export"}}},
+                {"properties": {"event": {"const": "restart"}}},
+                {"properties": {"event": {"const": "undo"}}},
+                {"properties": {"event": {"const": "rewind"}}},
+                {"properties": {"event": {"const": "bot"}}},
+                {"properties": {"event": {"const": "session_started"}}},
+                {"properties": {"event": {"const": "agent"}}},
+            ],
+        },
+    }
+
+
+def validate_events_in_request_body(request: Request) -> None:
+    """Validates events format in request body."""
+    from jsonschema import validate
+    from jsonschema import ValidationError
+
+    if not isinstance(request.json, list):
+        events = [request.json]
+    else:
+        events = request.json
+
+    try:
+        validate(events, events_request_format_spec())
+    except ValidationError as e:
+        e.message += (
+            " Failed to validate the events format in the action server request body."
+            "For more information about the format visit: "
+            "https://rasa.com/docs/action-server/pages/action-server-api"
+        )
+        raise e
+
+
 async def authenticate(_: Request) -> NoReturn:
     """Callback for authentication failed."""
     raise exceptions.AuthenticationFailed(
@@ -744,6 +869,8 @@ def create_app(
             "to the state of a conversation.",
         )
 
+        validate_events_in_request_body(request)
+
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
         try:
@@ -808,6 +935,8 @@ def create_app(
             "You must provide events in the request body to set the sate of the "
             "conversation tracker.",
         )
+
+        validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
@@ -1263,6 +1392,8 @@ def create_app(
             "No events defined in request_body. Add events to request body in order to "
             "predict the next action.",
         )
+
+        validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         request_params = request.json

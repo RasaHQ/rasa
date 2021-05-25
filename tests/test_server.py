@@ -1204,22 +1204,19 @@ async def test_callback_unexpected_error(
 
 
 async def test_predict(rasa_app: SanicASGITestClient):
-    data = {
-        "Events": {
-            "value": [
-                {"event": "action", "name": "action_listen"},
-                {
-                    "event": "user",
-                    "text": "hello",
-                    "parse_data": {
-                        "entities": [],
-                        "intent": {"confidence": 0.57, INTENT_NAME_KEY: "greet"},
-                        "text": "hello",
-                    },
-                },
-            ]
-        }
-    }
+    data = [
+        {"event": "action", "name": "action_listen"},
+        {
+            "event": "user",
+            "text": "hello",
+            "parse_data": {
+                "entities": [],
+                "intent": {"confidence": 0.57, INTENT_NAME_KEY: "greet"},
+                "text": "hello",
+            },
+        },
+    ]
+
     _, response = await rasa_app.post(
         "/model/predict",
         json=data,
@@ -1230,6 +1227,28 @@ async def test_predict(rasa_app: SanicASGITestClient):
     assert "scores" in content
     assert "tracker" in content
     assert "policy" in content
+
+
+async def test_predict_invalid_entities_format(rasa_app: SanicASGITestClient):
+    data = [
+        {"event": "action", "name": "action_listen"},
+        {
+            "event": "user",
+            "text": "hello",
+            "parse_data": {
+                "entities": {},
+                "intent": {"confidence": 0.57, INTENT_NAME_KEY: "greet"},
+                "text": "hello",
+            },
+        },
+    ]
+
+    _, response = await rasa_app.post(
+        "/model/predict",
+        json=data,
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+    assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @freeze_time("2018-01-01")
