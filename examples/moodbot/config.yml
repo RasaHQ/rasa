@@ -8,14 +8,14 @@ pipeline:
     min_ngram: 1
     max_ngram: 4
   - name: DIETClassifier
-    epochs: 10
+    epochs: 50
     constrain_similarities: true
-    random_seed: 101
+    random_seed: 99
   - name: EntitySynonymMapper
   - name: ResponseSelector
-    epochs: 10
+    epochs: 100
     constrain_similarities: true
-    random_seet: 101
+    random_seed: 99
 
 policies:
   - name: TEDPolicy

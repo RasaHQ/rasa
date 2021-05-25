@@ -715,7 +715,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._add_label_features(
             model_data, training_data, label_attribute, label_id_dict, training
         )
-        self._add_text_feature_sizes(training_data[0])
+        signature = model_data.get_signature()
+        self._set_feature_sizes(training_data[0], signature)
         # model_data.first_data_example()
         # make sure all keys are in the same order during training and prediction
         # as we rely on the order of key and sub-key when constructing the actual
@@ -724,11 +725,24 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return model_data
 
-    def _add_text_feature_sizes(self, message):
+    def _get_sparse_attrs(self, signature):
+        attributes = set()
+        for key, sub_keys in signature.items():
+            for sub_key, features in sub_keys.items():
+                for feature in features:
+                    if feature.is_sparse:
+                        attributes.add(key)
+        if 'label' in attributes:
+            attributes.remove('label')
+        return list(attributes)
+
+    def _set_feature_sizes(self, message, signature):
         # extracts and stores current feature sizes
-        feature_sizes = message.get_sparse_feature_sizes(attribute='text',
-                                                    featurizers=self.component_config[FEATURIZERS])
-        self._feature_sizes = {'text': feature_sizes}
+        attributes = self._get_sparse_attrs(signature)
+        for attr in attributes:
+            feature_sizes = message.get_sparse_feature_sizes(attribute=attr,
+                                                        featurizers=self.component_config[FEATURIZERS])
+            self._feature_sizes = {attr: feature_sizes}
 
     def _add_label_features(
         self,
@@ -821,8 +835,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         **kwargs: Any,
     ) -> None:
         """Train the embedding intent classifier on a data set."""
-        # for feature in training_data.nlu_examples[0].__dict__['features']:
-        #     print(feature.type, feature.attribute, feature.origin, feature.features.shape)
         model_data = self.preprocess_train_data(training_data)
         if model_data.is_empty():
             logger.debug(
@@ -1079,7 +1091,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir,
             finetune_mode=should_finetune,
         )
-
+        print(old_feature_sizes)
         return cls(
             component_config=meta,
             index_label_id_mapping=index_label_id_mapping,
@@ -1241,34 +1253,35 @@ class DIET(TransformerRasaModel):
         self._prepare_layers()
 
     def adjust_layers(self, data_example, new_feature_sizes, old_feature_sizes):
-        my_layers = {}
-        features = self._tf_layers["sequence_layer.text"]._tf_layers[
-            "feature_combining"
-        ]
-        my_layers["sequence"] = features._tf_layers["sparse_dense.sequence"]._tf_layers[
-            "sparse_to_dense"
-        ]
-        my_layers["sentence"] = features._tf_layers["sparse_dense.sentence"]._tf_layers[
-            "sparse_to_dense"
-        ]
-        old_sequence_size = old_feature_sizes['text']['sequence']
-        new_sequence_size = new_feature_sizes['text']['sequence']
-        old_sentence_size = old_feature_sizes['text']['sentence']
-        new_sentence_size = new_feature_sizes['text']['sentence']
-        if sum(old_sequence_size) < sum(new_sequence_size):
-            new_seq_layer = self._update_dense_layer(my_layers["sequence"], old_sequence_size, new_sequence_size)
-            self._tf_layers["sequence_layer.text"]._tf_layers[
+        for attr in new_feature_sizes:
+            my_layers = {}
+            features = self._tf_layers["sequence_layer." + attr]._tf_layers[
                 "feature_combining"
-            ]._tf_layers["sparse_dense.sequence"]._tf_layers[
+            ]
+            my_layers["sequence"] = features._tf_layers["sparse_dense.sequence"]._tf_layers[
                 "sparse_to_dense"
-            ] = new_seq_layer
-        if sum(old_sentence_size) < sum(new_sentence_size):
-            new_sent_layer = self._update_dense_layer(my_layers["sentence"], old_sentence_size, new_sentence_size)
-            self._tf_layers["sequence_layer.text"]._tf_layers[
-                "feature_combining"
-            ]._tf_layers["sparse_dense.sentence"]._tf_layers[
+            ]
+            my_layers["sentence"] = features._tf_layers["sparse_dense.sentence"]._tf_layers[
                 "sparse_to_dense"
-            ] = new_sent_layer
+            ]
+            old_sequence_size = old_feature_sizes[attr]['sequence']
+            new_sequence_size = new_feature_sizes[attr]['sequence']
+            old_sentence_size = old_feature_sizes[attr]['sentence']
+            new_sentence_size = new_feature_sizes[attr]['sentence']
+            if sum(old_sequence_size) < sum(new_sequence_size):
+                new_seq_layer = self._update_dense_layer(my_layers["sequence"], old_sequence_size, new_sequence_size)
+                self._tf_layers["sequence_layer." + attr]._tf_layers[
+                    "feature_combining"
+                ]._tf_layers["sparse_dense.sequence"]._tf_layers[
+                    "sparse_to_dense"
+                ] = new_seq_layer
+            if sum(old_sentence_size) < sum(new_sentence_size):
+                new_sent_layer = self._update_dense_layer(my_layers["sentence"], old_sentence_size, new_sentence_size)
+                self._tf_layers["sequence_layer." + attr]._tf_layers[
+                    "feature_combining"
+                ]._tf_layers["sparse_dense.sentence"]._tf_layers[
+                    "sparse_to_dense"
+                ] = new_sent_layer
 
         self.compile(optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]))
         label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None
@@ -1306,6 +1319,9 @@ class DIET(TransformerRasaModel):
         std, mean = np.std(kernel), np.mean(kernel)
         additional_weights = [np.random.normal(mean, std, size=(num_rows, units)).astype(np.float32)
                               for num_rows in additional_sizes]
+        # additional_weights = [np.random.random((num_rows, units)).astype(np.float32)
+        #                       for num_rows in additional_sizes]
+
         # merge existing weight splits with additional ones
         merged_weights = [np.vstack((existing, new)) for existing, new in zip(kernel_splits, additional_weights)]
         # stack each split to form a new weight tensors
