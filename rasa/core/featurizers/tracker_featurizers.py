@@ -76,31 +76,12 @@ class TrackerFeaturizer:
         Returns:
             a list of states
         """
-        return cls._remove_action_unlikely_intent(
-            tracker.past_states(
-                domain,
-                omit_unset_slots=omit_unset_slots,
-                ignore_rule_only_turns=ignore_rule_only_turns,
-                rule_only_data=rule_only_data,
-            )
+        return tracker.past_states(
+            domain,
+            omit_unset_slots=omit_unset_slots,
+            ignore_rule_only_turns=ignore_rule_only_turns,
+            rule_only_data=rule_only_data,
         )
-
-    @staticmethod
-    def _remove_action_unlikely_intent(states: List[State]) -> List[State]:
-        """Remove `action_unlikely_intent` from tracker state history.
-
-        Args:
-            states: A list of states produced by a `DialogueStateTracker`
-                instance.
-
-        Returns:
-            Filtered states with last `action_listen` removed.
-        """
-        return [
-            state
-            for state in states
-            if not is_prev_action_unlikely_intent_in_state(state)
-        ]
 
     def _featurize_states(
         self,
@@ -489,6 +470,23 @@ class TrackerFeaturizer:
         )
         return None
 
+    @staticmethod
+    def _remove_action_unlikely_intent(states: List[State]) -> List[State]:
+        """Remove `action_unlikely_intent` from tracker state history.
+
+        Args:
+            states: A list of states produced by a `DialogueStateTracker`
+                instance.
+
+        Returns:
+            Filtered states with last `action_listen` removed.
+        """
+        return [
+            state
+            for state in states
+            if not is_prev_action_unlikely_intent_in_state(state)
+        ]
+
 
 class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     """Creates full dialogue training data for time distributed architectures.
@@ -530,6 +528,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             states = self._create_states(
                 tracker, domain, omit_unset_slots=omit_unset_slots
             )
+            states = self._remove_action_unlikely_intent(states)
 
             delete_first_state = False
             actions = []
@@ -605,6 +604,10 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                 rule_only_data=rule_only_data,
             )
             for tracker in trackers
+        ]
+        trackers_as_states = [
+            self._remove_action_unlikely_intent(states)
+            for states in trackers_as_states
         ]
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
 
@@ -768,6 +771,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
         )
+        tracker_states = self._remove_action_unlikely_intent(tracker_states)
 
         label_index = 0
         entity_data = {}
@@ -828,6 +832,14 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 rule_only_data=rule_only_data,
             )
             for tracker in trackers
+        ]
+
+        # Remove `action_unlikely_intent` from `trackers_as_states`.
+        # This must be done before state history slicing to ensure the
+        # max history of the sliced states matches training time.
+        trackers_as_states = [
+            self._remove_action_unlikely_intent(states)
+            for states in trackers_as_states
         ]
 
         trackers_as_states = [
@@ -1009,6 +1021,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
         )
+        tracker_states = self._remove_action_unlikely_intent(tracker_states)
 
         label_index = 0
         for event in tracker.applied_events():
@@ -1079,6 +1092,14 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 rule_only_data=rule_only_data,
             )
             for tracker in trackers
+        ]
+
+        # Remove `action_unlikely_intent` from `trackers_as_states`.
+        # This must be done before state history slicing to ensure the
+        # max history of the sliced states matches training time.
+        trackers_as_states = [
+            self._remove_action_unlikely_intent(states)
+            for states in trackers_as_states
         ]
 
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
