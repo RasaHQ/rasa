@@ -737,7 +737,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             )
         return similarities, confidences
 
-    def call(self, *args, **kwargs):
+    def call(self, *args, **kwargs) -> Tuple[tf.Tensor, tf.Tensor]:
         """Layer's logic - to be implemented in child class."""
         raise NotImplementedError
 
@@ -1098,23 +1098,26 @@ class SingleLabelDotProductLoss(DotProductLoss):
     # noinspection PyMethodOverriding
     def call(
         self,
-        inputs_embed: tf.Tensor,  # (batch_size, 1, num_features)
-        labels_embed: tf.Tensor,  # (batch_size, 1, num_features)
-        labels: tf.Tensor,  # (batch_size, 1, 1)
-        all_labels_embed: tf.Tensor,  # (num_labels, num_features)
-        all_labels: tf.Tensor,  # (num_labels, 1)
-        mask: Optional[tf.Tensor] = None,  # (batch_size, 1)
+        inputs_embed: tf.Tensor,
+        labels_embed: tf.Tensor,
+        labels: tf.Tensor,
+        all_labels_embed: tf.Tensor,
+        all_labels: tf.Tensor,
+        mask: Optional[tf.Tensor] = None,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Calculate loss and accuracy.
 
         Args:
-            inputs_embed: Embedding tensor for the batch inputs.
-            labels_embed: Embedding tensor for the batch labels.
-            labels: Tensor representing batch labels.
-            all_labels_embed: Embedding tensor for the all labels.
-            all_labels: Tensor representing all labels.
+            inputs_embed: Embedding tensor for the batch inputs;
+                shape (batch_size, ..., num_features)
+            labels_embed: Embedding tensor for the batch labels;
+                shape (batch_size, ..., num_features)
+            labels: Tensor representing batch labels; shape (batch_size, ..., 1)
+            all_labels_embed: Embedding tensor for the all labels;
+                shape (num_labels, num_features)
+            all_labels: Tensor representing all labels; shape (num_labels, 1)
             mask: Optional tensor representing sequence mask,
-                contains `1` for inputs and `0` for padding.
+                contains `1` for inputs and `0` for padding; shape (batch_size, 1)
 
         Returns:
             loss: Total loss.
@@ -1193,29 +1196,34 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
     def call(
         self,
-        batch_inputs_embed: tf.Tensor,  # (batch_size, 1, num_features) or (batch_size, num_features)
-        batch_labels_embed: tf.Tensor,  # (batch_size, max_num_labels_per_input, num_features) or (batch_size, num_features)
-        batch_labels_ids: tf.Tensor,  # (batch_size, max_num_labels, 1) or (batch_size, ?)
-        all_labels_embed: tf.Tensor,  # (num_labels, num_features)
-        all_labels_ids: tf.Tensor,  # (num_labels, 1)
-        mask: Optional[tf.Tensor] = None,  # (batch_size, 1)
-    ) -> Tuple[tf.Tensor, tf.Tensor]:  # (), ()
+        batch_inputs_embed: tf.Tensor,
+        batch_labels_embed: tf.Tensor,
+        batch_labels_ids: tf.Tensor,
+        all_labels_embed: tf.Tensor,
+        all_labels_ids: tf.Tensor,
+        mask: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Calculates loss and accuracy.
 
         Args:
             batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized
-                trackers)
+                trackers); shape (batch_size, ..., num_features)
             batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents
-                for IntentTED)
-            batch_label_ids: Batch label indices (e.g. indices of the intents)
-            all_labels_embed: Embeddings for all labels in the domain
-            all_label_ids: Indices for all labels in the domain
+                for IntentTED);
+                shape (batch_size, max_num_labels_per_input, num_features)
+            batch_label_ids: Batch label indices (e.g. indices of the intents);
+                shape (batch_size, max_num_labels_per_input, 1)
+            all_labels_embed: Embeddings for all labels in the domain;
+                shape (batch_size, max_num_labels_per_input, 1)
+            all_labels_ids: Indices for all labels in the domain;
+                shape (num_labels, 1)
             mask: Optional sequence mask, which contains `1` for inputs and `0` for
                 padding.
 
         Returns:
-            loss: Total loss (based on StarSpace http://arxiv.org/abs/1709.03856)
-            accuracy: Training accuracy
+            loss: Total loss (based on StarSpace http://arxiv.org/abs/1709.03856);
+                scalar
+            accuracy: Training accuracy; scalar
         """
         (
             pos_inputs_embed,  # (batch_size, 1, 1, num_features)
@@ -1328,7 +1336,10 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
     def _get_pos_neg_indicators(
-        self, all_labels_ids, batch_labels_ids, candidate_ids,
+        self,
+        all_labels_ids: tf.Tensor,
+        batch_labels_ids: tf.Tensor,
+        candidate_ids: tf.Tensor,
     ) -> tf.Tensor:
         """Computes indicators for which candidates are positive labels.
 
