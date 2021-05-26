@@ -383,10 +383,7 @@ def events_request_format_spec() -> Dict[Text, Any]:
         "type": "array",
         "items": {
             "type": "object",
-            "properties": {
-                "event": {"type": "string"},
-                "timestamp": {"type": "number"},
-            },
+            "properties": {"event": {"type": "string"}, "timestamp": {}},
             "oneOf": [
                 {
                     "properties": {
@@ -426,8 +423,8 @@ def events_request_format_spec() -> Dict[Text, Any]:
                 {
                     "properties": {
                         "event": {"const": "action"},
-                        "policy": {"type": "string"},
-                        "confidence": {"type": "number"},
+                        "policy": {},
+                        "confidence": {},
                         "name": {"type": "string"},
                     }
                 },

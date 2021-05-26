@@ -591,16 +591,13 @@ class RemoteAction(Action):
                     "type": "array",
                     "items": {
                         "type": "object",
-                        "properties": {
-                            "event": {"type": "string"},
-                            "timestamp": {"type": "number"},
-                        },
+                        "properties": {"event": {"type": "string"}, "timestamp": {}},
                         "oneOf": [
                             {
                                 "properties": {
                                     "event": {"const": "user"},
                                     "text": {"type": "string"},
-                                    "input_channel": {"type": "string"},
+                                    "input_channel": {},
                                     "message_id": {"type": "string"},
                                     "parse_data": {
                                         "type": "object",
@@ -636,8 +633,8 @@ class RemoteAction(Action):
                             {
                                 "properties": {
                                     "event": {"const": "action"},
-                                    "policy": {"type": "string"},
-                                    "confidence": {"type": "number"},
+                                    "policy": {},
+                                    "confidence": {},
                                     "name": {"type": "string"},
                                 }
                             },
