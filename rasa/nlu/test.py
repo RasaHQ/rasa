@@ -59,6 +59,7 @@ from rasa.nlu.components import Component
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.exceptions import InvalidTypeException
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
@@ -339,9 +340,13 @@ def plot_attribute_confidences(
     ]
 
     if not (all(isinstance(item, float) for item in pos_hist)):
-        raise TypeError("All values of `pos_hist` should be of type `float`.")
+        raise InvalidTypeException(
+            f"All values of the `pos_hist` {type(pos_hist).__name__} should be of type `float`."
+        )
     if not (all(isinstance(item, float) for item in neg_hist)):
-        raise TypeError("All values of `neg_hist` should be of type `float`.")
+        raise InvalidTypeException(
+            f"All values of the `neg_hist` {type(neg_hist).__name__} should be of type `float`."
+        )
 
     plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
 

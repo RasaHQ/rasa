@@ -78,7 +78,7 @@ from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
 # this event_loop is used by pytest-asyncio, and redefining it
 # is currently the only way of changing the scope of this fixture
 from tests.nlu.utilities import write_file_config
-
+from rasa.exceptions import InvalidTypeException
 
 # Chinese Example
 # "对面食过敏" -> To be allergic to wheat-based food
@@ -1219,3 +1219,25 @@ def test_replacing_fallback_intent():
 def test_is_entity_extractor_present(components, expected_result):
     interpreter = Interpreter(components, context=None)
     assert is_entity_extractor_present(interpreter) == expected_result
+
+
+def test_plot_attribute_confidences_with_invalid_values(tmp_path: Path):
+    path = tmp_path / "evaluation"
+    path.mkdir()
+    report_folder = str(path / "reports")
+
+    rasa.shared.utils.io.create_directory(report_folder)
+
+    intent_results = [
+        IntentEvaluationResult("", "restaurant_search", 76, -21),
+        IntentEvaluationResult("greet", "greet", -32, 99),
+    ]
+
+    with pytest.raises(InvalidTypeException):
+        evaluate_intents(
+            intent_results,
+            report_folder,
+            successes=True,
+            errors=True,
+            disable_plotting=False,
+        )

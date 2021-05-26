@@ -23,6 +23,10 @@ class MissingDependencyException(RasaException):
     """Raised if a python package dependency is needed, but not installed."""
 
 
+class InvalidTypeException(RasaException):
+    """Raised when an object is of invalid/unexpected type is encountered."""
+
+
 class PublishingError(RasaException):
     """Raised when publishing of an event fails.
 

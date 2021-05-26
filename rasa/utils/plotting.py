@@ -10,7 +10,6 @@ from matplotlib.ticker import FormatStrFormatter
 
 import rasa.shared.utils.io
 from rasa.constants import RESULTS_FILE
-from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
