@@ -338,6 +338,11 @@ def plot_attribute_confidences(
         if getattr(r, target_key) != getattr(r, prediction_key)
     ]
 
+    if not (all(isinstance(item, float) for item in pos_hist)):
+        raise TypeError("All values of `pos_hist` should be of type `float`.")
+    if not (all(isinstance(item, float) for item in neg_hist)):
+        raise TypeError("All values of `neg_hist` should be of type `float`.")
+
     plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
 
 

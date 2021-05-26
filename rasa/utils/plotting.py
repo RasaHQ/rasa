@@ -125,8 +125,6 @@ def plot_confusion_matrix(
         logger.info(f"Confusion matrix, without normalization: \n{confusion_matrix}")
 
     thresh = zmax / 2.0
-    if not thresh:
-        raise RasaException(f"The variable `thresh` cannot be `{type(thresh)}`.")
     for i, j in itertools.product(
         range(confusion_matrix.shape[0]), range(confusion_matrix.shape[1])
     ):
