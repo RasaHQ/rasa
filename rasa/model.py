@@ -231,7 +231,7 @@ def unpack_model(
         with tarfile.open(model_file, mode="r:gz") as tar:
             tar.extractall(working_directory)
             logger.debug(f"Extracted model to '{working_directory}'.")
-    except Exception as e:
+    except tarfile.TarError as e:
         logger.error(f"Failed to extract model at {model_file}. Error: {e}")
         raise
 
@@ -490,41 +490,45 @@ def should_retrain(
     if old_model is None or not os.path.exists(old_model):
         return fingerprint_comparison
 
-    with unpack_model(old_model) as unpacked:
-        last_fingerprint = fingerprint_from_path(unpacked)
-        old_core, old_nlu = get_model_subdirectories(unpacked)
+    try:
+        with unpack_model(old_model) as unpacked:
+            last_fingerprint = fingerprint_from_path(unpacked)
+            old_core, old_nlu = get_model_subdirectories(unpacked)
 
-        fingerprint_comparison = FingerprintComparisonResult(
-            core=did_section_fingerprint_change(
-                last_fingerprint, new_fingerprint, SECTION_CORE
-            ),
-            nlu=did_section_fingerprint_change(
-                last_fingerprint, new_fingerprint, SECTION_NLU
-            ),
-            nlg=did_section_fingerprint_change(
-                last_fingerprint, new_fingerprint, SECTION_NLG
-            ),
-            force_training=force_training,
-        )
+            fingerprint_comparison = FingerprintComparisonResult(
+                core=did_section_fingerprint_change(
+                    last_fingerprint, new_fingerprint, SECTION_CORE
+                ),
+                nlu=did_section_fingerprint_change(
+                    last_fingerprint, new_fingerprint, SECTION_NLU
+                ),
+                nlg=did_section_fingerprint_change(
+                    last_fingerprint, new_fingerprint, SECTION_NLG
+                ),
+                force_training=force_training,
+            )
 
-        # We should retrain core if nlu data changes and there are e2e stories.
-        if has_e2e_examples and fingerprint_comparison.should_retrain_nlu():
-            fingerprint_comparison.core = True
+            # We should retrain core if nlu data changes and there are e2e stories.
+            if has_e2e_examples and fingerprint_comparison.should_retrain_nlu():
+                fingerprint_comparison.core = True
 
-        core_merge_failed = False
-        if not fingerprint_comparison.should_retrain_core():
-            target_path = os.path.join(train_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
-            core_merge_failed = not move_model(old_core, target_path)
-            fingerprint_comparison.core = core_merge_failed
+            core_merge_failed = False
+            if not fingerprint_comparison.should_retrain_core():
+                target_path = os.path.join(train_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
+                core_merge_failed = not move_model(old_core, target_path)
+                fingerprint_comparison.core = core_merge_failed
 
-        if not fingerprint_comparison.should_retrain_nlg() and core_merge_failed:
-            # If moving the Core model failed, we should also retrain NLG
-            fingerprint_comparison.nlg = True
+            if not fingerprint_comparison.should_retrain_nlg() and core_merge_failed:
+                # If moving the Core model failed, we should also retrain NLG
+                fingerprint_comparison.nlg = True
 
-        if not fingerprint_comparison.should_retrain_nlu():
-            target_path = os.path.join(train_path, "nlu")
-            fingerprint_comparison.nlu = not move_model(old_nlu, target_path)
+            if not fingerprint_comparison.should_retrain_nlu():
+                target_path = os.path.join(train_path, "nlu")
+                fingerprint_comparison.nlu = not move_model(old_nlu, target_path)
 
+            return fingerprint_comparison
+    except Exception as e:
+        logger.error(f"Failed to get the fingerprint. Error: {e}")
         return fingerprint_comparison
 
 
