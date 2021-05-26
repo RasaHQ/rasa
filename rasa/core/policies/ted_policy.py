@@ -108,9 +108,11 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
     BILOU_FLAG,
+    LABEL_BATCH_SIZE,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
+from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -123,6 +125,7 @@ LABEL_KEY = LABEL
 LABEL_SUB_KEY = IDS
 LENGTH = "length"
 INDICES = "indices"
+SAMPLE_ACTION_TEXT_ID = "sample_action_text_id"
 SENTENCE_FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
 SEQUENCE_FEATURES_TO_ENCODE = [TEXT, ACTION_TEXT, f"{LABEL}_{ACTION_TEXT}"]
 LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
@@ -302,6 +305,8 @@ class TEDPolicy(Policy):
         # ingredients in a recipe, but it doesn't make sense for the parts of
         # an address
         SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+        # Number of labels to use as candidates for negative sampling
+        LABEL_BATCH_SIZE: -1,
     }
 
     @staticmethod
@@ -397,6 +402,40 @@ class TEDPolicy(Policy):
             LABEL_SUB_KEY,
             [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
         )
+
+        label_batch_size = self.config[LABEL_BATCH_SIZE]
+
+        # Get label ids for each key in attribute data
+        # by using the pre-computed mask.
+        for key, data in attribute_data.items():
+            if MASK in data:
+                mask = np.reshape(data[MASK][0], (-1,)).astype(dtype=np.bool)
+                key_ids = label_ids[mask].astype(np.int32)
+                label_data.add_features(
+                    f"{LABEL_KEY}_{key}",
+                    LABEL_SUB_KEY,
+                    [FeatureArray(np.expand_dims(key_ids, -1), number_of_dimensions=2)],
+                )
+                key_label_batch_size = (
+                    key_ids.shape[0]
+                    if label_batch_size == -1
+                    else max(
+                        1,
+                        int(
+                            (np.shape(key_ids)[0] / np.shape(label_ids)[0])
+                            * label_batch_size
+                        ),
+                    )
+                )
+                label_data.add_features(
+                    f"{LABEL_KEY}_{key}",
+                    LABEL_BATCH_SIZE,
+                    [
+                        FeatureArray(
+                            np.array([key_label_batch_size]), number_of_dimensions=1
+                        )
+                    ],
+                )
 
         return label_data, encoded_all_labels
 
@@ -1139,6 +1178,214 @@ class TED(TransformerRasaModel):
 
         return all_label_ids, all_labels_embed
 
+    def _create_all_labels_embed_for_training(
+        self, sampled_candidate_label_ids: tf.Tensor, batch_label_ids: tf.Tensor
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+
+        # Concatenate sampled candidate label ids and batch label ids and
+        # extract a unique and sorted set of label ids for which embeddings
+        # have to be computed.
+        concatenated_ids = tf.concat(
+            [
+                tf.reshape(sampled_candidate_label_ids, (-1,)),
+                tf.reshape(batch_label_ids, (-1,)),
+            ],
+            axis=0,
+        )
+
+        all_unique_label_ids = tf.sort(tf.unique(concatenated_ids)[0], axis=0)
+
+        # Compute embeddings for all unique label ids
+        all_labels_embed = self._compute_embedding_for_label_ids(all_unique_label_ids)
+
+        return all_unique_label_ids, all_labels_embed
+
+    @staticmethod
+    def _slice_sparse_tensor(
+        input_tensor: tf.SparseTensor, selection_indices: tf.Tensor, axis=0
+    ) -> tf.SparseTensor:
+        """
+        Assume input_tensor is:
+            indices = [[0, 0], [2, 2], [2, 3], [3, 1]]
+            values = [1, 2, 2, 3]
+            original_shape = [4, 5]
+        Assume selection_indices is: [3,2]
+        Assume axis is 0
+        Note: Entries in selection_indices should be unique and sorted. If not, this implementation will fail.
+
+        Args:
+            input_tensor: Input sparse tensor to be sliced
+            selection_indices: Indices inside the sparse tensor that should be picked
+            axis: Axis over which selection_indices should operate
+        Returns:
+        """
+        n_indices = tf.size(selection_indices)  # (2)
+
+        # Get indices for the axis
+        selection_axis_indices = input_tensor.indices[:, axis]  # [0, 2, 2, 3]
+
+        # Find where indices match the selection
+        eq = tf.equal(
+            tf.expand_dims(selection_axis_indices, 1),
+            tf.cast(selection_indices, tf.int64),
+        )  # [[0, 0], [1, 0], [1, 0], [0, 1]]
+
+        # Mask for selected values
+        sel = tf.reduce_any(eq, axis=1)  # [0, 1, 1 ,1]
+
+        # Selected values
+        selected_values = tf.boolean_mask(input_tensor.values, sel, axis=0)  # [2, 2, 3]
+
+        # Construct the new index values for axis on which selection has been made.
+        n_indices = tf.cast(n_indices, tf.int64)
+        selection_axis_indices_new = tf.reduce_sum(
+            tf.cast(eq, tf.int64) * tf.range(n_indices), axis=1
+        )  # [0, 0, 0, 1]
+        selection_axis_indices_new = tf.boolean_mask(
+            selection_axis_indices_new, sel, axis=0
+        )  # [0, 0, 1]
+
+        # New full indices tensor
+        indices_new = tf.boolean_mask(
+            input_tensor.indices, sel, axis=0
+        )  # [[2,2], [2,3], [3,1]]
+        indices_new = tf.concat(
+            [
+                indices_new[:, :axis],
+                tf.expand_dims(selection_axis_indices_new, 1),
+                indices_new[:, axis + 1 :],
+            ],
+            axis=1,
+        )  # [[0,2], [0,3], [0,1]]
+
+        # New shape
+        shape_new = tf.concat(
+            [
+                input_tensor.dense_shape[:axis],
+                [n_indices],
+                input_tensor.dense_shape[axis + 1 :],
+            ],
+            axis=0,
+        )  # [2, 5]
+        return tf.SparseTensor(indices_new, selected_values, shape_new)
+
+    def _slice_tensor(
+        self, tensor: Union[tf.Tensor, tf.SparseTensor], indices: tf.Tensor
+    ) -> Union[tf.Tensor, tf.SparseTensor]:
+        if isinstance(tensor, tf.Tensor):
+            return tf.gather(tensor, tf.cast(indices, dtype=tf.int32))
+        elif isinstance(tensor, tf.SparseTensor):
+            return self._slice_sparse_tensor(tensor, indices)
+
+    def _filter_label_data(
+        self, selection_label_ids: tf.Tensor
+    ) -> Dict[Text, Dict[Text, List[Union[tf.Tensor, tf.SparseTensor]]]]:
+
+        feature_key_selection_ids = {}
+
+        for key in self.tf_label_data.keys():
+            if key != LABEL_KEY:
+                feature_key_selection_ids[key] = {}
+                key_label_ids = self.tf_label_data[key][LABEL_SUB_KEY][0]
+                for sub_key in self.tf_label_data[key]:
+                    if sub_key in [SEQUENCE, SENTENCE]:
+                        key_selection_mask = tf.equal(
+                            key_label_ids, selection_label_ids
+                        )
+                        key_selection_mask = tf.reduce_any(key_selection_mask, axis=1)
+                        key_selection_ids = tf.squeeze(tf.where(key_selection_mask), -1)
+
+                        feature_key_selection_ids[key][sub_key] = key_selection_ids
+
+                    elif sub_key in [MASK, SEQUENCE_LENGTH]:
+                        key_selection_ids = selection_label_ids
+                        feature_key_selection_ids[key][sub_key] = key_selection_ids
+
+        filtered_label_data = {}
+        max_sequence_length = {}
+
+        for key in self.tf_label_data.keys():
+            if key != LABEL_KEY:
+                filtered_label_data[key] = {}
+                for sub_key in self.tf_label_data[key]:
+                    if sub_key in [LABEL_SUB_KEY, LABEL_BATCH_SIZE]:
+                        continue
+
+                    filtered_attribute_data = [
+                        self._slice_tensor(
+                            data, feature_key_selection_ids[key][sub_key]
+                        )
+                        for data in self.tf_label_data[key][sub_key]
+                    ]
+
+                    if sub_key == SEQUENCE_LENGTH:
+                        max_sequence_length[key] = tf.cast(
+                            tf.reduce_max(filtered_attribute_data[0]), dtype=tf.int64
+                        )
+
+                    filtered_label_data[key][sub_key] = filtered_attribute_data
+
+        for key in filtered_label_data:
+            for sub_key in filtered_label_data[key]:
+                if sub_key == SEQUENCE:
+                    # Slice with correct max sequence length
+                    truncated_data = []
+                    for data in filtered_label_data[key][sub_key]:
+
+                        if isinstance(data, tf.SparseTensor):
+                            indices = data.indices
+                            values = data.values
+                            shape = data.dense_shape
+
+                            new_shape = (
+                                shape[0],
+                                max_sequence_length[key],
+                                data.shape[2],
+                            )
+
+                            truncated_data.append(
+                                tf.SparseTensor(indices, values, new_shape)
+                            )
+
+                        else:
+
+                            truncated_data.append(
+                                data[:, : max_sequence_length[key], :]
+                            )
+
+                    filtered_label_data[key][sub_key] = truncated_data
+
+        return filtered_label_data
+
+    def _compute_embedding_for_label_ids(self, label_ids: tf.Tensor) -> tf.Tensor:
+
+        filtered_label_data = self._filter_label_data(label_ids)
+
+        labels_encoded = {}
+        for key in filtered_label_data.keys():
+            if key != LABEL_KEY:
+                attribute_features, _, _ = self._encode_real_features_per_attribute(
+                    filtered_label_data, key
+                )
+                labels_encoded[key] = attribute_features
+            if (
+                labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None
+                and labels_encoded.get(f"{LABEL_KEY}_{ACTION_NAME}") is not None
+            ):
+                x = labels_encoded.pop(
+                    f"{LABEL_KEY}_{ACTION_TEXT}"
+                ) + labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
+            elif labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None:
+                x = labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}")
+            else:
+                x = labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
+                # additional sequence axis is artifact of our RasaModelData
+                # creation
+                # TODO check whether this should be solved in data creation
+            x = tf.squeeze(x, axis=1)
+            labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
+            return labels_embed
+
     def _embed_dialogue(
         self,
         dialogue_in: tf.Tensor,
@@ -1684,15 +1931,75 @@ class TED(TransformerRasaModel):
 
     @staticmethod
     def _get_labels_embed(
-        label_ids: tf.Tensor, all_labels_embed: tf.Tensor
+        selection_ids: tf.Tensor, all_label_ids: tf.Tensor, all_labels_embed: tf.Tensor
     ) -> tf.Tensor:
         # instead of processing labels again, gather embeddings from
         # all_labels_embed using label ids
 
-        indices = tf.cast(label_ids[:, :, 0], tf.int32)
-        labels_embed = tf.gather(all_labels_embed, indices)
+        selection_ids = tf.reshape(selection_ids, (-1,))
 
-        return labels_embed
+        # Find indices inside all_label_ids where selection_ids is equal to
+        # all_label_ids
+        indices = tf.where(
+            tf.transpose(
+                tf.equal(tf.expand_dims(all_label_ids, 1), selection_ids), (1, 0)
+            )
+        )[:, 1]
+        return tf.gather(all_labels_embed, indices)
+
+    def _get_candidate_label_ids(self, label_batch_size):
+
+        all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
+
+        total_num_label_ids = all_label_ids.shape[0]
+
+        if label_batch_size > total_num_label_ids:
+            raise TFLayerConfigException(
+                f"{LABEL_BATCH_SIZE} is set to {label_batch_size} which is "
+                f"greater that total number of unique label ids "
+                f"({total_num_label_ids}). Please make "
+                f"sure that {LABEL_BATCH_SIZE} is set to a value smaller than "
+                f"or equal to the number of unique label ids."
+            )
+
+        # Sample for each key
+        all_sampled_label_ids = []
+        for key in self.tf_label_data:
+            if key != LABEL_KEY:
+                key_ids = self.tf_label_data[key][LABEL_SUB_KEY][0]
+                num_samples = self.tf_label_data[key][LABEL_BATCH_SIZE][0]
+                total_num_candidates = key_ids.shape[0]
+                sampled_label_ids = self._sample_label_batch_ids(
+                    key_ids, num_samples, total_num_candidates
+                )
+                all_sampled_label_ids.append(sampled_label_ids)
+
+        all_sampled_label_ids = tf.concat(all_sampled_label_ids, axis=0)
+
+        return all_sampled_label_ids
+
+    @staticmethod
+    def _sample_label_batch_ids(all_label_ids, num_samples, total_num_label_ids):
+
+        # Sample a fixed number of random label ids
+        # We use uniform candidate sampler because it has the ability to
+        # sample unique values
+        indices, _, _ = tf.random.uniform_candidate_sampler(
+            tf.cast(tf.reshape(all_label_ids, (1, -1)), dtype=tf.int64),
+            total_num_label_ids,
+            num_samples,
+            True,
+            total_num_label_ids,
+        )
+
+        # Extract the values at those indices to get the action label ids
+        sampled_label_ids = tf.gather(all_label_ids, indices)
+
+        sampled_label_ids = tf.cast(sampled_label_ids, dtype=tf.float32)
+
+        sampled_label_ids = tf.reshape(sampled_label_ids, (-1, 1))
+
+        return sampled_label_ids
 
     def batch_loss(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
@@ -1708,10 +2015,31 @@ class TED(TransformerRasaModel):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
         self._compute_dialogue_indices(tf_batch_data)
 
-        all_label_ids, all_labels_embed = self._create_all_labels_embed()
+        batch_label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
-        labels_embed = self._get_labels_embed(label_ids, all_labels_embed)
+        sampled_label_ids = self._get_candidate_label_ids(
+            label_batch_size=self.config[LABEL_BATCH_SIZE]
+        )  # [label_bs, 1])
+
+        (
+            all_unique_label_ids,
+            all_labels_embed,
+        ) = self._create_all_labels_embed_for_training(
+            sampled_label_ids, batch_label_ids
+        )
+
+        # Collect embeddings for sampled label ids and batch label ids from
+        # embeddings for all labels
+        batch_labels_embed = self._get_labels_embed(
+            batch_label_ids, all_unique_label_ids, all_labels_embed
+        )
+        sampled_labels_embed = self._get_labels_embed(
+            sampled_label_ids, all_unique_label_ids, all_labels_embed
+        )
+
+        # Add back the sequence dimension
+        batch_labels_embed = tf.expand_dims(batch_labels_embed, axis=1)
+        sampled_labels_embed = tf.expand_dims(sampled_labels_embed, axis=1)
 
         dialogue_in, text_output, text_sequence_lengths = self._process_batch_data(
             tf_batch_data
@@ -1728,10 +2056,10 @@ class TED(TransformerRasaModel):
 
         loss, acc = self._tf_layers[f"loss.{LABEL}"](
             dialogue_embed,
-            labels_embed,
-            label_ids,
-            all_labels_embed,
-            all_label_ids,
+            batch_labels_embed,
+            batch_label_ids,
+            sampled_labels_embed,
+            sampled_label_ids,
             dialogue_mask,
         )
         losses.append(loss)
@@ -1758,7 +2086,27 @@ class TED(TransformerRasaModel):
     # ---PREDICTION---
     def prepare_for_predict(self) -> None:
         """Prepares the model for prediction."""
-        _, self.all_labels_embed = self._create_all_labels_embed()
+
+        all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
+        if self.config[LABEL_BATCH_SIZE] == -1:
+            all_label_ids = tf.reshape(all_label_ids, (-1,))
+            self.all_labels_embed = self._compute_embedding_for_label_ids(all_label_ids)
+        else:
+            # Compute in batches
+            all_label_embeds = []
+            index = 0
+            while index < len(all_label_ids):
+                batch_label_ids = all_label_ids[
+                    index : index + self.config[LABEL_BATCH_SIZE]
+                ]
+                batch_label_ids = tf.reshape(batch_label_ids, (-1,))
+                batch_label_embeds = self._compute_embedding_for_label_ids(
+                    batch_label_ids
+                )
+                all_label_embeds.append(batch_label_embeds)
+                index += self.config[LABEL_BATCH_SIZE]
+
+            self.all_labels_embed = tf.concat(all_label_embeds, axis=0)
 
     def batch_predict(
         self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]

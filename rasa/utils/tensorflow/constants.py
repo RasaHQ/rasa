@@ -62,6 +62,8 @@ RETRIEVAL_INTENT = "retrieval_intent"
 
 USE_TEXT_AS_LABEL = "use_text_as_label"
 
+LABEL_BATCH_SIZE = "label_batch_size"
+
 SOFTMAX = "softmax"
 MARGIN = "margin"
 AUTO = "auto"
