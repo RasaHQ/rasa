@@ -184,7 +184,7 @@ class ConveRTFeaturizer(DenseFeaturizer):
             f"{model_url} is neither a valid remote URL nor a local directory. "
             f"You can either use a community hosted URL or if you have a "
             f"local copy of the model, pass the path to "
-            f"the directory containing the model files. "
+            f"the directory containing the model files."
         )
 
     @staticmethod
