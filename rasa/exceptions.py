@@ -24,7 +24,7 @@ class MissingDependencyException(RasaException):
 
 
 class InvalidTypeException(RasaException):
-    """Raised when an object is of invalid/unexpected type is encountered."""
+    """Raised when an object of invalid/unexpected type is encountered."""
 
 
 class PublishingError(RasaException):
