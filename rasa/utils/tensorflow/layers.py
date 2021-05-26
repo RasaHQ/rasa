@@ -645,7 +645,7 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         Args:
             num_candidates: Number of labels besides the positive one. Depending on
-                whether single- or multi-label loss is implemented (done in 
+                whether single- or multi-label loss is implemented (done in
                 sub-classes), these can be all negative example labels, or a mixture of
                 negative and further positive labels, respectively.
             scale_loss: Boolean, if `True` scale loss inverse proportionally to
@@ -654,7 +654,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 similarity terms and adds to the loss function to
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
-            model_confidence: Normalization of confidence values during inference. 
+            model_confidence: Normalization of confidence values during inference.
                 Possible values are `SOFTMAX` and `LINEAR_NORM`.
             similarity_type: Similarity measure to use, either `cosine` or `inner`.
             name: Optional name of the layer.
@@ -679,12 +679,12 @@ class DotProductLoss(tf.keras.layers.Layer):
         self, a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None
     ) -> tf.Tensor:
         """Calculates similarity between `a` and `b`.
-        
+
         Operates on the last dimension. When `a` and `b` are vectors, then `sim`
         computes either the dot-product, or the cosine of the angle between `a` and `b`,
-        depending on `self.similarity_type`. 
+        depending on `self.similarity_type`.
         Specifically, when the similarity type is `INNER`, then we compute the scalar
-        product `a . b`. When the similarity type is `COSINE`, we compute 
+        product `a . b`. When the similarity type is `COSINE`, we compute
         `a . b / (|a| |b|)`, i.e. the cosine of the angle between `a` and `b`.
 
         Args:
@@ -773,7 +773,7 @@ class DotProductLoss(tf.keras.layers.Layer):
 
 class SingleLabelDotProductLoss(DotProductLoss):
     """Single-label dot-product loss layer.
-    
+
     This loss layer assumes that only one output (label) is correct for any given input.
     """
 
@@ -819,7 +819,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
             constrain_similarities: If `True` and loss_type is `cross_entropy`, a
                 sigmoid loss term is added to the total loss to ensure that similarity
                 values are approximately bounded.
-            model_confidence: Normalization of confidence values during inference. 
+            model_confidence: Normalization of confidence values during inference.
                 Possible values are `SOFTMAX` and `LINEAR_NORM`.
         """
         super().__init__(
@@ -1153,7 +1153,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
 
 class MultiLabelDotProductLoss(DotProductLoss):
     """Multi-label dot-product loss layer.
-    
+
     This loss layer assumes that multiple outputs (labels) can be correct for any given
     input. To accomodate for this, we use a sigmoid cross-entropy loss here.
     """
@@ -1179,7 +1179,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
                 similarity terms and adds to the loss function to
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
-            model_confidence: Normalization of confidence values during inference. 
+            model_confidence: Normalization of confidence values during inference.
                 Possible values are `SOFTMAX` and `LINEAR_NORM`.
         """
         super().__init__(
@@ -1231,17 +1231,29 @@ class MultiLabelDotProductLoss(DotProductLoss):
         )
 
         # Calculate similarities
+        sim_pos, sim_candidate_il = self._train_sim(
+            pos_inputs_embed, pos_labels_embed, candidate_labels_embed, mask
+        )
+
+        accuracy = self._accuracy(sim_pos, sim_candidate_il, pos_neg_labels)
+        loss = self._loss_sigmoid(sim_pos, sim_candidate_il, pos_neg_labels, mask)
+
+        return loss, accuracy
+
+    def _train_sim(
+        self,
+        pos_inputs_embed: tf.Tensor,
+        pos_labels_embed: tf.Tensor,
+        candidate_labels_embed: tf.Tensor,
+        mask: tf.Tensor,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
         sim_pos = self.sim(
             pos_inputs_embed, pos_labels_embed, mask
         )  # (batch_size, 1, 1)
         sim_candidate_il = self.sim(
             pos_inputs_embed, candidate_labels_embed, mask
         )  # (batch_size, 1, num_candidates)
-
-        accuracy = self._accuracy(sim_pos, sim_candidate_il, pos_neg_labels)
-        loss = self._loss_sigmoid(sim_pos, sim_candidate_il, pos_neg_labels, mask)
-
-        return loss, accuracy
+        return sim_pos, sim_candidate_il
 
     def _sample_candidates(
         self,
@@ -1319,7 +1331,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         self, all_labels_ids, batch_labels_ids, candidate_ids,
     ) -> tf.Tensor:
         """Computes indicators for which candidates are positive labels.
-        
+
         Args:
             all_labels_ids: Indices of all the labels
             batch_labels_ids: Indices of the labels in the examples

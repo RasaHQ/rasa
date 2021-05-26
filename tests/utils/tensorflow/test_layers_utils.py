@@ -5,7 +5,21 @@ import rasa.utils.tensorflow.layers_utils as layers_utils
 
 
 @pytest.mark.parametrize(
-    "batch_size, n, n_max", [(10, 4, 100), (10, 4, 0)],
+    "batch_size, n, n_max",
+    [
+        (10, 4, 100),
+        (10, 4, 0),
+        (
+            tf.constant(10, dtype=tf.int32),
+            tf.constant(4, dtype=tf.int32),
+            tf.constant(100, dtype=tf.int32),
+        ),
+        (
+            tf.constant(10, dtype=tf.int32),
+            tf.constant(4, dtype=tf.int32),
+            tf.constant(0, dtype=tf.int32),
+        ),
+    ],
 )
 def test_random_indices(batch_size, n, n_max):
     indices = layers_utils.random_indices(batch_size, n, n_max)
@@ -18,40 +32,6 @@ def test_batch_flatten():
     x = tf.ones([5, 6, 7, 8, 9])
     x_flat = layers_utils.batch_flatten(x)
     assert np.all(tf.shape(x_flat).numpy() == [5 * 6 * 7 * 8, 9])
-
-
-@pytest.mark.parametrize(
-    "shape, padding, expected_result",
-    [
-        (
-            [5, 7],
-            0,
-            [
-                [1, 1, 0, 0, 0, 0, 0],
-                [1, 1, 0, 0, 0, 0, 0],
-                [1, 1, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0],
-            ],
-        ),
-        (
-            [5, 7],
-            42,
-            [
-                [1, 1, 42, 42, 42, 42, 42],
-                [1, 1, 42, 42, 42, 42, 42],
-                [1, 1, 42, 42, 42, 42, 42],
-                [42, 42, 42, 42, 42, 42, 42],
-                [42, 42, 42, 42, 42, 42, 42],
-            ],
-        ),
-    ],
-)
-def test_pad_right(shape, padding, expected_result):
-    x = tf.ones([3, 2])
-    x_padded = layers_utils.pad_right(x, shape, value=padding)
-    assert np.all(tf.shape(x_padded).numpy() == shape)
-    assert np.all(x_padded.numpy() == expected_result)
 
 
 def test_get_candidate_values():

@@ -1,9 +1,11 @@
 import tensorflow as tf
-from tensorflow import Tensor, TensorShape
+from tensorflow import Tensor
 from typing import Union
 
 
-def random_indices(batch_size: Tensor, n: Tensor, n_max: Tensor) -> Tensor:
+def random_indices(
+    batch_size: Union[Tensor, int], n: Union[Tensor, int], n_max: Union[Tensor, int]
+) -> Tensor:
     """Creates batch_size * n random indices that run from 0 to n_max.
 
     Args:
@@ -14,10 +16,10 @@ def random_indices(batch_size: Tensor, n: Tensor, n_max: Tensor) -> Tensor:
     Returns:
         A uniformly distributed integer tensor of indices
     """
-    return (
-        tf.random.uniform(shape=(batch_size, n), maxval=n_max, dtype=tf.int32)
-        if n_max > 0
-        else tf.zeros((batch_size, n), dtype=tf.int32)
+    return tf.cond(
+        n_max > 0,
+        lambda: tf.random.uniform(shape=(batch_size, n), maxval=n_max, dtype=tf.int32),
+        lambda: tf.zeros((batch_size, n), dtype=tf.int32),
     )
 
 
@@ -32,27 +34,6 @@ def batch_flatten(x: Tensor) -> Tensor:
         are flattened into the first dimension
     """
     return tf.reshape(x, (-1, x.shape[-1]))
-
-
-def pad_right(
-    x: Tensor, target_shape: TensorShape, value: Union[int, float] = 0
-) -> Tensor:
-    """Creates a tensor of shape `target_shape` by padding it with `value` on the right.
-
-    Args:
-        x: Any tensor
-        target_shape: Shape of the padded x; must be at least as large as the
-            shape of x in all dimensions
-
-    Returns:
-        A tensor like x, but padded with `value`
-    """
-    current_shape = tf.shape(x)
-    right_padding = tf.expand_dims(
-        tf.convert_to_tensor(target_shape - current_shape), -1
-    )
-    padding = tf.concat([tf.zeros_like(right_padding), right_padding], -1)
-    return tf.pad(x, padding, "CONSTANT", constant_values=value)
 
 
 def get_candidate_values(
