@@ -246,6 +246,9 @@ class ResponseSelector(DIETClassifier):
         MODEL_CONFIDENCE: SOFTMAX,
     }
 
+    # The `transformer_size` to use as a default when the transformer is enabled.
+    default_transformer_size_when_enabled = 256
+
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
@@ -308,56 +311,80 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent = config[RETRIEVAL_INTENT]
         self.use_text_as_label = config[USE_TEXT_AS_LABEL]
 
-    def _check_diet2diet_config_params(self) -> None:
-        """Checks & corrects component config when in the `use_text_as_label` mode."""
-        if self.use_text_as_label:
+    def _warn_about_transformer_and_hidden_layers_enabled(
+        self, selector_name: Text
+    ) -> None:
+        """Warns user if they enabled the transformer but didn't disable hidden layers.
+
+        ResponseSelector defaults specify considerable hidden layer sizes, but
+        this is for cases where no transformer is used. If a transformer exists,
+        then the best results are chieved with no hidden layers used between the
+        feature-combining layers and the transformer.
+        """
+        hidden_layers_is_at_default_value = (
+            self.component_config[HIDDEN_LAYERS_SIZES]
+            == self.defaults[HIDDEN_LAYERS_SIZES]
+        )
+        config_for_disabling_hidden_layers = {
+            k: [] for k, _ in self.defaults[HIDDEN_LAYERS_SIZES].items()
+        }
+        # warn if the hidden layers aren't disabled
+        if (
+            self.component_config[HIDDEN_LAYERS_SIZES]
+            != config_for_disabling_hidden_layers
+        ):
+            # make the warning text more contextual by explaining what the user did
+            # to the hidden layers' config (i.e. what it is they should change)
+            if hidden_layers_is_at_default_value:
+                what_user_did = "left the hidden layer sizes at their default value:"
+            else:
+                what_user_did = "set the hidden layer sizes to be non-empty by setting"
+
+            rasa.shared.utils.io.raise_warning(
+                f"You have enabled a transformer inside {selector_name} by"
+                f" setting a positive value for `{NUM_TRANSFORMER_LAYERS}`, but you "
+                f"{what_user_did} `{HIDDEN_LAYERS_SIZES}="
+                f"{self.component_config[HIDDEN_LAYERS_SIZES]}`. We recommend to "
+                f"disable the hidden layers when using a transformer, by specifying "
+                f"`{HIDDEN_LAYERS_SIZES}={config_for_disabling_hidden_layers}`.",
+                category=UserWarning,
+            )
+
+    def _warn_and_correct_transformer_size(self, selector_name: Text) -> None:
+        """Corrects transformer size so that training doesn't break; informs the user.
+
+        If a transformer is used, the default `transformer_size` breaks things.
+        We need to set a reasonable default value so that the model works fine.
+        """
+        if (
+            self.component_config[TRANSFORMER_SIZE] is None
+            or self.component_config[TRANSFORMER_SIZE] < 1
+        ):
+            rasa.shared.utils.io.raise_warning(
+                f"`{TRANSFORMER_SIZE}` is set to "
+                f"`{self.component_config[TRANSFORMER_SIZE]}` for "
+                f"{selector_name}, but a positive size is required when using "
+                f"`{NUM_TRANSFORMER_LAYERS} > 0`. {selector_name} will proceed, using "
+                f"`{TRANSFORMER_SIZE}={self.default_transformer_size_when_enabled}`. "
+                f"Alternatively, specify a different value in the component's config.",
+                category=UserWarning,
+            )
+            self.component_config[
+                TRANSFORMER_SIZE
+            ] = self.default_transformer_size_when_enabled
+
+    def _check_config_params_when_transformer_enabled(self) -> None:
+        """Checks & corrects config parameters when the transformer is enabled.
+
+        This is needed because the defaults for individual config parameters are
+        interdependent and some defaults should change when the transformer is enabled.
+        """
+        if self.component_config[NUM_TRANSFORMER_LAYERS] > 0:
             selector_name = "ResponseSelector" + (
                 f"({self.retrieval_intent})" if self.retrieval_intent else ""
             )
-
-            # ResponseSelector defaults specify considerable hidden layer sizes, but
-            # this is for cases where no transformer is used. If a transformer exists,
-            # then the best results are chieved with no hidden layers used between the
-            # feature-combining layers and the transformer.
-            hidden_layers_is_at_default_value = (
-                self.component_config[HIDDEN_LAYERS_SIZES]
-                == self.defaults[HIDDEN_LAYERS_SIZES]
-            )
-            if (
-                self.component_config[NUM_TRANSFORMER_LAYERS] > 0
-                and hidden_layers_is_at_default_value
-            ):
-                hidden_layers_disabled = {
-                    k: [] for k, _ in self.defaults[HIDDEN_LAYERS_SIZES].items()
-                }
-                rasa.shared.utils.io.raise_warning(
-                    f"You have enabled a transformer inside {selector_name} by setting "
-                    f"a positive value for `{NUM_TRANSFORMER_LAYERS}`, but you left "
-                    f"the hidden layer sizes at their default value: "
-                    f"`{HIDDEN_LAYERS_SIZES}="
-                    f"{self.component_config[HIDDEN_LAYERS_SIZES]}`. We recommend to "
-                    f"disable the hidden layers when using a transformer "
-                    f"by specifying `{HIDDEN_LAYERS_SIZES}={hidden_layers_disabled}`.",
-                    category=UserWarning,
-                )
-
-            # If a transformer is used, the default `transformer_size` breaks things.
-            # We need to set a reasonable default value so that the model works fine.
-            if self.component_config[NUM_TRANSFORMER_LAYERS] > 0 and (
-                self.component_config[TRANSFORMER_SIZE] is None
-                or self.component_config[TRANSFORMER_SIZE] < 1
-            ):
-                rasa.shared.utils.io.raise_warning(
-                    f"`{TRANSFORMER_SIZE}` is set to "
-                    f"`{self.component_config[TRANSFORMER_SIZE]}` for "
-                    f"{selector_name}, but a positive size is required when using "
-                    f"`{USE_TEXT_AS_LABEL}=True` together with "
-                    f"`{NUM_TRANSFORMER_LAYERS} > 0`. {selector_name} will proceed, "
-                    f"using `{TRANSFORMER_SIZE}=256`. Alternatively, specify a "
-                    f"different value in the component's config.",
-                    category=UserWarning,
-                )
-                self.component_config[TRANSFORMER_SIZE] = 256
+            self._warn_about_transformer_and_hidden_layers_enabled(selector_name)
+            self._warn_and_correct_transformer_size(selector_name)
 
     def _check_config_parameters(self) -> None:
         """Checks that component configuration makes sense; corrects it where needed."""
@@ -365,7 +392,7 @@ class ResponseSelector(DIETClassifier):
         self._load_selector_params(self.component_config)
         # Once general DIET-related parameters have been checked, check also the ones
         # specific to ResponseSelector.
-        self._check_diet2diet_config_params()
+        self._check_config_params_when_transformer_enabled()
 
     def _set_message_property(
         self, message: Message, prediction_dict: Dict[Text, Any], selector_key: Text

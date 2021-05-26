@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-from typing import List, Dict, Text, Any, Optional
+from typing import List, Dict, Text, Any, Optional, Union
 from mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -24,7 +24,8 @@ from rasa.utils.tensorflow.constants import (
     RANDOM_SEED,
     RANKING_LENGTH,
     LOSS_TYPE,
-    USE_TEXT_AS_LABEL,
+    HIDDEN_LAYERS_SIZES,
+    LABEL,
 )
 from rasa.utils import train_utils
 from rasa.shared.nlu.constants import TEXT
@@ -444,80 +445,108 @@ async def test_softmax_ranking(
 
 
 @pytest.mark.parametrize(
-    "num_transformer_layers, should_raise_warning",
-    [(5, True), (0, False), (-1, False)],
+    "config, should_raise_warning",
+    [
+        # hidden layers left at defaults
+        ({}, False),
+        ({NUM_TRANSFORMER_LAYERS: 5}, True),
+        ({NUM_TRANSFORMER_LAYERS: 0}, False),
+        ({NUM_TRANSFORMER_LAYERS: -1}, False),
+        # hidden layers explicitly enabled
+        ({HIDDEN_LAYERS_SIZES: {TEXT: [10], LABEL: [11]}}, False),
+        (
+            {NUM_TRANSFORMER_LAYERS: 5, HIDDEN_LAYERS_SIZES: {TEXT: [10], LABEL: [11]}},
+            True,
+        ),
+        (
+            {NUM_TRANSFORMER_LAYERS: 0, HIDDEN_LAYERS_SIZES: {TEXT: [10], LABEL: [11]}},
+            False,
+        ),
+        (
+            {
+                NUM_TRANSFORMER_LAYERS: -1,
+                HIDDEN_LAYERS_SIZES: {TEXT: [10], LABEL: [11]},
+            },
+            False,
+        ),
+        # hidden layers explicitly disabled
+        ({HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []}}, False),
+        (
+            {NUM_TRANSFORMER_LAYERS: 5, HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []}},
+            False,
+        ),
+        (
+            {NUM_TRANSFORMER_LAYERS: 0, HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []}},
+            False,
+        ),
+        (
+            {NUM_TRANSFORMER_LAYERS: -1, HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []}},
+            False,
+        ),
+    ],
 )
-def test_DIET2DIET_config_warning_transformer_with_hidden_layers(
-    num_transformer_layers: int, should_raise_warning: bool
+def test_warning_when_transformer_and_hidden_layers_enabled(
+    config: Dict[Text, Union[int, Dict[Text, List[int]]]], should_raise_warning: bool
 ):
-    """DIET2DIET recommends to disable hidden layers if transformer is enabled."""
+    """ResponseSelector recommends disabling hidden layers if transformer is enabled."""
     with pytest.warns(UserWarning) as records:
-        _ = ResponseSelector(
-            component_config={
-                USE_TEXT_AS_LABEL: True,
-                NUM_TRANSFORMER_LAYERS: num_transformer_layers,
-            }
-        )
+        _ = ResponseSelector(component_config=config)
+    warning_str = "We recommend to disable the hidden layers when using a transformer"
 
     if should_raise_warning:
         assert len(records) > 0
         # Check all warnings since there may be multiple other warnings we don't care
         # about in this test case.
-        assert any(
-            "We recommend to disable the hidden layers when using a transformer"
-            in record.message.args[0]
-            for record in records
-        )
+        assert any(warning_str in record.message.args[0] for record in records)
     else:
         # Check all warnings since there may be multiple other warnings we don't care
         # about in this test case.
-        assert not any(
-            "We recommend to disable the hidden layers when using a transformer"
-            in record.message.args[0]
-            for record in records
-        )
+        assert not any(warning_str in record.message.args[0] for record in records)
 
 
 @pytest.mark.parametrize(
-    "transformer_config, should_set_default_transformer_size",
+    "config, should_set_default_transformer_size",
     [
-        ({}, True),
-        ({TRANSFORMER_SIZE: 0}, True),
-        ({TRANSFORMER_SIZE: -1}, True),
-        ({TRANSFORMER_SIZE: None}, True),
+        # transformer enabled
+        ({NUM_TRANSFORMER_LAYERS: 5}, True),
+        ({TRANSFORMER_SIZE: 0, NUM_TRANSFORMER_LAYERS: 5}, True),
+        ({TRANSFORMER_SIZE: -1, NUM_TRANSFORMER_LAYERS: 5}, True),
+        ({TRANSFORMER_SIZE: None, NUM_TRANSFORMER_LAYERS: 5}, True),
+        ({TRANSFORMER_SIZE: 10, NUM_TRANSFORMER_LAYERS: 5}, False),
+        # transformer disabled (by default)
+        ({}, False),
+        ({TRANSFORMER_SIZE: 0}, False),
+        ({TRANSFORMER_SIZE: -1}, False),
+        ({TRANSFORMER_SIZE: None}, False),
         ({TRANSFORMER_SIZE: 10}, False),
+        # transformer disabled explicitly
+        ({NUM_TRANSFORMER_LAYERS: 0}, False),
+        ({TRANSFORMER_SIZE: 0, NUM_TRANSFORMER_LAYERS: 0}, False),
+        ({TRANSFORMER_SIZE: -1, NUM_TRANSFORMER_LAYERS: 0}, False),
+        ({TRANSFORMER_SIZE: None, NUM_TRANSFORMER_LAYERS: 0}, False),
+        ({TRANSFORMER_SIZE: 10, NUM_TRANSFORMER_LAYERS: 0}, False),
     ],
 )
-def test_DIET2DIET_sets_transformer_size_when_needed(
-    transformer_config: Dict[Text, Optional[int]],
-    should_set_default_transformer_size: bool,
+def test_sets_integer_transformer_size_when_needed(
+    config: Dict[Text, Optional[int]], should_set_default_transformer_size: bool,
 ):
-    """DIET2DIET ensures a sensible transformer size when transformer is enabled."""
-    diet2diet_default_transformer_size = 256
-    component_config = dict({USE_TEXT_AS_LABEL: True, NUM_TRANSFORMER_LAYERS: 5})
-    component_config.update(transformer_config)
+    """ResponseSelector ensures sensible transformer size when transformer enabled."""
+    default_transformer_size = 256
     with pytest.warns(UserWarning) as records:
-        selector = ResponseSelector(component_config=component_config)
+        selector = ResponseSelector(component_config=config)
+
+    warning_str = f"positive size is required when using `{NUM_TRANSFORMER_LAYERS} > 0`"
+
     if should_set_default_transformer_size:
         assert len(records) > 0
-        assert any(
-            f"a positive size is required when using `{USE_TEXT_AS_LABEL}="
-            f"True` together with `{NUM_TRANSFORMER_LAYERS} > 0`"
-            in record.message.args[0]
-            for record in records
-        )
-        assert (
-            selector.component_config[TRANSFORMER_SIZE]
-            == diet2diet_default_transformer_size
-        )
+        # check that the specific warning was raised
+        assert any(warning_str in record.message.args[0] for record in records)
+        # check that transformer size got set to the new default
+        assert selector.component_config[TRANSFORMER_SIZE] == default_transformer_size
     else:
-        assert not any(
-            f"a positive size is required when using `{USE_TEXT_AS_LABEL}="
-            f"True` together with `{NUM_TRANSFORMER_LAYERS} > 0`"
-            in record.message.args[0]
-            for record in records
-        )
-        assert (
-            selector.component_config[TRANSFORMER_SIZE]
-            == transformer_config[TRANSFORMER_SIZE]
+        # check that the specific warning was not raised
+        assert not any(warning_str in record.message.args[0] for record in records)
+        # check that transformer size was not changed
+        assert selector.component_config[TRANSFORMER_SIZE] == config.get(
+            TRANSFORMER_SIZE, None  # None is the default transformer size
         )
