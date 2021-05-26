@@ -198,6 +198,7 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         omit_unset_slots: bool = False,
+        ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
         """Transforms list of trackers to lists of states, actions and entity data.
 
@@ -205,6 +206,8 @@ class TrackerFeaturizer:
             trackers: The trackers to transform
             domain: The domain
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_action_unlikely_intent: Remove action_unlikely_intent from
+                training states.
 
         Returns:
             A tuple of list of states, list of actions and list of entity data.
@@ -213,8 +216,11 @@ class TrackerFeaturizer:
             "'training_states_actions_and_entities' is being deprecated in favor of "
             "'training_states_labels_and_entities'."
         )
-        return self.training_states_actions_and_entities(
-            trackers, domain, omit_unset_slots=omit_unset_slots
+        return self.training_states_labels_and_entities(
+            trackers,
+            domain,
+            omit_unset_slots=omit_unset_slots,
+            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
         )
 
     def training_states_and_actions(
@@ -222,6 +228,7 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         omit_unset_slots: bool = False,
+        ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions.
 
@@ -229,6 +236,8 @@ class TrackerFeaturizer:
             trackers: The trackers to transform
             domain: The domain
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_action_unlikely_intent: Remove action_unlikely_intent from
+                training states.
 
         Returns:
             A tuple of list of states and list of actions.
@@ -239,7 +248,10 @@ class TrackerFeaturizer:
         )
 
         return self.training_states_and_labels(
-            trackers, domain, omit_unset_slots=omit_unset_slots
+            trackers,
+            domain,
+            omit_unset_slots=omit_unset_slots,
+            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
         )
 
     def training_states_and_labels(
@@ -247,6 +259,7 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         omit_unset_slots: bool = False,
+        ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and labels.
 
@@ -254,6 +267,8 @@ class TrackerFeaturizer:
             trackers: The trackers to transform
             domain: The domain
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_action_unlikely_intent: Remove action_unlikely_intent from
+                training states.
 
         Returns:
             A tuple of list of states and list of labels.
@@ -263,7 +278,10 @@ class TrackerFeaturizer:
             trackers_as_labels,
             _,
         ) = self.training_states_labels_and_entities(
-            trackers, domain, omit_unset_slots=omit_unset_slots
+            trackers,
+            domain,
+            omit_unset_slots=omit_unset_slots,
+            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
         )
         return trackers_as_states, trackers_as_labels
 
@@ -272,6 +290,7 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         omit_unset_slots: bool = False,
+        ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
         """Transforms list of trackers to lists of states, labels, and entity data.
 
@@ -279,6 +298,8 @@ class TrackerFeaturizer:
             trackers: The trackers to transform
             domain: The domain
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_action_unlikely_intent: Remove action_unlikely_intent from
+                training states.
 
         Returns:
             A tuple of list of states, list of labels and list of entity data.
@@ -293,6 +314,7 @@ class TrackerFeaturizer:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
+        ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[
         List[List[Dict[Text, List[Features]]]],
         np.ndarray,
@@ -305,6 +327,8 @@ class TrackerFeaturizer:
             domain: the domain
             interpreter: the interpreter
             bilou_tagging: indicates whether BILOU tagging should be used or not
+            ignore_action_unlikely_intent: Remove action_unlikely_intent from
+                training state features.
 
         Returns:
             A tuple of a list of state features, a list of labels, and a list of entity
@@ -332,7 +356,11 @@ class TrackerFeaturizer:
             trackers_as_states,
             trackers_as_labels,
             trackers_as_entities,
-        ) = self.training_states_labels_and_entities(trackers, domain)
+        ) = self.training_states_labels_and_entities(
+            trackers,
+            domain,
+            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
+        )
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_labels, domain)
@@ -374,6 +402,7 @@ class TrackerFeaturizer:
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_action_unlikely_intent: bool = False,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
@@ -386,6 +415,8 @@ class TrackerFeaturizer:
                 only in rules.
             rule_only_data: Slots and loops,
                 which only occur in rules but not in stories.
+            ignore_action_unlikely_intent: Remove any states containing
+                action_unlikely_intent from prediction states.
 
         Returns:
             A list of states.
@@ -402,6 +433,7 @@ class TrackerFeaturizer:
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_action_unlikely_intent: bool = False,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         """Create state features for prediction.
 
@@ -415,6 +447,8 @@ class TrackerFeaturizer:
                 only in rules.
             rule_only_data: Slots and loops,
                 which only occur in rules but not in stories.
+            ignore_action_unlikely_intent: Remove any states containing
+                action_unlikely_intent from state features.
 
         Returns:
             A list (corresponds to the list of trackers)
@@ -429,6 +463,7 @@ class TrackerFeaturizer:
             use_text_for_last_user_input,
             ignore_rule_only_turns,
             rule_only_data,
+            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
         )
         return self._featurize_states(trackers_as_states, interpreter)
 
@@ -499,6 +534,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers: List[DialogueStateTracker],
         domain: Domain,
         omit_unset_slots: bool = False,
+        ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
         """Transforms list of trackers to lists of state, action labels and entity data.
 
@@ -506,6 +542,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers: The trackers to transform
             domain: The domain
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_action_unlikely_intent: Remove action_unlikely_intent from
+                training states.
 
         Returns:
             A tuple of list of states, list of action labels and list of entity data.
@@ -528,7 +566,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             states = self._create_states(
                 tracker, domain, omit_unset_slots=omit_unset_slots
             )
-            states = self._remove_action_unlikely_intent(states)
+
+            if ignore_action_unlikely_intent:
+                states = self._remove_action_unlikely_intent(states)
 
             delete_first_state = False
             actions = []
@@ -541,7 +581,10 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                 if not isinstance(event, ActionExecuted):
                     continue
 
-                if event.action_name == ACTION_UNLIKELY_INTENT_NAME:
+                if (
+                    ignore_action_unlikely_intent
+                    and event.action_name == ACTION_UNLIKELY_INTENT_NAME
+                ):
                     continue
 
                 if not event.unpredictable:
@@ -580,6 +623,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_action_unlikely_intent: bool = False,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
@@ -592,6 +636,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                 only in rules.
             rule_only_data: Slots and loops,
                 which only occur in rules but not in stories.
+            ignore_action_unlikely_intent: Remove any states containing
+                action_unlikely_intent from prediction states.
 
         Returns:
             A list of states.
@@ -605,9 +651,13 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             )
             for tracker in trackers
         ]
-        trackers_as_states = [
-            self._remove_action_unlikely_intent(states) for states in trackers_as_states
-        ]
+
+        if ignore_action_unlikely_intent:
+            trackers_as_states = [
+                self._remove_action_unlikely_intent(states)
+                for states in trackers_as_states
+            ]
+
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
 
         return trackers_as_states
@@ -691,6 +741,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         trackers: List[DialogueStateTracker],
         domain: Domain,
         omit_unset_slots: bool = False,
+        ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
         """Transforms list of trackers to lists of states, labels and entity data.
 
@@ -698,6 +749,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             trackers: The trackers to transform
             domain: The domain
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_action_unlikely_intent: Remove action_unlikely_intent from
+                training states.
 
         Returns:
             A tuple of list of states, list of labels and list of entity data.
@@ -726,7 +779,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         for tracker in pbar:
 
             for states, label, entities in self._extract_examples(
-                tracker, domain, omit_unset_slots=omit_unset_slots
+                tracker,
+                domain,
+                omit_unset_slots=omit_unset_slots,
+                ignore_action_unlikely_intent=ignore_action_unlikely_intent,
             ):
 
                 if self.remove_duplicates:
@@ -752,6 +808,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         tracker: DialogueStateTracker,
         domain: Domain,
         omit_unset_slots: bool = False,
+        ignore_action_unlikely_intent: bool = False,
     ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
         """Create an iterator over training examples from a tracker.
 
@@ -762,6 +819,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             trackers: The tracker from which to extract training examples.
             domain: The domain of the training data.
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_action_unlikely_intent: Remove action_unlikely_intent from
+                training states.
+
+
 
         Returns:
             An iterator over tuples of list of states, list of labels and list of
@@ -770,7 +831,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
         )
-        tracker_states = self._remove_action_unlikely_intent(tracker_states)
+
+        if ignore_action_unlikely_intent:
+            tracker_states = self._remove_action_unlikely_intent(tracker_states)
 
         label_index = 0
         entity_data = {}
@@ -778,10 +841,13 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             if isinstance(event, UserUttered):
                 entity_data = self._entity_data(event)
 
-            elif (
-                isinstance(event, ActionExecuted)
-                and event.action_name != ACTION_UNLIKELY_INTENT_NAME
-            ):
+            elif isinstance(event, ActionExecuted):
+
+                if (
+                    ignore_action_unlikely_intent
+                    and event.action_name == ACTION_UNLIKELY_INTENT_NAME
+                ):
+                    continue
 
                 label_index += 1
 
@@ -807,6 +873,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_action_unlikely_intent: bool = False,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
@@ -819,6 +886,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 only in rules.
             rule_only_data: Slots and loops,
                 which only occur in rules but not in stories.
+            ignore_action_unlikely_intent: Remove any states containing
+                action_unlikely_intent from prediction states.
 
         Returns:
             A list of states.
@@ -836,9 +905,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         # Remove `action_unlikely_intent` from `trackers_as_states`.
         # This must be done before state history slicing to ensure the
         # max history of the sliced states matches training time.
-        trackers_as_states = [
-            self._remove_action_unlikely_intent(states) for states in trackers_as_states
-        ]
+        if ignore_action_unlikely_intent:
+            trackers_as_states = [
+                self._remove_action_unlikely_intent(states)
+                for states in trackers_as_states
+            ]
 
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)
@@ -916,6 +987,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         trackers: List[DialogueStateTracker],
         domain: Domain,
         omit_unset_slots: bool = False,
+        ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
         """Transforms list of trackers to lists of states, labels and entity data.
 
@@ -923,6 +995,8 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             trackers: The trackers to transform
             domain: The domain
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_action_unlikely_intent: Remove action_unlikely_intent from
+                training states.
 
         Returns:
             A tuple of list of states, list of labels and list of entity data.
@@ -956,7 +1030,10 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         for tracker in pbar:
 
             for states, label, entities in self._extract_examples(
-                tracker, domain, omit_unset_slots=omit_unset_slots
+                tracker,
+                domain,
+                omit_unset_slots=omit_unset_slots,
+                ignore_action_unlikely_intent=ignore_action_unlikely_intent,
             ):
 
                 if self.remove_duplicates:
@@ -1001,6 +1078,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         tracker: DialogueStateTracker,
         domain: Domain,
         omit_unset_slots: bool = False,
+        ignore_action_unlikely_intent: bool = False,
     ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
         """Create an iterator over training examples from a tracker.
 
@@ -1011,6 +1089,8 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             trackers: The tracker from which to extract training examples.
             domain: The domain of the training data.
             omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_action_unlikely_intent: Remove action_unlikely_intent from
+                training states.
 
         Returns:
             An iterator over tuples of list of states, list of labels and list of
@@ -1019,15 +1099,20 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
         )
-        tracker_states = self._remove_action_unlikely_intent(tracker_states)
+
+        if ignore_action_unlikely_intent:
+            tracker_states = self._remove_action_unlikely_intent(tracker_states)
 
         label_index = 0
         for event in tracker.applied_events():
 
-            if (
-                isinstance(event, ActionExecuted)
-                and event.action_name != ACTION_UNLIKELY_INTENT_NAME
-            ):
+            if isinstance(event, ActionExecuted):
+                if (
+                    ignore_action_unlikely_intent
+                    and event.action_name == ACTION_UNLIKELY_INTENT_NAME
+                ):
+                    continue
+
                 label_index += 1
 
             elif isinstance(event, UserUttered):
@@ -1066,6 +1151,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignore_action_unlikely_intent: bool = False,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
@@ -1078,6 +1164,8 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 only in rules.
             rule_only_data: Slots and loops,
                 which only occur in rules but not in stories.
+            ignore_action_unlikely_intent: Remove any states containing
+                action_unlikely_intent from prediction states.
 
         Returns:
             A list of states.
@@ -1095,9 +1183,11 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         # Remove `action_unlikely_intent` from `trackers_as_states`.
         # This must be done before state history slicing to ensure the
         # max history of the sliced states matches training time.
-        trackers_as_states = [
-            self._remove_action_unlikely_intent(states) for states in trackers_as_states
-        ]
+        if ignore_action_unlikely_intent:
+            trackers_as_states = [
+                self._remove_action_unlikely_intent(states)
+                for states in trackers_as_states
+            ]
 
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
 
