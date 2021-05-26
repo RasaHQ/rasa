@@ -374,16 +374,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 unseen.
         """
         existing_vocabulary: Dict[Text, int] = self.vectorizers[attribute].vocabulary
-        # if len(new_vocabulary) > len(existing_vocabulary):
-        #     rasa.shared.utils.io.raise_warning(
-        #         f"New data contains vocabulary of size {len(new_vocabulary)} for "
-        #         f"attribute {attribute} "
-        #         f"which is larger than the maximum vocabulary size "
-        #         f"({len(existing_vocabulary)}) of the original model. "
-        #         f"Some tokens will have to be dropped "
-        #         f"in order to continue training. It is advised to re-train the "
-        #         f"model from scratch on the complete data."
-        #     )
         self._merge_new_vocabulary_tokens(existing_vocabulary, new_vocabulary)
         self._set_vocabulary(attribute, existing_vocabulary)
 
@@ -394,73 +384,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         for token in vocabulary:
             if token not in existing_vocabulary:
                 existing_vocabulary[token] = len(existing_vocabulary)
-                # del existing_vocabulary[f"{BUFFER_SLOTS_PREFIX}{available_empty_index}"]
-                # available_empty_index += 1
-                # if available_empty_index == len(existing_vocabulary):
-                #     # We have exhausted all available vocabulary slots.
-                #     # Drop the remaining vocabulary.
-                #     return
-
-    def _get_additional_vocabulary_size(
-        self, attribute: Text, existing_vocabulary_size: int
-    ) -> int:
-        """Gets additional vocabulary size to be saved for incremental training.
-
-        If `self.additional_vocabulary_size` is not `None`,
-        we return that as the user should have specified
-        this number. If not then we take the default
-        additional vocabulary size which is 1/2 of the
-        current vocabulary size.
-
-        Args:
-            attribute: Message attribute for which additional vocabulary size should
-                be computed.
-            existing_vocabulary_size: Current size of vocabulary learnt from the
-                training data.
-
-        Returns:
-            Size of additional vocabulary that should be set aside for incremental
-            training.
-        """
-        # Vocabulary expansion for INTENTS, ACTION_NAME
-        # and INTENT_RESPONSE_KEY is currently not supported as
-        # incremental training does not support creation/deletion
-        # of new/existing labels(intents, actions, etc.)
-        return 0
-        # if attribute not in DENSE_FEATURIZABLE_ATTRIBUTES:
-        #     return 0
-        #
-        # configured_additional_size = self.additional_vocabulary_size.get(attribute)
-        # if configured_additional_size is not None:
-        #     return configured_additional_size
-        #
-        # # If the user hasn't defined additional vocabulary size,
-        # # then we increase it by 1000 minimum. If the current
-        # # vocabulary size is greater than 2000, we take half of
-        # # that number as additional vocabulary size.
-        # return max(MIN_ADDITIONAL_CVF_VOCABULARY, int(existing_vocabulary_size * 0.5))
-
-    def _add_buffer_to_vocabulary(self, attribute: Text) -> None:
-        """Adds extra tokens to vocabulary for incremental training.
-
-        These extra tokens act as buffer slots which are used up sequentially
-        when more data is received as part of incremental training. Each of
-        these tokens start with a prefix `buf_` followed by the extra slot index.
-        So for example - buf_1, buf_2, buf_3... and so on.
-
-        Args:
-            attribute: Name of the attribute for which the vocabulary should be
-            expanded.
-        """
-        original_vocabulary = self.vectorizers[attribute].vocabulary_
-        current_vocabulary_size = len(original_vocabulary)
-        for index in range(
-            current_vocabulary_size,
-            current_vocabulary_size
-            + self._get_additional_vocabulary_size(attribute, current_vocabulary_size),
-        ):
-            original_vocabulary[f"{BUFFER_SLOTS_PREFIX}{index}"] = index
-        self._set_vocabulary(attribute, original_vocabulary)
 
     def _set_vocabulary(
         self, attribute: Text, original_vocabulary: Dict[Text, int]
@@ -617,7 +540,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             )
         # Add buffer for extra vocabulary tokens
         # that come in during incremental training.
-        self._add_buffer_to_vocabulary(attribute)
         ls = [k for k,v in self.vectorizers[attribute].vocabulary_.items()]
         # print(ls[:100])
         # print(attribute)

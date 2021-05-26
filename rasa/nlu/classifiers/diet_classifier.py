@@ -330,6 +330,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         finetune_mode: bool = False,
+        old_feature_sizes: Dict[Text, Dict[Text, List[int]]] = None,
     ) -> None:
         """Declare instance variables with default values."""
         if component_config is not None and EPOCHS not in component_config:
@@ -359,6 +360,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.split_entities_config = self.init_split_entities()
 
         self.finetune_mode = finetune_mode
+        self._old_feature_sizes = old_feature_sizes
+        self._feature_sizes = None
 
         if not self.model and self.finetune_mode:
             raise rasa.shared.exceptions.InvalidParameterException(
@@ -1027,6 +1030,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         io_utils.pickle_dump(
             model_dir / f"{file_name}.data_example.pkl", self._data_example
         )
+        print(file_name)
         io_utils.pickle_dump(
             model_dir / f"{file_name}.feature_sizes.pkl", self._feature_sizes
         )
@@ -1061,6 +1065,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         **kwargs: Any,
     ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
+        print(cls.__name__)
         if not meta.get("file"):
             logger.debug(
                 f"Failed to load model for '{cls.__name__}'. "
@@ -1077,7 +1082,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             data_example,
             old_feature_sizes
         ) = cls._load_from_files(meta, model_dir)
-        cls._old_feature_sizes = old_feature_sizes
+        # cls._old_feature_sizes = old_feature_sizes
         meta = train_utils.override_defaults(cls.defaults, meta)
         meta = train_utils.update_confidence_type(meta)
         meta = train_utils.update_similarity_type(meta)
@@ -1091,13 +1096,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir,
             finetune_mode=should_finetune,
         )
-        print(old_feature_sizes)
         return cls(
             component_config=meta,
             index_label_id_mapping=index_label_id_mapping,
             entity_tag_specs=entity_tag_specs,
             model=model,
             finetune_mode=should_finetune,
+            old_feature_sizes=old_feature_sizes,
         )
 
     @classmethod
@@ -1117,6 +1122,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
         label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
+        print(file_name)
         old_feature_sizes = io_utils.pickle_load(model_dir / f"{file_name}.feature_sizes.pkl")
         label_data = RasaModelData(data=label_data)
         index_label_id_mapping = io_utils.json_unpickle(
@@ -1252,18 +1258,23 @@ class DIET(TransformerRasaModel):
 
         self._prepare_layers()
 
+    def _get_dense_layers(self, attr):
+        dense_layers = {}
+        features = self._tf_layers["sequence_layer." + attr]._tf_layers[
+            "feature_combining"
+        ]
+        dense_layers["sequence"] = features._tf_layers["sparse_dense.sequence"]._tf_layers[
+            "sparse_to_dense"
+        ]
+        dense_layers["sentence"] = features._tf_layers["sparse_dense.sentence"]._tf_layers[
+            "sparse_to_dense"
+        ]
+        return dense_layers
+
     def adjust_layers(self, data_example, new_feature_sizes, old_feature_sizes):
         for attr in new_feature_sizes:
-            my_layers = {}
-            features = self._tf_layers["sequence_layer." + attr]._tf_layers[
-                "feature_combining"
-            ]
-            my_layers["sequence"] = features._tf_layers["sparse_dense.sequence"]._tf_layers[
-                "sparse_to_dense"
-            ]
-            my_layers["sentence"] = features._tf_layers["sparse_dense.sentence"]._tf_layers[
-                "sparse_to_dense"
-            ]
+            my_layers = self._get_dense_layers(attr)
+            print(old_feature_sizes, attr, new_feature_sizes)
             old_sequence_size = old_feature_sizes[attr]['sequence']
             new_sequence_size = new_feature_sizes[attr]['sequence']
             old_sentence_size = old_feature_sizes[attr]['sentence']
