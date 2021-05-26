@@ -19,6 +19,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
 )
+from rasa.shared.exceptions import RasaException
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -94,6 +95,34 @@ class TestTEDPolicy(PolicyTestCollection):
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> TEDPolicy:
         return TEDPolicy(featurizer=featurizer, priority=priority)
+
+    async def test_raise_rasa_exception_no_user_features(
+        self,
+        featurizer: Optional[TrackerFeaturizer],
+        priority: int,
+        default_domain: Domain,
+        tmp_path: Path,
+    ):
+        stories = tmp_path / "stories.yml"
+        stories.write_text(
+            """
+            version: "2.0"
+            stories:
+            - story: test path
+              steps:
+              - action: utter_greet
+            """
+        )
+        policy = self.create_policy(featurizer=featurizer, priority=priority)
+        import tests.core.test_policies
+
+        training_trackers = await tests.core.test_policies.train_trackers(
+            default_domain, str(stories), augmentation_factor=20
+        )
+        with pytest.raises(RasaException) as e:
+            policy.train(training_trackers, default_domain, RegexInterpreter())
+
+        assert "No user features specified. Cannot train 'TED' model." == str(e.value)
 
     def test_similarity_type(self, trained_policy: TEDPolicy):
         assert trained_policy.config[SIMILARITY_TYPE] == "inner"

@@ -207,6 +207,20 @@ def test_exception_tracker_store_from_endpoint_config(
     assert "test exception" in str(e.value)
 
 
+def test_raise_connection_exception_redis_tracker_store_creation(
+    domain: Domain, monkeypatch: MonkeyPatch, endpoints_path: Text
+):
+    store = read_endpoint_config(endpoints_path, "tracker_store")
+    monkeypatch.setattr(
+        rasa.core.tracker_store,
+        "RedisTrackerStore",
+        Mock(side_effect=ConnectionError()),
+    )
+
+    with pytest.raises(ConnectionException):
+        TrackerStore.create(store, domain)
+
+
 class HostExampleTrackerStore(RedisTrackerStore):
     pass
 

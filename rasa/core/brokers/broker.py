@@ -34,6 +34,7 @@ class EventBroker:
             sqlalchemy.exc.OperationalError,
             aio_pika.exceptions.AMQPConnectionError,
             aiormq.exceptions.ChannelNotFoundEntity,
+            *aio_pika.exceptions.CONNECTION_EXCEPTIONS,
         ) as error:
             raise ConnectionException("Cannot connect to event broker.") from error
 
