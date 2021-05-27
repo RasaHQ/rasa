@@ -8,7 +8,6 @@ import rasa.shared.constants
 from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.cli
 import rasa.shared.utils.common
-from rasa.shared.utils.common import transform_collection_to_sentence
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -110,7 +109,7 @@ def _auto_configure(
     if keys_to_configure:
         logger.debug(
             f"The provided configuration does not contain the key(s) "
-            f"{transform_collection_to_sentence(keys_to_configure)}. "
+            f"{rasa.shared.utils.common.transform_collection_to_sentence(keys_to_configure)}. "  # noqa: E501, W505
             f"Values will be provided from the default configuration."
         )
 

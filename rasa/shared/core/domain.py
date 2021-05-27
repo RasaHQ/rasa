@@ -1043,8 +1043,8 @@ class Domain:
 
         return [
             f"{entity_label}"
-            + f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}"
-            + f"{entity_sub_label}"
+            f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}"
+            f"{entity_sub_label}"
             for entity_label, entity_sub_labels in entity_labels.items()
             for entity_sub_label in entity_sub_labels
         ]
