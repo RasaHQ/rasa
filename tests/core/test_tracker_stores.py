@@ -233,7 +233,7 @@ def test_mongo_tracker_store_raise_exception(
             side_effect=OperationFailure("not authorized on logs to execute command.")
         ),
     )
-    with pytest.raises(RasaException) as error:
+    with pytest.raises(ConnectionException) as error:
         TrackerStore.create(
             EndpointConfig(username="username", password="password", type="mongod"),
             domain,
