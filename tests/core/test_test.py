@@ -17,3 +17,18 @@ async def test_testing_warns_if_action_unknown(
     assert "Test story" in output
     assert "contains the bot utterance" in output
     assert "which is not part of the training data / domain" in output
+
+
+async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
+    test_stories = """
+    version: "2.0"
+    stories:
+    - story: Test with entity annotation
+      steps:
+      - intent: greet
+        user: |-
+           Hi, my name is [Anca]{"entity": "name"}
+      - bot: hey there Anca!
+"""
+    result = await rasa.core.test.test(test_stories, core_agent)
+    assert "report" in result.keys()
