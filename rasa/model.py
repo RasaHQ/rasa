@@ -530,8 +530,10 @@ def should_retrain(
 
             return fingerprint_comparison
     except Exception as e:
-        logger.error(f"Failed to get the fingerprint. Error: {e}.\n"
-                     f"Proceeding with running default retrain...")
+        logger.error(
+            f"Failed to get the fingerprint. Error: {e}.\n"
+            f"Proceeding with running default retrain..."
+        )
         return fingerprint_comparison
 
 
