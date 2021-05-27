@@ -477,6 +477,54 @@ async def test_remote_action_invalid_entities_payload(
     assert "Failed to validate Action server response from API" in str(e.value)
 
 
+async def test_remote_action_multiple_events_payload(
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+):
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+    response = {
+        "events": [
+            {
+                "event": "action",
+                "name": "action_listen",
+                "policy": None,
+                "confidence": None,
+                "timestamp": None,
+            },
+            {"event": "slot", "name": "name", "value": None, "timestamp": None},
+            {
+                "event": "user",
+                "timestamp": None,
+                "text": "hello",
+                "parse_data": {
+                    "intent": {"name": "greet", "confidence": 0.99},
+                    "entities": [],
+                },
+            },
+        ],
+        "responses": [],
+    }
+
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", payload=response)
+
+        events = await remote_action.run(
+            default_channel, default_nlg, default_tracker, domain
+        )
+
+    assert isinstance(events[0], ActionExecuted)
+    assert events[0].as_dict().get("name") == "action_listen"
+
+    assert isinstance(events[1], SlotSet)
+    assert events[1].as_dict().get("name") == "name"
+
+    assert isinstance(events[2], UserUttered)
+    assert events[2].as_dict().get("text") == "hello"
+
+
 async def test_remote_action_without_endpoint(
     default_channel, default_nlg, default_tracker, domain: Domain
 ):
