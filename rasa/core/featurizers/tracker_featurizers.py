@@ -49,7 +49,7 @@ class TrackerFeaturizer:
         """Initializes the tracker featurizer.
 
         Args:
-            state_featurizer: The state featurizer used to encode the states.
+            state_featurizer: The state featurizer used to encode tracker states.
         """
         self.state_featurizer = state_featurizer
 
@@ -64,8 +64,8 @@ class TrackerFeaturizer:
         """Creates states for the given tracker.
 
         Args:
-            tracker: a :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: a :class:`rasa.shared.core.domain.Domain`
+            tracker: The tracker to transform to states.
+            domain: The domain of the tracker.
             omit_unset_slots: If `True` do not include the initial values of slots.
             ignore_rule_only_turns: If `True` ignore dialogue turns that are present
                 only in rules.
@@ -73,7 +73,7 @@ class TrackerFeaturizer:
                 which only occur in rules but not in stories.
 
         Returns:
-            a list of states
+            Trackers as states.
         """
         return tracker.past_states(
             domain,
@@ -96,7 +96,7 @@ class TrackerFeaturizer:
                 to use.
 
         Returns:
-            Trackers as lists of state features.
+            Featurized tracker states.
         """
         return [
             [
@@ -110,13 +110,13 @@ class TrackerFeaturizer:
     def _convert_labels_to_ids(
         trackers_as_actions: List[List[Text]], domain: Domain
     ) -> np.ndarray:
-        """Converts list of action label strings to list of action label `int` ids.
+        """Converts tracker action label strings to label ids.
 
         Args:
             trackers_as_actions: A list of tracker labels.
 
         Returns:
-            Trackers as lists of label ids.
+            Trackers as label ids.
         """
         # store labels in numpy arrays so that it corresponds to np arrays of input
         # features
@@ -138,13 +138,13 @@ class TrackerFeaturizer:
         """Featurizes extracted entities with `state_featurizer`.
 
         Args:
-            trackers_as_entities: List of lists of entity dictionaries.
+            trackers_as_entities: Extracted entities from trackers.
             interpreter: A `NaturalLanguageInterpreter` for the `state_featurizer`
                 to use.
             bilou_tagging: When `True` use the BILOU tagging scheme.
 
         Returns:
-            Trackers as lists of entity features.
+            Trackers as entity features.
         """
         return [
             [
@@ -164,8 +164,7 @@ class TrackerFeaturizer:
             event: The `UserUttered` event from which to extract entities.
 
         Returns:
-            A dictionary with intent text and entities if no intent is present
-                otherwise and empty dictionary.
+            Intent text and entities if no intent is present.
         """
         # train stories support both text and intent,
         # but if intent is present, the text is ignored
@@ -178,12 +177,11 @@ class TrackerFeaturizer:
     @staticmethod
     def _remove_user_text_if_intent(trackers_as_states: List[List[State]]) -> None:
         """Deletes user text from state dictionaries if intent is present.
-            
+
         `trackers_as_states` is modified in place.
 
         Args:
-            trackers_as_states: List of lists of `State` instances produced by a
-                `DialogueStateTracker` instance.
+            trackers_as_states: States produced by a `DialogueStateTracker` instance.
         """
         for states in trackers_as_states:
             for state in states:
@@ -198,17 +196,17 @@ class TrackerFeaturizer:
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of states, actions and entity data.
+        """Transforms trackers to states, actions, and entity data.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain
+            trackers: The trackers to transform.
+            domain: The domain.
             omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Remove action_unlikely_intent from
-                training states.
+            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
+                 from training states.
 
         Returns:
-            A tuple of list of states, list of actions and list of entity data.
+            Trackers as states, actions, and entity data.
         """
         rasa.shared.utils.io.raise_deprecation_warning(
             "'training_states_actions_and_entities' is being deprecated in favor of "
@@ -228,17 +226,17 @@ class TrackerFeaturizer:
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]]]:
-        """Transforms list of trackers to lists of states and actions.
+        """Transforms trackers to states and actions.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain
+            trackers: The trackers to transform.
+            domain: The domain.
             omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Remove action_unlikely_intent from
-                training states.
+            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
+                from training states.
 
         Returns:
-            A tuple of list of states and list of actions.
+            Trackers as states and actions.
         """
         rasa.shared.utils.io.raise_deprecation_warning(
             "'training_states_and_actions' is being deprecated in favor of "
@@ -259,17 +257,17 @@ class TrackerFeaturizer:
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]]]:
-        """Transforms list of trackers to lists of states and labels.
+        """Transforms trackers to states and labels.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain
+            trackers: The trackers to transform.
+            domain: The domain.
             omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Remove action_unlikely_intent from
-                training states.
+            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
+                from training states.
 
         Returns:
-            A tuple of list of states and list of labels.
+            Trackers as states and labels.
         """
         (
             trackers_as_states,
@@ -290,17 +288,17 @@ class TrackerFeaturizer:
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of states, labels, and entity data.
+        """Transforms trackers to states, labels, and entity data.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain
+            trackers: The trackers to transform.
+            domain: The domain.
             omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Remove action_unlikely_intent from
-                training states.
+            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
+                from training states.
 
         Returns:
-            A tuple of list of states, list of labels and list of entity data.
+            Trackers as states, labels, and entity data.
         """
         raise NotImplementedError(
             f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
@@ -325,12 +323,10 @@ class TrackerFeaturizer:
             domain: the domain
             interpreter: the interpreter
             bilou_tagging: indicates whether BILOU tagging should be used or not
-            ignore_action_unlikely_intent: Remove action_unlikely_intent from
-                training state features.
+            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
+                from training state features.
 
         Returns:
-            A tuple of a list of state features, a list of labels, and a list of entity
-              data. The elements of each list respectively are:
             - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
               ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
               turns in all training trackers
@@ -402,7 +398,7 @@ class TrackerFeaturizer:
         rule_only_data: Optional[Dict[Text, Any]] = None,
         ignore_action_unlikely_intent: bool = False,
     ) -> List[List[State]]:
-        """Transforms list of trackers to lists of states for prediction.
+        """Transforms trackers to states for prediction.
 
         Args:
             trackers: The trackers to transform.
@@ -413,11 +409,11 @@ class TrackerFeaturizer:
                 only in rules.
             rule_only_data: Slots and loops,
                 which only occur in rules but not in stories.
-            ignore_action_unlikely_intent: Remove any states containing
-                action_unlikely_intent from prediction states.
+            ignore_action_unlikely_intent: Whether to remove states containing
+                `action_unlikely_intent` from prediction states.
 
         Returns:
-            A list of states.
+            Trackers as states for prediction.
         """
         raise NotImplementedError(
             "Featurizer must have the capacity to create feature vector"
@@ -445,13 +441,11 @@ class TrackerFeaturizer:
                 only in rules.
             rule_only_data: Slots and loops,
                 which only occur in rules but not in stories.
-            ignore_action_unlikely_intent: Remove any states containing
-                action_unlikely_intent from state features.
+            ignore_action_unlikely_intent: Whether to remove any states containing
+                `action_unlikely_intent` from state features.
 
         Returns:
-            A list (corresponds to the list of trackers)
-            of lists (corresponds to all dialogue turns)
-            of dictionaries of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+            Dictionaries of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
             ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
             turns in all trackers.
         """
@@ -512,7 +506,7 @@ class TrackerFeaturizer:
                 instance.
 
         Returns:
-            Filtered states with last `action_listen` removed.
+            Filtered states with last `action_unlikely_intent` removed.
         """
         return [
             state
@@ -534,17 +528,17 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of state, action labels and entity data.
+        """Transforms trackers to states, action labels, and entity data.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain
+            trackers: The trackers to transform.
+            domain: The domain.
             omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Remove action_unlikely_intent from
-                training states.
+            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
+                from training states.
 
         Returns:
-            A tuple of list of states, list of action labels and list of entity data.
+            Trackers as states, action labels, and entity data.
         """
         trackers_as_states = []
         trackers_as_actions = []
@@ -623,7 +617,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         rule_only_data: Optional[Dict[Text, Any]] = None,
         ignore_action_unlikely_intent: bool = False,
     ) -> List[List[State]]:
-        """Transforms list of trackers to lists of states for prediction.
+        """Transforms trackers to states for prediction.
 
         Args:
             trackers: The trackers to transform.
@@ -634,11 +628,11 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                 only in rules.
             rule_only_data: Slots and loops,
                 which only occur in rules but not in stories.
-            ignore_action_unlikely_intent: Remove any states containing
-                action_unlikely_intent from prediction states.
+            ignore_action_unlikely_intent: Whether to remove any states containing
+                `action_unlikely_intent` from prediction states.
 
         Returns:
-            A list of states.
+            Trackers as states for prediction.
         """
         trackers_as_states = [
             self._create_states(
@@ -714,13 +708,13 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     ) -> int:
         """Hashes states (and optionally label).
 
-        Produces an integer hash of the tracker states (and optionally the label).
+        Produces a hash of the tracker state sequence (and optionally the labels).
         If labels is None, labels is not hashed.
 
         Args:
             tracker: The `DialogueStateTracker` that produced `states`.
-            states: A list of tracker `State` instances.
-            labels: A list of label strings associated with this state sequence.
+            states: The tracker state sequence to hash.
+            labels: Label strings associated with this state sequence.
 
         Returns:
             The hash of the states and (optionally) the label.
@@ -741,17 +735,17 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of states, labels and entity data.
+        """Transforms trackers to states, action labels, and entity data.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain
+            trackers: The trackers to transform.
+            domain: The domain.
             omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Remove action_unlikely_intent from
-                training states.
+            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
+                from training states.
 
         Returns:
-            A tuple of list of states, list of labels and list of entity data.
+            Trackers as states, labels, and entity data.
         """
         example_states = []
         example_labels = []
@@ -810,21 +804,15 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
         """Creates an iterator over training examples from a tracker.
 
-        Create an iterator over the training examples that will be created
-        from the provided tracker.
-
         Args:
             trackers: The tracker from which to extract training examples.
             domain: The domain of the training data.
             omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Remove action_unlikely_intent from
-                training states.
-
-
+            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
+                from training states.
 
         Returns:
-            An iterator over tuples of list of states, list of labels and list of
-                entity data.
+            An iterator over example states, labels, and entity data.
         """
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
@@ -873,7 +861,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         rule_only_data: Optional[Dict[Text, Any]] = None,
         ignore_action_unlikely_intent: bool = False,
     ) -> List[List[State]]:
-        """Transforms list of trackers to lists of states for prediction.
+        """Transforms trackers to states for prediction.
 
         Args:
             trackers: The trackers to transform.
@@ -884,11 +872,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 only in rules.
             rule_only_data: Slots and loops,
                 which only occur in rules but not in stories.
-            ignore_action_unlikely_intent: Remove any states containing
-                action_unlikely_intent from prediction states.
+            ignore_action_unlikely_intent: Whether to remove any states containing
+                `action_unlikely_intent` from prediction states.
 
         Returns:
-            A list of states.
+            Trackers as states for prediction.
         """
         trackers_as_states = [
             self._create_states(
@@ -932,20 +920,20 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     def _convert_labels_to_ids(
         cls, trackers_as_intents: List[List[Text]], domain: Domain
     ) -> np.ndarray:
-        """Converts a list of labels to a 2d numpy array of label ids.
+        """Converts a list of labels to a matrix of label ids.
 
         The number of rows is equal to `len(trackers_as_intents)`. The number of
         columns is equal to the maximum number of positive labels that any training
         example is associated with. Rows are padded with `LABEL_PAD_ID` if not all rows
-        the same number of labels.
+        have the same number of labels.
 
         Args:
-            trackers_as_intents: A list of positive example label ids
+            trackers_as_intents: Positive example label ids
                 associated with each training example.
             domain: The domain of the training data.
 
         Returns:
-            A 2d np.ndarray of label ids.
+           A matrix of label ids.
         """
         # store labels in numpy arrays so that it corresponds to np arrays
         # of input features
@@ -958,15 +946,15 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
     @staticmethod
     def _pad_label_ids(label_ids: List[List[int]]) -> List[List[int]]:
-        """Pads list of lists of labels so that all inner lists are of the same length.
+        """Pads label ids so that all are of the same length.
 
         The pad value LABEL_PAD_ID is set in `rasa.utils.tensorflow.constants`.
 
         Args:
-            label_ids: A list of lists of label ids of varying lengths
+            label_ids: Label ids of varying lengths
 
         Returns:
-            A list of lists of label ids padded to be of uniform length.
+            Label ids padded to be of uniform length.
         """
         # Add `LABEL_PAD_ID` padding to labels array so that
         # each example has equal number of labels
@@ -987,17 +975,17 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
-        """Transforms list of trackers to lists of states, labels and entity data.
+        """Transforms trackers to states, intent labels, and entity data.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain
+            trackers: The trackers to transform.
+            domain: The domain.
             omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Remove action_unlikely_intent from
-                training states.
+            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
+                from training states.
 
         Returns:
-            A tuple of list of states, list of labels and list of entity data.
+            Trackers as states, labels, and entity data.
         """
         example_states = []
         example_labels = []
@@ -1080,19 +1068,15 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
         """Creates an iterator over training examples from a tracker.
 
-        Creates an iterator over the training examples that will be created
-        from the provided tracker.
-
         Args:
             trackers: The tracker from which to extract training examples.
             domain: The domain of the training data.
             omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_action_unlikely_intent: Remove action_unlikely_intent from
-                training states.
+            ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
+                from training states.
 
         Returns:
-            An iterator over tuples of list of states, list of labels and list of
-                entity data.
+            An iterator over example states, labels, and entity data.
         """
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
@@ -1151,7 +1135,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         rule_only_data: Optional[Dict[Text, Any]] = None,
         ignore_action_unlikely_intent: bool = False,
     ) -> List[List[State]]:
-        """Transforms list of trackers to lists of states for prediction.
+        """Transforms trackers to states for prediction.
 
         Args:
             trackers: The trackers to transform.
@@ -1162,11 +1146,11 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 only in rules.
             rule_only_data: Slots and loops,
                 which only occur in rules but not in stories.
-            ignore_action_unlikely_intent: Remove any states containing
-                action_unlikely_intent from prediction states.
+            ignore_action_unlikely_intent: Whether to remove any states containing
+                `action_unlikely_intent` from prediction states.
 
         Returns:
-            A list of states.
+            Trackers as states for prediction.
         """
         trackers_as_states = [
             self._create_states(
