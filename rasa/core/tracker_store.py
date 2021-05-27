@@ -129,7 +129,9 @@ class TrackerStore:
             ConnectionError,
             pymongo.errors.OperationFailure,
         ) as error:
-            raise ConnectionException("Cannot connect to tracker store." + str(error)) from error
+            raise ConnectionException(
+                "Cannot connect to tracker store." + str(error)
+            ) from error
 
     def get_or_create_tracker(
         self,
