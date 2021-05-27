@@ -53,9 +53,8 @@ class TrackerFeaturizer:
         """
         self.state_featurizer = state_featurizer
 
-    @classmethod
+    @staticmethod
     def _create_states(
-        cls,
         tracker: DialogueStateTracker,
         domain: Domain,
         omit_unset_slots: bool = False,
