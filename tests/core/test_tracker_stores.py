@@ -33,7 +33,7 @@ from rasa.shared.core.events import (
     BotUttered,
     Event,
 )
-from rasa.shared.exceptions import ConnectionException, RasaException
+from rasa.shared.exceptions import ConnectionException
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
