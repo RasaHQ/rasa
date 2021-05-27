@@ -46,7 +46,7 @@ class TrackerFeaturizer:
     def __init__(
         self, state_featurizer: Optional[SingleStateFeaturizer] = None
     ) -> None:
-        """Initialize the tracker featurizer.
+        """Initializes the tracker featurizer.
 
         Args:
             state_featurizer: The state featurizer used to encode the states.
@@ -61,7 +61,7 @@ class TrackerFeaturizer:
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
-        """Create states for the given tracker.
+        """Creates states for the given tracker.
 
         Args:
             tracker: a :class:`rasa.core.trackers.DialogueStateTracker`
@@ -110,7 +110,7 @@ class TrackerFeaturizer:
     def _convert_labels_to_ids(
         trackers_as_actions: List[List[Text]], domain: Domain
     ) -> np.ndarray:
-        """Convert list of action label strings to list of action label `int` ids.
+        """Converts list of action label strings to list of action label `int` ids.
 
         Args:
             trackers_as_actions: A list of tracker labels.
@@ -158,7 +158,7 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _entity_data(event: UserUttered) -> Dict[Text, Any]:
-        """Extract entities from `UserUttered` event if not using intents.
+        """Extracts entities from `UserUttered` event if not using intents.
 
         Args:
             event: The `UserUttered` event from which to extract entities.
@@ -177,14 +177,13 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _remove_user_text_if_intent(trackers_as_states: List[List[State]]) -> None:
-        """Delete user text from state dictionaries if intent is present.
+        """Deletes user text from state dictionaries if intent is present.
+            
+        `trackers_as_states` is modified in place.
 
         Args:
             trackers_as_states: List of lists of `State` instances produced by a
                 `DialogueStateTracker` instance.
-
-        Returns:
-            Returns None, `trackers_as_states` is modified in place.
         """
         for states in trackers_as_states:
             for state in states:
@@ -319,7 +318,7 @@ class TrackerFeaturizer:
         np.ndarray,
         List[List[Dict[Text, List[Features]]]],
     ]:
-        """Featurize the training trackers.
+        """Featurizes the training trackers.
 
         Args:
             trackers: list of training trackers
@@ -434,7 +433,7 @@ class TrackerFeaturizer:
         rule_only_data: Optional[Dict[Text, Any]] = None,
         ignore_action_unlikely_intent: bool = False,
     ) -> List[List[Dict[Text, List["Features"]]]]:
-        """Create state features for prediction.
+        """Creates state features for prediction.
 
         Args:
             trackers: A list of state trackers
@@ -467,7 +466,7 @@ class TrackerFeaturizer:
         return self._featurize_states(trackers_as_states, interpreter)
 
     def persist(self, path: Union[Text, Path]) -> None:
-        """Persist the tracker featurizer to the given path.
+        """Persists the tracker featurizer to the given path.
 
         Args:
             path: The path to persist the tracker featurizer to.
@@ -486,7 +485,7 @@ class TrackerFeaturizer:
 
     @staticmethod
     def load(path: Text) -> Optional["TrackerFeaturizer"]:
-        """Load the featurizer from file.
+        """Loads the featurizer from file.
 
         Args:
             path: The path to load the tracker featurizer from.
@@ -506,7 +505,7 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _remove_action_unlikely_intent(states: List[State]) -> List[State]:
-        """Remove `action_unlikely_intent` from tracker state history.
+        """Removes `action_unlikely_intent` from tracker state history.
 
         Args:
             states: A list of states produced by a `DialogueStateTracker`
@@ -678,7 +677,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         max_history: Optional[int] = None,
         remove_duplicates: bool = True,
     ) -> None:
-        """Initialize the tracker featurizer.
+        """Initializes the tracker featurizer.
 
         Args:
             state_featurizer: The state featurizer used to encode the states.
@@ -693,7 +692,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     def slice_state_history(
         states: List[State], slice_length: Optional[int]
     ) -> List[State]:
-        """Slice states from the trackers history.
+        """Slices states from the trackers history.
 
         Args:
             states: The states
@@ -713,7 +712,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         states: List[State],
         labels: Optional[List[Text]] = None,
     ) -> int:
-        """Hash states (and optionally label).
+        """Hashes states (and optionally label).
 
         Produces an integer hash of the tracker states (and optionally the label).
         If labels is None, labels is not hashed.
@@ -809,7 +808,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
-        """Create an iterator over training examples from a tracker.
+        """Creates an iterator over training examples from a tracker.
 
         Create an iterator over the training examples that will be created
         from the provided tracker.
@@ -933,7 +932,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     def _convert_labels_to_ids(
         cls, trackers_as_intents: List[List[Text]], domain: Domain
     ) -> np.ndarray:
-        """Convert a list of labels to a 2d numpy array of label ids.
+        """Converts a list of labels to a 2d numpy array of label ids.
 
         The number of rows is equal to `len(trackers_as_intents)`. The number of
         columns is equal to the maximum number of positive labels that any training
@@ -1079,9 +1078,9 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Iterator[Tuple[List[State], List[Text], List[Dict[Text, Any]]]]:
-        """Create an iterator over training examples from a tracker.
+        """Creates an iterator over training examples from a tracker.
 
-        Create an iterator over the training examples that will be created
+        Creates an iterator over the training examples that will be created
         from the provided tracker.
 
         Args:
@@ -1128,7 +1127,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     def _cleanup_last_user_state_with_action_listen(
         trackers_as_states: List[List[State]],
     ) -> List[List[State]]:
-        """Clean up the last user state where previous action is `action_listen`.
+        """Deletes the last user state where previous action is `action_listen`.
 
         Args:
             trackers_as_states: Trackers converted to states
