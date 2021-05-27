@@ -239,10 +239,7 @@ def test_mongo_tracker_store_raise_exception(
             domain,
         )
 
-    assert (
-        "Failed to create tracker: not authorized on logs to execute command."
-        == str(error.value)
-    )
+    assert "not authorized on logs to execute command." in str(error.value)
 
 
 class HostExampleTrackerStore(RedisTrackerStore):
