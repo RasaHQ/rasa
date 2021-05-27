@@ -1228,14 +1228,18 @@ def test_plot_attribute_confidences_with_invalid_values(tmp_path: Path):
 
     rasa.shared.utils.io.create_directory(report_folder)
 
-    intent_results = [
-        IntentEvaluationResult("", "restaurant_search", 76, -21),
-        IntentEvaluationResult("greet", "greet", -32, 99),
+    response_results = [
+        ResponseSelectionEvaluationResult(
+            "chitchat/ask_weather", "chitchat/ask_weather", "What's the weather", 98,
+        ),
+        ResponseSelectionEvaluationResult(
+            "chitchat/ask_name", "chitchat/ask_name", "What's your name?", 12
+        ),
     ]
 
     with pytest.raises(InvalidTypeException):
-        evaluate_intents(
-            intent_results,
+        evaluate_response_selections(
+            response_results,
             report_folder,
             successes=True,
             errors=True,
