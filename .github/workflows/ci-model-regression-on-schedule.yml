@@ -46,7 +46,7 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           chmod 755 gomplate
 
       - name: Render deployment template
@@ -437,7 +437,7 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
 
       - name: Analyse Performance 🔍
