@@ -10,6 +10,8 @@ from _pytest.capture import CaptureFixture
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
+from pymongo.errors import OperationFailure
+
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
@@ -31,7 +33,7 @@ from rasa.shared.core.events import (
     BotUttered,
     Event,
 )
-from rasa.shared.exceptions import ConnectionException
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
@@ -219,6 +221,28 @@ def test_raise_connection_exception_redis_tracker_store_creation(
 
     with pytest.raises(ConnectionException):
         TrackerStore.create(store, domain)
+
+
+def test_mongo_tracker_store_raise_exception(
+    domain: Domain, monkeypatch: MonkeyPatch,
+):
+    monkeypatch.setattr(
+        rasa.core.tracker_store,
+        "MongoTrackerStore",
+        Mock(
+            side_effect=OperationFailure("not authorized on logs to execute command.")
+        ),
+    )
+    with pytest.raises(RasaException) as error:
+        TrackerStore.create(
+            EndpointConfig(username="username", password="password", type="mongod"),
+            domain,
+        )
+
+    assert (
+        "Failed to create tracker: not authorized on logs to execute command."
+        == str(error.value)
+    )
 
 
 class HostExampleTrackerStore(RedisTrackerStore):

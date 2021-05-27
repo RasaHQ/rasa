@@ -43,7 +43,7 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
 )
-from rasa.shared.exceptions import ConnectionException
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
@@ -129,6 +129,8 @@ class TrackerStore:
             ConnectionError,
         ) as error:
             raise ConnectionException("Cannot connect to tracker store.") from error
+        except pymongo.errors.OperationFailure as error:
+            raise RasaException("Failed to create tracker: " + str(error)) from error
 
     def get_or_create_tracker(
         self,
