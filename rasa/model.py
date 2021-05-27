@@ -231,7 +231,7 @@ def unpack_model(
         with tarfile.open(model_file, mode="r:gz") as tar:
             tar.extractall(working_directory)
             logger.debug(f"Extracted model to '{working_directory}'.")
-    except tarfile.TarError as e:
+    except (tarfile.TarError, ValueError) as e:
         logger.error(f"Failed to extract model at {model_file}. Error: {e}")
         raise
 
@@ -485,6 +485,8 @@ def should_retrain(
         A FingerprintComparisonResult object indicating whether Rasa Core and/or Rasa
         NLU needs to be retrained or not.
     """
+    import tarfile
+
     fingerprint_comparison = FingerprintComparisonResult()
 
     if old_model is None or not os.path.exists(old_model):
@@ -528,7 +530,8 @@ def should_retrain(
 
             return fingerprint_comparison
     except Exception as e:
-        logger.error(f"Failed to get the fingerprint. Error: {e}")
+        logger.error(f"Failed to get the fingerprint. Error: {e}.\n"
+                     f"Proceeding with running default retrain...")
         return fingerprint_comparison
 
 
