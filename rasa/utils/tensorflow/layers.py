@@ -1211,7 +1211,9 @@ class MultiLabelDotProductLoss(DotProductLoss):
             batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents
                 for IntentTED);
                 shape (batch_size, max_num_labels_per_input, num_features)
-            batch_label_ids: Batch label indices (e.g. indices of the intents);
+            batch_label_ids: Batch label indices (e.g. indices of the intents). We
+                assume that indices are integers that run from 0 to
+                (number of labels) - 1.
                 shape (batch_size, max_num_labels_per_input, 1)
             all_labels_embed: Embeddings for all labels in the domain;
                 shape (batch_size, max_num_labels_per_input, 1)
