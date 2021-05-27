@@ -20,5 +20,7 @@ async def test_testing_warns_if_action_unknown(
 
 
 async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
-    result = await rasa.core.test.test("data/test_yaml_stories/test_stories_entity_annotations.yml", core_agent)
+    result = await rasa.core.test.test(
+        "data/test_yaml_stories/test_stories_entity_annotations.yml", core_agent
+    )
     assert "report" in result.keys()
