@@ -8,7 +8,7 @@ import rasa.utils.tensorflow.layers_utils as layers_utils
     "batch_size, n, n_max",
     [
         (10, 4, 100),
-        (10, 4, 0),
+        (10, 4, 1),
         (
             tf.constant(10, dtype=tf.int32),
             tf.constant(4, dtype=tf.int32),
@@ -17,15 +17,20 @@ import rasa.utils.tensorflow.layers_utils as layers_utils
         (
             tf.constant(10, dtype=tf.int32),
             tf.constant(4, dtype=tf.int32),
-            tf.constant(0, dtype=tf.int32),
+            tf.constant(1, dtype=tf.int32),
         ),
     ],
 )
 def test_random_indices(batch_size, n, n_max):
     indices = layers_utils.random_indices(batch_size, n, n_max)
     assert np.all(tf.shape(indices).numpy() == [batch_size, n])
-    assert np.max(indices.numpy()) <= n_max
+    assert np.max(indices.numpy()) < n_max
     assert np.max(indices.numpy()) >= 0
+
+
+def test_random_indices_raises_invalid_argument_error():
+    with pytest.raises(tf.errors.InvalidArgumentError):
+        layers_utils.random_indices(2, 2, 0)
 
 
 def test_batch_flatten():

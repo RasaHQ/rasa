@@ -737,7 +737,7 @@ class DotProductLoss(tf.keras.layers.Layer):
             )
         return similarities, confidences
 
-    def call(self, *args, **kwargs) -> Tuple[tf.Tensor, tf.Tensor]:
+    def call(self, *args: Any, **kwargs: Any) -> Tuple[tf.Tensor, tf.Tensor]:
         """Layer's logic - to be implemented in child class."""
         raise NotImplementedError
 
@@ -1207,7 +1207,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         Args:
             batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized
-                trackers); shape (batch_size, ..., num_features)
+                trackers); shape (batch_size, 1, num_features)
             batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents
                 for IntentTED);
                 shape (batch_size, max_num_labels_per_input, num_features)

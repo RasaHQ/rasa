@@ -11,16 +11,12 @@ def random_indices(
     Args:
         batch_size: Number of items in each batch
         n: Number of random indices in each example
-        n_max: Maximum index
+        n_max: Maximum index (excluded)
 
     Returns:
         A uniformly distributed integer tensor of indices
     """
-    return tf.cond(
-        n_max > 0,
-        lambda: tf.random.uniform(shape=(batch_size, n), maxval=n_max, dtype=tf.int32),
-        lambda: tf.zeros((batch_size, n), dtype=tf.int32),
-    )
+    return tf.random.uniform(shape=(batch_size, n), maxval=n_max, dtype=tf.int32)
 
 
 def batch_flatten(x: Tensor) -> Tensor:
