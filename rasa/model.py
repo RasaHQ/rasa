@@ -485,8 +485,6 @@ def should_retrain(
         A FingerprintComparisonResult object indicating whether Rasa Core and/or Rasa
         NLU needs to be retrained or not.
     """
-    import tarfile
-
     fingerprint_comparison = FingerprintComparisonResult()
 
     if old_model is None or not os.path.exists(old_model):
