@@ -1,0 +1,35 @@
+# This test domain is the same as `default_retrieval_intents.yml`, but the responses
+# for the retrieval intents live in the domain file here
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - mood_great
+  - mood_unhappy
+  - bot_challenge
+  - chitchat
+
+responses:
+  utter_greet:
+    - text: Hey! How are you?
+  utter_cheer_up:
+    - text: 'Here is something to cheer you up:'
+      image: https://i.imgur.com/nGF1K8f.jpg
+  utter_did_that_help:
+    - text: Did that help you?
+  utter_happy:
+    - text: Great, carry on!
+  utter_goodbye:
+    - text: Bye
+  utter_iamabot:
+    - text: I am a bot, powered by Rasa.
+  utter_chitchat/ask_name:
+    - image: "https://i.imgur.com/zTvA58i.jpeg"
+      text: hello, my name is retrieval bot.
+    - text: Oh yeah, I am called the retrieval bot.
+  utter_chitchat/ask_weather:
+    - text: Oh, it does look sunny right now in Berlin.
+      image: "https://i.imgur.com/vwv7aHN.png"
+    - text: I am not sure of the whole week but I can see the sun is out today.
