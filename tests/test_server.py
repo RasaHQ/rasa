@@ -1248,7 +1248,7 @@ async def test_predict_invalid_entities_format(rasa_app: SanicASGITestClient):
         json=data,
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert response.status == HTTPStatus.BAD_REQUEST
 
 
 @freeze_time("2018-01-01")

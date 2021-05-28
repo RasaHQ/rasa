@@ -490,13 +490,15 @@ def validate_events_in_request_body(request: Request) -> None:
 
     try:
         validate(events, events_request_format_spec())
-    except ValidationError as e:
-        e.message += (
+    except ValidationError as error:
+        error.message += (
             " Failed to validate the events format in the action server request body."
             "For more information about the format visit: "
             "https://rasa.com/docs/action-server/pages/action-server-api"
         )
-        raise e
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST, "JSON schema validation error", str(error)
+        ) from error
 
 
 async def authenticate(_: Request) -> NoReturn:

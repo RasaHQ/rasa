@@ -584,25 +584,55 @@ class RemoteAction(Action):
 
         Used for validation of the response returned from the
         Action endpoint."""
-        return {
+        entities = {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "start": {"type": "integer"},
+                    "end": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "confidence": {"type": "number"},
+                    "extractor": {},
+                    "value": {"type": "object"},
+                },
+            },
+        }
+        schema = {
             "type": "object",
             "properties": {
                 "events": {
                     "type": "array",
                     "items": {
                         "type": "object",
-                        "properties": {"event": {"type": "string"}, "timestamp": {}},
+                        "properties": {
+                            "event": {"type": "string"},
+                            "timestamp": {},
+                            "metadata": {},
+                        },
                         "oneOf": [
                             {
                                 "properties": {
                                     "event": {"const": "user"},
                                     "text": {"type": "string"},
                                     "input_channel": {},
-                                    "message_id": {"type": "string"},
+                                    "message_id": {},
                                     "parse_data": {
                                         "type": "object",
                                         "properties": {
                                             "text": {"type": "string"},
+                                            "intent_ranking": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {"type": "string"},
+                                                        "confidence": {
+                                                            "type": "number"
+                                                        },
+                                                    },
+                                                },
+                                            },
                                             "intent": {
                                                 "type": "object",
                                                 "properties": {
@@ -610,22 +640,7 @@ class RemoteAction(Action):
                                                     "confidence": {"type": "number"},
                                                 },
                                             },
-                                            "entities": {
-                                                "type": "array",
-                                                "items": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "start": {"type": "integer"},
-                                                        "end": {"type": "integer"},
-                                                        "name": {"type": "string"},
-                                                        "confidence": {
-                                                            "type": "number"
-                                                        },
-                                                        "extractor": {"type": "string"},
-                                                        "value": {"type": "object"},
-                                                    },
-                                                },
-                                            },
+                                            "entities": entities,
                                         },
                                     },
                                 }
@@ -635,7 +650,9 @@ class RemoteAction(Action):
                                     "event": {"const": "action"},
                                     "policy": {},
                                     "confidence": {},
-                                    "name": {"type": "string"},
+                                    "name": {},
+                                    "hide_rule_turn": {"type": "boolean"},
+                                    "action_text": {},
                                 }
                             },
                             {
@@ -648,20 +665,7 @@ class RemoteAction(Action):
                             {
                                 "properties": {
                                     "event": {"const": "entities"},
-                                    "entities": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "object",
-                                            "properties": {
-                                                "start": {"type": "integer"},
-                                                "end": {"type": "integer"},
-                                                "name": {"type": "string"},
-                                                "confidence": {"type": "number"},
-                                                "extractor": {"type": "string"},
-                                                "value": {"type": "object"},
-                                            },
-                                        },
-                                    },
+                                    "entities": entities,
                                 }
                             },
                             {"properties": {"event": {"const": "user_featurization"}}},
@@ -687,12 +691,15 @@ class RemoteAction(Action):
                             {"properties": {"event": {"const": "bot"}}},
                             {"properties": {"event": {"const": "session_started"}}},
                             {"properties": {"event": {"const": "agent"}}},
+                            {"properties": {"event": {"const": "wrong_utterance"}}},
+                            {"properties": {"event": {"const": "wrong_action"}}},
                         ],
                     },
                 },
                 "responses": {"type": "array", "items": {"type": "object"}},
             },
         }
+        return schema
 
     def _validate_action_result(self, result: Dict[Text, Any]) -> bool:
         from jsonschema import validate

@@ -1,6 +1,6 @@
 import textwrap
 from datetime import datetime
-from typing import List, Text, Any, Dict
+from typing import List, Text, Any, Dict, Type
 
 import pytest
 from aioresponses import aioresponses
@@ -54,7 +54,10 @@ from rasa.shared.core.events import (
     AgentUttered,
     LoopInterrupted,
     ActionExecutionRejected,
+    LegacyFormValidation,
+    LegacyForm,
 )
+import rasa.shared.utils.common
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import (
     USER_INTENT_SESSION_START,
@@ -367,57 +370,45 @@ async def test_remote_action_with_template_param(
     ]
 
 
+@pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
+async def test_remote_action_validate_all_event_subclasses(event_class: Type[Event]):
+    response = {"events": [{"event": event_class.type_name}], "responses": []}
+
+    from jsonschema import validate
+
+    validate(response, RemoteAction.action_response_format_spec())
+
+
 @pytest.mark.parametrize(
-    ("event", "expected_event"),
+    "event",
     (
-        ({"event": "entities", "timestamp": 1621590172.3872123}, EntitiesAdded),
-        (
-            {"event": "user_featurization", "timestamp": 1621590172.3872123},
-            DefinePrevUserUtteredFeaturization,
+        EntitiesAdded(entities=[], timestamp=None),
+        DefinePrevUserUtteredFeaturization(
+            use_text_for_featurization=False, timestamp=None, metadata=None
         ),
-        (
-            {"event": "cancel_reminder", "timestamp": 1621590172.3872123},
-            ReminderCancelled,
+        ReminderCancelled(timestamp=1621590172.3872123),
+        ReminderScheduled(
+            timestamp=None, trigger_date_time=datetime.now(), intent="greet"
         ),
-        (
-            {
-                "event": "reminder",
-                "timestamp": 1621590172.3872123,
-                "date_time": datetime.now().isoformat(),
-            },
-            ReminderScheduled,
-        ),
-        (
-            {"event": "action_execution_rejected", "timestamp": 1621590172.3872123},
-            ActionExecutionRejected,
-        ),
-        (
-            {"event": "form_validation", "timestamp": 1621590172.3872123},
-            LoopInterrupted,
-        ),
-        (
-            {"event": "loop_interrupted", "timestamp": 1621590172.3872123},
-            LoopInterrupted,
-        ),
-        ({"event": "form", "timestamp": 1621590172.3872123}, ActiveLoop),
-        ({"event": "active_loop", "timestamp": 1621590172.3872123}, ActiveLoop),
-        ({"event": "reset_slots", "timestamp": 1621590172.3872123}, AllSlotsReset),
-        ({"event": "slot", "timestamp": 1621590172.3872123}, SlotSet),
-        ({"event": "resume", "timestamp": 1621590172.3872123}, ConversationResumed),
-        ({"event": "pause", "timestamp": 1621590172.3872123}, ConversationPaused),
-        ({"event": "followup", "timestamp": 1621590172.3872123}, FollowupAction),
-        ({"event": "export", "timestamp": 1621590172.3872123}, StoryExported),
-        ({"event": "restart", "timestamp": 1621590172.3872123}, Restarted),
-        ({"event": "undo", "timestamp": 1621590172.3872123}, ActionReverted),
-        ({"event": "rewind", "timestamp": 1621590172.3872123}, UserUtteranceReverted),
-        ({"event": "bot", "timestamp": 1621590172.3872123}, BotUttered),
-        (
-            {"event": "user", "timestamp": 1621590172.3872123, "parse_data": {}},
-            UserUttered,
-        ),
-        ({"event": "session_started", "timestamp": 1621590172.3872123}, SessionStarted),
-        ({"event": "action", "timestamp": 1621590172.3872123}, ActionExecuted),
-        ({"event": "agent", "timestamp": 1621590172.3872123}, AgentUttered),
+        ActionExecutionRejected(action_name="my_action"),
+        LegacyFormValidation(validate=True, timestamp=None),
+        LoopInterrupted(timestamp=None, is_interrupted=False),
+        ActiveLoop(name="loop"),
+        LegacyForm(name="my_form"),
+        AllSlotsReset(),
+        SlotSet(key="my_slot", value={}),
+        ConversationResumed(),
+        ConversationPaused(),
+        FollowupAction(name="test"),
+        StoryExported(),
+        Restarted(),
+        ActionReverted(),
+        UserUtteranceReverted(),
+        BotUttered(text="Test bot utterance"),
+        UserUttered(text="hello", parse_data={}),
+        SessionStarted(),
+        ActionExecuted(action_name="action_listen"),
+        AgentUttered(),
     ),
 )
 async def test_remote_action_valid_payload_all_events(
@@ -425,12 +416,12 @@ async def test_remote_action_valid_payload_all_events(
     default_nlg: NaturalLanguageGenerator,
     default_tracker: DialogueStateTracker,
     domain: Domain,
-    event: Dict[Text, Any],
-    expected_event: Event,
+    event: Event,
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
-    response = {"events": [event], "responses": []}
+    events = [event.as_dict()]
+    response = {"events": events, "responses": []}
     with aioresponses() as mocked:
         mocked.post("https://example.com/webhooks/actions", payload=response)
 
@@ -438,7 +429,7 @@ async def test_remote_action_valid_payload_all_events(
             default_channel, default_nlg, default_tracker, domain
         )
 
-    assert isinstance(events[0], expected_event)
+    assert len(events) == 1
 
 
 @pytest.mark.parametrize(
