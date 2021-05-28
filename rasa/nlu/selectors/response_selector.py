@@ -318,8 +318,8 @@ class ResponseSelector(DIETClassifier):
 
         ResponseSelector defaults specify considerable hidden layer sizes, but
         this is for cases where no transformer is used. If a transformer exists,
-        then the best results are chieved with no hidden layers used between the
-        feature-combining layers and the transformer.
+        then, from our experience, the best results are achieved with no hidden layers
+        used between the feature-combining layers and the transformer.
         """
         hidden_layers_is_at_default_value = (
             self.component_config[HIDDEN_LAYERS_SIZES]
