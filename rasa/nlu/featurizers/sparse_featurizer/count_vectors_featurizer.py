@@ -21,14 +21,11 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
-    MIN_ADDITIONAL_CVF_VOCABULARY,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
     INTENT_RESPONSE_KEY,
-    RESPONSE,
-    ACTION_TEXT,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_NAME,
@@ -146,8 +143,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             self.OOV_token = self.OOV_token.lower()
             if self.OOV_words:
                 self.OOV_words = [w.lower() for w in self.OOV_words]
-
-
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
         """Checks if trained vocabulary exists in attribute's count vectorizer."""

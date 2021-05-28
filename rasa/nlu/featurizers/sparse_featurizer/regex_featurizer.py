@@ -14,7 +14,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     FEATURIZER_CLASS_ALIAS,
-    MIN_ADDITIONAL_REGEX_PATTERNS,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -29,7 +28,6 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.utils.common import lazy_property
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +67,8 @@ class RegexFeaturizer(SparseFeaturizer):
         self.case_sensitive = self.component_config["case_sensitive"]
         self.finetune_mode = finetune_mode
 
-
     def _merge_new_patterns(self, new_patterns: List[Dict[Text, Text]]) -> None:
         """Updates already known patterns with new patterns extracted from data.
-
         Args:
             new_patterns: Patterns extracted from training data and to be merged with
                 known patterns.
@@ -247,9 +243,7 @@ class RegexFeaturizer(SparseFeaturizer):
             known_patterns = rasa.shared.utils.io.read_json_file(patterns_file_name)
 
         return RegexFeaturizer(
-            meta,
-            known_patterns=known_patterns,
-            finetune_mode=should_finetune,
+            meta, known_patterns=known_patterns, finetune_mode=should_finetune,
         )
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:

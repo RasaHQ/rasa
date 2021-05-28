@@ -1,4 +1,4 @@
-from typing import List, Any, Text, Optional
+from typing import List, Any, Text
 import numpy as np
 import pytest
 import scipy.sparse
@@ -177,11 +177,7 @@ def test_count_vector_featurizer_attribute_featurization(
 def test_count_vector_featurizer_shared_vocab(
     sentence, intent, response, text_features, intent_features, response_features
 ):
-    ftr = CountVectorsFeaturizer(
-        {
-            "use_shared_vocab": True,
-        }
-    )
+    ftr = CountVectorsFeaturizer({"use_shared_vocab": True,})
     tk = WhitespaceTokenizer()
 
     train_message = Message(data={TEXT: sentence})
@@ -226,9 +222,7 @@ def test_count_vector_featurizer_shared_vocab(
     ],
 )
 def test_count_vector_featurizer_oov_token(sentence, expected):
-    ftr = CountVectorsFeaturizer(
-        {"OOV_token": "__oov__"}
-    )
+    ftr = CountVectorsFeaturizer({"OOV_token": "__oov__"})
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
 
@@ -259,10 +253,7 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
 def test_count_vector_featurizer_oov_words(sentence, expected):
 
     ftr = CountVectorsFeaturizer(
-        {
-            "OOV_token": "__oov__",
-            "OOV_words": ["oov_word0", "OOV_word1"],
-        }
+        {"OOV_token": "__oov__", "OOV_words": ["oov_word0", "OOV_word1"],}
     )
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
@@ -334,13 +325,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     ],
 )
 def test_count_vector_featurizer_char(sentence, expected):
-    ftr = CountVectorsFeaturizer(
-        {
-            "min_ngram": 1,
-            "max_ngram": 2,
-            "analyzer": "char",
-        }
-    )
+    ftr = CountVectorsFeaturizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char",})
 
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
@@ -453,9 +438,7 @@ def test_count_vector_featurizer_persist_load(tmp_path: Path):
 
 def test_count_vectors_featurizer_train():
 
-    featurizer = CountVectorsFeaturizer.create(
-        {}, RasaNLUModelConfig()
-    )
+    featurizer = CountVectorsFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today ?"
     message = Message(data={TEXT: sentence})
@@ -515,9 +498,7 @@ def test_count_vector_featurizer_use_lemma(
     sentence_features: List[List[int]],
     use_lemma: bool,
 ):
-    ftr = CountVectorsFeaturizer(
-        {"use_lemma": use_lemma}
-    )
+    ftr = CountVectorsFeaturizer({"use_lemma": use_lemma})
 
     train_message = Message(data={TEXT: sentence})
     train_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
@@ -558,11 +539,7 @@ def test_count_vector_featurizer_action_attribute_featurization(
     action_name_features: np.ndarray,
     response_features: np.ndarray,
 ):
-    ftr = CountVectorsFeaturizer(
-        {
-            "token_pattern": r"(?u)\b\w+\b",
-        }
-    )
+    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b",})
     tk = WhitespaceTokenizer()
 
     train_message = Message(data={TEXT: sentence})
@@ -626,11 +603,7 @@ def test_count_vector_featurizer_process_by_attribute(
     action_name_features: np.ndarray,
     response_features: np.ndarray,
 ):
-    ftr = CountVectorsFeaturizer(
-        {
-            "token_pattern": r"(?u)\b\w+\b",
-        }
-    )
+    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b",})
     tk = WhitespaceTokenizer()
 
     # add a second example that has some response, so that the vocabulary for
@@ -665,8 +638,6 @@ def test_count_vector_featurizer_process_by_attribute(
     assert action_name_sen_vecs is None
 
 
-
-
 @pytest.mark.parametrize(
     "initial_train_text, additional_train_text, initial_vocabulary_size, final_vocabulary_size",
     [
@@ -698,9 +669,7 @@ def test_cvf_incremental_training(
     file_dict = initial_cvf.persist("ftr", tmp_path)
     meta = initial_cvf.component_config.copy()
     meta.update(file_dict)
-    new_cvf = CountVectorsFeaturizer.load(
-        meta, tmp_path, should_finetune=True
-    )
+    new_cvf = CountVectorsFeaturizer.load(meta, tmp_path, should_finetune=True)
 
     # Check vocabulary size again
     assert len(new_cvf.vectorizers["text"].vocabulary_) == initial_vocabulary_size
