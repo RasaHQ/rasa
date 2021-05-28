@@ -2632,7 +2632,7 @@ Selectors predict a bot response from a set of candidate responses.
     If the `retrieval_intent` parameter of a particular response selector was left to its default value,
     the corresponding response selector will be identified as `default` in the returned output.
 
-    ```json {4}
+    ```json {3}
     {
         "response_selector": {
           "default": {
@@ -2777,14 +2777,19 @@ However, additional parameters exist that can be adapted.
 +=================================+===================+==============================================================+
 | hidden_layers_sizes             | text: [256, 128]  | Hidden layer sizes for layers before the embedding layers    |
 |                                 | label: [256, 128] | for user messages and labels. The number of hidden layers is |
-|                                 |                   | equal to the length of the corresponding.                    |
+|                                 |                   | equal to the length of the corresponding list. We recommend  |
+|                                 |                   | disabling the hidden layers (by providing empty lists) when  |
+|                                 |                   | the transformer is enabled.                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | share_hidden_layers             | False             | Whether to share the hidden layer weights between user       |
 |                                 |                   | messages and labels.                                         |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| transformer_size                | None              | Number of units in transformer.                              |
+| transformer_size                | None              | Number of units in the transformer. When a positive value is |
+|                                 |                   | provided for `number_of_transformer_layers`, the default size|
+|                                 |                   | becomes `256`.                                               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| number_of_transformer_layers    | 0                 | Number of transformer layers.                                |
+| number_of_transformer_layers    | 0                 | Number of transformer layers; positive values enable the     |
+|                                 |                   | transformer.                                                 |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | number_of_attention_heads       | 4                 | Number of attention heads in transformer.                    |
 +---------------------------------+-------------------+--------------------------------------------------------------+
