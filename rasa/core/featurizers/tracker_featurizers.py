@@ -817,23 +817,27 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
         )
+        events = tracker.applied_events()
 
         if ignore_action_unlikely_intent:
             tracker_states = self._remove_action_unlikely_intent(tracker_states)
+            # Remove all action_unlikely_intent events.
+            events = [
+                event
+                for event in events
+                if (
+                    not isinstance(event, ActionExecuted)
+                    or event.action_name != ACTION_UNLIKELY_INTENT_NAME
+                )
+            ]
 
         label_index = 0
         entity_data = {}
-        for event in tracker.applied_events():
+        for event in events:
             if isinstance(event, UserUttered):
                 entity_data = self._entity_data(event)
 
             elif isinstance(event, ActionExecuted):
-
-                if (
-                    ignore_action_unlikely_intent
-                    and event.action_name == ACTION_UNLIKELY_INTENT_NAME
-                ):
-                    continue
 
                 label_index += 1
 
@@ -1081,20 +1085,24 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         tracker_states = self._create_states(
             tracker, domain, omit_unset_slots=omit_unset_slots
         )
+        events = tracker.applied_events()
 
         if ignore_action_unlikely_intent:
             tracker_states = self._remove_action_unlikely_intent(tracker_states)
+            # Remove all action_unlikely_intent events.
+            events = [
+                event
+                for event in events
+                if (
+                    not isinstance(event, ActionExecuted)
+                    or event.action_name != ACTION_UNLIKELY_INTENT_NAME
+                )
+            ]
 
         label_index = 0
-        for event in tracker.applied_events():
+        for event in events:
 
             if isinstance(event, ActionExecuted):
-                if (
-                    ignore_action_unlikely_intent
-                    and event.action_name == ACTION_UNLIKELY_INTENT_NAME
-                ):
-                    continue
-
                 label_index += 1
 
             elif isinstance(event, UserUttered):
