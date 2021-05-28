@@ -541,10 +541,11 @@ def _get_e2e_entity_evaluation_result(
             parsed_message = processor.interpreter.featurize_message(
                 Message(data={TEXT: text})
             )
-            tokens = parsed_message.get(TOKENS_NAMES[TEXT])
-            return EntityEvaluationResult(
-                entity_targets, entities_predicted_by_policies, tokens, text
-            )
+            if parsed_message:
+                tokens = parsed_message.get(TOKENS_NAMES[TEXT])
+                return EntityEvaluationResult(
+                    entity_targets, entities_predicted_by_policies, tokens, text
+                )
 
 
 def _collect_action_executed_predictions(
