@@ -143,6 +143,11 @@ It is triggered by low action prediction confidence, if you have this [fallback 
 This action deactivates the active loop and resets the requested slot. This is used when
 [handling unhappy paths in forms](./forms.mdx#writing-stories--rules-for-unhappy-form-paths).
 
+:::note
+If you wish to reset all slots, we recommend using a custom action
+that returns the [`AllSlotsReset`](https://rasa.com/docs/rasa/reference/rasa/shared/core/events#allslotsreset-objects) event after form deactivation.
+:::
+
 ## action_revert_fallback_events
 
 :::caution Deprecated!

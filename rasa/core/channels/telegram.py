@@ -178,6 +178,10 @@ class TelegramInput(InputChannel):
         return message.text is not None
 
     @staticmethod
+    def _is_edited_message(message: Update) -> bool:
+        return message.edited_message is not None
+
+    @staticmethod
     def _is_button(message: Update) -> bool:
         return message.callback_query is not None
 
@@ -214,6 +218,9 @@ class TelegramInput(InputChannel):
                 if self._is_button(update):
                     msg = update.callback_query.message
                     text = update.callback_query.data
+                elif self._is_edited_message(update):
+                    msg = update.edited_message
+                    text = update.edited_message.text
                 else:
                     msg = update.message
                     if self._is_user_message(msg):
