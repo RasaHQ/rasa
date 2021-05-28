@@ -27,7 +27,7 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     ],
 )
 def test_count_vector_featurizer(sentence, expected, expected_cls):
-    ftr = CountVectorsFeaturizer({"additional_vocabulary_size": {"text": 0}})
+    ftr = CountVectorsFeaturizer()
 
     train_message = Message(data={TEXT: sentence})
     test_message = Message(data={TEXT: sentence})
@@ -62,9 +62,7 @@ def test_count_vector_featurizer(sentence, expected, expected_cls):
 def test_count_vector_featurizer_response_attribute_featurization(
     sentence, intent, response, intent_features, response_features
 ):
-    ftr = CountVectorsFeaturizer(
-        {"additional_vocabulary_size": {"text": 0, "response": 0}}
-    )
+    ftr = CountVectorsFeaturizer()
     tk = WhitespaceTokenizer()
 
     train_message = Message(data={TEXT: sentence})
@@ -122,9 +120,7 @@ def test_count_vector_featurizer_response_attribute_featurization(
 def test_count_vector_featurizer_attribute_featurization(
     sentence, intent, response, intent_features, response_features
 ):
-    ftr = CountVectorsFeaturizer(
-        {"additional_vocabulary_size": {"text": 0, "response": 0}}
-    )
+    ftr = CountVectorsFeaturizer()
     tk = WhitespaceTokenizer()
 
     train_message = Message(data={TEXT: sentence})
@@ -184,7 +180,6 @@ def test_count_vector_featurizer_shared_vocab(
     ftr = CountVectorsFeaturizer(
         {
             "use_shared_vocab": True,
-            "additional_vocabulary_size": {"text": 0, "response": 0},
         }
     )
     tk = WhitespaceTokenizer()
@@ -232,7 +227,7 @@ def test_count_vector_featurizer_shared_vocab(
 )
 def test_count_vector_featurizer_oov_token(sentence, expected):
     ftr = CountVectorsFeaturizer(
-        {"OOV_token": "__oov__", "additional_vocabulary_size": {"text": 0}}
+        {"OOV_token": "__oov__"}
     )
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
@@ -267,7 +262,6 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
         {
             "OOV_token": "__oov__",
             "OOV_words": ["oov_word0", "OOV_word1"],
-            "additional_vocabulary_size": {"text": 0},
         }
     )
     train_message = Message(data={TEXT: sentence})
@@ -302,7 +296,7 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
 )
 def test_count_vector_featurizer_using_tokens(tokens, expected):
 
-    ftr = CountVectorsFeaturizer({"additional_vocabulary_size": {"text": 0}})
+    ftr = CountVectorsFeaturizer()
 
     # using empty string instead of real text string to make sure
     # count vector only can come from `tokens` feature.
@@ -345,7 +339,6 @@ def test_count_vector_featurizer_char(sentence, expected):
             "min_ngram": 1,
             "max_ngram": 2,
             "analyzer": "char",
-            "additional_vocabulary_size": {"text": 0},
         }
     )
 
@@ -381,7 +374,6 @@ def test_count_vector_featurizer_persist_load(tmp_path: Path):
         "max_ngram": 3,
         "max_features": 10,
         "lowercase": False,
-        "additional_vocabulary_size": {"text": 0},
     }
     train_ftr = CountVectorsFeaturizer(config)
 
@@ -462,7 +454,7 @@ def test_count_vector_featurizer_persist_load(tmp_path: Path):
 def test_count_vectors_featurizer_train():
 
     featurizer = CountVectorsFeaturizer.create(
-        {"additional_vocabulary_size": {"text": 0, "response": 0}}, RasaNLUModelConfig()
+        {}, RasaNLUModelConfig()
     )
 
     sentence = "Hey how are you today ?"
@@ -524,7 +516,7 @@ def test_count_vector_featurizer_use_lemma(
     use_lemma: bool,
 ):
     ftr = CountVectorsFeaturizer(
-        {"use_lemma": use_lemma, "additional_vocabulary_size": {"text": 0}}
+        {"use_lemma": use_lemma}
     )
 
     train_message = Message(data={TEXT: sentence})
@@ -569,7 +561,6 @@ def test_count_vector_featurizer_action_attribute_featurization(
     ftr = CountVectorsFeaturizer(
         {
             "token_pattern": r"(?u)\b\w+\b",
-            "additional_vocabulary_size": {"text": 0, "response": 0, "action_text": 0},
         }
     )
     tk = WhitespaceTokenizer()
@@ -638,7 +629,6 @@ def test_count_vector_featurizer_process_by_attribute(
     ftr = CountVectorsFeaturizer(
         {
             "token_pattern": r"(?u)\b\w+\b",
-            "additional_vocabulary_size": {"text": 0, "response": 0, "action_text": 0},
         }
     )
     tk = WhitespaceTokenizer()
@@ -675,193 +665,57 @@ def test_count_vector_featurizer_process_by_attribute(
     assert action_name_sen_vecs is None
 
 
-@pytest.mark.parametrize(
-    "additional_size, text, real_vocabulary_size, total_vocabulary_size",
-    [(None, "hello my name is John.", 5, 1005), (10, "hello my name is John.", 5, 15)],
-)
-def test_cvf_independent_train_vocabulary_expand(
-    additional_size: Optional[int],
-    text: Text,
-    real_vocabulary_size: int,
-    total_vocabulary_size: int,
-):
-
-    tokenizer = WhitespaceTokenizer()
-    featurizer = CountVectorsFeaturizer(
-        {
-            "additional_vocabulary_size": {
-                TEXT: additional_size,
-                RESPONSE: additional_size,
-                ACTION_TEXT: additional_size,
-            }
-        },
-        finetune_mode=False,
-    )
-
-    train_message = Message(
-        data={
-            TEXT: text,
-            INTENT: "intent_1",
-            RESPONSE: text,
-            ACTION_TEXT: text,
-            ACTION_NAME: "action_1",
-        }
-    )
-    data = TrainingData([train_message])
-
-    tokenizer.train(data)
-    featurizer.train(data)
-
-    for attribute in [TEXT, RESPONSE, ACTION_TEXT]:
-        attribute_vocabulary = featurizer.vectorizers[attribute].vocabulary_
-        assert len(attribute_vocabulary) == total_vocabulary_size
-        assert (
-            featurizer._get_starting_empty_index(attribute_vocabulary)
-            == real_vocabulary_size
-        )
-
-    for attribute in [INTENT, ACTION_NAME]:
-        attribute_vocabulary = featurizer.vectorizers[attribute].vocabulary_
-        assert len(attribute_vocabulary) == 1
 
 
 @pytest.mark.parametrize(
-    "additional_size, text, real_vocabulary_size, total_vocabulary_size",
-    [(None, "hello my name is John.", 7, 1007), (10, "hello my name is John.", 7, 17)],
-)
-def test_cvf_shared_train_vocabulary_expand(
-    additional_size: Optional[int],
-    text: Text,
-    real_vocabulary_size: int,
-    total_vocabulary_size: int,
-):
-
-    tokenizer = WhitespaceTokenizer()
-    featurizer = CountVectorsFeaturizer(
-        {
-            "additional_vocabulary_size": {
-                "text": additional_size,
-                "response": additional_size,
-                "action_text": additional_size,
-            },
-            "use_shared_vocab": True,
-        },
-        finetune_mode=False,
-    )
-
-    train_message = Message(
-        data={
-            TEXT: text,
-            INTENT: "intent_1",
-            RESPONSE: text,
-            ACTION_TEXT: text,
-            ACTION_NAME: "action_1",
-        }
-    )
-    data = TrainingData([train_message])
-
-    tokenizer.train(data)
-    featurizer.train(data)
-
-    shared_vocabulary = featurizer.vectorizers["text"].vocabulary_
-    assert len(shared_vocabulary) == total_vocabulary_size
-    assert (
-        featurizer._get_starting_empty_index(shared_vocabulary) == real_vocabulary_size
-    )
-
-
-@pytest.mark.parametrize(
-    "additional_size, original_train_text, additional_train_text, total_vocabulary_size, remaining_buffer_size",
+    "initial_train_text, additional_train_text, initial_vocabulary_size, final_vocabulary_size",
     [
-        (10, "hello my name is John.", "I am also new.", 15, 6),
-        (None, "hello my name is John.", "I am also new.", 1005, 996),
+        ("am I the coolest person?", "yes, I am", 5, 6),
+        ("the coolest person", "person the coolest", 3, 3),
     ],
 )
-def test_cvf_incremental_train_vocabulary(
-    additional_size: Optional[int],
-    original_train_text: Text,
+def test_cvf_incremental_training(
+    initial_train_text: Text,
     additional_train_text: Text,
-    total_vocabulary_size: int,
-    remaining_buffer_size: int,
+    initial_vocabulary_size: int,
+    final_vocabulary_size: int,
     tmp_path: Path,
 ):
 
-    tokenizer = WhitespaceTokenizer()
-    original_featurizer = CountVectorsFeaturizer(
-        {"additional_vocabulary_size": {"text": additional_size}}, finetune_mode=False,
-    )
-    train_message = Message(data={"text": original_train_text})
+    tk = WhitespaceTokenizer()
+    initial_cvf = CountVectorsFeaturizer()
+    train_message = Message(data={"text": initial_train_text})
     data = TrainingData([train_message])
 
-    tokenizer.train(data)
-    original_featurizer.train(data)
+    tk.train(data)
+    initial_cvf.train(data)
 
-    # Check total vocabulary size with buffer slots before finetuning
-    original_vocabulary = original_featurizer.vectorizers["text"].vocabulary_
-    assert len(original_vocabulary) == total_vocabulary_size
+    # Check initial vocabulary size
+    initial_vocab = initial_cvf.vectorizers["text"].vocabulary_
+    assert len(initial_vocab) == initial_vocabulary_size
 
-    file_dict = original_featurizer.persist("ftr", str(tmp_path))
-
-    # load original_featurizer
-    meta = original_featurizer.component_config.copy()
+    # persist and load initial cvf
+    file_dict = initial_cvf.persist("ftr", tmp_path)
+    meta = initial_cvf.component_config.copy()
     meta.update(file_dict)
-    new_featurizer = CountVectorsFeaturizer.load(
-        meta, str(tmp_path), should_finetune=True
+    new_cvf = CountVectorsFeaturizer.load(
+        meta, tmp_path, should_finetune=True
     )
 
-    # Check total vocabulary size with buffer slots before finetuning
-    assert len(new_featurizer.vectorizers["text"].vocabulary_) == total_vocabulary_size
+    # Check vocabulary size again
+    assert len(new_cvf.vectorizers["text"].vocabulary_) == initial_vocabulary_size
 
     additional_train_message = Message(data={"text": additional_train_text})
     data = TrainingData([train_message, additional_train_message])
-    tokenizer.train(data)
-    new_featurizer.train(data)
+    tk.train(data)
+    new_cvf.train(data)
 
-    new_vocabulary = new_featurizer.vectorizers["text"].vocabulary_
+    new_vocab = new_cvf.vectorizers["text"].vocabulary_
 
-    # Check total vocabulary size with buffer slots after finetuning
-    assert len(new_vocabulary) == total_vocabulary_size
+    # Check vocabulary size after finetuning
+    assert len(new_vocab) == final_vocabulary_size
 
-    # Check remaining buffer slots after finetuning
-    assert (
-        len(new_vocabulary) - new_featurizer._get_starting_empty_index(new_vocabulary)
-        == remaining_buffer_size
-    )
-
-    # Check indices of original vocabulary haven't changed in the new vocabulary
-    for vocab_token, vocab_index in original_vocabulary.items():
-        if not vocab_token.startswith("buf_"):
-            assert vocab_token in new_vocabulary
-            assert new_vocabulary.get(vocab_token) == vocab_index
-
-
-def test_cvf_incremental_train_vocabulary_overflow(tmp_path: Path,):
-    additional_size = 3
-    original_train_text = "hello my name is John."
-    additional_train_text = "I am also new."
-    tokenizer = WhitespaceTokenizer()
-    original_featurizer = CountVectorsFeaturizer(
-        {"additional_vocabulary_size": {"text": additional_size}}, finetune_mode=False,
-    )
-    train_message = Message(data={"text": original_train_text})
-    data = TrainingData([train_message])
-
-    tokenizer.train(data)
-    original_featurizer.train(data)
-
-    file_dict = original_featurizer.persist("ftr", str(tmp_path))
-
-    # load original_featurizer
-    meta = original_featurizer.component_config.copy()
-    meta.update(file_dict)
-    new_featurizer = CountVectorsFeaturizer.load(
-        meta, str(tmp_path), should_finetune=True
-    )
-
-    additional_train_message = Message(data={"text": additional_train_text})
-    data = TrainingData([train_message, additional_train_message])
-    tokenizer.train(data)
-
-    with pytest.warns(UserWarning) as warning:
-        new_featurizer.train(data)
-    assert "New data contains vocabulary of size" in warning[0].message.args[0]
+    # Check indices of initial vocabulary haven't changed in the new vocabulary
+    for vocab_token, vocab_index in initial_vocab.items():
+        assert vocab_token in new_vocab
+        assert new_vocab.get(vocab_token) == vocab_index
