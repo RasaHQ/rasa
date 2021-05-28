@@ -257,6 +257,7 @@ async def test_kafka_broker_from_config():
         "localhost",
         sasl_username="username",
         sasl_password="password",
+        sasl_mechanism="PLAIN",
         topic="topic",
         partition_by_sender=True,
         security_protocol="SASL_PLAINTEXT",
@@ -265,6 +266,7 @@ async def test_kafka_broker_from_config():
     assert actual.url == expected.url
     assert actual.sasl_username == expected.sasl_username
     assert actual.sasl_password == expected.sasl_password
+    assert actual.sasl_mechanism == expected.sasl_mechanism
     assert actual.topic == expected.topic
     assert actual.partition_by_sender == expected.partition_by_sender
 

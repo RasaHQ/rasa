@@ -20,6 +20,7 @@ class KafkaEventBroker(EventBroker):
         partition_by_sender: bool = False,
         sasl_username: Optional[Text] = None,
         sasl_password: Optional[Text] = None,
+        sasl_mechanism: Optional[Text] = None,
         ssl_cafile: Optional[Text] = None,
         ssl_certfile: Optional[Text] = None,
         ssl_keyfile: Optional[Text] = None,
@@ -45,6 +46,7 @@ class KafkaEventBroker(EventBroker):
                 sender_id or not
             sasl_username: Username for plain authentication.
             sasl_password: Password for plain authentication.
+            sasl_mechanism: Optional sasl mechanism for authentication
             ssl_cafile: Optional filename of ca file to use in certificate
                 verification.
             ssl_certfile: Optional filename of file in pem format containing
@@ -68,6 +70,7 @@ class KafkaEventBroker(EventBroker):
         self.security_protocol = security_protocol.upper()
         self.sasl_username = sasl_username
         self.sasl_password = sasl_password
+        self.sasl_mechanism = sasl_mechanism
         self.ssl_cafile = ssl_cafile
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
@@ -143,7 +146,7 @@ class KafkaEventBroker(EventBroker):
                 value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
                 sasl_plain_username=self.sasl_username,
                 sasl_plain_password=self.sasl_password,
-                sasl_mechanism="PLAIN",
+                sasl_mechanism=self.sasl_mechanism,
                 security_protocol=self.security_protocol,
             )
         elif self.security_protocol == "SSL":
@@ -169,7 +172,7 @@ class KafkaEventBroker(EventBroker):
                 ssl_keyfile=self.ssl_keyfile,
                 ssl_check_hostname=self.ssl_check_hostname,
                 security_protocol=self.security_protocol,
-                sasl_mechanism="PLAIN",
+                sasl_mechanism=self.sasl_mechanism,
             )
         else:
             raise ValueError(
