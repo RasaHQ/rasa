@@ -170,7 +170,7 @@ def ensure_conversation_exists() -> "SanicView":
         @wraps(f)
         def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
-            if request.app.agent.tracker_store.exists(conversation_id):
+            if await request.app.agent.tracker_store.exists(conversation_id):
                 return f(request, *args, **kwargs)
             else:
                 raise ErrorResponse(
@@ -764,7 +764,7 @@ def create_app(
                         events, tracker, output_channel
                     )
 
-                app.agent.tracker_store.save(tracker)
+                await app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:
@@ -818,7 +818,7 @@ def create_app(
                 )
 
                 # will override an existing tracker with the same id!
-                app.agent.tracker_store.save(tracker)
+                await app.agent.tracker_store.save(tracker)
 
             return response.json(tracker.current_state(verbosity))
         except Exception as e:

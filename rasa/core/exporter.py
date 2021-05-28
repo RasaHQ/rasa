@@ -142,7 +142,7 @@ class Exporter:
             `conversation_ids_in_tracker_store` is empty.
 
         """
-        conversation_ids_in_tracker_store = set(self.tracker_store.keys())
+        conversation_ids_in_tracker_store = set(await self.tracker_store.keys())
 
         if conversation_ids_in_tracker_store:
             return conversation_ids_in_tracker_store
@@ -222,7 +222,7 @@ class Exporter:
         events = []
 
         for conversation_id in tqdm(conversation_ids_to_process, "conversation IDs"):
-            tracker = self.tracker_store.retrieve_full_tracker(conversation_id)
+            tracker = await self.tracker_store.retrieve_full_tracker(conversation_id)
             if not tracker:
                 logger.info(
                     f"Could not retrieve tracker for conversation ID "

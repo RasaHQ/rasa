@@ -97,7 +97,7 @@ class MessageProcessor:
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
+            await self._save_tracker(tracker)
             rasa.shared.utils.io.raise_warning(
                 "No policy ensemble or domain set. Skipping action prediction "
                 "and execution.",
@@ -108,7 +108,7 @@ class MessageProcessor:
         await self._predict_and_execute_next_action(message.output_channel, tracker)
 
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        await self._save_tracker(tracker)
 
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
@@ -130,7 +130,7 @@ class MessageProcessor:
         result = self.predict_next_with_tracker(tracker)
 
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        await self._save_tracker(tracker)
 
         return result
 
@@ -236,7 +236,7 @@ class MessageProcessor:
         Returns:
               Tracker for `sender_id`.
         """
-        tracker = self.get_tracker(sender_id)
+        tracker = await self.get_tracker(sender_id)
 
         await self._update_tracker_session(tracker, output_channel, metadata)
 
@@ -259,7 +259,7 @@ class MessageProcessor:
         Returns:
               Tracker for `sender_id`.
         """
-        tracker = self.get_tracker(sender_id)
+        tracker = await self.get_tracker(sender_id)
 
         # run session start only if the tracker is empty
         if not tracker.events:
@@ -267,7 +267,7 @@ class MessageProcessor:
 
         return tracker
 
-    def get_tracker(self, conversation_id: Text) -> DialogueStateTracker:
+    async def get_tracker(self, conversation_id: Text) -> DialogueStateTracker:
         """Get the tracker for a conversation.
 
         In contrast to `fetch_tracker_and_update_session` this does not add any
@@ -284,11 +284,11 @@ class MessageProcessor:
         """
         conversation_id = conversation_id or DEFAULT_SENDER_ID
 
-        return self.tracker_store.get_or_create_tracker(
+        return await self.tracker_store.get_or_create_tracker(
             conversation_id, append_action_listen=False
         )
 
-    def get_trackers_for_all_conversation_sessions(
+    async def get_trackers_for_all_conversation_sessions(
         self, conversation_id: Text
     ) -> List[DialogueStateTracker]:
         """Fetches all trackers for a conversation.
@@ -305,7 +305,7 @@ class MessageProcessor:
         """
         conversation_id = conversation_id or DEFAULT_SENDER_ID
 
-        tracker = self.tracker_store.retrieve_full_tracker(conversation_id)
+        tracker = await self.tracker_store.retrieve_full_tracker(conversation_id)
 
         return rasa.shared.core.trackers.get_trackers_for_conversation_sessions(tracker)
 
@@ -328,7 +328,7 @@ class MessageProcessor:
 
         if should_save_tracker:
             # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
+            await self._save_tracker(tracker)
 
         return tracker
 
@@ -364,7 +364,7 @@ class MessageProcessor:
         await self._run_action(action, tracker, output_channel, nlg, prediction)
 
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        await self._save_tracker(tracker)
 
         return tracker
 
@@ -491,7 +491,7 @@ class MessageProcessor:
         )
         await self._predict_and_execute_next_action(output_channel, tracker)
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        await self._save_tracker(tracker)
 
     @staticmethod
     def _log_slots(tracker: DialogueStateTracker) -> None:
@@ -897,8 +897,8 @@ class MessageProcessor:
 
         return has_expired
 
-    def _save_tracker(self, tracker: DialogueStateTracker) -> None:
-        self.tracker_store.save(tracker)
+    async def _save_tracker(self, tracker: DialogueStateTracker) -> None:
+        await self.tracker_store.save(tracker)
 
     def _get_next_action_probabilities(
         self, tracker: DialogueStateTracker

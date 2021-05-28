@@ -35,6 +35,7 @@ from rasa.core.tracker_store import (
     FailSafeTrackerStore,
     InMemoryTrackerStore,
     TrackerStore,
+    AwaitableTrackerStore,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 import rasa.core.utils
@@ -885,7 +886,7 @@ class Agent:
         else:
             tracker_store = InMemoryTrackerStore(domain)
 
-        return FailSafeTrackerStore(tracker_store)
+        return AwaitableTrackerStore(FailSafeTrackerStore(tracker_store))
 
     @staticmethod
     def _create_lock_store(store: Optional[LockStore]) -> LockStore:
