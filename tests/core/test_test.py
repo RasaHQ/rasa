@@ -1,8 +1,14 @@
 from pathlib import Path
 
+from _pytest.monkeypatch import MonkeyPatch
+
 import rasa.core.test
+import rasa.nlu.model
+import rasa.shared.nlu.interpreter
+import rasa.core.interpreter
 from _pytest.capture import CaptureFixture
 from rasa.core.agent import Agent
+from tests.conftest import AsyncMock
 
 
 async def test_testing_warns_if_action_unknown(
@@ -19,7 +25,8 @@ async def test_testing_warns_if_action_unknown(
     assert "which is not part of the training data / domain" in output
 
 
-async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
+async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent, monkeypatch: MonkeyPatch):
+    monkeypatch.setattr(rasa.nlu.model.Interpreter, "featurize_message", None)
     result = await rasa.core.test.test(
         "data/test_yaml_stories/test_stories_entity_annotations.yml", core_agent
     )

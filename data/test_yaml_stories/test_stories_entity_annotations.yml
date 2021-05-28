@@ -5,5 +5,5 @@ stories:
     steps:
       - intent: greet
         user: |-
-            Hi, my name is [Anca]{"entity": "name"}
-      - bot: hey there Anca!
+            Hi, I live in [London](city).
+      - bot: hey there!
