@@ -397,7 +397,7 @@ class SingleStateFeaturizer:
 
 
 class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
-    """A SingleStateFeaturizer for use with polcies that predict intent labels."""
+    """A SingleStateFeaturizer for use with policies that predict intent labels."""
 
     def _encode_intent(
         self, intent: Text, interpreter: NaturalLanguageInterpreter
