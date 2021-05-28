@@ -25,7 +25,7 @@ from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
-from rasa.shared.exceptions import ConnectionException
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 TEST_EVENTS = [
@@ -335,6 +335,16 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         record.name in ["rasa.core.brokers.pika", "asyncio"]
         for record in caplog.records
     )
+
+
+async def test_create_pika_invalid_port():
+
+    cfg = EndpointConfig(
+        username="username", password="password", type="pika", port="PORT"
+    )
+    with pytest.raises(RasaException) as e:
+        await EventBroker.create(cfg)
+        assert "Port could not be converted to integer." in str(e.value)
 
 
 def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):
