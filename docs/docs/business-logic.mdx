@@ -86,7 +86,7 @@ entities:
 ```
 
 Entities like numbers
-can be extracted by the [DucklingEntityExtractor](./components.mdx#ducklinghttpextractor). To use it, add  DucklingEntityExtractor
+can be extracted by the [DucklingEntityExtractor](./components.mdx#ducklingentityextractor). To use it, add  DucklingEntityExtractor
 to your NLU pipeline:
 
 ```yaml-rasa title="config.yml"
@@ -311,4 +311,4 @@ example above, this is a summary of what you'll need to do:
 To try out your newly defined form, retrain the bot's model by running `rasa train` and start `rasa shell`.
 Because the DucklingEntityExtractor is being used to extract
 entities, you'll need to start Duckling in the background as well
-(see the [instructions for running Duckling](components.mdx#ducklinghttpextractor)).
+(see the [instructions for running Duckling](components.mdx#DucklingEntityExtractor)).
