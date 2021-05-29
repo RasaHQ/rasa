@@ -110,6 +110,16 @@ def test_confidence_loss_settings(
     component_config: Dict[Text, Any], raises_exception: bool
 ):
     component_config[SIMILARITY_TYPE] = INNER
+    if component_config[MODEL_CONFIDENCE] == SOFTMAX:
+        with pytest.warns(UserWarning):
+            run_confidense_loss_settings(component_config, raises_exception)
+    else:
+        run_confidense_loss_settings(component_config, raises_exception)
+
+
+def run_confidense_loss_settings(
+    component_config: Dict[Text, Any], raises_exception: bool
+):
     if raises_exception:
         with pytest.raises(InvalidConfigException):
             train_utils._check_confidence_setting(component_config)
@@ -130,6 +140,16 @@ def test_confidence_similarity_settings(
     component_config: Dict[Text, Any], raises_exception: bool
 ):
     component_config[LOSS_TYPE] = SOFTMAX
+    if component_config[MODEL_CONFIDENCE] == SOFTMAX:
+        with pytest.warns(UserWarning):
+            run_confidence_similarity_settings(component_config, raises_exception)
+    else:
+        run_confidence_similarity_settings(component_config, raises_exception)
+
+
+def run_confidence_similarity_settings(
+    component_config: Dict[Text, Any], raises_exception: bool
+):
     if raises_exception:
         with pytest.raises(InvalidConfigException):
             train_utils._check_confidence_setting(component_config)
