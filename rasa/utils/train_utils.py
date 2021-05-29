@@ -475,12 +475,12 @@ def create_common_callbacks(
     """
     try:
         import tensorflow as tf
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as e:
         raise MissingDependencyException(
             f"Tensorflow does not seem to be installed, but it is needed for this."
             f"For an overview of how to install Rasa, please visit URL:"
             f"{DOCS_BASE_URL}/installation"
-        )
+        ) from e
 
     callbacks = [RasaTrainingLogger(epochs, silent=False)]
 
