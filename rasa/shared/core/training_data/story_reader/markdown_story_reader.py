@@ -138,7 +138,7 @@ class MarkdownStoryReader(StoryReader):
             except Exception as e:
                 msg = f"Error in line {line_num}: {e}"
                 logger.error(msg, exc_info=1)
-                raise ValueError(msg) from e
+                raise RasaException(msg) from e
         self._add_current_stories_to_result()
         return self.story_steps
 
@@ -161,13 +161,13 @@ class MarkdownStoryReader(StoryReader):
                     ".".format(type(parsed_slots))
                 )
         except Exception as e:
-            raise ValueError(
+            raise RasaException(
                 "Invalid to parse arguments in line "
                 "'{}'. Failed to decode parameters "
                 "as a json object. Make sure the event "
                 "name is followed by a proper json "
                 "object. Error: {}".format(line, e)
-            )
+            ) from e
 
     def _replace_template_variables(self, line: Text) -> Text:
         def process_match(matchobject: "Match") -> Any:
