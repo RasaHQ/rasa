@@ -22,7 +22,7 @@ from rasa.core.policies.memoization import MemoizationPolicy
 
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
-from rasa.nlu.test import evaluate_entities, run_evaluation
+from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
 from rasa.core.agent import Agent
 
 
@@ -109,7 +109,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(
     assert num_stories == 1
 
 
-@pytest.mark.timeout(300)
+@pytest.mark.timeout(300, func_only=True)
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     generator = await _create_data_generator(
         "data/test_evaluations/test_form_end_to_end_stories.yml",
@@ -255,7 +255,7 @@ def test_event_has_proper_implementation(
     assert actual_entities[0] == expected_entity
 
 
-@pytest.mark.timeout(600)
+@pytest.mark.timeout(600, func_only=True)
 @pytest.mark.parametrize(
     "test_file",
     [
@@ -302,7 +302,7 @@ async def test_retrieval_intent_wrong_prediction(
     assert "# predicted: chitchat/ask_name" in failed_stories
 
 
-@pytest.mark.timeout(240)
+@pytest.mark.timeout(240, func_only=True)
 async def test_e2e_with_entity_evaluation(e2e_bot_agent: Agent, tmp_path: Path):
     test_file = "data/test_e2ebot/tests/test_stories.yml"
 
@@ -495,3 +495,73 @@ def test_log_evaluation_table(caplog, skip_field, skip_value):
         assert f"Classification report: \n{kwargs['report']}" in caplog.text
     else:
         assert "Classification report:" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "test_file, correct_intent, correct_entity",
+    [
+        [
+            "data/test_yaml_stories/test_prediction_with_correct_intent_wrong_entity.yml",
+            True,
+            False,
+        ],
+        [
+            "data/test_yaml_stories/test_prediction_with_wrong_intent_correct_entity.yml",
+            False,
+            True,
+        ],
+        [
+            "data/test_yaml_stories/test_prediction_with_wrong_intent_wrong_entity.yml",
+            False,
+            False,
+        ],
+    ],
+)
+async def test_wrong_predictions_with_intent_and_entities(
+    tmpdir: Path,
+    restaurantbot_agent: Agent,
+    test_file: Text,
+    correct_intent: bool,
+    correct_entity: bool,
+):
+    stories_path = str(tmpdir / FAILED_STORIES_FILE)
+
+    await evaluate_stories(
+        stories=test_file,
+        agent=restaurantbot_agent,
+        out_directory=str(tmpdir),
+        max_stories=None,
+        e2e=True,
+    )
+
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
+
+    if correct_intent and not correct_entity:
+        # check if there is no comment on the intent line
+        assert "- intent: request_restaurant  # predicted:" not in failed_stories
+        # check if there is a comment with the predicted entity on the entity line
+        assert "# predicted: cuisine: greek" in failed_stories
+        # check that the correctly predicted entity is printed as well
+        assert "- seating: outside\n" in failed_stories
+        # check that it does not double print entities
+        assert failed_stories.count("\n") == 8
+
+    elif not correct_intent and correct_entity:
+        # check if there is a comment with the predicted intent on the intent line
+        assert "- intent: greet  # predicted: request_restaurant" in failed_stories
+        # check if there is no comment on the entity line
+        assert "# predicted: cuisine: greek" not in failed_stories
+        # check that the correctly predicted entity is printed as well
+        assert "- seating: outside\n" in failed_stories
+        # check that it does not double print entities
+        assert failed_stories.count("\n") == 9
+
+    elif not correct_intent and not correct_entity:
+        # check if there is a comment with the predicted intent on the intent line
+        assert "- intent: greet  # predicted: request_restaurant" in failed_stories
+        # check if there is a comment with the predicted entity on the entity line
+        assert "# predicted: cuisine: greek" in failed_stories
+        # check that the correctly predicted entity is printed as well
+        assert "- seating: outside\n" in failed_stories
+        # check that it does not double print entities
+        assert failed_stories.count("\n") == 9

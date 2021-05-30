@@ -16,6 +16,7 @@ from typing import (
     Dict,
     Any,
     NamedTuple,
+    TYPE_CHECKING,
 )
 
 from rasa import telemetry
@@ -34,6 +35,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+    ENTITY_ATTRIBUTE_TEXT,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -58,6 +60,17 @@ from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 from rasa.shared.importers.importer import TrainingDataImporter
 
+if TYPE_CHECKING:
+    from typing_extensions import TypedDict
+
+    EntityPrediction = TypedDict(
+        "EntityPrediction",
+        {
+            ENTITY_ATTRIBUTE_TEXT: Text,
+            "entities": List[Dict[Text, Any]],
+            "predicted_entities": List[Dict[Text, Any]],
+        },
+    )
 logger = logging.getLogger(__name__)
 
 # Exclude 'EntitySynonymMapper' and 'ResponseSelector' as their super class
@@ -166,17 +179,10 @@ def drop_intents_below_freq(
     logger.debug(
         "Raw data intent examples: {}".format(len(training_data.intent_examples))
     )
-    keep_examples = [
-        ex
-        for ex in training_data.intent_examples
-        if training_data.number_of_examples_per_intent[ex.get(INTENT)] >= cutoff
-    ]
 
-    return TrainingData(
-        keep_examples,
-        training_data.entity_synonyms,
-        training_data.regex_features,
-        responses=training_data.responses,
+    examples_per_intent = training_data.number_of_examples_per_intent
+    return training_data.filter_training_examples(
+        lambda ex: examples_per_intent.get(ex.get(INTENT), 0) >= cutoff
     )
 
 
@@ -332,7 +338,7 @@ def plot_attribute_confidences(
         if getattr(r, target_key) != getattr(r, prediction_key)
     ]
 
-    plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
+    plot_utils.plot_paired_histogram([pos_hist, neg_hist], title, hist_filename)
 
 
 def plot_entity_confidences(
@@ -367,7 +373,7 @@ def plot_entity_confidences(
         if prediction not in (NO_ENTITY, target)
     ]
 
-    plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
+    plot_utils.plot_paired_histogram([pos_hist, neg_hist], title, hist_filename)
 
 
 def evaluate_response_selections(
@@ -737,7 +743,7 @@ def collect_incorrect_entity_predictions(
     entity_results: List[EntityEvaluationResult],
     merged_predictions: List[Text],
     merged_targets: List[Text],
-):
+) -> List["EntityPrediction"]:
     """Get incorrect entity predictions.
 
     Args:
@@ -796,7 +802,7 @@ def collect_successful_entity_predictions(
     entity_results: List[EntityEvaluationResult],
     merged_predictions: List[Text],
     merged_targets: List[Text],
-):
+) -> List["EntityPrediction"]:
     """Get correct entity predictions.
 
     Args:
@@ -1350,14 +1356,12 @@ def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
 
 def is_entity_extractor_present(interpreter: Interpreter) -> bool:
     """Checks whether entity extractor is present."""
-
     extractors = get_entity_extractors(interpreter)
-    return extractors != []
+    return len(extractors) > 0
 
 
 def is_intent_classifier_present(interpreter: Interpreter) -> bool:
     """Checks whether intent classifier is present."""
-
     from rasa.nlu.classifiers.classifier import IntentClassifier
 
     intent_classifiers = [
@@ -1435,13 +1439,14 @@ async def run_evaluation(
     Returns: dictionary containing evaluation results
     """
     import rasa.shared.nlu.training_data.loading
+    from rasa.shared.constants import DEFAULT_DOMAIN_PATH
 
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path]
+        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
     )
     test_data = await test_data_importer.get_nlu_data()
 

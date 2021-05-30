@@ -54,13 +54,17 @@ from rasa.exceptions import ModelNotFound
 from rasa.model_training import train_core_async
 
 
-def test_get_latest_model(trained_rasa_model: str):
-    path_of_latest = os.path.join(os.path.dirname(trained_rasa_model), "latest.tar.gz")
-    shutil.copy(trained_rasa_model, path_of_latest)
+def test_get_latest_model(tmp_path: Path):
+    path = tmp_path / "test_get_latest_model"
+    path.mkdir()
+    Path(path / "model_one.tar.gz").touch()
 
-    model_directory = os.path.dirname(path_of_latest)
+    # create second model later to be registered as distinct in Windows
+    time.sleep(0.1)
+    Path(path / "model_two.tar.gz").touch()
 
-    assert get_latest_model(model_directory) == path_of_latest
+    path_of_latest = os.path.join(path, "model_two.tar.gz")
+    assert get_latest_model(str(path)) == path_of_latest
 
 
 def test_get_model_from_directory(trained_rasa_model: str):
@@ -75,6 +79,16 @@ def test_get_model_context_manager(trained_rasa_model: str):
         assert os.path.exists(unpacked)
 
     assert not os.path.exists(unpacked)
+
+
+def test_get_local_model(trained_rasa_model: str):
+    assert rasa.model.get_local_model(trained_rasa_model) == trained_rasa_model
+
+
+@pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
+def test_get_local_model_exception(model_path: Optional[Text]):
+    with pytest.raises(ModelNotFound):
+        rasa.model.get_local_model(model_path)
 
 
 @pytest.mark.parametrize("model_path", ["foobar", "rasa", "README.md", None])
@@ -626,18 +640,3 @@ async def test_can_finetune_min_version(
 
     with mock.patch("rasa.model.MINIMUM_COMPATIBLE_VERSION", min_compatible_version):
         assert can_finetune(old_fingerprint, new_fingerprint) == can_tune
-
-
-@pytest.mark.parametrize("empty_key", ["pipeline", "policies"])
-async def test_fingerprinting_config_epochs_empty_pipeline_or_policies(
-    project: Text, tmp_path: Path, empty_key: Text,
-):
-    config = {
-        "language": "en",
-        "pipeline": [{"name": "WhitespaceTokenizer"},],
-        "policies": [{"name": "MemoizationPolicy"},],
-    }
-
-    config[empty_key] = None
-
-    model._get_fingerprint_of_config_without_epochs(config)

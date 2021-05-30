@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Dict, List, Text, TYPE_CHECKING
+from typing import Dict, Union, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
@@ -14,7 +14,6 @@ import rasa.cli.utils
 from rasa.shared.constants import (
     DEFAULT_DATA_PATH,
     DEFAULT_CONFIG_PATH,
-    DEFAULT_DOMAIN_PATH,
     DOCS_URL_MIGRATION_GUIDE,
 )
 import rasa.shared.data
@@ -74,7 +73,7 @@ def add_subparser(
 
 
 def _add_data_convert_parsers(
-    data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     convert_parser = data_subparsers.add_parser(
         "convert",
@@ -151,7 +150,7 @@ def _add_data_convert_parsers(
 
 
 def _add_data_split_parsers(
-    data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     split_parser = data_subparsers.add_parser(
         "split",
@@ -175,7 +174,7 @@ def _add_data_split_parsers(
 
 
 def _add_data_validate_parsers(
-    data_subparsers, parents: List[argparse.ArgumentParser]
+    data_subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]
 ) -> None:
     validate_parser = data_subparsers.add_parser(
         "validate",
@@ -274,7 +273,11 @@ def validate_stories(args: argparse.Namespace) -> None:
 
 
 def _validate_domain(validator: "Validator") -> bool:
-    return validator.verify_domain_validity()
+    return (
+        validator.verify_domain_validity()
+        and validator.verify_actions_in_stories_rules()
+        and validator.verify_form_slots()
+    )
 
 
 def _validate_nlu(validator: "Validator", args: argparse.Namespace) -> bool:
@@ -377,8 +380,11 @@ def _migrate_responses(args: argparse.Namespace) -> None:
 
 
 async def _convert_to_yaml(
-    out_path: Text, data_path: Text, converter: "TrainingDataConverter"
+    out_path: Text, data_path: Union[list, Text], converter: "TrainingDataConverter"
 ) -> None:
+
+    if isinstance(data_path, list):
+        data_path = data_path[0]
 
     output = Path(out_path)
     if not os.path.exists(output):

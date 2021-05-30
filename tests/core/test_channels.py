@@ -1,14 +1,17 @@
 import logging
+import jwt
 from typing import Dict
 from unittest.mock import patch, MagicMock
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aiohttp import ClientTimeout
 from aioresponses import aioresponses
 from sanic import Sanic
 
 import rasa.core.run
+import rasa.core.channels.channel
 from rasa.core import utils
 from rasa.core.channels import RasaChatInput, console
 from rasa.core.channels.channel import UserMessage
@@ -27,29 +30,9 @@ from tests.utilities import json_of_latest_request, latest_request
 logger = logging.getLogger(__name__)
 
 
-def fake_sanic_run(*args, **kwargs):
-    """Used to replace `run` method of a Sanic server to avoid hanging."""
-    logger.info("Rabatnic: Take this and find Sanic! I want him here by supper time.")
-
-
 def noop(*args, **kwargs):
     """Just do nothing."""
     pass
-
-
-def fake_telegram_me(*args, **kwargs):
-    """Return a fake telegram user."""
-    return {
-        "id": 0,
-        "first_name": "Test",
-        "is_bot": True,
-        "username": "YOUR_TELEGRAM_BOT",
-    }
-
-
-def fake_send_message(*args, **kwargs):
-    """Fake sending a message."""
-    return {"ok": True, "result": {}}
 
 
 async def test_send_response(default_channel, default_tracker):
@@ -389,6 +372,69 @@ def test_socketio_channel():
     assert routes_list["handle_request"].startswith("/socket.io")
 
 
+async def test_socketio_channel_jwt_authentication():
+    from rasa.core.channels.socketio import SocketIOInput
+
+    public_key = "random_key123"
+    jwt_algorithm = "HS256"
+    auth_token = jwt.encode({"payload": "value"}, public_key, algorithm=jwt_algorithm)
+
+    input_channel = SocketIOInput(
+        # event name for messages sent from the user
+        user_message_evt="user_uttered",
+        # event name for messages sent from the bot
+        bot_message_evt="bot_uttered",
+        # socket.io namespace to use for the messages
+        namespace=None,
+        # public key for JWT methods
+        jwt_key=public_key,
+        # method used for the signature of the JWT authentication payload
+        jwt_method=jwt_algorithm,
+    )
+
+    assert input_channel.jwt_key == public_key
+    assert input_channel.jwt_algorithm == jwt_algorithm
+    assert rasa.core.channels.channel.decode_bearer_token(
+        auth_token, input_channel.jwt_key, input_channel.jwt_algorithm
+    )
+
+
+async def test_socketio_channel_jwt_authentication_invalid_key(
+    caplog: LogCaptureFixture,
+):
+    from rasa.core.channels.socketio import SocketIOInput
+
+    public_key = "random_key123"
+    invalid_public_key = "my_invalid_key"
+    jwt_algorithm = "HS256"
+    invalid_auth_token = jwt.encode(
+        {"payload": "value"}, invalid_public_key, algorithm=jwt_algorithm
+    )
+
+    input_channel = SocketIOInput(
+        # event name for messages sent from the user
+        user_message_evt="user_uttered",
+        # event name for messages sent from the bot
+        bot_message_evt="bot_uttered",
+        # socket.io namespace to use for the messages
+        namespace=None,
+        # public key for JWT methods
+        jwt_key=public_key,
+        # method used for the signature of the JWT authentication payload
+        jwt_method=jwt_algorithm,
+    )
+
+    assert input_channel.jwt_key == public_key
+    assert input_channel.jwt_algorithm == jwt_algorithm
+
+    with caplog.at_level(logging.ERROR):
+        rasa.core.channels.channel.decode_bearer_token(
+            invalid_auth_token, input_channel.jwt_key, input_channel.jwt_algorithm
+        )
+
+    assert any("JWT public key invalid." in message for message in caplog.messages)
+
+
 async def test_callback_calls_endpoint():
     from rasa.core.channels.callback import CallbackOutput
 
@@ -420,7 +466,7 @@ async def test_callback_calls_endpoint():
 
 
 def test_botframework_attachments():
-    from rasa.core.channels.botframework import BotFrameworkInput, BotFramework
+    from rasa.core.channels.botframework import BotFrameworkInput
     from copy import deepcopy
 
     ch = BotFrameworkInput("app_id", "app_pass")

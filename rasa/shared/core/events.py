@@ -111,18 +111,6 @@ def format_message(
     )
 
 
-def first_key(d: Dict[Text, Any], default_key: Any) -> Any:
-    if len(d) > 1:
-        for k in d.keys():
-            if k != default_key:
-                # we return the first key that is not the default key
-                return k
-    elif len(d) == 1:
-        return list(d.keys())[0]
-    else:
-        return None
-
-
 def split_events(
     events: Iterable["Event"],
     event_type_to_split_on: Type["Event"],
@@ -443,7 +431,7 @@ class UserUttered(Event):
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
         metadata: Optional[Dict] = None,
-    ):
+    ) -> "UserUttered":
         return UserUttered(
             text,
             parse_data.get(INTENT),
@@ -696,7 +684,7 @@ class DefinePrevUserUtteredFeaturization(SkipEventInMDStoryMixin):
             self.use_text_for_featurization
         )
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, DefinePrevUserUtteredFeaturization):
             return NotImplemented
@@ -786,7 +774,13 @@ class BotUttered(SkipEventInMDStoryMixin):
 
     type_name = "bot"
 
-    def __init__(self, text=None, data=None, metadata=None, timestamp=None) -> None:
+    def __init__(
+        self,
+        text: Optional[Text] = None,
+        data: Optional[Dict] = None,
+        metadata: Optional[Dict[Text, Any]] = None,
+        timestamp: Optional[float] = None,
+    ) -> None:
         """Creates event for a bot response.
 
         Args:
@@ -863,7 +857,7 @@ class BotUttered(SkipEventInMDStoryMixin):
         return d
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "BotUttered":
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "BotUttered":
         try:
             return BotUttered(
                 parameters.get("text"),
@@ -914,7 +908,7 @@ class SlotSet(Event):
         """Returns unique hash for event."""
         return hash((self.key, jsonpickle.encode(self.value)))
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, SlotSet):
             return NotImplemented
@@ -945,7 +939,7 @@ class SlotSet(Event):
         return d
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "SlotSet":
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "SlotSet":
         try:
             return SlotSet(
                 parameters.get("name"),
@@ -1027,7 +1021,7 @@ class AllSlotsReset(AlwaysEqualEventMixin):
         """Returns text representation of event."""
         return self.type_name
 
-    def apply_to(self, tracker) -> None:
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
         tracker._reset_slots()
 
@@ -1322,7 +1316,7 @@ class StoryExported(Event):
         if self.path:
             tracker.export_stories_to_file(self.path)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, StoryExported):
             return NotImplemented
@@ -1355,7 +1349,7 @@ class FollowupAction(Event):
         """Returns unique hash for event."""
         return hash(self.action_name)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, FollowupAction):
             return NotImplemented
@@ -1410,7 +1404,7 @@ class ConversationPaused(AlwaysEqualEventMixin):
         """Returns text representation of event."""
         return str(self)
 
-    def apply_to(self, tracker) -> None:
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
         tracker._paused = True
 
@@ -1432,7 +1426,7 @@ class ConversationResumed(AlwaysEqualEventMixin):
         """Returns text representation of event."""
         return self.type_name
 
-    def apply_to(self, tracker) -> None:
+    def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
         tracker._paused = False
 
@@ -1590,7 +1584,7 @@ class AgentUttered(SkipEventInMDStoryMixin):
         """Returns unique hash for event."""
         return hash((self.text, jsonpickle.encode(self.data)))
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, AgentUttered):
             return NotImplemented
@@ -1613,7 +1607,7 @@ class AgentUttered(SkipEventInMDStoryMixin):
         return d
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "AgentUttered":
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "AgentUttered":
         try:
             return AgentUttered(
                 parameters.get("text"),
@@ -1654,7 +1648,7 @@ class ActiveLoop(Event):
         """Returns unique hash for event."""
         return hash(self.name)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, ActiveLoop):
             return NotImplemented
@@ -1742,7 +1736,7 @@ class LoopInterrupted(SkipEventInMDStoryMixin):
         """Returns unique hash for event."""
         return hash(self.is_interrupted)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, LoopInterrupted):
             return NotImplemented
@@ -1750,7 +1744,7 @@ class LoopInterrupted(SkipEventInMDStoryMixin):
         return self.is_interrupted == other.is_interrupted
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "LoopInterrupted":
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "LoopInterrupted":
         return LoopInterrupted(
             parameters.get(LOOP_INTERRUPTED, False),
             parameters.get("timestamp"),
@@ -1845,7 +1839,7 @@ class ActionExecutionRejected(SkipEventInMDStoryMixin):
         """Returns unique hash for event."""
         return hash(self.action_name)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, ActionExecutionRejected):
             return NotImplemented
@@ -1853,7 +1847,7 @@ class ActionExecutionRejected(SkipEventInMDStoryMixin):
         return self.action_name == other.action_name
 
     @classmethod
-    def _from_parameters(cls, parameters) -> "ActionExecutionRejected":
+    def _from_parameters(cls, parameters: Dict[Text, Any]) -> "ActionExecutionRejected":
         return ActionExecutionRejected(
             parameters.get("name"),
             parameters.get("policy"),

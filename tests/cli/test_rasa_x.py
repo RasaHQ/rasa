@@ -16,8 +16,8 @@ from rasa.core.utils import AvailableEndpoints
 def test_x_help(run: Callable[..., RunResult]):
     output = run("x", "--help")
 
-    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA] [-c CONFIG]
-              [-d DOMAIN] [--no-prompt] [--production]
+    help_text = """usage: rasa x [-h] [-v] [-vv] [--quiet] [-m MODEL] [--data DATA [DATA ...]]
+              [-c CONFIG] [-d DOMAIN] [--no-prompt] [--production]
               [--rasa-x-port RASA_X_PORT] [--config-endpoint CONFIG_ENDPOINT]
               [--log-file LOG_FILE] [--endpoints ENDPOINTS] [-p PORT]
               [-t AUTH_TOKEN] [--cors [CORS [CORS ...]]] [--enable-api]

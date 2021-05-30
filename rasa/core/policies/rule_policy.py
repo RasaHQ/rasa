@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Dict, Text, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, List, Dict, Text, Optional, Set, Tuple, TYPE_CHECKING
 
 from tqdm import tqdm
 import numpy as np
@@ -13,7 +13,6 @@ from rasa.shared.core.events import (
     LoopInterrupted,
     UserUttered,
     ActionExecuted,
-    Event,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -519,6 +518,39 @@ class RulePolicy(MemoizationPolicy):
             )
         return loop_sources
 
+    def _should_delete(
+        self,
+        prediction_source: Text,
+        tracker: TrackerWithCachedStates,
+        predicted_action_name: Text,
+    ) -> bool:
+        """Checks whether this contradiction is due to action, intent pair.
+
+        Args:
+            prediction_source: the states that result in the prediction
+            tracker: the tracker that raises the contradiction
+
+        Returns:
+            true if the contradiction is a result of an action, intent pair in the rule.
+        """
+        if (
+            # only apply to contradicting story, not rule
+            tracker.is_rule_tracker
+            # only apply for prediction after unpredictable action
+            or prediction_source.count(PREVIOUS_ACTION) > 1
+            # only apply for prediction of action_listen
+            or predicted_action_name != ACTION_LISTEN_NAME
+        ):
+            return False
+        for source in self.lookup[RULES]:
+            # remove rule only if another action is predicted after action_listen
+            if (
+                source.startswith(prediction_source[:-2])
+                and not prediction_source == source
+            ):
+                return True
+        return False
+
     def _check_prediction(
         self,
         tracker: TrackerWithCachedStates,
@@ -529,12 +561,19 @@ class RulePolicy(MemoizationPolicy):
         if not predicted_action_name or predicted_action_name == gold_action_name:
             return []
 
+        if self._should_delete(prediction_source, tracker, predicted_action_name):
+            self.lookup[RULES].pop(prediction_source)
+            return []
+
         tracker_type = "rule" if tracker.is_rule_tracker else "story"
         contradicting_rules = {
             rule_name
             for rule_name, action_name in self._rules_sources[prediction_source]
             if action_name != gold_action_name
         }
+
+        if not contradicting_rules:
+            return []
 
         error_message = (
             f"- the prediction of the action '{gold_action_name}' in {tracker_type} "
@@ -767,26 +806,26 @@ class RulePolicy(MemoizationPolicy):
     def _does_rule_match_state(rule_state: State, conversation_state: State) -> bool:
         for state_type, rule_sub_state in rule_state.items():
             conversation_sub_state = conversation_state.get(state_type, {})
-            for key, value in rule_sub_state.items():
-                if isinstance(value, list):
+            for key, value_from_rules in rule_sub_state.items():
+                if isinstance(value_from_rules, list):
                     # json dumps and loads tuples as lists,
                     # so we need to convert them back
-                    value = tuple(value)
-
+                    value_from_rules = tuple(value_from_rules)
+                value_from_conversation = conversation_sub_state.get(key)
                 if (
                     # value should be set, therefore
                     # check whether it is the same as in the state
-                    value
-                    and value != SHOULD_NOT_BE_SET
-                    and conversation_sub_state.get(key) != value
+                    value_from_rules
+                    and value_from_rules != SHOULD_NOT_BE_SET
+                    and value_from_conversation != value_from_rules
                 ) or (
                     # value shouldn't be set, therefore
                     # it should be None or non existent in the state
-                    value == SHOULD_NOT_BE_SET
-                    and conversation_sub_state.get(key)
+                    value_from_rules == SHOULD_NOT_BE_SET
+                    and value_from_conversation
                     # during training `SHOULD_NOT_BE_SET` is provided. Hence, we also
                     # have to check for the value of the slot state
-                    and conversation_sub_state.get(key) != SHOULD_NOT_BE_SET
+                    and value_from_conversation != SHOULD_NOT_BE_SET
                 ):
                     return False
 
@@ -915,8 +954,6 @@ class RulePolicy(MemoizationPolicy):
             )
 
         return None, None
-
-        return None
 
     def _find_action_from_rules(
         self,

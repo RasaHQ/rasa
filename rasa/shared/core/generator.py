@@ -184,7 +184,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         if self._states_for_hashing is None:
             self._states_for_hashing = self.past_states_for_hashing(self.domain)
         else:
-            state = self.domain.get_active_states(self)
+            state = self.domain.get_active_state(self)
             frozen_state = self.freeze_current_state(state)
             self._states_for_hashing.append(frozen_state)
 
@@ -487,7 +487,7 @@ class TrainingDataGenerator:
                 # augmentation round, so we process only
                 # story end checkpoints
                 # reset used checkpoints
-                used_checkpoints: Set[Text] = set()
+                used_checkpoints = set()
 
                 # generate active trackers for augmentation
                 active_trackers = self._create_start_trackers_for_augmentation(
@@ -651,6 +651,15 @@ class TrainingDataGenerator:
 
         end_trackers = []
         for event in events:
+            if (
+                isinstance(event, ActionExecuted)
+                and event.action_text
+                and event.action_text not in self.domain.action_texts
+            ):
+                rasa.shared.utils.cli.print_warning(
+                    f"Test story '{step.block_name}' in '{step.source_name}' contains the bot utterance "
+                    f"'{event.action_text}', which is not part of the training data / domain."
+                )
             for tracker in trackers:
                 if isinstance(
                     event, (ActionReverted, UserUtteranceReverted, Restarted)

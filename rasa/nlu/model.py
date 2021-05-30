@@ -10,6 +10,7 @@ from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import components, utils
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component, ComponentBuilder
@@ -66,7 +67,7 @@ class Metadata:
     """Captures all information about a model to load and prepare it."""
 
     @staticmethod
-    def load(model_dir: Text):
+    def load(model_dir: Text) -> "Metadata":
         """Loads the metadata from a models directory.
 
         Args:
@@ -84,7 +85,7 @@ class Metadata:
                 f"Failed to load model metadata from '{abspath}'. {e}"
             )
 
-    def __init__(self, metadata: Dict[Text, Any]):
+    def __init__(self, metadata: Dict[Text, Any]) -> None:
         """Set `metadata` attribute."""
         self.metadata = metadata
 
@@ -93,17 +94,20 @@ class Metadata:
         return self.metadata.get(property_name, default)
 
     @property
-    def component_classes(self):
+    def component_classes(self) -> List[Optional[Text]]:
+        """Returns a list of component class names."""
         if self.get("pipeline"):
             return [c.get("class") for c in self.get("pipeline", [])]
         else:
             return []
 
     @property
-    def number_of_components(self):
+    def number_of_components(self) -> int:
+        """Returns count of components."""
         return len(self.get("pipeline", []))
 
     def for_component(self, index: int, defaults: Any = None) -> Dict[Text, Any]:
+        """Returns the configuration of the component based on index."""
         return component_config_from_pipeline(index, self.get("pipeline", []), defaults)
 
     @property
@@ -112,7 +116,7 @@ class Metadata:
 
         return self.get("language")
 
-    def persist(self, model_dir: Text):
+    def persist(self, model_dir: Text) -> None:
         """Persists the metadata of a model to a given directory."""
 
         metadata = self.metadata.copy()
@@ -199,6 +203,12 @@ class Trainer:
             components.validate_required_components_from_data(
                 self.pipeline, self.training_data
             )
+
+        # Warn if there is an obvious case of competing entity extractors
+        components.warn_of_competing_extractors(self.pipeline)
+        components.warn_of_competition_with_regex_extractor(
+            self.pipeline, self.training_data
+        )
 
         # data gets modified internally during the training - hence the copy
         working_data: TrainingData = copy.deepcopy(data)
@@ -425,6 +435,7 @@ class Interpreter:
         self.pipeline = pipeline
         self.context = context if context is not None else {}
         self.model_metadata = model_metadata
+        self.has_already_warned_of_overlapping_entities = False
 
     def parse(
         self,
@@ -454,6 +465,9 @@ class Interpreter:
         for component in self.pipeline:
             component.process(message, **self.context)
 
+        if not self.has_already_warned_of_overlapping_entities:
+            self.warn_of_overlapping_entities(message)
+
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=only_output_properties))
         return output
@@ -472,3 +486,29 @@ class Interpreter:
             if not isinstance(component, (EntityExtractor, IntentClassifier)):
                 component.process(message, **self.context)
         return message
+
+    def warn_of_overlapping_entities(self, message: Message) -> None:
+        """Issues a warning when there are overlapping entity annotations.
+
+        This warning is only issued once per Interpreter life time.
+
+        Args:
+            message: user message with all processing metadata such as entities
+        """
+        overlapping_entity_pairs = message.find_overlapping_entities()
+        if len(overlapping_entity_pairs) > 0:
+            message_text = message.get("text")
+            first_pair = overlapping_entity_pairs[0]
+            entity_1 = first_pair[0]
+            entity_2 = first_pair[1]
+            rasa.shared.utils.io.raise_warning(
+                f"Parsing of message: '{message_text}' lead to overlapping "
+                f"entities: {entity_1['value']} of type "
+                f"{entity_1['entity']} extracted by {entity_1['extractor']} overlaps with "
+                f"{entity_2['value']} of type {entity_2['entity']} extracted by "
+                f"{entity_2['extractor']}. This can lead to unintended filling of "
+                f"slots. Please refer to the documentation section on entity "
+                f"extractors and entities getting extracted multiple times:"
+                f"{DOCS_URL_COMPONENTS}#entity-extractors"
+            )
+            self.has_already_warned_of_overlapping_entities = True
