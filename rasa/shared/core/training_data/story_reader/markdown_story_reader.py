@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from rasa.shared.exceptions import RasaException
 import re
 from pathlib import Path
 import sys
@@ -154,7 +155,7 @@ class MarkdownStoryReader(StoryReader):
             if isinstance(parsed_slots, dict):
                 return parsed_slots
             else:
-                raise Exception(
+                raise RasaException(
                     "Parsed value isn't a json object "
                     "(instead parser found '{}')"
                     ".".format(type(parsed_slots))
