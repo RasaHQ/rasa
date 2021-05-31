@@ -4,6 +4,7 @@ import os
 import time
 import urllib.parse
 import uuid
+import sys
 from contextlib import ExitStack
 from http import HTTPStatus
 from multiprocessing import Process, Manager
@@ -537,7 +538,7 @@ async def test_train_core_success_with(
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
 
 
-async def test_train_with_retrieval_events_success(
+async def assert_trained_model(
     rasa_app: SanicASGITestClient, stack_config_path: Text, tmp_path: Path
 ):
     with ExitStack() as stack:
@@ -561,7 +562,10 @@ async def test_train_with_retrieval_events_success(
             nlu=nlu_file.read(),
         )
 
-    _, response = await rasa_app.post("/model/train", json=payload, timeout=60 * 5)
+    # it usually takes a bit longer on windows so we're going to double the timeout
+    timeout = 60 * 10 if sys.platform == "win32" else 60 * 5
+
+    _, response = await rasa_app.post("/model/train", json=payload, timeout=timeout)
     assert response.status == HTTPStatus.OK
     assert_trained_model(response.body, tmp_path)
 
