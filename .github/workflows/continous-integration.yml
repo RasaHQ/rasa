@@ -273,7 +273,7 @@ jobs:
           New-Item -Path $spacy_data_dir -Type Directory
         }
         make install-full
-        make prepare-tests-windows
+        make prepare-tests-windows-gha
 
     - name: Add github workflow problem matchers
       if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os == 'ubuntu-latest'

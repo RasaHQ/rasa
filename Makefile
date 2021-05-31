@@ -135,17 +135,26 @@ prepare-tests-files: prepare-spacy prepare-mitie prepare-transformers
 prepare-wget-macos:
 	brew install wget || true
 
-prepare-wget-windows:
-	choco install wget
-
 prepare-tests-macos: prepare-wget-macos prepare-tests-files
 	brew install graphviz || true
 
 prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
+prepare-wget-windows:
+	choco install wget
+
 prepare-tests-windows: prepare-wget-windows prepare-tests-files
 	choco install graphviz
+
+# GitHub Action has pre-installed a helper function for installing Chocolatey packages
+# It will retry the installation 5 times if it fails
+# See: https://github.com/actions/virtual-environments/blob/main/images/win/scripts/ImageHelpers/ChocoHelpers.ps1
+prepare-wget-windows-gha:
+	Choco-Install wget
+
+prepare-tests-windows-gha: prepare-wget-windows-gha prepare-tests-files
+	Choco-Install graphviz
 
 test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
