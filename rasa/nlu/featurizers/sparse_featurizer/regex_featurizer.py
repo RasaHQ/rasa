@@ -71,9 +71,7 @@ class RegexFeaturizer(SparseFeaturizer):
         self.finetune_mode = finetune_mode
         if self.component_config["number_additional_patterns"]:
             rasa.shared.utils.io.raise_deprecation_warning(
-                f"The parameter `pattern_vocabulary_stats` "
-                f"has been deprecated. You don't have "
-                f"to specify it anymore"
+                "The parameter `pattern_vocabulary_stats` has been deprecated. You don't have to specify it anymore"
             )
 
     def _merge_new_patterns(self, new_patterns: List[Dict[Text, Text]]) -> None:

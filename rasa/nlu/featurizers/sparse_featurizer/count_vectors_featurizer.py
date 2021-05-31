@@ -150,9 +150,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         if self.component_config["additional_vocabulary_size"]:
             rasa.shared.utils.io.raise_deprecation_warning(
-                f"The parameter `additional_vocabulary_size` "
-                f"has been deprecated and you don't have "
-                f"to specify it anymore"
+                "The parameter `additional_vocabulary_size` has been deprecated "
+                "and you don't have to specify it anymore"
             )
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
