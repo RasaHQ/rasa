@@ -688,3 +688,14 @@ def test_cvf_incremental_training(
     for vocab_token, vocab_index in initial_vocab.items():
         assert vocab_token in new_vocab
         assert new_vocab.get(vocab_token) == vocab_index
+
+
+def test_additional_vocab_size_deprecation():
+    with pytest.warns(FutureWarning) as warning:
+        _ = CountVectorsFeaturizer.create(
+            {"additional_vocabulary_size": {TEXT: 5}}, RasaNLUModelConfig()
+        )
+    assert (
+        "The parameter `additional_vocabulary_size` has been deprecated"
+        in warning[0].message.args[0]
+    )

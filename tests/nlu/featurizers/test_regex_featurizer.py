@@ -490,20 +490,96 @@ def test_persist_load_for_finetuning(tmp_path: Path):
     assert len(loaded_featurizer.known_patterns) == 4
 
 
-def test_adding_patterns():
+def test_finetuning(tmp_path: Path):
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
-        {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
     ]
 
-    featurizer = RegexFeaturizer(known_patterns=patterns, finetune_mode=True,)
+    featurizer = RegexFeaturizer.create({}, RasaNLUModelConfig())
 
-    additional_patterns = [
+    sentence = "hey hey 2020"
+    message = Message(data={TEXT: sentence})
+    message.set(RESPONSE, sentence)
+    message.set(INTENT, "intent")
+    WhitespaceTokenizer().train(TrainingData([message]))
+
+    featurizer.train(
+        TrainingData([message], regex_features=patterns), RasaNLUModelConfig()
+    )
+
+    # Test featurization of message
+    expected = np.array([1, 0])
+    expected_cls = np.array([1, 1])
+    seq_vecs, sen_vec = message.get_sparse_features(TEXT, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vec:
+        sen_vec = sen_vec.features
+
+    assert (3, 2) == seq_vecs.shape
+    assert (1, 2) == sen_vec.shape
+    assert np.all(seq_vecs.toarray()[0] == expected)
+    assert np.all(sen_vec.toarray()[-1] == expected_cls)
+
+    persist_value = featurizer.persist("ftr", str(tmp_path))
+    loaded_featurizer = RegexFeaturizer.load(
+        meta={"file": persist_value["file"],},
+        should_finetune=True,
+        model_dir=str(tmp_path),
+    )
+
+    new_patterns = [
         {"pattern": "\\btoday*", "name": "day", "usage": "intent"},
-        {"pattern": "\\bhello+", "name": "greet", "usage": "intent"},
+        {"pattern": "\\bhey+", "name": "hello", "usage": "intent"},
     ]
+    new_sentence = "hey today"
+    message = Message(data={TEXT: new_sentence})
+    message.set(RESPONSE, new_sentence)
+    message.set(INTENT, "intent")
+    WhitespaceTokenizer().train(TrainingData([message]))
 
-    featurizer.train(TrainingData([], regex_features=additional_patterns))
+    loaded_featurizer.train(
+        TrainingData([message], regex_features=patterns + new_patterns),
+        RasaNLUModelConfig(),
+    )
 
-    assert len(featurizer.known_patterns) == 5
+    # Test featurization of message, this time for the extra pattern as well.
+    expected_token_1 = np.array([1, 0, 0])
+    expected_token_2 = np.array([0, 0, 1])
+    expected_cls = np.array([1, 0, 1])
+
+    seq_vecs, sen_vec = message.get_sparse_features(TEXT, [])
+    if seq_vecs:
+        seq_vecs = seq_vecs.features
+    if sen_vec:
+        sen_vec = sen_vec.features
+
+    assert (2, 3) == seq_vecs.shape
+    assert (1, 3) == sen_vec.shape
+    assert np.all(seq_vecs.toarray()[0] == expected_token_1)
+    assert np.all(seq_vecs.toarray()[1] == expected_token_2)
+    assert np.all(sen_vec.toarray()[-1] == expected_cls)
+
+    # let's check if the order of patterns is preserved
+    for old_index, pattern in enumerate(featurizer.known_patterns):
+        assert pattern["name"] == loaded_featurizer.known_patterns[old_index]["name"]
+
+    # we also modified a pattern, check if that is correctly modified
+    pattern_to_check = [
+        pattern
+        for pattern in loaded_featurizer.known_patterns
+        if pattern["name"] == "hello"
+    ]
+    assert pattern_to_check == [new_patterns[1]]
+
+
+def test_additional_patterns_deprecation():
+    with pytest.warns(FutureWarning) as warning:
+        _ = RegexFeaturizer.create(
+            {"number_additional_patterns": 5}, RasaNLUModelConfig()
+        )
+    assert (
+        "The parameter `pattern_vocabulary_stats` has been deprecated"
+        in warning[0].message.args[0]
+    )

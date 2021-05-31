@@ -46,6 +46,9 @@ class RegexFeaturizer(SparseFeaturizer):
         "use_regexes": True,
         # use match word boundaries for lookup table
         "use_word_boundaries": True,
+        # Additional number of patterns to consider
+        # for incremental training
+        "number_additional_patterns": None,
     }
 
     def __init__(
@@ -66,6 +69,12 @@ class RegexFeaturizer(SparseFeaturizer):
         self.known_patterns = known_patterns if known_patterns else []
         self.case_sensitive = self.component_config["case_sensitive"]
         self.finetune_mode = finetune_mode
+        if self.component_config["number_additional_patterns"]:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The parameter `pattern_vocabulary_stats` "
+                f"has been deprecated. You don't have "
+                f"to specify it anymore"
+            )
 
     def _merge_new_patterns(self, new_patterns: List[Dict[Text, Text]]) -> None:
         """Updates already known patterns with new patterns extracted from data.

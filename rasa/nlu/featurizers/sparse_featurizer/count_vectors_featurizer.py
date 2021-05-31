@@ -26,6 +26,8 @@ from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
     INTENT_RESPONSE_KEY,
+    RESPONSE,
+    ACTION_TEXT,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
     ACTION_NAME,
@@ -86,6 +88,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         # indicates whether the featurizer should use the lemma of a word for
         # counting (if available) or not
         "use_lemma": True,
+        # Additional vocabulary size to be kept reserved for finetuning
+        "additional_vocabulary_size": {TEXT: None, RESPONSE: None, ACTION_TEXT: None},
     }
 
     @classmethod
@@ -143,6 +147,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             self.OOV_token = self.OOV_token.lower()
             if self.OOV_words:
                 self.OOV_words = [w.lower() for w in self.OOV_words]
+
+        if self.component_config["additional_vocabulary_size"]:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The parameter `additional_vocabulary_size` "
+                f"has been deprecated and you don't have "
+                f"to specify it anymore"
+            )
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
         """Checks if trained vocabulary exists in attribute's count vectorizer."""
@@ -463,7 +474,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 )
 
     def _log_vocabulary_stats(self, attribute: Text) -> None:
-        """Logs number of vocabulary items that were created for a specified attribute
+        """Logs number of vocabulary items that were created for a specified attribute.
 
         Args:
             attribute: Message attribute for which vocabulary stats are logged.
