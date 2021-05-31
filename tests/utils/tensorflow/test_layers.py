@@ -49,20 +49,17 @@ def test_multi_label_dot_product_loss_call_shapes():
 def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of_labels(
     monkeypatch: MonkeyPatch,
 ):
-    num_neg = 2
+    num_candidates = 2
+    num_features = 4
     batch_size = 3
-    layer = MultiLabelDotProductLoss(num_neg, scale_loss=False, similarity_type=INNER)
+    layer = MultiLabelDotProductLoss(
+        num_candidates, scale_loss=False, similarity_type=INNER
+    )
 
-    # Some random input embeddings
-    i0 = [0, 0, 0]
-    i1 = [1, 1, 1]
-    i2 = [2, 2, 2]
-
-    # Some random label embeddings
-    l0 = [11, 12, 13]
-    l1 = [21, 22, 23]
-    l2 = [31, 32, 33]
-    l3 = [41, 42, 43]
+    # Seven random vectors for inputs and labels
+    i0, i1, i2, l0, l1, l2, l3 = np.round(
+        np.random.uniform(-100, 100, size=[7, num_features])
+    ).tolist()
 
     # Each example in the batch has one input
     batch_inputs_embed = tf.constant([[i0], [i1], [i2]], dtype=tf.float32)
@@ -82,7 +79,7 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
     mock_indices = [0, 2, 0, 1, 0, 3]
 
     def mock_random_indices(*args, **kwargs) -> tf.Tensor:
-        return tf.reshape(tf.constant(mock_indices), [batch_size, num_neg])
+        return tf.reshape(tf.constant(mock_indices), [batch_size, num_candidates])
 
     monkeypatch.setattr(layers_utils, "random_indices", mock_random_indices)
 
@@ -137,23 +134,17 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
 def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of_labels(
     monkeypatch: MonkeyPatch,
 ):
-    num_neg = 2
+    num_candidates = 2
+    num_features = 4
     batch_size = 3
-    layer = MultiLabelDotProductLoss(num_neg)
+    layer = MultiLabelDotProductLoss(num_candidates)
 
-    # Some random input embeddings
-    i0 = [0, 0, 0]
-    i1 = [1, 1, 1]
-    i2 = [2, 2, 2]
-
-    # Some random label embeddings
-    l0 = [11, 12, 13]
-    l1 = [21, 22, 23]
-    l2 = [31, 32, 33]
-    l3 = [41, 42, 43]
-
+    # Seven random vectors for inputs and labels
+    i0, i1, i2, l0, l1, l2, l3 = np.round(
+        np.random.uniform(-100, 100, size=[7, num_features])
+    ).tolist()
     # Label used for padding
-    lp = [-1, -1, -1]
+    lp = [-1, -1, -1, -1]
 
     # Each example in the batch has one input
     batch_inputs_embed = tf.constant([[i0], [i1], [i2]], dtype=tf.float32)
@@ -174,7 +165,7 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
     mock_indices = [0, 2, 0, 1, 3, 1]
 
     def mock_random_indices(*args, **kwargs) -> tf.Tensor:
-        return tf.reshape(tf.constant(mock_indices), [batch_size, num_neg])
+        return tf.reshape(tf.constant(mock_indices), [batch_size, num_candidates])
 
     monkeypatch.setattr(layers_utils, "random_indices", mock_random_indices)
 
