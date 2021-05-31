@@ -690,7 +690,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         Args:
             a: Any float tensor
             b: Any tensor of the same shape and type as `a`
-            mask: Sequence mask (should contain 1s for inputs and 0s for padding)
+            mask: Mask (should contain 1s for inputs and 0s for padding). Note, that
+                `len(mask.shape) == len(a.shape) - 1` should hold.
 
         Returns:
             Similarities between vectors in `a` and `b`.
@@ -718,7 +719,8 @@ class DotProductLoss(tf.keras.layers.Layer):
         Args:
             input_embeddings: Embeddings of input.
             label_embeddings: Embeddings of labels.
-            mask: Mask over input and output sequence.
+            mask: Mask (should contain 1s for inputs and 0s for padding). Note, that
+                `len(mask.shape) == len(a.shape) - 1` should hold.
 
         Returns:
             similarity between input and label embeddings and model's prediction
