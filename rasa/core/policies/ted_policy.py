@@ -109,6 +109,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     BILOU_FLAG,
     LABEL_BATCH_SIZE,
+    NUM_LABEL_CANDIDATES,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
@@ -327,6 +328,7 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
+        # tf.config.run_functions_eagerly(True)
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
             kwargs.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE),
             self.defaults[SPLIT_ENTITIES_BY_COMMA],
@@ -403,41 +405,46 @@ class TEDPolicy(Policy):
             [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
         )
 
-        label_batch_size = self.config[LABEL_BATCH_SIZE]
+        return label_data, encoded_all_labels
 
+    @staticmethod
+    def get_label_sampling_metadata(
+        label_data: RasaModelData, label_batch_size: int
+    ) -> Dict[Text, Dict[Text, int]]:
+        """Generates meta data on labels for use by the model.
+
+        The metadata include
+            * number of labels per label type,
+                such as action_name and action_text
+            * number of ids to sample per label type, derived from their
+                relative frequency and the total number of negative labels
+                to sample
+
+        returns:
+            A dictionary containing the metadata
+        """
+        metadata = defaultdict(dict)
+        num_labels_ids = label_data.data[LABEL_KEY][LABEL_SUB_KEY][0].size
         # Get label ids for each key in attribute data
         # by using the pre-computed mask.
-        for key, data in attribute_data.items():
-            if MASK in data:
-                mask = np.reshape(data[MASK][0], (-1,)).astype(dtype=np.bool)
-                key_ids = label_ids[mask].astype(np.int32)
-                label_data.add_features(
-                    f"{LABEL_KEY}_{key}",
-                    LABEL_SUB_KEY,
-                    [FeatureArray(np.expand_dims(key_ids, -1), number_of_dimensions=2)],
-                )
+        for key, data in label_data.items():
+            if key != LABEL_KEY:
+                num_label_ids_for_key = np.sum(data[MASK])
+
                 key_label_batch_size = (
-                    key_ids.shape[0]
+                    num_label_ids_for_key
                     if label_batch_size == -1
                     else max(
                         1,
                         int(
-                            (np.shape(key_ids)[0] / np.shape(label_ids)[0])
-                            * label_batch_size
+                            (num_label_ids_for_key / num_labels_ids) * label_batch_size
                         ),
                     )
                 )
-                label_data.add_features(
-                    f"{LABEL_KEY}_{key}",
-                    LABEL_BATCH_SIZE,
-                    [
-                        FeatureArray(
-                            np.array([key_label_batch_size]), number_of_dimensions=1
-                        )
-                    ],
-                )
 
-        return label_data, encoded_all_labels
+                metadata[key][NUM_LABEL_CANDIDATES] = num_label_ids_for_key
+                metadata[key][LABEL_BATCH_SIZE] = key_label_batch_size
+        return metadata
 
     @staticmethod
     def _should_extract_entities(
@@ -569,6 +576,9 @@ class TEDPolicy(Policy):
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
         )
+        label_sampling_metadata = TEDPolicy.get_label_sampling_metadata(
+            self._label_data, self.config[LABEL_BATCH_SIZE]
+        )
 
         # extract actual training data to feed to model
         model_data = self._create_model_data(
@@ -597,6 +607,7 @@ class TEDPolicy(Policy):
                 isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
                 self._label_data,
                 self._entity_tag_specs,
+                label_sampling_metadata,
             )
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
@@ -919,6 +930,9 @@ class TEDPolicy(Policy):
         meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
 
         meta[EPOCHS] = epoch_override
+        label_sampling_metadata = cls.get_label_sampling_metadata(
+            label_data, meta[LABEL_BATCH_SIZE]
+        )
 
         predict_data_example = RasaModelData(
             label_key=LABEL_KEY,
@@ -942,6 +956,7 @@ class TEDPolicy(Policy):
                 featurizer, MaxHistoryTrackerFeaturizer
             ),
             label_data=label_data,
+            label_sampling_metadata=label_sampling_metadata,
             entity_tag_specs=entity_tag_specs,
             finetune_mode=should_finetune,
         )
@@ -965,6 +980,7 @@ class TED(TransformerRasaModel):
         max_history_featurizer_is_used: bool,
         label_data: RasaModelData,
         entity_tag_specs: Optional[List[EntityTagSpec]],
+        label_sampling_metadata: Dict[Text, Dict[Text, int]],
     ) -> None:
         """Intializes the TED model.
 
@@ -987,6 +1003,7 @@ class TED(TransformerRasaModel):
         }
 
         self._entity_tag_specs = entity_tag_specs
+        self._label_sampling_metadata = label_sampling_metadata
 
         # metrics
         self.action_loss = tf.keras.metrics.Mean(name="loss")
@@ -1286,7 +1303,7 @@ class TED(TransformerRasaModel):
         for key in self.tf_label_data.keys():
             if key != LABEL_KEY:
                 feature_key_selection_ids[key] = {}
-                key_label_ids = self.tf_label_data[key][LABEL_SUB_KEY][0]
+                key_label_ids = self.calulate_key_ids(key)
                 for sub_key in self.tf_label_data[key]:
                     if sub_key in [SEQUENCE, SENTENCE]:
                         key_selection_mask = tf.equal(
@@ -1304,12 +1321,11 @@ class TED(TransformerRasaModel):
         filtered_label_data = {}
         max_sequence_length = {}
 
+        # recompute sequence lengths and masks for the specific sampled labels
         for key in self.tf_label_data.keys():
             if key != LABEL_KEY:
                 filtered_label_data[key] = {}
                 for sub_key in self.tf_label_data[key]:
-                    if sub_key in [LABEL_SUB_KEY, LABEL_BATCH_SIZE]:
-                        continue
 
                     filtered_attribute_data = [
                         self._slice_tensor(
@@ -1966,9 +1982,11 @@ class TED(TransformerRasaModel):
         all_sampled_label_ids = []
         for key in self.tf_label_data:
             if key != LABEL_KEY:
-                key_ids = self.tf_label_data[key][LABEL_SUB_KEY][0]
-                num_samples = self.tf_label_data[key][LABEL_BATCH_SIZE][0]
-                total_num_candidates = key_ids.shape[0]
+                key_ids = self.calulate_key_ids(key)
+                num_samples = self._label_sampling_metadata[key][LABEL_BATCH_SIZE]
+                total_num_candidates = self._label_sampling_metadata[key][
+                    NUM_LABEL_CANDIDATES
+                ]
                 sampled_label_ids = self._sample_label_batch_ids(
                     key_ids, num_samples, total_num_candidates
                 )
@@ -1977,6 +1995,15 @@ class TED(TransformerRasaModel):
         all_sampled_label_ids = tf.concat(all_sampled_label_ids, axis=0)
 
         return all_sampled_label_ids
+
+    def calulate_key_ids(self, key):
+        """Calculate the ids that belong to the given key.
+
+        key might be action_text or action_name here."""
+        all_labels = tf.reshape(self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0], (-1,))
+        label_mask_for_key = tf.reshape(self.tf_label_data[key][MASK][0], (-1,))
+        key_ids = tf.boolean_mask(all_labels, label_mask_for_key)
+        return tf.reshape(key_ids, (-1, 1))
 
     @staticmethod
     def _sample_label_batch_ids(all_label_ids, num_samples, total_num_label_ids):
