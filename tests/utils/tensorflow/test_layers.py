@@ -1,3 +1,4 @@
+from typing import Text, List, Tuple
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 import numpy as np
@@ -7,18 +8,12 @@ from rasa.utils.tensorflow.layers import (
     MultiLabelDotProductLoss,
     RandomlyConnectedDense,
 )
-from rasa.utils.tensorflow.constants import INNER, SOFTMAX
+from rasa.utils.tensorflow.constants import INNER, SOFTMAX, LINEAR_NORM
 import rasa.utils.tensorflow.layers_utils as layers_utils
 
 
 def test_dot_product_loss_inner_sim():
-    layer = DotProductLoss(
-        0,
-        scale_loss=False,
-        similarity_type=INNER,
-        constrain_similarities=False,
-        model_confidence=SOFTMAX,
-    )
+    layer = DotProductLoss(0, similarity_type=INNER,)
     a = tf.constant([[[1.0, 0.0, 2.0]], [[1.0, 0.0, 2.0]]])
     b = tf.constant([[[1.0, 0.0, -2.0]], [[1.0, 0.0, -2.0]]])
     mask = tf.constant([[1.0, 0.0]])
@@ -28,7 +23,7 @@ def test_dot_product_loss_inner_sim():
 
 def test_multi_label_dot_product_loss_call_shapes():
     num_neg = 1
-    layer = MultiLabelDotProductLoss(num_neg, scale_loss=False, similarity_type=INNER)
+    layer = MultiLabelDotProductLoss(num_neg)
     batch_inputs_embed = tf.constant([[[0, 1, 2]], [[-2, 0, 2]],], dtype=tf.float32)
     batch_labels_embed = tf.constant(
         [[[0, 0, 1], [1, 0, 0]], [[0, 1, 0], [1, 0, 0]],], dtype=tf.float32
@@ -111,8 +106,8 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
     # The first example labels of each batch are in `pos_labels_embed`
     assert np.all(pos_labels_embed.numpy() == np.array([[[l0]], [[l2]], [[l3]]]))
     # The candidate label embeddings are picked according to the `mock_indices` above.
-    # E.g. a 2 coming from `mock_indices` means that the first positive label (always)
-    # of example 2 (`[l3, l0]`) is picked, i.e. `l3`.
+    # E.g. a 2 coming from `mock_indices` means that `all_labels_embed[2]` is picked,
+    # i.e. `l2`.
     assert np.all(
         candidate_labels_embed.numpy() == np.array([[[l0, l2]], [[l0, l1]], [[l0, l3]]])
     )
@@ -144,7 +139,7 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
 ):
     num_neg = 2
     batch_size = 3
-    layer = MultiLabelDotProductLoss(num_neg, scale_loss=False, similarity_type=INNER)
+    layer = MultiLabelDotProductLoss(num_neg)
 
     # Some random input embeddings
     i0 = [0, 0, 0]
@@ -203,8 +198,8 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
     # The first example labels of each batch are in `pos_labels_embed`
     assert np.all(pos_labels_embed.numpy() == np.array([[[l0]], [[l2]], [[l3]]]))
     # The candidate label embeddings are picked according to the `mock_indices` above.
-    # E.g. a 2 coming from `mock_indices` means that the first positive label (always)
-    # of example 2 (`[l3, l0, _]`) is picked, i.e. `l3`.
+    # E.g. a 2 coming from `mock_indices` means that `all_labels_embed[2]` is picked,
+    # i.e. `l2`.
     assert np.all(
         candidate_labels_embed.numpy() == np.array([[[l0, l2]], [[l0, l1]], [[l3, l1]]])
     )
@@ -232,14 +227,51 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
 
 
 def test_multi_label_dot_product_loss__loss_sigmoid_is_ln2_when_all_similarities_zero():
-    sim_pos = tf.zeros([2, 1, 1], dtype=tf.float32)
-    sim_candidates_il = tf.zeros([2, 1, 2], dtype=tf.float32)
-    pos_neg_labels = tf.cast(tf.random.uniform([2, 2]) < 0.5, tf.float32)
-    mask = None
+    batch_size = 2
+    num_candidates = 2
+    sim_pos = tf.zeros([batch_size, 1, 1], dtype=tf.float32)
+    sim_candidates_il = tf.zeros([batch_size, 1, num_candidates], dtype=tf.float32)
+    pos_neg_labels = tf.cast(
+        tf.random.uniform([batch_size, num_candidates]) < 0.5, tf.float32
+    )
 
-    layer = MultiLabelDotProductLoss(2, scale_loss=False, similarity_type=INNER)
-    loss = layer._loss_sigmoid(sim_pos, sim_candidates_il, pos_neg_labels, mask)
+    layer = MultiLabelDotProductLoss(
+        num_candidates, scale_loss=False, similarity_type=INNER
+    )
+    loss = layer._loss_sigmoid(sim_pos, sim_candidates_il, pos_neg_labels)
     assert abs(loss.numpy() - np.math.log(2.0)) < 1e-6
+
+
+@pytest.mark.parametrize(
+    "model_confidence, mock_similarities, expected_confidences",
+    [
+        # Confidence is always `1.0` since only one option exists and we use softmax
+        (SOFTMAX, [[[-3.0], [0.0]]], [[[1.0], [1.0]]]),
+        # Confidence is always `0.0` since negatives are clipped
+        (LINEAR_NORM, [[[-3.0], [0.0]]], [[[0.0], [0.0]]]),
+    ],
+)
+def test_dot_product_loss_get_similarities_and_confidences_from_embeddings(
+    model_confidence: Text,
+    mock_similarities: List,
+    expected_confidences: List,
+    monkeypatch: MonkeyPatch,
+):
+    def mock_sim(*args, **kwargs) -> tf.Tensor:
+        return tf.constant(mock_similarities)
+
+    monkeypatch.setattr(DotProductLoss, "sim", mock_sim)
+
+    similarities, confidences = DotProductLoss(
+        1, model_confidence=model_confidence
+    ).get_similarities_and_confidences_from_embeddings(
+        # Inputs are not used due to mocking of `sim`
+        tf.zeros([1]),
+        tf.zeros([1]),
+        tf.zeros([1]),
+    )
+    assert np.all(similarities == mock_similarities)
+    assert np.all(confidences == expected_confidences)
 
 
 @pytest.mark.parametrize(
@@ -252,7 +284,9 @@ def test_multi_label_dot_product_loss__loss_sigmoid_is_ln2_when_all_similarities
         (np.array([[[1, 2], [4, 5], [7, 8]]]), 4, (1, 3, 4)),
     ],
 )
-def test_randomly_connected_dense_shape(inputs, units, expected_output_shape):
+def test_randomly_connected_dense_shape(
+    inputs: np.array, units: int, expected_output_shape: Tuple[int]
+):
     layer = RandomlyConnectedDense(units=units)
     y = layer(inputs)
     assert y.shape == expected_output_shape

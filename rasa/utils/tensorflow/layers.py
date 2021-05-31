@@ -624,8 +624,8 @@ class DotProductLoss(tf.keras.layers.Layer):
     Idea based on StarSpace paper: http://arxiv.org/abs/1709.03856
 
     Implements similarity methods
-    * sim (computes a similarity between vectors)
-    * get_similarities_and_confidences_from_embeddings (calls `sim` and also computes
+    * `sim` (computes a similarity between vectors)
+    * `get_similarities_and_confidences_from_embeddings` (calls `sim` and also computes
         confidence values)
 
     Specific loss functions (single- or multi-label) must be implemented in child
@@ -732,9 +732,8 @@ class DotProductLoss(tf.keras.layers.Layer):
             # Clip negative values to 0 and linearly normalize to bring the predictions
             # in the range [0,1].
             clipped_similarities = tf.nn.relu(similarities)
-            confidences = clipped_similarities / tf.reduce_sum(
-                clipped_similarities, axis=-1
-            )
+            normalization = tf.reduce_sum(clipped_similarities, axis=-1)
+            confidences = tf.math.divide_no_nan(clipped_similarities, normalization)
         return similarities, confidences
 
     def call(self, *args: Any, **kwargs: Any) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -1109,15 +1108,15 @@ class SingleLabelDotProductLoss(DotProductLoss):
 
         Args:
             inputs_embed: Embedding tensor for the batch inputs;
-                shape (batch_size, ..., num_features)
+                shape `(batch_size, ..., num_features)`
             labels_embed: Embedding tensor for the batch labels;
-                shape (batch_size, ..., num_features)
-            labels: Tensor representing batch labels; shape (batch_size, ..., 1)
+                shape `(batch_size, ..., num_features)`
+            labels: Tensor representing batch labels; shape `(batch_size, ..., 1)`
             all_labels_embed: Embedding tensor for the all labels;
-                shape (num_labels, num_features)
-            all_labels: Tensor representing all labels; shape (num_labels, 1)
-            mask: Optional tensor representing sequence mask,
-                contains `1` for inputs and `0` for padding; shape (batch_size, 1)
+                shape `(num_labels, num_features)`
+            all_labels: Tensor representing all labels; shape `(num_labels, 1)`
+            mask: Optional mask, contains `1` for inputs and `0` for padding;
+                shape `(batch_size, 1)`
 
         Returns:
             loss: Total loss.
@@ -1164,8 +1163,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
     def __init__(
         self,
         num_neg: int,
-        scale_loss: bool,
-        similarity_type: Text,
+        scale_loss: bool = False,
+        similarity_type: Text = INNER,
         name: Optional[Text] = None,
         constrain_similarities: bool = True,
         model_confidence: Text = SOFTMAX,
@@ -1207,18 +1206,18 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         Args:
             batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized
-                trackers); shape (batch_size, 1, num_features)
+                trackers); shape `(batch_size, 1, num_features)`
             batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents
                 for IntentTED);
-                shape (batch_size, max_num_labels_per_input, num_features)
+                shape `(batch_size, max_num_labels_per_input, num_features)`
             batch_label_ids: Batch label indices (e.g. indices of the intents). We
-                assume that indices are integers that run from 0 to
-                (number of labels) - 1.
-                shape (batch_size, max_num_labels_per_input, 1)
+                assume that indices are integers that run from `0` to
+                `(number of labels) - 1`.
+                shape `(batch_size, max_num_labels_per_input, 1)`
             all_labels_embed: Embeddings for all labels in the domain;
-                shape (batch_size, max_num_labels_per_input, 1)
+                shape `(batch_size, num_features)`
             all_labels_ids: Indices for all labels in the domain;
-                shape (num_labels, 1)
+                shape `(num_labels, 1)`
             mask: Optional sequence mask, which contains `1` for inputs and `0` for
                 padding.
 
@@ -1396,7 +1395,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         sim_pos: tf.Tensor,  # (batch_size, 1, 1)
         sim_candidates_il: tf.Tensor,  # (batch_size, 1, num_candidates)
         pos_neg_labels: tf.Tensor,  # (batch_size, num_candidates)
-        mask: Optional[tf.Tensor],
+        mask: Optional[tf.Tensor] = None,
     ) -> tf.Tensor:  # ()
         """Computes the sigmoid loss."""
         # Concatenate the one guaranteed positive example with the candidate examples,

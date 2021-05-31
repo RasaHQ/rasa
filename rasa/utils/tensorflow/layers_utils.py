@@ -6,7 +6,7 @@ from typing import Union
 def random_indices(
     batch_size: Union[Tensor, int], n: Union[Tensor, int], n_max: Union[Tensor, int]
 ) -> Tensor:
-    """Creates batch_size * n random indices that run from 0 to n_max.
+    """Creates `batch_size * n` random indices that run from `0` to `n_max`.
 
     Args:
         batch_size: Number of items in each batch
@@ -43,10 +43,11 @@ def get_candidate_values(
         candidate_ids: Indicator for which candidates to gather
 
     Returns:
-        A tensor of shape (batch_size, 1, num_candidates, tf.shape(x)[-1]), where
-        for each batch example, we generate a list of num_candidates vectors, and
-        each candidate is chosen from x according to the candidate id. For example:
+        A tensor of shape `(batch_size, 1, num_candidates, tf.shape(x)[-1])`, where
+        for each batch example, we generate a list of `num_candidates` vectors, and
+        each candidate is chosen from `x` according to the candidate id. For example:
 
+        ```
         x = [[0 1 2],
                 [3 4 5],
                 [6 7 8]]
@@ -60,6 +61,7 @@ def get_candidate_values(
             [[6 7 8],
              [0 1 2]]
         ]
+        ```
     """
     tiled_x = tf.tile(
         tf.expand_dims(batch_flatten(x), 0), (tf.shape(candidate_ids)[0], 1, 1),
