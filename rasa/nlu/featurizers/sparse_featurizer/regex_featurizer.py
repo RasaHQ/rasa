@@ -76,6 +76,7 @@ class RegexFeaturizer(SparseFeaturizer):
 
     def _merge_new_patterns(self, new_patterns: List[Dict[Text, Text]]) -> None:
         """Updates already known patterns with new patterns extracted from data.
+
         Args:
             new_patterns: Patterns extracted from training data and to be merged with
                 known patterns.
