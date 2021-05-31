@@ -255,7 +255,7 @@ class ResponseSelector(DIETClassifier):
         all_retrieval_intents: Optional[List[Text]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
         finetune_mode: bool = False,
-        old_feature_sizes: Dict[Text, Dict[Text, List[int]]] = None,
+        feature_sizes: Dict[Text, Dict[Text, List[int]]] = None,
     ) -> None:
         """Declare instance variables with default values.
 
@@ -288,7 +288,7 @@ class ResponseSelector(DIETClassifier):
             entity_tag_specs,
             model,
             finetune_mode=finetune_mode,
-            old_feature_sizes=old_feature_sizes,
+            feature_sizes=feature_sizes,
         )
         print(self.model)
 

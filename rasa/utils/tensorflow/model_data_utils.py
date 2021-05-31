@@ -27,6 +27,7 @@ TAG_ID_ORIGIN = "tag_id_origin"
 def featurize_training_examples(
     training_examples: List[Message],
     attributes: List[Text],
+    label_attribute: Text,
     entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
     featurizers: Optional[List[Text]] = None,
     bilou_tagging: bool = False,
@@ -63,8 +64,20 @@ def featurize_training_examples(
                     attribute, featurizers
                 )
         output.append(attribute_to_features)
+    # get sparse feature sizes
+    sparse_attributes = []
+    for attr, features in output[0].items():
+        if features[0].is_sparse():
+            sparse_attributes.append(attr)
+    sparse_attributes.remove(label_attribute)
+    feature_sizes = {}
+    for attr in sparse_attributes:
+        sizes = training_examples[0].get_sparse_feature_sizes(
+            attribute=attr, featurizers=featurizers
+        )
 
-    return output
+        feature_sizes[attr] = sizes
+    return output, feature_sizes
 
 
 def get_tag_ids(

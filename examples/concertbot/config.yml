@@ -1,20 +1,21 @@
 language: en
 
 pipeline:
-  - name: "WhitespaceTokenizer"
-  - name: "RegexFeaturizer"
-  - name: "LexicalSyntacticFeaturizer"
-  - name: "CountVectorsFeaturizer"
-  - name: "CountVectorsFeaturizer"
-    analyzer: "char_wb"
+  - name: WhitespaceTokenizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: char_wb
     min_ngram: 1
     max_ngram: 4
-  - name: "DIETClassifier"
-    epochs: 100
-  - name: FallbackClassifier
-    threshold: 0.4
-    ambiguity_threshold: 0.1
-  - name: "EntitySynonymMapper"
+  - name: DIETClassifier
+    epochs: 1
+    constrain_similarities: true
+    random_seed: 99
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+    epochs: 2
+    constrain_similarities: true
+    random_seed: 99
 
 policies:
   - name: TEDPolicy

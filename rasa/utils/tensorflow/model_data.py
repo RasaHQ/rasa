@@ -265,6 +265,9 @@ class RasaModelData:
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
 
+    def add_feature_sizes(self, feature_sizes):
+        self.feature_sizes = feature_sizes
+
     def get(
         self, key: Text, sub_key: Optional[Text] = None
     ) -> Union[Dict[Text, List[FeatureArray]], List[FeatureArray]]:
@@ -479,7 +482,7 @@ class RasaModelData:
         """
         if features is None:
             return
-        if key == 'feature_sizes':
+        if key == "feature_sizes":
             print(features)
         for feature_array in features:
             if len(feature_array) > 0:
