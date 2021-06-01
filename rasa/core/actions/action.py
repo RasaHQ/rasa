@@ -591,10 +591,12 @@ class RemoteAction(Action):
                 "properties": {
                     "start": {"type": "integer"},
                     "end": {"type": "integer"},
-                    "name": {"type": "string"},
+                    "entity": {"type": "string"},
                     "confidence": {"type": "number"},
                     "extractor": {},
-                    "value": {"type": "object"},
+                    "value": {},
+                    "role": {"type": ["string", "null"]},
+                    "group": {"type": ["string", "null"]},
                 },
             },
         }
@@ -607,16 +609,17 @@ class RemoteAction(Action):
                         "type": "object",
                         "properties": {
                             "event": {"type": "string"},
-                            "timestamp": {},
-                            "metadata": {},
+                            "timestamp": {"type": ["number", "null"]},
+                            "metadata": {"type": ["object", "null"]},
                         },
+                        "required": ["event"],
                         "oneOf": [
                             {
                                 "properties": {
                                     "event": {"const": "user"},
-                                    "text": {"type": "string"},
-                                    "input_channel": {},
-                                    "message_id": {},
+                                    "text": {"type": ["string", "null"]},
+                                    "input_channel": {"type": ["string", "null"]},
+                                    "message_id": {"type": ["string", "null"]},
                                     "parse_data": {
                                         "type": "object",
                                         "properties": {
@@ -648,11 +651,11 @@ class RemoteAction(Action):
                             {
                                 "properties": {
                                     "event": {"const": "action"},
-                                    "policy": {},
-                                    "confidence": {},
-                                    "name": {},
+                                    "policy": {"type": ["string", "null"]},
+                                    "confidence": {"type": ["number", "null"]},
+                                    "name": {"type": ["string", "null"]},
                                     "hide_rule_turn": {"type": "boolean"},
-                                    "action_text": {},
+                                    "action_text": {"type": ["string", "null"]},
                                 }
                             },
                             {
@@ -691,8 +694,6 @@ class RemoteAction(Action):
                             {"properties": {"event": {"const": "bot"}}},
                             {"properties": {"event": {"const": "session_started"}}},
                             {"properties": {"event": {"const": "agent"}}},
-                            {"properties": {"event": {"const": "wrong_utterance"}}},
-                            {"properties": {"event": {"const": "wrong_action"}}},
                         ],
                     },
                 },

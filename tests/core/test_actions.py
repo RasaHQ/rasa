@@ -1,6 +1,6 @@
 import textwrap
 from datetime import datetime
-from typing import List, Text, Any, Dict, Type
+from typing import List, Text, Type
 
 import pytest
 from aioresponses import aioresponses
@@ -273,14 +273,10 @@ async def test_remote_action_utterances_with_none_values(
 
     response = {
         "events": [
-            {
-                "event": "form",
-                "name": "restaurant_form",
-                "timestamp": 1621601121.6691904,
-            },
+            {"event": "form", "name": "restaurant_form", "timestamp": None,},
             {
                 "event": "slot",
-                "timestamp": 1621601139.8977633,
+                "timestamp": None,
                 "name": "requested_slot",
                 "value": "cuisine",
             },
@@ -325,14 +321,10 @@ async def test_remote_action_with_template_param(
 
     response = {
         "events": [
-            {
-                "event": "form",
-                "name": "restaurant_form",
-                "timestamp": 1621601121.6691904,
-            },
+            {"event": "form", "name": "restaurant_form", "timestamp": None,},
             {
                 "event": "slot",
-                "timestamp": 1621601139.8977633,
+                "timestamp": None,
                 "name": "requested_slot",
                 "value": "cuisine",
             },
@@ -376,7 +368,11 @@ async def test_remote_action_validate_all_event_subclasses(event_class: Type[Eve
 
     from jsonschema import validate
 
-    validate(response, RemoteAction.action_response_format_spec())
+    if (
+        event_class.type_name != "wrong_utterance"
+        and event_class.type_name != "wrong_action"
+    ):
+        validate(response, RemoteAction.action_response_format_spec())
 
 
 @pytest.mark.parametrize(
