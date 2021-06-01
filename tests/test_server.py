@@ -538,7 +538,7 @@ async def test_train_core_success_with(
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
 
 
-async def assert_trained_model(
+async def test_train_with_retrieval_events_success(
     rasa_app: SanicASGITestClient, stack_config_path: Text, tmp_path: Path
 ):
     with ExitStack() as stack:
