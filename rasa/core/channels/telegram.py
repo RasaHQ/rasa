@@ -4,6 +4,7 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from telebot import TeleBot
+from telebot.apihelper import ApiTelegramException
 from telebot.types import (
     InlineKeyboardButton,
     Update,
@@ -17,6 +18,7 @@ from typing import Dict, Text, Any, List, Optional, Callable, Awaitable
 from rasa.core.channels.channel import InputChannel, UserMessage, OutputChannel
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.core.constants import USER_INTENT_RESTART
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -277,6 +279,12 @@ class TelegramInput(InputChannel):
     def get_output_channel(self) -> TelegramOutput:
         """Loads the telegram channel."""
         channel = TelegramOutput(self.access_token)
-        channel.set_webhook(url=self.webhook_url)
+
+        try:
+            channel.set_webhook(url=self.webhook_url)
+        except ApiTelegramException as error:
+            raise RasaException(
+                "Failed to set channel webhook: " + str(error)
+            ) from error
 
         return channel
