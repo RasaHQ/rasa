@@ -57,7 +57,23 @@ def test_convert_action_labels_to_ids(domain: Domain):
     actual_output = tracker_featurizer._convert_labels_to_ids(
         trackers_as_actions, domain
     )
-    expected_output = np.array([np.array([15, 12]), np.array([15, 13, 14])])
+    expected_output = np.array(
+        [
+            np.array(
+                [
+                    domain.action_names_or_texts.index("utter_greet"),
+                    domain.action_names_or_texts.index("utter_channel"),
+                ],
+            ),
+            np.array(
+                [
+                    domain.action_names_or_texts.index("utter_greet"),
+                    domain.action_names_or_texts.index("utter_default"),
+                    domain.action_names_or_texts.index("utter_goodbye"),
+                ],
+            ),
+        ],
+    )
 
     assert expected_output.size == actual_output.size
     for expected_array, actual_array in zip(expected_output, actual_output):
@@ -76,7 +92,22 @@ def test_convert_intent_labels_to_ids(domain: Domain):
         trackers_as_intents, domain
     )
 
-    expected_labels = np.array([[7, 8, 9, 10], [5, 6, 0, LABEL_PAD_ID]])
+    expected_labels = np.array(
+        [
+            [
+                domain.intents.index("next_intent"),
+                domain.intents.index("nlu_fallback"),
+                domain.intents.index("out_of_scope"),
+                domain.intents.index("restart"),
+            ],
+            [
+                domain.intents.index("greet"),
+                domain.intents.index("hello"),
+                domain.intents.index("affirm"),
+                LABEL_PAD_ID,
+            ],
+        ],
+    )
     assert expected_labels.size == actual_labels.size
     assert expected_labels.shape == actual_labels.shape
     assert np.all(expected_labels == actual_labels)
