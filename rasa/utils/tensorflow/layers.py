@@ -121,6 +121,14 @@ class DenseForSparse(tf.keras.layers.Dense):
 
         super().__init__(kernel_regularizer=regularizer, **kwargs)
 
+    def get_kernel(self):
+        return self.kernel
+
+    def get_bias(self):
+        if self.use_bias:
+            return self.bias
+        return None
+
     def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
         """Apply dense layer to sparse inputs.
 

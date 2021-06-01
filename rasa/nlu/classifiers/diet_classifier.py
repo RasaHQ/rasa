@@ -20,7 +20,7 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import rasa_layers
+from rasa.utils.tensorflow import rasa_layers, layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
@@ -44,6 +44,7 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
+from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.utils.tensorflow.constants import (
     LABEL,
     IDS,
@@ -102,7 +103,6 @@ from rasa.utils.tensorflow.constants import (
 )
 
 logger = logging.getLogger(__name__)
-
 
 SPARSE = "sparse"
 DENSE = "dense"
@@ -839,6 +839,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
+        else:
+            old_feature_sizes = {
+                "text": {"sequence": [14, 2814, 13134], "sentence": [14, 2814, 13134]}
+            }
+            current_feature_sizes = {
+                "text": {"sequence": [14, 2815, 13134], "sentence": [14, 2815, 13134]}
+            }
+            self.model.adjust_layers(
+                self._data_example, current_feature_sizes, old_feature_sizes
+            )
 
         data_generator, validation_data_generator = train_utils.create_data_generators(
             model_data,
@@ -1217,6 +1227,160 @@ class DIET(TransformerRasaModel):
         self.all_labels_embed: Optional[tf.Tensor] = None
 
         self._prepare_layers()
+
+    def adjust_layers(
+        self,
+        data_example: Dict[Text, List[FeatureArray]],
+        new_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+        old_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    ):
+        """
+        Adjusts sizes of DenseForSparse layers by comparing current sparse feature
+        sizes to old ones. This must be done before fine-tuning starts to account for
+        sparse features that might have changed. After adjusting the layers, compiles
+        the model and fits a sample data on it to activate new layers.
+
+        Args:
+            data_example: a data example that is stored in DIETClassifier class
+            new_feature_sizes: sizes of current sparse features
+            old_feature_sizes: sizes of sparse features the model was trained on before
+        """
+        for attr in new_feature_sizes:
+            my_layers = self._get_dense_layers(attr)
+            old_sequence_size = old_feature_sizes[attr]["sequence"]
+            new_sequence_size = new_feature_sizes[attr]["sequence"]
+            old_sentence_size = old_feature_sizes[attr]["sentence"]
+            new_sentence_size = new_feature_sizes[attr]["sentence"]
+            if sum(old_sequence_size) < sum(new_sequence_size):
+                new_seq_layer = self._update_dense_layer(
+                    my_layers["sequence"],
+                    old_sequence_size,
+                    new_sequence_size,
+                    self.config[REGULARIZATION_CONSTANT],
+                )
+                self._tf_layers["sequence_layer." + attr]._tf_layers[
+                    "feature_combining"
+                ]._tf_layers["sparse_dense.sequence"]._tf_layers[
+                    "sparse_to_dense"
+                ] = new_seq_layer
+            if sum(old_sentence_size) < sum(new_sentence_size):
+                new_sent_layer = self._update_dense_layer(
+                    my_layers["sentence"],
+                    old_sentence_size,
+                    new_sentence_size,
+                    self.config[REGULARIZATION_CONSTANT],
+                )
+                self._tf_layers["sequence_layer." + attr]._tf_layers[
+                    "feature_combining"
+                ]._tf_layers["sparse_dense.sentence"]._tf_layers[
+                    "sparse_to_dense"
+                ] = new_sent_layer
+        self._compile_and_fit(data_example)
+
+    def _compile_and_fit(self, data_example: Dict[Text, List[FeatureArray]]):
+        """
+        Compiles modified model and fits a sample data on it
+
+        Args:
+            data_example: a data example that is stored in DIETClassifier class
+        """
+        self.compile(optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]))
+        label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None
+        label_sub_key = LABEL_SUB_KEY if self.config[INTENT_CLASSIFICATION] else None
+
+        model_data = RasaModelData(
+            label_key=label_key, label_sub_key=label_sub_key, data=data_example
+        )
+        self._update_data_signatures(model_data)
+        data_generator = RasaBatchDataGenerator(model_data, batch_size=1)
+        self.fit(data_generator, verbose=False)
+
+    def _get_dense_layers(self, attr: Text) -> Dict[Text, layers.DenseForSparse]:
+        """
+        Gets the DenseForSparse layers that need to be adjusted for fine-tuning
+        At this point, works for just attribute - text
+
+        Args:
+            attr: attribute to consider when getting the layers
+        Returns:
+            dictionary of a feature type(sequence/sentence) to a corresponding DenseForSparse layer
+        """
+        dense_layers = {}
+        features = self._tf_layers["sequence_layer." + attr]._tf_layers[
+            "feature_combining"
+        ]
+        dense_layers["sequence"] = features._tf_layers[
+            "sparse_dense.sequence"
+        ]._tf_layers["sparse_to_dense"]
+        dense_layers["sentence"] = features._tf_layers[
+            "sparse_dense.sentence"
+        ]._tf_layers["sparse_to_dense"]
+        return dense_layers
+
+    def _update_data_signatures(self, model_data: RasaModelData):
+        self.data_signature = model_data.get_signature()
+        self.predict_data_signature = {
+            feature_name: features
+            for feature_name, features in self.data_signature.items()
+            if TEXT in feature_name
+        }
+
+    @staticmethod
+    def _update_dense_layer(
+        dense_layer: layers.DenseForSparse,
+        old_sizes: Dict[Text, Dict[Text, List[int]]],
+        new_sizes: Dict[Text, Dict[Text, List[int]]],
+        reg_lambda: float,
+    ) -> layers.DenseForSparse:
+        """
+        Updates given DenseForSparse layer
+
+        Args:
+            dense_layer: a DenseForSparse layer to be updated
+            old_sizes: sizes of sparse features the model was trained on before
+            new_sizes: sizes of current sparse features
+            reg_lambda: regularization constant
+        Returns:
+            updated DenseForSparse layer
+        """
+        # get kernel, bias and output units of the existing layer
+        kernel = dense_layer.get_kernel().numpy()
+        bias = dense_layer.get_bias().numpy()
+        units = dense_layer.units
+        # split kernel by feature sizes
+        kernel_splits = []
+        start = 0
+        for end in old_sizes:
+            kernel_splits.append(kernel[start : start + end, :])
+            start = end
+        # calculate how many features are added to each split
+        additional_sizes = [
+            new_size - old_size for new_size, old_size in zip(new_sizes, old_sizes)
+        ]
+        # initialize weights according to those sizes
+        std, mean = np.std(kernel), np.mean(kernel)
+        additional_weights = [
+            np.random.normal(mean, std, size=(num_rows, units)).astype(np.float32)
+            for num_rows in additional_sizes
+        ]
+        # merge existing weight splits with additional ones
+        merged_weights = [
+            np.vstack((existing, new))
+            for existing, new in zip(kernel_splits, additional_weights)
+        ]
+        # stack each split to form a new weight tensors
+        new_weights = merged_weights[0]
+        for weights in merged_weights[1:]:
+            new_weights = np.vstack((new_weights, weights))
+        kernel_init = tf.constant_initializer(new_weights)
+        bias_init = tf.constant_initializer(bias)
+        new_layer = layers.DenseForSparse(
+            reg_lambda=reg_lambda,
+            units=units,
+            kernel_initializer=kernel_init,
+            bias_initializer=bias_init,
+        )
+        return new_layer
 
     @staticmethod
     def _ordered_tag_specs(
