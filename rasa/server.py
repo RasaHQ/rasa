@@ -71,6 +71,7 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 import rasa.nlu.test
 from rasa.nlu.test import CVEvaluationResult
+from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
@@ -379,103 +380,7 @@ def validate_request_body(request: Request, error_message: Text) -> None:
 
 def events_request_format_spec() -> Dict[Text, Any]:
     """Expected request body schema used for validation."""
-    return {
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {"event": {"type": "string"}, "timestamp": {}},
-            "oneOf": [
-                {
-                    "properties": {
-                        "event": {"const": "user"},
-                        "text": {"type": "string"},
-                        "input_channel": {},
-                        "message_id": {},
-                        "parse_data": {
-                            "type": "object",
-                            "properties": {
-                                "text": {"type": "string"},
-                                "intent": {
-                                    "type": "object",
-                                    "properties": {
-                                        "name": {"type": "string"},
-                                        "confidence": {"type": "number"},
-                                    },
-                                },
-                                "entities": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "start": {"type": "integer"},
-                                            "end": {"type": "integer"},
-                                            "name": {"type": "string"},
-                                            "confidence": {"type": "number"},
-                                            "extractor": {"type": "string"},
-                                            "value": {"type": "object"},
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    }
-                },
-                {
-                    "properties": {
-                        "event": {"const": "action"},
-                        "policy": {},
-                        "confidence": {},
-                        "name": {"type": "string"},
-                    }
-                },
-                {
-                    "properties": {
-                        "event": {"const": "slot"},
-                        "name": {"type": "string"},
-                        "value": {},
-                    }
-                },
-                {
-                    "properties": {
-                        "event": {"const": "entities"},
-                        "entities": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "start": {"type": "integer"},
-                                    "end": {"type": "integer"},
-                                    "name": {"type": "string"},
-                                    "confidence": {"type": "number"},
-                                    "extractor": {"type": "string"},
-                                    "value": {"type": "object"},
-                                },
-                            },
-                        },
-                    }
-                },
-                {"properties": {"event": {"const": "user_featurization"}}},
-                {"properties": {"event": {"const": "cancel_reminder"}}},
-                {"properties": {"event": {"const": "reminder"}}},
-                {"properties": {"event": {"const": "action_execution_rejected"}}},
-                {"properties": {"event": {"const": "form_validation"}}},
-                {"properties": {"event": {"const": "loop_interrupted"}}},
-                {"properties": {"event": {"const": "form"}}},
-                {"properties": {"event": {"const": "active_loop"}}},
-                {"properties": {"event": {"const": "reset_slots"}}},
-                {"properties": {"event": {"const": "resume"}}},
-                {"properties": {"event": {"const": "pause"}}},
-                {"properties": {"event": {"const": "followup"}}},
-                {"properties": {"event": {"const": "export"}}},
-                {"properties": {"event": {"const": "restart"}}},
-                {"properties": {"event": {"const": "undo"}}},
-                {"properties": {"event": {"const": "rewind"}}},
-                {"properties": {"event": {"const": "bot"}}},
-                {"properties": {"event": {"const": "session_started"}}},
-                {"properties": {"event": {"const": "agent"}}},
-            ],
-        },
-    }
+    return EVENTS_SCHEMA
 
 
 def validate_events_in_request_body(request: Request) -> None:
