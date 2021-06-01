@@ -327,6 +327,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         model: Optional[RasaModel] = None,
         finetune_mode: bool = False,
+        feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None,
     ) -> None:
         """Declare instance variables with default values."""
         if component_config is not None and EPOCHS not in component_config:
@@ -356,6 +357,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.split_entities_config = self.init_split_entities()
 
         self.finetune_mode = finetune_mode
+        self._feature_sizes = feature_sizes
 
         if not self.model and self.finetune_mode:
             raise rasa.shared.exceptions.InvalidParameterException(
@@ -692,9 +694,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # no training data are present to train
             return RasaModelData()
 
-        features_for_examples = model_data_utils.featurize_training_examples(
+        (
+            features_for_examples,
+            feature_sizes,
+        ) = model_data_utils.featurize_training_examples(
             training_data,
             attributes_to_consider,
+            label_attribute,
             entity_tag_specs=self._entity_tag_specs,
             featurizers=self.component_config[FEATURIZERS],
             bilou_tagging=self.component_config[BILOU_FLAG],
@@ -708,6 +714,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
         model_data.add_data(attribute_data)
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
+        model_data.add_feature_sizes(feature_sizes)
 
         self._add_label_features(
             model_data, training_data, label_attribute, label_id_dict, training
@@ -839,6 +846,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
+        else:
+            old_feature_sizes = self._feature_sizes
+            current_feature_sizes = model_data.get_feature_sizes()
+            print(old_feature_sizes, current_feature_sizes)
+            # call adjust_layers(data_example, current_feature_sizes, old_feature_sizes)
+        self._feature_sizes = model_data.get_feature_sizes()
 
         data_generator, validation_data_generator = train_utils.create_data_generators(
             model_data,
@@ -1002,6 +1015,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             model_dir / f"{file_name}.data_example.pkl", self._data_example
         )
         io_utils.pickle_dump(
+            model_dir / f"{file_name}.feature_sizes.pkl", self._feature_sizes
+        )
+        io_utils.pickle_dump(
             model_dir / f"{file_name}.label_data.pkl", dict(self._label_data.data)
         )
         io_utils.json_pickle(
@@ -1045,6 +1061,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_data,
             meta,
             data_example,
+            feature_sizes,
         ) = cls._load_from_files(meta, model_dir)
 
         meta = train_utils.override_defaults(cls.defaults, meta)
@@ -1067,6 +1084,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             entity_tag_specs=entity_tag_specs,
             model=model,
             finetune_mode=should_finetune,
+            feature_sizes=feature_sizes,
         )
 
     @classmethod
@@ -1078,6 +1096,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         RasaModelData,
         Dict[Text, Any],
         Dict[Text, Dict[Text, List[FeatureArray]]],
+        Dict[Text, Dict[Text, List[int]]],
     ]:
         file_name = meta.get("file")
 
@@ -1086,6 +1105,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
         label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
         label_data = RasaModelData(data=label_data)
+        feature_sizes = io_utils.pickle_load(
+            model_dir / f"{file_name}.feature_sizes.pkl"
+        )
         index_label_id_mapping = io_utils.json_unpickle(
             model_dir / f"{file_name}.index_label_id_mapping.json"
         )
@@ -1117,6 +1139,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_data,
             meta,
             data_example,
+            feature_sizes,
         )
 
     @classmethod
