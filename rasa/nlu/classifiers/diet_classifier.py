@@ -878,6 +878,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             verbose=False,
             shuffle=False,  # we use custom shuffle inside data generator
         )
+        self.model._print_layers()
 
     # process helpers
     def _predict(
@@ -1320,9 +1321,6 @@ class DIET(TransformerRasaModel):
             np.random.normal(mean, std, size=(num_rows, units)).astype(np.float32)
             for num_rows in additional_sizes
         ]
-        # additional_weights = [np.random.random((num_rows, units)).astype(np.float32)
-        #                       for num_rows in additional_sizes]
-
         # merge existing weight splits with additional ones
         merged_weights = [
             np.vstack((existing, new))
