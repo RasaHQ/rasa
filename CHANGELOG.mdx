@@ -16,6 +16,22 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.6.3] - 2021-05-28
+                       
+
+### Bugfixes
+- [#8046](https://github.com/rasahq/rasa/issues/8046): `ResponseSelector` can now be trained with the transformer enabled (i.e. when a positive
+  `number_of_transformer_layers` is provided) even if one doesn't specify the transformer's
+  size. Previously, not specifying `transformer_size` led to an error.
+- [#8386](https://github.com/rasahq/rasa/issues/8386): Return `EntityEvaluationResult` during evaluation of test stories only if `parsed_message` is not `None`.
+- [#8546](https://github.com/rasahq/rasa/issues/8546): Ignore `OSError` in Sentry reporting.
+- [#8547](https://github.com/rasahq/rasa/issues/8547): Replaced `ValueError` with `RasaException` in TED model `_check_data` method.
+- [#8639](https://github.com/rasahq/rasa/issues/8639): Changed import to fix agent creation in Jupyter.
+
+### Miscellaneous internal changes
+- [#7906](https://github.com/rasahq/rasa/issues/7906), [#8544](https://github.com/rasahq/rasa/issues/8544), [#8725](https://github.com/rasahq/rasa/issues/8725), [#8726](https://github.com/rasahq/rasa/issues/8726), [#8727](https://github.com/rasahq/rasa/issues/8727), [#8728](https://github.com/rasahq/rasa/issues/8728)
+
+
 ## [2.6.2] - 2021-05-18
                        
 
