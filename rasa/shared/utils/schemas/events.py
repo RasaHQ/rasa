@@ -7,12 +7,17 @@ ENTITIES_SCHEMA = {
             "end": {"type": "integer"},
             "entity": {"type": "string"},
             "confidence": {"type": "number"},
-            "extractor": {},
+            "extractor": {"type": ["string", "null"]},
             "value": {},
             "role": {"type": ["string", "null"]},
             "group": {"type": ["string", "null"]},
         },
     },
+}
+
+INTENT = {
+    "type": "object",
+    "properties": {"name": {"type": "string"}, "confidence": {"type": "number"}},
 }
 
 EVENTS_SCHEMA = {
@@ -36,24 +41,67 @@ EVENTS_SCHEMA = {
                         "type": "object",
                         "properties": {
                             "text": {"type": "string"},
-                            "intent_ranking": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "name": {"type": "string"},
-                                        "confidence": {"type": "number"},
+                            "intent_ranking": {"type": "array", "items": INTENT,},
+                            "intent": INTENT,
+                            "entities": ENTITIES_SCHEMA,
+                            "response_selector": {
+                                "type": "object",
+                                "properties": {
+                                    "all_retrieval_intents": {"type": "array"},
+                                    "default": {
+                                        "type": "object",
+                                        "properties": {
+                                            "response": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "responses": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "text": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                        },
+                                                    },
+                                                    "response_templates": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "text": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                        },
+                                                    },
+                                                    "confidence": {"type": "number"},
+                                                    "intent_response_key": {
+                                                        "type": "string"
+                                                    },
+                                                    "utter_action": {"type": "string"},
+                                                    "template_name": {"type": "string"},
+                                                },
+                                            },
+                                            "ranking": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "confidence": {
+                                                            "type": "number"
+                                                        },
+                                                        "intent_response_key": {
+                                                            "type": "string"
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
                                     },
                                 },
                             },
-                            "intent": {
-                                "type": "object",
-                                "properties": {
-                                    "name": {"type": "string"},
-                                    "confidence": {"type": "number"},
-                                },
-                            },
-                            "entities": ENTITIES_SCHEMA,
                         },
                     },
                 }
@@ -73,13 +121,15 @@ EVENTS_SCHEMA = {
                     "event": {"const": "slot"},
                     "name": {"type": "string"},
                     "value": {},
-                }
+                },
+                "required": ["name", "value"],
             },
             {
                 "properties": {
                     "event": {"const": "entities"},
                     "entities": ENTITIES_SCHEMA,
-                }
+                },
+                "required": ["entities"],
             },
             {"properties": {"event": {"const": "user_featurization"}}},
             {"properties": {"event": {"const": "cancel_reminder"}}},

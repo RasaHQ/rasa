@@ -1,6 +1,6 @@
 import textwrap
 from datetime import datetime
-from typing import List, Text, Type
+from typing import List, Text
 
 import pytest
 from aioresponses import aioresponses
@@ -362,19 +362,6 @@ async def test_remote_action_with_template_param(
     ]
 
 
-@pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
-async def test_remote_action_validate_all_event_subclasses(event_class: Type[Event]):
-    response = {"events": [{"event": event_class.type_name}], "responses": []}
-
-    from jsonschema import validate
-
-    if (
-        event_class.type_name != "wrong_utterance"
-        and event_class.type_name != "wrong_action"
-    ):
-        validate(response, RemoteAction.action_response_format_spec())
-
-
 @pytest.mark.parametrize(
     "event",
     (
@@ -393,6 +380,9 @@ async def test_remote_action_validate_all_event_subclasses(event_class: Type[Eve
         LegacyForm(name="my_form"),
         AllSlotsReset(),
         SlotSet(key="my_slot", value={}),
+        SlotSet(key="my slot", value=[]),
+        SlotSet(key="test", value=1),
+        SlotSet(key="test", value="text"),
         ConversationResumed(),
         ConversationPaused(),
         FollowupAction(name="test"),
@@ -401,7 +391,88 @@ async def test_remote_action_validate_all_event_subclasses(event_class: Type[Eve
         ActionReverted(),
         UserUtteranceReverted(),
         BotUttered(text="Test bot utterance"),
-        UserUttered(text="hello", parse_data={}),
+        UserUttered(
+            text="hello",
+            parse_data={
+                "intent": {
+                    "id": -4389344335148575888,
+                    "name": "greet",
+                    "confidence": 0.9604260921478271,
+                },
+                "entities": [],
+                "text": "hi",
+                "message_id": "3f4c04602a4947098c574b107d3ccc50",
+                "metadata": {},
+                "intent_ranking": [
+                    {
+                        "id": -4389344335148575888,
+                        "name": "greet",
+                        "confidence": 0.9604260921478271,
+                    },
+                    {
+                        "id": 7180145986630405383,
+                        "name": "goodbye",
+                        "confidence": 0.01835782080888748,
+                    },
+                    {
+                        "id": 4246019067232216572,
+                        "name": "deny",
+                        "confidence": 0.011255578137934208,
+                    },
+                    {
+                        "id": -4048707801696782560,
+                        "name": "bot_challenge",
+                        "confidence": 0.004019865766167641,
+                    },
+                    {
+                        "id": -5942619264156239037,
+                        "name": "affirm",
+                        "confidence": 0.002524246694520116,
+                    },
+                    {
+                        "id": 677880322645240870,
+                        "name": "mood_great",
+                        "confidence": 0.002214624546468258,
+                    },
+                    {
+                        "id": -5973454296286367554,
+                        "name": "chitchat",
+                        "confidence": 0.0009614597074687481,
+                    },
+                    {
+                        "id": -4598562678335233249,
+                        "name": "mood_unhappy",
+                        "confidence": 0.00024030178610701114,
+                    },
+                ],
+                "response_selector": {
+                    "all_retrieval_intents": [],
+                    "default": {
+                        "response": {
+                            "id": -226546773594344189,
+                            "responses": [{"text": "chitchat\/ask_name"}],
+                            "response_templates": [{"text": "chitchat\/ask_name"}],
+                            "confidence": 0.9618658423423767,
+                            "intent_response_key": "chitchat\/ask_name",
+                            "utter_action": "utter_chitchat\/ask_name",
+                            "template_name": "utter_chitchat\/ask_name",
+                        },
+                        "ranking": [
+                            {
+                                "id": -226546773594344189,
+                                "confidence": 0.9618658423423767,
+                                "intent_response_key": "chitchat\/ask_name",
+                            },
+                            {
+                                "id": 8392727822750416828,
+                                "confidence": 0.03813415765762329,
+                                "intent_response_key": "chitchat\/ask_weather",
+                            },
+                        ],
+                    },
+                },
+            },
+        ),
         SessionStarted(),
         ActionExecuted(action_name="action_listen"),
         AgentUttered(),

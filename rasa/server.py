@@ -378,11 +378,6 @@ def validate_request_body(request: Request, error_message: Text) -> None:
         raise ErrorResponse(HTTPStatus.BAD_REQUEST, "BadRequest", error_message)
 
 
-def events_request_format_spec() -> Dict[Text, Any]:
-    """Expected request body schema used for validation."""
-    return EVENTS_SCHEMA
-
-
 def validate_events_in_request_body(request: Request) -> None:
     """Validates events format in request body."""
     from jsonschema import validate
@@ -394,15 +389,14 @@ def validate_events_in_request_body(request: Request) -> None:
         events = request.json
 
     try:
-        validate(events, events_request_format_spec())
+        validate(events, EVENTS_SCHEMA)
     except ValidationError as error:
-        error.message += (
-            " Failed to validate the events format in the action server request body."
-            "For more information about the format visit: "
-            "https://rasa.com/docs/action-server/pages/action-server-api"
-        )
         raise ErrorResponse(
-            HTTPStatus.BAD_REQUEST, "JSON schema validation error", str(error)
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            f"Failed to validate the events format. "
+            f"For more information about the format visit: "
+            f"https://rasa.com/docs/action-server/pages/action-server-api. Error: {error}",
         ) from error
 
 
