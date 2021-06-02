@@ -41,7 +41,7 @@ EVENTS_SCHEMA = {
                         "type": "object",
                         "properties": {
                             "text": {"type": "string"},
-                            "intent_ranking": {"type": "array", "items": INTENT,},
+                            "intent_ranking": {"type": "array", "items": INTENT},
                             "intent": INTENT,
                             "entities": ENTITIES_SCHEMA,
                             "response_selector": {

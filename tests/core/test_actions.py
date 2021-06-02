@@ -450,23 +450,23 @@ async def test_remote_action_with_template_param(
                     "default": {
                         "response": {
                             "id": -226546773594344189,
-                            "responses": [{"text": "chitchat\/ask_name"}],
-                            "response_templates": [{"text": "chitchat\/ask_name"}],
+                            "responses": [{"text": "chitchat/ask_name"}],
+                            "response_templates": [{"text": "chitchat/ask_name"}],
                             "confidence": 0.9618658423423767,
-                            "intent_response_key": "chitchat\/ask_name",
-                            "utter_action": "utter_chitchat\/ask_name",
-                            "template_name": "utter_chitchat\/ask_name",
+                            "intent_response_key": "chitchat/ask_name",
+                            "utter_action": "utter_chitchat/ask_name",
+                            "template_name": "utter_chitchat/ask_name",
                         },
                         "ranking": [
                             {
                                 "id": -226546773594344189,
                                 "confidence": 0.9618658423423767,
-                                "intent_response_key": "chitchat\/ask_name",
+                                "intent_response_key": "chitchat/ask_name",
                             },
                             {
                                 "id": 8392727822750416828,
                                 "confidence": 0.03813415765762329,
-                                "intent_response_key": "chitchat\/ask_weather",
+                                "intent_response_key": "chitchat/ask_weather",
                             },
                         ],
                     },
