@@ -177,6 +177,100 @@ def test_get_sparse_features(
 
 
 @pytest.mark.parametrize(
+    "features, attribute, featurizers, expected_seq_sizes, expected_sen_sizes",
+    [
+        (None, TEXT, [], None, None),
+        (
+            [
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 0]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "test",
+                )
+            ],
+            TEXT,
+            [],
+            [3],
+            None,
+        ),
+        (
+            [
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 0]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "c2",
+                ),
+                Features(
+                    scipy.sparse.csr_matrix([1, 2, 2]),
+                    FEATURE_TYPE_SENTENCE,
+                    TEXT,
+                    "c1",
+                ),
+                Features(
+                    scipy.sparse.csr_matrix([1, 2, 1]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "c1",
+                ),
+            ],
+            TEXT,
+            [],
+            [3, 3],
+            [3],
+        ),
+        (
+            [
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 0]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "c1",
+                ),
+                Features(
+                    scipy.sparse.csr_matrix([1, 2, 1]),
+                    FEATURE_TYPE_SENTENCE,
+                    TEXT,
+                    "test",
+                ),
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 1]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "test",
+                ),
+            ],
+            TEXT,
+            ["c1"],
+            [3],
+            None,
+        ),
+    ],
+)
+def test_get_sparse_feature_sizes(
+    features: Optional[List[Features]],
+    attribute: Text,
+    featurizers: List[Text],
+    expected_seq_sizes: List[int],
+    expected_sen_sizes: List[int],
+):
+    message = Message(data={TEXT: "This is a test sentence."}, features=features)
+    feature_sizes = message.get_sparse_feature_sizes(attribute, featurizers)
+    if not expected_seq_sizes:
+        assert not feature_sizes[FEATURE_TYPE_SEQUENCE]
+    else:
+        assert feature_sizes[FEATURE_TYPE_SEQUENCE]
+        assert np.all(feature_sizes[FEATURE_TYPE_SEQUENCE] == expected_seq_sizes)
+
+    if not expected_sen_sizes:
+        assert not feature_sizes[FEATURE_TYPE_SENTENCE]
+    else:
+        assert feature_sizes[FEATURE_TYPE_SENTENCE]
+        assert np.all(feature_sizes[FEATURE_TYPE_SENTENCE] == expected_sen_sizes)
+
+
+@pytest.mark.parametrize(
     "features, attribute, featurizers, expected",
     [
         (None, TEXT, [], False),

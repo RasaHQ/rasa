@@ -32,8 +32,7 @@ def featurize_training_examples(
     featurizers: Optional[List[Text]] = None,
     bilou_tagging: bool = False,
 ) -> Tuple[List[Dict[Text, List["Features"]]], Dict[Text, Dict[Text, List[int]]]]:
-    """Converts training data into a list of attribute to features.
-    Also, returns sparse feature sizes for each attribute.
+    """Converts training data into a list of attribute to features and returns sparse feature sizes for each attribute.
 
     Possible attributes are, for example, INTENT, RESPONSE, TEXT, ACTION_TEXT,
     ACTION_NAME or ENTITIES.
@@ -51,7 +50,6 @@ def featurize_training_examples(
         A dictionary of attribute that has sparse features to a dictionary of
         a feature type to a list of different sparse feature sizes.
     """
-
     output = []
 
     for example in training_examples:
@@ -72,10 +70,11 @@ def featurize_training_examples(
     # get sparse feature sizes
     sparse_attributes = []
     for attr, features in output[0].items():
-        if features[0].is_sparse():
+        if features and features[0].is_sparse():
             sparse_attributes.append(attr)
     # we exclude labels at this point
-    sparse_attributes.remove(label_attribute)
+    if label_attribute in sparse_attributes:
+        sparse_attributes.remove(label_attribute)
     feature_sizes = {}
     for attr in sparse_attributes:
         feature_sizes[attr] = training_examples[0].get_sparse_feature_sizes(

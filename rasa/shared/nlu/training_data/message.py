@@ -245,7 +245,6 @@ class Message:
         Returns:
             Sparse feature sizes.
         """
-
         if featurizers is None:
             featurizers = []
 

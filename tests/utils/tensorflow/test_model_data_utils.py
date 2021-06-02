@@ -177,15 +177,28 @@ def test_extract_features():
 
 
 @pytest.mark.parametrize(
-    "text, intent, entities, attributes",
+    "text, intent, entities, attributes, real_feature_sizes",
     [
-        ("Hello!", "greet", None, [TEXT]),
-        ("Hello!", "greet", None, [TEXT, INTENT]),
+        (
+            "Hello!",
+            "greet",
+            None,
+            [TEXT],
+            {"text": {"sequence": [1001], "sentence": [1001]}},
+        ),
+        (
+            "Hello!",
+            "greet",
+            None,
+            [TEXT, INTENT],
+            {"text": {"sequence": [1001], "sentence": [1001]}},
+        ),
         (
             "Hello Max!",
             "greet",
             [{"entity": "name", "value": "Max", "start": 6, "end": 9}],
             [TEXT, ENTITIES],
+            {"text": {"sequence": [1002], "sentence": [1002]}},
         ),
     ],
 )
@@ -195,6 +208,7 @@ def test_convert_training_examples(
     intent: Optional[Text],
     entities: Optional[List[Dict[Text, Any]]],
     attributes: List[Text],
+    real_feature_sizes: Dict[Text, Dict[Text, List[int]]],
 ):
     message = Message(data={TEXT: text, INTENT: intent, ENTITIES: entities})
 
@@ -217,8 +231,11 @@ def test_convert_training_examples(
             3,
         )
     ]
-    output = model_data_utils.featurize_training_examples(
-        [message], attributes=attributes, entity_tag_specs=entity_tag_spec
+    output, feature_sizes = model_data_utils.featurize_training_examples(
+        [message],
+        attributes=attributes,
+        label_attribute=INTENT,
+        entity_tag_specs=entity_tag_spec,
     )
 
     assert len(output) == 1
@@ -235,6 +252,8 @@ def test_convert_training_examples(
     if ENTITIES in attributes:
         # we will just have space sentence features
         assert len(output[0][ENTITIES]) == len(entity_tag_spec)
+    # check that it calculates feature_sizes correctly
+    assert feature_sizes == real_feature_sizes
 
 
 @pytest.mark.parametrize(
