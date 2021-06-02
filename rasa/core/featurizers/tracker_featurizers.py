@@ -10,7 +10,7 @@ import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
-from rasa.shared.core.events import ActionExecuted, UserUttered
+from rasa.shared.core.events import Event, ActionExecuted, UserUttered
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     is_prev_action_listen_in_state,
@@ -498,7 +498,7 @@ class TrackerFeaturizer:
         return None
 
     @staticmethod
-    def _remove_action_unlikely_intent(states: List[State]) -> List[State]:
+    def _remove_action_unlikely_intent_from_states(states: List[State]) -> List[State]:
         """Removes `action_unlikely_intent` from tracker state history.
 
         Args:
@@ -506,12 +506,32 @@ class TrackerFeaturizer:
                 instance.
 
         Returns:
-            Filtered states with last `action_unlikely_intent` removed.
+            Filtered states with `action_unlikely_intent` removed.
         """
         return [
             state
             for state in states
             if not is_prev_action_unlikely_intent_in_state(state)
+        ]
+
+    @staticmethod
+    def _remove_action_unlikely_intent_from_events(events: List[Event]) -> List[Event]:
+        """Removes `action_unlikely_intent` from an event list.
+
+        Args:
+            events: A list of events produced by a `DialogueStateTracker`
+                instance.
+
+        Returns:
+            Filtered events with `action_unlikely_intent` removed.
+        """
+        return [
+            event
+            for event in events
+            if (
+                not isinstance(event, ActionExecuted)
+                or event.action_name != ACTION_UNLIKELY_INTENT_NAME
+            )
         ]
 
 
@@ -558,25 +578,21 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             states = self._create_states(
                 tracker, domain, omit_unset_slots=omit_unset_slots
             )
+            events = tracker.applied_events()
 
             if ignore_action_unlikely_intent:
-                states = self._remove_action_unlikely_intent(states)
+                states = self._remove_action_unlikely_intent_from_states(states)
+                events = self._remove_action_unlikely_intent_from_events(events)
 
             delete_first_state = False
             actions = []
             entities = []
             entity_data = {}
-            for event in tracker.applied_events():
+            for event in events:
                 if isinstance(event, UserUttered):
                     entity_data = self._entity_data(event)
 
                 if not isinstance(event, ActionExecuted):
-                    continue
-
-                if (
-                    ignore_action_unlikely_intent
-                    and event.action_name == ACTION_UNLIKELY_INTENT_NAME
-                ):
                     continue
 
                 if not event.unpredictable:
@@ -646,7 +662,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
 
         if ignore_action_unlikely_intent:
             trackers_as_states = [
-                self._remove_action_unlikely_intent(states)
+                self._remove_action_unlikely_intent_from_states(states)
                 for states in trackers_as_states
             ]
 
@@ -820,16 +836,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         events = tracker.applied_events()
 
         if ignore_action_unlikely_intent:
-            tracker_states = self._remove_action_unlikely_intent(tracker_states)
-            # Remove all action_unlikely_intent events.
-            events = [
-                event
-                for event in events
-                if (
-                    not isinstance(event, ActionExecuted)
-                    or event.action_name != ACTION_UNLIKELY_INTENT_NAME
-                )
-            ]
+            tracker_states = self._remove_action_unlikely_intent_from_states(
+                tracker_states
+            )
+            events = self._remove_action_unlikely_intent_from_events(events)
 
         label_index = 0
         entity_data = {}
@@ -897,7 +907,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         # max history of the sliced states matches training time.
         if ignore_action_unlikely_intent:
             trackers_as_states = [
-                self._remove_action_unlikely_intent(states)
+                self._remove_action_unlikely_intent_from_states(states)
                 for states in trackers_as_states
             ]
 
@@ -1088,16 +1098,10 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         events = tracker.applied_events()
 
         if ignore_action_unlikely_intent:
-            tracker_states = self._remove_action_unlikely_intent(tracker_states)
-            # Remove all action_unlikely_intent events.
-            events = [
-                event
-                for event in events
-                if (
-                    not isinstance(event, ActionExecuted)
-                    or event.action_name != ACTION_UNLIKELY_INTENT_NAME
-                )
-            ]
+            tracker_states = self._remove_action_unlikely_intent_from_states(
+                tracker_states
+            )
+            events = self._remove_action_unlikely_intent_from_events(events)
 
         label_index = 0
         for event in events:
@@ -1175,7 +1179,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         # max history of the sliced states matches training time.
         if ignore_action_unlikely_intent:
             trackers_as_states = [
-                self._remove_action_unlikely_intent(states)
+                self._remove_action_unlikely_intent_from_states(states)
                 for states in trackers_as_states
             ]
 
