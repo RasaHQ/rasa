@@ -8,6 +8,7 @@ from typing import List, Text, Dict, Any
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
+from tensorflow.python.framework.errors_impl import InvalidArgumentError
 from rasa.shared.nlu.training_data.features import Features
 import rasa.nlu.train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
@@ -683,7 +684,7 @@ def test_update_dense_layers():
             indices=[[0, 0], [1, 2]], values=[1, 2], dense_shape=[2, sum(old_sizes)]
         )
         layer(random_input)
-    except:
+    except (InvalidArgumentError):
         print("this needs to be fixed")
     new_layer = DIET._update_dense_layer(
         dense_layer=layer, old_sizes=old_sizes, new_sizes=new_sizes, reg_lambda=0.02
@@ -693,7 +694,7 @@ def test_update_dense_layers():
             indices=[[0, 0], [1, 2]], values=[1, 2], dense_shape=[2, sum(new_sizes)]
         )
         new_layer(random_input)
-    except:
+    except (InvalidArgumentError):
         print("this needs to be fixed")
 
     # check dimensions
