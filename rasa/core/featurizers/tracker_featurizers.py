@@ -90,8 +90,8 @@ class TrackerFeaturizer:
         """Featurizes state histories with `state_featurizer`.
 
         Args:
-            trackers_as_states: List of lists of `State` instances produced by a
-                `DialogueStateTracker` instance.
+            trackers_as_states: Lists of states produced by a `DialogueStateTracker`
+                instance.
             interpreter: A `NaturalLanguageInterpreter` for the `state_featurizer`
                 to use.
 
