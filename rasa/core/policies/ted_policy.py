@@ -114,6 +114,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
+import rasa.utils.tensorflow.gathering
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -1217,83 +1218,6 @@ class TED(TransformerRasaModel):
 
         return all_unique_label_ids, all_labels_embed
 
-    @staticmethod
-    def _slice_sparse_tensor(
-        input_tensor: tf.SparseTensor, selection_indices: tf.Tensor, axis=0
-    ) -> tf.SparseTensor:
-        """
-        Assume input_tensor is:
-            indices = [[0, 0], [2, 2], [2, 3], [3, 1]]
-            values = [1, 2, 2, 3]
-            original_shape = [4, 5]
-        Assume selection_indices is: [3,2]
-        Assume axis is 0
-        Note: Entries in selection_indices should be unique and sorted. If not, this implementation will fail.
-
-        Args:
-            input_tensor: Input sparse tensor to be sliced
-            selection_indices: Indices inside the sparse tensor that should be picked
-            axis: Axis over which selection_indices should operate
-        Returns:
-        """
-        n_indices = tf.size(selection_indices)  # (2)
-
-        # Get indices for the axis
-        selection_axis_indices = input_tensor.indices[:, axis]  # [0, 2, 2, 3]
-
-        # Find where indices match the selection
-        eq = tf.equal(
-            tf.expand_dims(selection_axis_indices, 1),
-            tf.cast(selection_indices, tf.int64),
-        )  # [[0, 0], [1, 0], [1, 0], [0, 1]]
-
-        # Mask for selected values
-        sel = tf.reduce_any(eq, axis=1)  # [0, 1, 1 ,1]
-
-        # Selected values
-        selected_values = tf.boolean_mask(input_tensor.values, sel, axis=0)  # [2, 2, 3]
-
-        # Construct the new index values for axis on which selection has been made.
-        n_indices = tf.cast(n_indices, tf.int64)
-        selection_axis_indices_new = tf.reduce_sum(
-            tf.cast(eq, tf.int64) * tf.range(n_indices), axis=1
-        )  # [0, 0, 0, 1]
-        selection_axis_indices_new = tf.boolean_mask(
-            selection_axis_indices_new, sel, axis=0
-        )  # [0, 0, 1]
-
-        # New full indices tensor
-        indices_new = tf.boolean_mask(
-            input_tensor.indices, sel, axis=0
-        )  # [[2,2], [2,3], [3,1]]
-        indices_new = tf.concat(
-            [
-                indices_new[:, :axis],
-                tf.expand_dims(selection_axis_indices_new, 1),
-                indices_new[:, axis + 1 :],
-            ],
-            axis=1,
-        )  # [[0,2], [0,3], [0,1]]
-
-        # New shape
-        shape_new = tf.concat(
-            [
-                input_tensor.dense_shape[:axis],
-                [n_indices],
-                input_tensor.dense_shape[axis + 1 :],
-            ],
-            axis=0,
-        )  # [2, 5]
-        return tf.SparseTensor(indices_new, selected_values, shape_new)
-
-    def _slice_tensor(
-        self, tensor: Union[tf.Tensor, tf.SparseTensor], indices: tf.Tensor
-    ) -> Union[tf.Tensor, tf.SparseTensor]:
-        if isinstance(tensor, tf.Tensor):
-            return tf.gather(tensor, tf.cast(indices, dtype=tf.int32))
-        elif isinstance(tensor, tf.SparseTensor):
-            return self._slice_sparse_tensor(tensor, indices)
-
     def _filter_label_data(
         self, selection_label_ids: tf.Tensor
     ) -> Dict[Text, Dict[Text, List[Union[tf.Tensor, tf.SparseTensor]]]]:
@@ -1328,7 +1252,7 @@ class TED(TransformerRasaModel):
                 for sub_key in self.tf_label_data[key]:
 
                     filtered_attribute_data = [
-                        self._slice_tensor(
+                        rasa.utils.tensorflow.gathering.gather(
                             data, feature_key_selection_ids[key][sub_key]
                         )
                         for data in self.tf_label_data[key][sub_key]
@@ -2112,7 +2036,10 @@ class TED(TransformerRasaModel):
 
     # ---PREDICTION---
     def prepare_for_predict(self) -> None:
-        """Prepares the model for prediction."""
+        """Creates all target label embeddings as preparation for prediction.
+
+        The labels are either generated at once or in a batched fashion
+        """
 
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
         if self.config[LABEL_BATCH_SIZE] == -1:
