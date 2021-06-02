@@ -92,8 +92,7 @@ class TrackerFeaturizer:
         Args:
             trackers_as_states: Lists of states produced by a `DialogueStateTracker`
                 instance.
-            interpreter: A `NaturalLanguageInterpreter` for the `state_featurizer`
-                to use.
+            interpreter: An interpreter for the `state_featurizer` to use.
 
         Returns:
             Featurized tracker states.
@@ -139,8 +138,7 @@ class TrackerFeaturizer:
 
         Args:
             trackers_as_entities: Extracted entities from trackers.
-            interpreter: A `NaturalLanguageInterpreter` for the `state_featurizer`
-                to use.
+            interpreter: An interpreter for the `state_featurizer` to use.
             bilou_tagging: When `True` use the BILOU tagging scheme.
 
         Returns:
@@ -158,10 +156,10 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _entity_data(event: UserUttered) -> Dict[Text, Any]:
-        """Extracts entities from `UserUttered` event if not using intents.
+        """Extracts entities from event if not using intents.
 
         Args:
-            event: The `UserUttered` event from which to extract entities.
+            event: The event from which to extract entities.
 
         Returns:
             Intent text and entities if no intent is present.
@@ -728,7 +726,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         If labels is None, labels is not hashed.
 
         Args:
-            tracker: The `DialogueStateTracker` that produced `states`.
+            tracker: The tracker that produced `states`.
             states: The tracker state sequence to hash.
             labels: Label strings associated with this state sequence.
 
