@@ -23,7 +23,11 @@ from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
-from rasa.shared.exceptions import ConnectionException, RasaException
+from rasa.shared.exceptions import (
+    ConnectionException,
+    RasaException,
+    KafkaProducerInitializationError,
+)
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 TEST_EVENTS = [
@@ -285,6 +289,8 @@ async def test_kafka_broker_from_config():
         ("kafka_invalid_security_protocol.yml", ValueError),
         # `TypeError` exception is raised when there is no `url` specified
         ("kafka_plaintext_endpoint_no_url.yml", TypeError),
+        # `KafkaProducerInitializationError` is raised when an invalid `sasl_mechanism` is provided
+        ("kafka_invalid_sasl_mechanism.yml", KafkaProducerInitializationError),
     ],
 )
 async def test_kafka_broker_security_protocols(file: Text, exception: Exception):
