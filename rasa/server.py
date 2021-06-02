@@ -52,6 +52,7 @@ from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_CONVERSATION_TEST_PATH,
     TEST_STORIES_FILE_PREFIX,
+    DOCS_BASE_URL_ACTION_SERVER,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.core.agent import Agent
@@ -395,8 +396,8 @@ def validate_events_in_request_body(request: Request) -> None:
             HTTPStatus.BAD_REQUEST,
             "BadRequest",
             f"Failed to validate the events format. "
-            f"For more information about the format visit: "
-            f"https://rasa.com/docs/action-server/pages/action-server-api. Error: {error}",
+            f"For more information about the format visit the docs. Error: {error}",
+            help_url=DOCS_BASE_URL_ACTION_SERVER + "/pages/action-server-api",
         ) from error
 
 
