@@ -163,19 +163,19 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
             {
-                INTENT: [moodbot_features["intents"]["deny"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["deny"]],
             },
         ]
     ]
@@ -233,19 +233,19 @@ def test_featurize_trackers_ignore_action_unlikely_intent_with_full_dialogue_tra
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
             {
-                INTENT: [moodbot_features["intents"]["deny"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["deny"]],
             },
         ]
     ]
@@ -300,21 +300,21 @@ def test_featurize_trackers_keep_action_unlikely_intent_with_full_dialogue_track
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
             {
-                INTENT: [moodbot_features["intents"]["deny"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["deny"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
         ]
@@ -353,19 +353,19 @@ def test_create_state_features_with_full_dialogue_tracker_featurizer(
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
             {
-                INTENT: [moodbot_features["intents"]["deny"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["deny"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_goodbye"]]},
         ]
@@ -410,18 +410,18 @@ def test_create_state_features_ignore_action_unlikely_intent_with_full_dialogue_
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_great"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_great"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_happy"]]},
             {
-                INTENT: [moodbot_features["intents"]["goodbye"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["goodbye"]],
             },
         ]
     ]
@@ -465,20 +465,20 @@ def test_create_state_features_keep_action_unlikely_intent_with_full_dialogue_tr
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_great"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_great"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_happy"]]},
             {
-                INTENT: [moodbot_features["intents"]["goodbye"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["goodbye"]],
             },
         ]
     ]
@@ -503,13 +503,13 @@ def test_prediction_states_with_full_dialogue_tracker_featurizer(
         [
             {},
             {
-                USER: {INTENT: "greet"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "greet"},
             },
             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
             {
-                USER: {INTENT: "mood_unhappy"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_unhappy"},
             },
             {
                 USER: {INTENT: "mood_unhappy"},
@@ -520,8 +520,8 @@ def test_prediction_states_with_full_dialogue_tracker_featurizer(
                 PREVIOUS_ACTION: {ACTION_NAME: "utter_did_that_help"},
             },
             {
-                USER: {INTENT: "deny"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "deny"},
             },
             {USER: {INTENT: "deny"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_goodbye"},},
         ]
@@ -560,8 +560,8 @@ def test_prediction_states_hide_rule_states_with_full_dialogue_tracker_featurize
         [
             {},
             {
-                USER: {INTENT: "greet"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "greet"},
             },
         ],
     ]
@@ -594,8 +594,8 @@ def test_prediction_states_hide_rule_states_with_full_dialogue_tracker_featurize
         [
             {},
             {
-                USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_great"},
             },
             {
                 USER: {INTENT: "mood_great"},
@@ -647,21 +647,21 @@ def test_prediction_states_ignores_action_intent_unlikely_with_full_dialogue_tra
         [
             {},
             {
-                USER: {INTENT: "greet"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "greet"},
             },
             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
             {
-                USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_great"},
             },
             {
                 USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
             },
             {
-                USER: {INTENT: "goodbye"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "goodbye"},
             },
         ]
     ]
@@ -703,8 +703,8 @@ def test_prediction_states_keeps_action_intent_unlikely_with_full_dialogue_track
         [
             {},
             {
-                USER: {INTENT: "greet"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "greet"},
             },
             {
                 USER: {INTENT: "greet"},
@@ -712,8 +712,8 @@ def test_prediction_states_keeps_action_intent_unlikely_with_full_dialogue_track
             },
             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
             {
-                USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_great"},
             },
             {
                 USER: {INTENT: "mood_great"},
@@ -724,8 +724,8 @@ def test_prediction_states_keeps_action_intent_unlikely_with_full_dialogue_track
                 PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
             },
             {
-                USER: {INTENT: "goodbye"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "goodbye"},
             },
         ]
     ]
@@ -758,73 +758,73 @@ def test_featurize_trackers_with_max_history_tracker_featurizer(
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
                 INTENT: [moodbot_features["intents"]["mood_unhappy"]],
-                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
                 INTENT: [moodbot_features["intents"]["mood_unhappy"]],
-                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
-            },
-            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
-            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
-        ],
-        [
-            {},
-            {
-                INTENT: [moodbot_features["intents"]["greet"]],
-                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
-            },
-            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
-            {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
-                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
+        ],
+        [
+            {},
             {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+            },
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
+            {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+            },
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
+            {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
                 INTENT: [moodbot_features["intents"]["deny"]],
-                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
         ],
     ]
@@ -882,15 +882,15 @@ def test_featurize_trackers_ignore_action_unlikely_intent_with_max_history_track
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
         ],
@@ -945,23 +945,23 @@ def test_featurize_trackers_keep_action_unlikely_intent_with_max_history_tracker
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
@@ -1012,73 +1012,73 @@ def test_deduplicate_featurize_trackers_with_max_history_tracker_featurizer(
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
                 INTENT: [moodbot_features["intents"]["mood_unhappy"]],
-                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
                 INTENT: [moodbot_features["intents"]["mood_unhappy"]],
-                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
-            },
-            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
-            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
-        ],
-        [
-            {},
-            {
-                INTENT: [moodbot_features["intents"]["greet"]],
-                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
-            },
-            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
-            {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
-                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
+        ],
+        [
+            {},
             {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+            },
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
+            {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+            },
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
+            {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
                 INTENT: [moodbot_features["intents"]["deny"]],
-                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
             },
         ],
     ]
@@ -1126,19 +1126,19 @@ def test_create_state_features_with_max_history_tracker_featurizer(
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
             {
-                INTENT: [moodbot_features["intents"]["deny"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["deny"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_goodbye"]]},
         ]
@@ -1190,18 +1190,18 @@ def test_create_state_features_ignore_action_unlikely_intent_with_max_history_tr
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_great"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_great"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_happy"]]},
             {
-                INTENT: [moodbot_features["intents"]["goodbye"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["goodbye"]],
             },
         ]
     ]
@@ -1252,20 +1252,20 @@ def test_create_state_features_keep_action_unlikely_intent_with_max_history_trac
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_great"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_great"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_happy"]]},
             {
-                INTENT: [moodbot_features["intents"]["goodbye"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["goodbye"]],
             },
         ]
     ]
@@ -1298,13 +1298,13 @@ def test_prediction_states_with_max_history_tracker_featurizer(
         [
             {},
             {
-                USER: {INTENT: "greet"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "greet"},
             },
             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
             {
-                USER: {INTENT: "mood_unhappy"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_unhappy"},
             },
             {
                 USER: {INTENT: "mood_unhappy"},
@@ -1315,8 +1315,8 @@ def test_prediction_states_with_max_history_tracker_featurizer(
                 PREVIOUS_ACTION: {ACTION_NAME: "utter_did_that_help"},
             },
             {
-                USER: {INTENT: "deny"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "deny"},
             },
             {USER: {INTENT: "deny"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_goodbye"},},
         ]
@@ -1362,8 +1362,8 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
         [
             {},
             {
-                USER: {INTENT: "greet"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "greet"},
             },
         ],
     ]
@@ -1396,16 +1396,16 @@ def test_prediction_states_hide_rule_states_with_max_history_tracker_featurizer(
         [
             {},
             {
-                USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_great"},
             },
             {
                 USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
             },
             {
-                USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_great"},
             },
         ]
     ]
@@ -1457,21 +1457,21 @@ def test_prediction_states_ignores_action_intent_unlikely_with_max_history_track
         [
             {},
             {
-                USER: {INTENT: "greet"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "greet"},
             },
             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
             {
-                USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_great"},
             },
             {
                 USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
             },
             {
-                USER: {INTENT: "goodbye"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "goodbye"},
             },
         ]
     ]
@@ -1521,8 +1521,8 @@ def test_prediction_states_keeps_action_intent_unlikely_with_max_history_tracker
         [
             {},
             {
-                USER: {INTENT: "greet"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "greet"},
             },
             {
                 USER: {INTENT: "greet"},
@@ -1530,8 +1530,8 @@ def test_prediction_states_keeps_action_intent_unlikely_with_max_history_tracker
             },
             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
             {
-                USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_great"},
             },
             {
                 USER: {INTENT: "mood_great"},
@@ -1542,8 +1542,8 @@ def test_prediction_states_keeps_action_intent_unlikely_with_max_history_tracker
                 PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
             },
             {
-                USER: {INTENT: "goodbye"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "goodbye"},
             },
         ]
     ]
@@ -1586,21 +1586,21 @@ def test_featurize_trackers_with_intent_max_history_tracker_featurizer(
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
@@ -1667,8 +1667,8 @@ def test_featurize_trackers_ignore_action_unlikely_intent_with_intent_max_histor
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
         ],
@@ -1731,8 +1731,8 @@ def test_featurize_trackers_keep_action_unlikely_intent_with_intent_max_history_
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
@@ -1789,21 +1789,21 @@ def test_deduplicate_featurize_trackers_with_intent_max_history_tracker_featuriz
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
         ],
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
@@ -1869,13 +1869,13 @@ def test_create_state_features_with_intent_max_history_tracker_featurizer(
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
@@ -1935,13 +1935,13 @@ def test_create_state_features_ignore_action_unlikely_intent_with_intent_max_his
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_great"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_great"]],
             },
             {ACTION_NAME: [moodbot_features["actions"]["utter_happy"]]},
         ],
@@ -2000,14 +2000,14 @@ def test_create_state_features_keep_action_unlikely_intent_with_intent_max_histo
         [
             {},
             {
-                INTENT: [moodbot_features["intents"]["greet"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
             {
-                INTENT: [moodbot_features["intents"]["mood_great"]],
                 ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_great"]],
             },
             {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
             {ACTION_NAME: [moodbot_features["actions"]["utter_happy"]]},
@@ -2050,13 +2050,13 @@ def test_prediction_states_with_intent_max_history_tracker_featurizer(
         [
             {},
             {
-                USER: {INTENT: "greet"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "greet"},
             },
             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
             {
-                USER: {INTENT: "mood_unhappy"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_unhappy"},
             },
             {
                 USER: {INTENT: "mood_unhappy"},
@@ -2175,13 +2175,13 @@ def test_prediction_states_ignores_action_intent_unlikely_with_intent_max_histor
         [
             {},
             {
-                USER: {INTENT: "greet"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "greet"},
             },
             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
             {
-                USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_great"},
             },
             {
                 USER: {INTENT: "mood_great"},
@@ -2235,8 +2235,8 @@ def test_prediction_states_keeps_action_intent_unlikely_with_intent_max_history_
         [
             {},
             {
-                USER: {INTENT: "greet"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "greet"},
             },
             {
                 USER: {INTENT: "greet"},
@@ -2244,8 +2244,8 @@ def test_prediction_states_keeps_action_intent_unlikely_with_intent_max_history_
             },
             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
             {
-                USER: {INTENT: "mood_great"},
                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                USER: {INTENT: "mood_great"},
             },
             {
                 USER: {INTENT: "mood_great"},
