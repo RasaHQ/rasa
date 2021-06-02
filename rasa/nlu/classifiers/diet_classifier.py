@@ -849,7 +849,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.model.adjust_layers(
                 self._data_example, current_feature_sizes, old_feature_sizes
             )
-
         data_generator, validation_data_generator = train_utils.create_data_generators(
             model_data,
             self.component_config[BATCH_SIZES],
@@ -1233,9 +1232,10 @@ class DIET(TransformerRasaModel):
         data_example: Dict[Text, List[FeatureArray]],
         new_feature_sizes: Dict[Text, Dict[Text, List[int]]],
         old_feature_sizes: Dict[Text, Dict[Text, List[int]]],
-    ):
-        """
-        Adjusts sizes of DenseForSparse layers by comparing current sparse feature
+    ) -> None:
+        """Adjusts sizes of DenseForSparse layers.
+
+        Updates sizes of DenseForSparse layers by comparing current sparse feature
         sizes to old ones. This must be done before fine-tuning starts to account for
         sparse features that might have changed. After adjusting the layers, compiles
         the model and fits a sample data on it to activate new layers.
@@ -1277,9 +1277,8 @@ class DIET(TransformerRasaModel):
                 ] = new_sent_layer
         self._compile_and_fit(data_example)
 
-    def _compile_and_fit(self, data_example: Dict[Text, List[FeatureArray]]):
-        """
-        Compiles modified model and fits a sample data on it
+    def _compile_and_fit(self, data_example: Dict[Text, List[FeatureArray]]) -> None:
+        """Compiles modified model and fits a sample data on it.
 
         Args:
             data_example: a data example that is stored in DIETClassifier class
@@ -1296,8 +1295,9 @@ class DIET(TransformerRasaModel):
         self.fit(data_generator, verbose=False)
 
     def _get_dense_layers(self, attr: Text) -> Dict[Text, layers.DenseForSparse]:
-        """
-        Gets the DenseForSparse layers that need to be adjusted for fine-tuning
+        """Finds DenseForSparse layers.
+
+        Finds DenseForSparse layers that need to be adjusted for fine-tuning
         At this point, works for just attribute - text
 
         Args:
@@ -1317,7 +1317,7 @@ class DIET(TransformerRasaModel):
         ]._tf_layers["sparse_to_dense"]
         return dense_layers
 
-    def _update_data_signatures(self, model_data: RasaModelData):
+    def _update_data_signatures(self, model_data: RasaModelData) -> None:
         self.data_signature = model_data.get_signature()
         self.predict_data_signature = {
             feature_name: features
@@ -1328,12 +1328,11 @@ class DIET(TransformerRasaModel):
     @staticmethod
     def _update_dense_layer(
         dense_layer: layers.DenseForSparse,
-        old_sizes: Dict[Text, Dict[Text, List[int]]],
-        new_sizes: Dict[Text, Dict[Text, List[int]]],
+        old_sizes: List[int],
+        new_sizes: List[int],
         reg_lambda: float,
     ) -> layers.DenseForSparse:
-        """
-        Updates given DenseForSparse layer
+        """Updates given DenseForSparse layer.
 
         Args:
             dense_layer: a DenseForSparse layer to be updated

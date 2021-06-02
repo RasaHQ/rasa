@@ -121,10 +121,12 @@ class DenseForSparse(tf.keras.layers.Dense):
 
         super().__init__(kernel_regularizer=regularizer, **kwargs)
 
-    def get_kernel(self):
+    def get_kernel(self) -> tf.Tensor:
+        """Returns kernel tensor."""
         return self.kernel
 
-    def get_bias(self):
+    def get_bias(self) -> tf.Tensor:
+        """Returns bias tensor if it exists."""
         if self.use_bias:
             return self.bias
         return None
