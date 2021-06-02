@@ -2,6 +2,8 @@
 
 LABEL = "label"
 IDS = "ids"
+# LABEL_PAD_ID is used to pad multi-label training examples.
+# It should be < 0 to avoid index out of bounds errors by tf.one_hot.
 LABEL_PAD_ID = -1
 HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
 SHARE_HIDDEN_LAYERS = "share_hidden_layers"
