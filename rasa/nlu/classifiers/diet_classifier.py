@@ -1303,7 +1303,8 @@ class DIET(TransformerRasaModel):
         Args:
             attr: attribute to consider when getting the layers
         Returns:
-            dictionary of a feature type(sequence/sentence) to a corresponding DenseForSparse layer
+            dictionary of a feature type(sequence/sentence) to a
+            corresponding DenseForSparse layer
         """
         dense_layers = {}
         features = self._tf_layers["sequence_layer." + attr]._tf_layers[
