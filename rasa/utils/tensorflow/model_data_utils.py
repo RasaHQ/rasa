@@ -32,10 +32,11 @@ def featurize_training_examples(
     featurizers: Optional[List[Text]] = None,
     bilou_tagging: bool = False,
 ) -> Tuple[List[Dict[Text, List["Features"]]], Dict[Text, Dict[Text, List[int]]]]:
-    """Converts training data into a list of attribute to features and returns sparse feature sizes for each attribute.
+    """Converts training data into a list of attribute to features.
 
     Possible attributes are, for example, INTENT, RESPONSE, TEXT, ACTION_TEXT,
     ACTION_NAME or ENTITIES.
+    Also returns sparse feature sizes for each attribute.
 
     Args:
         training_examples: the list of training examples

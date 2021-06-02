@@ -234,7 +234,7 @@ class Message:
     def get_sparse_feature_sizes(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Dict[Text, List[int]]:
-        """Gets all sparse feature sizes for the attribute given the list of featurizers.
+        """Gets sparse feature sizes for the attribute given the list of featurizers.
 
         If no featurizers are provided, all available features will be considered.
 

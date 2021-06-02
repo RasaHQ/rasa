@@ -539,8 +539,9 @@ class RasaModelData:
         """Adds a dictionary of feature sizes for different attributes.
 
         Args:
-            feature_sizes: a dictionary of attribute that has sparse features to a dictionary
-                           of a feature type to a list of different sparse feature sizes.
+            feature_sizes: a dictionary of attribute that has sparse
+                           features to a dictionary of a feature type
+                           to a list of different sparse feature sizes.
         """
         if not self.feature_sizes:
             self.feature_sizes = feature_sizes
@@ -548,8 +549,8 @@ class RasaModelData:
     def get_feature_sizes(self) -> Dict[Text, Dict[Text, List[int]]]:
         """Get feature sizes of the model.
 
-        feature_sizes is a dictionary of attribute that has sparse features to a dictionary of
-        a feature type to a list of different sparse feature sizes.
+        feature_sizes is a dictionary of attribute that has sparse features to
+        a dictionary of a feature type to a list of different sparse feature sizes.
 
         Returns:
             A dictionary of key and sub-key to a list of feature signatures
