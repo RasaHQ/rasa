@@ -148,11 +148,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             if self.OOV_words:
                 self.OOV_words = [w.lower() for w in self.OOV_words]
 
-        if self.component_config["additional_vocabulary_size"]:
-            rasa.shared.utils.io.raise_deprecation_warning(
-                "The parameter `additional_vocabulary_size` has been deprecated "
-                "and you don't have to specify it anymore"
-            )
+        for _, value in self.component_config["additional_vocabulary_size"].items():
+            if value:
+                rasa.shared.utils.io.raise_deprecation_warning(
+                    "The parameter `additional_vocabulary_size` has been deprecated "
+                    "and you don't have to specify it anymore"
+                )
+                # to avoid warning several times
+                break
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
         """Checks if trained vocabulary exists in attribute's count vectorizer."""
@@ -371,6 +374,15 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _merge_new_vocabulary_tokens(
         self, existing_vocabulary: Dict[Text, int], vocabulary: Set[Text]
     ) -> None:
+        """Merges new vocabulary tokens with the existing vocabulary.
+
+        New vocabulary items should always be added to the end of the existing
+        vocabulary and the order of the existing vocabulary should not be disturbed.
+
+        Args:
+            existing_vocabulary: existing vocabulary
+            vocabulary: set of new tokens
+        """
         for token in vocabulary:
             if token not in existing_vocabulary:
                 existing_vocabulary[token] = len(existing_vocabulary)

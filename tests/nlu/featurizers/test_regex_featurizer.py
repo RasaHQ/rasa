@@ -490,7 +490,7 @@ def test_persist_load_for_finetuning(tmp_path: Path):
     assert len(loaded_featurizer.known_patterns) == 4
 
 
-def test_finetuning(tmp_path: Path):
+def test_vocabulary_expand_for_finetuning(tmp_path: Path):
     patterns = [
         {"pattern": "[0-9]+", "name": "number", "usage": "intent"},
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
