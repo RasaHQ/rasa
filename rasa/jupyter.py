@@ -5,10 +5,11 @@ from typing import Any, Dict, Optional, Text
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.utils.cli import print_error, print_success
+import rasa.core.agent
 import rasa.utils.common
 
 if typing.TYPE_CHECKING:
-    from rasa.core.agent import Agent, create_agent
+    from rasa.core.agent import Agent
 
 
 def pprint(obj: Any) -> None:
@@ -34,7 +35,7 @@ def chat(
 
     if model_path:
 
-        agent = create_agent(model_path, endpoints)
+        agent = rasa.core.agent.create_agent(model_path, endpoints)
 
     elif agent is not None and interpreter is not None:
         # HACK: this skips loading the interpreter and directly
