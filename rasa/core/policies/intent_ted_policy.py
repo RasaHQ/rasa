@@ -511,7 +511,7 @@ class IntentTEDPolicy(TEDPolicy):
         query_intent_similarity = similarities[0][query_intent_id]
 
         logger.debug(
-            f"Score for user intent {query_intent} likely to occur here is "
+            f"Score for intent `{query_intent}` is "
             f"{query_intent_similarity}, while "
             f"threshold is {self.label_thresholds[query_intent_id]}"
         )
