@@ -7,7 +7,6 @@ import shutil
 from subprocess import CalledProcessError, DEVNULL, check_output  # skipcq:BAN-B404
 import tempfile
 import typing
-from packaging import version
 from pathlib import Path
 from typing import Any, Text, Tuple, Union, Optional, List, Dict, NamedTuple
 
@@ -27,7 +26,6 @@ from rasa.shared.constants import (
     DEFAULT_CORE_SUBDIRECTORY_NAME,
     DEFAULT_NLU_SUBDIRECTORY_NAME,
 )
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 
 from rasa.exceptions import ModelNotFound
 from rasa.utils.common import TempDirectoryPath
@@ -496,10 +494,10 @@ def should_retrain(
         with unpack_model(old_model) as unpacked:
             last_fingerprint = fingerprint_from_path(unpacked)
             old_core, old_nlu = get_model_subdirectories(unpacked)
-            
-            model_outdated = version.parse(last_fingerprint.get("version")) < version.parse(
-                MINIMUM_COMPATIBLE_VERSION
-            )
+
+            model_outdated = version.parse(
+                last_fingerprint.get("version")
+            ) < version.parse(MINIMUM_COMPATIBLE_VERSION)
 
             fingerprint_comparison = FingerprintComparisonResult(
                 core=did_section_fingerprint_change(
