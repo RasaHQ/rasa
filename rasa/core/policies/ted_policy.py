@@ -334,7 +334,8 @@ class TEDPolicy(Policy):
         )
 
         # TODO: check if the else statement can be removed.
-        #  More context here - https://github.com/RasaHQ/rasa/issues/5786#issuecomment-840762751
+        #  More context here -
+        #  https://github.com/RasaHQ/rasa/issues/5786#issuecomment-840762751
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
         else:
@@ -859,8 +860,8 @@ class TEDPolicy(Policy):
             return
 
         model_path = Path(path)
-        metadata_filename = self._metadata_filename()
-        tf_model_file = model_path / f"{metadata_filename}.tf_model"
+        model_filename = self._metadata_filename()
+        tf_model_file = model_path / f"{model_filename}.tf_model"
 
         rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
@@ -878,19 +879,19 @@ class TEDPolicy(Policy):
         Args:
             model_path: Path where model is to be persisted
         """
-        metadata_filename = self._metadata_filename()
+        model_filename = self._metadata_filename()
         io_utils.json_pickle(
-            model_path / f"{metadata_filename}.priority.pkl", self.priority
+            model_path / f"{model_filename}.priority.pkl", self.priority
         )
-        io_utils.pickle_dump(model_path / f"{metadata_filename}.meta.pkl", self.config)
+        io_utils.pickle_dump(model_path / f"{model_filename}.meta.pkl", self.config)
         io_utils.pickle_dump(
-            model_path / f"{metadata_filename}.data_example.pkl", self.data_example,
-        )
-        io_utils.pickle_dump(
-            model_path / f"{metadata_filename}.fake_features.pkl", self.fake_features,
+            model_path / f"{model_filename}.data_example.pkl", self.data_example,
         )
         io_utils.pickle_dump(
-            model_path / f"{metadata_filename}.label_data.pkl",
+            model_path / f"{model_filename}.fake_features.pkl", self.fake_features,
+        )
+        io_utils.pickle_dump(
+            model_path / f"{model_filename}.label_data.pkl",
             dict(self._label_data.data),
         )
         entity_tag_specs = (
@@ -899,7 +900,7 @@ class TEDPolicy(Policy):
             else []
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(
-            model_path / f"{metadata_filename}.entity_tag_specs.json", entity_tag_specs,
+            model_path / f"{model_filename}.entity_tag_specs.json", entity_tag_specs,
         )
 
     @classmethod

@@ -561,7 +561,6 @@ class IntentTEDPolicy(TEDPolicy):
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
         meta = train_utils.override_defaults(cls.defaults, meta)
-
         return meta
 
     @classmethod
