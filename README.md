@@ -344,9 +344,11 @@ Releasing a new version is quite simple, as the packages are build and distribut
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
 4. Run `make release`
-5. Create a PR against `main` or the release branch (e.g. `1.2.x`)
-6. Once your PR is merged, tag a new release (this SHOULD always happen on `main` or release branches), e.g. using
+5. Create a PR against the release branch (e.g. `1.2.x`)
+6. Once your PR is merged, tag a new release (this SHOULD always happen the release branche), e.g. using
     ```bash
+    git checkout 1.2.x
+    git pull origin 1.2.x
     git tag 1.2.0 -m "next release"
     git push origin 1.2.0
     ```
