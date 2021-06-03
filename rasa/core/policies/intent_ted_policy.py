@@ -349,7 +349,7 @@ class IntentTEDPolicy(TEDPolicy):
             label_ids: Label ids corresponding to the data points in `model_data`.
 
         Raises:
-            `RasaException` if `label_ids` is None as it's needed for
+            `RasaCoreException` if `label_ids` is None as it's needed for
                 running post training procedures.
         """
         if not label_ids:
