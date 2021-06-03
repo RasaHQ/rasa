@@ -68,20 +68,22 @@ def featurize_training_examples(
                     attribute, featurizers
                 )
         output.append(attribute_to_features)
-    # get sparse feature sizes
-    sparse_attributes = []
-    for attr, features in output[0].items():
-        if features and features[0].is_sparse():
-            sparse_attributes.append(attr)
-    # we exclude labels at this point
-    if label_attribute in sparse_attributes:
-        sparse_attributes.remove(label_attribute)
-    feature_sizes = {}
-    for attr in sparse_attributes:
-        feature_sizes[attr] = training_examples[0].get_sparse_feature_sizes(
-            attribute=attr, featurizers=featurizers
-        )
-    return output, feature_sizes
+
+    sparse_feature_sizes = {}
+    if output:
+        sparse_attributes = []
+        for attr, features in output[0].items():
+            if features and features[0].is_sparse():
+                sparse_attributes.append(attr)
+        # we don't support updating label attribute layers at this point
+        if label_attribute in sparse_attributes:
+            sparse_attributes.remove(label_attribute)
+        if training_examples:
+            for attribute in sparse_attributes:
+                sparse_feature_sizes[attribute] = training_examples[
+                    0
+                ].get_sparse_feature_sizes(attribute=attribute, featurizers=featurizers)
+    return output, sparse_feature_sizes
 
 
 def get_tag_ids(
