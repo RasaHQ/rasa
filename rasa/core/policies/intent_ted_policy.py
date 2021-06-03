@@ -92,6 +92,7 @@ from rasa.utils.tensorflow.model_data import (
 )
 
 import rasa.utils.io as io_utils
+from rasa.core.exceptions import RasaCoreException
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -318,10 +319,10 @@ class IntentTEDPolicy(TEDPolicy):
         }
         return RasaModelData(data=filtered_data)
 
-    def run_post_training_procedures(
+    def calculate_label_thresholds_post_training(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> None:
-        """Runs any post training tasks.
+        """Calculates label thresholds for prediction of `action_unlikely_intent`.
 
         Args:
             model_data: Data used for training the model.
@@ -337,6 +338,28 @@ class IntentTEDPolicy(TEDPolicy):
         self.label_thresholds = self.model.compute_thresholds(
             model_prediction_data, label_ids
         )
+
+    def run_training(
+        self, model_data: RasaModelData, label_ids: Optional[np.ndarray] = None
+    ) -> None:
+        """Feeds the featurized training data to the model.
+
+        Args:
+            model_data: Featurized training data.
+            label_ids: Label ids corresponding to the data points in `model_data`.
+
+        Raises:
+            `RasaException` if `label_ids` is None as it's needed for
+                running post training procedures.
+        """
+        if not label_ids:
+            raise RasaCoreException(
+                f"Incorrect usage of `run_training` "
+                f"method of `{self.__class__.__name__}`."
+                f"`label_ids` cannot be left to `None`."
+            )
+        super().run_training(model_data, label_ids)
+        self.calculate_label_thresholds_post_training(model_data, label_ids)
 
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array

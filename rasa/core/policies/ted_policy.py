@@ -588,11 +588,16 @@ class TEDPolicy(Policy):
 
         return model_data, label_ids
 
-    def run_training(self, model_data: RasaModelData) -> None:
+    def run_training(
+        self, model_data: RasaModelData, label_ids: Optional[np.ndarray] = None
+    ) -> None:
         """Feeds the featurized training data to the model.
 
         Args:
             model_data: Featurized training data.
+            label_ids: Label ids corresponding to the data points in `model_data`.
+                These may or may not be used by the function depending
+                on how the policy is trained.
         """
         if not self.finetune_mode:
             # This means the model wasn't loaded from a
@@ -635,18 +640,6 @@ class TEDPolicy(Policy):
             shuffle=False,  # we use custom shuffle inside data generator
         )
 
-    def run_post_training_procedures(
-        self, model_data: RasaModelData, label_ids: np.ndarray
-    ) -> None:
-        """Runs any tasks to be completed after the model has been trained.
-
-        Args:
-            model_data: Featurized data on which the model has been trained.
-            label_ids: Label ids corresponding to the featurized data.
-        """
-        # No post training procedure for `TEDPolicy`
-        return
-
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
@@ -681,9 +674,7 @@ class TEDPolicy(Policy):
             )
             return
 
-        self.run_training(model_data)
-
-        self.run_post_training_procedures(model_data, label_ids)
+        self.run_training(model_data, label_ids)
 
     def _featurize_tracker_for_e2e(
         self,

@@ -164,7 +164,9 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             training_trackers, default_domain, interpreter
         )
 
-        trained_policy.run_post_training_procedures(training_model_data, label_ids)
+        trained_policy.calculate_label_thresholds_post_training(
+            training_model_data, label_ids
+        )
 
         # -1 is used for padding and hence is not expected in the keys
         expected_keys = list(np.unique(label_ids))
