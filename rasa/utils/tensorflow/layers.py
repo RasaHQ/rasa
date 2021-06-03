@@ -640,6 +640,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         model_confidence: Text = SOFTMAX,
         similarity_type: Text = INNER,
         name: Optional[Text] = None,
+        **kwargs,
     ):
         """Declares instance variables with default values.
 
@@ -780,23 +781,24 @@ class SingleLabelDotProductLoss(DotProductLoss):
 
     def __init__(
         self,
-        num_neg: int,
-        loss_type: Text,
-        mu_pos: float,
-        mu_neg: float,
-        use_max_sim_neg: bool,
-        neg_lambda: float,
-        scale_loss: bool,
-        similarity_type: Text,
-        name: Optional[Text] = None,
-        same_sampling: bool = False,
+        num_candidates: int,
+        scale_loss: bool = False,
         constrain_similarities: bool = True,
         model_confidence: Text = SOFTMAX,
+        similarity_type: Text = INNER,
+        name: Optional[Text] = None,
+        loss_type: Text = CROSS_ENTROPY,
+        mu_pos: float = 0.8,
+        mu_neg: float = -0.2,
+        use_max_sim_neg: bool = True,
+        neg_lambda: float = 0.5,
+        same_sampling: bool = False,
+        **kwargs,
     ) -> None:
         """Declares instance variables with default values.
 
         Args:
-            num_neg: Positive integer, the number of incorrect labels;
+            num_candidates: Positive integer, the number of incorrect labels;
                 the algorithm will minimize their similarity to the input.
             loss_type: The type of the loss function, either `cross_entropy` or
                 `margin`.
@@ -1164,17 +1166,18 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
     def __init__(
         self,
-        num_neg: int,
+        num_candidates: int,
         scale_loss: bool = False,
-        similarity_type: Text = INNER,
-        name: Optional[Text] = None,
         constrain_similarities: bool = True,
         model_confidence: Text = SOFTMAX,
+        similarity_type: Text = INNER,
+        name: Optional[Text] = None,
+        **kwargs,
     ) -> None:
         """Declares instance variables with default values.
 
         Args:
-            num_neg: Positive integer, the number of candidate labels.
+            num_candidates: Positive integer, the number of candidate labels.
             scale_loss: If `True` scale loss inverse proportionally to
                 the confidence of the correct prediction.
             similarity_type: Similarity measure to use, either `cosine` or `inner`.
@@ -1187,7 +1190,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
                 Possible values are `SOFTMAX` and `LINEAR_NORM`.
         """
         super().__init__(
-            num_neg,
+            num_candidates,
             scale_loss=scale_loss,
             similarity_type=similarity_type,
             name=name,
