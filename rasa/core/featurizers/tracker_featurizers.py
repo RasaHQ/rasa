@@ -193,7 +193,7 @@ class TrackerFeaturizer:
         interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool,
     ) -> None:
-        """Makes sure that the featurizer is ready to be called during training.
+        """Ensures that the featurizer is ready to be called during training.
 
         State featurizer needs to build its vocabulary from the domain
         for it to be ready to be used during training.

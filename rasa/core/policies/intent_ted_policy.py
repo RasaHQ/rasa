@@ -227,7 +227,7 @@ class IntentTEDPolicy(TEDPolicy):
         label_thresholds: Dict[int, float] = None,
         **kwargs: Any,
     ) -> None:
-        """Declare instance variables with default values."""
+        """Declares instance variables with default values."""
 
         super().__init__(
             featurizer,
@@ -270,7 +270,7 @@ class IntentTEDPolicy(TEDPolicy):
     def _assemble_label_data(
         self, attribute_data: Data, domain: Domain
     ) -> RasaModelData:
-        """Construct data regarding labels to be fed to the model.
+        """Constructs data regarding labels to be fed to the model.
 
         The resultant model data should contain the keys `label_intent`, `label`.
         `label_intent` will contain the sequence, sentence and mask features
@@ -298,7 +298,7 @@ class IntentTEDPolicy(TEDPolicy):
 
     @staticmethod
     def _prepare_data_for_prediction(model_data: RasaModelData) -> RasaModelData:
-        """Transform training model data to data usable for making model predictions.
+        """Transforms training model data to data usable for making model predictions.
 
         Transformation involves filtering out all features which
         are not useful at prediction time. This is important
@@ -321,7 +321,7 @@ class IntentTEDPolicy(TEDPolicy):
     def run_post_training_procedures(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> None:
-        """Run any post training tasks.
+        """Runs any post training tasks.
 
         Args:
             model_data: Data used for training the model.
@@ -341,7 +341,7 @@ class IntentTEDPolicy(TEDPolicy):
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array
     ) -> Dict[Text, Dict[Text, float]]:
-        """Add any metadata to be attached to the predicted action.
+        """Adds any metadata to be attached to the predicted action.
 
         Similarities for all intents and their thresholds are attached as metadata.
 
@@ -425,7 +425,7 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
-        """Check if the intent should raise `action_unlikely_intent`.
+        """Checks if the intent should raise `action_unlikely_intent`.
 
         Args:
             intent: Intent to be queried.
@@ -449,7 +449,7 @@ class IntentTEDPolicy(TEDPolicy):
     def _check_unlikely_intent(
         self, domain: Domain, similarities: np.array, query_intent: Text
     ) -> bool:
-        """Check if the query intent is probable according to model's predictions.
+        """Checks if the query intent is probable according to model's predictions.
 
         If the similarity prediction for the intent of
         is lower than the threshold calculated for that
@@ -505,7 +505,7 @@ class IntentTEDPolicy(TEDPolicy):
         return False
 
     def persist_model_utilities(self, model_path: Path) -> None:
-        """Persist model's utility attributes like model weights, etc.
+        """Persists model's utility attributes like model weights, etc.
 
         Args:
             model_path: Path where model is to be persisted
@@ -518,7 +518,7 @@ class IntentTEDPolicy(TEDPolicy):
 
     @classmethod
     def _load_model_utilities(cls, model_path: Path) -> None:
-        """Load model's utility attributes.
+        """Loads model's utility attributes.
 
         Args:
             model_path: Path where model is to be persisted.
@@ -610,7 +610,7 @@ class IntentTED(TED):
     def compute_thresholds(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> Dict[int, float]:
-        """Compute prediction thresholds for each intent.
+        """Computes prediction thresholds for each intent.
 
         These thresholds are used at inference time to predict
         whether a query intent is likely or not.
@@ -644,7 +644,7 @@ class IntentTED(TED):
     def _pick_threshold_from_similarities(
         label_id_similarities: Dict[int, List[float]]
     ) -> Dict[int, float]:
-        """Compute threshold for predicted similarities.
+        """Computes threshold for predicted similarities.
 
         The threshold for an intent is computed as the minimum
         of all similarities predicted for that particular intent.
@@ -664,7 +664,7 @@ class IntentTED(TED):
     def _collect_label_id_similarities_from_outputs(
         label_ids: np.ndarray, outputs: Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
     ) -> Dict[int, List[float]]:
-        """Collect similarities predicted for each label id.
+        """Collects similarities predicted for each label id.
 
         Args:
             label_ids: Numerical IDs of labels for each data point used during training.

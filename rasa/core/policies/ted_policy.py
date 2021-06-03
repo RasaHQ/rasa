@@ -379,7 +379,7 @@ class TEDPolicy(Policy):
         self._auto_update_configuration()
 
     def _auto_update_configuration(self) -> None:
-        """Take care of deprecations and compatibility of parameters."""
+        """Takes care of deprecations and compatibility of parameters."""
         self.config = rasa.utils.train_utils.update_confidence_type(self.config)
         rasa.utils.train_utils.validate_configuration_settings(self.config)
         self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
@@ -407,7 +407,7 @@ class TEDPolicy(Policy):
     def _assemble_label_data(
         self, attribute_data: Data, domain: Domain
     ) -> RasaModelData:
-        """Construct data regarding labels to be fed to the model.
+        """Constructs data regarding labels to be fed to the model.
 
         The resultant model data can possibly contain one or both of the
         keys - [`label_action_name`, `label_action_text`] but will definitely
@@ -547,7 +547,7 @@ class TEDPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> Tuple[RasaModelData, np.ndarray]:
-        """Prepare data to be fed into the model.
+        """Prepares data to be fed into the model.
 
         Args:
             training_trackers: List of training trackers to be featurized.
@@ -589,7 +589,7 @@ class TEDPolicy(Policy):
         return model_data, label_ids
 
     def run_training(self, model_data: RasaModelData) -> None:
-        """Feed the featurized training data to the model.
+        """Feeds the featurized training data to the model.
 
         Args:
             model_data: Featurized training data.
@@ -638,7 +638,7 @@ class TEDPolicy(Policy):
     def run_post_training_procedures(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> None:
-        """Run any tasks to be completed after the model has been trained.
+        """Runs any tasks to be completed after the model has been trained.
 
         Args:
             model_data: Featurized data on which the model has been trained.
@@ -882,7 +882,7 @@ class TEDPolicy(Policy):
         self.persist_model_utilities(model_path)
 
     def persist_model_utilities(self, model_path: Path) -> None:
-        """Persist model's utility attributes like model weights, etc.
+        """Persists model's utility attributes like model weights, etc.
 
         Args:
             model_path: Path where model is to be persisted
@@ -913,7 +913,7 @@ class TEDPolicy(Policy):
 
     @classmethod
     def _load_model_utilities(cls, model_path: Path) -> Dict[Text, Any]:
-        """Load model's utility attributes.
+        """Loads model's utility attributes.
 
         Args:
             model_path: Path where model is to be persisted.
