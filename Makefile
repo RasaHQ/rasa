@@ -102,28 +102,7 @@ lint-security:
 	poetry run bandit -ll -ii -r --config bandit.yml rasa/*
 
 types:
-	# FIXME: working our way towards removing these
-	# see https://github.com/RasaHQ/rasa/pull/6470
-	# the list below is sorted by the number of errors for each error code, in decreasing order
-	poetry run mypy rasa --disable-error-code arg-type \
-	--disable-error-code assignment \
-	--disable-error-code var-annotated \
-	--disable-error-code return-value \
-	--disable-error-code union-attr \
-	--disable-error-code override \
-	--disable-error-code operator \
-	--disable-error-code attr-defined \
-	--disable-error-code index \
-	--disable-error-code misc \
-	--disable-error-code return \
-	--disable-error-code call-arg \
-	--disable-error-code type-var \
-	--disable-error-code list-item \
-	--disable-error-code has-type \
-	--disable-error-code valid-type \
-	--disable-error-code dict-item \
-	--disable-error-code no-redef \
-	--disable-error-code func-returns-value
+	poetry run mypy rasa
 
 static-checks: lint lint-security types
 
@@ -131,8 +110,6 @@ prepare-spacy:
 	poetry install -E spacy
 	poetry run python -m spacy download en_core_web_md
 	poetry run python -m spacy download de_core_news_sm
-	poetry run python -m spacy link en_core_web_md en --force
-	poetry run python -m spacy link de_core_news_sm de --force
 
 prepare-mitie:
 	wget --progress=dot:giga -N -P data/ https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
@@ -158,28 +135,39 @@ prepare-tests-files: prepare-spacy prepare-mitie prepare-transformers
 prepare-wget-macos:
 	brew install wget || true
 
-prepare-wget-windows:
-	choco install wget
-
 prepare-tests-macos: prepare-wget-macos prepare-tests-files
 	brew install graphviz || true
 
 prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
+prepare-wget-windows:
+	choco install wget
+
 prepare-tests-windows: prepare-wget-windows prepare-tests-files
 	choco install graphviz
 
+# GitHub Action has pre-installed a helper function for installing Chocolatey packages
+# It will retry the installation 5 times if it fails
+# See: https://github.com/actions/virtual-environments/blob/main/images/win/scripts/ImageHelpers/ChocoHelpers.ps1
+prepare-wget-windows-gha:
+	powershell -command "Choco-Install wget"
+
+prepare-tests-windows-gha: prepare-wget-windows-gha prepare-tests-files
+	powershell -command "Choco-Install graphviz"
+
 test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
+	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
 
 test-integration:
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
 ifeq (,$(wildcard tests_deployment/.env))
-	OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS)
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS)
 else
-	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
+	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
 endif
 
 test-cli: PYTEST_MARKER=category_cli
@@ -203,9 +191,13 @@ test-full-model-training: test-marker
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests
 test-other-unit-tests: test-marker
 
+test-performance: PYTEST_MARKER=category_performance
+test-performance: test-marker
+
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "$(PYTEST_MARKER)" --ignore $(INTEGRATION_TEST_FOLDER)
+	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --cov rasa -m "$(PYTEST_MARKER)" --ignore $(INTEGRATION_TEST_FOLDER)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"

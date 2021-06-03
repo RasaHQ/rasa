@@ -26,9 +26,12 @@ class MitieEntityExtractor(EntityExtractor):
     def required_components(cls) -> List[Type[Component]]:
         return [MitieNLP, Tokenizer]
 
-    def __init__(self, component_config: Optional[Dict[Text, Any]] = None, ner=None):
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        ner: Optional["mitie.named_entity_extractor"] = None,
+    ) -> None:
         """Construct a new intent classifier using the sklearn framework."""
-
         super().__init__(component_config)
         self.ner = ner
 
@@ -37,7 +40,10 @@ class MitieEntityExtractor(EntityExtractor):
         return ["mitie"]
 
     def extract_entities(
-        self, text: Text, tokens: List[Token], feature_extractor
+        self,
+        text: Text,
+        tokens: List[Token],
+        feature_extractor: Optional["mitie.total_word_feature_extractor"],
     ) -> List[Dict[Text, Any]]:
         ents = []
         tokens_strs = [token.text for token in tokens]
@@ -128,7 +134,6 @@ class MitieEntityExtractor(EntityExtractor):
         return sample
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
             raise Exception(
@@ -146,11 +151,12 @@ class MitieEntityExtractor(EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["MitieEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "MitieEntityExtractor":
+        """Loads trained component (see parent class for full docstring)."""
         import mitie
 
         file_name = meta.get("file")

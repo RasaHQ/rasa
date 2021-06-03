@@ -17,7 +17,7 @@ MDX_DOCS_FILES = list((DOCS_BASE_DIR / "docs").glob("**/*.mdx"))
 # we're matching codeblocks with either `yaml-rasa` or `yml-rasa` types
 # we support title or no title (you'll get a nice error message if there is a title)
 TRAINING_DATA_CODEBLOCK_RE = re.compile(
-    r"```y(?:a)?ml-rasa(?: title=[\"'][^\"']+[\"'])?(?: \((?P<yaml_path>.+?)\))?[^\n]*\n(?P<codeblock>.*?)```",
+    r"```y(?:a)?ml-rasa(?: title=[\"'][^\"']+[\"'])?(?: \((?P<yaml_path>.+?)\))?[^\n]*\n(?P<codeblock>.*?)```",  # noqa: E501
     re.DOTALL,
 )
 

@@ -1,6 +1,5 @@
 import logging
 import os
-from pathlib import Path
 from typing import Text, Optional, Dict, List, Union
 
 import rasa.shared.data
@@ -54,7 +53,7 @@ def _guess_reader(
 
 
 async def load_data_from_resource(
-    resource: Union[Text, Path],
+    resource: Union[Text],
     domain: Domain,
     template_variables: Optional[Dict] = None,
     use_e2e: bool = False,

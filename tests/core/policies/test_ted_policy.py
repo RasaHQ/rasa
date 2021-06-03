@@ -19,10 +19,11 @@ from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
 )
+from rasa.shared.exceptions import RasaException
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from rasa.train import train_core
+from rasa.model_training import train_core
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
@@ -35,7 +36,6 @@ from rasa.utils.tensorflow.constants import (
     VALUE_RELATIVE_ATTENTION,
     MODEL_CONFIDENCE,
     COSINE,
-    INNER,
     AUTO,
     LINEAR_NORM,
 )
@@ -93,8 +93,36 @@ class TestTEDPolicy(PolicyTestCollection):
 
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
+    ) -> TEDPolicy:
         return TEDPolicy(featurizer=featurizer, priority=priority)
+
+    async def test_raise_rasa_exception_no_user_features(
+        self,
+        featurizer: Optional[TrackerFeaturizer],
+        priority: int,
+        default_domain: Domain,
+        tmp_path: Path,
+    ):
+        stories = tmp_path / "stories.yml"
+        stories.write_text(
+            """
+            version: "2.0"
+            stories:
+            - story: test path
+              steps:
+              - action: utter_greet
+            """
+        )
+        policy = self.create_policy(featurizer=featurizer, priority=priority)
+        import tests.core.test_policies
+
+        training_trackers = await tests.core.test_policies.train_trackers(
+            default_domain, str(stories), augmentation_factor=20
+        )
+        with pytest.raises(RasaException) as e:
+            policy.train(training_trackers, default_domain, RegexInterpreter())
+
+        assert "No user features specified. Cannot train 'TED' model." == str(e.value)
 
     def test_similarity_type(self, trained_policy: TEDPolicy):
         assert trained_policy.config[SIMILARITY_TYPE] == "inner"
@@ -131,17 +159,17 @@ class TestTEDPolicy(PolicyTestCollection):
 
         mock.normalize.assert_called_once()
 
-    async def test_gen_batch(self, trained_policy: TEDPolicy, default_domain: Domain):
+    async def test_gen_batch(
+        self, trained_policy: TEDPolicy, default_domain: Domain, stories_path: Path
+    ):
         training_trackers = await tests.core.test_policies.train_trackers(
-            default_domain, augmentation_factor=0
+            default_domain, stories_path, augmentation_factor=0
         )
         interpreter = RegexInterpreter()
-        training_data, label_ids, entity_tags = trained_policy.featurize_for_training(
+        training_data, label_ids, entity_tags = trained_policy._featurize_for_training(
             training_trackers, default_domain, interpreter
         )
-        label_data, all_labels = trained_policy._create_label_data(
-            default_domain, interpreter
-        )
+        _, all_labels = trained_policy._create_label_data(default_domain, interpreter)
         model_data = trained_policy._create_model_data(
             training_data, label_ids, entity_tags, all_labels
         )
@@ -154,22 +182,22 @@ class TestTEDPolicy(PolicyTestCollection):
         (
             (
                 batch_action_name_mask,
-                batch_action_name_sentence_indices,
-                batch_action_name_sentence_data,
+                _,
+                _,
                 batch_action_name_sentence_shape,
                 batch_dialogue_length,
                 batch_entities_mask,
-                batch_entities_sentence_indices,
-                batch_entities_sentence_data,
+                _,
+                _,
                 batch_entities_sentence_shape,
                 batch_intent_mask,
-                batch_intent_sentence_indices,
-                batch_intent_sentence_data,
+                _,
+                _,
                 batch_intent_sentence_shape,
                 batch_label_ids,
                 batch_slots_mask,
-                batch_slots_sentence_indices,
-                batch_slots_sentence_data,
+                _,
+                _,
                 batch_slots_sentence_shape,
             ),
             _,
@@ -220,22 +248,22 @@ class TestTEDPolicy(PolicyTestCollection):
         (
             (
                 batch_action_name_mask,
-                batch_action_name_sentence_indices,
-                batch_action_name_sentence_data,
+                _,
+                _,
                 batch_action_name_sentence_shape,
                 batch_dialogue_length,
                 batch_entities_mask,
-                batch_entities_sentence_indices,
-                batch_entities_sentence_data,
+                _,
+                _,
                 batch_entities_sentence_shape,
                 batch_intent_mask,
-                batch_intent_sentence_indices,
-                batch_intent_sentence_data,
+                _,
+                _,
                 batch_intent_sentence_shape,
                 batch_label_ids,
                 batch_slots_mask,
-                batch_slots_sentence_indices,
-                batch_slots_sentence_data,
+                _,
+                _,
                 batch_slots_sentence_shape,
             ),
             _,

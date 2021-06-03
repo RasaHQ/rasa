@@ -113,24 +113,26 @@ class RegexEntityExtractor(EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["RegexEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "RegexEntityExtractor":
-
+        """Loads trained component (see parent class for full docstring)."""
         file_name = meta.get("file")
         regex_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(regex_file):
             patterns = rasa.shared.utils.io.read_json_file(regex_file)
-            return RegexEntityExtractor(meta, patterns=patterns)
+            return cls(meta, patterns=patterns)
 
-        return RegexEntityExtractor(meta)
+        return cls(meta)
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
-        Return the metadata necessary to load the model again."""
+
+        Return the metadata necessary to load the model again.
+        """
         file_name = f"{file_name}.json"
         regex_file = os.path.join(model_dir, file_name)
         rasa.shared.utils.io.dump_obj_as_json_to_file(regex_file, self.patterns)

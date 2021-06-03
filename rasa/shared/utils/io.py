@@ -7,12 +7,12 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional, Text, Type, Union, FrozenSet
+from typing import Any, Dict, List, Optional, Text, Type, Union
 import warnings
 
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
-from ruamel.yaml.constructor import DuplicateKeyError
+from ruamel.yaml.constructor import DuplicateKeyError, BaseConstructor, ScalarNode
 
 from rasa.shared.constants import (
     DEFAULT_LOG_LEVEL,
@@ -25,6 +25,7 @@ from rasa.shared.exceptions import (
     FileIOException,
     FileNotFoundException,
     YamlSyntaxException,
+    RasaException,
 )
 import rasa.shared.utils.validation
 
@@ -71,7 +72,7 @@ def raise_warning(
         filename: Text,
         lineno: Optional[int],
         line: Optional[Text] = None,
-    ):
+    ) -> Text:
         """Function to format a warning the standard way."""
 
         if not should_show_source_line():
@@ -290,7 +291,7 @@ def json_to_string(obj: Any, **kwargs: Any) -> Text:
 def fix_yaml_loader() -> None:
     """Ensure that any string read by yaml is represented as unicode."""
 
-    def construct_yaml_str(self, node):
+    def construct_yaml_str(self: BaseConstructor, node: ScalarNode) -> Any:
         # Override the default string handling function
         # to always return unicode objects
         return self.construct_scalar(node)
@@ -306,7 +307,7 @@ def replace_environment_variables() -> None:
     env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
     yaml.Resolver.add_implicit_resolver("!env_var", env_var_pattern, None)
 
-    def env_var_constructor(loader, node):
+    def env_var_constructor(loader: BaseConstructor, node: ScalarNode) -> Text:
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
         expanded_vars = os.path.expandvars(value)
@@ -314,10 +315,11 @@ def replace_environment_variables() -> None:
             w for w in expanded_vars.split() if w.startswith("$") and w in value
         ]
         if not_expanded:
-            raise ValueError(
-                "Error when trying to expand the environment variables"
-                " in '{}'. Please make sure to also set these environment"
-                " variables: '{}'.".format(value, not_expanded)
+            raise RasaException(
+                f"Error when trying to expand the "
+                f"environment variables in '{value}'. "
+                f"Please make sure to also set these "
+                f"environment variables: '{not_expanded}'."
             )
         return expanded_vars
 
@@ -333,8 +335,7 @@ def read_yaml(content: Text, reader_type: Union[Text, List[Text]] = "safe") -> A
 
     Args:
         content: A text containing yaml content.
-        reader_type: Reader type to use. By default "safe" will be used
-        replace_env_vars: Specifies if environment variables need to be replaced
+        reader_type: Reader type to use. By default "safe" will be used.
 
     Raises:
         ruamel.yaml.parser.ParserError: If there was an error when parsing the YAML.
@@ -414,6 +415,31 @@ def write_yaml(
 YAML_LINE_MAX_WIDTH = 4096
 
 
+def is_key_in_yaml(file_path: Union[Text, Path], *keys: Text) -> bool:
+    """Checks if any of the keys is contained in the root object of the yaml file.
+
+    Arguments:
+        file_path: path to the yaml file
+        keys: keys to look for
+
+    Returns:
+          `True` if at least one of the keys is found, `False` otherwise.
+
+    Raises:
+        FileNotFoundException: if the file cannot be found.
+    """
+    try:
+        with open(file_path, encoding=DEFAULT_ENCODING) as file:
+            return any(
+                any(line.lstrip().startswith(f"{key}:") for key in keys)
+                for line in file
+            )
+    except FileNotFoundError:
+        raise FileNotFoundException(
+            f"Failed to read file, " f"'{os.path.abspath(file_path)}' does not exist."
+        )
+
+
 def convert_to_ordered_dict(obj: Any) -> Any:
     """Convert object to an `OrderedDict`.
 
@@ -466,8 +492,7 @@ def create_directory_for_file(file_path: Union[Text, Path]) -> None:
 
 def dump_obj_as_json_to_file(filename: Union[Text, Path], obj: Any) -> None:
     """Dump an object as a json string to a file."""
-
-    write_text_file(json.dumps(obj, indent=2), filename)
+    write_text_file(json.dumps(obj, ensure_ascii=False, indent=2), filename)
 
 
 def dump_obj_as_yaml_to_string(

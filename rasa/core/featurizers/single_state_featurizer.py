@@ -129,12 +129,15 @@ class SingleStateFeaturizer:
     def _state_features_for_attribute(
         self, sub_state: SubState, attribute: Text
     ) -> Dict[Text, int]:
+        # FIXME: the code below is not type-safe, but fixing it
+        #        would require more refactoring, for instance using
+        #        data classes in our states
         if attribute in {INTENT, ACTION_NAME}:
-            return {sub_state[attribute]: 1}
+            return {sub_state[attribute]: 1}  # type: ignore[dict-item]
         elif attribute == ENTITIES:
             return {entity: 1 for entity in sub_state.get(ENTITIES, [])}
         elif attribute == ACTIVE_LOOP:
-            return {sub_state["name"]: 1}
+            return {sub_state["name"]: 1}  # type: ignore[dict-item]
         elif attribute == SLOTS:
             return {
                 f"{slot_name}_{i}": value
@@ -371,13 +374,15 @@ class SingleStateFeaturizer:
 
 
 class BinarySingleStateFeaturizer(SingleStateFeaturizer):
+    """Dialogue State featurizer which features the state as binaries."""
+
     def __init__(self) -> None:
+        """Creates featurizer."""
         super().__init__()
-        rasa.shared.utils.io.raise_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"'{self.__class__.__name__}' is deprecated and "
-            f"will be removed in the future. "
+            f"will be removed in Rasa Open Source 3.0.0. "
             f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
-            category=DeprecationWarning,
             docs=DOCS_URL_MIGRATION_GUIDE,
         )
 
@@ -398,14 +403,13 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
 
 
 class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__()
         # it is hard to fully mimic old behavior, but SingleStateFeaturizer
         # does the same thing if nlu pipeline is configured correctly
-        rasa.shared.utils.io.raise_warning(
+        rasa.shared.utils.io.raise_deprecation_warning(
             f"'{self.__class__.__name__}' is deprecated and "
-            f"will be removed in the future. "
+            f"will be removed in Rasa Open Source 3.0.0. "
             f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
-            category=DeprecationWarning,
             docs=DOCS_URL_MIGRATION_GUIDE,
         )

@@ -5,12 +5,15 @@ from typing import (
     Union,
     Optional,
     Any,
+    Generator,
+    Tuple,
+    Iterator,
 )
 
 import numpy as np
 import tensorflow as tf
 
-from tensorflow.python.keras.callbacks import Callback
+from tensorflow.python.keras.callbacks import Callback, History
 from tensorflow.python.keras.engine import training
 from tensorflow.python.keras.engine import training_utils
 from tensorflow.python.keras.engine import data_adapter
@@ -57,7 +60,7 @@ class TmpKerasModel(tf.keras.models.Model):
         max_queue_size: int = 10,
         workers: int = 1,
         use_multiprocessing: bool = False,
-    ):
+    ) -> History:
         """Trains the model for a fixed number of epochs (iterations on a dataset).
 
         Args:
@@ -129,8 +132,8 @@ class TmpKerasModel(tf.keras.models.Model):
                 validation_data
             )
 
-        with self.distribute_strategy.scope(), training_utils.RespectCompiledTrainableState(
-            self
+        with self.distribute_strategy.scope(), (
+            training_utils.RespectCompiledTrainableState(self)
         ):
             # Creates a `tf.data.Dataset` and handles batch and epoch iteration.
             # Use our own custom data handler to handle increasing batch size
@@ -169,7 +172,7 @@ class TmpKerasModel(tf.keras.models.Model):
             callbacks.on_train_begin()
             training_logs = None
             # Handle fault-tolerance for multi-worker.
-            data_handler._initial_epoch = self._maybe_load_initial_epoch_from_ckpt(  # pylint: disable=protected-access
+            data_handler._initial_epoch = self._maybe_load_initial_epoch_from_ckpt(  # pylint: disable=protected-access # noqa: E501
                 initial_epoch
             )
             for epoch, iterator in data_handler.enumerate_epochs():
@@ -231,7 +234,7 @@ class TmpKerasModel(tf.keras.models.Model):
                 if self.stop_training:
                     break
 
-            # If eval data_hanlder exists, delete it after all epochs are done.
+            # If _eval_data_handler exists, delete it after all epochs are done.
             if getattr(self, "_eval_data_handler", None) is not None:
                 del self._eval_data_handler
             callbacks.on_train_end(logs=training_logs)
@@ -241,7 +244,7 @@ class TmpKerasModel(tf.keras.models.Model):
 class CustomDataHandler(DataHandler):
     """Handles iterating over epoch-level `tf.data.Iterator` objects."""
 
-    def enumerate_epochs(self):
+    def enumerate_epochs(self) -> Generator[Tuple[int, Iterator], None, None]:
         """Yields `(epoch, tf.data.Iterator)`."""
         # TODO
         #  we don't need this anymore once
