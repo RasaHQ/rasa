@@ -14,6 +14,14 @@ Intent classifier using simple keyword matching.
 The classifier takes a list of keywords and associated intents as an input.
 An input sentence is checked for the keywords and the intent is returned.
 
+#### process
+
+```python
+ | process(message: Message, **kwargs: Any) -> None
+```
+
+Set the message intent and add it to the output is it exists.
+
 #### persist
 
 ```python

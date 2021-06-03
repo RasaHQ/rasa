@@ -8,6 +8,25 @@ title: rasa.core.channels.hangouts
 class HangoutsOutput(OutputChannel)
 ```
 
+A Hangouts communication channel.
+
+#### name
+
+```python
+ | @classmethod
+ | name(cls) -> Text
+```
+
+Return channel name.
+
+#### \_\_init\_\_
+
+```python
+ | __init__() -> None
+```
+
+Starts messages as empty dictionary.
+
 #### send\_custom\_json
 
 ```python

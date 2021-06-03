@@ -249,7 +249,8 @@ class RedisLockStore(LockStore):
             self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
         else:
             logger.warning(
-                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
+                f"Using default '{self.key_prefix}' instead."
             )
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
