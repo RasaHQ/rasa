@@ -343,19 +343,14 @@ Releasing a new version is quite simple, as the packages are build and distribut
 3. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for minors and micros)
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
-3. Run `make release`
-4. Create a PR against `main` or the release branch (e.g. `1.2.x`)
-5. Once your PR is merged, tag a new release (this SHOULD always happen on `main` or release branches), e.g. using
+4. Run `make release`
+5. Create a PR against `main` or the release branch (e.g. `1.2.x`)
+6. Once your PR is merged, tag a new release (this SHOULD always happen on `main` or release branches), e.g. using
     ```bash
     git tag 1.2.0 -m "next release"
     git push origin 1.2.0
     ```
     GitHub will build this tag and publish the build artifacts.
-6. **If this is a minor release**, a new release branch should be created pointing to the same commit as the tag to allow for future patch releases, e.g.
-    ```bash
-    git checkout -b 1.2.x
-    git push origin 1.2.x
-    ```
 7. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
 8. If no message appears in the channel then you can do the following checks:
     - Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa/actions) and make sure that the merged PR of the current release is completed successfully. To easily find your PR you can use the filters `event: push` and `branch: <version number>` (example on release 2.4 you can see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876))
