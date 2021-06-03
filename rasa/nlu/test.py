@@ -338,7 +338,7 @@ def plot_attribute_confidences(
         if getattr(r, target_key) != getattr(r, prediction_key)
     ]
 
-    plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
+    plot_utils.plot_paired_histogram([pos_hist, neg_hist], title, hist_filename)
 
 
 def plot_entity_confidences(
@@ -373,7 +373,7 @@ def plot_entity_confidences(
         if prediction not in (NO_ENTITY, target)
     ]
 
-    plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
+    plot_utils.plot_paired_histogram([pos_hist, neg_hist], title, hist_filename)
 
 
 def evaluate_response_selections(
@@ -1439,13 +1439,14 @@ async def run_evaluation(
     Returns: dictionary containing evaluation results
     """
     import rasa.shared.nlu.training_data.loading
+    from rasa.shared.constants import DEFAULT_DOMAIN_PATH
 
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path]
+        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
     )
     test_data = await test_data_importer.get_nlu_data()
 

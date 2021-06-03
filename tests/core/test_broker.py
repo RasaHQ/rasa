@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Union, Text, List, Optional, Type, Dict, Any
 
 import aio_pika.exceptions
+import aiormq.exceptions
+import pamqp.exceptions
 import kafka
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -23,7 +25,7 @@ from rasa.core.brokers.kafka import KafkaEventBroker
 from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
-from rasa.shared.exceptions import ConnectionException
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 TEST_EVENTS = [
@@ -102,6 +104,30 @@ async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(
         PikaEventBroker, "connect", AsyncMock(side_effect=ChannelNotFoundEntity())
     )
+
+    with pytest.raises(ConnectionException):
+        await EventBroker.create(
+            EndpointConfig(username="username", password="password", type="pika")
+        )
+
+
+@pytest.mark.parametrize(
+    "exception",
+    (
+        RuntimeError,
+        ConnectionError,
+        OSError,
+        aiormq.exceptions.AMQPError,
+        pamqp.exceptions.PAMQPException,
+        pamqp.specification.AMQPConnectionForced,
+        pamqp.specification.AMQPNotFound,
+        pamqp.specification.AMQPInternalError,
+    ),
+)
+async def test_aio_pika_exceptions_caught(
+    exception: Exception, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setattr(PikaEventBroker, "connect", AsyncMock(side_effect=exception))
 
     with pytest.raises(ConnectionException):
         await EventBroker.create(
@@ -309,6 +335,16 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         record.name in ["rasa.core.brokers.pika", "asyncio"]
         for record in caplog.records
     )
+
+
+async def test_create_pika_invalid_port():
+
+    cfg = EndpointConfig(
+        username="username", password="password", type="pika", port="PORT"
+    )
+    with pytest.raises(RasaException) as e:
+        await EventBroker.create(cfg)
+        assert "Port could not be converted to integer." in str(e.value)
 
 
 def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):

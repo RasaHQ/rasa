@@ -21,6 +21,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
@@ -1134,7 +1135,7 @@ class TED(TransformerRasaModel):
 
     def _check_data(self) -> None:
         if not any(key in [INTENT, TEXT] for key in self.data_signature.keys()):
-            raise ValueError(
+            raise RasaException(
                 f"No user features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )
