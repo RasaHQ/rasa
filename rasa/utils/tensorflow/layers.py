@@ -640,7 +640,7 @@ class DotProductLoss(tf.keras.layers.Layer):
         model_confidence: Text = SOFTMAX,
         similarity_type: Text = INNER,
         name: Optional[Text] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """Declares instance variables with default values.
 
@@ -793,7 +793,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
         use_max_sim_neg: bool = True,
         neg_lambda: float = 0.5,
         same_sampling: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Declares instance variables with default values.
 
@@ -1172,7 +1172,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         model_confidence: Text = SOFTMAX,
         similarity_type: Text = INNER,
         name: Optional[Text] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Declares instance variables with default values.
 
