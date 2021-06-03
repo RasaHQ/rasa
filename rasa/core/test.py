@@ -343,14 +343,28 @@ class WronglyClassifiedUserUtterance(UserUttered):
             event.input_channel,
         )
 
-    def inline_comment(self) -> Text:
+    def inline_comment(self) -> Optional[Text]:
         """A comment attached to this event. Used during dumping."""
         from rasa.shared.core.events import format_message
 
-        predicted_message = format_message(
-            self.text, self.predicted_intent, self.predicted_entities
-        )
-        return f"predicted: {self.predicted_intent}: {predicted_message}"
+        if self.predicted_intent != self.intent["name"]:
+            predicted_message = format_message(
+                self.text, self.predicted_intent, self.predicted_entities
+            )
+
+            return f"predicted: {self.predicted_intent}: {predicted_message}"
+        else:
+            return None
+
+    @staticmethod
+    def inline_comment_for_entity(
+        predicted: Dict[Text, Any], entity: Dict[Text, Any]
+    ) -> Optional[Text]:
+        """Returns the predicted entity which is then printed as a comment."""
+        if predicted["entity"] != entity["entity"]:
+            return "predicted: " + predicted["entity"] + ": " + predicted["value"]
+        else:
+            return None
 
     def as_story_string(self, e2e: bool = True) -> Text:
         """Returns text representation of event."""
@@ -552,10 +566,11 @@ def _get_e2e_entity_evaluation_result(
             parsed_message = processor.interpreter.featurize_message(
                 Message(data={TEXT: text})
             )
-            tokens = parsed_message.get(TOKENS_NAMES[TEXT])
-            return EntityEvaluationResult(
-                entity_targets, entities_predicted_by_policies, tokens, text
-            )
+            if parsed_message:
+                tokens = parsed_message.get(TOKENS_NAMES[TEXT])
+                return EntityEvaluationResult(
+                    entity_targets, entities_predicted_by_policies, tokens, text
+                )
 
 
 def _collect_action_executed_predictions(
