@@ -461,10 +461,15 @@ class IntentTEDPolicy(TEDPolicy):
             # This means the intent was never present in a story
             logger.debug(
                 f"Query intent index {domain.intents.index(intent)} not "
-                f"found in label thresholds - {self.label_thresholds}"
+                f"found in label thresholds - {self.label_thresholds}."
+                f"Check for `action_unlikely_intent` prediction will be skipped."
             )
             return False
         if intent in self.config[IGNORE_INTENTS_LIST]:
+            logger.debug(
+                f"Query intent {intent} found in {IGNORE_INTENTS_LIST}. "
+                f"Check for `action_unlikely_intent` prediction will be skipped."
+            )
             return False
 
         return True
@@ -487,6 +492,11 @@ class IntentTEDPolicy(TEDPolicy):
         Returns:
             Whether query intent is likely or not.
         """
+        logger.debug(f"Querying for intent {query_intent}")
+
+        if not self._should_check_for_intent(query_intent, domain):
+            return False
+
         predicted_intent_scores = {
             index: similarities[0][index] for index, intent in enumerate(domain.intents)
         }
@@ -500,30 +510,26 @@ class IntentTEDPolicy(TEDPolicy):
         query_intent_id = domain.intents.index(query_intent)
         query_intent_similarity = similarities[0][query_intent_id]
 
-        logger.debug(f"Querying for intent {query_intent}")
+        logger.debug(
+            f"Score for user intent {query_intent} likely to occur here is "
+            f"{query_intent_similarity}, while "
+            f"threshold is {self.label_thresholds[query_intent_id]}"
+        )
+        logger.debug(
+            f"Top 5 intents(in ascending order) that "
+            f"are likely here are: {sorted_intent_scores[-5:]}"
+        )
 
-        if self._should_check_for_intent(query_intent, domain):
-
+        # If score for query intent is below threshold and
+        # the query intent is not the top likely intent
+        if (
+            query_intent_similarity < self.label_thresholds[query_intent_id]
+            and query_intent_id != sorted_intent_scores[-1][0]
+        ):
             logger.debug(
-                f"Score for user intent {query_intent} likely to occur here is "
-                f"{query_intent_similarity}, while "
-                f"threshold is {self.label_thresholds[query_intent_id]}"
+                f"Intent {query_intent}-{query_intent_id} unlikely to occur here."
             )
-            logger.debug(
-                f"Top 5 intents(in ascending order) that "
-                f"are likely here are: {sorted_intent_scores[-5:]}"
-            )
-
-            # If score for query intent is below threshold and
-            # the query intent is not the top likely intent
-            if (
-                query_intent_similarity < self.label_thresholds[query_intent_id]
-                and query_intent_id != sorted_intent_scores[-1][0]
-            ):
-                logger.debug(
-                    f"Intent {query_intent}-{query_intent_id} unlikely to occur here."
-                )
-                return True
+            return True
 
         return False
 
