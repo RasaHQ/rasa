@@ -826,7 +826,7 @@ class SingleLabelDotProductLoss(DotProductLoss):
                 Possible values are `SOFTMAX` and `LINEAR_NORM`.
         """
         super().__init__(
-            num_neg,
+            num_candidates,
             scale_loss=scale_loss,
             constrain_similarities=constrain_similarities,
             model_confidence=model_confidence,
