@@ -345,7 +345,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
 4. Run `make release`
 5. Create a PR against the release branch (e.g. `1.2.x`)
-6. Once your PR is merged, tag a new release (this SHOULD always happen the release branche), e.g. using
+6. Once your PR is merged, tag a new release (this SHOULD always happen on the release branch), e.g. using
     ```bash
     git checkout 1.2.x
     git pull origin 1.2.x
