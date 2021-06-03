@@ -19,3 +19,5 @@ from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy  # noqa
 from rasa.core.policies.mapping_policy import MappingPolicy  # noqa: F401
 
 from rasa.core.policies.rule_policy import RulePolicy  # noqa: F401
+
+from rasa.core.policies.intent_ted_policy import IntentTEDPolicy  # noqa: F401

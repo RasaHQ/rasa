@@ -38,7 +38,13 @@ from rasa.utils.tensorflow.constants import (
     COSINE,
     AUTO,
     LINEAR_NORM,
+    LABEL,
+    MASK,
+    SENTENCE,
+    IDS,
 )
+from rasa.shared.nlu.constants import ACTION_NAME
+from rasa.utils.tensorflow import model_data_utils
 from tests.core.test_policies import PolicyTestCollection
 from rasa.shared.constants import DEFAULT_SENDER_ID
 
@@ -158,6 +164,34 @@ class TestTEDPolicy(PolicyTestCollection):
         )
 
         mock.normalize.assert_called_once()
+
+    def test_label_data_assembly(
+        self, trained_policy: TEDPolicy, default_domain: Domain
+    ):
+        interpreter = RegexInterpreter()
+        encoded_all_labels = trained_policy.featurizer.state_featurizer.encode_all_labels(
+            default_domain, interpreter
+        )
+
+        attribute_data, _ = model_data_utils.convert_to_data_format(encoded_all_labels)
+        assembled_label_data = trained_policy._assemble_label_data(
+            attribute_data, default_domain
+        )
+        assembled_label_data_signature = assembled_label_data.get_signature()
+
+        assert list(assembled_label_data_signature.keys()) == [
+            f"{LABEL}_{ACTION_NAME}",
+            f"{LABEL}",
+        ]
+        assert assembled_label_data.num_examples == default_domain.num_actions
+        assert list(
+            assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"].keys()
+        ) == [MASK, SENTENCE,]
+        assert list(assembled_label_data_signature[LABEL].keys()) == [IDS]
+        assert (
+            assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"][SENTENCE][0].units
+            == default_domain.num_actions
+        )
 
     async def test_gen_batch(
         self, trained_policy: TEDPolicy, default_domain: Domain, stories_path: Path
