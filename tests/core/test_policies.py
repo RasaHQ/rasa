@@ -402,7 +402,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         (
             all_states,
             all_actions,
-        ) = trained_policy.featurizer.training_states_and_actions(
+        ) = trained_policy.featurizer.training_states_and_labels(
             trackers, default_domain
         )
 
@@ -471,7 +471,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         )
 
         # Get the hash of the tracker state of new story
-        new_story_states, _ = loaded_policy.featurizer.training_states_and_actions(
+        new_story_states, _ = loaded_policy.featurizer.training_states_and_labels(
             [new_story], default_domain
         )
 
@@ -520,7 +520,7 @@ class TestFormPolicy(TestMemoizationPolicy):
         (
             all_states,
             all_actions,
-        ) = trained_policy.featurizer.training_states_and_actions(trackers, domain)
+        ) = trained_policy.featurizer.training_states_and_labels(trackers, domain)
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             for state in states:
