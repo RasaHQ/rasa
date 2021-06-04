@@ -100,7 +100,7 @@ class WatsonReader(JsonTrainingDataReader):
     def _list_all_entities(js: Dict[Text, Any]) -> List:
         all_entities = []
         entities = js.get("entities")
-        if not entities:
+        if entities:
             for entity in entities:
                 all_entities.append({entity.get("entity"): entity.get("values")})
         return all_entities
@@ -108,7 +108,7 @@ class WatsonReader(JsonTrainingDataReader):
     def _entity_synonyms(self, js: Dict[Text, Any]) -> List:
         entity_synonyms = []
         entities = js.get("entities")
-        if not entities:
+        if entities:
             for entity in entities:
                 for val in entity.get("values"):
                     entity_synonyms.append(
