@@ -154,7 +154,7 @@ def test_wit_data():
 
 
 def test_watson_data():
-    td = load_data("data/examples/watson/demo_watson.json")
+    td = load_data("data/examples/watson/demo_watson_v2.json")
     assert not td.is_empty()
     assert len(td.entity_examples) == 2
     assert len(td.intent_examples) == 15
