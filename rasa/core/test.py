@@ -494,6 +494,8 @@ def _collect_user_uttered_predictions(
     # predicted intent: note that this is only the base intent at this point
     predicted_base_intent = predicted.get(INTENT, {}).get(INTENT_NAME_KEY)
 
+    print("ALWX PREDICTED", predicted)
+
     # if the test story only provides the base intent AND the prediction was correct,
     # we are not interested in full retrieval intents and skip this section.
     # In any other case we are interested in the full retrieval intent (e.g. for report)
@@ -739,11 +741,13 @@ async def _predict_tracker_actions(
             # Indirectly that means that the test story was in YAML format.
             if not event.text:
                 predicted = event.parse_data
+                print("ALWX P1", predicted)
             # Indirectly that means that the test story was either:
             # in YAML format containing a user message, or in Markdown format.
             # Leaving that as it is because Markdown is in legacy mode.
             else:
                 predicted = await processor.parse_message(UserMessage(event.text))
+                print("ALWX P1", predicted)
             user_uttered_result = _collect_user_uttered_predictions(
                 event, predicted, partial_tracker, fail_on_prediction_errors
             )
