@@ -635,6 +635,6 @@ def test_vocabulary_overflow_log():
     with pytest.warns(UserWarning) as warning:
         featurizer.train(TrainingData([], regex_features=additional_patterns))
     assert (
-        "The originally trained model was configured to handle a maximum number of 4 patterns"
-        in warning[0].message.args[0]
+        "The originally trained model was configured to handle "
+        "a maximum number of 4 patterns" in warning[0].message.args[0]
     )

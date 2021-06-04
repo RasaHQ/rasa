@@ -232,7 +232,7 @@ class YAMLStoryWriter(StoryWriter):
                     if hasattr(user_utterance, "inline_comment_for_entity"):
                         for predicted in user_utterance.predicted_entities:
                             if predicted["start"] == entity["start"]:
-                                commented_entity = user_utterance.inline_comment_for_entity(
+                                commented_entity = user_utterance.inline_comment_for_entity(  # noqa: E501
                                     predicted, entity
                                 )
                                 if commented_entity:

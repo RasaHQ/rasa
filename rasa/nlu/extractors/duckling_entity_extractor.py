@@ -140,7 +140,9 @@ class DucklingEntityExtractor(EntityExtractor):
             else:
                 logger.error(
                     f"Failed to get a proper response from remote "
-                    f"duckling at '{parse_url}. Status Code: {response.status_code}. Response: {response.text}"
+                    f"duckling at '{parse_url}. "
+                    f"Status Code: {response.status_code}. "
+                    f"Response: {response.text}"
                 )
                 return []
         except (
