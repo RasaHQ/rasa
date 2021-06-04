@@ -7,9 +7,13 @@ import time
 from rasa.core.brokers.broker import EventBroker
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.endpoints import EndpointConfig
-from rasa.shared.exceptions import KafkaProducerInitializationError
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
+
+
+class KafkaProducerInitializationError(RasaException):
+    """Raised if the Kafka Producer cannot be properly initialized."""
 
 
 class KafkaEventBroker(EventBroker):
@@ -136,34 +140,18 @@ class KafkaEventBroker(EventBroker):
         import kafka
 
         if self.security_protocol == "PLAINTEXT":
-            self.producer = kafka.KafkaProducer(
-                client_id=self.client_id,
-                bootstrap_servers=self.url,
-                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
-                security_protocol=self.security_protocol,
-                ssl_check_hostname=False,
+            authentication_params = dict(
+                security_protocol=self.security_protocol, ssl_check_hostname=False,
             )
         elif self.security_protocol == "SASL_PLAINTEXT":
-            try:
-                self.producer = kafka.KafkaProducer(
-                    client_id=self.client_id,
-                    bootstrap_servers=self.url,
-                    value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
-                    sasl_plain_username=self.sasl_username,
-                    sasl_plain_password=self.sasl_password,
-                    sasl_mechanism=self.sasl_mechanism,
-                    security_protocol=self.security_protocol,
-                )
-            except AssertionError as e:
-                raise KafkaProducerInitializationError(
-                    f"Cannot initialise `KafkaEventBroker`: {e}"
-                )
-
+            authentication_params = dict(
+                sasl_plain_username=self.sasl_username,
+                sasl_plain_password=self.sasl_password,
+                sasl_mechanism=self.sasl_mechanism,
+                security_protocol=self.security_protocol,
+            )
         elif self.security_protocol == "SSL":
-            self.producer = kafka.KafkaProducer(
-                client_id=self.client_id,
-                bootstrap_servers=self.url,
-                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
+            authentication_params = dict(
                 ssl_cafile=self.ssl_cafile,
                 ssl_certfile=self.ssl_certfile,
                 ssl_keyfile=self.ssl_keyfile,
@@ -171,28 +159,32 @@ class KafkaEventBroker(EventBroker):
                 security_protocol=self.security_protocol,
             )
         elif self.security_protocol == "SASL_SSL":
-            try:
-                self.producer = kafka.KafkaProducer(
-                    client_id=self.client_id,
-                    bootstrap_servers=self.url,
-                    value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
-                    sasl_plain_username=self.sasl_username,
-                    sasl_plain_password=self.sasl_password,
-                    ssl_cafile=self.ssl_cafile,
-                    ssl_certfile=self.ssl_certfile,
-                    ssl_keyfile=self.ssl_keyfile,
-                    ssl_check_hostname=self.ssl_check_hostname,
-                    security_protocol=self.security_protocol,
-                    sasl_mechanism=self.sasl_mechanism,
-                )
-            except AssertionError as e:
-                raise KafkaProducerInitializationError(
-                    f"Cannot initialise `KafkaEventBroker`: {e}"
-                )
+            authentication_params = dict(
+                sasl_plain_username=self.sasl_username,
+                sasl_plain_password=self.sasl_password,
+                ssl_cafile=self.ssl_cafile,
+                ssl_certfile=self.ssl_certfile,
+                ssl_keyfile=self.ssl_keyfile,
+                ssl_check_hostname=self.ssl_check_hostname,
+                security_protocol=self.security_protocol,
+                sasl_mechanism=self.sasl_mechanism,
+            )
         else:
             raise ValueError(
                 f"Cannot initialise `KafkaEventBroker`: "
                 f"Invalid `security_protocol` ('{self.security_protocol}')."
+            )
+
+        try:
+            self.producer = kafka.KafkaProducer(
+                client_id=self.client_id,
+                bootstrap_servers=self.url,
+                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
+                **authentication_params,
+            )
+        except AssertionError as e:
+            raise KafkaProducerInitializationError(
+                f"Cannot initialise `KafkaEventBroker`: {e}"
             )
 
     def _publish(self, event: Dict[Text, Any]) -> None:
