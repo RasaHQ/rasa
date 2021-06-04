@@ -45,7 +45,7 @@ There's a lot more background information in this
 [blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a).
 
 ---
-- **What does Rasa do? 🤔**
+- **What does Rasa do? 🤔🤔**
   [Check out our Website](https://rasa.com/)
 
 - **I'm new to Rasa 😄**
