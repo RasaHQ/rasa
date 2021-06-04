@@ -282,7 +282,7 @@ class RasaYAMLReader(TrainingDataReader):
             self.regex_features.append({"name": regex_name, "pattern": example})
 
     def _parse_lookup(self, nlu_item: Dict[Text, Any]) -> None:
-        import rasa.shared.nlu.training_data.lookup_tables_parser as lookup_tables_parser
+        import rasa.shared.nlu.training_data.lookup_tables_parser as lookup_tables_parser  # noqa: E501
 
         lookup_item_name = nlu_item[KEY_LOOKUP]
         if not lookup_item_name:

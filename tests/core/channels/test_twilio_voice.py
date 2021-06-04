@@ -35,8 +35,11 @@ async def test_twilio_voice_twiml_response_text():
 
     twiml = tv._build_twilio_voice_response(output_channel.messages)
     assert (
-        str(twiml)
-        == '<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">Test:</Say></Gather></Response>'
+        str(twiml) == '<?xml version="1.0" encoding="UTF-8"?><Response>'
+        '<Gather action="/webhooks/twilio_voice/webhook" '
+        'actionOnEmptyResult="true" enhanced="false" input="speech" '
+        'speechModel="default" speechTimeout="5"><Say voice="woman">'
+        "Test:</Say></Gather></Response>"
     )
 
 
@@ -68,8 +71,13 @@ async def test_twilio_voice_twiml_response_buttons():
 
     twiml = tv._build_twilio_voice_response(output_channel.messages)
     assert (
-        str(twiml)
-        == '<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="woman">Buttons:</Say><Pause length="1" /><Say voice="woman">Yes</Say><Pause length="1" /><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">No</Say></Gather></Response>'
+        str(twiml) == '<?xml version="1.0" encoding="UTF-8"?><Response>'
+        '<Say voice="woman">Buttons:</Say><Pause length="1" />'
+        '<Say voice="woman">Yes</Say><Pause length="1" />'
+        '<Gather action="/webhooks/twilio_voice/webhook" '
+        'actionOnEmptyResult="true" enhanced="false" input="speech" '
+        'speechModel="default" speechTimeout="5">'
+        '<Say voice="woman">No</Say></Gather></Response>'
     )
 
 
@@ -207,8 +215,11 @@ async def test_twilio_voice_multiple_responses():
     twiml = tv._build_twilio_voice_response(output_channel.messages)
 
     assert (
-        str(twiml)
-        == '<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="woman">message 1</Say><Pause length="1" /><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">message 2</Say></Gather></Response>'
+        str(twiml) == '<?xml version="1.0" encoding="UTF-8"?><Response>'
+        '<Say voice="woman">message 1</Say><Pause length="1" />'
+        '<Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" '
+        'enhanced="false" input="speech" speechModel="default" speechTimeout="5">'
+        '<Say voice="woman">message 2</Say></Gather></Response>'
     )
 
 
@@ -238,8 +249,10 @@ async def test_twilio_receive_answer(stack_agent: Agent):
     assert response.status == HTTPStatus.OK
     # Actual test xml content
     assert (
-        response.body
-        == b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">hey there None!</Say></Gather></Response>'
+        response.body == b'<?xml version="1.0" encoding="UTF-8"?><Response>'
+        b'<Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" '
+        b'enhanced="false" input="speech" speechModel="default" speechTimeout="5">'
+        b'<Say voice="woman">hey there None!</Say></Gather></Response>'
     )
 
 
@@ -278,8 +291,10 @@ async def test_twilio_receive_no_response(stack_agent: Agent):
 
     assert response.status == HTTPStatus.OK
     assert (
-        response.body
-        == b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">hey there None!</Say></Gather></Response>'
+        response.body == b'<?xml version="1.0" encoding="UTF-8"?><Response>'
+        b'<Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" '
+        b'enhanced="false" input="speech" speechModel="default" speechTimeout="5">'
+        b'<Say voice="woman">hey there None!</Say></Gather></Response>'
     )
 
 
@@ -309,6 +324,8 @@ async def test_twilio_receive_no_previous_response(stack_agent: Agent):
 
     assert response.status == HTTPStatus.OK
     assert (
-        response.body
-        == b'<?xml version="1.0" encoding="UTF-8"?><Response><Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" enhanced="false" input="speech" speechModel="default" speechTimeout="5"><Say voice="woman">i didn\'t get that</Say></Gather></Response>'
+        response.body == b'<?xml version="1.0" encoding="UTF-8"?><Response>'
+        b'<Gather action="/webhooks/twilio_voice/webhook" actionOnEmptyResult="true" '
+        b'enhanced="false" input="speech" speechModel="default" speechTimeout="5">'
+        b'<Say voice="woman">i didn\'t get that</Say></Gather></Response>'
     )
