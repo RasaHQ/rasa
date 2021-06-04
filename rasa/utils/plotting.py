@@ -167,7 +167,7 @@ def _extract_paired_histogram_specification(
     Raises:
         ValueError: If histogram_data does not contain values.
     """
-    if not histogram_data or not np.concatenate(histogram_data):
+    if not histogram_data or not np.concatenate(histogram_data).size:
         rasa.shared.utils.io.raise_warning("No data to plot paired histogram.")
         raise ValueError("No data to plot paired histogram.")
     min_data_value = np.min(np.concatenate(histogram_data))
@@ -258,8 +258,8 @@ def plot_paired_histogram(
             x_pad_fraction=x_pad_fraction,
             y_pad_fraction=y_pad_fraction,
         )
-    except ValueError:
-        rasa.shared.utils.io.raise_warning("Unable to plot paried histogram.")
+    except ValueError as e:
+        rasa.shared.utils.io.raise_warning(f"Unable to plot paried histogram: {e}")
         return
     yticks = [float(f"{x:.2f}") for x in bins]
 
