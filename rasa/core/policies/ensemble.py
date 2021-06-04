@@ -697,6 +697,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             for i, p in enumerate(self.policies)
         }
 
+        print("ALWX predictions", predictions)
+
         if rejected_action_name:
             logger.debug(
                 f"Execution of '{rejected_action_name}' was rejected. "

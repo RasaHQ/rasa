@@ -561,6 +561,9 @@ class PolicyPrediction:
             # action prediction.
         )
 
+    def __str__(self) -> Text:
+        return "PolicyPrediction('{}', {})".format(self.policy_name, self.events)
+
     @property
     def max_confidence_index(self) -> int:
         """Gets the index of the action prediction with the highest confidence.

@@ -376,11 +376,22 @@ class MessageProcessor:
         This should be overwritten by more advanced policies to use
         ML to predict the action. Returns the index of the next action.
         """
+
+        from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
+            YAMLStoryWriter,
+        )
+
+        stories = [tracker.as_story(include_source=True)]
+        steps = [step for story in stories for step in story.story_steps]
+        print("ALWX before prediction", YAMLStoryWriter().dumps(steps))
+
         prediction = self._get_next_action_probabilities(tracker)
 
         action = rasa.core.actions.action.action_for_index(
             prediction.max_confidence_index, self.domain, self.action_endpoint
         )
+
+        print("ALWX after prediction", action.name())
 
         logger.debug(
             f"Predicted next action '{action.name()}' with confidence "

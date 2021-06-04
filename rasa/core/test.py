@@ -311,6 +311,12 @@ class EndToEndUserUtterance(UserUttered):
     Mostly used to print the full end-to-end user message in the
     `failed_test_stories.yml` output file."""
 
+    @property
+    def intent_name(self) -> Optional[Text]:
+        """Returns intent name or `None` if no intent."""
+        # TODO(alwx): might be that it's better to just modify the source (in events.py)
+        return self.intent.get(FULL_RETRIEVAL_INTENT_NAME_KEY) or self.intent.get(INTENT_NAME_KEY)
+
     def as_story_string(self, e2e: bool = True) -> Text:
         return super().as_story_string(e2e=True)
 
@@ -594,6 +600,7 @@ def _collect_action_executed_predictions(
         prediction = PolicyPrediction([], policy_name=None)
         predicted = "circuit breaker tripped"
     else:
+        # TODO(ALWX):
         action, prediction = processor.predict_next_action(partial_tracker)
         predicted = action.name()
 
@@ -728,6 +735,7 @@ async def _predict_tracker_actions(
                     "confidence": prediction.max_confidence,
                 }
             )
+            print("ALWX action_predictions", action_executed_result.action_predictions[0])
             should_predict_another_action = processor.should_predict_another_action(
                 action_executed_result.action_predictions[0]
             )
@@ -747,6 +755,12 @@ async def _predict_tracker_actions(
             user_uttered_result = _collect_user_uttered_predictions(
                 event, predicted, partial_tracker, fail_on_prediction_errors
             )
+
+            print("ALWX partial tracker", partial_tracker)
+
+            stories = [partial_tracker.as_story(include_source=True)]
+            steps = [step for story in stories for step in story.story_steps]
+            print(YAMLStoryWriter().dumps(steps))
 
             tracker_eval_store.merge_store(user_uttered_result)
         else:
