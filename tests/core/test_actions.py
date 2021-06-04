@@ -365,7 +365,13 @@ async def test_remote_action_with_template_param(
 @pytest.mark.parametrize(
     "event",
     (
-        EntitiesAdded(entities=[], timestamp=None),
+        EntitiesAdded(
+            entities=[
+                {"entity": "city", "value": "London"},
+                {"entity": "count", "value": 1},
+            ],
+            timestamp=None,
+        ),
         DefinePrevUserUtteredFeaturization(
             use_text_for_featurization=False, timestamp=None, metadata=None
         ),
@@ -399,7 +405,10 @@ async def test_remote_action_with_template_param(
                     "name": "greet",
                     "confidence": 0.9604260921478271,
                 },
-                "entities": [],
+                "entities": [
+                    {"entity": "city", "value": "London"},
+                    {"entity": "count", "value": 1},
+                ],
                 "text": "hi",
                 "message_id": "3f4c04602a4947098c574b107d3ccc50",
                 "metadata": {},
