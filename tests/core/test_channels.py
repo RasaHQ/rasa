@@ -21,6 +21,7 @@ from rasa.core.channels.rasa_chat import (
     INTERACTIVE_LEARNING_PERMISSION,
 )
 from rasa.core.channels.telegram import TelegramOutput
+from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
 
@@ -38,7 +39,8 @@ def noop(*args, **kwargs):
 async def test_send_response(default_channel, default_tracker):
     text_only_message = {"text": "hey"}
     multiline_text_message = {
-        "text": "This message should come first:  \n\nThis is message two  \nThis as well\n\n"
+        "text": "This message should come first:  \n\n"
+        "This is message two  \nThis as well\n\n"
     }
     image_only_message = {"image": "https://i.imgur.com/nGF1K8f.jpg"}
     text_and_image_message = {
@@ -296,6 +298,24 @@ def test_telegram_channel():
     assert routes_list["telegram_webhook.message"].startswith(
         "/webhooks/telegram/webhook"
     )
+
+
+def test_telegram_channel_raise_rasa_exception_webhook_not_set():
+    from rasa.core.channels.telegram import TelegramInput
+
+    input_channel = TelegramInput(
+        # you get this when setting up a bot
+        access_token="123:YOUR_ACCESS_TOKEN",
+        # this is your bots username
+        verify="YOUR_TELEGRAM_BOT",
+        # the url your bot should listen for messages
+        webhook_url="",
+    )
+
+    with pytest.raises(RasaException) as e:
+        rasa.core.run.configure_app([input_channel], port=5004)
+
+    assert "Failed to set channel webhook:" in str(e.value)
 
 
 async def test_handling_of_integer_user_id():

@@ -300,7 +300,8 @@ class Interpreter:
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedModelError(
                 f"The model version is trained using Rasa Open Source {model_version} "
-                f"and is not compatible with your current installation ({rasa.__version__}). "
+                f"and is not compatible with your current installation "
+                f"({rasa.__version__}). "
                 f"This means that you either need to retrain your model "
                 f"or revert back to the Rasa version that trained the model "
                 f"to ensure that the versions match up again."
@@ -506,7 +507,8 @@ class Interpreter:
             rasa.shared.utils.io.raise_warning(
                 f"Parsing of message: '{message_text}' lead to overlapping "
                 f"entities: {entity_1['value']} of type "
-                f"{entity_1['entity']} extracted by {entity_1['extractor']} overlaps with "
+                f"{entity_1['entity']} extracted by "
+                f"{entity_1['extractor']} overlaps with "
                 f"{entity_2['value']} of type {entity_2['entity']} extracted by "
                 f"{entity_2['extractor']}. This can lead to unintended filling of "
                 f"slots. Please refer to the documentation section on entity "

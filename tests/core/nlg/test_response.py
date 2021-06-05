@@ -173,8 +173,8 @@ async def test_nlg_conditional_response_variations_with_yaml_and_channel():
         utter_action="utter_check_balance", tracker=tracker, output_channel="os"
     )
     assert (
-        r.get("text")
-        == "As a primary account holder, you can now set-up your access on mobile app too."
+        r.get("text") == "As a primary account holder, you can now set-up "
+        "your access on mobile app too."
     )
 
     resp = await t.generate(

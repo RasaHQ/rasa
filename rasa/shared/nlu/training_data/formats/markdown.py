@@ -104,7 +104,7 @@ class MarkdownReader(TrainingDataReader):
 
     def _parse_item(self, line: Text) -> None:
         """Parses an md list item line based on the current section type."""
-        import rasa.shared.nlu.training_data.lookup_tables_parser as lookup_tables_parser
+        import rasa.shared.nlu.training_data.lookup_tables_parser as lookup_tables_parser  # noqa: E501
         import rasa.shared.nlu.training_data.synonyms_parser as synonyms_parser
         from rasa.shared.nlu.training_data import entities_parser
 
