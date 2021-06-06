@@ -217,7 +217,7 @@ class IntentTEDPolicy(TEDPolicy):
 
     def __init__(
         self,
-        featurizer: Optional[IntentMaxHistoryTrackerFeaturizer] = None,
+        featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = UNLIKELY_INTENT_POLICY_PRIORITY,
         max_history: Optional[int] = None,
         model: Optional[RasaModel] = None,
@@ -351,7 +351,7 @@ class IntentTEDPolicy(TEDPolicy):
             `RasaCoreException` if `label_ids` is None as it's needed for
                 running post training procedures.
         """
-        if not label_ids:
+        if label_ids is None:
             raise RasaCoreException(
                 f"Incorrect usage of `run_training` "
                 f"method of `{self.__class__.__name__}`."
@@ -375,7 +375,7 @@ class IntentTEDPolicy(TEDPolicy):
             Metadata to be attached.
         """
         metadata = {}
-        for intent_index, intent in domain.intents:
+        for intent_index, intent in enumerate(domain.intents):
             if intent_index in self.label_thresholds:
                 metadata[intent] = {
                     "score": similarities[0][intent_index],
@@ -545,7 +545,7 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     @classmethod
-    def _load_model_utilities(cls, model_path: Path) -> None:
+    def _load_model_utilities(cls, model_path: Path) -> Dict[Text, Any]:
         """Loads model's utility attributes.
 
         Args:
@@ -556,6 +556,7 @@ class IntentTEDPolicy(TEDPolicy):
             model_path / f"{cls._metadata_filename()}.label_thresholds.pkl"
         )
         model_utilties.update({"label_thresholds": label_thresholds})
+        return model_utilties
 
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
@@ -588,6 +589,15 @@ class IntentTED(TED):
         self._prepare_embed_layers(predictor_attribute)
         self._prepare_embed_layers(LABEL)
         self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
+
+    def _prepare_dot_product_loss(
+        self, name: Text, scale_loss: bool, prefix: Text = "loss",
+    ) -> None:
+        self._tf_layers[f"{prefix}.{name}"] = self.dot_product_loss_layer(
+            self.config[NUM_NEG],
+            scale_loss,
+            similarity_type=self.config[SIMILARITY_TYPE],
+        )
 
     @property
     def dot_product_loss_layer(self) -> tf.keras.layers.Layer:
