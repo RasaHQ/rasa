@@ -580,7 +580,7 @@ class TEDPolicy(Policy):
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
         )
-        label_sampling_metadata = TEDPolicy.get_label_sampling_metadata(
+        label_sampling_metadata = self.get_label_sampling_metadata(
             self._label_data, self.config[LABEL_BATCH_SIZE]
         )
 
@@ -1199,17 +1199,16 @@ class TED(TransformerRasaModel):
 
         return all_label_ids, all_labels_embed
 
-    def _create_all_labels_embed_for_training(
-        self, sampled_candidate_label_ids: tf.Tensor, batch_label_ids: tf.Tensor
+    def _create_label_embeddings_for_training(
+        self, negative_label_ids: tf.Tensor, positive_label_ids: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor]:
 
-        # Concatenate sampled candidate label ids and batch label ids and
-        # extract a unique and sorted set of label ids for which embeddings
-        # have to be computed.
+        # Concatenate negative and positive label ids and extract a unique and
+        # sorted set of label ids for which embeddings have to be computed.
         concatenated_ids = tf.concat(
             [
-                tf.reshape(sampled_candidate_label_ids, (-1,)),
-                tf.reshape(batch_label_ids, (-1,)),
+                tf.reshape(negative_label_ids, (-1,)),
+                tf.reshape(positive_label_ids, (-1,)),
             ],
             axis=0,
         )
@@ -1224,13 +1223,14 @@ class TED(TransformerRasaModel):
     def _filter_label_data(
         self, selection_label_ids: tf.Tensor
     ) -> Dict[Text, Dict[Text, List[Union[tf.Tensor, tf.SparseTensor]]]]:
+        """Filters and adjusts data on all label to only contain the selected labesl."""
 
         feature_key_selection_ids = {}
 
         for key in self.tf_label_data.keys():
             if key != LABEL_KEY:
                 feature_key_selection_ids[key] = {}
-                key_label_ids = self.calulate_key_ids(key)
+                key_label_ids = self.calculate_key_ids(key)
                 for sub_key in self.tf_label_data[key]:
                     if sub_key in [SEQUENCE, SENTENCE]:
                         key_selection_mask = tf.equal(
@@ -1890,7 +1890,15 @@ class TED(TransformerRasaModel):
         )[:, 1]
         return tf.gather(all_labels_embed, indices)
 
-    def _get_candidate_label_ids(self, label_batch_size):
+    def _sample_negative_label_ids(self, label_batch_size: int) -> tf.Tensor:
+        """Samples `label_batch_size` ids used as negative examples during training.
+
+        Args:
+            label_batch_size: the number of negative labels to sample
+
+        Returns:
+            a tensor containing the label ids
+        """
 
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
@@ -1906,24 +1914,24 @@ class TED(TransformerRasaModel):
             )
 
         # Sample for each key
-        all_sampled_label_ids = []
+        sampled_label_ids = []
         for key in self.tf_label_data:
             if key != LABEL_KEY:
-                key_ids = self.calulate_key_ids(key)
+                key_ids = self.calculate_key_ids(key)
                 num_samples = self._label_sampling_metadata[key][LABEL_BATCH_SIZE]
                 total_num_candidates = self._label_sampling_metadata[key][
                     NUM_LABEL_CANDIDATES
                 ]
-                sampled_label_ids = self._sample_label_batch_ids(
+                label_ids = self._sample_unique_label_ids(
                     key_ids, num_samples, total_num_candidates
                 )
-                all_sampled_label_ids.append(sampled_label_ids)
+                sampled_label_ids.append(label_ids)
 
-        all_sampled_label_ids = tf.concat(all_sampled_label_ids, axis=0)
+        sampled_label_ids = tf.concat(sampled_label_ids, axis=0)
 
-        return all_sampled_label_ids
+        return sampled_label_ids
 
-    def calulate_key_ids(self, key):
+    def calculate_key_ids(self, key):
         """Calculate the label ids that belong to the given key.
 
         Args:
@@ -1938,11 +1946,10 @@ class TED(TransformerRasaModel):
         return tf.reshape(key_ids, (-1, 1))
 
     @staticmethod
-    def _sample_label_batch_ids(all_label_ids, num_samples, total_num_label_ids):
-
-        # Sample a fixed number of random label ids
-        # We use uniform candidate sampler because it has the ability to
-        # sample unique values
+    def _sample_unique_label_ids(
+        all_label_ids: tf.Tensor, num_samples: int, total_num_label_ids: int
+    ) -> tf.Tensor:
+        """Sample unique random label ids."""
         indices, _, _ = tf.random.uniform_candidate_sampler(
             tf.cast(tf.reshape(all_label_ids, (1, -1)), dtype=tf.int64),
             total_num_label_ids,
@@ -1974,31 +1981,31 @@ class TED(TransformerRasaModel):
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
         self._compute_dialogue_indices(tf_batch_data)
 
-        batch_label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
+        positive_label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        sampled_label_ids = self._get_candidate_label_ids(
+        negative_label_ids = self._sample_negative_label_ids(
             label_batch_size=self.config[LABEL_BATCH_SIZE]
         )  # [label_bs, 1])
 
         (
             all_unique_label_ids,
             all_labels_embed,
-        ) = self._create_all_labels_embed_for_training(
-            sampled_label_ids, batch_label_ids
+        ) = self._create_label_embeddings_for_training(
+            negative_label_ids, positive_label_ids
         )
 
         # Collect embeddings for sampled label ids and batch label ids from
         # embeddings for all labels
-        batch_labels_embed = self._get_labels_embed(
-            batch_label_ids, all_unique_label_ids, all_labels_embed
+        positive_labels_embed = self._get_labels_embed(
+            positive_label_ids, all_unique_label_ids, all_labels_embed
         )
-        sampled_labels_embed = self._get_labels_embed(
-            sampled_label_ids, all_unique_label_ids, all_labels_embed
+        negative_labels_embed = self._get_labels_embed(
+            negative_label_ids, all_unique_label_ids, all_labels_embed
         )
 
         # Add back the sequence dimension
-        batch_labels_embed = tf.expand_dims(batch_labels_embed, axis=1)
-        sampled_labels_embed = tf.expand_dims(sampled_labels_embed, axis=1)
+        positive_labels_embed = tf.expand_dims(positive_labels_embed, axis=1)
+        negative_labels_embed = tf.expand_dims(negative_labels_embed, axis=1)
 
         dialogue_in, text_output, text_sequence_lengths = self._process_batch_data(
             tf_batch_data
@@ -2015,10 +2022,10 @@ class TED(TransformerRasaModel):
 
         loss, acc = self._tf_layers[f"loss.{LABEL}"](
             dialogue_embed,
-            batch_labels_embed,
-            batch_label_ids,
-            sampled_labels_embed,
-            sampled_label_ids,
+            positive_labels_embed,
+            positive_label_ids,
+            negative_labels_embed,
+            negative_label_ids,
             dialogue_mask,
         )
         losses.append(loss)
