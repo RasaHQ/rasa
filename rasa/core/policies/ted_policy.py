@@ -1930,7 +1930,7 @@ class TED(TransformerRasaModel):
 
         return sampled_label_ids
 
-    def calculate_key_ids(self, key):
+    def calculate_key_ids(self, key: Text) -> tf.Tensor:
         """Calculate the label ids that belong to the given key.
 
         Args:
