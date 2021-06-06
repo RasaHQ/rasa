@@ -414,14 +414,17 @@ class TEDPolicy(Policy):
     ) -> Dict[Text, Dict[Text, int]]:
         """Generates meta data on labels for use by the model.
 
-        The metadata include
+        the metadata include
             * number of labels per label type,
                 such as action_name and action_text
             * number of ids to sample per label type, derived from their
                 relative frequency and the total number of negative labels
                 to sample
 
-        returns:
+        Args:
+            label_data: the encoded learning targets
+            label_batch_size: number of neg labels to sample during training
+        Returns:
             A dictionary containing the metadata
         """
         metadata = defaultdict(dict)
@@ -1921,9 +1924,14 @@ class TED(TransformerRasaModel):
         return all_sampled_label_ids
 
     def calulate_key_ids(self, key):
-        """Calculate the ids that belong to the given key.
+        """Calculate the label ids that belong to the given key.
 
-        key might be action_text or action_name here."""
+        Args:
+            key: can be 'action_text' or 'action_name' here.
+
+        Returns:
+            Ids of the labels that belong to the respective key.
+        """
         all_labels = tf.reshape(self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0], (-1,))
         label_mask_for_key = tf.reshape(self.tf_label_data[key][MASK][0], (-1,))
         key_ids = tf.boolean_mask(all_labels, label_mask_for_key)
@@ -2040,7 +2048,6 @@ class TED(TransformerRasaModel):
 
         The labels are either generated at once or in a batched fashion
         """
-
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
         if self.config[LABEL_BATCH_SIZE] == -1:
             all_label_ids = tf.reshape(all_label_ids, (-1,))
