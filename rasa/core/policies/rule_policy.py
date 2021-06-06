@@ -729,7 +729,7 @@ class RulePolicy(MemoizationPolicy):
         (
             rule_trackers_as_states,
             rule_trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(
+        ) = self.featurizer.training_states_and_labels(
             rule_trackers, domain, omit_unset_slots=True
         )
 
@@ -741,7 +741,7 @@ class RulePolicy(MemoizationPolicy):
         (
             story_trackers_as_states,
             story_trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(story_trackers, domain)
+        ) = self.featurizer.training_states_and_labels(story_trackers, domain)
 
         if self._check_for_contradictions:
             (

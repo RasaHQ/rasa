@@ -7,7 +7,10 @@ import scipy.sparse
 
 import pytest
 
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
@@ -160,7 +163,7 @@ def test_single_state_featurizer_prepare_for_training():
     assert len(f._default_feature_states[ACTIVE_LOOP]) == 0
 
 
-def test_single_state_featurizer_creates_encoded_all_actions():
+def test_single_state_featurizer_creates_encoded_all_labels():
     domain = Domain(
         intents=[],
         entities=[],
@@ -172,13 +175,36 @@ def test_single_state_featurizer_creates_encoded_all_actions():
 
     f = SingleStateFeaturizer()
     f.prepare_for_training(domain, RegexInterpreter())
-    encoded_actions = f.encode_all_actions(domain, RegexInterpreter())
+    encoded_labels = f.encode_all_labels(domain, RegexInterpreter())
 
-    assert len(encoded_actions) == len(domain.action_names_or_texts)
+    assert len(encoded_labels) == len(domain.action_names_or_texts)
     assert all(
         [
-            ACTION_NAME in encoded_action and ACTION_TEXT not in encoded_action
-            for encoded_action in encoded_actions
+            ACTION_NAME in encoded_label and ACTION_TEXT not in encoded_label
+            for encoded_label in encoded_labels
+        ]
+    )
+
+
+def test_intent_tokenized_single_state_featurizer_creates_encoded_all_labels():
+    domain = Domain(
+        intents=["a", "b", "c", "d"],
+        entities=[],
+        slots=[],
+        responses={},
+        forms={},
+        action_names=[],
+    )
+
+    f = IntentTokenizerSingleStateFeaturizer()
+    f.prepare_for_training(domain, RegexInterpreter())
+    encoded_labels = f.encode_all_labels(domain, RegexInterpreter())
+
+    assert len(encoded_labels) == len(domain.intents)
+    assert all(
+        [
+            INTENT in encoded_label and TEXT not in encoded_label
+            for encoded_label in encoded_labels
         ]
     )
 
