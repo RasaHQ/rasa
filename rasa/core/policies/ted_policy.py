@@ -995,6 +995,7 @@ class TED(TransformerRasaModel):
                 only the last dialogue turn will be used
             label_data: the label data
             entity_tag_specs: the entity tag specifications
+            label_sampling_metadata: config values for negative label sampling
         """
         super().__init__("TED", config, data_signature, label_data)
 
@@ -1224,7 +1225,6 @@ class TED(TransformerRasaModel):
         self, selection_label_ids: tf.Tensor
     ) -> Dict[Text, Dict[Text, List[Union[tf.Tensor, tf.SparseTensor]]]]:
         """Filters and adjusts data on all label to only contain the selected labesl."""
-
         feature_key_selection_ids = {}
 
         for key in self.tf_label_data.keys():
@@ -1899,7 +1899,6 @@ class TED(TransformerRasaModel):
         Returns:
             a tensor containing the label ids
         """
-
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
         total_num_label_ids = all_label_ids.shape[0]
