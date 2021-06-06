@@ -302,11 +302,11 @@ class TrackerFeaturizer:
             f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
         )
 
-    def prepare_for_training(
+    def prepare_for_featurization(
         self,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-        bilou_tagging: bool,
+        bilou_tagging: bool = False,
     ) -> None:
         """Ensures that the featurizer is ready to be called during training.
 
@@ -359,6 +359,7 @@ class TrackerFeaturizer:
               containing entity tag ids for text user inputs otherwise empty dict
               for all dialogue turns in all training trackers
         """
+        self.prepare_for_featurization(domain, interpreter, bilou_tagging)
         (
             trackers_as_states,
             trackers_as_labels,
