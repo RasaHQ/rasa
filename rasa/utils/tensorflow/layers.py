@@ -14,6 +14,7 @@ from rasa.utils.tensorflow.constants import (
     CROSS_ENTROPY,
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
+import rasa.utils.tensorflow.layers_utils as layers_utils
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class SparseDropout(tf.keras.layers.Dropout):
     which helps prevent overfitting.
 
     Arguments:
-        rate: Float between 0 and 1; fraction of the input units to drop.
+        rate: Fraction of the input units to drop (between 0 and 1).
     """
 
     def call(
@@ -39,7 +40,7 @@ class SparseDropout(tf.keras.layers.Dropout):
 
         Arguments:
             inputs: Input sparse tensor (of any rank).
-            training: Python boolean indicating whether the layer should behave in
+            training: Indicates whether the layer should behave in
                 training mode (adding dropout) or in inference mode (doing nothing).
 
         Returns:
@@ -91,10 +92,10 @@ class DenseForSparse(tf.keras.layers.Dense):
             activation: Activation function to use.
             If you don't specify anything, no activation is applied
             (ie. "linear" activation: `a(x) = x`).
-        use_bias: Boolean, whether the layer uses a bias vector.
+        use_bias: Indicates whether the layer uses a bias vector.
         kernel_initializer: Initializer for the `kernel` weights matrix.
         bias_initializer: Initializer for the bias vector.
-        reg_lambda: Float, regularization factor.
+        reg_lambda: regularization factor
         bias_regularizer: Regularizer function applied to the bias vector.
         activity_regularizer: Regularizer function applied to
             the output of the layer (its "activation")..
@@ -190,12 +191,12 @@ class RandomlyConnectedDense(tf.keras.layers.Dense):
         """Declares instance variables with default values.
 
         Args:
-            density: Float between 0 and 1. Approximate fraction of trainable weights.
+            density: Approximate fraction of trainable weights (between 0 and 1).
             units: Positive integer, dimensionality of the output space.
             activation: Activation function to use.
                 If you don't specify anything, no activation is applied
                 (ie. "linear" activation: `a(x) = x`).
-            use_bias: Boolean, whether the layer uses a bias vector.
+            use_bias: Indicates whether the layer uses a bias vector.
             kernel_initializer: Initializer for the `kernel` weights matrix.
             bias_initializer: Initializer for the bias vector.
             kernel_regularizer: Regularizer function applied to
@@ -306,9 +307,9 @@ class Ffnn(tf.keras.layers.Layer):
 
     Arguments:
         layer_sizes: List of integers with dimensionality of the layers.
-        dropout_rate: Float between 0 and 1; fraction of the input units to drop.
-        reg_lambda: Float, regularization factor.
-        density: Float between 0 and 1. Approximate fraction of trainable weights.
+        dropout_rate: Fraction of the input units to drop (between 0 and 1).
+        reg_lambda: regularization factor.
+        density: Approximate fraction of trainable weights (between 0 and 1).
         layer_name_suffix: Text added to the name of the layers.
 
     Input shape:
@@ -436,7 +437,7 @@ class InputMask(tf.keras.layers.Layer):
             x: Input sequence tensor of rank 3.
             mask: A tensor representing sequence mask,
                 contains `1` for inputs and `0` for padding.
-            training: Python boolean indicating whether the layer should behave in
+            training: Indicates whether the layer should run in
                 training mode (mask inputs) or in inference mode (doing nothing).
 
         Returns:
@@ -510,7 +511,7 @@ class CRF(tf.keras.layers.Layer):
 
     Arguments:
         num_tags: Positive integer, number of tags.
-        reg_lambda: Float; regularization factor.
+        reg_lambda: regularization factor.
         name: Optional name of the layer.
     """
 
@@ -618,96 +619,226 @@ class CRF(tf.keras.layers.Layer):
 
 
 class DotProductLoss(tf.keras.layers.Layer):
-    """Dot-product loss layer."""
+    """Abstract dot-product loss layer class.
+
+    Idea based on StarSpace paper: http://arxiv.org/abs/1709.03856
+
+    Implements similarity methods
+    * `sim` (computes a similarity between vectors)
+    * `get_similarities_and_confidences_from_embeddings` (calls `sim` and also computes
+        confidence values)
+
+    Specific loss functions (single- or multi-label) must be implemented in child
+    classes.
+    """
 
     def __init__(
         self,
-        num_neg: int,
-        loss_type: Text,
-        mu_pos: float,
-        mu_neg: float,
-        use_max_sim_neg: bool,
-        neg_lambda: float,
-        scale_loss: bool,
-        similarity_type: Text,
-        name: Optional[Text] = None,
-        same_sampling: bool = False,
+        num_candidates: int,
+        scale_loss: bool = False,
         constrain_similarities: bool = True,
         model_confidence: Text = SOFTMAX,
-    ) -> None:
-        """Declare instance variables with default values.
+        similarity_type: Text = INNER,
+        name: Optional[Text] = None,
+        **kwargs: Any,
+    ):
+        """Declares instance variables with default values.
 
         Args:
-            num_neg: Positive integer, the number of incorrect labels;
-                the algorithm will minimize their similarity to the input.
-            loss_type: The type of the loss function, either 'cross_entropy' or
-                'margin'.
-            mu_pos: Float, indicates how similar the algorithm should
-                try to make embedding vectors for correct labels;
-                should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-            mu_neg: Float, maximum negative similarity for incorrect labels,
-                should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-            use_max_sim_neg: Boolean, if 'True' the algorithm only minimizes
-                maximum similarity over incorrect intent labels,
-                used only if 'loss_type' is set to 'margin'.
-            neg_lambda: Float, the scale of how important is to minimize
-                the maximum similarity between embeddings of different labels,
-                used only if 'loss_type' is set to 'margin'.
-            scale_loss: Boolean, if 'True' scale loss inverse proportionally to
+            num_candidates: Number of labels besides the positive one. Depending on
+                whether single- or multi-label loss is implemented (done in
+                sub-classes), these can be all negative example labels, or a mixture of
+                negative and further positive labels, respectively.
+            scale_loss: Boolean, if `True` scale loss inverse proportionally to
                 the confidence of the correct prediction.
-            similarity_type: Similarity measure to use, either 'cosine' or 'inner'.
-            name: Optional name of the layer.
-            same_sampling: Boolean, if 'True' sample same negative labels
-                for the whole batch.
-            constrain_similarities: Boolean, if 'True' applies sigmoid on all
+            constrain_similarities: Boolean, if `True` applies sigmoid on all
                 similarity terms and adds to the loss function to
                 ensure that similarity values are approximately bounded.
                 Used inside _loss_cross_entropy() only.
-            model_confidence: Model confidence to be returned during inference.
-                Possible values - 'softmax' and 'linear_norm'.
+            model_confidence: Normalization of confidence values during inference.
+                Possible values are `SOFTMAX` and `LINEAR_NORM`.
+            similarity_type: Similarity measure to use, either `cosine` or `inner`.
+            name: Optional name of the layer.
 
         Raises:
-            LayerConfigException: When `similarity_type` is not one of 'cosine' or
-                'inner'.
+            TFLayerConfigException: When `similarity_type` is not one of `COSINE` or
+                `INNER`.
         """
         super().__init__(name=name)
-        self.num_neg = num_neg
-        self.loss_type = loss_type
-        self.mu_pos = mu_pos
-        self.mu_neg = mu_neg
-        self.use_max_sim_neg = use_max_sim_neg
-        self.neg_lambda = neg_lambda
+        self.num_neg = num_candidates
         self.scale_loss = scale_loss
-        self.same_sampling = same_sampling
         self.constrain_similarities = constrain_similarities
         self.model_confidence = model_confidence
         self.similarity_type = similarity_type
         if self.similarity_type not in {COSINE, INNER}:
             raise TFLayerConfigException(
-                f"Wrong similarity type '{self.similarity_type}', "
+                f"Unsupported similarity type '{self.similarity_type}', "
                 f"should be '{COSINE}' or '{INNER}'."
             )
 
-    @staticmethod
-    def _make_flat(x: tf.Tensor) -> tf.Tensor:
-        """Make tensor 2D."""
-
-        return tf.reshape(x, (-1, x.shape[-1]))
-
-    def _random_indices(
-        self, batch_size: tf.Tensor, total_candidates: tf.Tensor
+    def sim(
+        self, a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None
     ) -> tf.Tensor:
-        return tf.random.uniform(
-            shape=(batch_size, self.num_neg), maxval=total_candidates, dtype=tf.int32
+        """Calculates similarity between `a` and `b`.
+
+        Operates on the last dimension. When `a` and `b` are vectors, then `sim`
+        computes either the dot-product, or the cosine of the angle between `a` and `b`,
+        depending on `self.similarity_type`.
+        Specifically, when the similarity type is `INNER`, then we compute the scalar
+        product `a . b`. When the similarity type is `COSINE`, we compute
+        `a . b / (|a| |b|)`, i.e. the cosine of the angle between `a` and `b`.
+
+        Args:
+            a: Any float tensor
+            b: Any tensor of the same shape and type as `a`
+            mask: Mask (should contain 1s for inputs and 0s for padding). Note, that
+                `len(mask.shape) == len(a.shape) - 1` should hold.
+
+        Returns:
+            Similarities between vectors in `a` and `b`.
+        """
+        if self.similarity_type == COSINE:
+            a = tf.nn.l2_normalize(a, axis=-1)
+            b = tf.nn.l2_normalize(b, axis=-1)
+        sim = tf.reduce_sum(a * b, axis=-1)
+        if mask is not None:
+            sim *= tf.expand_dims(mask, 2)
+
+        return sim
+
+    def get_similarities_and_confidences_from_embeddings(
+        self,
+        input_embeddings: tf.Tensor,
+        label_embeddings: tf.Tensor,
+        mask: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Computes similary between input and label embeddings and model's confidence.
+
+        First compute the similarity from embeddings and then apply an activation
+        function if needed to get the confidence.
+
+        Args:
+            input_embeddings: Embeddings of input.
+            label_embeddings: Embeddings of labels.
+            mask: Mask (should contain 1s for inputs and 0s for padding). Note, that
+                `len(mask.shape) == len(a.shape) - 1` should hold.
+
+        Returns:
+            similarity between input and label embeddings and model's prediction
+            confidence for each label.
+        """
+        similarities = self.sim(input_embeddings, label_embeddings, mask)
+        confidences = similarities
+        if self.model_confidence == SOFTMAX:
+            confidences = tf.nn.softmax(similarities)
+        elif self.model_confidence == LINEAR_NORM:
+            # Clip negative values to 0 and linearly normalize to bring the predictions
+            # in the range [0,1].
+            clipped_similarities = tf.nn.relu(similarities)
+            normalization = tf.reduce_sum(clipped_similarities, axis=-1)
+            confidences = tf.math.divide_no_nan(clipped_similarities, normalization)
+        return similarities, confidences
+
+    def call(self, *args: Any, **kwargs: Any) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Layer's logic - to be implemented in child class."""
+        raise NotImplementedError
+
+    def apply_mask_and_scaling(
+        self, loss: tf.Tensor, mask: Optional[tf.Tensor]
+    ) -> tf.Tensor:
+        """Scales the loss and applies the mask if necessary.
+
+        Args:
+            loss: The loss tensor
+            mask: (Optional) A mask to multiply with the loss
+
+        Returns:
+            The scaled loss, potentially averaged over the sequence
+            dimension.
+        """
+        if self.scale_loss:
+            # in case of cross entropy log_likelihood = -loss
+            loss *= _scale_loss(-loss)
+
+        if mask is not None:
+            loss *= mask
+
+        if len(loss.shape) == 2:
+            # average over the sequence
+            if mask is not None:
+                loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
+            else:
+                loss = tf.reduce_mean(loss, axis=-1)
+
+        return loss
+
+
+class SingleLabelDotProductLoss(DotProductLoss):
+    """Single-label dot-product loss layer.
+
+    This loss layer assumes that only one output (label) is correct for any given input.
+    """
+
+    def __init__(
+        self,
+        num_candidates: int,
+        scale_loss: bool = False,
+        constrain_similarities: bool = True,
+        model_confidence: Text = SOFTMAX,
+        similarity_type: Text = INNER,
+        name: Optional[Text] = None,
+        loss_type: Text = CROSS_ENTROPY,
+        mu_pos: float = 0.8,
+        mu_neg: float = -0.2,
+        use_max_sim_neg: bool = True,
+        neg_lambda: float = 0.5,
+        same_sampling: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        """Declares instance variables with default values.
+
+        Args:
+            num_candidates: Positive integer, the number of incorrect labels;
+                the algorithm will minimize their similarity to the input.
+            loss_type: The type of the loss function, either `cross_entropy` or
+                `margin`.
+            mu_pos: Indicates how similar the algorithm should
+                try to make embedding vectors for correct labels;
+                should be 0.0 < ... < 1.0 for `cosine` similarity type.
+            mu_neg: Maximum negative similarity for incorrect labels,
+                should be -1.0 < ... < 1.0 for `cosine` similarity type.
+            use_max_sim_neg: If `True` the algorithm only minimizes
+                maximum similarity over incorrect intent labels,
+                used only if `loss_type` is set to `margin`.
+            neg_lambda: The scale of how important it is to minimize
+                the maximum similarity between embeddings of different labels,
+                used only if `loss_type` is set to `margin`.
+            scale_loss: If `True` scale loss inverse proportionally to
+                the confidence of the correct prediction.
+            similarity_type: Similarity measure to use, either `cosine` or `inner`.
+            name: Optional name of the layer.
+            same_sampling: If `True` sample same negative labels
+                for the whole batch.
+            constrain_similarities: If `True` and loss_type is `cross_entropy`, a
+                sigmoid loss term is added to the total loss to ensure that similarity
+                values are approximately bounded.
+            model_confidence: Normalization of confidence values during inference.
+                Possible values are `SOFTMAX` and `LINEAR_NORM`.
+        """
+        super().__init__(
+            num_candidates,
+            scale_loss=scale_loss,
+            constrain_similarities=constrain_similarities,
+            model_confidence=model_confidence,
+            similarity_type=similarity_type,
+            name=name,
         )
-
-    @staticmethod
-    def _sample_idxs(batch_size: tf.Tensor, x: tf.Tensor, idxs: tf.Tensor) -> tf.Tensor:
-        """Sample negative examples for given indices"""
-
-        tiled = tf.tile(tf.expand_dims(x, 0), (batch_size, 1, 1))
-
-        return tf.gather(tiled, idxs, batch_dims=1)
+        self.loss_type = loss_type
+        self.mu_pos = mu_pos
+        self.mu_neg = mu_neg
+        self.use_max_sim_neg = use_max_sim_neg
+        self.neg_lambda = neg_lambda
+        self.same_sampling = same_sampling
 
     def _get_bad_mask(
         self, labels: tf.Tensor, target_labels: tf.Tensor, idxs: tf.Tensor
@@ -716,9 +847,8 @@ class DotProductLoss(tf.keras.layers.Layer):
 
         Checks that input features are different for positive negative samples.
         """
-
         pos_labels = tf.expand_dims(target_labels, axis=-2)
-        neg_labels = self._sample_idxs(tf.shape(target_labels)[0], labels, idxs)
+        neg_labels = layers_utils.get_candidate_values(labels, idxs)
 
         return tf.cast(
             tf.reduce_all(tf.equal(neg_labels, pos_labels), axis=-1), pos_labels.dtype
@@ -727,18 +857,19 @@ class DotProductLoss(tf.keras.layers.Layer):
     def _get_negs(
         self, embeds: tf.Tensor, labels: tf.Tensor, target_labels: tf.Tensor
     ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Get negative examples from given tensor."""
-
-        embeds_flat = self._make_flat(embeds)
-        labels_flat = self._make_flat(labels)
-        target_labels_flat = self._make_flat(target_labels)
+        """Gets negative examples from given tensor."""
+        embeds_flat = layers_utils.batch_flatten(embeds)
+        labels_flat = layers_utils.batch_flatten(labels)
+        target_labels_flat = layers_utils.batch_flatten(target_labels)
 
         total_candidates = tf.shape(embeds_flat)[0]
         target_size = tf.shape(target_labels_flat)[0]
 
-        neg_ids = self._random_indices(target_size, total_candidates)
+        neg_ids = layers_utils.random_indices(
+            target_size, self.num_neg, total_candidates
+        )
 
-        neg_embeds = self._sample_idxs(target_size, embeds_flat, neg_ids)
+        neg_embeds = layers_utils.get_candidate_values(embeds_flat, neg_ids)
         bad_negs = self._get_bad_mask(labels_flat, target_labels_flat, neg_ids)
 
         # check if inputs have sequence dimension
@@ -781,54 +912,6 @@ class DotProductLoss(tf.keras.layers.Layer):
             labels_bad_negs,
         )
 
-    def sim(
-        self, a: tf.Tensor, b: tf.Tensor, mask: Optional[tf.Tensor] = None
-    ) -> tf.Tensor:
-        """Calculate similarity between given tensors."""
-        if self.similarity_type == COSINE:
-            a = tf.nn.l2_normalize(a, axis=-1)
-            b = tf.nn.l2_normalize(b, axis=-1)
-        sim = tf.reduce_sum(a * b, axis=-1)
-        if mask is not None:
-            sim *= tf.expand_dims(mask, 2)
-
-        return sim
-
-    def similarity_confidence_from_embeddings(
-        self,
-        input_embeddings: tf.Tensor,
-        label_embeddings: tf.Tensor,
-        mask: Optional[tf.Tensor] = None,
-    ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Computes similarity.
-
-        Calculates similary between input and label embeddings and model's confidence.
-
-        First compute the similarity from embeddings and then apply an activation
-        function if needed to get the confidence.
-
-        Args:
-            input_embeddings: Embeddings of input.
-            label_embeddings: Embeddings of labels.
-            mask: Mask over input and output sequence.
-
-        Returns:
-            similarity between input and label embeddings and model's prediction
-            confidence for each label.
-        """
-        similarities = self.sim(input_embeddings, label_embeddings, mask)
-        confidences = similarities
-        if self.model_confidence == SOFTMAX:
-            confidences = tf.nn.softmax(similarities)
-        if self.model_confidence == LINEAR_NORM:
-            # Clip negative values to 0 and linearly normalize to bring the predictions
-            # in the range [0,1].
-            clipped_similarities = tf.nn.relu(similarities)
-            confidences = clipped_similarities / tf.reduce_sum(
-                clipped_similarities, axis=-1
-            )
-        return similarities, confidences
-
     def _train_sim(
         self,
         pos_inputs_embed: tf.Tensor,
@@ -870,13 +953,9 @@ class DotProductLoss(tf.keras.layers.Layer):
     @staticmethod
     def _calc_accuracy(sim_pos: tf.Tensor, sim_neg: tf.Tensor) -> tf.Tensor:
         """Calculate accuracy."""
-
         max_all_sim = tf.reduce_max(tf.concat([sim_pos, sim_neg], axis=-1), axis=-1)
-        return tf.reduce_mean(
-            tf.cast(
-                tf.math.equal(max_all_sim, tf.squeeze(sim_pos, axis=-1)), tf.float32
-            )
-        )
+        sim_pos = tf.squeeze(sim_pos, axis=-1)
+        return layers_utils.reduce_mean_equal(max_all_sim, sim_pos)
 
     def _loss_margin(
         self,
@@ -950,19 +1029,7 @@ class DotProductLoss(tf.keras.layers.Layer):
                 sim_pos, sim_neg_il, sim_neg_ll, sim_neg_ii, sim_neg_li
             )
 
-        if self.scale_loss:
-            # in case of cross entropy log_likelihood = -loss
-            loss *= _scale_loss(-loss)
-
-        if mask is not None:
-            loss *= mask
-
-        if len(loss.shape) == 2:
-            # average over the sequence
-            if mask is not None:
-                loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
-            else:
-                loss = tf.reduce_mean(loss, axis=-1)
+        loss = self.apply_mask_and_scaling(loss, mask)
 
         # average the loss over the batch
         return tf.reduce_mean(loss)
@@ -1043,14 +1110,17 @@ class DotProductLoss(tf.keras.layers.Layer):
     ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Calculate loss and accuracy.
 
-        Arguments:
-            inputs_embed: Embedding tensor for the batch inputs.
-            labels_embed: Embedding tensor for the batch labels.
-            labels: Tensor representing batch labels.
-            all_labels_embed: Embedding tensor for the all labels.
-            all_labels: Tensor representing all labels.
-            mask: Optional tensor representing sequence mask,
-                contains `1` for inputs and `0` for padding.
+        Args:
+            inputs_embed: Embedding tensor for the batch inputs;
+                shape `(batch_size, ..., num_features)`
+            labels_embed: Embedding tensor for the batch labels;
+                shape `(batch_size, ..., num_features)`
+            labels: Tensor representing batch labels; shape `(batch_size, ..., 1)`
+            all_labels_embed: Embedding tensor for the all labels;
+                shape `(num_labels, num_features)`
+            all_labels: Tensor representing all labels; shape `(num_labels, 1)`
+            mask: Optional mask, contains `1` for inputs and `0` for padding;
+                shape `(batch_size, 1)`
 
         Returns:
             loss: Total loss.
@@ -1085,3 +1155,295 @@ class DotProductLoss(tf.keras.layers.Layer):
         )
 
         return loss, accuracy
+
+
+class MultiLabelDotProductLoss(DotProductLoss):
+    """Multi-label dot-product loss layer.
+
+    This loss layer assumes that multiple outputs (labels) can be correct for any given
+    input. To accomodate for this, we use a sigmoid cross-entropy loss here.
+    """
+
+    def __init__(
+        self,
+        num_candidates: int,
+        scale_loss: bool = False,
+        constrain_similarities: bool = True,
+        model_confidence: Text = SOFTMAX,
+        similarity_type: Text = INNER,
+        name: Optional[Text] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Declares instance variables with default values.
+
+        Args:
+            num_candidates: Positive integer, the number of candidate labels.
+            scale_loss: If `True` scale loss inverse proportionally to
+                the confidence of the correct prediction.
+            similarity_type: Similarity measure to use, either `cosine` or `inner`.
+            name: Optional name of the layer.
+            constrain_similarities: Boolean, if `True` applies sigmoid on all
+                similarity terms and adds to the loss function to
+                ensure that similarity values are approximately bounded.
+                Used inside _loss_cross_entropy() only.
+            model_confidence: Normalization of confidence values during inference.
+                Possible values are `SOFTMAX` and `LINEAR_NORM`.
+        """
+        super().__init__(
+            num_candidates,
+            scale_loss=scale_loss,
+            similarity_type=similarity_type,
+            name=name,
+            constrain_similarities=constrain_similarities,
+            model_confidence=model_confidence,
+        )
+
+    def call(
+        self,
+        batch_inputs_embed: tf.Tensor,
+        batch_labels_embed: tf.Tensor,
+        batch_labels_ids: tf.Tensor,
+        all_labels_embed: tf.Tensor,
+        all_labels_ids: tf.Tensor,
+        mask: Optional[tf.Tensor] = None,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Calculates loss and accuracy.
+
+        Args:
+            batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized
+                trackers); shape `(batch_size, 1, num_features)`
+            batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents
+                for IntentTED);
+                shape `(batch_size, max_num_labels_per_input, num_features)`
+            batch_label_ids: Batch label indices (e.g. indices of the intents). We
+                assume that indices are integers that run from `0` to
+                `(number of labels) - 1`.
+                shape `(batch_size, max_num_labels_per_input, 1)`
+            all_labels_embed: Embeddings for all labels in the domain;
+                shape `(batch_size, num_features)`
+            all_labels_ids: Indices for all labels in the domain;
+                shape `(num_labels, 1)`
+            mask: Optional sequence mask, which contains `1` for inputs and `0` for
+                padding.
+
+        Returns:
+            loss: Total loss (based on StarSpace http://arxiv.org/abs/1709.03856);
+                scalar
+            accuracy: Training accuracy; scalar
+        """
+        (
+            pos_inputs_embed,  # (batch_size, 1, 1, num_features)
+            pos_labels_embed,  # (batch_size, 1, num_features)
+            candidate_labels_embed,  # (batch_size, 1, num_candidates, num_features)
+            pos_neg_labels,  # (batch_size, num_candidates)
+        ) = self._sample_candidates(
+            batch_inputs_embed,
+            batch_labels_embed,
+            batch_labels_ids,
+            all_labels_embed,
+            all_labels_ids,
+        )
+
+        # Calculate similarities
+        sim_pos, sim_candidate_il = self._train_sim(
+            pos_inputs_embed, pos_labels_embed, candidate_labels_embed, mask
+        )
+
+        accuracy = self._accuracy(sim_pos, sim_candidate_il, pos_neg_labels)
+        loss = self._loss_sigmoid(sim_pos, sim_candidate_il, pos_neg_labels, mask)
+
+        return loss, accuracy
+
+    def _train_sim(
+        self,
+        pos_inputs_embed: tf.Tensor,
+        pos_labels_embed: tf.Tensor,
+        candidate_labels_embed: tf.Tensor,
+        mask: tf.Tensor,
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
+        sim_pos = self.sim(
+            pos_inputs_embed, pos_labels_embed, mask
+        )  # (batch_size, 1, 1)
+        sim_candidate_il = self.sim(
+            pos_inputs_embed, candidate_labels_embed, mask
+        )  # (batch_size, 1, num_candidates)
+        return sim_pos, sim_candidate_il
+
+    def _sample_candidates(
+        self,
+        batch_inputs_embed: tf.Tensor,  # (batch_size, 1, num_features)
+        batch_labels_embed: tf.Tensor,  # (batch_size, max_num_labels_per_input, num_features)
+        batch_labels_ids: tf.Tensor,  # (batch_size, max_num_labels_per_input, 1)
+        all_labels_embed: tf.Tensor,  # (num_labels, num_features)
+        all_labels_ids: tf.Tensor,  # (num_labels, 1)
+    ) -> Tuple[
+        tf.Tensor,  # (batch_size, 1, 1, num_features)
+        tf.Tensor,  # (batch_size, 1, num_features)
+        tf.Tensor,  # (batch_size, 1, num_candidates, num_features)
+        tf.Tensor,  # (batch_size, num_candidates)
+    ]:
+        """Samples candidate examples.
+
+        Args:
+            batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized
+                trackers)
+            batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents
+                for IntentTED)
+            batch_labels_ids: Batch label indices (e.g. indices of the intents)
+            all_labels_embed: Embeddings for all labels in the domain
+            all_labels_ids: Indices for all labels in the domain
+
+        Returns:
+            pos_inputs_embed: Embeddings of the batch inputs
+            pos_labels_embed: First example of the embedding of a positive label
+            candidate_labels_embed: More examples of embeddings of labels, some positive
+                some negative
+            pos_neg_indicators: Indicator for which candidates are positives and which
+                are negatives
+        """
+        pos_inputs_embed = tf.expand_dims(
+            batch_inputs_embed, axis=-2, name="expand_pos_input"
+        )
+
+        # We want to guarantee that we return at least one positive example. All labels
+        # in `batch_labels_embed` are positive examples, but their number can be
+        # different in each example. So we take the first positive one here as our
+        # guarantee, and we may or may not capture more positive examples with the
+        # candidate sampling below.
+        pos_labels_embed = tf.expand_dims(
+            tf.expand_dims(batch_labels_embed[:, 0, ...], axis=-2),
+            axis=1,
+            name="expand_pos_labels",
+        )
+
+        # Pick random examples from the batch
+        candidate_ids = layers_utils.random_indices(
+            batch_size=tf.shape(batch_inputs_embed)[0],
+            n=self.num_neg,
+            n_max=tf.shape(all_labels_embed)[0],
+        )
+
+        # Get the label embeddings corresponding to candidate indices
+        candidate_labels_embed = layers_utils.get_candidate_values(
+            all_labels_embed, candidate_ids
+        )
+        candidate_labels_embed = tf.expand_dims(candidate_labels_embed, axis=1)
+
+        # Get binary indicators of whether a candidate is positive or not
+        pos_neg_indicators = self._get_pos_neg_indicators(
+            all_labels_ids, batch_labels_ids, candidate_ids,
+        )
+
+        return (
+            pos_inputs_embed,
+            pos_labels_embed,
+            candidate_labels_embed,
+            pos_neg_indicators,
+        )
+
+    def _get_pos_neg_indicators(
+        self,
+        all_labels_ids: tf.Tensor,
+        batch_labels_ids: tf.Tensor,
+        candidate_ids: tf.Tensor,
+    ) -> tf.Tensor:
+        """Computes indicators for which candidates are positive labels.
+
+        Args:
+            all_labels_ids: Indices of all the labels
+            batch_labels_ids: Indices of the labels in the examples
+            candidate_ids: Indices of labels that may or may not appear in the examples
+
+        Returns:
+            Binary indicators of whether or not a label is positive
+        """
+        candidate_labels_ids = layers_utils.get_candidate_values(
+            all_labels_ids, candidate_ids
+        )
+        candidate_labels_ids = tf.expand_dims(candidate_labels_ids, axis=1)
+
+        # Determine how many distinct labels exist (highest label index)
+        max_label_id = tf.cast(tf.math.reduce_max(all_labels_ids), dtype=tf.int32)
+
+        # Convert the positive label ids to their one_hot representation.
+        # Note: -1 indices yield a zeros-only vector. We use -1 as a padding token,
+        # as the number of positive labels in each example can differ. The padding is
+        # added in the TrackerFeaturizer.
+        batch_labels_one_hot = tf.one_hot(
+            tf.cast(tf.squeeze(batch_labels_ids, axis=-1), tf.int32),
+            max_label_id + 1,
+            axis=-1,
+        )  # (batch_size, max_num_labels_per_input, max_label_id)
+
+        # Collapse the extra dimension and convert to a multi-hot representation
+        # by aggregating all ones in the one-hot representation.
+        # We use tf.reduce_any instead of tf.reduce_sum because several examples can
+        # have the same postivie label.
+        batch_labels_multi_hot = tf.cast(
+            tf.math.reduce_any(tf.cast(batch_labels_one_hot, dtype=tf.bool), axis=-2),
+            tf.float32,
+        )  # (batch_size, max_label_id)
+
+        # Remove extra dimensions for gather
+        candidate_labels_ids = tf.squeeze(tf.squeeze(candidate_labels_ids, 1), -1)
+
+        # Collect binary indicators of whether or not a label is positive
+        return tf.gather(
+            batch_labels_multi_hot,
+            tf.cast(candidate_labels_ids, tf.int32),
+            batch_dims=1,
+            name="gather_labels",
+        )
+
+    def _loss_sigmoid(
+        self,
+        sim_pos: tf.Tensor,  # (batch_size, 1, 1)
+        sim_candidates_il: tf.Tensor,  # (batch_size, 1, num_candidates)
+        pos_neg_labels: tf.Tensor,  # (batch_size, num_candidates)
+        mask: Optional[tf.Tensor] = None,
+    ) -> tf.Tensor:  # ()
+        """Computes the sigmoid loss."""
+        # Concatenate the one guaranteed positive example with the candidate examples,
+        # some of which are positives and others are negatives. Which are which
+        # is stored in `pos_neg_labels`.
+        logits = tf.concat([sim_pos, sim_candidates_il], axis=-1, name="logit_concat")
+        logits = tf.squeeze(logits, 1)
+
+        # Create label_ids for sigmoid
+        pos_label_ids = tf.squeeze(tf.ones_like(sim_pos, tf.float32), -1)
+        label_ids = tf.concat(
+            [pos_label_ids, pos_neg_labels], axis=-1, name="gt_concat"
+        )
+
+        # Compute the sigmoid cross-entropy loss. When minimized, the embeddings
+        # for the two classes (positive and negative) are pushed away from each
+        # other in the embedding space, while it is allowed that any input embedding
+        # (featurized tracker) corresponds to more than one label (intent).
+        loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label_ids, logits=logits)
+
+        loss = self.apply_mask_and_scaling(loss, mask)
+
+        # Average the loss over the batch
+        return tf.reduce_mean(loss)
+
+    @staticmethod
+    def _accuracy(
+        sim_pos: tf.Tensor,  # (batch_size, 1, 1)
+        sim_candidates: tf.Tensor,  # (batch_size, 1, num_candidates)
+        pos_neg_indicators: tf.Tensor,  # (batch_size, num_candidates)
+    ) -> tf.Tensor:  # ()
+        """Calculates the accuracy."""
+        all_preds = tf.concat(
+            [sim_pos, sim_candidates], axis=-1, name="acc_concat_preds"
+        )
+        all_preds_sigmoid = tf.nn.sigmoid(all_preds)
+        all_pred_labels = tf.squeeze(tf.math.round(all_preds_sigmoid), 1)
+
+        # Create an indicator for the positive labels by concatenating the 1 for the one
+        # guaranteed positive example and the `pos_neg_indicators`
+        all_positives = tf.concat(
+            [tf.squeeze(tf.ones_like(sim_pos), axis=-1), pos_neg_indicators],
+            axis=-1,
+            name="acc_concat_gt",
+        )
+        return layers_utils.reduce_mean_equal(all_pred_labels, all_positives)

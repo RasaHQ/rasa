@@ -1795,7 +1795,7 @@ class TED(TransformerRasaModel):
 
         sim_all, scores = self._tf_layers[
             f"loss.{LABEL}"
-        ].similarity_confidence_from_embeddings(
+        ].get_similarities_and_confidences_from_embeddings(
             dialogue_embed[:, :, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
             dialogue_mask,
