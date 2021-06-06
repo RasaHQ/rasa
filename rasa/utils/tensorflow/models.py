@@ -563,7 +563,6 @@ class TransformerRasaModel(RasaModel):
         """Prepares layers & loss for the final label prediction step."""
         self._prepare_embed_layers(predictor_attribute)
         self._prepare_embed_layers(LABEL)
-
         self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
     def _prepare_embed_layers(self, name: Text, prefix: Text = "embed") -> None:
@@ -589,24 +588,29 @@ class TransformerRasaModel(RasaModel):
         )
 
     def _prepare_dot_product_loss(
-        self,
-        name: Text,
-        scale_loss: bool,
-        prefix: Text = "loss",
-        loss_layer: tf.keras.layers.Layer = layers.SingleLabelDotProductLoss,
+        self, name: Text, scale_loss: bool, prefix: Text = "loss",
     ) -> None:
-        self._tf_layers[f"{prefix}.{name}"] = loss_layer(
+        self._tf_layers[f"{prefix}.{name}"] = self.dot_product_loss_layer(
             self.config[NUM_NEG],
-            self.config[LOSS_TYPE],
-            self.config[MAX_POS_SIM],
-            self.config[MAX_NEG_SIM],
-            self.config[USE_MAX_NEG_SIM],
-            self.config[NEGATIVE_MARGIN_SCALE],
-            scale_loss,
+            loss_type=self.config[LOSS_TYPE],
+            mu_pos=self.config[MAX_POS_SIM],
+            mu_neg=self.config[MAX_NEG_SIM],
+            use_max_sim_neg=self.config[USE_MAX_NEG_SIM],
+            neg_lambda=self.config[NEGATIVE_MARGIN_SCALE],
+            scale_loss=scale_loss,
             similarity_type=self.config[SIMILARITY_TYPE],
             constrain_similarities=self.config[CONSTRAIN_SIMILARITIES],
             model_confidence=self.config[MODEL_CONFIDENCE],
         )
+
+    @property
+    def dot_product_loss_layer(self) -> tf.keras.layers.Layer:
+        """Returns the dot-product loss layer to use.
+
+        Returns:
+            The loss layer that is used by `_prepare_dot_product_loss`.
+        """
+        return layers.SingleLabelDotProductLoss
 
     def _prepare_entity_recognition_layers(self) -> None:
         for tag_spec in self._entity_tag_specs:

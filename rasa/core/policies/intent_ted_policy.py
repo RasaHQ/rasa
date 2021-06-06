@@ -75,7 +75,6 @@ from rasa.utils.tensorflow.constants import (
     ENTITY_RECOGNITION,
     IGNORE_INTENTS_LIST,
     BILOU_FLAG,
-    MODEL_CONFIDENCE,
     LEARNING_RATE,
     CROSS_ENTROPY,
     SPARSE_INPUT_DROPOUT,
@@ -588,24 +587,19 @@ class IntentTED(TED):
         """Prepares layers & loss for the final label prediction step."""
         self._prepare_embed_layers(predictor_attribute)
         self._prepare_embed_layers(LABEL)
+        self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
-        self._prepare_dot_product_loss(
-            LABEL, self.config[SCALE_LOSS], loss_layer=layers.MultiLabelDotProductLoss
-        )
+    @property
+    def dot_product_loss_layer(self) -> tf.keras.layers.Layer:
+        """Returns the dot-product loss layer to use.
 
-    def _prepare_dot_product_loss(
-        self,
-        name: Text,
-        scale_loss: bool,
-        prefix: Text = "loss",
-        loss_layer: tf.keras.layers.Layer = layers.SingleLabelDotProductLoss,
-    ) -> None:
-        self._tf_layers[f"{prefix}.{name}"] = loss_layer(
-            self.config[NUM_NEG],
-            scale_loss,
-            similarity_type=self.config[SIMILARITY_TYPE],
-            model_confidence=self.config[MODEL_CONFIDENCE],
-        )
+        Multiple intents can be valid simultaneously, so `IntentTED` uses the
+        `MultiLabelDotProductLoss`.
+
+        Returns:
+            The loss layer that is used by `_prepare_dot_product_loss`.
+        """
+        return layers.MultiLabelDotProductLoss
 
     @staticmethod
     def _get_labels_embed(
@@ -645,7 +639,8 @@ class IntentTED(TED):
 
         Args:
             model_data: Data used during model training.
-            label_ids: Numerical IDs of labels corresponding to data points used during training.
+            label_ids: Numerical IDs of labels corresponding to data points used during
+            training.
 
         Returns:
             Computed thresholds for each intent label present in `label_ids`.
