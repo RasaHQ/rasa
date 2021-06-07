@@ -76,9 +76,18 @@ def add_subparser(
 def _print_core_test_execution_info(args: argparse.Namespace) -> None:
     output = args.out or DEFAULT_RESULTS_PATH
 
-    rasa.shared.utils.cli.print_info(
-        f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
-    )
+    if args.successes:
+        rasa.shared.utils.cli.print_info(
+            f"Successful stories written to '{os.path.join(output, SUCCESSFUL_STORIES_FILE)}'"
+        )
+    if not args.no_errors:
+        rasa.shared.utils.cli.print_info(
+            f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
+        )
+    if not args.no_warnings:
+        rasa.shared.utils.cli.print_info(
+            f"Stories with prediction warnings written to '{os.path.join(output, STORIES_WITH_WARNINGS_FILE)}'"
+        )
 
 
 def run_core_test(args: argparse.Namespace) -> None:

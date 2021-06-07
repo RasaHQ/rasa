@@ -89,6 +89,7 @@ StoryEvaluation = namedtuple(
         "evaluation_store",
         "failed_stories",
         "successful_stories",
+        "stories_with_warnings",
         "action_list",
         "in_training_data_fraction",
     ],
@@ -783,8 +784,9 @@ async def _collect_story_predictions(
     from tqdm import tqdm
 
     story_eval_store = EvaluationStore()
-    failed = []
-    success = []
+    failed_stories = []
+    successful_stories = []
+    stories_with_warnings = []
     correct_dialogues = []
     number_of_stories = len(completed_trackers)
 
@@ -811,11 +813,12 @@ async def _collect_story_predictions(
 
         if tracker_results.has_prediction_target_mismatch():
             # there is at least one wrong prediction
-            failed.append(predicted_tracker)
+            print("ALWX events", predicted_tracker.events[-1].as_dict())
+            failed_stories.append(predicted_tracker)
             correct_dialogues.append(0)
         else:
             correct_dialogues.append(1)
-            success.append(predicted_tracker)
+            successful_stories.append(predicted_tracker)
 
     logger.info("Finished collecting predictions.")
 
@@ -835,8 +838,9 @@ async def _collect_story_predictions(
     return (
         StoryEvaluation(
             evaluation_store=story_eval_store,
-            failed_stories=failed,
-            successful_stories=success,
+            failed_stories=failed_stories,
+            successful_stories=successful_stories,
+            stories_with_warnings=stories_with_warnings,
             action_list=action_list,
             in_training_data_fraction=in_training_data_fraction,
         ),
@@ -967,6 +971,11 @@ async def test(
         _log_stories(
             story_evaluation.successful_stories,
             os.path.join(out_directory, SUCCESSFUL_STORIES_FILE),
+        )
+    if warnings and out_directory:
+        _log_stories(
+            story_evaluation.stories_with_warnings,
+            os.path.join(out_directory, STORIES_WITH_WARNINGS_FILE),
         )
 
     return {
