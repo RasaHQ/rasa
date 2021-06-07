@@ -978,7 +978,7 @@ async def test(
         _log_stories(
             story_evaluation.stories_with_warnings,
             os.path.join(out_directory, STORIES_WITH_WARNINGS_FILE),
-            "No warning for test stories"
+            "No warnings for test stories"
         )
 
     return {
