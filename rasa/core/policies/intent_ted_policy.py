@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
+from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING, Tuple
 from collections import defaultdict
 
 from rasa.shared.core.domain import Domain
@@ -82,6 +82,7 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     HIDDEN_LAYERS_SIZES,
     CONCAT_DIMENSION,
+    TOLERANCE,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import (
@@ -213,6 +214,8 @@ class IntentTEDPolicy(TEDPolicy):
         FEATURIZERS: [],
         # List of intents to ignore
         IGNORE_INTENTS_LIST: [],
+        # Tolerance for prediction of action_unlikely_intent.
+        TOLERANCE: 0.00,
     }
 
     def __init__(
@@ -240,6 +243,11 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
         self.label_thresholds = label_thresholds
+        self.tolerance_thresholds = (
+            self._compute_tolerance_thresholds(self.label_thresholds)
+            if self.label_thresholds
+            else None
+        )
         self.ignore_intent_list = self.config[IGNORE_INTENTS_LIST]
 
         # Set all invalid / non configurable parameters
@@ -460,11 +468,11 @@ class IntentTEDPolicy(TEDPolicy):
         Returns:
             Whether intent should raise `action_unlikely_intent` or not.
         """
-        if domain.intents.index(intent) not in self.label_thresholds:
+        if domain.intents.index(intent) not in self.tolerance_thresholds:
             # This means the intent was never present in a story
             logger.debug(
                 f"Query intent index {domain.intents.index(intent)} not "
-                f"found in label thresholds - {self.label_thresholds}."
+                f"found in label thresholds - {self.tolerance_thresholds}."
                 f"Check for `action_unlikely_intent` prediction will be skipped."
             )
             return False
@@ -516,7 +524,7 @@ class IntentTEDPolicy(TEDPolicy):
         logger.debug(
             f"Score for intent `{query_intent}` is "
             f"{query_intent_similarity}, while "
-            f"threshold is {self.label_thresholds[query_intent_id]}"
+            f"threshold is {self.tolerance_thresholds[query_intent_id]}"
         )
         logger.debug(
             f"Top 5 intents(in ascending order) that "
@@ -526,7 +534,7 @@ class IntentTEDPolicy(TEDPolicy):
         # If score for query intent is below threshold and
         # the query intent is not the top likely intent
         if (
-            query_intent_similarity < self.label_thresholds[query_intent_id]
+            query_intent_similarity < self.tolerance_thresholds[query_intent_id]
             and query_intent_id != sorted_intent_scores[-1][0]
         ):
             logger.debug(
@@ -585,6 +593,25 @@ class IntentTEDPolicy(TEDPolicy):
             label_thresholds=model_utilities["label_thresholds"],
             **model_utilities["meta"],
         )
+
+    def _compute_tolerance_thresholds(self, label_thresholds):
+        def _find_appropriate_tolerance_threshold(bins, edges, tolerance_percentile):
+            tolerance_percentile = 1.0 - tolerance_percentile
+            for index, boundary_value in enumerate(bins):
+                if boundary_value >= tolerance_percentile:
+                    return edges[index]
+            return edges[-1]
+
+        tolerance_thresholds = {}
+        for label_id in label_thresholds:
+            (bins, edges), min_pos_value = label_thresholds[label_id]
+            tolerance_thresholds[label_id] = min(
+                min_pos_value,
+                _find_appropriate_tolerance_threshold(
+                    bins, edges, self.config[TOLERANCE]
+                ),
+            )
+        return tolerance_thresholds
 
 
 class IntentTED(TED):
@@ -675,7 +702,20 @@ class IntentTED(TED):
             label_ids, outputs
         )
 
-        return self._pick_threshold_from_similarities(label_id_scores)
+        return self._construct_score_bins(label_id_scores)
+
+        # return self._pick_threshold_from_similarities(label_id_scores)
+
+    @staticmethod
+    def _construct_score_bins(label_id_scores: Dict[int, List[List[float]]]):
+        def _get_cumsum_edges(scores: List[float]) -> Tuple[np.ndarray, np.ndarray]:
+            bins, edges = np.histogram(scores, bins=100)
+            return np.cumsum(bins) / np.sum(bins), edges
+
+        return {
+            label_id: [_get_cumsum_edges(scores[1]), np.min(scores[0])]
+            for label_id, scores in label_id_scores.items()
+        }
 
     @staticmethod
     def _pick_threshold_from_similarities(
@@ -700,8 +740,13 @@ class IntentTED(TED):
     @staticmethod
     def _collect_label_id_similarities_from_outputs(
         label_ids: np.ndarray, outputs: Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
-    ) -> Dict[int, List[float]]:
+    ) -> Dict[int, List[List[float]]]:
         """Collects similarities predicted for each label id.
+
+        For each `label_id`, we collect similarity scores across
+        all trackers and categorize them into two buckets:
+            1. Similarity scores when `label_id` is the correct label.
+            2. Similarity scores when `label_id` is the wrong label.
 
         Args:
             label_ids: Numerical IDs of labels for each data point used during training.
@@ -710,20 +755,29 @@ class IntentTED(TED):
         Returns:
             Similarities grouped by intent label id.
         """
-        label_id_scores: Dict[int, List[float]] = defaultdict(list)
+        label_id_scores: Dict[int, List[List[float]]] = defaultdict(list)
+        unique_label_ids = np.unique(label_ids).tolist()
+        if -1 in unique_label_ids:
+            unique_label_ids.remove(-1)
+        for label_id in unique_label_ids:
+            label_id_scores[label_id] = [[], []]
+
         for index, all_pos_labels in enumerate(label_ids):
 
-            # If a data point (tracker) has multiple label ids
-            # assigned to it, the tracker featurizer distributes
-            # those multiple label ids across multiple data points,
-            # one for each label id. Hence, here when we iterate over
-            # all data points, we consider only the first label id.
-            # Other positive label ids will be taken care of as part of
-            # some other data point, where the input tracker is the same
-            # as this one but first positive label id is different.
-            # This prevents over-counting across label ids.
-            first_pos_label_id = all_pos_labels[0]
-            label_id_scores[first_pos_label_id].append(
-                outputs["similarities"][index, 0, first_pos_label_id]
-            )
-        return label_id_scores
+            for candidate_label_id in unique_label_ids:
+                if candidate_label_id in all_pos_labels:
+                    label_id_scores[candidate_label_id][0].append(
+                        outputs["similarities"][index, 0, candidate_label_id]
+                    )
+                else:
+                    label_id_scores[candidate_label_id][1].append(
+                        outputs["similarities"][index, 0, candidate_label_id]
+                    )
+
+        # Get only unique scores so that duplicate
+        # trackers created because of permutation are pruned out.
+        unique_label_id_scores = {
+            label_id: [list(set(scores[0])), list(set(scores[1]))]
+            for label_id, scores in label_id_scores.items()
+        }
+        return unique_label_id_scores

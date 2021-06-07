@@ -95,3 +95,5 @@ CHECKPOINT_MODEL = "checkpoint_model"
 MASK = "mask"
 
 IGNORE_INTENTS_LIST = "ignore_intents_list"
+
+TOLERANCE = "tolerance"
