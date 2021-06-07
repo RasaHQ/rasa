@@ -849,12 +849,12 @@ async def _collect_story_predictions(
     )
 
 
-def _log_stories(trackers: List[DialogueStateTracker], file_path: Text) -> None:
+def _log_stories(trackers: List[DialogueStateTracker], file_path: Text, comment: Text) -> None:
     """Write given stories to the given file."""
 
     with open(file_path, "w", encoding=DEFAULT_ENCODING) as f:
         if not trackers:
-            f.write("# None of the test stories failed - all good!")
+            f.write(f"# {comment}")
         else:
             stories = [tracker.as_story(include_source=True) for tracker in trackers]
             steps = [step for story in stories for step in story.story_steps]
@@ -966,16 +966,19 @@ async def test(
         _log_stories(
             story_evaluation.failed_stories,
             os.path.join(out_directory, FAILED_STORIES_FILE),
+            "None of the test stories failed - all good!"
         )
     if successes and out_directory:
         _log_stories(
             story_evaluation.successful_stories,
             os.path.join(out_directory, SUCCESSFUL_STORIES_FILE),
+            "None of the test stories succeeded :("
         )
     if warnings and out_directory:
         _log_stories(
             story_evaluation.stories_with_warnings,
             os.path.join(out_directory, STORIES_WITH_WARNINGS_FILE),
+            "No warning for test stories"
         )
 
     return {
