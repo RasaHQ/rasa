@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import pickle
-import asyncio
+from inspect import isawaitable
 from datetime import datetime, timezone
 
 from time import sleep
@@ -1255,32 +1255,22 @@ class AwaitableTrackerStore(TrackerStore):
         )
 
     async def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-        if (asyncio.iscoroutinfunction(self._tracker_store.retrieve)):
-            return await self._tracker_store.retrieve(sender_id)
-        else:
-            return self._tracker_store.retrieve(sender_id)
-
+        result = self._tracker_store.retrieve(sender_id)
+        return await result if isawaitable(result) else result
+    
     async def keys(self) -> Iterable[Text]:
-        if (asyncio.iscoroutinfunction(self._tracker_store.keys)):
-            return await self._tracker_store.keys()
-        else:
-            return self._tracker_store.keys()
-
+        result = self._tracker_store.keys()
+        return await result if isawaitable(result) else result
 
     async def save(self, tracker: DialogueStateTracker) -> None:
-        if (asyncio.iscoroutinfunction(self._tracker_store.save)):
-            return await self._tracker_store.save(tracker)
-        else:
-            return self._tracker_store.save(tracker)
+        result = self._tracker_store.save(tracker)
+        return await result if isawaitable(result) else result
     
     async def retrieve_full_tracker(
         self, conversation_id: Text
     ) -> Optional[DialogueStateTracker]:
-        if (asyncio.iscoroutinfunction(self._tracker_store.retrieve_full_tracker)):
-            return await self._tracker_store.retrieve_full_tracker(conversation_id)
-        else:
-            return self._tracker_store.retrieve_full_tracker(conversation_id)
-
+        result = self._tracker_store.retrieve_full_tracker(conversation_id)
+        return await result if isawaitable(result) else result
 
 def _create_from_endpoint_config(
     endpoint_config: Optional[EndpointConfig] = None,

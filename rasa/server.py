@@ -168,7 +168,7 @@ def ensure_conversation_exists() -> "SanicView":
 
     def decorator(f: "SanicView") -> HTTPResponse:
         @wraps(f)
-        def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
+        async def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
             if await request.app.agent.tracker_store.exists(conversation_id):
                 return f(request, *args, **kwargs)
