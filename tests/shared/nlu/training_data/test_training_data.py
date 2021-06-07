@@ -157,11 +157,7 @@ def test_watson_data():
     td = load_data("data/examples/watson/demo_watson_v2.json")
     assert not td.is_empty()
     assert len(td.entity_examples) == 117
-    assert len(td.intent_examples) == 15
-    assert len(td.training_examples) == 309
-    assert td.entity_synonyms == {"Apple": "Mac"}
-    assert td.intents == {"Specific_AddToBasket"}
-    assert td.entities == {"brands"}
+    assert len(td.intent_examples) == 309
 
 
 def test_dialogflow_data():
