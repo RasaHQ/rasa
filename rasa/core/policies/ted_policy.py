@@ -329,7 +329,6 @@ class TEDPolicy(Policy):
         **kwargs: Any,
     ) -> None:
         """Declare instance variables with default values."""
-        # tf.config.run_functions_eagerly(True)
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
             kwargs.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE),
             self.defaults[SPLIT_ENTITIES_BY_COMMA],
@@ -1311,23 +1310,23 @@ class TED(TransformerRasaModel):
                     filtered_label_data, key
                 )
                 labels_encoded[key] = attribute_features
-            if (
-                labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None
-                and labels_encoded.get(f"{LABEL_KEY}_{ACTION_NAME}") is not None
-            ):
-                x = labels_encoded.pop(
-                    f"{LABEL_KEY}_{ACTION_TEXT}"
-                ) + labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
-            elif labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None:
-                x = labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}")
-            else:
-                x = labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
-                # additional sequence axis is artifact of our RasaModelData
-                # creation
-                # TODO check whether this should be solved in data creation
-            x = tf.squeeze(x, axis=1)
-            labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
-            return labels_embed
+        if (
+            labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None
+            and labels_encoded.get(f"{LABEL_KEY}_{ACTION_NAME}") is not None
+        ):
+            x = labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}") + labels_encoded.pop(
+                f"{LABEL_KEY}_{ACTION_NAME}"
+            )
+        elif labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None:
+            x = labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}")
+        else:
+            x = labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
+            # additional sequence axis is artifact of our RasaModelData
+            # creation
+            # TODO check whether this should be solved in data creation
+        x = tf.squeeze(x, axis=1)
+        labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
+        return labels_embed
 
     def _embed_dialogue(
         self,
