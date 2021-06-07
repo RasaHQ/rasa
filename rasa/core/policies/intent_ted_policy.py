@@ -215,7 +215,7 @@ class IntentTEDPolicy(TEDPolicy):
         # List of intents to ignore
         IGNORE_INTENTS_LIST: [],
         # Tolerance for prediction of action_unlikely_intent.
-        TOLERANCE: 0.00,
+        TOLERANCE: 0.0,
     }
 
     def __init__(
@@ -595,20 +595,35 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     def _compute_tolerance_thresholds(self, label_thresholds):
-        def _find_appropriate_tolerance_threshold(bins, edges, tolerance_percentile):
-            tolerance_percentile = 1.0 - tolerance_percentile
-            for index, boundary_value in enumerate(bins):
-                if boundary_value >= tolerance_percentile:
-                    return edges[index]
-            return edges[-1]
+        # def _find_appropriate_tolerance_threshold(bins, edges, tolerance_percentile):
+        #     tolerance_percentile = 1.0 - tolerance_percentile
+        #     for index, boundary_value in enumerate(bins):
+        #         if boundary_value >= tolerance_percentile:
+        #             return edges[index]
+        #     return edges[-1]
+
+        def _appropriate_negative_value_threshold(
+            negative_values, tolerance_percentile
+        ):
+            index = max(
+                0,
+                min(
+                    np.size(negative_values) - 1,
+                    int(tolerance_percentile * np.size(negative_values)),
+                ),
+            )
+            return sorted(negative_values)[::-1][index]
 
         tolerance_thresholds = {}
         for label_id in label_thresholds:
-            (bins, edges), min_pos_value = label_thresholds[label_id]
+            negative_values, min_pos_value = label_thresholds[label_id]
             tolerance_thresholds[label_id] = min(
                 min_pos_value,
-                _find_appropriate_tolerance_threshold(
-                    bins, edges, self.config[TOLERANCE]
+                # _find_appropriate_tolerance_threshold(
+                #     bins, edges, self.config[TOLERANCE]
+                # ),
+                _appropriate_negative_value_threshold(
+                    negative_values, self.config[TOLERANCE]
                 ),
             )
         return tolerance_thresholds
@@ -708,12 +723,13 @@ class IntentTED(TED):
 
     @staticmethod
     def _construct_score_bins(label_id_scores: Dict[int, List[List[float]]]):
-        def _get_cumsum_edges(scores: List[float]) -> Tuple[np.ndarray, np.ndarray]:
-            bins, edges = np.histogram(scores, bins=100)
-            return np.cumsum(bins) / np.sum(bins), edges
+        # def _get_cumsum_edges(scores: List[float]) -> Tuple[np.ndarray, np.ndarray]:
+        #     bins, edges = np.histogram(scores, bins=100)
+        #     return np.cumsum(bins) / np.sum(bins), edges
 
+        # bins and edges of negative scores, minimum of positive scores.
         return {
-            label_id: [_get_cumsum_edges(scores[1]), np.min(scores[0])]
+            label_id: [scores[1], np.min(scores[0])]
             for label_id, scores in label_id_scores.items()
         }
 
