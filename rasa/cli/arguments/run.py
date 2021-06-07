@@ -89,7 +89,8 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
     )
     server_arguments.add_argument(
         "--ssl-ca-file",
-        help="If your SSL certificate needs to be verified, you can specify the CA file "
+        help="If your SSL certificate needs to be verified, "
+        "you can specify the CA file "
         "using this parameter.",
     )
     server_arguments.add_argument(

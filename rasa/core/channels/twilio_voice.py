@@ -169,8 +169,10 @@ class TwilioVoiceInput(InputChannel):
     def _raise_invalid_speech_model_timeout_exception(self) -> None:
         """Raises an error if incompatible speech_timeout and speech_model used."""
         raise InvalidConfigException(
-            "If speech_timeout is 'auto' the speech_model must be 'numbers_and_commands'. Please update your "
-            "speech_model to be 'numbers_and_commands' if you would like to continue using the 'auto' speech_model."
+            "If speech_timeout is 'auto' the speech_model must be "
+            "'numbers_and_commands'. Please update your speech_model "
+            "to be 'numbers_and_commands' if you would like to continue "
+            "using the 'auto' speech_model."
         )
 
     def _raise_invalid_enhanced_option_exception(self) -> None:
@@ -184,8 +186,9 @@ class TwilioVoiceInput(InputChannel):
         """Raises an error if an invalid speech_model is provided."""
         raise InvalidConfigException(
             f"The value {self.speech_model} for speech_model is invalid. "
-            f"You must choose one of 'default', 'numbers_and_commands', or 'phone_call'. "
-            f"Refer to the documentation for details about the selections."
+            f"You must choose one of 'default', 'numbers_and_commands', "
+            f"or 'phone_call'. Refer to the documentation for details "
+            f"about the selections."
         )
 
     def _raise_invalid_speech_timeout_exception(self) -> None:
@@ -199,15 +202,15 @@ class TwilioVoiceInput(InputChannel):
         """Raises an error if an invalid voice is provided."""
         raise InvalidConfigException(
             f"The value {self.assistant_voice} is an invalid for assistant_voice. "
-            f"Please refer to the documentation for a list of valid voices you can use for "
-            f"your voice assistant."
+            f"Please refer to the documentation for a list of valid voices "
+            f"you can use for your voice assistant."
         )
 
     def _raise_invalid_enhanced_speech_model_exception(self) -> None:
         """Raises error if enhanced is used with an incompatible speech_model."""
         raise InvalidConfigException(
-            f"If you set enhanced to 'true' then speech_model must be 'phone_call'. Current speech_model is: "
-            f"{self.speech_model}."
+            f"If you set enhanced to 'true' then speech_model must be 'phone_call'. "
+            f"Current speech_model is: {self.speech_model}."
         )
 
     def blueprint(
@@ -315,8 +318,8 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
         emoji_regex = rasa.utils.io.get_emoji_regex()
         if emoji_regex.findall(text):
             rasa.shared.utils.io.raise_warning(
-                "Text contains an emoji in a voice response. Review responses to provide a voice-friendly "
-                "alternative."
+                "Text contains an emoji in a voice response. "
+                "Review responses to provide a voice-friendly alternative."
             )
 
     async def send_text_message(
@@ -347,7 +350,10 @@ class TwilioVoiceCollectingOutputChannel(CollectingOutputChannel):
     ) -> None:
         """For voice channel do not send images."""
         rasa.shared.utils.io.raise_warning(
-            "An image was removed from the voice message and only the text of message was sent. "
-            "It's recommended that you define voice-friendly alternatives for all responses "
-            "with a visual elements such as images and emojis that are used in your voice channel."
+            "An image was removed from the voice message and "
+            "only the text of message was sent. "
+            "It's recommended that you define voice-friendly "
+            "alternatives for all responses "
+            "with a visual elements such as images and emojis "
+            "that are used in your voice channel."
         )

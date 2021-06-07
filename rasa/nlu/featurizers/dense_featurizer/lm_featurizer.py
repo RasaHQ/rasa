@@ -575,8 +575,8 @@ class LanguageModelFeaturizer(DenseFeaturizer):
                         f"The sequence length of '{example.get(attribute)[:20]}...' "
                         f"is too long({sequence_length} tokens) for the "
                         f"model chosen {self.model_name} which has a maximum "
-                        f"sequence length of {self.max_model_sequence_length} tokens. Either "
-                        f"shorten the message or use a model which has no "
+                        f"sequence length of {self.max_model_sequence_length} tokens. "
+                        f"Either shorten the message or use a model which has no "
                         f"restriction on input sequence length like XLNet."
                     )
                 logger.debug(
