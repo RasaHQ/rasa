@@ -365,6 +365,11 @@ class TEDPolicy(Policy):
 
     @staticmethod
     def model_class() -> Type[RasaModel]:
+        """Gets the class of the model architecture to be used by the policy.
+
+        Returns:
+            Required class.
+        """
         return TED
 
     @classmethod
@@ -1277,9 +1282,7 @@ class TED(TransformerRasaModel):
                 )
                 all_labels_encoded[key] = attribute_features
 
-        x = self._collect_label_attribute_encodings(
-            all_labels_encoded, LABEL_FEATURES_TO_ENCODE
-        )
+        x = self._collect_label_attribute_encodings(all_labels_encoded)
 
         # additional sequence axis is artifact of our RasaModelData creation
         # TODO check whether this should be solved in data creation
@@ -1291,16 +1294,16 @@ class TED(TransformerRasaModel):
 
     @staticmethod
     def _collect_label_attribute_encodings(
-        all_labels_encoded: Dict[Text, tf.Tensor], label_attributes: List[Text]
-    ):
-        x = None
-        for attribute in label_attributes:
-            if all_labels_encoded.get(attribute) is not None:
-                x = (
-                    all_labels_encoded.pop(attribute)
-                    if not x
-                    else x + all_labels_encoded.pop(attribute)
-                )
+        all_labels_encoded: Dict[Text, tf.Tensor]
+    ) -> tf.Tensor:
+        # Initialize with at least one attribute first
+        # so that the subsequent TF ops are simplified.
+        all_attributes_present = list(all_labels_encoded.keys())
+        x = all_labels_encoded.pop(all_attributes_present[0])
+
+        # Add remaining attributes
+        for attribute in all_labels_encoded:
+            x += all_labels_encoded.get(attribute)
         return x
 
     def _embed_dialogue(

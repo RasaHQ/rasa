@@ -103,8 +103,8 @@ SAVE_MODEL_FILE_NAME = "intent_ted_policy"
 
 
 class IntentTEDPolicy(TEDPolicy):
-    """
-    `IntentTEDPolicy` has the same model architecture as `TEDPolicy`.
+    """`IntentTEDPolicy` has the same model architecture as `TEDPolicy`.
+
     The difference is at a task level.
     Instead of predicting the next probable action, this policy
     predicts whether the last predicted intent is a likely intent
@@ -228,7 +228,6 @@ class IntentTEDPolicy(TEDPolicy):
         **kwargs: Any,
     ) -> None:
         """Declares instance variables with default values."""
-
         super().__init__(
             featurizer,
             priority,
@@ -257,6 +256,11 @@ class IntentTEDPolicy(TEDPolicy):
 
     @staticmethod
     def model_class() -> Type[RasaModel]:
+        """Gets the class of the model architecture to be used by the policy.
+
+        Returns:
+            Required class.
+        """
         return IntentTED
 
     def _auto_update_configuration(self):
@@ -719,7 +723,6 @@ class IntentTED(TED):
             # as this one but first positive label id is different.
             # This prevents over-counting across label ids.
             first_pos_label_id = all_pos_labels[0]
-
             label_id_scores[first_pos_label_id].append(
                 outputs["similarities"][index, 0, first_pos_label_id]
             )

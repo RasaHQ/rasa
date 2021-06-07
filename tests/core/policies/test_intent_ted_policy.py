@@ -111,7 +111,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         assert set(data_for_prediction.data.keys()).issubset(PREDICTION_FEATURES)
 
     def test_similarities_collection_for_label_ids(self):
-        label_ids = np.ndarray([[0, 1], [1, -1], [1, 0], [2, -1]])
+        label_ids = np.array([[0, 1], [1, -1], [1, 0], [2, -1]])
         outputs = {
             "similarities": np.array(
                 [
