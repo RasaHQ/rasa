@@ -320,7 +320,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             rasa.shared.utils.io.raise_warning(
                 f"The out of vocabulary token '{self.OOV_token}' was configured, but "
                 f"could not be found in any one of the {training_data_type} "
-                f"training examples. All unseen words will be ignored during prediction.",
+                f"training examples. All unseen words will be "
+                f"ignored during prediction.",
                 docs=DOCS_URL_COMPONENTS + "#countvectorsfeaturizer",
             )
 

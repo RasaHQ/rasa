@@ -55,7 +55,8 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             ],
         ),
         (
-            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 https://rasa.com/docs/rasa/components#whitespacetokenizer",
+            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 "  # noqa: E501, W505
+            "https://rasa.com/docs/rasa/components#whitespacetokenizer",
             [
                 "https://www.google.com/search?"
                 "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",

@@ -10,6 +10,7 @@ from typing import Deque, Dict, Optional, Text, Union, Any, List, Tuple
 import aio_pika
 
 from rasa.constants import DEFAULT_LOG_LEVEL_LIBRARIES, ENV_LOG_LEVEL_LIBRARIES
+from rasa.shared.exceptions import RasaException
 from rasa.shared.constants import DOCS_URL_PIKA_EVENT_BROKER
 from rasa.core.brokers.broker import EventBroker
 import rasa.shared.utils.io
@@ -72,7 +73,12 @@ class PikaEventBroker(EventBroker):
         self.host = host
         self.username = username
         self.password = password
-        self.port = int(port)
+
+        try:
+            self.port = int(port)
+        except ValueError as e:
+            raise RasaException("Port could not be converted to integer.") from e
+
         self.queues = self._get_queues_from_args(queues)
         self.raise_on_failure = raise_on_failure
         self._connection_attempts = connection_attempts
@@ -151,7 +157,8 @@ class PikaEventBroker(EventBroker):
 
         channel = await self._connection.channel()
         logger.debug(
-            f"RabbitMQ channel was opened. Declaring fanout exchange '{self.exchange_name}'."
+            f"RabbitMQ channel was opened. "
+            f"Declaring fanout exchange '{self.exchange_name}'."
         )
 
         self._exchange = await self._set_up_exchange(channel)

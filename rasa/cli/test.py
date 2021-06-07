@@ -16,6 +16,7 @@ from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
+    DEFAULT_DOMAIN_PATH,
 )
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
@@ -90,7 +91,8 @@ def run_core_test(args: argparse.Namespace) -> None:
 
     if args.model is None:
         rasa.shared.utils.cli.print_error(
-            "No model provided. Please make sure to specify the model to test with '--model'."
+            "No model provided. Please make sure to specify "
+            "the model to test with '--model'."
         )
         return
 
@@ -158,7 +160,7 @@ async def run_nlu_test_async(
 
     data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path]
+        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
     )
     nlu_data = await test_data_importer.get_nlu_data()
 

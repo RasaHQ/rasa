@@ -259,9 +259,193 @@ async def test_verify_there_is_not_example_repetition_in_intents():
     assert validator.verify_example_repetition_in_intents(False)
 
 
+async def test_verify_actions_in_stories_not_in_domain(
+    tmp_path: Path, domain_path: Text
+):
+    story_file_name = tmp_path / "stories.yml"
+    story_file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+        - story: story path 1
+          steps:
+          - intent: greet
+          - action: action_test_1
+        """
+    )
+
+    importer = RasaFileImporter(
+        domain_path=domain_path, training_data_paths=[story_file_name],
+    )
+    validator = await Validator.from_importer(importer)
+    with pytest.warns(UserWarning) as warning:
+        validity = validator.verify_actions_in_stories_rules()
+        assert validity is False
+
+    assert (
+        "The action 'action_test_1' is used in the 'story path 1' block, "
+        "but it is not listed in the domain file." in warning[0].message.args[0]
+    )
+
+
+async def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text):
+    rules_file_name = tmp_path / "rules.yml"
+    rules_file_name.write_text(
+        """
+        version: "2.0"
+        rules:
+        - rule: rule path 1
+          steps:
+          - intent: goodbye
+          - action: action_test_2
+        """
+    )
+    importer = RasaFileImporter(
+        domain_path=domain_path, training_data_paths=[rules_file_name],
+    )
+    validator = await Validator.from_importer(importer)
+    with pytest.warns(UserWarning) as warning:
+        validity = validator.verify_actions_in_stories_rules()
+        assert validity is False
+
+    assert (
+        "The action 'action_test_2' is used in the 'rule path 1' block, "
+        "but it is not listed in the domain file." in warning[0].message.args[0]
+    )
+
+
+async def test_verify_form_slots_invalid_domain(tmp_path: Path):
+    domain = tmp_path / "domain.yml"
+    domain.write_text(
+        """
+        version: "2.0"
+        forms:
+          name_form:
+             first_name:
+             - type: from_text
+             last_name:
+             - type: from_text
+        slots:
+             first_name:
+                type: text
+             last_nam:
+                type: text
+        """
+    )
+    importer = RasaFileImporter(domain_path=domain)
+    validator = await Validator.from_importer(importer)
+    with pytest.warns(UserWarning) as w:
+        validity = validator.verify_form_slots()
+        assert validity is False
+
+    assert (
+        w[0].message.args[0] == "The form slot 'last_name' in form 'name_form' "
+        "is not present in the domain slots."
+        "Please add the correct slot or check for typos."
+    )
+
+
+async def test_response_selector_responses_in_domain_no_errors():
+    importer = RasaFileImporter(
+        config_file="data/test_config/config_defaults.yml",
+        domain_path="data/test_domains/response_selector_responses_in_domain.yml",
+        training_data_paths=[
+            "data/test_yaml_stories/test_base_retrieval_intent_story.yml"
+        ],
+        training_type=TrainingType.CORE,
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_utterances_in_stories(ignore_warnings=True)
+
+
 async def test_invalid_domain_mapping_policy():
     importer = RasaFileImporter(
         domain_path="data/test_domains/default_with_mapping.yml"
     )
     validator = await Validator.from_importer(importer)
     assert validator.verify_domain_validity() is False
+
+
+@pytest.mark.parametrize(
+    ("file_name", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+async def test_valid_stories_rules_actions_in_domain(
+    file_name: Text, data_type: Text, tmp_path: Path
+):
+    domain = tmp_path / "domain.yml"
+    domain.write_text(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        actions:
+        - action_greet
+        """
+    )
+    file_name = tmp_path / f"{file_name}.yml"
+    file_name.write_text(
+        f"""
+        version: "2.0"
+        {file_name}:
+        - {data_type}: test path
+          steps:
+          - intent: greet
+          - action: action_greet
+        """
+    )
+    importer = RasaFileImporter(domain_path=domain, training_data_paths=[file_name],)
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_actions_in_stories_rules()
+
+
+@pytest.mark.parametrize(
+    ("file_name", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+async def test_valid_stories_rules_default_actions(
+    file_name: Text, data_type: Text, tmp_path: Path
+):
+    domain = tmp_path / "domain.yml"
+    domain.write_text(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        """
+    )
+    file_name = tmp_path / f"{file_name}.yml"
+    file_name.write_text(
+        f"""
+            version: "2.0"
+            {file_name}:
+            - {data_type}: test path
+              steps:
+              - intent: greet
+              - action: action_restart
+            """
+    )
+    importer = RasaFileImporter(domain_path=domain, training_data_paths=[file_name],)
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_actions_in_stories_rules()
+
+
+async def test_valid_form_slots_in_domain(tmp_path: Path):
+    domain = tmp_path / "domain.yml"
+    domain.write_text(
+        """
+        version: "2.0"
+        forms:
+          name_form:
+             first_name:
+             - type: from_text
+             last_name:
+             - type: from_text
+        slots:
+             first_name:
+                type: text
+             last_name:
+                type: text
+        """
+    )
+    importer = RasaFileImporter(domain_path=domain)
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_form_slots()
