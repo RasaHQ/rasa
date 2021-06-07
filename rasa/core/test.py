@@ -1,6 +1,6 @@
 import logging
 import os
-import warnings
+import warnings as pywarnings
 import typing
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
@@ -79,7 +79,7 @@ CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
 REPORT_STORIES_FILE = "story_report.json"
 FAILED_STORIES_FILE = "failed_test_stories.yml"
 SUCCESSFUL_STORIES_FILE = "successful_test_stories.yml"
-
+STORIES_WITH_WARNINGS_FILE = "stories_with_warnings.yml"
 
 logger = logging.getLogger(__name__)
 
@@ -867,6 +867,7 @@ async def test(
     disable_plotting: bool = False,
     successes: bool = False,
     errors: bool = True,
+    warnings: bool = True,
 ) -> Dict[Text, Any]:
     """Run the evaluation of the stories, optionally plot the results.
 
@@ -882,6 +883,7 @@ async def test(
         successes: boolean indicating whether to write down successful predictions or
             not
         errors: boolean indicating whether to write down incorrect predictions or not
+        warnings: boolean indicating whether to write down prediction warnings or not
 
     Returns:
         Evaluation summary.
@@ -897,10 +899,10 @@ async def test(
 
     evaluation_store = story_evaluation.evaluation_store
 
-    with warnings.catch_warnings():
+    with pywarnings.catch_warnings():
         from sklearn.exceptions import UndefinedMetricWarning
 
-        warnings.simplefilter("ignore", UndefinedMetricWarning)
+        pywarnings.simplefilter("ignore", UndefinedMetricWarning)
 
         targets, predictions = evaluation_store.serialise()
 
