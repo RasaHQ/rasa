@@ -501,17 +501,20 @@ def test_log_evaluation_table(caplog, skip_field, skip_value):
     "test_file, correct_intent, correct_entity",
     [
         [
-            "data/test_yaml_stories/test_prediction_with_correct_intent_wrong_entity.yml",
+            "data/test_yaml_stories/"
+            "test_prediction_with_correct_intent_wrong_entity.yml",
             True,
             False,
         ],
         [
-            "data/test_yaml_stories/test_prediction_with_wrong_intent_correct_entity.yml",
+            "data/test_yaml_stories/"
+            "test_prediction_with_wrong_intent_correct_entity.yml",
             False,
             True,
         ],
         [
-            "data/test_yaml_stories/test_prediction_with_wrong_intent_wrong_entity.yml",
+            "data/test_yaml_stories/"
+            "test_prediction_with_wrong_intent_wrong_entity.yml",
             False,
             False,
         ],

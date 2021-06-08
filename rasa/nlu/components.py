@@ -111,7 +111,8 @@ def validate_component_keys(
     for key in provided_keys:
         if key not in allowed_keys:
             rasa.shared.utils.io.raise_warning(
-                f"You have provided an invalid key `{key}` for component `{component_name}` in your pipeline. "
+                f"You have provided an invalid key `{key}` "
+                f"for component `{component_name}` in your pipeline. "
                 f"Valid options for `{component_name}` are:\n- "
                 f"{list_separator.join(allowed_keys)}"
             )
@@ -356,7 +357,8 @@ def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
         rasa.shared.utils.io.raise_warning(
             f"You have defined multiple entity extractors that do the same job "
             f"in your pipeline: "
-            f"{', '.join(extractors_in_pipeline)}. This can lead to the same entity getting "
+            f"{', '.join(extractors_in_pipeline)}. "
+            f"This can lead to the same entity getting "
             f"extracted multiple times. Please read the documentation section "
             f"on entity extractors to make sure you understand the implications: "
             f"{DOCS_URL_COMPONENTS}#entity-extractors"

@@ -355,8 +355,8 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
         FINGERPRINT_CONFIG_NLU_KEY: _get_fingerprint_of_config(
             config, include_keys=CONFIG_KEYS_NLU
         ),
-        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY: _get_fingerprint_of_config_without_epochs(
-            config
+        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY: (
+            _get_fingerprint_of_config_without_epochs(config)
         ),
         FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain.fingerprint(),
         FINGERPRINT_NLG_KEY: rasa.shared.utils.io.deep_container_fingerprint(responses),

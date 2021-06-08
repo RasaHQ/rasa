@@ -879,8 +879,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
-                    conversation_id
+                tracker = await (
+                    app.agent.create_processor().fetch_tracker_and_update_session(
+                        conversation_id
+                    )
                 )
 
                 output_channel = _get_output_channel(request, tracker)
@@ -930,8 +932,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
-                    conversation_id
+                tracker = await (
+                    app.agent.create_processor().fetch_tracker_and_update_session(
+                        conversation_id
+                    )
                 )
                 output_channel = _get_output_channel(request, tracker)
                 if intent_to_trigger not in app.agent.domain.intents:
