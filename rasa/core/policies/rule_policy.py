@@ -833,7 +833,7 @@ class RulePolicy(MemoizationPolicy):
         return True
 
     @staticmethod
-    # This function is called a lot (e.g. for checking rule predictions) so we cache
+    # This function is called a lot (e.g. for checking contradictions) so we cache
     # its results.
     @functools.lru_cache(maxsize=1000)
     def _rule_key_to_state(rule_key: Text) -> List[State]:
