@@ -161,9 +161,6 @@ class EvaluationStore:
         )
 
     def has_unlikely_intent_prediction(self) -> bool:
-        print("ALWX intent_predictions", self.intent_predictions, self.intent_targets)
-        print("ALWX entity_predictions", self.entity_predictions, self.entity_targets)
-        print("ALWX action_predictions", self.action_predictions, self.action_targets)
         return False
 
     @staticmethod
@@ -630,7 +627,8 @@ def _collect_action_executed_predictions(
             # that something else than the form was supposed to run.
             predicted = action.name()
 
-    if predicted == ACTION_UNLIKELY_INTENT_NAME and predicted != gold:
+    has_prediction_target_mismatch = action_executed_eval_store.has_prediction_target_mismatch()
+    if has_prediction_target_mismatch or (predicted == ACTION_UNLIKELY_INTENT_NAME and predicted != gold):
         partial_tracker.update(
             WronglyPredictedAction(
                 gold_action_name,
@@ -641,18 +639,7 @@ def _collect_action_executed_predictions(
                 event.timestamp,
             )
         )
-    elif action_executed_eval_store.has_prediction_target_mismatch():
-        partial_tracker.update(
-            WronglyPredictedAction(
-                gold_action_name,
-                gold_action_text,
-                predicted,
-                prediction.policy_name,
-                prediction.max_confidence,
-                event.timestamp,
-            )
-        )
-        if fail_on_prediction_errors:
+        if fail_on_prediction_errors and has_prediction_target_mismatch:
             story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
             error_msg = (
                 f"Model predicted a wrong action. Failed Story: " f"\n\n{story_dump}"
@@ -698,7 +685,7 @@ async def _predict_tracker_actions(
     EvaluationStore,
     DialogueStateTracker,
     List[Dict[Text, Any]],
-    List[EntityEvaluationResult],
+    List[EntityEvaluationResult]
 ]:
 
     processor = agent.create_processor()
@@ -820,7 +807,7 @@ async def _collect_story_predictions(
             tracker_results,
             predicted_tracker,
             tracker_actions,
-            tracker_entity_results,
+            tracker_entity_results
         ) = await _predict_tracker_actions(
             tracker, agent, fail_on_prediction_errors, use_e2e
         )
@@ -831,15 +818,17 @@ async def _collect_story_predictions(
 
         action_list.extend(tracker_actions)
 
-        if tracker_results.has_unlikely_intent_prediction():
-            stories_with_warnings.append(predicted_tracker)
-        elif tracker_results.has_prediction_target_mismatch():
+        if tracker_results.has_prediction_target_mismatch():
             # there is at least one wrong prediction
             failed_stories.append(predicted_tracker)
             correct_dialogues.append(0)
         else:
-            correct_dialogues.append(1)
             successful_stories.append(predicted_tracker)
+            correct_dialogues.append(1)
+
+            last_event = predicted_tracker.events[-1]
+            if type(last_event) == WronglyPredictedAction and last_event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME:
+                stories_with_warnings.append(predicted_tracker)
 
     logger.info("Finished collecting predictions.")
 
