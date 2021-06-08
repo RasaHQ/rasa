@@ -114,7 +114,8 @@ class RasaModelCheckpoint(tf.keras.callbacks.Callback):
 
         # all current values >= previous best and at least one is better
         if at_least_one_improved:
-            for key in self.best_metrics_so_far.keys():
-                self.best_metrics_so_far[key] = float(current_results[key])
+            for metric_name in self.best_metrics_so_far.keys():
+                if float(current_results[metric_name]) > self.best_metrics_so_far[metric_name]:
+                    self.best_metrics_so_far[metric_name] = float(current_results[metric_name])
 
         return at_least_one_improved
