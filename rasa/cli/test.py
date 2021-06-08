@@ -16,12 +16,12 @@ from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
-    DEFAULT_DOMAIN_PATH,
 )
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
 import rasa.utils.common
-from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.importers.importer import NluDataImporter
+from rasa.shared.importers.rasa import RasaFileImporter
 
 logger = logging.getLogger(__name__)
 
@@ -158,9 +158,7 @@ async def run_nlu_test_async(
     )
 
     data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
-    test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
-    )
+    test_data_importer = NluDataImporter(RasaFileImporter(training_data_paths=[data_path]))
     nlu_data = await test_data_importer.get_nlu_data()
 
     output = output_dir or DEFAULT_RESULTS_PATH
