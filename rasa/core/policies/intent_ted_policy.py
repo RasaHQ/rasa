@@ -468,7 +468,15 @@ class IntentTEDPolicy(TEDPolicy):
         Returns:
             Whether intent should raise `action_unlikely_intent` or not.
         """
-        if domain.intents.index(intent) not in self.tolerance_thresholds:
+        if intent not in domain.intents:
+            # This means the intent was never present in a story
+            logger.debug(
+                f"Query intent {intent} not "
+                f"found in label thresholds - {self.tolerance_thresholds}."
+                f"Check for `action_unlikely_intent` prediction will be skipped."
+            )
+            return False
+        elif domain.intents.index(intent) not in self.tolerance_thresholds:
             # This means the intent was never present in a story
             logger.debug(
                 f"Query intent index {domain.intents.index(intent)} not "
@@ -535,7 +543,7 @@ class IntentTEDPolicy(TEDPolicy):
         # the query intent is not the top likely intent
         if (
             query_intent_similarity < self.tolerance_thresholds[query_intent_id]
-            and query_intent_id != sorted_intent_scores[-1][0]
+        #    and query_intent_id != sorted_intent_scores[-1][0]
         ):
             logger.debug(
                 f"Intent {query_intent}-{query_intent_id} unlikely to occur here."
@@ -613,7 +621,9 @@ class IntentTEDPolicy(TEDPolicy):
                 ),
             )
             return sorted(negative_values)[::-1][index]
-
+        import os
+        TOL = float(os.getenv("ITED_TOL", 0.2))
+        print("TOL HACK!!", TOL)
         tolerance_thresholds = {}
         for label_id in label_thresholds:
             negative_values, min_pos_value = label_thresholds[label_id]
@@ -622,8 +632,9 @@ class IntentTEDPolicy(TEDPolicy):
                 # _find_appropriate_tolerance_threshold(
                 #     bins, edges, self.config[TOLERANCE]
                 # ),
+
                 _appropriate_negative_value_threshold(
-                    negative_values, self.config[TOLERANCE]
+                    negative_values, TOL, #self.config[TOLERANCE]
                 ),
             )
         return tolerance_thresholds
