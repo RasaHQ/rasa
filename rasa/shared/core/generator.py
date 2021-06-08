@@ -657,8 +657,10 @@ class TrainingDataGenerator:
                 and event.action_text not in self.domain.action_texts
             ):
                 rasa.shared.utils.cli.print_warning(
-                    f"Test story '{step.block_name}' in '{step.source_name}' contains the bot utterance "
-                    f"'{event.action_text}', which is not part of the training data / domain."
+                    f"Test story '{step.block_name}' in "
+                    f"'{step.source_name}' contains the bot utterance "
+                    f"'{event.action_text}', which is not part "
+                    f"of the training data / domain."
                 )
             for tracker in trackers:
                 if isinstance(

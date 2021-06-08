@@ -320,7 +320,8 @@ TEST_MIGRATED_MAPPING_POLICIES = [
             "domain_intents": ["greet", "leave"],
             "rules": [
                 {
-                    "rule": "Rule to map `greet` intent to `action_greet` (automatic conversion)",
+                    "rule": "Rule to map `greet` intent to"
+                    " `action_greet` (automatic conversion)",
                     "steps": [{"intent": "greet"}, {"action": "action_greet"}],
                 }
             ],

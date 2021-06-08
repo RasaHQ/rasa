@@ -160,8 +160,8 @@ def add_test_core_model_param(parser: argparse.ArgumentParser) -> None:
         default=[default_path],
         help="Path to a pre-trained model. If it is a 'tar.gz' file that model file "
         "will be used. If it is a directory, the latest model in that directory "
-        "will be used (exception: '--evaluate-model-directory' flag is set). If multiple "
-        "'tar.gz' files are provided, all those models will be compared.",
+        "will be used (exception: '--evaluate-model-directory' flag is set). "
+        "If multiple 'tar.gz' files are provided, all those models will be compared.",
     )
 
 
