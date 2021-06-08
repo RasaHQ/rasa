@@ -67,7 +67,8 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         interpreter = RegexInterpreter()
 
         # Construct input data
-        encoded_all_labels = trained_policy.featurizer.state_featurizer.encode_all_labels(
+        state_featurizer = trained_policy.featurizer.state_featurizer
+        encoded_all_labels = state_featurizer.encode_all_labels(
             default_domain, interpreter
         )
         attribute_data, _ = model_data_utils.convert_to_data_format(encoded_all_labels)
