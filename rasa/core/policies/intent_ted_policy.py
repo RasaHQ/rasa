@@ -588,6 +588,12 @@ class IntentTEDPolicy(TEDPolicy):
 
 
 class IntentTED(TED):
+    """Follows TED's model architecture from https://arxiv.org/abs/1910.00486.
+
+    However, it has been re-purposed to predict multiple
+    labels (intents) instead of a single label (action).
+    """
+
     def _prepare_label_classification_layers(self, predictor_attribute: Text) -> None:
         """Prepares layers & loss for the final label prediction step."""
         self._prepare_embed_layers(predictor_attribute)

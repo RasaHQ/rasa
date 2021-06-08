@@ -1085,6 +1085,8 @@ class TEDPolicy(Policy):
 
 
 class TED(TransformerRasaModel):
+    """TED model architecture from https://arxiv.org/abs/1910.00486."""
+
     def __init__(
         self,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
