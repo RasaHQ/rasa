@@ -7,6 +7,7 @@ from typing import List, Text, Dict, Any
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.features import Features
 import rasa.nlu.train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
@@ -564,26 +565,19 @@ async def test_train_model_checkpointing(
     component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-checkpointed-model"
-    best_model_file = Path(str(tmpdir), model_name)
-    assert not best_model_file.exists()
+    best_model_file = Path(tmpdir / model_name)
+    checkpoint_dir = Path(tmpdir / model_name / "checkpoints")
+    assert not checkpoint_dir.is_dir()
 
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {
-                    "name": "CountVectorsFeaturizer",
-                    "analyzer": "char_wb",
-                    "min_ngram": 3,
-                    "max_ngram": 17,
-                    "max_features": 10,
-                    "min_df": 5,
-                },
+                {"name": "CountVectorsFeaturizer"},
                 {
                     "name": "DIETClassifier",
                     EPOCHS: 5,
-                    CONSTRAIN_SIMILARITIES: True,
-                    MODEL_CONFIDENCE: "linear_norm",
+                    EVAL_NUM_EXAMPLES: 10,
                     CHECKPOINT_MODEL: True,
                 },
             ],
@@ -599,7 +593,7 @@ async def test_train_model_checkpointing(
         fixed_model_name=model_name,
     )
 
-    assert best_model_file.exists()
+    assert checkpoint_dir.is_dir()
 
     """
     Tricky to validate the *exact* number of files that should be there, however there
@@ -611,6 +605,35 @@ async def test_train_model_checkpointing(
     """
     all_files = list(best_model_file.rglob("*.*"))
     assert len(all_files) > 4
+
+
+async def test_train_model_not_checkpointing(
+    component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
+):
+    model_name = "nlu-checkpointed-model"
+    best_model_file = Path(tmpdir, model_name, "checkpoint")
+    assert not best_model_file.exists()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", EPOCHS: 5, CHECKPOINT_MODEL: False,},
+            ],
+            "language": "en",
+        }
+    )
+
+    await rasa.nlu.train.train(
+        _config,
+        path=str(tmpdir),
+        data=nlu_data_path,
+        component_builder=component_builder,
+        fixed_model_name=model_name,
+    )
+
+    assert not best_model_file.exists()
 
 
 async def test_train_fails_with_zero_eval_num_epochs(
@@ -628,8 +651,6 @@ async def test_train_fails_with_zero_eval_num_epochs(
                 {
                     "name": "DIETClassifier",
                     EPOCHS: 5,
-                    CONSTRAIN_SIMILARITIES: True,
-                    MODEL_CONFIDENCE: "linear_norm",
                     CHECKPOINT_MODEL: True,
                     EVAL_NUM_EPOCHS: 0,
                     EVAL_NUM_EXAMPLES: 10,
@@ -638,7 +659,7 @@ async def test_train_fails_with_zero_eval_num_epochs(
             "language": "en",
         }
     )
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidConfigException):
         await rasa.nlu.train.train(
             _config,
             path=str(tmpdir),
@@ -665,8 +686,6 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
                 {
                     "name": "DIETClassifier",
                     EPOCHS: 2,
-                    CONSTRAIN_SIMILARITIES: True,
-                    MODEL_CONFIDENCE: "linear_norm",
                     CHECKPOINT_MODEL: True,
                     EVAL_NUM_EXAMPLES: 0,
                     EVAL_NUM_EPOCHS: 1,
