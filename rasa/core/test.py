@@ -580,7 +580,6 @@ def _get_e2e_entity_evaluation_result(
                 )
 
 
-# TODO(alwx):
 def _collect_action_executed_predictions(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
@@ -675,7 +674,6 @@ def _form_might_have_been_rejected(
     )
 
 
-# TODO(alwx):
 async def _predict_tracker_actions(
     tracker: DialogueStateTracker,
     agent: "Agent",
@@ -779,7 +777,6 @@ def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
     return len(in_training_data) / len(action_list) if action_list else 0
 
 
-# TODO(alwx):
 async def _collect_story_predictions(
     completed_trackers: List["DialogueStateTracker"],
     agent: "Agent",
@@ -928,12 +925,14 @@ async def test(
             # Add conversation level accuracy to story report.
             num_failed = len(story_evaluation.failed_stories)
             num_correct = len(story_evaluation.successful_stories)
+            num_warnings = len(story_evaluation.stories_with_warnings)
             num_convs = num_failed + num_correct
             if num_convs:
                 conv_accuracy = num_correct / num_convs
                 report["conversation_accuracy"] = {
                     "accuracy": conv_accuracy,
                     "correct": num_correct,
+                    "with_warnings": num_warnings,
                     "total": num_convs,
                 }
             report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
