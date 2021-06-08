@@ -299,8 +299,34 @@ class TrackerFeaturizer:
             Trackers as states, labels, and entity data.
         """
         raise NotImplementedError(
-            f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
+            f"`{self.__class__.__name__}` should implement how to "
+            f"encode trackers as feature vectors"
         )
+
+    def prepare_for_featurization(
+        self,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        bilou_tagging: bool = False,
+    ) -> None:
+        """Ensures that the featurizer is ready to be called during training.
+
+        State featurizer needs to build its vocabulary from the domain
+        for it to be ready to be used during training.
+
+        Args:
+            domain: Domain of the assistant.
+            interpreter: NLU Interpreter for featurizing states.
+            bilou_tagging: Whether to consider bilou tagging.
+        """
+        if self.state_featurizer is None:
+            raise ValueError(
+                f"Instance variable 'state_featurizer' is not set. "
+                f"During initialization set 'state_featurizer' to an instance of "
+                f"'{SingleStateFeaturizer.__class__.__name__}' class "
+                f"to get numerical features for trackers."
+            )
+        self.state_featurizer.prepare_for_training(domain, interpreter, bilou_tagging)
 
     def featurize_trackers(
         self,
@@ -334,16 +360,7 @@ class TrackerFeaturizer:
               containing entity tag ids for text user inputs otherwise empty dict
               for all dialogue turns in all training trackers
         """
-        if self.state_featurizer is None:
-            raise ValueError(
-                f"Instance variable 'state_featurizer' is not set. "
-                f"During initialization set 'state_featurizer' to an instance of "
-                f"'{SingleStateFeaturizer.__class__.__name__}' class "
-                f"to get numerical features for trackers."
-            )
-
-        self.state_featurizer.prepare_for_training(domain, interpreter, bilou_tagging)
-
+        self.prepare_for_featurization(domain, interpreter, bilou_tagging)
         (
             trackers_as_states,
             trackers_as_labels,
@@ -355,6 +372,14 @@ class TrackerFeaturizer:
         )
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
+
+        if not tracker_state_features and not trackers_as_labels:
+            # If input and output were empty, it means there is
+            # no data on which the policy can be trained
+            # hence return them as it is. They'll be handled
+            # appropriately inside the policy.
+            return tracker_state_features, np.ndarray(trackers_as_labels), []
+
         label_ids = self._convert_labels_to_ids(trackers_as_labels, domain)
 
         entity_tags = self._create_entity_tags(
@@ -968,6 +993,10 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         Returns:
             Label ids padded to be of uniform length.
         """
+        # If `label_ids` is an empty list, no padding needs to be added.
+        if not label_ids:
+            return label_ids
+
         # Add `LABEL_PAD_ID` padding to labels array so that
         # each example has equal number of labels
         multiple_labels_count = [len(a) for a in label_ids]

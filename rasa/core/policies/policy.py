@@ -189,7 +189,12 @@ class Policy:
               for all dialogue turns in all training trackers
         """
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
-            training_trackers, domain, interpreter, bilou_tagging
+            training_trackers,
+            domain,
+            interpreter,
+            bilou_tagging,
+            ignore_action_unlikely_intent=self.supported_data()
+            == SupportedData.ML_DATA,
         )
 
         max_training_samples = kwargs.get("max_training_samples")
@@ -227,6 +232,8 @@ class Policy:
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
             rule_only_data=self._rule_only_data,
+            ignore_action_unlikely_intent=self.supported_data()
+            == SupportedData.ML_DATA,
         )[0]
 
     def _featurize_for_prediction(
@@ -262,6 +269,8 @@ class Policy:
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
             rule_only_data=self._rule_only_data,
+            ignore_action_unlikely_intent=self.supported_data()
+            == SupportedData.ML_DATA,
         )
 
     def train(
@@ -309,6 +318,7 @@ class Policy:
         is_end_to_end_prediction: bool = False,
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
+        action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> "PolicyPrediction":
         return PolicyPrediction(
             probabilities,
@@ -319,6 +329,7 @@ class Policy:
             is_end_to_end_prediction,
             is_no_user_prediction,
             diagnostic_data,
+            action_metadata=action_metadata,
         )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
