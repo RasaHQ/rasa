@@ -191,10 +191,11 @@ def update_evaluation_parameters(config: Dict[Text, Any]) -> Dict[Text, Any]:
     if config[EVAL_NUM_EPOCHS] == -1:
         config[EVAL_NUM_EPOCHS] = config[EPOCHS]
     elif config[EVAL_NUM_EPOCHS] < 1:
-        raise ValueError(
+        raise InvalidConfigException(
             f"'{EVAL_NUM_EPOCHS}' is set to "
             f"'{config[EVAL_NUM_EPOCHS]}'. "
-            f"Only values > 1 are allowed for this configuration value."
+            "Only values either equal to -1 or greater than 0 are allowed for this "
+            "configuration value."
         )
     if config[CHECKPOINT_MODEL] and config[EVAL_NUM_EXAMPLES] == 0:
         config[CHECKPOINT_MODEL] = False
@@ -539,15 +540,15 @@ def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
 
 def _check_checkpoint_setting(component_config: Dict[Text, Any]) -> None:
     if component_config[CHECKPOINT_MODEL]:
-        if component_config[EVAL_NUM_EPOCHS] <= 0:
+        if component_config[EVAL_NUM_EPOCHS] != -1 and component_config[EVAL_NUM_EPOCHS] < 1:
             rasa.shared.utils.io.raise_warning(
-                f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not greater "
-                f"than 0, training will fail."
+                f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not -1 or "
+                "greater than 0, training will fail."
             )
         if component_config[EVAL_NUM_EXAMPLES] <= 0:
             rasa.shared.utils.io.raise_warning(
                 f"You have opted to save the best model, {EVAL_NUM_EXAMPLES} is not greater "
-                f"than 0. No model will be saved."
+                "than 0. No model will be saved."
             )
 
 
