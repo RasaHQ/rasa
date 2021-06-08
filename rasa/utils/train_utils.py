@@ -539,15 +539,18 @@ def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
 
 def _check_checkpoint_setting(component_config: Dict[Text, Any]) -> None:
     if component_config[CHECKPOINT_MODEL]:
-        if component_config[EVAL_NUM_EPOCHS] != -1 and component_config[EVAL_NUM_EPOCHS] < 1:
+        if (
+            component_config[EVAL_NUM_EPOCHS] != -1
+            and component_config[EVAL_NUM_EPOCHS] < 1
+        ):
             rasa.shared.utils.io.raise_warning(
-                f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not -1 or "
-                "greater than 0, training will fail."
+                f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not -1 "
+                "or greater than 0, training will fail."
             )
         if component_config[EVAL_NUM_EXAMPLES] <= 0:
             rasa.shared.utils.io.raise_warning(
-                f"You have opted to save the best model, {EVAL_NUM_EXAMPLES} is not greater "
-                "than 0. No model will be saved."
+                f"You have opted to save the best model, {EVAL_NUM_EXAMPLES} is not "
+                "greater than 0. No model will be saved."
             )
 
 
