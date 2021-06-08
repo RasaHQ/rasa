@@ -1,6 +1,5 @@
 import functools
 import logging
-import time
 from typing import Any, List, Dict, Text, Optional, Set, Tuple, TYPE_CHECKING
 
 from tqdm import tqdm
