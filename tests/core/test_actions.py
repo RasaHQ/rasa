@@ -372,6 +372,7 @@ async def test_remote_action_with_template_param(
             ],
             timestamp=None,
         ),
+        EntitiesAdded(entities=[]),
         DefinePrevUserUtteredFeaturization(
             use_text_for_featurization=False, timestamp=None, metadata=None
         ),
@@ -397,6 +398,7 @@ async def test_remote_action_with_template_param(
         ActionReverted(),
         UserUtteranceReverted(),
         BotUttered(text="Test bot utterance"),
+        UserUttered(parse_data={"entities": []}),
         UserUttered(
             text="hello",
             parse_data={

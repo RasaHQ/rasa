@@ -12,6 +12,7 @@ ENTITIES_SCHEMA = {
             "role": {"type": ["string", "null"]},
             "group": {"type": ["string", "null"]},
         },
+        "required": ["entity", "value"],
     },
 }
 
@@ -40,7 +41,7 @@ EVENTS_SCHEMA = {
                     "parse_data": {
                         "type": "object",
                         "properties": {
-                            "text": {"type": "string"},
+                            "text": {"type": ["string", "null"]},
                             "intent_ranking": {"type": "array", "items": INTENT},
                             "intent": INTENT,
                             "entities": ENTITIES_SCHEMA,
