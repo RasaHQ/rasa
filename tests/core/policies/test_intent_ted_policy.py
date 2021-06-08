@@ -1,11 +1,11 @@
-from tests.core.policies.test_ted_policy import TestTEDPolicy
 from pathlib import Path
 from typing import Optional, Dict, List
 import tensorflow as tf
-
 import numpy as np
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
+from _pytest.logging import LogCaptureFixture
+
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
@@ -33,6 +33,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.shared.nlu.constants import INTENT
 from rasa.utils.tensorflow import model_data_utils
 from tests.core.test_policies import train_trackers
+from tests.core.policies.test_ted_policy import TestTEDPolicy
 
 
 class TestIntentTEDPolicy(TestTEDPolicy):
@@ -89,6 +90,37 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         assert assembled_label_data_signature[f"{LABEL}_{INTENT}"][SENTENCE][
             0
         ].units == len(default_domain.intents)
+
+    async def test_training_with_no_intent(
+        self,
+        featurizer: Optional[TrackerFeaturizer],
+        priority: int,
+        default_domain: Domain,
+        tmp_path: Path,
+        caplog: LogCaptureFixture,
+    ):
+        stories = tmp_path / "stories.yml"
+        stories.write_text(
+            """
+            version: "2.0"
+            stories:
+            - story: test path
+              steps:
+              - action: utter_greet
+            """
+        )
+        policy = self.create_policy(featurizer=featurizer, priority=priority)
+        import tests.core.test_policies
+
+        training_trackers = await tests.core.test_policies.train_trackers(
+            default_domain, str(stories), augmentation_factor=20
+        )
+        policy.train(training_trackers, default_domain, RegexInterpreter())
+
+        assert (
+            "Can not train 'IntentTEDPolicy'. No data was provided. "
+            "Skipping training of the policy." in caplog.text
+        )
 
     async def test_prepared_data_for_threshold_prediction(
         self,

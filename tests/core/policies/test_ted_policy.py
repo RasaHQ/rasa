@@ -1,11 +1,12 @@
 from pathlib import Path
 from typing import Optional
 from unittest.mock import Mock
-
 import numpy as np
 import pytest
 import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
+from _pytest.logging import LogCaptureFixture
+
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
@@ -102,12 +103,13 @@ class TestTEDPolicy(PolicyTestCollection):
     ) -> TEDPolicy:
         return TEDPolicy(featurizer=featurizer, priority=priority)
 
-    async def test_raise_rasa_exception_no_user_features(
+    async def test_training_with_no_intent(
         self,
         featurizer: Optional[TrackerFeaturizer],
         priority: int,
         default_domain: Domain,
         tmp_path: Path,
+        caplog: LogCaptureFixture,
     ):
         stories = tmp_path / "stories.yml"
         stories.write_text(

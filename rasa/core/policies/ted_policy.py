@@ -573,6 +573,9 @@ class TEDPolicy(Policy):
             **kwargs,
         )
 
+        if not tracker_state_features:
+            return RasaModelData(), label_ids
+
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
         )
