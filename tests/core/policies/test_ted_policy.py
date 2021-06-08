@@ -37,10 +37,10 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     COSINE,
     AUTO,
-    LINEAR_NORM,
+    LINEAR_NORM, EVAL_NUM_EPOCHS,
 )
 from tests.core.test_policies import PolicyTestCollection
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import DEFAULT_SENDER_ID, DEFAULT_CORE_SUBDIRECTORY_NAME
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
@@ -50,6 +50,13 @@ intents:
 actions:
 - {UTTER_GREET_ACTION}
 """
+
+
+def get_checkpoint_dir_path(tmp_path: Path) -> Path:
+    policy_dir_name = "policy_{}_{}".format(0, TEDPolicy.__name__)
+    path = Path(tmp_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
+    policy_path = Path(path) / policy_dir_name
+    return Path(policy_path, "checkpoints")
 
 
 def test_diagnostics():
@@ -76,58 +83,73 @@ def test_diagnostics():
 
 
 class TestTEDPolicy(PolicyTestCollection):
-    def test_train_model_checkpointing(self, tmp_path: Path):
-        model_name = "core-checkpointed-model"
-        best_model_file = Path(tmp_path, model_name)
-        assert not best_model_file.exists()
-
-        train_core(
-            domain="data/test_domains/default.yml",
-            stories="data/test_yaml_stories/stories_defaultdomain.yaml",
-            output=str(tmp_path),
-            fixed_model_name=model_name,
-            config="data/test_config/config_ted_policy_model_checkpointing.yml",
-        )
-
-        assert best_model_file.exists()
-
-    def test_doesnt_checkpoint_with_zero_eval_num_examples(self, tmp_path: Path):
-        model_name = "core-checkpointed-model"
-        best_model_file = Path(tmp_path, model_name)
-        assert not best_model_file.exists()
-
-        train_core(
-            domain="data/test_domains/default.yml",
-            stories="data/test_yaml_stories/stories_defaultdomain.yaml",
-            output=str(tmp_path),
-            fixed_model_name=model_name,
-            config="data/test_config/config_ted_policy_model_checkpointing_zero_eval_num_examples.yml",
-        )
-
-        assert not best_model_file.exists()
-
-    def test_train_fails_with_checkpoint_zero_eval_every_num_epochs(
-        self, tmp_path: Path
-    ):
-        model_name = "core-checkpointed-model"
-        best_model_file = Path(tmp_path, model_name)
-        assert not best_model_file.exists()
-
-        with pytest.raises(ValueError):
-            train_core(
-                domain="data/test_domains/default.yml",
-                stories="data/test_yaml_stories/stories_defaultdomain.yaml",
-                output=str(tmp_path),
-                fixed_model_name=model_name,
-                config="data/test_config/config_ted_policy_model_checkpointing_zero_eval_every_num_epochs.yml",
-            )
-
-        assert not best_model_file.exists()
-
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> TEDPolicy:
         return TEDPolicy(featurizer=featurizer, priority=priority)
+
+    def test_train_model_checkpointing(self, tmp_path: Path):
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
+
+        train_core(
+            domain="data/test_domains/default.yml",
+            stories="data/test_yaml_stories/stories_defaultdomain.yml",
+            train_path=str(tmp_path),
+            output=str(tmp_path),
+            config="data/test_config/config_ted_policy_model_checkpointing.yml",
+        )
+        assert checkpoint_dir.is_dir()
+
+    def test_doesnt_checkpoint_with_no_checkpointing(self, tmp_path: Path):
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
+
+        train_core(
+            domain="data/test_domains/default.yml",
+            stories="data/test_yaml_stories/stories_defaultdomain.yml",
+            train_path=str(tmp_path),
+            output=str(tmp_path),
+            config="data/test_config/config_ted_policy_no_model_checkpointing.yml",
+        )
+        assert not checkpoint_dir.is_dir()
+
+    def test_doesnt_checkpoint_with_zero_eval_num_examples(self, tmp_path: Path):
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
+
+        with pytest.warns(UserWarning) as warning:
+            train_core(
+                domain="data/test_domains/default.yml",
+                stories="data/test_yaml_stories/stories_defaultdomain.yml",
+                train_path=str(tmp_path),
+                output=str(tmp_path),
+                config="data/test_config/config_ted_policy_model_checkpointing_zero_eval_num_examples.yml",
+            )
+        warn_text = (f"You have opted to save the best model, {EVAL_NUM_EXAMPLES} is not greater than 0. "
+                     "No model will be saved.")
+        assert not checkpoint_dir.is_dir()
+        assert len([w for w in warning if warn_text in str(w.message)]) == 1
+
+    def test_train_fails_with_checkpoint_zero_eval_every_num_epochs(
+            self, tmp_path: Path
+    ):
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
+
+        with pytest.raises(ValueError):
+            with pytest.warns(UserWarning) as warning:
+                train_core(
+                    domain="data/test_domains/default.yml",
+                    stories="data/test_yaml_stories/stories_defaultdomain.yml",
+                    train_path=str(tmp_path),
+                    output=str(tmp_path),
+                    config="data/test_config/config_ted_policy_model_checkpointing_zero_eval_every_num_epochs.yml",
+                )
+        warn_text = (f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not -1 or "
+                     "greater than 0, training will fail.")
+        assert len([w for w in warning if warn_text in str(w.message)]) == 1
+        assert not checkpoint_dir.is_dir()
 
     async def test_raise_rasa_exception_no_user_features(
         self,
@@ -303,8 +325,8 @@ class TestTEDPolicy(PolicyTestCollection):
         ) = next(iterator)
 
         assert (
-            batch_label_ids.shape[0] == batch_size
-            and batch_dialogue_length.shape[0] == batch_size
+                batch_label_ids.shape[0] == batch_size
+                and batch_dialogue_length.shape[0] == batch_size
         )
         # some features might be "fake" so there sequence is `0`
         seq_len = max(
@@ -553,7 +575,6 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
 
 
 class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
-
     max_history = 1
 
     def create_policy(
