@@ -255,7 +255,7 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     @staticmethod
-    def model_class() -> Type[RasaModel]:
+    def model_class() -> Type["IntentTED"]:
         """Gets the class of the model architecture to be used by the policy.
 
         Returns:
@@ -263,7 +263,7 @@ class IntentTEDPolicy(TEDPolicy):
         """
         return IntentTED
 
-    def _auto_update_configuration(self):
+    def _auto_update_configuration(self) -> None:
         self.config = train_utils.update_evaluation_parameters(self.config)
         self.config = train_utils.update_deprecated_sparsity_to_density(self.config)
 

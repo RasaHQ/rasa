@@ -364,7 +364,7 @@ class TEDPolicy(Policy):
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
     @staticmethod
-    def model_class() -> Type[RasaModel]:
+    def model_class() -> Type["TED"]:
         """Gets the class of the model architecture to be used by the policy.
 
         Returns:
@@ -1038,7 +1038,7 @@ class TEDPolicy(Policy):
         predict_data_example: RasaModelData,
         featurizer: TrackerFeaturizer,
         should_finetune: bool,
-    ):
+    ) -> "TED":
         model = cls.model_class().load(
             str(model_utilities["tf_model_file"]),
             model_data_example,
