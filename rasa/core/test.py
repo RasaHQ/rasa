@@ -8,7 +8,10 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 from rasa import telemetry
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.test import EntityEvaluationResult, evaluate_entities
-from rasa.shared.core.constants import POLICIES_THAT_EXTRACT_ENTITIES
+from rasa.shared.core.constants import (
+    POLICIES_THAT_EXTRACT_ENTITIES,
+    ACTION_UNLIKELY_INTENT_NAME,
+)
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
@@ -156,6 +159,12 @@ class EvaluationStore:
             or self.entity_predictions != self.entity_targets
             or self.action_predictions != self.action_targets
         )
+
+    def has_unlikely_intent_prediction(self) -> bool:
+        print("ALWX intent_predictions", self.intent_predictions, self.intent_targets)
+        print("ALWX entity_predictions", self.entity_predictions, self.entity_targets)
+        print("ALWX action_predictions", self.action_predictions, self.action_targets)
+        return False
 
     @staticmethod
     def _compare_entities(
@@ -574,6 +583,7 @@ def _get_e2e_entity_evaluation_result(
                 )
 
 
+# TODO(alwx):
 def _collect_action_executed_predictions(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
@@ -620,11 +630,18 @@ def _collect_action_executed_predictions(
             # that something else than the form was supposed to run.
             predicted = action.name()
 
-    action_executed_eval_store.add_to_store(
-        action_predictions=[predicted], action_targets=[gold]
-    )
-
-    if action_executed_eval_store.has_prediction_target_mismatch():
+    if predicted == ACTION_UNLIKELY_INTENT_NAME and predicted != gold:
+        partial_tracker.update(
+            WronglyPredictedAction(
+                gold_action_name,
+                gold_action_text,
+                predicted,
+                prediction.policy_name,
+                prediction.max_confidence,
+                event.timestamp,
+            )
+        )
+    elif action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
                 gold_action_name,
@@ -671,6 +688,7 @@ def _form_might_have_been_rejected(
     )
 
 
+# TODO(alwx):
 async def _predict_tracker_actions(
     tracker: DialogueStateTracker,
     agent: "Agent",
@@ -720,19 +738,20 @@ async def _predict_tracker_actions(
             if entity_result:
                 policy_entity_results.append(entity_result)
 
-            tracker_eval_store.merge_store(action_executed_result)
-            tracker_actions.append(
-                {
-                    "action": action_executed_result.action_targets[0],
-                    "predicted": action_executed_result.action_predictions[0],
-                    "policy": prediction.policy_name,
-                    "confidence": prediction.max_confidence,
-                }
-            )
-            should_predict_another_action = processor.should_predict_another_action(
-                action_executed_result.action_predictions[0]
-            )
-            num_predicted_actions += 1
+            if action_executed_result.action_predictions:
+                tracker_eval_store.merge_store(action_executed_result)
+                tracker_actions.append(
+                    {
+                        "action": action_executed_result.action_targets[0],
+                        "predicted": action_executed_result.action_predictions[0],
+                        "policy": prediction.policy_name,
+                        "confidence": prediction.max_confidence,
+                    }
+                )
+                should_predict_another_action = processor.should_predict_another_action(
+                    action_executed_result.action_predictions[0]
+                )
+                num_predicted_actions += 1
 
         elif use_e2e and isinstance(event, UserUttered):
             # This means that user utterance didn't have a user message, only intent,
@@ -773,6 +792,7 @@ def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
     return len(in_training_data) / len(action_list) if action_list else 0
 
 
+# TODO(alwx):
 async def _collect_story_predictions(
     completed_trackers: List["DialogueStateTracker"],
     agent: "Agent",
@@ -811,9 +831,10 @@ async def _collect_story_predictions(
 
         action_list.extend(tracker_actions)
 
-        if tracker_results.has_prediction_target_mismatch():
+        if tracker_results.has_unlikely_intent_prediction():
+            stories_with_warnings.append(predicted_tracker)
+        elif tracker_results.has_prediction_target_mismatch():
             # there is at least one wrong prediction
-            print("ALWX events", predicted_tracker.events[-1].as_dict())
             failed_stories.append(predicted_tracker)
             correct_dialogues.append(0)
         else:
