@@ -114,10 +114,8 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
         pos_neg_labels.numpy()
         == np.array(
             [
-                [
-                    1,
-                    0,
-                ],  # l0 is an actual positive example in `batch_labels_embed[0]`, whereas l2 is not
+                [1, 0,],  # l0 is an actual positive example in `batch_labels_embed[0]`,
+                # whereas l2 is not
                 [
                     0,
                     0,
@@ -200,18 +198,14 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
         pos_neg_labels.numpy()
         == np.array(
             [
-                [
-                    1,
-                    0,
-                ],  # l0 is an actual positive example in `batch_labels_embed[0]`, whereas l2 is not
+                [1, 0,],  # l0 is an actual positive example in `batch_labels_embed[0]`,
+                # whereas l2 is not
                 [
                     0,
                     0,
                 ],  # Neither l0 nor l1 are positive examples in `batch_labels_embed[1]`
-                [
-                    1,
-                    0,
-                ],  # l3 is an actual positive example in `batch_labels_embed[2]`, whereas l1 is not
+                [1, 0,],  # l3 is an actual positive example in `batch_labels_embed[2]`,
+                # whereas l1 is not
             ]
         )
     )

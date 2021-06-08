@@ -299,7 +299,8 @@ class TrackerFeaturizer:
             Trackers as states, labels, and entity data.
         """
         raise NotImplementedError(
-            f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
+            f"`{self.__class__.__name__}` should implement how to "
+            f"encode trackers as feature vectors"
         )
 
     def prepare_for_featurization(

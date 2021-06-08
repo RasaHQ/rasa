@@ -1271,11 +1271,11 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
     def _sample_candidates(
         self,
-        batch_inputs_embed: tf.Tensor,  # (batch_size, 1, num_features)
-        batch_labels_embed: tf.Tensor,  # (batch_size, max_num_labels_per_input, num_features)
-        batch_labels_ids: tf.Tensor,  # (batch_size, max_num_labels_per_input, 1)
-        all_labels_embed: tf.Tensor,  # (num_labels, num_features)
-        all_labels_ids: tf.Tensor,  # (num_labels, 1)
+        batch_inputs_embed: tf.Tensor,
+        batch_labels_embed: tf.Tensor,
+        batch_labels_ids: tf.Tensor,
+        all_labels_embed: tf.Tensor,
+        all_labels_ids: tf.Tensor,
     ) -> Tuple[
         tf.Tensor,  # (batch_size, 1, 1, num_features)
         tf.Tensor,  # (batch_size, 1, num_features)
@@ -1286,12 +1286,15 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         Args:
             batch_inputs_embed: Embeddings of the batch inputs (e.g. featurized
-                trackers)
+                trackers) # (batch_size, 1, num_features)
             batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents
-                for IntentTED)
-            batch_labels_ids: Batch label indices (e.g. indices of the intents)
-            all_labels_embed: Embeddings for all labels in the domain
-            all_labels_ids: Indices for all labels in the domain
+                for IntentTED) # (batch_size, max_num_labels_per_input, num_features)
+            batch_labels_ids: Batch label indices (e.g. indices of the
+                intents) # (batch_size, max_num_labels_per_input, 1)
+            all_labels_embed: Embeddings for all labels in
+                the domain # (num_labels, num_features)
+            all_labels_ids: Indices for all labels in the
+                domain # (num_labels, 1)
 
         Returns:
             pos_inputs_embed: Embeddings of the batch inputs
