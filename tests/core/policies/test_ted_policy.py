@@ -117,17 +117,17 @@ class TestTEDPolicy(PolicyTestCollection):
     def test_doesnt_checkpoint_with_zero_eval_num_examples(self, tmp_path: Path):
         checkpoint_dir = get_checkpoint_dir_path(tmp_path)
         assert not checkpoint_dir.is_dir()
-
+        config_file = "config_ted_policy_model_checkpointing_zero_eval_num_examples.yml"
         with pytest.warns(UserWarning) as warning:
             train_core(
                 domain="data/test_domains/default.yml",
                 stories="data/test_yaml_stories/stories_defaultdomain.yml",
                 train_path=str(tmp_path),
                 output=str(tmp_path),
-                config="data/test_config/config_ted_policy_model_checkpointing_zero_eval_num_examples.yml",
+                config=f"data/test_config/{config_file}",
             )
-        warn_text = (f"You have opted to save the best model, {EVAL_NUM_EXAMPLES} is not greater than 0. "
-                     "No model will be saved.")
+        warn_text = (f"You have opted to save the best model, {EVAL_NUM_EXAMPLES} is "
+                     "not greater than 0. No model will be saved.")
         assert not checkpoint_dir.is_dir()
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
 
@@ -136,7 +136,7 @@ class TestTEDPolicy(PolicyTestCollection):
     ):
         checkpoint_dir = get_checkpoint_dir_path(tmp_path)
         assert not checkpoint_dir.is_dir()
-
+        config_file = "config_ted_policy_model_checkpointing_zero_every_num_epochs.yml"
         with pytest.raises(ValueError):
             with pytest.warns(UserWarning) as warning:
                 train_core(
@@ -144,10 +144,10 @@ class TestTEDPolicy(PolicyTestCollection):
                     stories="data/test_yaml_stories/stories_defaultdomain.yml",
                     train_path=str(tmp_path),
                     output=str(tmp_path),
-                    config="data/test_config/config_ted_policy_model_checkpointing_zero_eval_every_num_epochs.yml",
+                    config=f"data/test_config/{config_file}",
                 )
-        warn_text = (f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not -1 or "
-                     "greater than 0, training will fail.")
+        warn_text = (f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not "
+                     "-1 or greater than 0, training will fail.")
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
         assert not checkpoint_dir.is_dir()
 
@@ -325,8 +325,8 @@ class TestTEDPolicy(PolicyTestCollection):
         ) = next(iterator)
 
         assert (
-                batch_label_ids.shape[0] == batch_size
-                and batch_dialogue_length.shape[0] == batch_size
+            batch_label_ids.shape[0] == batch_size
+            and batch_dialogue_length.shape[0] == batch_size
         )
         # some features might be "fake" so there sequence is `0`
         seq_len = max(
