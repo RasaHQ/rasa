@@ -540,6 +540,14 @@ def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
 def set_default_checkpoint_parameters(
     component_config: Dict[Text, Any], defaults: Dict[Text, Any]
 ) -> Dict[Text, Any]:
+    """Sets checkpoint parameters to default if they haven't been set.
+
+    Only applies if checkpoint model is set to true.
+
+    Args:
+        component_config: configuration to adjust.
+        defaults: default values for the component.
+    """
     if (
         CHECKPOINT_MODEL in component_config
         and component_config[CHECKPOINT_MODEL]
