@@ -361,7 +361,9 @@ class TEDPolicy(Policy):
         )
 
         self.config = rasa.utils.train_utils.update_confidence_type(self.config)
-
+        self.config = rasa.utils.train_utils.set_default_checkpoint_parameters(
+            self.config, self.defaults
+        )
         rasa.utils.train_utils.validate_configuration_settings(self.config)
 
         self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
