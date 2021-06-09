@@ -160,9 +160,6 @@ class EvaluationStore:
             or self.action_predictions != self.action_targets
         )
 
-    def has_unlikely_intent_prediction(self) -> bool:
-        return False
-
     @staticmethod
     def _compare_entities(
         entity_predictions: List["EntityPrediction"],
@@ -629,6 +626,8 @@ def _collect_action_executed_predictions(
     has_prediction_target_mismatch = (
         action_executed_eval_store.has_prediction_target_mismatch()
     )
+    print("ALWX predicted / gold", predicted, gold)
+    print("ALWX has_prediction_target_mismatch", has_prediction_target_mismatch)
     if has_prediction_target_mismatch or (
         predicted == ACTION_UNLIKELY_INTENT_NAME and predicted != gold
     ):
@@ -727,7 +726,7 @@ async def _predict_tracker_actions(
             if entity_result:
                 policy_entity_results.append(entity_result)
 
-            if action_executed_result.action_predictions:
+            if action_executed_result.action_targets:
                 tracker_eval_store.merge_store(action_executed_result)
                 tracker_actions.append(
                     {
@@ -827,6 +826,7 @@ async def _collect_story_predictions(
             successful_stories.append(predicted_tracker)
             correct_dialogues.append(1)
 
+            # TODO(alwx): check this
             last_event = predicted_tracker.events[-1]
             if (
                 type(last_event) == WronglyPredictedAction
