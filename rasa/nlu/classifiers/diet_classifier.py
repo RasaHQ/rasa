@@ -298,6 +298,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config
         )
 
+        self.component_config = train_utils.set_default_checkpoint_parameters(
+            self.component_config, self.defaults
+        )
         train_utils.validate_configuration_settings(self.component_config)
 
         self.component_config = train_utils.update_deprecated_loss_type(
