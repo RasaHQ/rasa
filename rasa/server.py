@@ -24,6 +24,7 @@ from typing import (
 )
 
 import aiohttp
+import jsonschema
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
@@ -380,17 +381,14 @@ def validate_request_body(request: Request, error_message: Text) -> None:
 
 def validate_events_in_request_body(request: Request) -> None:
     """Validates events format in request body."""
-    from jsonschema import validate
-    from jsonschema import ValidationError
-
     if not isinstance(request.json, list):
         events = [request.json]
     else:
         events = request.json
 
     try:
-        validate(events, EVENTS_SCHEMA)
-    except ValidationError as error:
+        jsonschema.validate(events, EVENTS_SCHEMA)
+    except jsonschema.ValidationError as error:
         raise ErrorResponse(
             HTTPStatus.BAD_REQUEST,
             "BadRequest",

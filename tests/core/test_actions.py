@@ -373,6 +373,11 @@ async def test_remote_action_with_template_param(
             timestamp=None,
         ),
         EntitiesAdded(entities=[]),
+        EntitiesAdded(
+            entities=[
+                {"entity": "name", "value": "John", "role": "contact", "group": "test"}
+            ]
+        ),
         DefinePrevUserUtteredFeaturization(
             use_text_for_featurization=False, timestamp=None, metadata=None
         ),
