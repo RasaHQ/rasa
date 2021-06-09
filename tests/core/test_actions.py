@@ -398,7 +398,15 @@ async def test_remote_action_with_template_param(
         ActionReverted(),
         UserUtteranceReverted(),
         BotUttered(text="Test bot utterance"),
-        UserUttered(parse_data={"entities": []}),
+        UserUttered(
+            parse_data={
+                "entities": [],
+                "response_selector": {
+                    "all_retrieval_intents": [],
+                    "chitchat/ask_weather": {"response": {}, "ranking": []},
+                },
+            }
+        ),
         UserUttered(
             text="hello",
             parse_data={

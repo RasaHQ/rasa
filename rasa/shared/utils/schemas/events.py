@@ -47,65 +47,82 @@ EVENTS_SCHEMA = {
                             "entities": ENTITIES_SCHEMA,
                             "response_selector": {
                                 "type": "object",
-                                "properties": {
-                                    "all_retrieval_intents": {"type": "array"},
-                                    "default": {
-                                        "type": "object",
+                                "oneOf": [
+                                    {
                                         "properties": {
-                                            "response": {
+                                            "all_retrieval_intents": {"type": "array"},
+                                        }
+                                    },
+                                    {
+                                        "patternProperties": {
+                                            "[\\w/]": {
                                                 "type": "object",
                                                 "properties": {
-                                                    "responses": {
+                                                    "response": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "responses": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "text": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    },
+                                                                },
+                                                            },
+                                                            "response_templates": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "text": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    },
+                                                                },
+                                                            },
+                                                            "confidence": {
+                                                                "type": "number"
+                                                            },
+                                                            "intent_response_key": {
+                                                                "type": "string"
+                                                            },
+                                                            "utter_action": {
+                                                                "type": "string"
+                                                            },
+                                                            "template_name": {
+                                                                "type": "string"
+                                                            },
+                                                        },
+                                                    },
+                                                    "ranking": {
                                                         "type": "array",
                                                         "items": {
                                                             "type": "object",
                                                             "properties": {
-                                                                "text": {
+                                                                "id": {
+                                                                    "type": "number"
+                                                                },
+                                                                "confidence": {
+                                                                    "type": "number"
+                                                                },
+                                                                "intent_response_key": {
                                                                     "type": "string"
-                                                                }
+                                                                },
                                                             },
-                                                        },
-                                                    },
-                                                    "response_templates": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "object",
-                                                            "properties": {
-                                                                "text": {
-                                                                    "type": "string"
-                                                                }
-                                                            },
-                                                        },
-                                                    },
-                                                    "confidence": {"type": "number"},
-                                                    "intent_response_key": {
-                                                        "type": "string"
-                                                    },
-                                                    "utter_action": {"type": "string"},
-                                                    "template_name": {"type": "string"},
-                                                },
-                                            },
-                                            "ranking": {
-                                                "type": "array",
-                                                "items": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "confidence": {
-                                                            "type": "number"
-                                                        },
-                                                        "intent_response_key": {
-                                                            "type": "string"
                                                         },
                                                     },
                                                 },
                                             },
                                         },
                                     },
-                                },
+                                ],
                             },
                         },
                     },
-                }
+                },
             },
             {
                 "properties": {
