@@ -150,38 +150,105 @@ class TestIntentTEDPolicy(TestTEDPolicy):
                 [
                     [[1.2, 0.3, 0.2]],
                     [[0.5, 0.2, 1.6]],
-                    [[0.1, 0.6, 0.8]],
-                    [[2.3, 0.1, 0.3]],
+                    [[1.2, 0.3, 0.8]],
+                    [[0.01, 0.1, 1.7]],
                 ]
             )
         }
-        label_id_similarities = IntentTED._collect_label_id_similarities_from_outputs(
-            label_ids, outputs
+        label_id_similarities = IntentTEDPolicy._collect_label_id_grouped_scores(
+            outputs, label_ids
         )
 
-        # Should contain similarities for all label ids.
+        # Should contain similarities for all label ids except padding token.
         assert sorted(list(label_id_similarities.keys())) == [0, 1, 2]
 
         # Cross-check that the collected similarities are correct for each label id.
-        assert label_id_similarities[0] == [1.2]
-        assert label_id_similarities[1] == [0.2, 0.6]
-        assert label_id_similarities[2] == [0.3]
+        assert label_id_similarities[0] == [[1.2], [0.5, 0.01]]
+        assert label_id_similarities[1] == [[0.3, 0.2], [0.1]]
+        assert label_id_similarities[2] == [[1.7], [0.2, 1.6, 0.8]]
 
-    @pytest.mark.parametrize(
-        "similarities, expected_thresholds",
-        [
-            ({0: [1.2], 1: [-0.2, 0.6]}, {0: 1.2, 1: -0.2}),
-            ({0: [0.2, 0.1, 0.8], 1: [0.9, 0.6]}, {0: 0.1, 1: 0.6}),
-            ({0: [-0.2, -0.1, -0.8], 1: [-0.9, -0.6]}, {0: -0.8, 1: -0.9}),
-        ],
-    )
-    def test_threshold_computation_from_similarities(
-        self,
-        similarities: Dict[int, List[float]],
-        expected_thresholds: Dict[int, float],
-    ):
-        computed_thresholds = IntentTED._pick_threshold_from_similarities(similarities)
-        assert computed_thresholds == expected_thresholds
+    def test_label_threshold_for_tolerance_ranges_computation(self):
+        label_id_scores = {
+            0: [[1.3, 0.2], [-0.1, -1.2, -2.3, -4.1, -0.5, 0.2, 0.8, 0.9, -3.2, -2.7]],
+            3: [[1.3, 0.2], [-0.1]],
+            6: [[1.3, 0.2], []],
+        }
+        expected_thresholds = {
+            0: [
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                -0.1,
+                -0.1,
+                -0.5,
+                -0.5,
+                -1.2,
+                -1.2,
+                -2.3,
+                -2.3,
+                -2.7,
+                -2.7,
+                -3.2,
+                -3.2,
+                -4.1,
+                -4.1,
+            ],
+            3: [
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+            ],
+            6: [
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+            ],
+        }
+        thresholds = IntentTEDPolicy._compute_label_tolerance_thresholds(
+            label_id_scores
+        )
+        assert sorted(list(thresholds.keys())) == sorted(
+            list(expected_thresholds.keys())
+        )
+        for label_id, tolerance_thresholds in thresholds.items():
+            assert expected_thresholds[label_id] == tolerance_thresholds
 
     async def test_post_training_threshold_computation(
         self,
@@ -197,17 +264,87 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             training_trackers, default_domain, interpreter
         )
 
-        trained_policy.calculate_label_thresholds_post_training(
+        trained_policy.calculate_label_tolerance_thresholds(
             training_model_data, label_ids
         )
+
+        computed_thresholds = trained_policy.label_tolerance_thresholds
 
         # -1 is used for padding and hence is not expected in the keys
         expected_keys = list(np.unique(label_ids))
         expected_keys.remove(-1)
 
-        assert sorted(list(trained_policy.label_thresholds.keys())) == sorted(
-            expected_keys
+        assert sorted(list(computed_thresholds.keys())) == sorted(expected_keys)
+
+    @pytest.mark.parametrize(
+        "tolerance, expected_thresholds",
+        [
+            (0.0, [0.2, -0.1]),
+            (0.30, [-0.1, -0.1]),
+            (0.75, [-2.9, -0.1]),
+            (0.72, [-2.7, -0.1]),
+            (0.78, [-2.9, -0.1]),
+            (1.0, [-4.1, -0.1]),
+        ],
+    )
+    def test_label_threshold_from_tolerance_thresholds(
+        self, tolerance: float, expected_thresholds: List[float]
+    ):
+        label_id_tolerance_thresholds = {
+            0: [
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                -0.1,
+                -0.1,
+                -0.5,
+                -0.5,
+                -1.2,
+                -1.2,
+                -2.3,
+                -2.3,
+                -2.7,
+                -2.9,
+                -3.2,
+                -3.2,
+                -4.1,
+                -4.1,
+            ],
+            3: [
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+            ],
+        }
+        thresholds = IntentTEDPolicy._compute_exact_label_thresholds_from_tolerance(
+            label_id_tolerance_thresholds, tolerance
         )
+        print(thresholds)
+        assert sorted(list(thresholds.keys())) == sorted(
+            list(label_id_tolerance_thresholds.keys())
+        )
+        computed_values = list(thresholds.values())
+        assert expected_thresholds == computed_values
 
     @pytest.mark.parametrize(
         "predicted_similarity, threshold_value, is_unlikely",
