@@ -37,7 +37,8 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     COSINE,
     AUTO,
-    LINEAR_NORM, EVAL_NUM_EPOCHS,
+    LINEAR_NORM,
+    EVAL_NUM_EPOCHS,
 )
 from tests.core.test_policies import PolicyTestCollection
 from rasa.shared.constants import DEFAULT_SENDER_ID, DEFAULT_CORE_SUBDIRECTORY_NAME
@@ -52,10 +53,19 @@ actions:
 """
 
 
-def get_checkpoint_dir_path(tmp_path: Path) -> Path:
-    policy_dir_name = "policy_{}_{}".format(0, TEDPolicy.__name__)
-    path = Path(tmp_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
-    policy_path = Path(path) / policy_dir_name
+def get_checkpoint_dir_path(train_path: Path, ted_pos: Optional[int] = 0) -> Path:
+    """
+    Produce the path of the checkpoint directory for TED.
+
+    This is very tightly coupled to the persist methods of PolicyEnsemble, Agent, and
+    TEDPolicy.
+    Args:
+        train_path: the path passed to model_training.train_core for training output.
+        ted_pos: the position of TED in the policies listed in the config.
+
+    """
+    policy_dir_name = Path("policy_{}_{}".format(ted_pos, TEDPolicy.__name__))
+    policy_path = train_path / Path(DEFAULT_CORE_SUBDIRECTORY_NAME) / policy_dir_name
     return Path(policy_path, "checkpoints")
 
 
@@ -126,13 +136,15 @@ class TestTEDPolicy(PolicyTestCollection):
                 output=str(tmp_path),
                 config=f"data/test_config/{config_file}",
             )
-        warn_text = (f"You have opted to save the best model, {EVAL_NUM_EXAMPLES} is "
-                     "not greater than 0. No model will be saved.")
+        warn_text = (
+            f"You have opted to save the best model, {EVAL_NUM_EXAMPLES} is "
+            "not greater than 0. No model will be saved."
+        )
         assert not checkpoint_dir.is_dir()
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
 
     def test_train_fails_with_checkpoint_zero_eval_every_num_epochs(
-            self, tmp_path: Path
+        self, tmp_path: Path
     ):
         checkpoint_dir = get_checkpoint_dir_path(tmp_path)
         assert not checkpoint_dir.is_dir()
@@ -146,8 +158,10 @@ class TestTEDPolicy(PolicyTestCollection):
                     output=str(tmp_path),
                     config=f"data/test_config/{config_file}",
                 )
-        warn_text = (f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not "
-                     "-1 or greater than 0, training will fail.")
+        warn_text = (
+            f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not "
+            "-1 or greater than 0, training will fail."
+        )
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
         assert not checkpoint_dir.is_dir()
 
