@@ -627,7 +627,7 @@ async def test_train_model_not_checkpointing(
 ):
     model_name = "nlu-not-checkpointed-model"
     checkpoint_dir = get_checkpoint_dir_path(tmpdir, Path(tmpdir, model_name))
-    assert not checkpoint_dir.exists()
+    assert not checkpoint_dir.is_dir()
 
     _config = RasaNLUModelConfig(
         {
@@ -648,7 +648,7 @@ async def test_train_model_not_checkpointing(
         fixed_model_name=model_name,
     )
 
-    assert not checkpoint_dir.exists()
+    assert not checkpoint_dir.is_dir()
 
 
 async def test_train_fails_with_zero_eval_num_epochs(
@@ -656,7 +656,7 @@ async def test_train_fails_with_zero_eval_num_epochs(
 ):
     model_name = "nlu-fail"
     checkpoint_dir = get_checkpoint_dir_path(tmpdir, Path(tmpdir, model_name))
-    assert not checkpoint_dir.exists()
+    assert not checkpoint_dir.is_dir()
 
     _config = RasaNLUModelConfig(
         {
@@ -675,15 +675,20 @@ async def test_train_fails_with_zero_eval_num_epochs(
         }
     )
     with pytest.raises(InvalidConfigException):
-        await rasa.nlu.train.train(
-            _config,
-            path=str(tmpdir),
-            data=nlu_data_path,
-            component_builder=component_builder,
-            fixed_model_name=model_name,
-        )
-
-    assert not checkpoint_dir.exists()
+        with pytest.warns(UserWarning) as warning:
+            await rasa.nlu.train.train(
+                _config,
+                path=str(tmpdir),
+                data=nlu_data_path,
+                component_builder=component_builder,
+                fixed_model_name=model_name,
+            )
+    warn_text = (
+        f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not "
+        "-1 or greater than 0, training will fail."
+    )
+    assert len([w for w in warning if warn_text in str(w.message)]) == 1
+    assert not checkpoint_dir.is_dir()
 
 
 async def test_doesnt_checkpoint_with_zero_eval_num_examples(
@@ -691,7 +696,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
 ):
     model_name = "nlu-fail-checkpoint"
     checkpoint_dir = get_checkpoint_dir_path(tmpdir, Path(tmpdir, model_name))
-    assert not checkpoint_dir.exists()
+    assert not checkpoint_dir.is_dir()
 
     _config = RasaNLUModelConfig(
         {
@@ -709,16 +714,21 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
             "language": "en",
         }
     )
+    with pytest.warns(UserWarning) as warning:
+        await rasa.nlu.train.train(
+            _config,
+            path=str(tmpdir),
+            data=nlu_data_path,
+            component_builder=component_builder,
+            fixed_model_name=model_name,
+        )
 
-    await rasa.nlu.train.train(
-        _config,
-        path=str(tmpdir),
-        data=nlu_data_path,
-        component_builder=component_builder,
-        fixed_model_name=model_name,
+    assert not checkpoint_dir.is_dir()
+    warn_text = (
+        f"You have opted to save the best model, {EVAL_NUM_EXAMPLES} is "
+        "not greater than 0. No model will be saved."
     )
-
-    assert not checkpoint_dir.exists()
+    assert len([w for w in warning if warn_text in str(w.message)]) == 1
 
 
 @pytest.mark.parametrize(

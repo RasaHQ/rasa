@@ -19,7 +19,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
 )
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -143,13 +143,11 @@ class TestTEDPolicy(PolicyTestCollection):
         assert not checkpoint_dir.is_dir()
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
 
-    def test_train_fails_with_checkpoint_zero_eval_every_num_epochs(
-        self, tmp_path: Path
-    ):
+    def test_train_fails_with_checkpoint_zero_eval_num_epochs(self, tmp_path: Path):
         checkpoint_dir = get_checkpoint_dir_path(tmp_path)
         assert not checkpoint_dir.is_dir()
         config_file = "config_ted_policy_model_checkpointing_zero_every_num_epochs.yml"
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidConfigException):
             with pytest.warns(UserWarning) as warning:
                 train_core(
                     domain="data/test_domains/default.yml",
