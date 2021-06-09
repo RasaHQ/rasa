@@ -534,10 +534,10 @@ def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
     _check_loss_setting(component_config)
     _check_confidence_setting(component_config)
     _check_similarity_loss_setting(component_config)
-    _check_checkpoint_setting(component_config)
+    _check_evaluation_setting(component_config)
 
 
-def _check_checkpoint_setting(component_config: Dict[Text, Any]) -> None:
+def _check_evaluation_setting(component_config: Dict[Text, Any]) -> None:
     if (
         EVAL_NUM_EPOCHS in component_config
         and component_config[EVAL_NUM_EPOCHS] != -1
