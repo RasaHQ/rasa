@@ -1258,20 +1258,20 @@ async def test_predict_empty_request_body(rasa_app: SanicASGITestClient):
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
-async def test_append_and_replace_events_empty_request_body(
-    rasa_app: SanicASGITestClient,
-):
+async def test_append_events_empty_request_body(rasa_app: SanicASGITestClient,):
     _, response = await rasa_app.post(
         "/conversations/testid/tracker/events",
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
     assert response.status == HTTPStatus.BAD_REQUEST
 
-    _, response_2 = await rasa_app.put(
+
+async def test_replace_events_empty_request_body(rasa_app: SanicASGITestClient):
+    _, response = await rasa_app.put(
         "/conversations/testid/tracker/events",
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
     )
-    assert response_2.status == HTTPStatus.BAD_REQUEST
+    assert response.status == HTTPStatus.BAD_REQUEST
 
 
 @freeze_time("2018-01-01")

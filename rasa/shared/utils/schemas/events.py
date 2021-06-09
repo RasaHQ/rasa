@@ -107,7 +107,7 @@ SLOT_SET = {
 }
 
 ENTITIES_ADDED = {
-    "properties": {"event": {"const": "entities"}, "entities": ENTITIES_SCHEMA,},
+    "properties": {"event": {"const": "entities"}, "entities": ENTITIES_SCHEMA},
     "required": ["entities"],
 }
 
@@ -129,7 +129,7 @@ STORY_EXPORTED = {"properties": {"event": {"const": "export"}}}
 RESTARTED = {"properties": {"event": {"const": "restart"}}}
 ACTION_REVERTED = {"properties": {"event": {"const": "undo"}}}
 USER_UTTERANCE_REVERTED = {"properties": {"event": {"const": "rewind"}}}
-BOT_UTTERED = ({"properties": {"event": {"const": "bot"}}},)
+BOT_UTTERED = {"properties": {"event": {"const": "bot"}}}
 SESSION_STARTED = {"properties": {"event": {"const": "session_started"}}}
 AGENT_UTTERED = {"properties": {"event": {"const": "agent"}}}
 

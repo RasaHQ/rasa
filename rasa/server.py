@@ -760,7 +760,7 @@ def create_app(
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def append_events(request: Request, conversation_id: Text) -> HTTPResponse:
-        """Append a list of events to the state of a conversation"""
+        """Append a list of events to the state of a conversation."""
         validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
