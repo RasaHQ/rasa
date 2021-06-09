@@ -94,11 +94,13 @@ class KeywordIntentClassifier(IntentClassifier):
         for intent, keyword in ambiguous_mappings:
             self.intent_keyword_map.pop(keyword)
             logger.debug(
-                f"Removed keyword '{keyword}' from intent '{intent}' because it matched a "
-                "keyword of another intent."
+                f"Removed keyword '{keyword}' from intent "
+                f"'{intent}' because it matched a "
+                f"keyword of another intent."
             )
 
     def process(self, message: Message, **kwargs: Any) -> None:
+        """Set the message intent and add it to the output is it exists."""
         intent_name = self._map_keyword_to_intent(message.get(TEXT))
 
         confidence = 0.0 if intent_name is None else 1.0

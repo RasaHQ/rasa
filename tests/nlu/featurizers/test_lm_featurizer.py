@@ -91,7 +91,8 @@ def process_texts(
 
 
 @pytest.mark.parametrize(
-    "model_name, model_weights, texts, expected_shape, expected_sequence_vec, expected_cls_vec",
+    "model_name, model_weights, texts, expected_shape, "
+    "expected_sequence_vec, expected_cls_vec",
     [
         (
             "bert",

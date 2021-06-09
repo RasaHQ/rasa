@@ -364,7 +364,7 @@ class TEDPolicy(Policy):
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
     @staticmethod
-    def model_class() -> Type[RasaModel]:
+    def model_class() -> Type["TED"]:
         """Gets the class of the model architecture to be used by the policy.
 
         Returns:
@@ -572,6 +572,9 @@ class TEDPolicy(Policy):
             bilou_tagging=self.config[BILOU_FLAG],
             **kwargs,
         )
+
+        if not tracker_state_features:
+            return RasaModelData(), label_ids
 
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
@@ -1035,7 +1038,7 @@ class TEDPolicy(Policy):
         predict_data_example: RasaModelData,
         featurizer: TrackerFeaturizer,
         should_finetune: bool,
-    ):
+    ) -> "TED":
         model = cls.model_class().load(
             str(model_utilities["tf_model_file"]),
             model_data_example,
@@ -1082,6 +1085,8 @@ class TEDPolicy(Policy):
 
 
 class TED(TransformerRasaModel):
+    """TED model architecture from https://arxiv.org/abs/1910.00486."""
+
     def __init__(
         self,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],

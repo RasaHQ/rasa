@@ -79,7 +79,8 @@ class Features:
         if self.features.shape[0] != additional_features.features.shape[0]:
             raise ValueError(
                 f"Cannot combine sparse features as sequence dimensions do not "
-                f"match: {self.features.shape[0]} != {additional_features.features.shape[0]}."
+                f"match: {self.features.shape[0]} != "
+                f"{additional_features.features.shape[0]}."
             )
 
         self.features = hstack([self.features, additional_features.features])

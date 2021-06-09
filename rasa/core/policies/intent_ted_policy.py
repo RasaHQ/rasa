@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING, Tuple
+from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
 from collections import defaultdict
 
 from rasa.shared.core.domain import Domain
@@ -263,7 +263,7 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     @staticmethod
-    def model_class() -> Type[RasaModel]:
+    def model_class() -> Type["IntentTED"]:
         """Gets the class of the model architecture to be used by the policy.
 
         Returns:
@@ -271,7 +271,7 @@ class IntentTEDPolicy(TEDPolicy):
         """
         return IntentTED
 
-    def _auto_update_configuration(self):
+    def _auto_update_configuration(self) -> None:
         self.config = train_utils.update_evaluation_parameters(self.config)
         self.config = train_utils.update_deprecated_sparsity_to_density(self.config)
 
@@ -595,13 +595,6 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     def _compute_tolerance_thresholds(self, label_thresholds):
-        # def _find_appropriate_tolerance_threshold(bins, edges, tolerance_percentile):
-        #     tolerance_percentile = 1.0 - tolerance_percentile
-        #     for index, boundary_value in enumerate(bins):
-        #         if boundary_value >= tolerance_percentile:
-        #             return edges[index]
-        #     return edges[-1]
-
         def _appropriate_negative_value_threshold(
             negative_values, tolerance_percentile
         ):
@@ -630,6 +623,12 @@ class IntentTEDPolicy(TEDPolicy):
 
 
 class IntentTED(TED):
+    """Follows TED's model architecture from https://arxiv.org/abs/1910.00486.
+
+    However, it has been re-purposed to predict multiple
+    labels (intents) instead of a single label (action).
+    """
+
     def _prepare_label_classification_layers(self, predictor_attribute: Text) -> None:
         """Prepares layers & loss for the final label prediction step."""
         self._prepare_embed_layers(predictor_attribute)
@@ -723,10 +722,6 @@ class IntentTED(TED):
 
     @staticmethod
     def _construct_score_bins(label_id_scores: Dict[int, List[List[float]]]):
-        # def _get_cumsum_edges(scores: List[float]) -> Tuple[np.ndarray, np.ndarray]:
-        #     bins, edges = np.histogram(scores, bins=100)
-        #     return np.cumsum(bins) / np.sum(bins), edges
-
         # bins and edges of negative scores, minimum of positive scores.
         return {
             label_id: [scores[1], np.min(scores[0])]

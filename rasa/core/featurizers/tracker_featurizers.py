@@ -299,7 +299,8 @@ class TrackerFeaturizer:
             Trackers as states, labels, and entity data.
         """
         raise NotImplementedError(
-            f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
+            f"`{self.__class__.__name__}` should implement how to "
+            f"encode trackers as feature vectors"
         )
 
     def prepare_for_featurization(
@@ -371,6 +372,13 @@ class TrackerFeaturizer:
         )
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
+
+        if not tracker_state_features and not trackers_as_labels:
+            # If input and output were empty, it means there is
+            # no data on which the policy can be trained
+            # hence return them as it is. They'll be handled
+            # appropriately inside the policy.
+            return tracker_state_features, np.ndarray(trackers_as_labels), []
 
         label_ids = self._convert_labels_to_ids(trackers_as_labels, domain)
 
