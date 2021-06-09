@@ -70,20 +70,41 @@ def featurize_training_examples(
         output.append(attribute_to_features)
 
     sparse_feature_sizes = {}
-    if output:
-        sparse_attributes = []
-        for attr, features in output[0].items():
-            if features and features[0].is_sparse():
-                sparse_attributes.append(attr)
-        # we don't support updating label attribute layers at this point
-        if label_attribute in sparse_attributes:
-            sparse_attributes.remove(label_attribute)
-        if training_examples:
-            for attribute in sparse_attributes:
-                sparse_feature_sizes[attribute] = training_examples[
-                    0
-                ].get_sparse_feature_sizes(attribute=attribute, featurizers=featurizers)
+    if output and training_examples:
+        sparse_feature_sizes = _collect_sparse_feature_sizes(
+            featurized_example=output[0],
+            training_example=training_examples[0],
+            featurizers=featurizers,
+        )
     return output, sparse_feature_sizes
+
+
+def _collect_sparse_feature_sizes(
+    featurized_example: Dict[Text, List["Features"]],
+    training_example: Message,
+    featurizers: Optional[List[Text]] = None,
+) -> Dict[Text, Dict[Text, List[int]]]:
+    """Collects sparse feature sizes for all attributes that have sparse features.
+
+    Args:
+        featurized_example: a featurized example
+        training_example: a training example
+        featurizers: the featurizers to consider
+
+    Returns:
+        A dictionary of attribute that has sparse features to a dictionary of
+        a feature type to a list of different sparse feature sizes.
+    """
+    sparse_feature_sizes = {}
+    sparse_attributes = []
+    for attribute, features in featurized_example.items():
+        if features and features[0].is_sparse():
+            sparse_attributes.append(attribute)
+    for attribute in sparse_attributes:
+        sparse_feature_sizes[attribute] = training_example.get_sparse_feature_sizes(
+            attribute=attribute, featurizers=featurizers
+        )
+    return sparse_feature_sizes
 
 
 def get_tag_ids(

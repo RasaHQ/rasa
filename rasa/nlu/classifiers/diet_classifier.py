@@ -705,6 +705,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             featurizers=self.component_config[FEATURIZERS],
             bilou_tagging=self.component_config[BILOU_FLAG],
         )
+
         attribute_data, _ = model_data_utils.convert_to_data_format(
             features_for_examples, consider_dialogue_dimension=False
         )
@@ -714,6 +715,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
         model_data.add_data(attribute_data)
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
+        sparse_feature_sizes = self._remove_label_attribute_feature_sizes(
+            sparse_feature_sizes=sparse_feature_sizes, label_attribute=label_attribute
+        )
         model_data.add_sparse_feature_sizes(sparse_feature_sizes)
 
         self._add_label_features(
@@ -726,6 +730,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data.sort()
 
         return model_data
+
+    def _remove_label_attribute_feature_sizes(
+        self,
+        sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+        label_attribute: Optional[Text] = None,
+    ) -> Dict[Text, Dict[Text, List[int]]]:
+
+        if label_attribute in sparse_feature_sizes:
+            del sparse_feature_sizes[label_attribute]
+        return sparse_feature_sizes
 
     def _add_label_features(
         self,

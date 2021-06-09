@@ -251,12 +251,8 @@ class Message:
         sequence_features, sentence_features = self._filter_sparse_features(
             attribute, featurizers
         )
-        sequence_sizes = []
-        if sequence_features:
-            sequence_sizes = [f.features.shape[1] for f in sequence_features]
-        sentence_sizes = []
-        if sentence_features:
-            sentence_sizes = [f.features.shape[1] for f in sentence_features]
+        sequence_sizes = [f.features.shape[1] for f in sequence_features]
+        sentence_sizes = [f.features.shape[1] for f in sentence_features]
 
         return {
             FEATURE_TYPE_SEQUENCE: sequence_sizes,

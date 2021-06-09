@@ -543,8 +543,7 @@ class RasaModelData:
                            features to a dictionary of a feature type
                            to a list of different sparse feature sizes.
         """
-        if not self.sparse_feature_sizes:
-            self.sparse_feature_sizes = sparse_feature_sizes
+        self.sparse_feature_sizes = sparse_feature_sizes
 
     def get_sparse_feature_sizes(self) -> Dict[Text, Dict[Text, List[int]]]:
         """Get feature sizes of the model.
