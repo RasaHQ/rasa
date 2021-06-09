@@ -1,12 +1,7 @@
 import logging
 from typing import Any, Dict, List, Text
 
-from rasa.shared.nlu.constants import (
-    INTENT,
-    ENTITIES,
-    TEXT,
-    VALID_FEATURE_TYPES,
-)
+from rasa.shared.nlu.constants import INTENT, ENTITIES, TEXT
 from rasa.shared.nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 from rasa.shared.nlu.training_data.util import transform_entity_synonyms
 from rasa.shared.nlu.training_data.training_data import TrainingData
