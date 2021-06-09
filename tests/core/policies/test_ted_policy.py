@@ -137,8 +137,8 @@ class TestTEDPolicy(PolicyTestCollection):
                 config=f"data/test_config/{config_file}",
             )
         warn_text = (
-            f"You have opted to save the best model, {EVAL_NUM_EXAMPLES} is "
-            "not greater than 0. No model will be saved."
+            f"You have opted to save the best model, but {EVAL_NUM_EXAMPLES} is "
+            "not greater than 0. No checkpoint model will be saved."
         )
         assert not checkpoint_dir.is_dir()
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
@@ -157,7 +157,7 @@ class TestTEDPolicy(PolicyTestCollection):
                     config=f"data/test_config/{config_file}",
                 )
         warn_text = (
-            f"You have opted to save the best model, {EVAL_NUM_EPOCHS} is not "
+            f"You have opted to save the best model, but {EVAL_NUM_EPOCHS} is not "
             "-1 or greater than 0, training will fail."
         )
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
