@@ -761,12 +761,6 @@ def create_app(
     @ensure_loaded_agent(app)
     async def append_events(request: Request, conversation_id: Text) -> HTTPResponse:
         """Append a list of events to the state of a conversation"""
-        validate_request_body(
-            request,
-            "You must provide events in the request body in order to append them"
-            "to the state of a conversation.",
-        )
-
         validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
@@ -828,12 +822,6 @@ def create_app(
     @ensure_loaded_agent(app)
     async def replace_events(request: Request, conversation_id: Text) -> HTTPResponse:
         """Use a list of events to set a conversations tracker to a state."""
-        validate_request_body(
-            request,
-            "You must provide events in the request body to set the sate of the "
-            "conversation tracker.",
-        )
-
         validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
@@ -1285,12 +1273,6 @@ def create_app(
     @ensure_loaded_agent(app, require_core_is_ready=True)
     async def tracker_predict(request: Request) -> HTTPResponse:
         """Given a list of events, predicts the next action."""
-        validate_request_body(
-            request,
-            "No events defined in request_body. Add events to request body in order to "
-            "predict the next action.",
-        )
-
         validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
