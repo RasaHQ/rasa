@@ -6,7 +6,7 @@ from typing import List, Optional, Text, Dict, Union, Any
 from rasa.core.test import (
     FAILED_STORIES_FILE,
     SUCCESSFUL_STORIES_FILE,
-    STORIES_WITH_WARNINGS_FILE
+    STORIES_WITH_WARNINGS_FILE,
 )
 from rasa.cli import SubParsersAction
 import rasa.shared.data
