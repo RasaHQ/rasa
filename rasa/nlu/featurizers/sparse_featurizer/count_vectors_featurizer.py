@@ -148,14 +148,21 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             if self.OOV_words:
                 self.OOV_words = [w.lower() for w in self.OOV_words]
 
-        for _, value in self.component_config["additional_vocabulary_size"].items():
-            if value:
-                rasa.shared.utils.io.raise_deprecation_warning(
-                    "The parameter `additional_vocabulary_size` has been deprecated "
-                    "and you don't have to specify it anymore"
-                )
-                # to avoid warning several times
-                break
+        additional_size_attributes = [
+            key
+            for key, value in self.component_config[
+                "additional_vocabulary_size"
+            ].items()
+            if value
+        ]
+        if additional_size_attributes:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"additional vocabulary size has been specified for attributes - "
+                f"{additional_size_attributes}. The parameter `additional_vocabulary_size` "
+                f"has been deprecated since the pipeline does not create an extra buffer for "
+                f"vocabulary anymore. Any value assigned to this parameter will be ignored. "
+                f"You can omit specifying `additional_vocabulary_size` in future runs."
+            )
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:
         """Checks if trained vocabulary exists in attribute's count vectorizer."""

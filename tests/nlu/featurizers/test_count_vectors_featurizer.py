@@ -693,7 +693,8 @@ def test_cvf_incremental_training(
 def test_additional_vocab_size_deprecation():
     with pytest.warns(FutureWarning) as warning:
         _ = CountVectorsFeaturizer.create(
-            {"additional_vocabulary_size": {TEXT: 5}}, RasaNLUModelConfig()
+            {"additional_vocabulary_size": {TEXT: 5, RESPONSE: 10}},
+            RasaNLUModelConfig(),
         )
     assert (
         "The parameter `additional_vocabulary_size` has been deprecated"
