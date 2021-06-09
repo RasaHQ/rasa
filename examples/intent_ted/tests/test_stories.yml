@@ -27,3 +27,15 @@ stories:
       intent: mood_unhappy
     - action: action_unlikely_intent
     - action: action_listen
+
+- story: happy path
+  steps:
+    - user: |
+        hello there!
+      intent: greet
+    - action: action_unlikely_intent
+    - action: utter_greet
+    - user: |
+        amazing
+      intent: mood_great
+    - action: utter_happy
