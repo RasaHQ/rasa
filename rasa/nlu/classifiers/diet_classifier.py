@@ -700,7 +700,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ) = model_data_utils.featurize_training_examples(
             training_data,
             attributes_to_consider,
-            label_attribute,
             entity_tag_specs=self._entity_tag_specs,
             featurizers=self.component_config[FEATURIZERS],
             bilou_tagging=self.component_config[BILOU_FLAG],

@@ -27,7 +27,6 @@ TAG_ID_ORIGIN = "tag_id_origin"
 def featurize_training_examples(
     training_examples: List[Message],
     attributes: List[Text],
-    label_attribute: Text = None,
     entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
     featurizers: Optional[List[Text]] = None,
     bilou_tagging: bool = False,
@@ -41,7 +40,6 @@ def featurize_training_examples(
     Args:
         training_examples: the list of training examples
         attributes: the attributes to consider
-        label_attribute: the label attribute
         entity_tag_specs: the entity specs
         featurizers: the featurizers to consider
         bilou_tagging: indicates whether BILOU tagging should be used or not

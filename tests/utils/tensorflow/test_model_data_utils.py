@@ -191,7 +191,10 @@ def test_extract_features():
             "greet",
             None,
             [TEXT, INTENT],
-            {"text": {"sequence": [1001], "sentence": [1001]}},
+            {
+                "intent": {"sentence": [], "sequence": [1]},
+                "text": {"sequence": [1001], "sentence": [1001]},
+            },
         ),
         (
             "Hello Max!",
@@ -232,10 +235,7 @@ def test_convert_training_examples(
         )
     ]
     output, feature_sizes = model_data_utils.featurize_training_examples(
-        [message],
-        attributes=attributes,
-        label_attribute=INTENT,
-        entity_tag_specs=entity_tag_spec,
+        [message], attributes=attributes, entity_tag_specs=entity_tag_spec,
     )
 
     assert len(output) == 1
