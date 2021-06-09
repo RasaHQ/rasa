@@ -21,7 +21,7 @@ from rasa.core.channels import console
 from rasa.core.channels.channel import InputChannel
 import rasa.core.interpreter
 from rasa.core.lock_store import LockStore
-from rasa.core.tracker_store import TrackerStore
+from rasa.core.tracker_store import TrackerStore, AwaitableTrackerStore
 from rasa.core.utils import AvailableEndpoints
 import rasa.shared.utils.io
 from sanic import Sanic
@@ -252,7 +252,7 @@ async def load_agent_on_start(
         _interpreter = None
 
     _broker = await EventBroker.create(endpoints.event_broker, loop=loop)
-    _tracker_store = TrackerStore.create(endpoints.tracker_store, event_broker=_broker)
+    _tracker_store = AwaitableTrackerStore.create(TrackerStore.create(endpoints.tracker_store, event_broker=_broker))
     _lock_store = LockStore.create(endpoints.lock_store)
 
     model_server = endpoints.model if endpoints and endpoints.model else None

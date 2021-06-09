@@ -9,7 +9,7 @@ from aioresponses import aioresponses
 from rasa.core.agent import Agent
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.processor import MessageProcessor
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_store import InMemoryTrackerStore, AwaitableTrackerStore
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
@@ -150,7 +150,7 @@ responses:
         empty_agent.interpreter,
         empty_agent.policy_ensemble,
         domain,
-        InMemoryTrackerStore(domain),
+        AwaitableTrackerStore.create(InMemoryTrackerStore(domain)),
         InMemoryLockStore(),
         TemplatedNaturalLanguageGenerator(domain.responses),
     )

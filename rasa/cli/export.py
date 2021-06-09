@@ -16,7 +16,7 @@ from rasa.core.brokers.pika import PikaEventBroker
 
 if typing.TYPE_CHECKING:
     from rasa.core.brokers.broker import EventBroker
-    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.tracker_store import TrackerStore, AwaitableTrackerStore
     from rasa.core.exporter import Exporter
     from rasa.core.utils import AvailableEndpoints
 
@@ -66,9 +66,9 @@ def _get_tracker_store(endpoints: "AvailableEndpoints") -> "TrackerStore":
             f"Exiting. "
         )
 
-    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.tracker_store import TrackerStore, AwaitableTrackerStore
 
-    return TrackerStore.create(endpoints.tracker_store)
+    return AwaitableTrackerStore.create(TrackerStore.create(endpoints.tracker_store))
 
 
 async def _get_event_broker(endpoints: "AvailableEndpoints") -> "EventBroker":

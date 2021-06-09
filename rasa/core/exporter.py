@@ -11,7 +11,7 @@ import rasa.shared.utils.io
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
-from rasa.core.tracker_store import TrackerStore
+from rasa.core.tracker_store import TrackerStore, AwaitableTrackerStore
 from rasa.shared.core.trackers import EventVerbosity
 from rasa.exceptions import (
     NoEventsToMigrateError,
@@ -50,7 +50,7 @@ class Exporter:
         maximum_timestamp: Optional[float] = None,
     ) -> None:
         self.endpoints_path = endpoints_path
-        self.tracker_store = tracker_store
+        self.tracker_store = AwaitableTrackerStore.create(tracker_store)
 
         self.event_broker = event_broker
         self.requested_conversation_ids = requested_conversation_ids

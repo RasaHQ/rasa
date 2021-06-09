@@ -55,7 +55,7 @@ from rasa.core.tracker_store import (
     RedisTrackerStore,
     SQLTrackerStore,
 )
-from rasa.core.tracker_store import TrackerStore
+from rasa.core.tracker_store import TrackerStore, AwaitableTrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from tests.core.conftest import MockedMongoTrackerStore
 from tests.conftest import (
@@ -115,7 +115,7 @@ def test_tracker_duplicate():
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
-def test_tracker_store_storage_and_retrieval(store: TrackerStore):
+async def test_tracker_store_storage_and_retrieval(store: TrackerStore):
     tracker = store.get_or_create_tracker("some-id")
     # the retrieved tracker should be empty
     assert tracker.sender_id == "some-id"
@@ -143,7 +143,7 @@ def test_tracker_store_storage_and_retrieval(store: TrackerStore):
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
 @pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, EXAMPLE_DOMAINS))
-def test_tracker_store(store, pair):
+async def test_tracker_store(store, pair):
     filename, domainpath = pair
     domain = Domain.load(domainpath)
     tracker = tracker_from_dialogue_file(filename, domain)
@@ -180,7 +180,7 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent: Age
     sender_id = "test_tracker_state_regression_without_bot_utterance"
     for i in range(0, 2):
         await default_agent.handle_text("/greet", sender_id=sender_id)
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # Ensures that the tracker has changed between the utterances
     # (and wasn't reset in between them)
@@ -198,7 +198,7 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent: Agent)
     sender_id = "test_tracker_state_regression_with_bot_utterance"
     for i in range(0, 2):
         await default_agent.handle_text("/greet", sender_id=sender_id)
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     expected = [
         "action_session_start",
@@ -224,7 +224,7 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
 
     await default_agent.handle_text("/greet", sender_id=sender_id)
 
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # important is, that the 'bot' comes after the second 'action' and not
     # before

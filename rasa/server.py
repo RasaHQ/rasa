@@ -65,7 +65,7 @@ import rasa.shared.core.events
 from rasa.shared.core.events import Event
 from rasa.core.lock_store import LockStore
 from rasa.core.test import test
-from rasa.core.tracker_store import TrackerStore
+from rasa.core.tracker_store import TrackerStore, AwaitableTrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
@@ -171,7 +171,7 @@ def ensure_conversation_exists() -> "SanicView":
         async def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
             if await request.app.agent.tracker_store.exists(conversation_id):
-                return f(request, *args, **kwargs)
+                return await f(request, *args, **kwargs)
             else:
                 raise ErrorResponse(
                     HTTPStatus.NOT_FOUND, "Not found", "Conversation ID not found."
@@ -294,7 +294,7 @@ def event_verbosity_parameter(
         )
 
 
-def get_test_stories(
+async def get_test_stories(
     processor: "MessageProcessor",
     conversation_id: Text,
     until_time: Optional[float],
@@ -314,9 +314,9 @@ def get_test_stories(
         The stories for `conversation_id` in test format.
     """
     if fetch_all_sessions:
-        trackers = processor.get_trackers_for_all_conversation_sessions(conversation_id)
+        trackers = await processor.get_trackers_for_all_conversation_sessions(conversation_id)
     else:
-        trackers = [processor.get_tracker(conversation_id)]
+        trackers = [await processor.get_tracker(conversation_id)]
 
     if until_time is not None:
         trackers = [tracker.travel_back_in_time(until_time) for tracker in trackers]
@@ -361,7 +361,7 @@ async def update_conversation_with_events(
         The tracker for `conversation_id` with the updated events.
     """
     if rasa.shared.core.events.do_events_begin_with_session_start(events):
-        tracker = processor.get_tracker(conversation_id)
+        tracker = await processor.get_tracker(conversation_id)
     else:
         tracker = await processor.fetch_tracker_with_initial_session(conversation_id)
 
@@ -461,9 +461,9 @@ async def _load_agent(
 
         if endpoints:
             broker = await EventBroker.create(endpoints.event_broker)
-            tracker_store = TrackerStore.create(
+            tracker_store = AwaitableTrackerStore.create(TrackerStore.create(
                 endpoints.tracker_store, event_broker=broker
-            )
+            ))
             generator = endpoints.nlg
             action_endpoint = endpoints.action
             if not lock_store:
@@ -841,7 +841,7 @@ def create_app(
         )
 
         try:
-            stories = get_test_stories(
+            stories = await get_test_stories(
                 app.agent.create_processor(),
                 conversation_id,
                 until_time,

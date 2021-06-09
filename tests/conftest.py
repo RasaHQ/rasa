@@ -33,7 +33,7 @@ from rasa.core.exporter import Exporter
 from rasa.core.policies import Policy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 import rasa.core.run
-from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa.core.tracker_store import InMemoryTrackerStore, TrackerStore, AwaitableTrackerStore
 from rasa.model import get_model
 from rasa.model_training import train_async, train_nlu_async
 from rasa.utils.common import TempDirectoryPath
@@ -209,7 +209,7 @@ async def empty_agent() -> Agent:
 
 def reset_conversation_state(agent: Agent) -> Agent:
     # Clean tracker store after each test so tests don't affect each other
-    agent.tracker_store = InMemoryTrackerStore(agent.domain)
+    agent.tracker_store = AwaitableTrackerStore.create(InMemoryTrackerStore(agent.domain))
     agent.domain.session_config = SessionConfig.default()
     return agent
 
@@ -615,7 +615,7 @@ class MockExporter(Exporter):
 
     def __init__(
         self,
-        tracker_store: TrackerStore = Mock(),
+        tracker_store: TrackerStore = AwaitableTrackerStore.create(Mock()),
         event_broker: EventBroker = Mock(),
         endpoints_path: Text = "",
     ) -> None:

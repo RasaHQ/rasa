@@ -374,7 +374,7 @@ async def test_agent_update_model_none_domain(trained_rasa_model: Text):
     sender_id = "test_sender_id"
     message = UserMessage("hello", sender_id=sender_id)
     await agent.handle_message(message)
-    tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await agent.tracker_store.get_or_create_tracker(sender_id)
 
     # UserUttered event was added to tracker, with correct intent data
     assert tracker.events[3].intent["name"] == "greet"

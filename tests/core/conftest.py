@@ -18,7 +18,7 @@ from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGene
 from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
 from rasa.shared.core.slots import Slot
-from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore
+from rasa.core.tracker_store import InMemoryTrackerStore, MongoTrackerStore, AwaitableTrackerStore
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 
@@ -82,7 +82,7 @@ def default_channel() -> OutputChannel:
 
 @pytest.fixture
 async def default_processor(default_agent: Agent) -> MessageProcessor:
-    tracker_store = InMemoryTrackerStore(default_agent.domain)
+    tracker_store = AwaitableTrackerStore.create(InMemoryTrackerStore(default_agent.domain))
     lock_store = InMemoryLockStore()
     return MessageProcessor(
         default_agent.interpreter,
@@ -95,7 +95,7 @@ async def default_processor(default_agent: Agent) -> MessageProcessor:
 
 
 @pytest.fixture
-def tracker_with_six_scheduled_reminders(
+async def tracker_with_six_scheduled_reminders(
     default_processor: MessageProcessor,
 ) -> DialogueStateTracker:
     reminders = [
@@ -124,13 +124,13 @@ def tracker_with_six_scheduled_reminders(
         ),
     ]
     sender_id = uuid.uuid4().hex
-    tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_processor.tracker_store.get_or_create_tracker(sender_id)
     for reminder in reminders:
         tracker.update(UserUttered("test"))
         tracker.update(ActionExecuted("action_reminder_reminder"))
         tracker.update(reminder)
 
-    default_processor.tracker_store.save(tracker)
+    await default_processor.tracker_store.save(tracker)
 
     return tracker
 

@@ -64,7 +64,7 @@ def test_validate_timestamp_options_with_invalid_timestamps():
 
 
 # noinspection PyProtectedMember
-def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path):
+async def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path):
     # write valid config to file
     endpoints_path = write_endpoint_config_to_yaml(
         tmp_path,
@@ -80,7 +80,7 @@ def test_get_event_broker_and_tracker_store_from_endpoint_config(tmp_path: Path)
     available_endpoints = rasa_core_utils.read_endpoints_from_path(endpoints_path)
 
     # fetching the event broker is successful
-    assert export._get_event_broker(available_endpoints)
+    assert await export._get_event_broker(available_endpoints)
     assert export._get_tracker_store(available_endpoints)
 
 

@@ -12,7 +12,7 @@ from rasa.core.brokers.pika import PikaEventBroker
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.constants import RASA_EXPORT_PROCESS_ID_HEADER_NAME
 from rasa.shared.core.events import SessionStarted, ActionExecuted
-from rasa.core.tracker_store import SQLTrackerStore
+from rasa.core.tracker_store import SQLTrackerStore, AwaitableTrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.exceptions import (
     NoConversationsInTrackerStoreError,
@@ -27,7 +27,7 @@ from tests.conftest import MockExporter, random_user_uttered_event
     "requested_ids,available_ids,expected",
     [(["1"], ["1"], ["1"]), (["1", "2"], ["2"], ["2"]), (None, ["2"], ["2"])],
 )
-def test_get_conversation_ids_to_process(
+async def test_get_conversation_ids_to_process(
     requested_ids: Optional[List[Text]],
     available_ids: Optional[List[Text]],
     expected: Optional[List[Text]],
@@ -36,11 +36,11 @@ def test_get_conversation_ids_to_process(
     tracker_store = Mock()
     tracker_store.keys.return_value = available_ids
 
-    exporter = MockExporter(tracker_store)
+    exporter = MockExporter(AwaitableTrackerStore.create(tracker_store))
     exporter.requested_conversation_ids = requested_ids
 
     # noinspection PyProtectedMember
-    assert exporter._get_conversation_ids_to_process() == set(expected)
+    assert (await exporter._get_conversation_ids_to_process()) == set(expected)
 
 
 @pytest.mark.parametrize(
@@ -55,22 +55,22 @@ def test_get_conversation_ids_to_process(
         ),  # no overlap between requested IDs and those available
     ],
 )
-def test_get_conversation_ids_to_process_error(
+async def test_get_conversation_ids_to_process_error(
     requested_ids: Optional[List[Text]], available_ids: List[Text], exception: Exception
 ):
     # create and mock tracker store containing `available_ids` as keys
     tracker_store = Mock()
     tracker_store.keys.return_value = available_ids
 
-    exporter = MockExporter(tracker_store)
+    exporter = MockExporter(AwaitableTrackerStore.create(tracker_store))
     exporter.requested_conversation_ids = requested_ids
 
     with pytest.raises(exception):
         # noinspection PyProtectedMember
-        exporter._get_conversation_ids_to_process()
+        await exporter._get_conversation_ids_to_process()
 
 
-def test_fetch_events_within_time_range():
+async def test_fetch_events_within_time_range():
     conversation_ids = ["some-id", "another-id"]
 
     # prepare events from different senders and different timestamps
@@ -89,11 +89,11 @@ def test_fetch_events_within_time_range():
     tracker_store.retrieve_full_tracker.side_effect = _get_tracker
     tracker_store.keys.return_value = conversation_ids
 
-    exporter = MockExporter(tracker_store)
+    exporter = MockExporter(AwaitableTrackerStore.create(tracker_store))
     exporter.requested_conversation_ids = conversation_ids
 
     # noinspection PyProtectedMember
-    fetched_events = exporter._fetch_events_within_time_range()
+    fetched_events = await exporter._fetch_events_within_time_range()
 
     # events should come back for all requested conversation IDs
     assert all(
@@ -105,21 +105,21 @@ def test_fetch_events_within_time_range():
     assert fetched_events == list(sorted(fetched_events, key=lambda e: e["timestamp"]))
 
 
-def test_fetch_events_within_time_range_tracker_does_not_err():
+async def test_fetch_events_within_time_range_tracker_does_not_err():
     # create mock tracker store that returns `None` on `retrieve_full_tracker()`
     tracker_store = Mock()
     tracker_store.retrieve_full_tracker.return_value = None
     tracker_store.keys.return_value = [uuid.uuid4()]
 
-    exporter = MockExporter(tracker_store)
+    exporter = MockExporter(AwaitableTrackerStore.create(tracker_store))
 
     # no events means `NoEventsInTimeRangeError`
     with pytest.raises(NoEventsInTimeRangeError):
         # noinspection PyProtectedMember
-        exporter._fetch_events_within_time_range()
+        await exporter._fetch_events_within_time_range()
 
 
-def test_fetch_events_within_time_range_tracker_contains_no_events():
+async def test_fetch_events_within_time_range_tracker_contains_no_events():
     # create mock tracker store that returns `None` on `retrieve_full_tracker()`
     tracker_store = Mock()
     tracker_store.retrieve_full_tracker.return_value = DialogueStateTracker.from_events(
@@ -127,22 +127,22 @@ def test_fetch_events_within_time_range_tracker_contains_no_events():
     )
     tracker_store.keys.return_value = ["a great ID"]
 
-    exporter = MockExporter(tracker_store)
+    exporter = MockExporter(AwaitableTrackerStore.create(tracker_store))
 
     # no events means `NoEventsInTimeRangeError`
     with pytest.raises(NoEventsInTimeRangeError):
         # noinspection PyProtectedMember
-        exporter._fetch_events_within_time_range()
+        await exporter._fetch_events_within_time_range()
 
 
-def test_fetch_events_within_time_range_with_session_events(tmp_path: Path):
+async def test_fetch_events_within_time_range_with_session_events(tmp_path: Path):
     conversation_id = "test_fetch_events_within_time_range_with_sessions"
 
-    tracker_store = SQLTrackerStore(
+    tracker_store = AwaitableTrackerStore.create(SQLTrackerStore(
         dialect="sqlite",
         db=str(tmp_path / f"{uuid.uuid4().hex}.db"),
         domain=Domain.empty(),
-    )
+    ))
 
     events = [
         random_user_uttered_event(1),
@@ -151,12 +151,12 @@ def test_fetch_events_within_time_range_with_session_events(tmp_path: Path):
         random_user_uttered_event(4),
     ]
     tracker = DialogueStateTracker.from_events(conversation_id, evts=events)
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     exporter = MockExporter(tracker_store=tracker_store)
 
     # noinspection PyProtectedMember
-    fetched_events = exporter._fetch_events_within_time_range()
+    fetched_events = await exporter._fetch_events_within_time_range()
 
     assert len(fetched_events) == len(events)
 
@@ -173,7 +173,7 @@ def test_sort_and_select_events_by_timestamp():
     ]
 
     tracker_store = Mock()
-    exporter = MockExporter(tracker_store)
+    exporter = MockExporter(AwaitableTrackerStore.create(tracker_store))
 
     selected_events = exporter._sort_and_select_events_by_timestamp(events)
 
@@ -203,7 +203,7 @@ def test_sort_and_select_events_by_timestamp():
 # noinspection PyProtectedMember
 def test_sort_and_select_events_by_timestamp_error():
     tracker_store = Mock()
-    exporter = MockExporter(tracker_store)
+    exporter = MockExporter(AwaitableTrackerStore.create(tracker_store))
 
     # no events given
     with pytest.raises(NoEventsInTimeRangeError):
@@ -274,8 +274,10 @@ async def test_publishing_error():
     user_event = random_user_uttered_event(1).as_dict()
     user_event["sender_id"] = uuid.uuid4().hex
 
+    async def _fetch_events_within_time_range_helper():
+        return [user_event]
     # noinspection PyProtectedMember
-    exporter._fetch_events_within_time_range = Mock(return_value=[user_event])
+    exporter._fetch_events_within_time_range = _fetch_events_within_time_range_helper
 
     # run the export function
     with pytest.raises(PublishingError):
@@ -285,8 +287,10 @@ async def test_publishing_error():
 async def test_closing_broker():
     exporter = MockExporter(event_broker=SQLEventBroker())
 
+    async def _fetch_events_within_time_range_helper():
+        return []
     # noinspection PyProtectedMember
-    exporter._fetch_events_within_time_range = Mock(return_value=[])
+    exporter._fetch_events_within_time_range = _fetch_events_within_time_range_helper
 
     # run the export function
     with pytest.warns(None) as warnings:
@@ -302,8 +306,10 @@ async def test_closing_broker_sync():
 
     exporter = MockExporter(event_broker=TestBroker())
 
+    async def _fetch_events_within_time_range_helper():
+        return []
     # noinspection PyProtectedMember
-    exporter._fetch_events_within_time_range = Mock(return_value=[])
+    exporter._fetch_events_within_time_range = _fetch_events_within_time_range_helper
 
     # run the export function
     with pytest.warns(FutureWarning):

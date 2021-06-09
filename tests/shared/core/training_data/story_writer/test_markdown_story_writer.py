@@ -9,7 +9,7 @@ async def test_tracker_dump_e2e_story(default_agent: Agent):
 
     await default_agent.handle_text("/greet", sender_id=sender_id)
     await default_agent.handle_text("/goodbye", sender_id=sender_id)
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    tracker = await default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     story = tracker.export_stories(MarkdownStoryWriter(), e2e=True)
     assert story.strip().split("\n") == [

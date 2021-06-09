@@ -277,7 +277,7 @@ def create_agent(model: Text, endpoints: Text = None) -> "Agent":
         model: file path to the stored model
         endpoints: file path to the used endpoint configuration
     """
-    from rasa.core.tracker_store import TrackerStore
+    from rasa.core.tracker_store import TrackerStore, AwaitableTrackerStore
     from rasa.core.utils import AvailableEndpoints
     from rasa.core.brokers.broker import EventBroker
     import rasa.utils.common
@@ -285,7 +285,7 @@ def create_agent(model: Text, endpoints: Text = None) -> "Agent":
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     _broker = rasa.utils.common.run_in_loop(EventBroker.create(_endpoints.event_broker))
-    _tracker_store = TrackerStore.create(_endpoints.tracker_store, event_broker=_broker)
+    _tracker_store = AwaitableTrackerStore.create(TrackerStore.create(_endpoints.tracker_store, event_broker=_broker))
     _lock_store = LockStore.create(_endpoints.lock_store)
 
     return Agent.load(
@@ -887,7 +887,7 @@ class Agent:
         else:
             tracker_store = InMemoryTrackerStore(domain)
 
-        return AwaitableTrackerStore(FailSafeTrackerStore(tracker_store))
+        return FailSafeTrackerStore(tracker_store)
 
     @staticmethod
     def _create_lock_store(store: Optional[LockStore]) -> LockStore:

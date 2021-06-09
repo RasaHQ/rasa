@@ -42,7 +42,7 @@ from rasa.core.channels import (
     CallbackInput,
 )
 from rasa.core.channels.slack import SlackBot
-from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.tracker_store import InMemoryTrackerStore, AwaitableTrackerStore
 from rasa.model import unpack_model
 import rasa.nlu.test
 from rasa.nlu.test import CVEvaluationResult
@@ -1947,10 +1947,10 @@ async def test_get_story(
 ):
     conversation_id = "some-conversation-ID"
 
-    tracker_store = InMemoryTrackerStore(Domain.empty())
+    tracker_store = AwaitableTrackerStore.create(InMemoryTrackerStore(Domain.empty()))
     tracker = DialogueStateTracker.from_events(conversation_id, conversation_events)
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
 
@@ -2009,9 +2009,9 @@ async def test_get_story_does_not_update_conversation_session(
     # the conversation session has expired
     assert rasa_app.app.agent.create_processor()._has_session_expired(tracker)
 
-    tracker_store = InMemoryTrackerStore(domain)
+    tracker_store = AwaitableTrackerStore.create(InMemoryTrackerStore(domain))
 
-    tracker_store.save(tracker)
+    await tracker_store.save(tracker)
 
     monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
 
@@ -2096,14 +2096,14 @@ async def test_update_conversation_with_events(
 ):
     conversation_id = "some-conversation-ID"
     domain = Domain.empty()
-    tracker_store = InMemoryTrackerStore(domain)
+    tracker_store = AwaitableTrackerStore.create(InMemoryTrackerStore(domain))
     monkeypatch.setattr(rasa_app.app.agent, "tracker_store", tracker_store)
 
     if initial_tracker_events:
         tracker = DialogueStateTracker.from_events(
             conversation_id, initial_tracker_events
         )
-        tracker_store.save(tracker)
+        await tracker_store.save(tracker)
 
     fetched_tracker = await rasa.server.update_conversation_with_events(
         conversation_id, rasa_app.app.agent.create_processor(), domain, events_to_append

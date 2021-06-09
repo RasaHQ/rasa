@@ -42,6 +42,7 @@ from rasa.core.tracker_store import (
     SQLTrackerStore,
     DynamoTrackerStore,
     FailSafeTrackerStore,
+    AwaitableTrackerStore
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
@@ -267,7 +268,7 @@ def test_tracker_store_from_invalid_module(domain: Domain):
     with pytest.warns(UserWarning):
         tracker_store = TrackerStore.create(store_config, domain)
 
-    assert isinstance(tracker_store, InMemoryTrackerStore)
+    assert isinstance(tracker_store, AwaitableTrackerStore)
 
 
 def test_tracker_store_from_invalid_string(domain: Domain):
@@ -278,7 +279,7 @@ def test_tracker_store_from_invalid_string(domain: Domain):
     with pytest.warns(UserWarning):
         tracker_store = TrackerStore.create(store_config, domain)
 
-    assert isinstance(tracker_store, InMemoryTrackerStore)
+    assert isinstance(tracker_store, AwaitableTrackerStore)
 
 
 def _tracker_store_and_tracker_with_slot_set() -> Tuple[
@@ -437,31 +438,31 @@ def test_db_url_with_query_from_endpoint_config(tmp_path: Path):
     )
 
 
-def test_fail_safe_tracker_store_if_no_errors():
+async def test_fail_safe_tracker_store_if_no_errors():
     mocked_tracker_store = Mock()
 
     tracker_store = FailSafeTrackerStore(mocked_tracker_store, None)
 
     # test save
     mocked_tracker_store.save = Mock()
-    tracker_store.save(None)
+    await tracker_store.save(None)
     mocked_tracker_store.save.assert_called_once()
 
     # test retrieve
     expected = [1]
     mocked_tracker_store.retrieve = Mock(return_value=expected)
     sender_id = "10"
-    assert tracker_store.retrieve(sender_id) == expected
+    assert await tracker_store.retrieve(sender_id) == expected
     mocked_tracker_store.retrieve.assert_called_once_with(sender_id)
 
     # test keys
     expected = ["sender 1", "sender 2"]
     mocked_tracker_store.keys = Mock(return_value=expected)
-    assert tracker_store.keys() == expected
+    assert await tracker_store.keys() == expected
     mocked_tracker_store.keys.assert_called_once()
 
 
-def test_fail_safe_tracker_store_with_save_error():
+async def test_fail_safe_tracker_store_with_save_error():
     mocked_tracker_store = Mock()
     mocked_tracker_store.save = Mock(side_effect=Exception())
 
@@ -473,24 +474,24 @@ def test_fail_safe_tracker_store_with_save_error():
     tracker_store = FailSafeTrackerStore(
         mocked_tracker_store, on_error_callback, fallback_tracker_store
     )
-    tracker_store.save(None)
+    await tracker_store.save(None)
 
     fallback_tracker_store.save.assert_called_once()
     on_error_callback.assert_called_once()
 
 
-def test_fail_safe_tracker_store_with_keys_error():
+async def test_fail_safe_tracker_store_with_keys_error():
     mocked_tracker_store = Mock()
     mocked_tracker_store.keys = Mock(side_effect=Exception())
 
     on_error_callback = Mock()
 
     tracker_store = FailSafeTrackerStore(mocked_tracker_store, on_error_callback)
-    assert tracker_store.keys() == []
+    assert (await tracker_store.keys()) == []
     on_error_callback.assert_called_once()
 
 
-def test_fail_safe_tracker_store_with_retrieve_error():
+async def test_fail_safe_tracker_store_with_retrieve_error():
     mocked_tracker_store = Mock()
     mocked_tracker_store.retrieve = Mock(side_effect=Exception())
 
@@ -501,7 +502,7 @@ def test_fail_safe_tracker_store_with_retrieve_error():
         mocked_tracker_store, on_error_callback, fallback_tracker_store
     )
 
-    assert tracker_store.retrieve("sender_id") is None
+    assert (await tracker_store.retrieve("sender_id")) is None
     on_error_callback.assert_called_once()
 
 
