@@ -65,6 +65,20 @@ def test_compute_default_label_features():
         assert o.shape == (1, len(label_features))
 
 
+def get_checkpoint_dir_path(path: Path, model_dir: Path) -> Path:
+    """
+    Produce the path of the checkpoint directory for DIET.
+
+    This is coupled to the persist method of DIET.
+
+    Args:
+        model_dir: the model directory
+        path: the path passed to train for training output.
+
+    """
+    return Path(path, model_dir, "checkpoints")
+
+
 @pytest.mark.parametrize(
     "messages, expected",
     [
@@ -565,7 +579,7 @@ async def test_train_model_checkpointing(
     component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-checkpointed-model"
-    best_model_file = Path(tmpdir / model_name)
+    model_dir = Path(tmpdir / model_name)
     checkpoint_dir = Path(tmpdir / model_name / "checkpoints")
     assert not checkpoint_dir.is_dir()
 
@@ -577,6 +591,7 @@ async def test_train_model_checkpointing(
                 {
                     "name": "DIETClassifier",
                     EPOCHS: 5,
+                    EVAL_NUM_EPOCHS: 1,
                     EVAL_NUM_EXAMPLES: 10,
                     CHECKPOINT_MODEL: True,
                 },
@@ -603,23 +618,23 @@ async def test_train_model_checkpointing(
         - component_1_CountVectorsFeaturizer (as per the pipeline above)
         - component_2_DIETClassifier files (more than 1 file)
     """
-    all_files = list(best_model_file.rglob("*.*"))
+    all_files = list(model_dir.rglob("*.*"))
     assert len(all_files) > 4
 
 
 async def test_train_model_not_checkpointing(
     component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
 ):
-    model_name = "nlu-checkpointed-model"
-    best_model_file = Path(tmpdir, model_name, "checkpoint")
-    assert not best_model_file.exists()
+    model_name = "nlu-not-checkpointed-model"
+    checkpoint_dir = get_checkpoint_dir_path(tmpdir, Path(tmpdir, model_name))
+    assert not checkpoint_dir.exists()
 
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 5, CHECKPOINT_MODEL: False,},
+                {"name": "DIETClassifier", EPOCHS: 5, CHECKPOINT_MODEL: False},
             ],
             "language": "en",
         }
@@ -633,15 +648,15 @@ async def test_train_model_not_checkpointing(
         fixed_model_name=model_name,
     )
 
-    assert not best_model_file.exists()
+    assert not checkpoint_dir.exists()
 
 
 async def test_train_fails_with_zero_eval_num_epochs(
     component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
 ):
-    model_name = "nlu-checkpoint"
-    best_model_file = Path(tmpdir, model_name)
-    assert not best_model_file.exists()
+    model_name = "nlu-fail"
+    checkpoint_dir = get_checkpoint_dir_path(tmpdir, Path(tmpdir, model_name))
+    assert not checkpoint_dir.exists()
 
     _config = RasaNLUModelConfig(
         {
@@ -668,15 +683,15 @@ async def test_train_fails_with_zero_eval_num_epochs(
             fixed_model_name=model_name,
         )
 
-    assert not best_model_file.exists()
+    assert not checkpoint_dir.exists()
 
 
 async def test_doesnt_checkpoint_with_zero_eval_num_examples(
     component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
 ):
-    model_name = "nlu-checkpoint"
-    best_model_file = Path(tmpdir, model_name)
-    assert not best_model_file.exists()
+    model_name = "nlu-fail-checkpoint"
+    checkpoint_dir = get_checkpoint_dir_path(tmpdir, Path(tmpdir, model_name))
+    assert not checkpoint_dir.exists()
 
     _config = RasaNLUModelConfig(
         {
@@ -703,7 +718,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
         fixed_model_name=model_name,
     )
 
-    assert not best_model_file.exists()
+    assert not checkpoint_dir.exists()
 
 
 @pytest.mark.parametrize(
