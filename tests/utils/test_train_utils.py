@@ -180,7 +180,7 @@ def test_update_confidence_type(
 )
 def test_warning_incorrect_eval_num_epochs(component_config: Dict[Text, Text]):
     with pytest.warns(UserWarning) as record:
-        train_utils._check_checkpoint_setting(component_config)
+        train_utils._check_evaluation_setting(component_config)
         assert len(record) == 1
         assert (
             f"{EVAL_NUM_EPOCHS} is not -1 or greater than 0, training will fail"
@@ -202,7 +202,7 @@ def test_warning_eval_num_epochs_greater_than_epochs(
         f"{EVAL_NUM_EPOCHS} is greater than {EPOCHS}. No evaluation will " "occur."
     )
     with pytest.warns(UserWarning) as record:
-        train_utils._check_checkpoint_setting(component_config)
+        train_utils._check_evaluation_setting(component_config)
         assert len(record) == 1
         if component_config[CHECKPOINT_MODEL]:
             warning = (
@@ -228,7 +228,7 @@ def test_warning_eval_num_epochs_greater_than_epochs(
 )
 def test_warning_incorrect_eval_num_examples(component_config: Dict[Text, Text]):
     with pytest.warns(UserWarning) as record:
-        train_utils._check_checkpoint_setting(component_config)
+        train_utils._check_evaluation_setting(component_config)
         assert len(record) == 1
         assert (
             f"{EVAL_NUM_EXAMPLES} is not greater than 0. No checkpoint model "
@@ -259,5 +259,5 @@ def test_warning_incorrect_eval_num_examples(component_config: Dict[Text, Text])
 )
 def test_no_warning_correct_checkpoint_setting(component_config: Dict[Text, Text]):
     with pytest.warns(None) as record:
-        train_utils._check_checkpoint_setting(component_config)
+        train_utils._check_evaluation_setting(component_config)
         assert len(record) == 0
