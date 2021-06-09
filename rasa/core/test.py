@@ -161,7 +161,7 @@ class EvaluationStore:
         )
 
     @staticmethod
-    def should_ignore_prediction(self, predicted: Text) -> bool:
+    def should_ignore_prediction(predicted: Text) -> bool:
         return predicted == ACTION_UNLIKELY_INTENT_NAME
 
     @staticmethod
