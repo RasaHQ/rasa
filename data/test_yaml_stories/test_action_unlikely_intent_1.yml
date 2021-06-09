@@ -1,0 +1,7 @@
+stories:
+  - story: unlikely path
+    steps:
+      - user: |
+          very terrible
+        intent: mood_unhappy
+      - action: action_listen

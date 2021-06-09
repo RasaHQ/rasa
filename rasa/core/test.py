@@ -626,8 +626,12 @@ def _collect_action_executed_predictions(
             # that something else than the form was supposed to run.
             predicted = action.name()
 
-    has_prediction_target_mismatch = action_executed_eval_store.has_prediction_target_mismatch()
-    if has_prediction_target_mismatch or (predicted == ACTION_UNLIKELY_INTENT_NAME and predicted != gold):
+    has_prediction_target_mismatch = (
+        action_executed_eval_store.has_prediction_target_mismatch()
+    )
+    if has_prediction_target_mismatch or (
+        predicted == ACTION_UNLIKELY_INTENT_NAME and predicted != gold
+    ):
         partial_tracker.update(
             WronglyPredictedAction(
                 gold_action_name,
@@ -683,7 +687,7 @@ async def _predict_tracker_actions(
     EvaluationStore,
     DialogueStateTracker,
     List[Dict[Text, Any]],
-    List[EntityEvaluationResult]
+    List[EntityEvaluationResult],
 ]:
 
     processor = agent.create_processor()
@@ -804,7 +808,7 @@ async def _collect_story_predictions(
             tracker_results,
             predicted_tracker,
             tracker_actions,
-            tracker_entity_results
+            tracker_entity_results,
         ) = await _predict_tracker_actions(
             tracker, agent, fail_on_prediction_errors, use_e2e
         )
@@ -824,7 +828,10 @@ async def _collect_story_predictions(
             correct_dialogues.append(1)
 
             last_event = predicted_tracker.events[-1]
-            if type(last_event) == WronglyPredictedAction and last_event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME:
+            if (
+                type(last_event) == WronglyPredictedAction
+                and last_event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME
+            ):
                 stories_with_warnings.append(predicted_tracker)
 
     logger.info("Finished collecting predictions.")
@@ -856,7 +863,9 @@ async def _collect_story_predictions(
     )
 
 
-def _log_stories(trackers: List[DialogueStateTracker], file_path: Text, comment: Text) -> None:
+def _log_stories(
+    trackers: List[DialogueStateTracker], file_path: Text, comment: Text
+) -> None:
     """Write given stories to the given file."""
 
     with open(file_path, "w", encoding=DEFAULT_ENCODING) as f:
@@ -975,19 +984,19 @@ async def test(
         _log_stories(
             story_evaluation.failed_stories,
             os.path.join(out_directory, FAILED_STORIES_FILE),
-            "None of the test stories failed - all good!"
+            "None of the test stories failed - all good!",
         )
     if successes and out_directory:
         _log_stories(
             story_evaluation.successful_stories,
             os.path.join(out_directory, SUCCESSFUL_STORIES_FILE),
-            "None of the test stories succeeded :("
+            "None of the test stories succeeded :(",
         )
     if warnings and out_directory:
         _log_stories(
             story_evaluation.stories_with_warnings,
             os.path.join(out_directory, STORIES_WITH_WARNINGS_FILE),
-            "No warnings for test stories"
+            "No warnings for test stories",
         )
 
     return {
