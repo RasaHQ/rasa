@@ -154,6 +154,7 @@ class EvaluationStore:
         )
 
     def has_prediction_target_mismatch(self) -> bool:
+        print("ALWX predictions / targets", self.action_predictions, self.action_targets)
         return (
             self.intent_predictions != self.intent_targets
             or self.entity_predictions != self.entity_targets
@@ -826,11 +827,10 @@ async def _collect_story_predictions(
             successful_stories.append(predicted_tracker)
             correct_dialogues.append(1)
 
-            # TODO(alwx): check this
-            last_event = predicted_tracker.events[-1]
-            if (
-                type(last_event) == WronglyPredictedAction
-                and last_event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME
+            if any(
+                type(event) == WronglyPredictedAction
+                and event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME
+                for event in predicted_tracker.events
             ):
                 stories_with_warnings.append(predicted_tracker)
 
