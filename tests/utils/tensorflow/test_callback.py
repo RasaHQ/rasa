@@ -70,7 +70,7 @@ def test_on_epoch_end_saves_checkpoints_file(
     current_values: Dict[Text, float],
     improved: bool,
     tmpdir: Path,
-    trained_ted: TEDPolicy
+    trained_ted: TEDPolicy,
 ):
     model_name = "checkpoint"
     best_model_file = Path(tmpdir, model_name)

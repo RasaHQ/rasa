@@ -25,7 +25,6 @@ from rasa.utils.tensorflow.constants import (
     CHECKPOINT_MODEL,
     EVAL_NUM_EPOCHS,
     EVAL_NUM_EXAMPLES,
-    EPOCHS,
 )
 from rasa.shared.exceptions import InvalidConfigException
 
@@ -202,19 +201,6 @@ def test_no_warning_correct_checkpoint_setting(component_config: Dict[Text, Text
     with pytest.warns(None) as record:
         train_utils._check_checkpoint_setting(component_config)
         assert len(record) == 0
-
-
-@pytest.mark.parametrize(
-    "component_config", [({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: 20, EPOCHS: 5}),],
-)
-def test_warning_incorrect_eval_num_epochs(component_config: Dict[Text, Text]):
-    with pytest.warns(UserWarning) as record:
-        train_utils._check_checkpoint_setting(component_config)
-        assert len(record) == 1
-        assert (
-            f"{EVAL_NUM_EPOCHS} is greater than {EPOCHS}. No model will be saved"
-            in record[0].message.args[0]
-        )
 
 
 @pytest.mark.parametrize(
