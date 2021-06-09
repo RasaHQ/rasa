@@ -42,7 +42,7 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
     assert "report" in result.keys()
 
 
-async def test_action_unlikely_intent_warnings(
+async def test_action_unlikely_intent_warnings_1(
     tmpdir: Path, intent_ted_policy_moodbot_agent: Agent
 ):
     result = await rasa.core.test.test(
@@ -55,7 +55,7 @@ async def test_action_unlikely_intent_warnings(
     assert result["report"]["conversation_accuracy"]["with_warnings"] == 1
 
 
-async def test_action_unlikely_intent_no_warnings(
+async def test_action_unlikely_intent_warnings_2(
     tmpdir: Path, intent_ted_policy_moodbot_agent: Agent
 ):
     result = await rasa.core.test.test(
@@ -65,7 +65,7 @@ async def test_action_unlikely_intent_no_warnings(
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 1
-    assert result["report"]["conversation_accuracy"]["with_warnings"] == 0
+    assert result["report"]["conversation_accuracy"]["with_warnings"] == 1
 
 
 async def test_action_unlikely_intent_complete(
@@ -78,12 +78,12 @@ async def test_action_unlikely_intent_complete(
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 4
-    assert result["report"]["conversation_accuracy"]["with_warnings"] == 1
+    assert result["report"]["conversation_accuracy"]["with_warnings"] == 2
     assert result["report"]["conversation_accuracy"]["total"] == 4
 
 
 async def test_action_unlikely_intent_wrong_story(
-        tmpdir: Path, intent_ted_policy_moodbot_agent: Agent
+    tmpdir: Path, intent_ted_policy_moodbot_agent: Agent
 ):
     result = await rasa.core.test.test(
         "data/test_yaml_stories/test_action_unlikely_intent_wrong.yml",

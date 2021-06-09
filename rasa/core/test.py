@@ -154,12 +154,15 @@ class EvaluationStore:
         )
 
     def has_prediction_target_mismatch(self) -> bool:
-        print("ALWX predictions / targets", self.action_predictions, self.action_targets)
         return (
             self.intent_predictions != self.intent_targets
             or self.entity_predictions != self.entity_targets
             or self.action_predictions != self.action_targets
         )
+
+    @staticmethod
+    def should_ignore_prediction(self, predicted: Text) -> bool:
+        return predicted == ACTION_UNLIKELY_INTENT_NAME
 
     @staticmethod
     def _compare_entities(
@@ -624,13 +627,19 @@ def _collect_action_executed_predictions(
             # that something else than the form was supposed to run.
             predicted = action.name()
 
+    should_ignore_prediction = action_executed_eval_store.should_ignore_prediction(
+        predicted
+    )
+    if not should_ignore_prediction:
+        action_executed_eval_store.add_to_store(
+            action_predictions=[predicted], action_targets=[gold]
+        )
+
     has_prediction_target_mismatch = (
         action_executed_eval_store.has_prediction_target_mismatch()
     )
-    print("ALWX predicted / gold", predicted, gold)
-    print("ALWX has_prediction_target_mismatch", has_prediction_target_mismatch)
     if has_prediction_target_mismatch or (
-        predicted == ACTION_UNLIKELY_INTENT_NAME and predicted != gold
+        should_ignore_prediction and predicted != gold
     ):
         partial_tracker.update(
             WronglyPredictedAction(
@@ -656,7 +665,7 @@ def _collect_action_executed_predictions(
                     "training stories and retrain."
                 )
             raise WrongPredictionException(error_msg)
-    else:
+    elif not should_ignore_prediction:
         partial_tracker.update(
             ActionExecuted(
                 predicted,
