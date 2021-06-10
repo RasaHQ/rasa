@@ -372,8 +372,8 @@ def test_md_format_message_using_long_entity_syntax():
         ],
     )
     assert (
-        formatted
-        == """I am from [Berlin](city) in [Germany]{"entity": "country", "role": "destination"}."""
+        formatted == """I am from [Berlin](city) in [Germany]"""
+        """{"entity": "country", "role": "destination"}."""
     )
 
 
