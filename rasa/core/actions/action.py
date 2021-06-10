@@ -50,6 +50,7 @@ from rasa.shared.core.events import (
     Restarted,
     SessionStarted,
 )
+from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 from rasa.shared.core.domain import Domain
 
@@ -588,19 +589,14 @@ class RemoteAction(Action):
 
         Used for validation of the response returned from the
         Action endpoint."""
-        return {
+        schema = {
             "type": "object",
             "properties": {
-                "events": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {"event": {"type": "string"}},
-                    },
-                },
+                "events": EVENTS_SCHEMA,
                 "responses": {"type": "array", "items": {"type": "object"}},
             },
         }
+        return schema
 
     def _validate_action_result(self, result: Dict[Text, Any]) -> bool:
         from jsonschema import validate

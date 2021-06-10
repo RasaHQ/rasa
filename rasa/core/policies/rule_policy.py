@@ -1,3 +1,4 @@
+import functools
 import logging
 from typing import Any, List, Dict, Text, Optional, Set, Tuple, TYPE_CHECKING
 
@@ -832,6 +833,9 @@ class RulePolicy(MemoizationPolicy):
         return True
 
     @staticmethod
+    # This function is called a lot (e.g. for checking contradictions) so we cache
+    # its results.
+    @functools.lru_cache(maxsize=1000)
     def _rule_key_to_state(rule_key: Text) -> List[State]:
         return json.loads(rule_key)
 
