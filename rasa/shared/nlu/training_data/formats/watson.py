@@ -21,9 +21,9 @@ class WatsonReader(JsonTrainingDataReader):
         all_entities = self._list_all_entities(js)
         for intent in js.get("intents"):
             examples = intent.get("examples")
-            intent = intent.get("intent")
             if not examples:
                 continue
+            intent = intent.get("intent")
             for text in examples:
                 utterance = text.get("text")
                 example_with_entities = self._unpack_entity_examples(
