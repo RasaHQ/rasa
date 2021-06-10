@@ -53,8 +53,8 @@ class WatsonReader(JsonTrainingDataReader):
         js: Dict[Text, Any],
         text: str,
         intent: str,
-        training_examples,
-        all_entities,
+        training_examples: List,
+        all_entities: List,
     ) -> List:
         examples_with_entities = []
         all_entity_names = set().union(*(d.keys() for d in all_entities))
