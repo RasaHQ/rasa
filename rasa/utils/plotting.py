@@ -259,7 +259,9 @@ def plot_paired_histogram(
             y_pad_fraction=y_pad_fraction,
         )
     except ValueError as e:
-        rasa.shared.utils.io.raise_warning(f"Unable to plot paried histogram: {e}")
+        rasa.shared.utils.io.raise_warning(
+            f"Unable to plot paired histogram '{title}': {e}"
+        )
         return
     yticks = [float(f"{x:.2f}") for x in bins]
 
