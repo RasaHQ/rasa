@@ -629,7 +629,8 @@ class RemoteAction(Action):
                     "'response', use the `response` parameter instead of "
                     "`template` in `dispatcher.utter_message`. You can do that "
                     "by upgrading to Rasa SDK 2.4.1 or adapting your custom SDK.",
-                    docs=f"{rasa.shared.constants.DOCS_BASE_URL_ACTION_SERVER}/sdk-dispatcher",
+                    docs=f"{rasa.shared.constants.DOCS_BASE_URL_ACTION_SERVER}"
+                    f"/sdk-dispatcher",
                 )
             if generated_response:
                 draft = await nlg.generate(

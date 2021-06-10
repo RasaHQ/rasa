@@ -31,7 +31,7 @@ nlu:
     - how much co2 is produced on a return flight from london to new york?
     - what's the co2 usage of a return flight to new york?
     - can you calculate the co2 footprint of a flight to london?
-"""
+"""  # noqa: E501
 
 MULTILINE_INTENT_EXAMPLE_WITH_SYNONYM = """
 nlu:
@@ -46,7 +46,7 @@ nlu:
   examples: |
     how much CO2 will that use?
     - how much carbon will a one way flight from [new york]{"entity": "city", "role": "from"} to california produce?
-"""
+"""  # noqa: E501
 
 INTENT_EXAMPLES_WITH_METADATA = f"""version: "{LATEST_TRAINING_DATA_FORMAT_VERSION}"
 nlu:
@@ -76,7 +76,7 @@ nlu:
   - text: |
       goodbye
     metadata: positive-sentiment
-"""
+"""  # noqa: E501
 
 
 MINIMAL_VALID_EXAMPLE = """

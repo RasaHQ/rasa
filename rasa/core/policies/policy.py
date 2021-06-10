@@ -447,11 +447,13 @@ class Policy:
                     if PREVIOUS_ACTION in state:
                         if ACTION_NAME in state[PREVIOUS_ACTION]:
                             state_messages.append(
-                                f"previous action name: {str(state[PREVIOUS_ACTION][ACTION_NAME])}"
+                                f"previous action name: "
+                                f"{str(state[PREVIOUS_ACTION][ACTION_NAME])}"
                             )
                         if ACTION_TEXT in state[PREVIOUS_ACTION]:
                             state_messages.append(
-                                f"previous action text: {str(state[PREVIOUS_ACTION][ACTION_TEXT])}"
+                                f"previous action text: "
+                                f"{str(state[PREVIOUS_ACTION][ACTION_TEXT])}"
                             )
                     if ACTIVE_LOOP in state:
                         state_messages.append(f"active loop: {str(state[ACTIVE_LOOP])}")

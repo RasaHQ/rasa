@@ -288,7 +288,8 @@ def _validate_story_structure(validator: "Validator", args: argparse.Namespace) 
     # Check if a valid setting for `max_history` was given
     if isinstance(args.max_history, int) and args.max_history < 1:
         raise argparse.ArgumentTypeError(
-            f"The value of `--max-history {args.max_history}` is not a positive integer."
+            f"The value of `--max-history {args.max_history}` "
+            f"is not a positive integer."
         )
 
     return validator.verify_story_structure(
