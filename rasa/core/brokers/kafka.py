@@ -17,6 +17,8 @@ class KafkaProducerInitializationError(RasaException):
 
 
 class KafkaEventBroker(EventBroker):
+    """Kafka event broker."""
+
     def __init__(
         self,
         url: Union[Text, List[Text], None],
