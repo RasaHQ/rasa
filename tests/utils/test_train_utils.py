@@ -22,6 +22,7 @@ from rasa.utils.tensorflow.constants import (
     MARGIN,
     AUTO,
     LINEAR_NORM,
+    TOLERANCE,
 )
 from rasa.shared.exceptions import InvalidConfigException
 
@@ -151,3 +152,24 @@ def test_update_confidence_type(
 ):
     component_config = train_utils.update_confidence_type(component_config)
     assert component_config[MODEL_CONFIDENCE] == model_confidence
+
+
+@pytest.mark.parametrize(
+    "component_config, raises_exception",
+    [
+        ({TOLERANCE: 0.5}, False),
+        ({TOLERANCE: 0.0}, False),
+        ({TOLERANCE: 1.0}, False),
+        ({TOLERANCE: -1.0}, True),
+        ({TOLERANCE: 2.0}, True),
+        ({}, False),
+    ],
+)
+def test_tolerance_setting(
+    component_config: Dict[Text, float], raises_exception: bool,
+):
+    if raises_exception:
+        with pytest.raises(InvalidConfigException):
+            train_utils._check_tolerance_setting(component_config)
+    else:
+        train_utils._check_tolerance_setting(component_config)
