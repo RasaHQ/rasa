@@ -2,16 +2,26 @@
 sidebar_label: rasa.core.brokers.kafka
 title: rasa.core.brokers.kafka
 ---
+## KafkaProducerInitializationError Objects
+
+```python
+class KafkaProducerInitializationError(RasaException)
+```
+
+Raised if the Kafka Producer cannot be properly initialized.
+
 ## KafkaEventBroker Objects
 
 ```python
 class KafkaEventBroker(EventBroker)
 ```
 
+Kafka event broker.
+
 #### \_\_init\_\_
 
 ```python
- | __init__(url: Union[Text, List[Text], None], topic: Text = "rasa_core_events", client_id: Optional[Text] = None, partition_by_sender: bool = False, sasl_username: Optional[Text] = None, sasl_password: Optional[Text] = None, ssl_cafile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_keyfile: Optional[Text] = None, ssl_check_hostname: bool = False, security_protocol: Text = "SASL_PLAINTEXT", loglevel: Union[int, Text] = logging.ERROR, **kwargs: Any, ,) -> None
+ | __init__(url: Union[Text, List[Text], None], topic: Text = "rasa_core_events", client_id: Optional[Text] = None, partition_by_sender: bool = False, sasl_username: Optional[Text] = None, sasl_password: Optional[Text] = None, sasl_mechanism: Optional[Text] = "PLAIN", ssl_cafile: Optional[Text] = None, ssl_certfile: Optional[Text] = None, ssl_keyfile: Optional[Text] = None, ssl_check_hostname: bool = False, security_protocol: Text = "SASL_PLAINTEXT", loglevel: Union[int, Text] = logging.ERROR, **kwargs: Any, ,) -> None
 ```
 
 Kafka event broker.
@@ -32,6 +42,10 @@ Kafka event broker.
   sender_id or not
 - `sasl_username` - Username for plain authentication.
 - `sasl_password` - Password for plain authentication.
+- `sasl_mechanism` - Authentication mechanism when security_protocol is
+  configured for SASL_PLAINTEXT or SASL_SSL.
+  Valid values are: PLAIN, GSSAPI, OAUTHBEARER, SCRAM-SHA-256,
+  SCRAM-SHA-512. Default: `PLAIN`
 - `ssl_cafile` - Optional filename of ca file to use in certificate
   verification.
 - `ssl_certfile` - Optional filename of file in pem format containing
