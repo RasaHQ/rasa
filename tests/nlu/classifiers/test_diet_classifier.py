@@ -580,7 +580,7 @@ async def test_train_model_checkpointing(
 ):
     model_name = "nlu-checkpointed-model"
     model_dir = Path(tmpdir / model_name)
-    checkpoint_dir = Path(tmpdir / model_name / "checkpoints")
+    checkpoint_dir = get_checkpoint_dir_path(tmpdir, model_dir)
     assert not checkpoint_dir.is_dir()
 
     _config = RasaNLUModelConfig(
@@ -683,12 +683,12 @@ async def test_train_fails_with_zero_eval_num_epochs(
                 component_builder=component_builder,
                 fixed_model_name=model_name,
             )
+    assert not checkpoint_dir.is_dir()
     warn_text = (
         f"You have opted to save the best model, but {EVAL_NUM_EPOCHS} is not "
         "-1 or greater than 0, training will fail."
     )
     assert len([w for w in warning if warn_text in str(w.message)]) == 1
-    assert not checkpoint_dir.is_dir()
 
 
 async def test_doesnt_checkpoint_with_zero_eval_num_examples(

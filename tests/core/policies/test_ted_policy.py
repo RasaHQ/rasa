@@ -62,7 +62,6 @@ def get_checkpoint_dir_path(train_path: Path, ted_pos: Optional[int] = 0) -> Pat
     Args:
         train_path: the path passed to model_training.train_core for training output.
         ted_pos: the position of TED in the policies listed in the config.
-
     """
     policy_dir_name = Path("policy_{}_{}".format(ted_pos, TEDPolicy.__name__))
     policy_path = train_path / Path(DEFAULT_CORE_SUBDIRECTORY_NAME) / policy_dir_name
@@ -587,6 +586,7 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
 
 
 class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
+
     max_history = 1
 
     def create_policy(
