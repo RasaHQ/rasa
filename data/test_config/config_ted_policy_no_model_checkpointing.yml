@@ -1,5 +1,5 @@
 language: "en"
 policies:
   - name: TEDPolicy
-    epochs: 1
+    epochs: 2
     checkpoint_model: False
