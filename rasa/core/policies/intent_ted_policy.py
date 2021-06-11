@@ -345,9 +345,12 @@ class IntentTEDPolicy(TEDPolicy):
     def compute_label_quantiles_post_training(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> None:
-        """Calculates label thresholds for prediction of `action_unlikely_intent`.
+        """Computes quantile scores for prediction of `action_unlikely_intent`.
 
-        Multiple thresholds are computed.
+        Multiple quantiles are computed for each label
+        so that an appropriate threshold can be picked at
+        inference time according to the `tolerance` value specified.
+
         Args:
             model_data: Data used for training the model.
             label_ids: Numerical IDs of labels for each data point used during training.
