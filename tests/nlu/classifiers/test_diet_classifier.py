@@ -634,7 +634,7 @@ async def test_train_model_not_checkpointing(
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 5, CHECKPOINT_MODEL: False},
+                {"name": "DIETClassifier", EPOCHS: 1, CHECKPOINT_MODEL: False},
             ],
             "language": "en",
         }
