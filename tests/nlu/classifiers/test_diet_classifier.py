@@ -590,7 +590,7 @@ async def test_train_model_checkpointing(
                 {"name": "CountVectorsFeaturizer"},
                 {
                     "name": "DIETClassifier",
-                    EPOCHS: 5,
+                    EPOCHS: 2,
                     EVAL_NUM_EPOCHS: 1,
                     EVAL_NUM_EXAMPLES: 10,
                     CHECKPOINT_MODEL: True,
@@ -634,7 +634,7 @@ async def test_train_model_not_checkpointing(
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 1, CHECKPOINT_MODEL: False},
+                {"name": "DIETClassifier", EPOCHS: 2, CHECKPOINT_MODEL: False},
             ],
             "language": "en",
         }
@@ -665,7 +665,7 @@ async def test_train_fails_with_zero_eval_num_epochs(
                 {"name": "CountVectorsFeaturizer"},
                 {
                     "name": "DIETClassifier",
-                    EPOCHS: 5,
+                    EPOCHS: 1,
                     CHECKPOINT_MODEL: True,
                     EVAL_NUM_EPOCHS: 0,
                     EVAL_NUM_EXAMPLES: 10,
