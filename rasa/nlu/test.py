@@ -56,6 +56,7 @@ from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
+from rasa.nlu.classifiers import fallback_classifier
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -1270,14 +1271,11 @@ def get_eval_data(
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
 
         if should_eval_intents:
-            if rasa.nlu.classifiers.fallback_classifier.is_fallback_classifier_prediction(
-                result
-            ):
-                # Revert fallback prediction to not shadow the wrongly predicted intent
+            if fallback_classifier.is_fallback_classifier_prediction(result):
+                # Revert fallback prediction to not shadow
+                # the wrongly predicted intent
                 # during the test phase.
-                result = rasa.nlu.classifiers.fallback_classifier.undo_fallback_prediction(
-                    result
-                )
+                result = fallback_classifier.undo_fallback_prediction(result)
             intent_prediction = result.get(INTENT, {}) or {}
 
             intent_results.append(

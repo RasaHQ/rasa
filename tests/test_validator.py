@@ -339,8 +339,8 @@ async def test_verify_form_slots_invalid_domain(tmp_path: Path):
         assert validity is False
 
     assert (
-        w[0].message.args[0]
-        == "The form slot 'last_name' in form 'name_form' is not present in the domain slots."
+        w[0].message.args[0] == "The form slot 'last_name' in form 'name_form' "
+        "is not present in the domain slots."
         "Please add the correct slot or check for typos."
     )
 

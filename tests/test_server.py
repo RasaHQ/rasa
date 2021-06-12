@@ -4,6 +4,7 @@ import os
 import time
 import urllib.parse
 import uuid
+import sys
 from contextlib import ExitStack
 from http import HTTPStatus
 from multiprocessing import Process, Manager
@@ -561,7 +562,10 @@ async def test_train_with_retrieval_events_success(
             nlu=nlu_file.read(),
         )
 
-    _, response = await rasa_app.post("/model/train", json=payload, timeout=60 * 5)
+    # it usually takes a bit longer on windows so we're going to double the timeout
+    timeout = 60 * 10 if sys.platform == "win32" else 60 * 5
+
+    _, response = await rasa_app.post("/model/train", json=payload, timeout=timeout)
     assert response.status == HTTPStatus.OK
     assert_trained_model(response.body, tmp_path)
 
@@ -1204,22 +1208,19 @@ async def test_callback_unexpected_error(
 
 
 async def test_predict(rasa_app: SanicASGITestClient):
-    data = {
-        "Events": {
-            "value": [
-                {"event": "action", "name": "action_listen"},
-                {
-                    "event": "user",
-                    "text": "hello",
-                    "parse_data": {
-                        "entities": [],
-                        "intent": {"confidence": 0.57, INTENT_NAME_KEY: "greet"},
-                        "text": "hello",
-                    },
-                },
-            ]
-        }
-    }
+    data = [
+        {"event": "action", "name": "action_listen"},
+        {
+            "event": "user",
+            "text": "hello",
+            "parse_data": {
+                "entities": [],
+                "intent": {"confidence": 0.57, INTENT_NAME_KEY: "greet"},
+                "text": "hello",
+            },
+        },
+    ]
+
     _, response = await rasa_app.post(
         "/model/predict",
         json=data,
@@ -1230,6 +1231,51 @@ async def test_predict(rasa_app: SanicASGITestClient):
     assert "scores" in content
     assert "tracker" in content
     assert "policy" in content
+
+
+async def test_predict_invalid_entities_format(rasa_app: SanicASGITestClient):
+    data = [
+        {"event": "action", "name": "action_listen"},
+        {
+            "event": "user",
+            "text": "hello",
+            "parse_data": {
+                "entities": {},
+                "intent": {"confidence": 0.57, INTENT_NAME_KEY: "greet"},
+                "text": "hello",
+            },
+        },
+    ]
+
+    _, response = await rasa_app.post(
+        "/model/predict",
+        json=data,
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+    assert response.status == HTTPStatus.BAD_REQUEST
+
+
+async def test_predict_empty_request_body(rasa_app: SanicASGITestClient):
+    _, response = await rasa_app.post(
+        "/model/predict", headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+    assert response.status == HTTPStatus.BAD_REQUEST
+
+
+async def test_append_events_empty_request_body(rasa_app: SanicASGITestClient,):
+    _, response = await rasa_app.post(
+        "/conversations/testid/tracker/events",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+    assert response.status == HTTPStatus.BAD_REQUEST
+
+
+async def test_replace_events_empty_request_body(rasa_app: SanicASGITestClient):
+    _, response = await rasa_app.put(
+        "/conversations/testid/tracker/events",
+        headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+    )
+    assert response.status == HTTPStatus.BAD_REQUEST
 
 
 @freeze_time("2018-01-01")

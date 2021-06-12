@@ -518,7 +518,8 @@ class Domain:
 
         if duplicates:
             raise InvalidDomain(
-                f"Intents are not unique! Found multiple intents with name(s) {sorted(duplicates)}. "
+                f"Intents are not unique! Found multiple intents "
+                f"with name(s) {sorted(duplicates)}. "
                 f"Either rename or remove the duplicate ones."
             )
 
@@ -785,7 +786,9 @@ class Domain:
     def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
         """Return only the responses which are defined for retrieval intents."""
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response', call `retrieval_intent_responses` instead of `retrieval_intent_templates`.",
+            "The terminology 'template' is deprecated and replaced by "
+            "'response', call `retrieval_intent_responses` instead of "
+            "`retrieval_intent_templates`.",
             docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         return self.retrieval_intent_responses
@@ -806,7 +809,9 @@ class Domain:
     def templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
         """Temporary property before templates become completely deprecated."""
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response'. Instead of using the `templates` property, please use the `responses` property instead.",
+            "The terminology 'template' is deprecated and replaced by 'response'. "
+            "Instead of using the `templates` property, "
+            "please use the `responses` property instead.",
             docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         return self.responses
@@ -821,7 +826,10 @@ class Domain:
         the rest.
         """
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response', call `is_retrieval_intent_response` instead of `is_retrieval_intent_template`.",
+            "The terminology 'template' is deprecated "
+            "and replaced by 'response', "
+            "call `is_retrieval_intent_response` "
+            "instead of `is_retrieval_intent_template`.",
             docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
@@ -1027,12 +1035,16 @@ class Domain:
 
         if entity:
             return [
-                f"{entity}{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{sub_label}"
+                f"{entity}"
+                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}"
+                f"{sub_label}"
                 for sub_label in entity_labels[entity]
             ]
 
         return [
-            f"{entity_label}{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity_sub_label}"
+            f"{entity_label}"
+            f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}"
+            f"{entity_sub_label}"
             for entity_label, entity_sub_labels in entity_labels.items()
             for entity_sub_label in entity_sub_labels
         ]
@@ -1402,7 +1414,9 @@ class Domain:
         return {
             "config": {"store_entities_as_slots": self.store_entities_as_slots},
             SESSION_CONFIG_KEY: {
-                SESSION_EXPIRATION_TIME_KEY: self.session_config.session_expiration_time,
+                SESSION_EXPIRATION_TIME_KEY: (
+                    self.session_config.session_expiration_time
+                ),
                 CARRY_OVER_SLOTS_KEY: self.session_config.carry_over_slots,
             },
             KEY_INTENTS: self._transform_intents_for_file(),
@@ -1801,7 +1815,10 @@ class Domain:
     def check_missing_templates(self) -> None:
         """Warn user of utterance names which have no specified response."""
         rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response'. Please use `check_missing_responses` instead of `check_missing_templates`.",
+            "The terminology 'template' is deprecated "
+            "and replaced by 'response'. "
+            "Please use `check_missing_responses` "
+            "instead of `check_missing_templates`.",
             docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
         )
         self.check_missing_responses()
