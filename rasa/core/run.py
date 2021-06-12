@@ -3,7 +3,7 @@ import logging
 import uuid
 import os
 from functools import partial
-from typing import Any, List, Optional, Text, Union, Dict
+from typing import Any, Callable, List, Optional, Text, Tuple, Union, Dict
 
 import rasa.core.utils
 from rasa.shared.exceptions import RasaException
@@ -12,6 +12,8 @@ import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
 from rasa import server, telemetry
+from rasa.constants import ENV_SANIC_BACKLOG, DEFAULT_SERVER_HOST
+from rasa import model, server, telemetry
 from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
@@ -94,6 +96,7 @@ def configure_app(
     syslog_port: Optional[int] = None,
     syslog_protocol: Optional[Text] = None,
     request_timeout: Optional[int] = None,
+    server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
 ) -> Sanic:
     """Run the agent."""
     rasa.core.utils.configure_file_logging(
@@ -143,6 +146,10 @@ def configure_app(
 
         app.add_task(run_cmdline_io)
 
+    if server_listeners:
+        for (listener, event) in server_listeners:
+            app.register_listener(listener, event)
+
     return app
 
 
@@ -171,6 +178,7 @@ def serve_application(
     syslog_port: Optional[int] = None,
     syslog_protocol: Optional[Text] = None,
     request_timeout: Optional[int] = None,
+    server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
 ) -> None:
     """Run the API entrypoint."""
     if not channel and not credentials:
@@ -195,6 +203,7 @@ def serve_application(
         syslog_port=syslog_port,
         syslog_protocol=syslog_protocol,
         request_timeout=request_timeout,
+        server_listeners=server_listeners,
     )
 
     ssl_context = server.create_ssl_context(
@@ -224,6 +233,7 @@ def serve_application(
 
     app.run(
         host=interface,
+        host=DEFAULT_SERVER_HOST,
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
