@@ -1911,16 +1911,21 @@ async def test_get_story(
     assert response.content.decode().strip() == expected
 
 
-async def test_get_story_without_conversation_id(
+async def test_get_story_with_new_conversation_id(
     rasa_app: SanicASGITestClient, monkeypatch: MonkeyPatch
 ):
-    conversation_id = "some-conversation-ID"
+    conversation_id = "some-conversation-ID-42"
     url = f"/conversations/{conversation_id}/story"
 
     _, response = await rasa_app.get(url)
 
-    assert response.status == HTTPStatus.NOT_FOUND
-    assert response.json["message"] == "Conversation ID not found."
+    expected = """version: "3.1"
+stories:
+- story: some-conversation-ID-42
+  steps: []"""
+
+    assert response.status == HTTPStatus.OK
+    assert response.content.decode().strip() == expected
 
 
 async def test_get_story_does_not_update_conversation_session(
