@@ -12,6 +12,7 @@ import rasa.utils.io
 import rasa.utils.tensorflow.environment as tf_env
 from rasa import version
 from rasa.cli import (
+    chat,
     data,
     export,
     interactive,
@@ -61,6 +62,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     scaffold.add_subparser(subparsers, parents=parent_parsers)
     run.add_subparser(subparsers, parents=parent_parsers)
     shell.add_subparser(subparsers, parents=parent_parsers)
+    chat.add_subparser(subparsers, parents=parent_parsers)
     train.add_subparser(subparsers, parents=parent_parsers)
     interactive.add_subparser(subparsers, parents=parent_parsers)
     telemetry.add_subparser(subparsers, parents=parent_parsers)

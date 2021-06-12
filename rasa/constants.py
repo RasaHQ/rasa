@@ -15,6 +15,7 @@ NLU_MODEL_NAME_PREFIX = "nlu_"
 
 DEFAULT_RASA_X_PORT = 5002
 DEFAULT_RASA_PORT = 5005
+DEFAULT_SERVER_HOST = "0.0.0.0"
 
 # Key in global config file which contains whether the user agreed to telemetry
 # reporting. These are reused in Rasa X. Keep this in mind when changing their names.

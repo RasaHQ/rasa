@@ -4,7 +4,7 @@ import uuid
 import os
 import shutil
 from functools import partial
-from typing import Any, List, Optional, Text, Union, Dict
+from typing import Any, Callable, List, Optional, Text, Tuple, Union, Dict
 
 import rasa.core.utils
 from rasa.shared.exceptions import RasaException
@@ -13,7 +13,7 @@ import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
 from rasa import model, server, telemetry
-from rasa.constants import ENV_SANIC_BACKLOG
+from rasa.constants import ENV_SANIC_BACKLOG, DEFAULT_SERVER_HOST
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
@@ -95,6 +95,7 @@ def configure_app(
     endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
+    server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
 ) -> Sanic:
     """Run the agent."""
 
@@ -142,6 +143,10 @@ def configure_app(
 
         app.add_task(run_cmdline_io)
 
+    if server_listeners:
+        for (listener, event) in server_listeners:
+            app.register_listener(listener, event)
+
     return app
 
 
@@ -164,6 +169,7 @@ def serve_application(
     ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
+    server_listeners: Optional[List[Tuple[Callable, Text]]] = None,
 ) -> None:
     """Run the API entrypoint."""
 
@@ -184,6 +190,7 @@ def serve_application(
         endpoints=endpoints,
         log_file=log_file,
         conversation_id=conversation_id,
+        server_listeners=server_listeners,
     )
 
     ssl_context = server.create_ssl_context(
@@ -219,7 +226,7 @@ def serve_application(
 
     rasa.utils.common.update_sanic_log_level(log_file)
     app.run(
-        host="0.0.0.0",
+        host=DEFAULT_SERVER_HOST,
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
