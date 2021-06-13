@@ -1,6 +1,5 @@
 from pathlib import Path
 import copy
-from rasa.exceptions import MissingDependencyException
 import numpy as np
 from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 
@@ -8,7 +7,6 @@ import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.nlu.utils.bilou_utils
 from rasa.shared.constants import (
-    DOCS_BASE_URL,
     NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
     DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY,
 )
@@ -473,14 +471,7 @@ def create_common_callbacks(
     Returns:
         A list of callbacks.
     """
-    try:
-        import tensorflow as tf
-    except ModuleNotFoundError as e:
-        raise MissingDependencyException(
-            f"Tensorflow does not seem to be installed, but it is needed for this."
-            f"For an overview of how to install Rasa, please visit URL:"
-            f"{DOCS_BASE_URL}/installation"
-        ) from e
+    import tensorflow as tf
 
     callbacks = [RasaTrainingLogger(epochs, silent=False)]
 
