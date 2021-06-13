@@ -174,13 +174,16 @@ class AvailableEndpoints:
         nlu = read_endpoint_config(endpoint_file, endpoint_type="nlu")
         action = read_endpoint_config(endpoint_file, endpoint_type="action_endpoint")
         model = read_endpoint_config(endpoint_file, endpoint_type="models")
+        bridge = read_endpoint_config(endpoint_file, endpoint_type="bridge")
         tracker_store = read_endpoint_config(
             endpoint_file, endpoint_type="tracker_store"
         )
         lock_store = read_endpoint_config(endpoint_file, endpoint_type="lock_store")
         event_broker = read_endpoint_config(endpoint_file, endpoint_type="event_broker")
 
-        return cls(nlg, nlu, action, model, tracker_store, lock_store, event_broker)
+        return cls(
+            nlg, nlu, action, model, tracker_store, lock_store, event_broker, bridge
+        )
 
     def __init__(
         self,
@@ -191,6 +194,7 @@ class AvailableEndpoints:
         tracker_store: Optional[EndpointConfig] = None,
         lock_store: Optional[EndpointConfig] = None,
         event_broker: Optional[EndpointConfig] = None,
+        bridge: Optional[EndpointConfig] = None,
     ) -> None:
         self.model = model
         self.action = action
@@ -199,6 +203,7 @@ class AvailableEndpoints:
         self.tracker_store = tracker_store
         self.lock_store = lock_store
         self.event_broker = event_broker
+        self.bridge = bridge
 
 
 def read_endpoints_from_path(

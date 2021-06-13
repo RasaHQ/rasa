@@ -121,6 +121,7 @@ regex = ">=2020.6,<2020.10"
 joblib = ">=0.15.1,<1.1.0"
 sentry-sdk = ">=0.17.0,<1.2.0"
 aio-pika = "^6.7.1"
+pynacl = "^1.4.0"
 pyTelegramBotAPI = "^3.7.3"
 
 [tool.poetry.dev-dependencies]

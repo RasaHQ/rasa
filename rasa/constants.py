@@ -27,6 +27,7 @@ CONFIG_TELEMETRY_DATE = "date"
 MINIMUM_COMPATIBLE_VERSION = "2.6.0"
 
 GLOBAL_USER_CONFIG_PATH = os.path.expanduser("~/.config/rasa/global.yml")
+CONNECT_AUTH_PATH = os.path.expanduser("~/.config/rasa/bridge_default_credentials.json")
 
 DEFAULT_LOG_LEVEL_RASA_X = "WARNING"
 DEFAULT_LOG_LEVEL_LIBRARIES = "ERROR"
