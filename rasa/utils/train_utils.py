@@ -545,7 +545,7 @@ def _check_evaluation_setting(component_config: Dict[Text, Any]) -> None:
     ):
         warning = (
             f"the value of '{EVAL_NUM_EPOCHS}' is greater than the value of '{EPOCHS}'."
-            f"No evaluation will occur."
+            f" No evaluation will occur."
         )
         if component_config[CHECKPOINT_MODEL]:
             warning = (

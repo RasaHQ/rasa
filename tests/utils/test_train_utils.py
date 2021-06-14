@@ -183,7 +183,7 @@ def test_warning_incorrect_eval_num_epochs(component_config: Dict[Text, Text]):
         train_utils._check_evaluation_setting(component_config)
         assert len(record) == 1
         assert (
-            f"{EVAL_NUM_EPOCHS} is not -1 or greater than 0, training will fail"
+            f"'{EVAL_NUM_EPOCHS}' is not -1 or greater than 0. Training will fail"
             in record[0].message.args[0]
         )
 
@@ -198,7 +198,10 @@ def test_warning_incorrect_eval_num_epochs(component_config: Dict[Text, Text]):
 def test_warning_eval_num_epochs_greater_than_epochs(
     component_config: Dict[Text, Text]
 ):
-    warning = f"{EVAL_NUM_EPOCHS} is greater than {EPOCHS}. No evaluation will occur."
+    warning = (
+        f"the value of '{EVAL_NUM_EPOCHS}' is greater than the value of "
+        f"'{EPOCHS}'. No evaluation will occur."
+    )
     with pytest.warns(UserWarning) as record:
         train_utils._check_evaluation_setting(component_config)
         assert len(record) == 1
@@ -229,7 +232,7 @@ def test_warning_incorrect_eval_num_examples(component_config: Dict[Text, Text])
         train_utils._check_evaluation_setting(component_config)
         assert len(record) == 1
         assert (
-            f"{EVAL_NUM_EXAMPLES} is not greater than 0. No checkpoint model "
+            f"'{EVAL_NUM_EXAMPLES}' is not greater than 0. No checkpoint model "
             f"will be saved"
         ) in record[0].message.args[0]
 
