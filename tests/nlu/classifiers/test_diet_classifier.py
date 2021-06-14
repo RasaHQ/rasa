@@ -685,9 +685,11 @@ async def test_train_fails_with_zero_eval_num_epochs(
             )
     assert not checkpoint_dir.is_dir()
     warn_text = (
-        f"You have opted to save the best model, but {EVAL_NUM_EPOCHS} is not "
-        "-1 or greater than 0, training will fail."
+        f"You have opted to save the best model, but the value of '{EVAL_NUM_EPOCHS}' "
+        f"is not -1 or greater than 0. Training will fail."
     )
+    print(f"\n{warn_text}")
+    print(warning[2].message)
     assert len([w for w in warning if warn_text in str(w.message)]) == 1
 
 
@@ -725,8 +727,9 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
 
     assert not checkpoint_dir.is_dir()
     warn_text = (
-        f"You have opted to save the best model, but {EVAL_NUM_EXAMPLES} is "
-        "not greater than 0. No checkpoint model will be saved."
+        f"You have opted to save the best model, but the value of "
+        f"'{EVAL_NUM_EXAMPLES}' is not greater than 0. No checkpoint model "
+        f"will be saved."
     )
     assert len([w for w in warning if warn_text in str(w.message)]) == 1
 
