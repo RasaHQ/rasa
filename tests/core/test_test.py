@@ -42,7 +42,7 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
     assert "report" in result.keys()
 
 
-async def test_action_unlikely_intent_warnings_1(
+async def test_action_unlikely_intent_1(
     tmpdir: Path, intent_ted_policy_moodbot_agent: Agent
 ):
     result = await rasa.core.test.test(
@@ -55,7 +55,7 @@ async def test_action_unlikely_intent_warnings_1(
     assert result["report"]["conversation_accuracy"]["with_warnings"] == 1
 
 
-async def test_action_unlikely_intent_warnings_2(
+async def test_action_unlikely_intent_2(
     tmpdir: Path, intent_ted_policy_moodbot_agent: Agent
 ):
     result = await rasa.core.test.test(

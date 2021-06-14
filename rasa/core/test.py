@@ -161,8 +161,18 @@ class EvaluationStore:
         )
 
     @staticmethod
-    def should_ignore_prediction(predicted: Text) -> bool:
-        return predicted == ACTION_UNLIKELY_INTENT_NAME
+    def should_ignore_prediction(predicted_action: Text) -> bool:
+        """Indicates if the predicted action needs to be ignored and not added to the store.
+
+        Right now we only ignore the `action_unlikely_intent`.
+
+        Args:
+            predicted_action: A predicted action.
+
+        Returns:
+            `True` if the prediction needs to be ignored, `False` otherwise.
+        """
+        return predicted_action == ACTION_UNLIKELY_INTENT_NAME
 
     @staticmethod
     def _compare_entities(
@@ -592,18 +602,18 @@ def _collect_action_executed_predictions(
 
     action_executed_eval_store = EvaluationStore()
 
-    gold_action_name = event.action_name
-    gold_action_text = event.action_text
-    gold = gold_action_name or gold_action_text
+    expected_action_name = event.action_name
+    expected_action_text = event.action_text
+    expected_action = expected_action_name or expected_action_text
 
     policy_entity_result = None
 
     if circuit_breaker_tripped:
         prediction = PolicyPrediction([], policy_name=None)
-        predicted = "circuit breaker tripped"
+        predicted_action = "circuit breaker tripped"
     else:
         action, prediction = processor.predict_next_action(partial_tracker)
-        predicted = action.name()
+        predicted_action = action.name()
 
         policy_entity_result = _get_e2e_entity_evaluation_result(
             processor, partial_tracker, prediction
@@ -611,9 +621,9 @@ def _collect_action_executed_predictions(
 
         if (
             prediction.policy_name
-            and predicted != gold
+            and predicted_action != expected_action
             and _form_might_have_been_rejected(
-                processor.domain, partial_tracker, predicted
+                processor.domain, partial_tracker, predicted_action
             )
         ):
             # Wrong action was predicted,
@@ -625,27 +635,27 @@ def _collect_action_executed_predictions(
             # Even if the prediction is also wrong, we don't have to undo the emulation
             # of the action rejection as we know that the user explicitly specified
             # that something else than the form was supposed to run.
-            predicted = action.name()
+            predicted_action = action.name()
 
     should_ignore_prediction = action_executed_eval_store.should_ignore_prediction(
-        predicted
+        predicted_action
     )
     if not should_ignore_prediction:
         action_executed_eval_store.add_to_store(
-            action_predictions=[predicted], action_targets=[gold]
+            action_predictions=[predicted_action], action_targets=[expected_action]
         )
 
     has_prediction_target_mismatch = (
         action_executed_eval_store.has_prediction_target_mismatch()
     )
     if has_prediction_target_mismatch or (
-        should_ignore_prediction and predicted != gold
+        should_ignore_prediction and predicted_action != expected_action
     ):
         partial_tracker.update(
             WronglyPredictedAction(
-                gold_action_name,
-                gold_action_text,
-                predicted,
+                expected_action_name,
+                expected_action_text,
+                predicted_action,
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
@@ -668,7 +678,7 @@ def _collect_action_executed_predictions(
     elif not should_ignore_prediction:
         partial_tracker.update(
             ActionExecuted(
-                predicted,
+                predicted_action,
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
