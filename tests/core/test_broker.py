@@ -12,7 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from rasa.core.brokers import pika
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.file import FileEventBroker
-from rasa.core.brokers.kafka import KafkaEventBroker
+from rasa.core.brokers.kafka import KafkaEventBroker, KafkaProducerInitializationError
 from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.events import Event, Restarted, SlotSet, UserUttered
@@ -224,6 +224,7 @@ async def test_kafka_broker_from_config():
         "localhost",
         "username",
         "password",
+        sasl_mechanism="PLAIN",
         topic="topic",
         partition_by_sender=True,
         security_protocol="SASL_PLAINTEXT",
@@ -232,8 +233,20 @@ async def test_kafka_broker_from_config():
     assert actual.host == expected.host
     assert actual.sasl_username == expected.sasl_username
     assert actual.sasl_password == expected.sasl_password
+    assert actual.sasl_mechanism == expected.sasl_mechanism
     assert actual.topic == expected.topic
     assert actual.partition_by_sender == expected.partition_by_sender
+
+
+async def test_kafka_invalid_sasl_mechanism():
+    endpoints_path = (
+        "data/test_endpoints/event_brokers/kafka_invalid_sasl_mechanism.yml"
+    )
+    cfg = read_endpoint_config(endpoints_path, "event_broker")
+
+    actual = await KafkaEventBroker.from_endpoint_config(cfg)
+    with pytest.raises(KafkaProducerInitializationError):
+        actual._create_producer()
 
 
 async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
