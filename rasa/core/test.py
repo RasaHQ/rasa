@@ -637,9 +637,7 @@ def _collect_action_executed_predictions(
             # that something else than the form was supposed to run.
             predicted_action = action.name()
 
-    should_ignore_prediction = action_executed_eval_store.should_ignore_prediction(
-        predicted_action
-    )
+    should_ignore_prediction = action_executed_eval_store.should_ignore_prediction(predicted_action)
     if not should_ignore_prediction:
         action_executed_eval_store.add_to_store(
             action_predictions=[predicted_action], action_targets=[expected_action]
@@ -675,7 +673,7 @@ def _collect_action_executed_predictions(
                     "training stories and retrain."
                 )
             raise WrongPredictionException(error_msg)
-    elif not should_ignore_prediction:
+    else:
         partial_tracker.update(
             ActionExecuted(
                 predicted_action,
