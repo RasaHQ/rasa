@@ -44,6 +44,7 @@ from rasa.shared.core.constants import (
     LOOP_REJECTED,
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
+    ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.core import run, utils
 import rasa.core.train
@@ -1130,7 +1131,7 @@ async def _validate_action(
 
     Returns `True` if the prediction is correct, `False` otherwise."""
 
-    if action_name == "action_unlikely_intent":
+    if action_name == ACTION_UNLIKELY_INTENT_NAME:
         print(f"The bot wants to run '{action_name}' "
               f"(https://rasa.com/docs/rasa/default-actions#action_unlikely_intent) "
               f"to indicate that this user message was unexpected "
