@@ -97,3 +97,7 @@ MASK = "mask"
 IGNORE_INTENTS_LIST = "ignore_intents_list"
 
 TOLERANCE = "tolerance"
+
+POSITIVE_SCORES_KEY = "positive_scores"
+
+NEGATIVE_SCORES_KEY = "negative_scores"

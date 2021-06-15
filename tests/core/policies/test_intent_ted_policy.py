@@ -29,6 +29,8 @@ from rasa.utils.tensorflow.constants import (
     MASK,
     SENTENCE,
     IDS,
+    POSITIVE_SCORES_KEY,
+    NEGATIVE_SCORES_KEY,
 )
 from rasa.shared.nlu.constants import INTENT
 from rasa.utils.tensorflow import model_data_utils
@@ -168,15 +170,38 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         assert sorted(list(label_id_similarities.keys())) == [0, 1, 2]
 
         # Cross-check that the collected similarities are correct for each label id.
-        assert label_id_similarities[0] == ([1.2], [0.5, 0.01])
-        assert label_id_similarities[1] == ([0.3, 0.2], [0.1])
-        assert label_id_similarities[2] == ([1.7], [0.2, 1.6, 0.8])
+        assert label_id_similarities[0] == {
+            POSITIVE_SCORES_KEY: [1.2],
+            NEGATIVE_SCORES_KEY: [0.5, 0.01],
+        }
+        assert label_id_similarities[1] == {
+            POSITIVE_SCORES_KEY: [0.3, 0.2],
+            NEGATIVE_SCORES_KEY: [0.1],
+        }
+        assert label_id_similarities[2] == {
+            POSITIVE_SCORES_KEY: [1.7],
+            NEGATIVE_SCORES_KEY: [0.2, 1.6, 0.8],
+        }
 
     def test_label_quantiles_computation(self):
         label_id_scores = {
-            0: ([1.3, 0.2], [-0.1, -1.2, -2.3, -4.1, -0.5, 0.2, 0.8, 0.9, -3.2, -2.7]),
-            3: ([1.3, 0.2], [-0.1]),
-            6: ([1.3, 0.2], []),
+            0: {
+                POSITIVE_SCORES_KEY: [1.3, 0.2],
+                NEGATIVE_SCORES_KEY: [
+                    -0.1,
+                    -1.2,
+                    -2.3,
+                    -4.1,
+                    -0.5,
+                    0.2,
+                    0.8,
+                    0.9,
+                    -3.2,
+                    -2.7,
+                ],
+            },
+            3: {POSITIVE_SCORES_KEY: [1.3, 0.2], NEGATIVE_SCORES_KEY: [-0.1]},
+            6: {POSITIVE_SCORES_KEY: [1.3, 0.2], NEGATIVE_SCORES_KEY: []},
         }
         expected_thresholds = {
             0: [

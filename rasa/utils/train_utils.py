@@ -541,7 +541,7 @@ def _check_tolerance_setting(component_config: Dict[Text, Any]) -> None:
         raise InvalidConfigException(
             f"{TOLERANCE} was set to {component_config.get(TOLERANCE)} "
             f"which is an invalid setting. Please set it to a value "
-            f"between 0.0 and 1.0 ."
+            f"between 0.0 and 1.0 inclusive."
         )
 
 

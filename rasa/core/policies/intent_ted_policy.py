@@ -84,6 +84,8 @@ from rasa.utils.tensorflow.constants import (
     CONCAT_DIMENSION,
     TOLERANCE,
     LABEL_PAD_ID,
+    POSITIVE_SCORES_KEY,
+    NEGATIVE_SCORES_KEY,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import (
@@ -215,18 +217,19 @@ class IntentTEDPolicy(TEDPolicy):
         FEATURIZERS: [],
         # List of intents to ignore for `action_unlikely_intent` prediction.
         IGNORE_INTENTS_LIST: [],
-        # Tolerance for prediction of action_unlikely_intent.
-        # This is specified as a ratio of negative trackers for
-        # which the predicted similarity score of the
-        # corresponding correct label is above a threshold.
-        # Hence, any tracker at inference time
-        # should result in a predicted similarity score equal
-        # to or above the threshold in order to avoid triggering
-        # `action_unlikely_intent`. Higher values of `tolerance`
-        # means the policy is more "tolerant" to surprising paths
-        # in conversations and hence will result in lesser number
-        # of `action_unlikely_intent` triggers. Acceptable values
-        # are between 0.0 and 1.0 .
+        # Tolerance for prediction of `action_unlikely_intent`.
+        # For each intent, the tolerance is the percentage of
+        # negative training instances (trackers for which
+        # the corresponding intent is not the correct label) that
+        # would be ignored by `IntentTEDPolicy`. This is converted
+        # into a similarity threshold by identifying the similarity
+        # score for the (1 - tolerance) percentile of negative
+        # examples. Any tracker with a similarity score below this
+        # threshold will trigger an `action_unlikely_intent`.
+        # Higher values of `tolerance` means the policy is more
+        # "tolerant" to surprising paths in conversations and
+        # hence will result in lesser number of `action_unlikely_intent`
+        # triggers. Acceptable values are between 0.0 and 1.0 (inclusive).
         TOLERANCE: 0.0,
     }
 
@@ -570,7 +573,7 @@ class IntentTEDPolicy(TEDPolicy):
     def _collect_label_id_grouped_scores(
         output_scores: Dict[Text, Union[np.ndarray, Dict[Text, Any]]],
         label_ids: np.ndarray,
-    ) -> Dict[int, Tuple[List[float], List[float]]]:
+    ) -> Dict[int, Dict[Text, List[float]]]:
         """Collects similarities predicted for each label id.
 
         For each `label_id`, we collect similarity scores across
@@ -608,14 +611,17 @@ class IntentTEDPolicy(TEDPolicy):
         # Get only unique scores so that duplicate
         # trackers created because of permutations are pruned out.
         unique_label_id_scores = {
-            label_id: (list(set(scores[0])), list(set(scores[1])))
+            label_id: {
+                POSITIVE_SCORES_KEY: list(set(scores[0])),
+                NEGATIVE_SCORES_KEY: list(set(scores[1])),
+            }
             for label_id, scores in label_id_scores.items()
         }
         return unique_label_id_scores
 
     @staticmethod
     def _compute_label_quantiles(
-        label_id_scores: Dict[int, Tuple[List[float], List[float]]]
+        label_id_scores: Dict[int, Dict[Text, List[float]]]
     ) -> Dict[int, List[float]]:
         """Computes multiple quantiles for each label id.
 
@@ -633,20 +639,26 @@ class IntentTEDPolicy(TEDPolicy):
         """
         label_quantiles = {}
 
-        for label_id, (positive_scores, negative_scores) in label_id_scores.items():
-            label_quantiles[label_id] = [
-                min(
-                    min(positive_scores),
-                    np.quantile(
-                        negative_scores,
-                        1 - tolerance_value / 100.0,
-                        interpolation="lower",
-                    ),
+        quantile_indices = [
+            1 - tolerance_value / 100.0 for tolerance_value in range(0, 100, 5)
+        ]
+        for label_id, prediction_scores in label_id_scores.items():
+            positive_scores, negative_scores = (
+                prediction_scores[POSITIVE_SCORES_KEY],
+                prediction_scores[NEGATIVE_SCORES_KEY],
+            )
+            minimum_positive_score = min(positive_scores)
+            if negative_scores:
+                quantile_values = np.quantile(
+                    negative_scores, quantile_indices, interpolation="lower"
                 )
-                if negative_scores
-                else min(positive_scores)
-                for tolerance_value in range(0, 100, 5)
-            ]
+                label_quantiles[label_id] = [
+                    min(minimum_positive_score, value) for value in quantile_values
+                ]
+            else:
+                label_quantiles[label_id] = [minimum_positive_score] * len(
+                    quantile_indices
+                )
 
         return label_quantiles
 
