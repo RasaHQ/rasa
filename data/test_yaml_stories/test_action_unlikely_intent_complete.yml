@@ -15,7 +15,10 @@ stories:
       - user: |
           very terrible
         intent: mood_unhappy
-      - action: action_listen
+      - action: utter_cheer_up
+      - action: utter_did_that_help
+      - intent: affirm
+      - action: utter_happy
 
   - story: unlikely path (with action_unlikely_intent)
     steps:
@@ -23,7 +26,10 @@ stories:
           very terrible
         intent: mood_unhappy
       - action: action_unlikely_intent
-      - action: action_listen
+      - action: utter_cheer_up
+      - action: utter_did_that_help
+      - intent: affirm
+      - action: utter_happy
 
   - story: happy path 2
     steps:
