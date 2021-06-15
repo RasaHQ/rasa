@@ -1131,7 +1131,12 @@ async def _validate_action(
     Returns `True` if the prediction is correct, `False` otherwise."""
 
     if action_name == "action_unlikely_intent":
-        print(f"The bot wants to run '{action_name}'. Press any key to continue...")
+        print(f"The bot wants to run '{action_name}' "
+              f"(https://rasa.com/docs/rasa/default-actions#action_unlikely_intent) "
+              f"to indicate that this user message was unexpected "
+              f"given the context of the conversation. "
+              f"Check out IntentTEDPolicy to learn more. "
+              f"Press any key to continue…")
         input()
         is_correct = True
     else:
