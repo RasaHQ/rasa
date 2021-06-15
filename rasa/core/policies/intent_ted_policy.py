@@ -588,16 +588,14 @@ class IntentTEDPolicy(TEDPolicy):
         Returns:
             Both buckets of similarity scores grouped by each unique label id.
         """
-        label_id_scores = {}
         unique_label_ids = np.unique(label_ids).tolist()
         if LABEL_PAD_ID in unique_label_ids:
             unique_label_ids.remove(LABEL_PAD_ID)
 
-        for label_id in unique_label_ids:
-            label_id_scores[label_id] = {
-                POSITIVE_SCORES_KEY: [],
-                NEGATIVE_SCORES_KEY: [],
-            }
+        label_id_scores = {
+            label_id: {POSITIVE_SCORES_KEY: [], NEGATIVE_SCORES_KEY: []}
+            for label_id in unique_label_ids
+        }
 
         for index, all_pos_labels in enumerate(label_ids):
 
