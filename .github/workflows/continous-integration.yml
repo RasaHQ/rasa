@@ -41,18 +41,30 @@ env:
 jobs:
   changes:
     name: Check for file changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      docker: ${{ steps.filter.outputs.docker }}
-      docs: ${{ steps.filter.outputs.docs }}
+      # Both of the outputs below are strings but only one exists at any given time
+      backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
+      frontend: ${{ steps.changed-files.outputs.frontend || steps.run-all.outputs.frontend }}
+      docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
       - uses: actions/checkout@v2
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
-        id: filter
+        # Run the normal filters if the all-tests-required label is not set
+        id: changed-files
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
+      - name: Set all filters to true if all tests are required
+        # Set all filters to true if the all-tests-required label is set
+        # Bypasses all the change filters in change_filters.yml and forces all outputs to true
+        id: run-all
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
+        run: |
+          echo "::set-output name=backend::true"
+          echo "::set-output name=frontend::true"
+          echo "::set-output name=docs::true"
 
 
   wait_for_docs_tests:
