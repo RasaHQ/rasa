@@ -4,4 +4,7 @@ stories:
       - user: |
           very terrible
         intent: mood_unhappy
-      - action: action_listen
+      - action: utter_cheer_up
+      - action: utter_did_that_help
+      - intent: affirm
+      - action: utter_happy

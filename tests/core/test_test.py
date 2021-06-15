@@ -65,7 +65,7 @@ async def test_action_unlikely_intent_2(
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 1
-    assert result["report"]["conversation_accuracy"]["with_warnings"] == 1
+    assert result["report"]["conversation_accuracy"]["with_warnings"] == 0
 
 
 async def test_action_unlikely_intent_complete(
@@ -78,7 +78,7 @@ async def test_action_unlikely_intent_complete(
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 4
-    assert result["report"]["conversation_accuracy"]["with_warnings"] == 2
+    assert result["report"]["conversation_accuracy"]["with_warnings"] == 1
     assert result["report"]["conversation_accuracy"]["total"] == 4
 
 
