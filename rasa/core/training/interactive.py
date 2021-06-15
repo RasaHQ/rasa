@@ -1130,9 +1130,13 @@ async def _validate_action(
 
     Returns `True` if the prediction is correct, `False` otherwise."""
 
-    question = questionary.confirm(f"The bot wants to run '{action_name}', correct?")
-
-    is_correct = await _ask_questions(question, conversation_id, endpoint)
+    if action_name == "action_unlikely_intent":
+        print(f"The bot wants to run '{action_name}'. Press any key to continue...")
+        input()
+        is_correct = True
+    else:
+        question = questionary.confirm(f"The bot wants to run '{action_name}', correct?")
+        is_correct = await _ask_questions(question, conversation_id, endpoint)
 
     if not is_correct:
         action_name, is_new_action = await _request_action_from_user(
