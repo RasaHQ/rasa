@@ -26,6 +26,7 @@ policies: # even here
 #   - name: MemoizationPolicy
 #   - name: RulePolicy
 #   - name: IntentTEDPolicy
+#   - name: TEDPolicy
 #     max_history: 5
 #     epochs: 100
 #     constrain_similarities: true
