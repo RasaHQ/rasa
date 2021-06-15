@@ -688,7 +688,15 @@ class TEDPolicy(Policy):
         if TEXT in attributes_needed:
             events.append(UserUttered(text="hello"))
             if ACTION_NAME in attributes_needed:
-                events.append(ActionExecuted(action_name=domain.user_actions[0]))
+                if len(domain.user_actions) > 0:
+                    # use first custom action
+                    events.append(ActionExecuted(action_name=domain.user_actions[0]))
+                else:
+                    # in pure e2e there are no custom actions, so we use first default
+                    # action
+                    events.append(
+                        ActionExecuted(action_name=domain.action_names_or_texts[0])
+                    )
             if ACTION_TEXT in attributes_needed:
                 events.append(ActionExecuted(action_text=domain.action_texts[0]))
             # if SLOTS in attributes_needed:
