@@ -120,6 +120,9 @@ example:
                               no_ack=True)
         channel.start_consuming()
 
+
+.. _event-brokers-kafka:
+
 Kafka Event Broker
 ------------------
 
