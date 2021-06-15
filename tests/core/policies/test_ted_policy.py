@@ -171,6 +171,7 @@ class TestTEDPolicy(PolicyTestCollection):
         self, trained_policy: TEDPolicy, default_domain: Domain
     ):
         interpreter = RegexInterpreter()
+
         state_featurizer = trained_policy.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_labels(
             default_domain, interpreter

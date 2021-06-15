@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, List
 import tensorflow as tf
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
 )
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
-from rasa.core.policies.intent_ted_policy import IntentTEDPolicy, IntentTED
+from rasa.core.policies.intent_ted_policy import IntentTEDPolicy
 from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -29,6 +29,8 @@ from rasa.utils.tensorflow.constants import (
     MASK,
     SENTENCE,
     IDS,
+    POSITIVE_SCORES_KEY,
+    NEGATIVE_SCORES_KEY,
 )
 from rasa.shared.nlu.constants import INTENT
 from rasa.utils.tensorflow import model_data_utils
@@ -48,6 +50,11 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             IntentTokenizerSingleStateFeaturizer(), max_history=self.max_history
         )
         return featurizer
+
+    @staticmethod
+    def persist_and_load_policy(trained_policy: IntentTEDPolicy, tmp_path: Path):
+        trained_policy.persist(tmp_path)
+        return IntentTEDPolicy.load(tmp_path)
 
     @pytest.mark.skip
     def test_normalization(
@@ -150,38 +157,126 @@ class TestIntentTEDPolicy(TestTEDPolicy):
                 [
                     [[1.2, 0.3, 0.2]],
                     [[0.5, 0.2, 1.6]],
-                    [[0.1, 0.6, 0.8]],
-                    [[2.3, 0.1, 0.3]],
+                    [[1.2, 0.3, 0.8]],
+                    [[0.01, 0.1, 1.7]],
                 ]
             )
         }
-        label_id_similarities = IntentTED._collect_label_id_similarities_from_outputs(
-            label_ids, outputs
+        label_id_similarities = IntentTEDPolicy._collect_label_id_grouped_scores(
+            outputs, label_ids
         )
 
-        # Should contain similarities for all label ids.
+        # Should contain similarities for all label ids except padding token.
         assert sorted(list(label_id_similarities.keys())) == [0, 1, 2]
 
         # Cross-check that the collected similarities are correct for each label id.
-        assert label_id_similarities[0] == [1.2]
-        assert label_id_similarities[1] == [0.2, 0.6]
-        assert label_id_similarities[2] == [0.3]
+        assert label_id_similarities[0] == {
+            POSITIVE_SCORES_KEY: [1.2],
+            NEGATIVE_SCORES_KEY: [0.5, 0.01],
+        }
+        assert label_id_similarities[1] == {
+            POSITIVE_SCORES_KEY: [0.3, 0.2],
+            NEGATIVE_SCORES_KEY: [0.1],
+        }
+        assert label_id_similarities[2] == {
+            POSITIVE_SCORES_KEY: [1.7],
+            NEGATIVE_SCORES_KEY: [0.2, 1.6, 0.8],
+        }
 
-    @pytest.mark.parametrize(
-        "similarities, expected_thresholds",
-        [
-            ({0: [1.2], 1: [-0.2, 0.6]}, {0: 1.2, 1: -0.2}),
-            ({0: [0.2, 0.1, 0.8], 1: [0.9, 0.6]}, {0: 0.1, 1: 0.6}),
-            ({0: [-0.2, -0.1, -0.8], 1: [-0.9, -0.6]}, {0: -0.8, 1: -0.9}),
-        ],
-    )
-    def test_threshold_computation_from_similarities(
-        self,
-        similarities: Dict[int, List[float]],
-        expected_thresholds: Dict[int, float],
-    ):
-        computed_thresholds = IntentTED._pick_threshold_from_similarities(similarities)
-        assert computed_thresholds == expected_thresholds
+    def test_label_quantiles_computation(self):
+        label_id_scores = {
+            0: {
+                POSITIVE_SCORES_KEY: [1.3, 0.2],
+                NEGATIVE_SCORES_KEY: [
+                    -0.1,
+                    -1.2,
+                    -2.3,
+                    -4.1,
+                    -0.5,
+                    0.2,
+                    0.8,
+                    0.9,
+                    -3.2,
+                    -2.7,
+                ],
+            },
+            3: {POSITIVE_SCORES_KEY: [1.3, 0.2], NEGATIVE_SCORES_KEY: [-0.1]},
+            6: {POSITIVE_SCORES_KEY: [1.3, 0.2], NEGATIVE_SCORES_KEY: []},
+        }
+        expected_thresholds = {
+            0: [
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                -0.1,
+                -0.1,
+                -0.5,
+                -0.5,
+                -1.2,
+                -1.2,
+                -1.2,
+                -2.3,
+                -2.3,
+                -2.7,
+                -2.7,
+                -3.2,
+                -3.2,
+                -4.1,
+                -4.1,
+            ],
+            3: [
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+            ],
+            6: [
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+            ],
+        }
+        thresholds = IntentTEDPolicy._compute_label_quantiles(label_id_scores)
+        assert sorted(list(thresholds.keys())) == sorted(
+            list(expected_thresholds.keys())
+        )
+        for label_id, tolerance_thresholds in thresholds.items():
+            assert expected_thresholds[label_id] == tolerance_thresholds
 
     async def test_post_training_threshold_computation(
         self,
@@ -197,17 +292,86 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             training_trackers, default_domain, interpreter
         )
 
-        trained_policy.calculate_label_thresholds_post_training(
+        trained_policy.compute_label_quantiles_post_training(
             training_model_data, label_ids
         )
+
+        computed_thresholds = trained_policy.label_quantiles
 
         # -1 is used for padding and hence is not expected in the keys
         expected_keys = list(np.unique(label_ids))
         expected_keys.remove(-1)
 
-        assert sorted(list(trained_policy.label_thresholds.keys())) == sorted(
-            expected_keys
+        assert sorted(list(computed_thresholds.keys())) == sorted(expected_keys)
+
+    @pytest.mark.parametrize(
+        "tolerance, expected_thresholds",
+        [
+            (0.0, [0.2, -0.1, 0.2]),
+            (0.75, [-2.9, -0.1, -4.3]),
+            (0.72, [-2.7, -0.1, -4.0]),
+            (0.78, [-2.9, -0.1, -4.3]),
+            (1.0, [-4.1, -0.1, -5.5]),
+        ],
+    )
+    def test_pick_thresholds_for_labels(
+        self, tolerance: float, expected_thresholds: List[float]
+    ):
+        label_id_tolerance_thresholds = {
+            0: [
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                -0.1,
+                -0.1,
+                -0.5,
+                -0.5,
+                -1.2,
+                -1.2,
+                -2.3,
+                -2.3,
+                -2.7,
+                -2.9,
+                -3.2,
+                -3.2,
+                -4.1,
+                -4.1,
+            ],
+            3: [
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+                -0.1,
+            ],
+            4: [0.2 - (index * 0.3) for index in range(20)],
+        }
+        thresholds = IntentTEDPolicy._pick_thresholds(
+            label_id_tolerance_thresholds, tolerance
         )
+        assert sorted(list(thresholds.keys())) == sorted(
+            list(label_id_tolerance_thresholds.keys())
+        )
+        computed_values = list(thresholds.values())
+        assert expected_thresholds == computed_values
 
     @pytest.mark.parametrize(
         "predicted_similarity, threshold_value, is_unlikely",
@@ -220,67 +384,61 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         predicted_similarity: float,
         threshold_value: float,
         is_unlikely: bool,
+        tmp_path: Path,
     ):
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
         # Construct dummy similarities
         similarities = np.array([[0.0] * len(default_domain.intents)])
         dummy_intent_index = 4
         similarities[0, dummy_intent_index] = predicted_similarity
 
-        # Record the original thresholds because the test will modify it.
-        # Need to revert it back so that the `trained_policy` can
-        # be reused across tests.
-        original_label_thresholds = trained_policy.label_thresholds
-
-        trained_policy.label_thresholds[dummy_intent_index] = threshold_value
+        loaded_policy.label_thresholds[dummy_intent_index] = threshold_value
         query_intent = default_domain.intents[dummy_intent_index]
 
-        unlikely_intent_prediction = trained_policy._check_unlikely_intent(
+        unlikely_intent_prediction = loaded_policy._check_unlikely_intent(
             default_domain, similarities, query_intent
         )
 
         assert is_unlikely == unlikely_intent_prediction
 
-        # Revert back the label thresholds to original values.
-        trained_policy.label_thresholds = original_label_thresholds
-
     def test_should_check_for_intent(
-        self, trained_policy: IntentTEDPolicy, default_domain: Domain
+        self, trained_policy: IntentTEDPolicy, default_domain: Domain, tmp_path: Path
     ):
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+
         intent_index = 0
         assert (
-            trained_policy._should_check_for_intent(
+            loaded_policy._should_check_for_intent(
                 default_domain.intents[intent_index], default_domain
             )
             is False
         )
 
         intent_index = 4
-        assert trained_policy._should_check_for_intent(
+        assert loaded_policy._should_check_for_intent(
             default_domain.intents[intent_index], default_domain
         )
 
-        trained_policy.config[IGNORE_INTENTS_LIST] = [
+        loaded_policy.config[IGNORE_INTENTS_LIST] = [
             default_domain.intents[intent_index]
         ]
         assert (
-            trained_policy._should_check_for_intent(
+            loaded_policy._should_check_for_intent(
                 default_domain.intents[intent_index], default_domain
             )
             is False
         )
 
-        # Revert back the ignore intents list to empty
-        # so that the original `trained_policy` object is not modified.
-        trained_policy.config[IGNORE_INTENTS_LIST] = []
-
     def test_no_action_unlikely_intent_prediction(
-        self, trained_policy: IntentTEDPolicy, default_domain: Domain
+        self, trained_policy: IntentTEDPolicy, default_domain: Domain, tmp_path: Path
     ):
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+
         expected_probabilities = [0] * default_domain.num_actions
 
         interpreter = RegexInterpreter()
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
-        prediction = trained_policy.predict_action_probabilities(
+        prediction = loaded_policy.predict_action_probabilities(
             tracker, default_domain, interpreter
         )
 
@@ -293,26 +451,19 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             ],
             default_domain,
         )
-        prediction = trained_policy.predict_action_probabilities(
+        prediction = loaded_policy.predict_action_probabilities(
             tracker, default_domain, interpreter
         )
 
         assert prediction.probabilities == expected_probabilities
 
-        # Preserve the original model because the test will modify it.
-        # Need to revert it back so that the `trained_policy` can be
-        # reused across tests.
-        original_model = trained_policy.model
+        loaded_policy.model = None
 
-        trained_policy.model = None
-
-        prediction = trained_policy.predict_action_probabilities(
+        prediction = loaded_policy.predict_action_probabilities(
             tracker, default_domain, interpreter
         )
 
         assert prediction.probabilities == expected_probabilities
-
-        trained_policy.model = original_model
 
     @pytest.mark.parametrize(
         "predicted_similarity, threshold_value, is_unlikely",
@@ -326,11 +477,9 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         threshold_value,
         is_unlikely,
         monkeypatch: MonkeyPatch,
+        tmp_path: Path,
     ):
-        # Record the original thresholds because the test will modify it.
-        # Need to revert it back so that the `trained_policy` can
-        # be reused across tests.
-        original_label_thresholds = trained_policy.label_thresholds
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
 
         similarities = np.array([[[0.0] * len(default_domain.intents)]])
 
@@ -338,7 +487,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         similarities[0, 0, dummy_intent_index] = predicted_similarity
         query_intent = default_domain.intents[dummy_intent_index]
 
-        trained_policy.label_thresholds[dummy_intent_index] = threshold_value
+        loaded_policy.label_thresholds[dummy_intent_index] = threshold_value
 
         interpreter = RegexInterpreter()
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
@@ -350,12 +499,12 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         # Preset the model predictions to the similarity values
         # so that we don't need to hardcode for particular model predictions.
         monkeypatch.setattr(
-            trained_policy.model,
+            loaded_policy.model,
             "run_inference",
             lambda data: {"similarities": similarities},
         )
 
-        prediction = trained_policy.predict_action_probabilities(
+        prediction = loaded_policy.predict_action_probabilities(
             tracker, default_domain, interpreter
         )
 
@@ -373,17 +522,15 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             expected_action_metadata = {
                 intent: {
                     "score": similarities[0, 0, default_domain.intents.index(intent)],
-                    "threshold": trained_policy.label_thresholds[
+                    "threshold": loaded_policy.label_thresholds[
                         default_domain.intents.index(intent)
                     ],
                 }
                 for intent in default_domain.intents
                 if default_domain.intents.index(intent)
-                in trained_policy.label_thresholds
+                in loaded_policy.label_thresholds
             }
             assert expected_action_metadata == prediction.action_metadata
-
-        trained_policy.label_thresholds = original_label_thresholds
 
     def test_label_embedding_collection(self, trained_policy: IntentTEDPolicy):
         label_ids = tf.constant([[[2], [-1]], [[1], [2]], [[0], [-1]]], dtype=tf.int32)

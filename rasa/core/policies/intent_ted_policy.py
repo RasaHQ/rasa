@@ -3,7 +3,6 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
-from collections import defaultdict
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -82,6 +81,10 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     HIDDEN_LAYERS_SIZES,
     CONCAT_DIMENSION,
+    TOLERANCE,
+    LABEL_PAD_ID,
+    POSITIVE_SCORES_KEY,
+    NEGATIVE_SCORES_KEY,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import (
@@ -211,8 +214,22 @@ class IntentTEDPolicy(TEDPolicy):
         # Specify what features to use as sequence and sentence features.
         # By default all features in the pipeline are used.
         FEATURIZERS: [],
-        # List of intents to ignore
+        # List of intents to ignore for `action_unlikely_intent` prediction.
         IGNORE_INTENTS_LIST: [],
+        # Tolerance for prediction of `action_unlikely_intent`.
+        # For each intent, the tolerance is the percentage of
+        # negative training instances (trackers for which
+        # the corresponding intent is not the correct label) that
+        # would be ignored by `IntentTEDPolicy`. This is converted
+        # into a similarity threshold by identifying the similarity
+        # score for the (1 - tolerance) percentile of negative
+        # examples. Any tracker with a similarity score below this
+        # threshold will trigger an `action_unlikely_intent`.
+        # Higher values of `tolerance` means the policy is more
+        # "tolerant" to surprising paths in conversations and
+        # hence will result in lesser number of `action_unlikely_intent`
+        # triggers. Acceptable values are between 0.0 and 1.0 (inclusive).
+        TOLERANCE: 0.0,
     }
 
     def __init__(
@@ -224,7 +241,7 @@ class IntentTEDPolicy(TEDPolicy):
         fake_features: Optional[Dict[Text, List["Features"]]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
         should_finetune: bool = False,
-        label_thresholds: Dict[int, float] = None,
+        label_quantiles: Optional[Dict[int, List[float]]] = None,
         **kwargs: Any,
     ) -> None:
         """Declares instance variables with default values."""
@@ -239,7 +256,12 @@ class IntentTEDPolicy(TEDPolicy):
             **kwargs,
         )
 
-        self.label_thresholds = label_thresholds
+        self.label_quantiles = label_quantiles or {}
+        self.label_thresholds = (
+            self._pick_thresholds(self.label_quantiles, self.config[TOLERANCE])
+            if self.label_quantiles
+            else {}
+        )
         self.ignore_intent_list = self.config[IGNORE_INTENTS_LIST]
 
         # Set all invalid / non configurable parameters
@@ -322,10 +344,14 @@ class IntentTEDPolicy(TEDPolicy):
         }
         return RasaModelData(data=filtered_data)
 
-    def calculate_label_thresholds_post_training(
+    def compute_label_quantiles_post_training(
         self, model_data: RasaModelData, label_ids: np.ndarray
     ) -> None:
-        """Calculates label thresholds for prediction of `action_unlikely_intent`.
+        """Computes quantile scores for prediction of `action_unlikely_intent`.
+
+        Multiple quantiles are computed for each label
+        so that an appropriate threshold can be picked at
+        inference time according to the `tolerance` value specified.
 
         Args:
             model_data: Data used for training the model.
@@ -338,9 +364,15 @@ class IntentTEDPolicy(TEDPolicy):
         # Hence, we first filter out the attributes inside `model_data`
         # to keep only those which should be present during prediction.
         model_prediction_data = self._prepare_data_for_prediction(model_data)
-        self.label_thresholds = self.model.compute_thresholds(
-            model_prediction_data, label_ids
+        prediction_scores = self.model.run_bulk_inference(model_prediction_data)
+        label_id_scores = self._collect_label_id_grouped_scores(
+            prediction_scores, label_ids
         )
+        # For each label id, compute multiple quantile scores.
+        # These quantile scores can be looked up during inference
+        # to select a specific threshold according to the `tolerance`
+        # value specified in the configuration.
+        self.label_quantiles = self._compute_label_quantiles(label_id_scores)
 
     def run_training(
         self, model_data: RasaModelData, label_ids: Optional[np.ndarray] = None
@@ -362,7 +394,7 @@ class IntentTEDPolicy(TEDPolicy):
                 f"`label_ids` cannot be left to `None`."
             )
         super().run_training(model_data, label_ids)
-        self.calculate_label_thresholds_post_training(model_data, label_ids)
+        self.compute_label_quantiles_post_training(model_data, label_ids)
 
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array
@@ -536,6 +568,125 @@ class IntentTEDPolicy(TEDPolicy):
 
         return False
 
+    @staticmethod
+    def _collect_label_id_grouped_scores(
+        output_scores: Dict[Text, Union[np.ndarray, Dict[Text, Any]]],
+        label_ids: np.ndarray,
+    ) -> Dict[int, Dict[Text, List[float]]]:
+        """Collects similarities predicted for each label id.
+
+        For each `label_id`, we collect similarity scores across
+        all trackers and categorize them into two buckets:
+            1. Similarity scores when `label_id` is the correct label.
+            2. Similarity scores when `label_id` is the wrong label.
+
+        Args:
+            output_scores: Model's predictions for each data point.
+            label_ids: Numerical IDs of labels for each data point.
+
+        Returns:
+            Both buckets of similarity scores grouped by each unique label id.
+        """
+        unique_label_ids = np.unique(label_ids).tolist()
+        if LABEL_PAD_ID in unique_label_ids:
+            unique_label_ids.remove(LABEL_PAD_ID)
+
+        label_id_scores = {
+            label_id: {POSITIVE_SCORES_KEY: [], NEGATIVE_SCORES_KEY: []}
+            for label_id in unique_label_ids
+        }
+
+        for index, all_pos_labels in enumerate(label_ids):
+
+            for candidate_label_id in unique_label_ids:
+                if candidate_label_id in all_pos_labels:
+                    label_id_scores[candidate_label_id][POSITIVE_SCORES_KEY].append(
+                        output_scores["similarities"][index, 0, candidate_label_id]
+                    )
+                else:
+                    label_id_scores[candidate_label_id][NEGATIVE_SCORES_KEY].append(
+                        output_scores["similarities"][index, 0, candidate_label_id]
+                    )
+
+        # Get only unique scores so that duplicate
+        # trackers created because of permutations are pruned out.
+        unique_label_id_scores = {
+            label_id: {
+                POSITIVE_SCORES_KEY: list(set(scores[POSITIVE_SCORES_KEY])),
+                NEGATIVE_SCORES_KEY: list(set(scores[NEGATIVE_SCORES_KEY])),
+            }
+            for label_id, scores in label_id_scores.items()
+        }
+        return unique_label_id_scores
+
+    @staticmethod
+    def _compute_label_quantiles(
+        label_id_scores: Dict[int, Dict[Text, List[float]]]
+    ) -> Dict[int, List[float]]:
+        """Computes multiple quantiles for each label id.
+
+        The quantiles are computed over the negative scores
+        collected for each label id. However, no quantile score
+        can be greater than the minimum positive score collected
+        for the corresponding label id.
+
+        Args:
+            label_id_scores: Scores collected for each label id
+                over positive and negative trackers.
+
+        Returns:
+            Computed quantiles for each label id.
+        """
+        label_quantiles = {}
+
+        quantile_indices = [
+            1 - tolerance_value / 100.0 for tolerance_value in range(0, 100, 5)
+        ]
+        for label_id, prediction_scores in label_id_scores.items():
+            positive_scores, negative_scores = (
+                prediction_scores[POSITIVE_SCORES_KEY],
+                prediction_scores[NEGATIVE_SCORES_KEY],
+            )
+            minimum_positive_score = min(positive_scores)
+            if negative_scores:
+                quantile_values = np.quantile(
+                    negative_scores, quantile_indices, interpolation="lower"
+                )
+                label_quantiles[label_id] = [
+                    min(minimum_positive_score, value) for value in quantile_values
+                ]
+            else:
+                label_quantiles[label_id] = [minimum_positive_score] * len(
+                    quantile_indices
+                )
+
+        return label_quantiles
+
+    @staticmethod
+    def _pick_thresholds(
+        label_quantiles: Dict[int, List[float]], tolerance: float
+    ) -> Dict[int, float]:
+        """Compute a threshold for each label id.
+
+        Uses tolerance which is the percentage of negative
+        trackers for which predicted score should be equal
+        to or above the threshold.
+
+        Args:
+            label_quantiles: Quantiles computed for each label id
+            tolerance: Specified tolerance value from the configuration.
+
+        Returns:
+            Computed thresholds
+        """
+        label_thresholds = {}
+        for label_id in label_quantiles:
+            num_thresholds = len(label_quantiles[label_id])
+            label_thresholds[label_id] = label_quantiles[label_id][
+                min(int(tolerance * num_thresholds), num_thresholds - 1)
+            ]
+        return label_thresholds
+
     def persist_model_utilities(self, model_path: Path) -> None:
         """Persists model's utility attributes like model weights, etc.
 
@@ -544,8 +695,8 @@ class IntentTEDPolicy(TEDPolicy):
         """
         super().persist_model_utilities(model_path)
         io_utils.pickle_dump(
-            model_path / f"{self._metadata_filename()}.label_thresholds.pkl",
-            self.label_thresholds,
+            model_path / f"{self._metadata_filename()}.label_quantiles.pkl",
+            self.label_quantiles,
         )
 
     @classmethod
@@ -556,10 +707,10 @@ class IntentTEDPolicy(TEDPolicy):
             model_path: Path where model is to be persisted.
         """
         model_utilties = super()._load_model_utilities(model_path)
-        label_thresholds = io_utils.pickle_load(
-            model_path / f"{cls._metadata_filename()}.label_thresholds.pkl"
+        label_quantiles = io_utils.pickle_load(
+            model_path / f"{cls._metadata_filename()}.label_quantiles.pkl"
         )
-        model_utilties.update({"label_thresholds": label_thresholds})
+        model_utilties.update({"label_quantiles": label_quantiles})
         return model_utilties
 
     @classmethod
@@ -582,7 +733,7 @@ class IntentTEDPolicy(TEDPolicy):
             fake_features=model_utilities["fake_features"],
             entity_tag_specs=model_utilities["entity_tag_specs"],
             should_finetune=should_finetune,
-            label_thresholds=model_utilities["label_thresholds"],
+            label_quantiles=model_utilities["label_quantiles"],
             **model_utilities["meta"],
         )
 
@@ -649,21 +800,16 @@ class IntentTED(TED):
 
         return labels_embed
 
-    def compute_thresholds(
-        self, model_data: RasaModelData, label_ids: np.ndarray
-    ) -> Dict[int, float]:
-        """Computes prediction thresholds for each intent.
-
-        These thresholds are used at inference time to predict
-        whether a query intent is likely or not.
+    def run_bulk_inference(
+        self, model_data: RasaModelData
+    ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
+        """Computes model's predictions for input data.
 
         Args:
-            model_data: Data used during model training.
-            label_ids: Numerical IDs of labels corresponding to data points used during
-            training.
+            model_data: Data to be passed as input
 
         Returns:
-            Computed thresholds for each intent label present in `label_ids`.
+            Predictions for the input data.
         """
         self._training = False
 
@@ -672,64 +818,7 @@ class IntentTED(TED):
             if isinstance(self.config[BATCH_SIZES], int)
             else self.config[BATCH_SIZES][0]
         )
-        outputs = self.run_inference(
+
+        return self.run_inference(
             model_data, batch_size=batch_size, output_keys_expected=["similarities"]
         )
-
-        # Collect scores across all data points
-        label_id_scores = self._collect_label_id_similarities_from_outputs(
-            label_ids, outputs
-        )
-
-        return self._pick_threshold_from_similarities(label_id_scores)
-
-    @staticmethod
-    def _pick_threshold_from_similarities(
-        label_id_similarities: Dict[int, List[float]]
-    ) -> Dict[int, float]:
-        """Computes threshold for predicted similarities.
-
-        The threshold for an intent is computed as the minimum
-        of all similarities predicted for that particular intent.
-
-        Args:
-            label_id_similarities: Similarities predicted for each label/
-
-        Returns:
-            Computed thresholds for each intent label.
-        """
-        return {
-            label_id: min(label_id_similarities[label_id])
-            for label_id in label_id_similarities
-        }
-
-    @staticmethod
-    def _collect_label_id_similarities_from_outputs(
-        label_ids: np.ndarray, outputs: Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
-    ) -> Dict[int, List[float]]:
-        """Collects similarities predicted for each label id.
-
-        Args:
-            label_ids: Numerical IDs of labels for each data point used during training.
-            outputs: Model's predictions for each data point.
-
-        Returns:
-            Similarities grouped by intent label id.
-        """
-        label_id_scores: Dict[int, List[float]] = defaultdict(list)
-        for index, all_pos_labels in enumerate(label_ids):
-
-            # If a data point (tracker) has multiple label ids
-            # assigned to it, the tracker featurizer distributes
-            # those multiple label ids across multiple data points,
-            # one for each label id. Hence, here when we iterate over
-            # all data points, we consider only the first label id.
-            # Other positive label ids will be taken care of as part of
-            # some other data point, where the input tracker is the same
-            # as this one but first positive label id is different.
-            # This prevents over-counting across label ids.
-            first_pos_label_id = all_pos_labels[0]
-            label_id_scores[first_pos_label_id].append(
-                outputs["similarities"][index, 0, first_pos_label_id]
-            )
-        return label_id_scores
