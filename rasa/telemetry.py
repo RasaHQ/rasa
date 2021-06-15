@@ -563,27 +563,34 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
 
     rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, configuration)
 
-def filter_errors(event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None) -> None:
-    """Filtering errors.
+
+def filter_errors(
+    event: Dict[Text, Any], hint: Optional[Dict[Text, Any]] = None
+) -> Optional[Dict[Text, Any]]:
+    """Filter errors.
 
     Args:
         event: event to be logged to sentry
-        _unused_hint: some hinting information sent alongside of the event
+        hint: some hinting information sent alongside of the event
 
     Returns:
         the event without any sensitive / PII data or `None` if the event should
         be discarded.
     """
-    if 'exc_info' in _unused_hint:
-        exc_type, exc_value, tb = _unused_hint['exc_info']
+    if "exc_info" in hint:
+        exc_type, exc_value, tb = hint["exc_info"]
         if isinstance(exc_value, ImportError):
             return None
     return event
 
-def before_send(event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None) -> Optional[Dict[Text, Any]]:
-  event = filter_errors(event, _unused_hint)
-  event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
-  return event
+
+def before_send(
+    event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
+) -> Optional[Dict[Text, Any]]:
+    event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
+    event = filter_errors(event, _unused_hint)
+    return event
+
 
 def strip_sensitive_data_from_sentry_event(
     event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
@@ -595,8 +602,8 @@ def strip_sensitive_data_from_sentry_event(
         _unused_hint: some hinting information sent alongside of the event
 
     Returns:
-        the event without any sensitive / PII data or `None` if the event should
-        be discarded.
+        the event without any sensitive / PII data or `None` if the event constitutes
+        an `ImportError` which should be discarded.
     """
     # removes any paths from stack traces (avoids e.g. sending
     # a users home directory name if package is installed there)
