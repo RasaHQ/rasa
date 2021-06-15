@@ -307,12 +307,11 @@ class TestIntentTEDPolicy(TestTEDPolicy):
     @pytest.mark.parametrize(
         "tolerance, expected_thresholds",
         [
-            (0.0, [0.2, -0.1]),
-            (0.30, [-0.1, -0.1]),
-            (0.75, [-2.9, -0.1]),
-            (0.72, [-2.7, -0.1]),
-            (0.78, [-2.9, -0.1]),
-            (1.0, [-4.1, -0.1]),
+            (0.0, [0.2, -0.1, 0.2]),
+            (0.75, [-2.9, -0.1, -4.3]),
+            (0.72, [-2.7, -0.1, -4.0]),
+            (0.78, [-2.9, -0.1, -4.3]),
+            (1.0, [-4.1, -0.1, -5.5]),
         ],
     )
     def test_pick_thresholds_for_labels(
@@ -363,6 +362,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
                 -0.1,
                 -0.1,
             ],
+            4: [0.2 - (index * 0.3) for index in range(20)],
         }
         thresholds = IntentTEDPolicy._pick_thresholds(
             label_id_tolerance_thresholds, tolerance
