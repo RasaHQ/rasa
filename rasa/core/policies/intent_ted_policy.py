@@ -588,23 +588,26 @@ class IntentTEDPolicy(TEDPolicy):
         Returns:
             Both buckets of similarity scores grouped by each unique label id.
         """
-        label_id_scores: Dict[int, List[List[float]]] = defaultdict(list)
+        label_id_scores = {}
         unique_label_ids = np.unique(label_ids).tolist()
         if LABEL_PAD_ID in unique_label_ids:
             unique_label_ids.remove(LABEL_PAD_ID)
 
         for label_id in unique_label_ids:
-            label_id_scores[label_id] = [[], []]
+            label_id_scores[label_id] = {
+                POSITIVE_SCORES_KEY: [],
+                NEGATIVE_SCORES_KEY: [],
+            }
 
         for index, all_pos_labels in enumerate(label_ids):
 
             for candidate_label_id in unique_label_ids:
                 if candidate_label_id in all_pos_labels:
-                    label_id_scores[candidate_label_id][0].append(
+                    label_id_scores[candidate_label_id][POSITIVE_SCORES_KEY].append(
                         output_scores["similarities"][index, 0, candidate_label_id]
                     )
                 else:
-                    label_id_scores[candidate_label_id][1].append(
+                    label_id_scores[candidate_label_id][NEGATIVE_SCORES_KEY].append(
                         output_scores["similarities"][index, 0, candidate_label_id]
                     )
 
@@ -612,8 +615,8 @@ class IntentTEDPolicy(TEDPolicy):
         # trackers created because of permutations are pruned out.
         unique_label_id_scores = {
             label_id: {
-                POSITIVE_SCORES_KEY: list(set(scores[0])),
-                NEGATIVE_SCORES_KEY: list(set(scores[1])),
+                POSITIVE_SCORES_KEY: list(set(scores[POSITIVE_SCORES_KEY])),
+                NEGATIVE_SCORES_KEY: list(set(scores[NEGATIVE_SCORES_KEY])),
             }
             for label_id, scores in label_id_scores.items()
         }

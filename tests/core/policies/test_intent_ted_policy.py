@@ -51,8 +51,8 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         )
         return featurizer
 
-    @pytest.fixture()
-    def loaded_policy(self, trained_policy: IntentTEDPolicy, tmp_path: Path):
+    @staticmethod
+    def persist_and_load_policy(trained_policy: IntentTEDPolicy, tmp_path: Path):
         trained_policy.persist(tmp_path)
         return IntentTEDPolicy.load(tmp_path)
 
@@ -379,22 +379,18 @@ class TestIntentTEDPolicy(TestTEDPolicy):
     )
     def test_unlikely_intent_check(
         self,
-        loaded_policy: IntentTEDPolicy,
+        trained_policy: IntentTEDPolicy,
         default_domain: Domain,
         predicted_similarity: float,
         threshold_value: float,
         is_unlikely: bool,
         tmp_path: Path,
     ):
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
         # Construct dummy similarities
         similarities = np.array([[0.0] * len(default_domain.intents)])
         dummy_intent_index = 4
         similarities[0, dummy_intent_index] = predicted_similarity
-
-        # Record the original thresholds because the test will modify it.
-        # Need to revert it back so that the `trained_policy` can
-        # be reused across tests.
-        original_label_thresholds = loaded_policy.label_thresholds
 
         loaded_policy.label_thresholds[dummy_intent_index] = threshold_value
         query_intent = default_domain.intents[dummy_intent_index]
@@ -405,12 +401,11 @@ class TestIntentTEDPolicy(TestTEDPolicy):
 
         assert is_unlikely == unlikely_intent_prediction
 
-        # Revert back the label thresholds to original values.
-        loaded_policy.label_thresholds = original_label_thresholds
-
     def test_should_check_for_intent(
-        self, loaded_policy: IntentTEDPolicy, default_domain: Domain, tmp_path: Path
+        self, trained_policy: IntentTEDPolicy, default_domain: Domain, tmp_path: Path
     ):
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+
         intent_index = 0
         assert (
             loaded_policy._should_check_for_intent(
@@ -434,13 +429,11 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             is False
         )
 
-        # Revert back the ignore intents list to empty
-        # so that the original `trained_policy` object is not modified.
-        loaded_policy.config[IGNORE_INTENTS_LIST] = []
-
     def test_no_action_unlikely_intent_prediction(
-        self, loaded_policy: IntentTEDPolicy, default_domain: Domain, tmp_path: Path
+        self, trained_policy: IntentTEDPolicy, default_domain: Domain, tmp_path: Path
     ):
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+
         expected_probabilities = [0] * default_domain.num_actions
 
         interpreter = RegexInterpreter()
@@ -464,11 +457,6 @@ class TestIntentTEDPolicy(TestTEDPolicy):
 
         assert prediction.probabilities == expected_probabilities
 
-        # Preserve the original model because the test will modify it.
-        # Need to revert it back so that the `trained_policy` can be
-        # reused across tests.
-        original_model = loaded_policy.model
-
         loaded_policy.model = None
 
         prediction = loaded_policy.predict_action_probabilities(
@@ -477,25 +465,21 @@ class TestIntentTEDPolicy(TestTEDPolicy):
 
         assert prediction.probabilities == expected_probabilities
 
-        loaded_policy.model = original_model
-
     @pytest.mark.parametrize(
         "predicted_similarity, threshold_value, is_unlikely",
         [(1.2, 0.2, False), (0.3, -0.1, False), (-1.5, 0.03, True)],
     )
     def test_action_unlikely_intent_prediction(
         self,
-        loaded_policy: IntentTEDPolicy,
+        trained_policy: IntentTEDPolicy,
         default_domain: Domain,
         predicted_similarity,
         threshold_value,
         is_unlikely,
         monkeypatch: MonkeyPatch,
+        tmp_path: Path,
     ):
-        # Record the original thresholds because the test will modify it.
-        # Need to revert it back so that the `trained_policy` can
-        # be reused across tests.
-        original_label_thresholds = loaded_policy.label_thresholds
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
 
         similarities = np.array([[[0.0] * len(default_domain.intents)]])
 
@@ -547,8 +531,6 @@ class TestIntentTEDPolicy(TestTEDPolicy):
                 in loaded_policy.label_thresholds
             }
             assert expected_action_metadata == prediction.action_metadata
-
-        loaded_policy.label_thresholds = original_label_thresholds
 
     def test_label_embedding_collection(self, trained_policy: IntentTEDPolicy):
         label_ids = tf.constant([[[2], [-1]], [[1], [2]], [[0], [-1]]], dtype=tf.int32)
