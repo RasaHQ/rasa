@@ -1,1 +1,1 @@
-Added ``sasl_mechanism`` as an optional configurable parameters for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
+Added ``sasl_mechanism`` as an optional configurable parameter for the ``KafkaEventBroker``. 
