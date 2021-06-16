@@ -714,7 +714,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
         model_data.add_data(attribute_data)
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
-        sparse_feature_sizes = self._remove_label_attribute_feature_sizes(
+        # Current implementation doesn't yet account for updating sparse
+        # feature sizes of label attributes. That's why we remove them.
+        sparse_feature_sizes = DIETClassifier._remove_label_sparse_feature_sizes(
             sparse_feature_sizes=sparse_feature_sizes, label_attribute=label_attribute
         )
         model_data.add_sparse_feature_sizes(sparse_feature_sizes)
@@ -730,8 +732,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return model_data
 
-    def _remove_label_attribute_feature_sizes(
-        self,
+    @staticmethod
+    def _remove_label_sparse_feature_sizes(
         sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
         label_attribute: Optional[Text] = None,
     ) -> Dict[Text, Dict[Text, List[int]]]:

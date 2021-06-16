@@ -177,7 +177,7 @@ def test_extract_features():
 
 
 @pytest.mark.parametrize(
-    "text, intent, entities, attributes, real_feature_sizes",
+    "text, intent, entities, attributes, real_sparse_feature_sizes",
     [
         (
             "Hello!",
@@ -211,7 +211,7 @@ def test_convert_training_examples(
     intent: Optional[Text],
     entities: Optional[List[Dict[Text, Any]]],
     attributes: List[Text],
-    real_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    real_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
 ):
     message = Message(data={TEXT: text, INTENT: intent, ENTITIES: entities})
 
@@ -234,7 +234,7 @@ def test_convert_training_examples(
             3,
         )
     ]
-    output, feature_sizes = model_data_utils.featurize_training_examples(
+    output, sparse_feature_sizes = model_data_utils.featurize_training_examples(
         [message], attributes=attributes, entity_tag_specs=entity_tag_spec,
     )
 
@@ -252,8 +252,8 @@ def test_convert_training_examples(
     if ENTITIES in attributes:
         # we will just have space sentence features
         assert len(output[0][ENTITIES]) == len(entity_tag_spec)
-    # check that it calculates feature_sizes correctly
-    assert feature_sizes == real_feature_sizes
+    # check that it calculates sparse_feature_sizes correctly
+    assert sparse_feature_sizes == real_sparse_feature_sizes
 
 
 @pytest.mark.parametrize(
