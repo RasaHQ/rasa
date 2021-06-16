@@ -326,6 +326,8 @@ def plot_curve(
     """
     import matplotlib.pyplot as plt
 
+    plt.gcf().clear()
+
     ax = plt.gca()
 
     # load results from file

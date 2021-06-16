@@ -2879,6 +2879,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | evaluate_on_number_of_examples  | 0                 | How many examples to use for hold out validation set.        |
 |                                 |                   | Large values may hurt performance, e.g. model accuracy.      |
+|                                 |                   | Set to 0 for no validation.                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | use_masked_language_model       | False             | If 'True' random tokens of the input message will be masked  |
 |                                 |                   | and the model should predict those tokens.                   |
@@ -2897,7 +2898,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"           | Define when training metrics for tensorboard should be       |
 |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
-|                                 |                   | training step ("batch").                                 |
+|                                 |                   | training step ("batch").                                     |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | featurizers                     | []                | List of featurizer names (alias names). Only features        |
 |                                 |                   | coming from the listed names are used. If list is empty      |
