@@ -184,7 +184,7 @@ def test_extract_features():
             "greet",
             None,
             [TEXT],
-            {"text": {"sequence": [1001], "sentence": [1001]}},
+            {"text": {"sequence": [1], "sentence": [1]}},
         ),
         (
             "Hello!",
@@ -193,7 +193,7 @@ def test_extract_features():
             [TEXT, INTENT],
             {
                 "intent": {"sentence": [], "sequence": [1]},
-                "text": {"sequence": [1001], "sentence": [1001]},
+                "text": {"sequence": [1], "sentence": [1]},
             },
         ),
         (
@@ -201,7 +201,7 @@ def test_extract_features():
             "greet",
             [{"entity": "name", "value": "Max", "start": 6, "end": 9}],
             [TEXT, ENTITIES],
-            {"text": {"sequence": [1002], "sentence": [1002]}},
+            {"text": {"sequence": [2], "sentence": [2]}},
         ),
     ],
 )
