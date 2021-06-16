@@ -1,10 +1,10 @@
 from pathlib import Path
 from typing import List, Any, Text, Optional, Union
-from unittest.mock import Mock
 
 from _pytest.capture import CaptureFixture
-from _pytest.monkeypatch import MonkeyPatch
 import pytest
+from _pytest.logging import LogCaptureFixture
+import logging
 import copy
 
 from rasa.core.exceptions import UnsupportedDialogueModelError
@@ -116,6 +116,7 @@ class ConstantPolicy(Policy):
         predict_index: Optional[int] = None,
         confidence: float = 1,
         is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
         events: Optional[List[Event]] = None,
         optional_events: Optional[List[Event]] = None,
         **kwargs: Any,
@@ -124,6 +125,7 @@ class ConstantPolicy(Policy):
         self.predict_index = predict_index
         self.confidence = confidence
         self.is_end_to_end_prediction = is_end_to_end_prediction
+        self.is_no_user_prediction = is_no_user_prediction
         self.events = events or []
         self.optional_events = optional_events or []
 
@@ -158,6 +160,7 @@ class ConstantPolicy(Policy):
             self.__class__.__name__,
             policy_priority=self.priority,
             is_end_to_end_prediction=self.is_end_to_end_prediction,
+            is_no_user_prediction=self.is_no_user_prediction,
             events=self.events,
             optional_events=self.optional_events,
         )
@@ -365,13 +368,19 @@ class LoadReturnsNonePolicy(Policy):
         pass
 
 
-def test_policy_loading_load_returns_none(tmp_path: Path):
+def test_policy_loading_load_returns_none(tmp_path: Path, caplog: LogCaptureFixture):
     original_policy_ensemble = PolicyEnsemble([LoadReturnsNonePolicy()])
     original_policy_ensemble.train([], None, RegexInterpreter())
     original_policy_ensemble.persist(str(tmp_path))
 
-    with pytest.raises(Exception):
-        PolicyEnsemble.load(str(tmp_path))
+    with caplog.at_level(logging.WARNING):
+        ensemble = PolicyEnsemble.load(str(tmp_path))
+        assert (
+            caplog.records.pop().msg
+            == "Failed to load policy tests.core.test_ensemble."
+            "LoadReturnsNonePolicy: load returned None"
+        )
+        assert len(ensemble.policies) == 0
 
 
 class LoadReturnsWrongTypePolicy(Policy):
@@ -445,7 +454,7 @@ def test_from_dict_does_not_change_passed_dict_parameter():
                     {
                         "name": "MaxHistoryTrackerFeaturizer",
                         "max_history": 5,
-                        "state_featurizer": [{"name": "BinarySingleStateFeaturizer"}],
+                        "state_featurizer": [{"name": "SingleStateFeaturizer"}],
                     }
                 ],
             }
@@ -502,7 +511,7 @@ def test_mutual_exclusion_of_rule_policy_and_old_rule_like_policies(
         PolicyEnsemble.from_dict({"policies": policy_config})
 
 
-def test_end_to_end_prediction_supersedes_others(default_domain: Domain):
+def test_end_to_end_prediction_supersedes_others(domain: Domain):
     expected_action_index = 2
     expected_confidence = 0.5
     ensemble = SimplePolicyEnsemble(
@@ -519,7 +528,7 @@ def test_end_to_end_prediction_supersedes_others(default_domain: Domain):
     tracker = DialogueStateTracker.from_events("test", evts=[])
 
     prediction = ensemble.probabilities_using_best_policy(
-        tracker, default_domain, RegexInterpreter()
+        tracker, domain, RegexInterpreter()
     )
 
     assert prediction.max_confidence == expected_confidence
@@ -527,7 +536,35 @@ def test_end_to_end_prediction_supersedes_others(default_domain: Domain):
     assert prediction.policy_name == f"policy_1_{ConstantPolicy.__name__}"
 
 
-def test_prediction_applies_must_have_policy_events(default_domain: Domain):
+def test_no_user_prediction_supersedes_others(domain: Domain):
+    expected_action_index = 2
+    expected_confidence = 0.5
+    ensemble = SimplePolicyEnsemble(
+        [
+            ConstantPolicy(priority=100, predict_index=0),
+            ConstantPolicy(priority=1, predict_index=1, is_end_to_end_prediction=True),
+            ConstantPolicy(
+                priority=1,
+                predict_index=expected_action_index,
+                confidence=expected_confidence,
+                is_no_user_prediction=True,
+            ),
+        ]
+    )
+    tracker = DialogueStateTracker.from_events("test", evts=[])
+
+    prediction = ensemble.probabilities_using_best_policy(
+        tracker, domain, RegexInterpreter()
+    )
+
+    assert prediction.max_confidence == expected_confidence
+    assert prediction.max_confidence_index == expected_action_index
+    assert prediction.policy_name == f"policy_2_{ConstantPolicy.__name__}"
+    assert prediction.is_no_user_prediction
+    assert not prediction.is_end_to_end_prediction
+
+
+def test_prediction_applies_must_have_policy_events(domain: Domain):
     must_have_events = [ActionExecuted("my action")]
 
     ensemble = SimplePolicyEnsemble(
@@ -539,7 +576,7 @@ def test_prediction_applies_must_have_policy_events(default_domain: Domain):
     tracker = DialogueStateTracker.from_events("test", evts=[])
 
     prediction = ensemble.probabilities_using_best_policy(
-        tracker, default_domain, RegexInterpreter()
+        tracker, domain, RegexInterpreter()
     )
 
     # Policy 0 won due to higher prio
@@ -549,7 +586,7 @@ def test_prediction_applies_must_have_policy_events(default_domain: Domain):
     assert prediction.events == must_have_events
 
 
-def test_prediction_applies_optional_policy_events(default_domain: Domain):
+def test_prediction_applies_optional_policy_events(domain: Domain):
     optional_events = [ActionExecuted("my action")]
     must_have_events = [SlotSet("some slot", "some value")]
 
@@ -567,7 +604,7 @@ def test_prediction_applies_optional_policy_events(default_domain: Domain):
     tracker = DialogueStateTracker.from_events("test", evts=[])
 
     prediction = ensemble.probabilities_using_best_policy(
-        tracker, default_domain, RegexInterpreter()
+        tracker, domain, RegexInterpreter()
     )
 
     # Policy 0 won due to higher prio
@@ -579,9 +616,7 @@ def test_prediction_applies_optional_policy_events(default_domain: Domain):
     assert all(event in prediction.events for event in must_have_events)
 
 
-def test_end_to_end_prediction_applies_define_featurization_events(
-    default_domain: Domain,
-):
+def test_end_to_end_prediction_applies_define_featurization_events(domain: Domain):
     ensemble = SimplePolicyEnsemble(
         [
             ConstantPolicy(priority=100, predict_index=0),
@@ -592,7 +627,7 @@ def test_end_to_end_prediction_applies_define_featurization_events(
     # no events should be added if latest action is not action listen
     tracker = DialogueStateTracker.from_events("test", evts=[])
     prediction = ensemble.probabilities_using_best_policy(
-        tracker, default_domain, RegexInterpreter()
+        tracker, domain, RegexInterpreter()
     )
     assert prediction.events == []
 
@@ -601,14 +636,12 @@ def test_end_to_end_prediction_applies_define_featurization_events(
         "test", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
     )
     prediction = ensemble.probabilities_using_best_policy(
-        tracker, default_domain, RegexInterpreter()
+        tracker, domain, RegexInterpreter()
     )
     assert prediction.events == [DefinePrevUserUtteredFeaturization(True)]
 
 
-def test_intent_prediction_does_not_apply_define_featurization_events(
-    default_domain: Domain,
-):
+def test_intent_prediction_does_not_apply_define_featurization_events(domain: Domain):
     ensemble = SimplePolicyEnsemble(
         [
             ConstantPolicy(priority=100, predict_index=0),
@@ -619,7 +652,7 @@ def test_intent_prediction_does_not_apply_define_featurization_events(
     # no events should be added if latest action is not action listen
     tracker = DialogueStateTracker.from_events("test", evts=[])
     prediction = ensemble.probabilities_using_best_policy(
-        tracker, default_domain, RegexInterpreter()
+        tracker, domain, RegexInterpreter()
     )
     assert prediction.events == []
 
@@ -628,12 +661,12 @@ def test_intent_prediction_does_not_apply_define_featurization_events(
         "test", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
     )
     prediction = ensemble.probabilities_using_best_policy(
-        tracker, default_domain, RegexInterpreter()
+        tracker, domain, RegexInterpreter()
     )
     assert prediction.events == [DefinePrevUserUtteredFeaturization(False)]
 
 
-def test_with_float_returning_policy(default_domain: Domain):
+def test_with_float_returning_policy(domain: Domain):
     expected_index = 3
 
     class OldPolicy(Policy):
@@ -644,7 +677,7 @@ def test_with_float_returning_policy(default_domain: Domain):
             interpreter: NaturalLanguageInterpreter,
             **kwargs: Any,
         ) -> List[float]:
-            prediction = [0.0] * default_domain.num_actions
+            prediction = [0.0] * domain.num_actions
             prediction[expected_index] = 3
             return prediction
 
@@ -655,7 +688,7 @@ def test_with_float_returning_policy(default_domain: Domain):
 
     with pytest.warns(FutureWarning):
         prediction = ensemble.probabilities_using_best_policy(
-            tracker, default_domain, RegexInterpreter()
+            tracker, domain, RegexInterpreter()
         )
 
     assert prediction.policy_name == f"policy_1_{OldPolicy.__name__}"

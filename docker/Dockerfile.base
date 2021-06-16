@@ -1,0 +1,25 @@
+# The base image used for all images
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND="noninteractive"
+
+RUN apt-get update -qq && \
+  apt-get install -y --no-install-recommends \
+  python3 \
+  python3-venv \
+  python3-pip \
+  python3-dev \
+  # required by psycopg2 at build and runtime
+  libpq-dev \
+  # required for health check
+  curl \
+  && apt-get autoremove -y
+
+# Make sure that all security updates are installed
+RUN apt-get update && apt-get dist-upgrade -y --no-install-recommends
+
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 100 \
+   && update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 100
+
+# Create rasa user and group
+RUN useradd -rm -d /app -s /sbin/nologin -g root -u 1001 rasa && groupadd -g 1001 rasa

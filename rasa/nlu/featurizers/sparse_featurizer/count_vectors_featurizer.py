@@ -320,7 +320,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             rasa.shared.utils.io.raise_warning(
                 f"The out of vocabulary token '{self.OOV_token}' was configured, but "
                 f"could not be found in any one of the {training_data_type} "
-                f"training examples. All unseen words will be ignored during prediction.",
+                f"training examples. All unseen words will be "
+                f"ignored during prediction.",
                 docs=DOCS_URL_COMPONENTS + "#countvectorsfeaturizer",
             )
 
@@ -370,14 +371,17 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         Args:
             attribute: Message attribute for which vocabulary should be updated.
-            new_vocabulary: Set of words to expand the vocabulary with if they are unseen.
+            new_vocabulary: Set of words to expand the vocabulary with if they are
+                unseen.
         """
         existing_vocabulary: Dict[Text, int] = self.vectorizers[attribute].vocabulary
         if len(new_vocabulary) > len(existing_vocabulary):
             rasa.shared.utils.io.raise_warning(
-                f"New data contains vocabulary of size {len(new_vocabulary)} for attribute {attribute} "
-                f"which is larger than the maximum vocabulary size({len(existing_vocabulary)}) "
-                f"of the original model. Some tokens will have to be dropped "
+                f"New data contains vocabulary of size {len(new_vocabulary)} for "
+                f"attribute {attribute} "
+                f"which is larger than the maximum vocabulary size "
+                f"({len(existing_vocabulary)}) of the original model. "
+                f"Some tokens will have to be dropped "
                 f"in order to continue training. It is advised to re-train the "
                 f"model from scratch on the complete data."
             )
@@ -410,11 +414,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         current vocabulary size.
 
         Args:
-            attribute: Message attribute for which additional vocabulary size should be computed.
-            existing_vocabulary_size: Current size of vocabulary learnt from the training data.
+            attribute: Message attribute for which additional vocabulary size should
+                be computed.
+            existing_vocabulary_size: Current size of vocabulary learnt from the
+                training data.
 
         Returns:
-            Size of additional vocabulary that should be set aside for incremental training.
+            Size of additional vocabulary that should be set aside for incremental
+            training.
         """
         # Vocabulary expansion for INTENTS, ACTION_NAME
         # and INTENT_RESPONSE_KEY is currently not supported as
@@ -442,7 +449,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         So for example - buf_1, buf_2, buf_3... and so on.
 
         Args:
-            attribute: Name of the attribute for which the vocabulary should be expanded.
+            attribute: Name of the attribute for which the vocabulary should be
+            expanded.
         """
         original_vocabulary = self.vectorizers[attribute].vocabulary_
         current_vocabulary_size = len(original_vocabulary)
@@ -552,7 +560,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 )
 
     def _log_vocabulary_stats(self, attribute: Text) -> None:
-        """Logs number of vocabulary slots filled out of the total number of available slots.
+        """Logs number of vocabulary slots filled out of the total available ones.
 
         Args:
             attribute: Message attribute for which vocabulary stats are logged.
@@ -777,7 +785,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         return attribute_vocabularies
 
     @staticmethod
-    def _is_any_model_trained(attribute_vocabularies) -> bool:
+    def _is_any_model_trained(
+        attribute_vocabularies: Dict[Text, Optional[Dict[Text, int]]]
+    ) -> bool:
         """Check if any model got trained"""
 
         return any(value is not None for value in attribute_vocabularies.values())
@@ -868,12 +878,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
+        """Loads trained component (see parent class for full docstring)."""
         file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)
 

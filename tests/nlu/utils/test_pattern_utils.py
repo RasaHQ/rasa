@@ -36,7 +36,8 @@ from rasa.shared.nlu.training_data.message import Message
                 {"name": "zipcode", "pattern": "[0-9]{5}"},
                 {
                     "name": "plates",
-                    "pattern": "(\\btacos\\b|\\bbeef\\b|\\bmapo\\ tofu\\b|\\bburrito\\b|\\blettuce\\ wrap\\b)",
+                    "pattern": "(\\btacos\\b|\\bbeef\\b|\\bmapo\\ "
+                    "tofu\\b|\\bburrito\\b|\\blettuce\\ wrap\\b)",
                 },
             ],
         ),
@@ -131,7 +132,8 @@ def test_extract_patterns_use_only_entities_lookup_tables(
 
 
 @pytest.mark.parametrize(
-    "lookup_tables, regex_features, use_lookup_tables, use_regex_features, expected_patterns",
+    "lookup_tables, regex_features, use_lookup_tables, "
+    "use_regex_features, expected_patterns",
     [
         ({"name": "person", "elements": ["Max", "John"]}, {}, False, True, []),
         ({}, {}, True, True, []),

@@ -38,8 +38,10 @@ DROP_RATE = "drop_rate"
 DROP_RATE_ATTENTION = "drop_rate_attention"
 DROP_RATE_DIALOGUE = "drop_rate_dialogue"
 DROP_RATE_LABEL = "drop_rate_label"
+CONSTRAIN_SIMILARITIES = "constrain_similarities"
 
-WEIGHT_SPARSITY = "weight_sparsity"
+WEIGHT_SPARSITY = "weight_sparsity"  # Deprecated and superseeded by CONNECTION_DENSITY
+CONNECTION_DENSITY = "connection_density"
 
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
 EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
@@ -52,6 +54,7 @@ SPARSE_INPUT_DROPOUT = "use_sparse_input_dropout"
 DENSE_INPUT_DROPOUT = "use_dense_input_dropout"
 
 RANKING_LENGTH = "ranking_length"
+MODEL_CONFIDENCE = "model_confidence"
 
 BILOU_FLAG = "BILOU_flag"
 
@@ -63,7 +66,9 @@ SOFTMAX = "softmax"
 MARGIN = "margin"
 AUTO = "auto"
 INNER = "inner"
+LINEAR_NORM = "linear_norm"
 COSINE = "cosine"
+CROSS_ENTROPY = "cross_entropy"
 
 BALANCED = "balanced"
 

@@ -18,10 +18,11 @@ from typing import (
     Text,
     Union,
     TYPE_CHECKING,
+    Generator,
 )
 
 from boto3.dynamodb.conditions import Key
-from botocore.exceptions import ClientError
+from pymongo.collection import Collection
 
 import rasa.core.utils as core_utils
 import rasa.shared.utils.cli
@@ -42,6 +43,7 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
 )
+from rasa.shared.exceptions import ConnectionException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
@@ -50,9 +52,8 @@ if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
     from sqlalchemy.engine.url import URL
     from sqlalchemy.engine.base import Engine
-    from sqlalchemy.orm.session import Session
+    from sqlalchemy.orm import Session, Query
     from sqlalchemy import Sequence
-    from sqlalchemy.orm.query import Query
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
 
 
 class TrackerStore:
-    """Class to hold all of the TrackerStore classes"""
+    """Represents common behavior and interface for all `TrackerStore`s."""
 
     def __init__(
         self,
@@ -115,7 +116,22 @@ class TrackerStore:
         if isinstance(obj, TrackerStore):
             return obj
 
-        return _create_from_endpoint_config(obj, domain, event_broker)
+        from botocore.exceptions import BotoCoreError
+        import pymongo.errors
+        import sqlalchemy.exc
+
+        try:
+            return _create_from_endpoint_config(obj, domain, event_broker)
+        except (
+            BotoCoreError,
+            pymongo.errors.ConnectionFailure,
+            sqlalchemy.exc.OperationalError,
+            ConnectionError,
+            pymongo.errors.OperationFailure,
+        ) as error:
+            raise ConnectionException(
+                "Cannot connect to tracker store." + str(error)
+            ) from error
 
     def get_or_create_tracker(
         self,
@@ -172,9 +188,23 @@ class TrackerStore:
 
         return tracker
 
-    def save(self, tracker):
-        """Save method that will be overridden by specific tracker"""
+    def save(self, tracker: DialogueStateTracker) -> None:
+        """Save method that will be overridden by specific tracker."""
         raise NotImplementedError()
+
+    def exists(self, conversation_id: Text) -> bool:
+        """Checks if tracker exists for the specified ID.
+
+        This method may be overridden by the specific tracker store for
+        faster implementations.
+
+        Args:
+            conversation_id: Conversation ID to check if the tracker exists.
+
+        Returns:
+            `True` if the tracker exists, `False` otherwise.
+        """
+        return self.retrieve(conversation_id) is not None
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         """Retrieves tracker for the latest conversation session.
@@ -303,10 +333,10 @@ class RedisTrackerStore(TrackerStore):
 
     def __init__(
         self,
-        domain,
-        host="localhost",
-        port=6379,
-        db=0,
+        domain: Domain,
+        host: Text = "localhost",
+        port: int = 6379,
+        db: int = 0,
         password: Optional[Text] = None,
         event_broker: Optional[EventBroker] = None,
         record_exp: Optional[float] = None,
@@ -333,14 +363,17 @@ class RedisTrackerStore(TrackerStore):
             self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
         else:
             logger.warning(
-                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
+                f"Using default '{self.key_prefix}' instead."
             )
 
     def _get_key_prefix(self) -> Text:
         return self.key_prefix
 
-    def save(self, tracker, timeout=None):
-        """Saves the current conversation state"""
+    def save(
+        self, tracker: DialogueStateTracker, timeout: Optional[float] = None
+    ) -> None:
+        """Saves the current conversation state."""
         if self.event_broker:
             self.stream_events(tracker)
 
@@ -407,7 +440,7 @@ class DynamoTrackerStore(TrackerStore):
     def get_or_create_table(
         self, table_name: Text
     ) -> "boto3.resources.factory.dynamodb.Table":
-        """Returns table or creates one if the table name is not in the table list"""
+        """Returns table or creates one if the table name is not in the table list."""
         import boto3
 
         dynamo = boto3.resource("dynamodb", region_name=self.region)
@@ -441,8 +474,10 @@ class DynamoTrackerStore(TrackerStore):
 
         return table
 
-    def save(self, tracker):
-        """Saves the current conversation state"""
+    def save(self, tracker: DialogueStateTracker) -> None:
+        """Saves the current conversation state."""
+        from botocore.exceptions import ClientError
+
         if self.event_broker:
             self.stream_events(tracker)
         serialized = self.serialise_tracker(tracker)
@@ -475,7 +510,7 @@ class DynamoTrackerStore(TrackerStore):
         return dialogues[0].get("session_date")
 
     def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
-        """Serializes the tracker, returns object with decimal types"""
+        """Serializes the tracker, returns object with decimal types."""
         d = tracker.as_dialogue().as_dict()
         d.update(
             {"sender_id": tracker.sender_id,}
@@ -505,7 +540,7 @@ class DynamoTrackerStore(TrackerStore):
         )
 
     def keys(self) -> Iterable[Text]:
-        """Returns sender_ids of the DynamoTrackerStore"""
+        """Returns sender_ids of the `DynamoTrackerStore`."""
         return [
             i["sender_id"]
             for i in self.db.scan(ProjectionExpression="sender_id")["Items"]
@@ -513,8 +548,7 @@ class DynamoTrackerStore(TrackerStore):
 
 
 class MongoTrackerStore(TrackerStore):
-    """
-    Stores conversation history in Mongo
+    """Stores conversation history in Mongo.
 
     Property methods:
         conversations: returns the current conversation
@@ -551,12 +585,12 @@ class MongoTrackerStore(TrackerStore):
         self._ensure_indices()
 
     @property
-    def conversations(self):
-        """Returns the current conversation"""
+    def conversations(self) -> Collection:
+        """Returns the current conversation."""
         return self.db[self.collection]
 
-    def _ensure_indices(self):
-        """Create an index on the sender_id"""
+    def _ensure_indices(self) -> None:
+        """Create an index on the sender_id."""
         self.conversations.create_index("sender_id")
 
     @staticmethod
@@ -568,8 +602,8 @@ class MongoTrackerStore(TrackerStore):
 
         return state
 
-    def save(self, tracker, timeout=None):
-        """Saves the current conversation state"""
+    def save(self, tracker: DialogueStateTracker) -> None:
+        """Saves the current conversation state."""
         if self.event_broker:
             self.stream_events(tracker)
 
@@ -599,9 +633,12 @@ class MongoTrackerStore(TrackerStore):
 
         stored = self.conversations.find_one({"sender_id": tracker.sender_id}) or {}
         all_events = self._events_from_serialized_tracker(stored)
-        number_events_since_last_session = len(
-            self._events_since_last_session_start(all_events)
-        )
+        if self.retrieve_events_from_previous_conversation_sessions:
+            number_events_since_last_session = len(all_events)
+        else:
+            number_events_since_last_session = len(
+                self._events_since_last_session_start(all_events)
+            )
 
         return itertools.islice(
             tracker.events, number_events_since_last_session, len(tracker.events)
@@ -684,7 +721,7 @@ class MongoTrackerStore(TrackerStore):
         )
 
     def keys(self) -> Iterable[Text]:
-        """Returns sender_ids of the Mongo Tracker Store"""
+        """Returns sender_ids of the Mongo Tracker Store."""
         return [c["sender_id"] for c in self.conversations.find()]
 
 
@@ -784,12 +821,12 @@ def ensure_schema_exists(session: "Session") -> None:
 class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database."""
 
-    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
-    Base = declarative_base()
+    Base: DeclarativeMeta = declarative_base()
 
     class SQLEvent(Base):
-        """Represents an event in the SQL Tracker Store"""
+        """Represents an event in the SQL Tracker Store."""
 
         __tablename__ = "events"
 
@@ -916,7 +953,7 @@ class SQLTrackerStore(TrackerStore):
             query=query,
         )
 
-    def _create_database_and_update_engine(self, db: Text, engine_url: "URL"):
+    def _create_database_and_update_engine(self, db: Text, engine_url: "URL") -> None:
         """Creates database `db` and updates engine accordingly."""
         from sqlalchemy import create_engine
 
@@ -927,13 +964,14 @@ class SQLTrackerStore(TrackerStore):
             return
 
         self._create_database(self.engine, db)
+        self.engine.dispose()
         engine_url.database = db
         self.engine = create_engine(engine_url)
 
     @staticmethod
     def _create_database(engine: "Engine", database_name: Text) -> None:
         """Create database `db` on `engine` if it does not exist."""
-        import psycopg2
+        import sqlalchemy.exc
 
         conn = engine.connect()
 
@@ -952,13 +990,16 @@ class SQLTrackerStore(TrackerStore):
         if not matching_rows:
             try:
                 conn.execute(f"CREATE DATABASE {database_name}")
-            except psycopg2.IntegrityError as e:
+            except (
+                sqlalchemy.exc.ProgrammingError,
+                sqlalchemy.exc.IntegrityError,
+            ) as e:
                 logger.error(f"Could not create database '{database_name}': {e}")
 
         conn.close()
 
     @contextlib.contextmanager
-    def session_scope(self):
+    def session_scope(self) -> Generator["Session", None, None]:
         """Provide a transactional scope around a series of operations."""
         session = self.sessionmaker()
         try:
@@ -1096,10 +1137,14 @@ class SQLTrackerStore(TrackerStore):
         self, session: "Session", tracker: DialogueStateTracker
     ) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
-
         number_of_events_since_last_session = self._event_query(
-            session, tracker.sender_id, fetch_events_from_all_sessions=False
+            session,
+            tracker.sender_id,
+            fetch_events_from_all_sessions=(
+                self.retrieve_events_from_previous_conversation_sessions
+            ),
         ).count()
+
         return itertools.islice(
             tracker.events, number_of_events_since_last_session, len(tracker.events)
         )

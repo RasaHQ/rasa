@@ -1,14 +1,11 @@
 import logging
 import re
 from collections import OrderedDict
-from json import JSONDecodeError
 from pathlib import Path
-from typing import Any, Text, Optional, Tuple, Dict, Union
+from typing import Any, Text, Optional, Tuple, Union
 
-from rasa.shared.constants import (
-    LEGACY_DOCS_BASE_URL,
-    DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
-)
+from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION
+from rasa.shared.exceptions import MarkdownException
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -107,7 +104,7 @@ class MarkdownReader(TrainingDataReader):
 
     def _parse_item(self, line: Text) -> None:
         """Parses an md list item line based on the current section type."""
-        import rasa.shared.nlu.training_data.lookup_tables_parser as lookup_tables_parser
+        import rasa.shared.nlu.training_data.lookup_tables_parser as lookup_tables_parser  # noqa: E501
         import rasa.shared.nlu.training_data.synonyms_parser as synonyms_parser
         from rasa.shared.nlu.training_data import entities_parser
 
@@ -135,47 +132,10 @@ class MarkdownReader(TrainingDataReader):
                     self.current_title, item, self.lookup_tables
                 )
 
-    @staticmethod
-    def _get_validated_dict(json_str: Text) -> Dict[Text, Text]:
-        """Converts the provided json_str to a valid dict containing the entity
-        attributes.
-
-        Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
-        [LA]{"entity": "city", "role": "to", "value": "Los Angeles"}
-
-        Args:
-            json_str: the entity dict as string without "{}"
-
-        Raises:
-            ValidationError if validation of entity dict fails.
-            JSONDecodeError if provided entity dict is not valid json.
-
-        Returns:
-            a proper python dict
-        """
-        import json
-        import rasa.shared.utils.validation as validation_utils
-        import rasa.shared.nlu.training_data.schemas.data_schema as schema
-
-        # add {} as they are not part of the regex
-        try:
-            data = json.loads(f"{{{json_str}}}")
-        except JSONDecodeError as e:
-            rasa.shared.utils.io.raise_warning(
-                f"Incorrect training data format ('{{{json_str}}}'), make sure your "
-                f"data is valid. For more information about the format visit "
-                f"{LEGACY_DOCS_BASE_URL}/nlu/training-data-format/."
-            )
-            raise e
-
-        validation_utils.validate_training_data(data, schema.entity_dict_schema())
-
-        return data
-
     def _set_current_section(self, section: Text, title: Text) -> None:
         """Update parsing mode."""
         if section not in AVAILABLE_SECTIONS:
-            raise ValueError(
+            raise MarkdownException(
                 "Found markdown section '{}' which is not "
                 "in the allowed sections '{}'."
                 "".format(section, "', '".join(AVAILABLE_SECTIONS))

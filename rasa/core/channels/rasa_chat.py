@@ -5,8 +5,9 @@ import aiohttp
 import logging
 from sanic.exceptions import abort
 import jwt
+import jwt.exceptions
 
-from rasa.core import constants
+import rasa.core.channels.channel
 from rasa.core.channels.channel import InputChannel
 from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -34,8 +35,9 @@ class RasaChatInput(RestInput):
         return cls(credentials.get("url"))
 
     def __init__(self, url: Optional[Text]) -> None:
+        """Initialise the channel with attributes."""
         self.base_url = url
-        self.jwt_key = None
+        self.jwt_key: Optional[Text] = None
         self.jwt_algorithm = None
 
     async def _fetch_public_key(self) -> None:
@@ -70,31 +72,23 @@ class RasaChatInput(RestInput):
                         "".format(public_key_url, public_key_field, json.dumps(rjs))
                     )
 
-    def _decode_jwt(self, bearer_token: Text) -> Dict:
-        authorization_header_value = bearer_token.replace(
-            constants.BEARER_TOKEN_PREFIX, ""
-        )
-        return jwt.decode(
-            authorization_header_value, self.jwt_key, algorithms=self.jwt_algorithm
-        )
-
     async def _decode_bearer_token(self, bearer_token: Text) -> Optional[Dict]:
         if self.jwt_key is None:
             await self._fetch_public_key()
 
-        # noinspection PyBroadException
         try:
-            return self._decode_jwt(bearer_token)
-        except jwt.exceptions.InvalidSignatureError:
+            return rasa.core.channels.channel.decode_jwt(
+                bearer_token, self.jwt_key, self.jwt_algorithm
+            )
+        except jwt.InvalidSignatureError:
             logger.error("JWT public key invalid, fetching new one.")
             await self._fetch_public_key()
-            return self._decode_jwt(bearer_token)
-        except Exception:
-            logger.exception("Failed to decode bearer token.")
+            return rasa.core.channels.channel.decode_jwt(
+                bearer_token, self.jwt_key, self.jwt_algorithm
+            )
 
     async def _extract_sender(self, req: Request) -> Optional[Text]:
         """Fetch user from the Rasa X Admin API."""
-
         jwt_payload = None
         if req.headers.get("Authorization"):
             jwt_payload = await self._decode_bearer_token(req.headers["Authorization"])

@@ -13,7 +13,6 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, Event
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS
 
 if typing.TYPE_CHECKING:
     from rasa.shared.core.conversation import Dialogue
@@ -23,9 +22,6 @@ def tracker_from_dialogue_file(
     filename: Text, domain: Optional[Domain] = None
 ) -> DialogueStateTracker:
     dialogue = read_dialogue_file(filename)
-
-    if not domain:
-        domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
 
     tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)

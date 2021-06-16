@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 from typing import Any, Dict, List, Optional, Text, Union
@@ -10,6 +11,7 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
 )
 from rasa.shared.utils.io import json_to_string
+from rasa.nlu.constants import COMPONENT_INDEX
 import rasa.utils.train_utils
 
 logger = logging.getLogger(__name__)
@@ -40,7 +42,7 @@ def load(
         config = DEFAULT_CONFIG_PATH
 
     if config is not None:
-        file_config = rasa.shared.utils.io.read_config_file(config)
+        file_config = rasa.shared.utils.io.read_model_configuration(config)
 
     return _load_from_dict(file_config, **kwargs)
 
@@ -56,19 +58,21 @@ def component_config_from_pipeline(
     pipeline: List[Dict[Text, Any]],
     defaults: Optional[Dict[Text, Any]] = None,
 ) -> Dict[Text, Any]:
-    """Get config of the component with the given index in the pipeline.
+    """Gets the configuration of the `index`th component.
 
     Args:
-        index: index the component in the pipeline
-        pipeline: a list of component configs in the NLU pipeline
-        defaults: default config of the component
+        index: Index of the component in the pipeline.
+        pipeline: Configurations of the components in the pipeline.
+        defaults: Default configuration.
 
     Returns:
-        config of the component
+        The `index`th component configuration, expanded
+        by the given defaults.
     """
     try:
-        c = pipeline[index]
-        return rasa.utils.train_utils.override_defaults(defaults, c)
+        configuration = copy.deepcopy(pipeline[index])
+        configuration[COMPONENT_INDEX] = index
+        return rasa.utils.train_utils.override_defaults(defaults, configuration)
     except IndexError:
         rasa.shared.utils.io.raise_warning(
             f"Tried to get configuration value for component "
@@ -76,7 +80,9 @@ def component_config_from_pipeline(
             f"Returning `defaults`.",
             docs=DOCS_URL_PIPELINE,
         )
-        return rasa.utils.train_utils.override_defaults(defaults, {})
+        return rasa.utils.train_utils.override_defaults(
+            defaults, {COMPONENT_INDEX: index}
+        )
 
 
 class RasaNLUModelConfig:
@@ -137,7 +143,9 @@ class RasaNLUModelConfig:
     def view(self) -> Text:
         return json_to_string(self.__dict__, indent=4)
 
-    def for_component(self, index, defaults=None) -> Dict[Text, Any]:
+    def for_component(
+        self, index: int, defaults: Optional[Dict[Text, Any]] = None
+    ) -> Dict[Text, Any]:
         return component_config_from_pipeline(index, self.pipeline, defaults)
 
     @property
@@ -147,7 +155,7 @@ class RasaNLUModelConfig:
         else:
             return []
 
-    def set_component_attr(self, index, **kwargs) -> None:
+    def set_component_attr(self, index: int, **kwargs: Any) -> None:
         try:
             self.pipeline[index].update(kwargs)
         except IndexError:
@@ -157,6 +165,11 @@ class RasaNLUModelConfig:
                 docs=DOCS_URL_PIPELINE,
             )
 
-    def override(self, config) -> None:
+    def override(self, config: Optional[Dict[Text, Any]] = None) -> None:
+        """Overrides default config with given values.
+
+        Args:
+            config: New values for the configuration.
+        """
         if config:
             self.__dict__.update(config)

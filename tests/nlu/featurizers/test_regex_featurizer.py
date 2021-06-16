@@ -3,8 +3,6 @@ from typing import Text, List, Any, Tuple
 import numpy as np
 import pytest
 from pathlib import Path
-from _pytest.logging import LogCaptureFixture
-import logging
 
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -637,6 +635,6 @@ def test_vocabulary_overflow_log():
     with pytest.warns(UserWarning) as warning:
         featurizer.train(TrainingData([], regex_features=additional_patterns))
     assert (
-        "The originally trained model was configured to handle a maximum number of 4 patterns"
-        in warning[0].message.args[0]
+        "The originally trained model was configured to handle "
+        "a maximum number of 4 patterns" in warning[0].message.args[0]
     )

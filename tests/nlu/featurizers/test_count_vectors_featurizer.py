@@ -3,8 +3,6 @@ import numpy as np
 import pytest
 import scipy.sparse
 from pathlib import Path
-from _pytest.logging import LogCaptureFixture
-import logging
 
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
@@ -773,7 +771,8 @@ def test_cvf_shared_train_vocabulary_expand(
 
 
 @pytest.mark.parametrize(
-    "additional_size, original_train_text, additional_train_text, total_vocabulary_size, remaining_buffer_size",
+    "additional_size, original_train_text, additional_train_text, "
+    "total_vocabulary_size, remaining_buffer_size",
     [
         (10, "hello my name is John.", "I am also new.", 15, 6),
         (None, "hello my name is John.", "I am also new.", 1005, 996),

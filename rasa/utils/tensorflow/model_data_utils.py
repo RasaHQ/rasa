@@ -7,12 +7,11 @@ from typing import List, Optional, Text, Dict, Tuple, Union, Any
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
-from rasa.utils.tensorflow.constants import MASK
+from rasa.utils.tensorflow.constants import MASK, IDS
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     TEXT,
     ENTITIES,
-    FEATURE_TYPE_SEQUENCE,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
@@ -20,8 +19,7 @@ from rasa.shared.nlu.constants import (
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
-    from rasa.nlu.classifiers.diet_classifier import EntityTagSpec
-
+    from rasa.nlu.extractors.extractor import EntityTagSpec
 
 TAG_ID_ORIGIN = "tag_id_origin"
 
@@ -58,7 +56,7 @@ def featurize_training_examples(
                 # in case of entities add the tag_ids
                 for tag_spec in entity_tag_specs:
                     attribute_to_features[attribute].append(
-                        _get_tag_ids(example, tag_spec, bilou_tagging)
+                        get_tag_ids(example, tag_spec, bilou_tagging)
                     )
             elif attribute in example.data:
                 attribute_to_features[attribute] = example.get_all_features(
@@ -69,10 +67,19 @@ def featurize_training_examples(
     return output
 
 
-def _get_tag_ids(
+def get_tag_ids(
     example: Message, tag_spec: "EntityTagSpec", bilou_tagging: bool
 ) -> "Features":
-    """Creates a feature array containing the entity tag ids of the given example."""
+    """Creates a feature array containing the entity tag ids of the given example.
+
+    Args:
+        example: the message
+        tag_spec: entity tag spec
+        bilou_tagging: indicates whether BILOU tagging should be used or not
+
+    Returns:
+        A list of features.
+    """
     from rasa.nlu.test import determine_token_labels
     from rasa.nlu.utils.bilou_utils import bilou_tags_to_ids
     from rasa.shared.nlu.training_data.features import Features
@@ -88,9 +95,7 @@ def _get_tag_ids(
             _tags.append(tag_spec.tags_to_ids[_tag])
 
     # transpose to have seq_len x 1
-    return Features(
-        np.array([_tags]).T, FEATURE_TYPE_SEQUENCE, tag_spec.tag_name, TAG_ID_ORIGIN
-    )
+    return Features(np.array([_tags]).T, IDS, tag_spec.tag_name, TAG_ID_ORIGIN)
 
 
 def _surface_attributes(

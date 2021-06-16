@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class InvalidStory(RasaException):
     """Exception that can be raised if story cannot be featurized."""
 
-    def __init__(self, message) -> None:
+    def __init__(self, message: Text) -> None:
         self.message = message
         super(InvalidStory, self).__init__()
 
@@ -51,17 +51,33 @@ class TrackerFeaturizer:
         self.state_featurizer = state_featurizer
 
     @staticmethod
-    def _create_states(tracker: DialogueStateTracker, domain: Domain) -> List[State]:
+    def _create_states(
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        omit_unset_slots: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+    ) -> List[State]:
         """Create states for the given tracker.
 
         Args:
             tracker: a :class:`rasa.core.trackers.DialogueStateTracker`
             domain: a :class:`rasa.shared.core.domain.Domain`
+            omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_rule_only_turns: If `True` ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
         Returns:
             a list of states
         """
-        return tracker.past_states(domain)
+        return tracker.past_states(
+            domain,
+            omit_unset_slots=omit_unset_slots,
+            ignore_rule_only_turns=ignore_rule_only_turns,
+            rule_only_data=rule_only_data,
+        )
 
     def _featurize_states(
         self,
@@ -95,10 +111,14 @@ class TrackerFeaturizer:
         self,
         trackers_as_entities: List[List[Dict[Text, Any]]],
         interpreter: NaturalLanguageInterpreter,
+        bilou_tagging: bool = False,
     ) -> List[List[Dict[Text, List["Features"]]]]:
+
         return [
             [
-                self.state_featurizer.encode_entities(entity_data, interpreter)
+                self.state_featurizer.encode_entities(
+                    entity_data, interpreter, bilou_tagging
+                )
                 for entity_data in trackers_entities
             ]
             for trackers_entities in trackers_as_entities
@@ -123,29 +143,38 @@ class TrackerFeaturizer:
                     del state[USER][TEXT]
 
     def training_states_actions_and_entities(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        omit_unset_slots: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
         """Transforms list of trackers to lists of states, actions and entity data.
 
         Args:
             trackers: The trackers to transform
             domain: The domain
+            omit_unset_slots: If `True` do not include the initial values of slots.
 
         Returns:
             A tuple of list of states, list of actions and list of entity data.
         """
         raise NotImplementedError(
-            f"`{self.__class__.__name__}` should implement how to encode trackers as feature vectors"
+            f"`{self.__class__.__name__}` should implement how to "
+            f"encode trackers as feature vectors"
         )
 
     def training_states_and_actions(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        omit_unset_slots: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions.
 
         Args:
             trackers: The trackers to transform
             domain: The domain
+            omit_unset_slots: If `True` do not include the initial values of slots.
 
         Returns:
             A tuple of list of states and list of actions.
@@ -154,7 +183,9 @@ class TrackerFeaturizer:
             trackers_as_states,
             trackers_as_actions,
             _,
-        ) = self.training_states_actions_and_entities(trackers, domain)
+        ) = self.training_states_actions_and_entities(
+            trackers, domain, omit_unset_slots=omit_unset_slots
+        )
         return trackers_as_states, trackers_as_actions
 
     def featurize_trackers(
@@ -162,6 +193,7 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        bilou_tagging: bool = False,
     ) -> Tuple[
         List[List[Dict[Text, List["Features"]]]],
         np.ndarray,
@@ -173,6 +205,7 @@ class TrackerFeaturizer:
             trackers: list of training trackers
             domain: the domain
             interpreter: the interpreter
+            bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
             - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
@@ -192,7 +225,7 @@ class TrackerFeaturizer:
                 f"to get numerical features for trackers."
             )
 
-        self.state_featurizer.prepare_for_training(domain, interpreter)
+        self.state_featurizer.prepare_for_training(domain, interpreter, bilou_tagging)
 
         (
             trackers_as_states,
@@ -202,7 +235,9 @@ class TrackerFeaturizer:
 
         tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
-        entity_tags = self._create_entity_tags(trackers_as_entities, interpreter)
+        entity_tags = self._create_entity_tags(
+            trackers_as_entities, interpreter, bilou_tagging
+        )
 
         return tracker_state_features, label_ids, entity_tags
 
@@ -235,14 +270,20 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         use_text_for_last_user_input: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain
+            trackers: The trackers to transform.
+            domain: The domain.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
         Returns:
             A list of states.
@@ -257,6 +298,8 @@ class TrackerFeaturizer:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         use_text_for_last_user_input: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         """Create state features for prediction.
 
@@ -266,14 +309,24 @@ class TrackerFeaturizer:
             interpreter: The interpreter
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
         Returns:
-            A dictionary of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+            A list (corresponds to the list of trackers)
+            of lists (corresponds to all dialogue turns)
+            of dictionaries of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
             ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
             turns in all trackers.
         """
         trackers_as_states = self.prediction_states(
-            trackers, domain, use_text_for_last_user_input
+            trackers,
+            domain,
+            use_text_for_last_user_input,
+            ignore_rule_only_turns,
+            rule_only_data,
         )
         return self._featurize_states(trackers_as_states, interpreter)
 
@@ -285,6 +338,10 @@ class TrackerFeaturizer:
         """
         featurizer_file = Path(path) / FEATURIZER_FILE
         rasa.shared.utils.io.create_directory_for_file(featurizer_file)
+
+        # entity tags are persisted in TED policy, they are not needed for prediction
+        if self.state_featurizer is not None:
+            self.state_featurizer.entity_tag_specs = None
 
         # noinspection PyTypeChecker
         rasa.shared.utils.io.write_text_file(
@@ -320,13 +377,17 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     """
 
     def training_states_actions_and_entities(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        omit_unset_slots: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
         """Transforms list of trackers to lists of states, actions and entity data.
 
         Args:
             trackers: The trackers to transform
             domain: The domain
+            omit_unset_slots: If `True` do not include the initial values of slots.
 
         Returns:
             A tuple of list of states, list of actions and list of entity data.
@@ -346,7 +407,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             disable=rasa.shared.utils.io.is_logging_disabled(),
         )
         for tracker in pbar:
-            states = self._create_states(tracker, domain)
+            states = self._create_states(
+                tracker, domain, omit_unset_slots=omit_unset_slots
+            )
 
             delete_first_state = False
             actions = []
@@ -393,20 +456,32 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers: List[DialogueStateTracker],
         domain: Domain,
         use_text_for_last_user_input: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain,
+            trackers: The trackers to transform.
+            domain: The domain.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
         Returns:
             A list of states.
         """
         trackers_as_states = [
-            self._create_states(tracker, domain) for tracker in trackers
+            self._create_states(
+                tracker,
+                domain,
+                ignore_rule_only_turns=ignore_rule_only_turns,
+                rule_only_data=rule_only_data,
+            )
+            for tracker in trackers
         ]
         self._choose_last_user_input(trackers_as_states, use_text_for_last_user_input)
 
@@ -464,13 +539,17 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return hash((frozen_states, frozen_actions))
 
     def training_states_actions_and_entities(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain,
+        omit_unset_slots: bool = False,
     ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
         """Transforms list of trackers to lists of states, actions and entity data.
 
         Args:
             trackers: The trackers to transform
             domain: The domain
+            omit_unset_slots: If `True` do not include the initial values of slots.
 
         Returns:
             A tuple of list of states, list of actions and list of entity data.
@@ -494,7 +573,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             disable=rasa.shared.utils.io.is_logging_disabled(),
         )
         for tracker in pbar:
-            states = self._create_states(tracker, domain)
+            states = self._create_states(
+                tracker, domain, omit_unset_slots=omit_unset_slots
+            )
 
             states_length_for_action = 0
             entity_data = {}
@@ -548,20 +629,32 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         trackers: List[DialogueStateTracker],
         domain: Domain,
         use_text_for_last_user_input: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states for prediction.
 
         Args:
-            trackers: The trackers to transform
-            domain: The domain
+            trackers: The trackers to transform.
+            domain: The domain.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
         Returns:
             A list of states.
         """
         trackers_as_states = [
-            self._create_states(tracker, domain) for tracker in trackers
+            self._create_states(
+                tracker,
+                domain,
+                ignore_rule_only_turns=ignore_rule_only_turns,
+                rule_only_data=rule_only_data,
+            )
+            for tracker in trackers
         ]
         trackers_as_states = [
             self.slice_state_history(states, self.max_history)

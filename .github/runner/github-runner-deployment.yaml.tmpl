@@ -22,10 +22,10 @@ spec:
     spec:
       priorityClassName: high-priority
       automountServiceAccountToken: false
-      terminationGracePeriodSeconds: 180
+      terminationGracePeriodSeconds: 720
       containers:
       - name: github-runner
-        image: us.gcr.io/rasa-platform/github-runner:latest
+        image: {{getenv "GH_RUNNER_IMAGE"}}:latest
         imagePullPolicy: Always
         livenessProbe:
           initialDelaySeconds: 30
@@ -44,7 +44,7 @@ spec:
             nvidia.com/gpu: 1
           requests:
             nvidia.com/gpu: 1
-            memory: 10Gi
+            memory: 10G
         env:
         - name: POD_NAME
           valueFrom:

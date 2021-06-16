@@ -2,13 +2,14 @@ from typing import Optional, Text, Dict, Any
 
 import pytest
 
+from rasa.shared.exceptions import MarkdownException
+from rasa.shared.nlu.training_data.formats import RasaReader
+from rasa.shared.nlu.training_data.formats import MarkdownReader, MarkdownWriter
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.duckling_entity_extractor import DucklingEntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa.shared.nlu.training_data.formats import RasaReader
-from rasa.shared.nlu.training_data.formats import MarkdownReader, MarkdownWriter
 
 
 @pytest.mark.parametrize(
@@ -75,7 +76,7 @@ def test_markdown_empty_section():
 
 
 def test_markdown_not_existing_section():
-    with pytest.raises(ValueError):
+    with pytest.raises(MarkdownException):
         load_data("data/test/markdown_single_sections/not_existing_section.md")
 
 

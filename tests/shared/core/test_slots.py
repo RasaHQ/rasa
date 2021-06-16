@@ -4,6 +4,7 @@ import pytest
 from _pytest.fixtures import SubRequest
 
 import rasa.shared.core.constants
+from rasa.shared.core.events import SlotSet
 from rasa.shared.core.slots import (
     InvalidSlotTypeException,
     Slot,
@@ -15,7 +16,9 @@ from rasa.shared.core.slots import (
     CategoricalSlot,
     bool_from_any,
     AnySlot,
+    InvalidSlotConfigError,
 )
+from rasa.shared.core.trackers import DialogueStateTracker
 
 
 class SlotTestCollection:
@@ -94,6 +97,18 @@ class SlotTestCollection:
 
         assert isinstance(slot, slot_type)
         assert recreated.persistence_info() == persistence_info
+
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_slot_has_been_set(
+        self, influence_conversation: bool, value_feature_pair: Tuple[Any, List[float]]
+    ):
+        slot = self.create_slot(influence_conversation)
+        assert not slot.has_been_set
+        value, _ = value_feature_pair
+        slot.value = value
+        assert slot.has_been_set
+        slot.reset()
+        assert not slot.has_been_set
 
 
 class TestTextSlot(SlotTestCollection):
@@ -188,6 +203,16 @@ class TestListSlot(SlotTestCollection):
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
         return request.param
 
+    @pytest.mark.parametrize("value", ["cat", ["cat"]])
+    def test_apply_single_item_to_slot(self, value: Any):
+        slot = self.create_slot(influence_conversation=False)
+        tracker = DialogueStateTracker.from_events("sender", evts=[], slots=[slot])
+
+        slot_event = SlotSet(slot.name, value)
+        tracker.update(slot_event)
+
+        assert tracker.slots[slot.name].value == ["cat"]
+
 
 class TestUnfeaturizedSlot(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
@@ -202,7 +227,7 @@ class TestUnfeaturizedSlot(SlotTestCollection):
         return request.param
 
     def test_exception_if_featurized(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidSlotConfigError):
             UnfeaturizedSlot("⛔️", influence_conversation=True)
 
     def test_deprecation_warning(self):
@@ -291,7 +316,7 @@ class TestAnySlot(SlotTestCollection):
         return request.param
 
     def test_exception_if_featurized(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidSlotConfigError):
             UnfeaturizedSlot("⛔️", influence_conversation=True)
 
 

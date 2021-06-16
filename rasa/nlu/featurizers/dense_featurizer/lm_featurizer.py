@@ -108,7 +108,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional["Metadata"] = None,
         cached_component: Optional["Component"] = None,
         **kwargs: Any,
@@ -348,9 +348,10 @@ class LanguageModelFeaturizer(DenseFeaturizer):
             split_token_ids, split_token_strings = self._lm_tokenize(token.text)
 
             if not split_token_ids:
-                # fix the situation that `token.text` only contains whitespace or other special characters,
-                # which cause `split_token_ids` and `split_token_strings` be empty,
-                # finally cause `self._lm_specific_token_cleanup()` to raise an exception
+                # fix the situation that `token.text` only contains whitespace or other
+                # special characters, which cause `split_token_ids` and
+                # `split_token_strings` be empty, finally cause
+                # `self._lm_specific_token_cleanup()` to raise an exception
                 continue
 
             (split_token_ids, split_token_strings) = self._lm_specific_token_cleanup(
@@ -574,8 +575,8 @@ class LanguageModelFeaturizer(DenseFeaturizer):
                         f"The sequence length of '{example.get(attribute)[:20]}...' "
                         f"is too long({sequence_length} tokens) for the "
                         f"model chosen {self.model_name} which has a maximum "
-                        f"sequence length of {self.max_model_sequence_length} tokens. Either "
-                        f"shorten the message or use a model which has no "
+                        f"sequence length of {self.max_model_sequence_length} tokens. "
+                        f"Either shorten the message or use a model which has no "
                         f"restriction on input sequence length like XLNet."
                     )
                 logger.debug(

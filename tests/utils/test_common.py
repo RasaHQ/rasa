@@ -1,5 +1,7 @@
 import logging
+from typing import Any
 
+import rasa.utils.common
 from rasa.utils.common import RepeatedLogFilter
 
 
@@ -22,3 +24,25 @@ def test_repeated_log_filter():
     assert log_filter.filter(record2_other_args) is True
     assert log_filter.filter(record3_other) is True
     assert log_filter.filter(record1) is True  # same as before, but not repeated
+
+
+async def test_call_maybe_coroutine_with_async() -> Any:
+    expected = 5
+
+    async def my_function():
+        return expected
+
+    actual = await rasa.utils.common.call_potential_coroutine(my_function())
+
+    assert actual == expected
+
+
+async def test_call_maybe_coroutine_with_sync() -> Any:
+    expected = 5
+
+    def my_function():
+        return expected
+
+    actual = await rasa.utils.common.call_potential_coroutine(my_function())
+
+    assert actual == expected
