@@ -35,7 +35,8 @@ def featurize_training_examples(
 
     Possible attributes are, for example, INTENT, RESPONSE, TEXT, ACTION_TEXT,
     ACTION_NAME or ENTITIES.
-    Also returns sparse feature sizes for each attribute.
+    Also returns sparse feature sizes for each attribute. It could look like this:
+    {TEXT: {FEATURE_TYPE_SEQUENCE: [16, 32], FEATURE_TYPE_SENTENCE: [16, 32]}}.
 
     Args:
         training_examples: the list of training examples
@@ -46,8 +47,7 @@ def featurize_training_examples(
 
     Returns:
         A list of attribute to features.
-        A dictionary of attribute that has sparse features to a dictionary of
-        a feature type to a list of different sparse feature sizes.
+        A dictionary of attribute to feature sizes.
     """
     output = []
 
@@ -84,14 +84,16 @@ def _collect_sparse_feature_sizes(
 ) -> Dict[Text, Dict[Text, List[int]]]:
     """Collects sparse feature sizes for all attributes that have sparse features.
 
+    Returns sparse feature sizes for each attribute. It could look like this:
+    {TEXT: {FEATURE_TYPE_SEQUENCE: [16, 32], FEATURE_TYPE_SENTENCE: [16, 32]}}.
+
     Args:
         featurized_example: a featurized example
         training_example: a training example
         featurizers: the featurizers to consider
 
     Returns:
-        A dictionary of attribute that has sparse features to a dictionary of
-        a feature type to a list of different sparse feature sizes.
+        A dictionary of attribute to feature sizes.
     """
     sparse_feature_sizes = {}
     sparse_attributes = []
