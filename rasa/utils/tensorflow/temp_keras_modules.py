@@ -12,6 +12,7 @@ from typing import (
 
 import numpy as np
 import tensorflow as tf
+from keras.engine.training import _disallow_inside_tf_function
 
 from tensorflow.python.keras.callbacks import Callback, History
 from tensorflow.python.keras.engine import training
@@ -20,7 +21,7 @@ from tensorflow.python.keras.engine import data_adapter
 from tensorflow.python.keras.utils import version_utils
 from tensorflow.python.eager import context
 from tensorflow.python.keras.engine.data_adapter import DataHandler
-
+from tensorflow.python.keras.engine import base_layer
 
 # noinspection PyMethodOverriding
 class TmpKerasModel(tf.keras.models.Model):
@@ -34,7 +35,7 @@ class TmpKerasModel(tf.keras.models.Model):
     # This code is adapted from
     # https://github.com/tensorflow/tensorflow/blob/v2.3.1/tensorflow/python/keras/engine/training.py#L824-L1146
 
-    @training.enable_multi_worker
+    #TODO: figure out if equivalent for previous @training.enable_multi_worker is needed
     def fit(
         self,
         x: Optional[
@@ -110,12 +111,13 @@ class TmpKerasModel(tf.keras.models.Model):
             ValueError: In case of mismatch between the provided input data
                 and what the model expects.
         """
-        training._keras_api_gauge.get_cell("fit").set(True)
+        #TODO: verify this is the correct equivalent for training._keras_api_gauge
+        base_layer.keras_api_gauge.get_cell('fit').set(True)
         # Legacy graph support is contained in `training_v1.Model`.
         version_utils.disallow_legacy_graph("Model", "fit")
         self._assert_compile_was_called()
         self._check_call_args("fit")
-        training._disallow_inside_tf_function("fit")
+        _disallow_inside_tf_function("fit")
 
         if validation_split:
             # Create the validation data using the training data. Only supported for
