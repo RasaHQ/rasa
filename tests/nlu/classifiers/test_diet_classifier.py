@@ -668,3 +668,20 @@ async def test_process_gives_diagnostic_data(
     assert isinstance(diagnostic_data[name].get("attention_weights"), np.ndarray)
     assert "text_transformed" in diagnostic_data[name]
     assert isinstance(diagnostic_data[name].get("text_transformed"), np.ndarray)
+
+
+def test_removing_label_sparse_feature_sizes():
+    initial_sparse_feature_sizes = {
+        TEXT: {FEATURE_TYPE_SEQUENCE: [10], FEATURE_TYPE_SENTENCE: [20]},
+        INTENT: {FEATURE_TYPE_SEQUENCE: [5], FEATURE_TYPE_SENTENCE: []},
+    }
+    final_sparse_feature_sizes = {
+        TEXT: {FEATURE_TYPE_SEQUENCE: [10], FEATURE_TYPE_SENTENCE: [20]}
+    }
+    label_attribute = INTENT
+
+    sparse_feature_sizes = DIETClassifier._remove_label_sparse_feature_sizes(
+        sparse_feature_sizes=initial_sparse_feature_sizes,
+        label_attribute=label_attribute,
+    )
+    assert sparse_feature_sizes == final_sparse_feature_sizes
