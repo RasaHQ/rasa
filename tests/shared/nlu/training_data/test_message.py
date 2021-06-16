@@ -177,7 +177,8 @@ def test_get_sparse_features(
 
 
 @pytest.mark.parametrize(
-    "features, attribute, featurizers, expected_sequence_sizes, expected_sentence_sizes",
+    "features, attribute, featurizers, "
+    "expected_sequence_sizes, expected_sentence_sizes",
     [
         (None, TEXT, [], [], []),
         (
