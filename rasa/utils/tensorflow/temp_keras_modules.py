@@ -35,7 +35,8 @@ class TmpKerasModel(tf.keras.models.Model):
     # This code is adapted from
     # https://github.com/tensorflow/tensorflow/blob/v2.3.1/tensorflow/python/keras/engine/training.py#L824-L1146
 
-    #TODO: figure out if equivalent for previous @training.enable_multi_worker is needed
+    # TODO: TF 2.5 figure out if equivalent for previous @training.enable_multi_worker
+    #  is needed
     def fit(
         self,
         x: Optional[
@@ -111,7 +112,8 @@ class TmpKerasModel(tf.keras.models.Model):
             ValueError: In case of mismatch between the provided input data
                 and what the model expects.
         """
-        #TODO: verify this is the correct equivalent for training._keras_api_gauge
+        # TODO: TF 2.5 verify this is the correct equivalent for
+        #  training._keras_api_gauge
         base_layer.keras_api_gauge.get_cell('fit').set(True)
         # Legacy graph support is contained in `training_v1.Model`.
         version_utils.disallow_legacy_graph("Model", "fit")

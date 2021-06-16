@@ -250,7 +250,8 @@ class RasaModel(TmpKerasModel):
             self.prepared_for_prediction = True
 
         if self._run_eagerly:
-            # TODO: verify sync_to_numpy_or_python_type is appropriate replacement for to_numpy_or_python_type
+            # TODO: TF 2.5 verify sync_to_numpy_or_python_type is appropriate
+            #  replacement for to_numpy_or_python_type
             outputs = tf_utils.sync_to_numpy_or_python_type(self.predict_step(batch_in))
             if DIAGNOSTIC_DATA in outputs:
                 outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
@@ -263,7 +264,8 @@ class RasaModel(TmpKerasModel):
                 self.predict_step, input_signature=self._dynamic_signature(batch_in)
             )
 
-        # TODO: verify sync_to_numpy_or_python_type is appropriate replacement for to_numpy_or_python_type
+        # TODO: TF 2.5 verify sync_to_numpy_or_python_type is appropriate
+        #  replacement for to_numpy_or_python_type
         outputs = tf_utils.sync_to_numpy_or_python_type(self._tf_predict_step(batch_in))
         if DIAGNOSTIC_DATA in outputs:
             outputs[DIAGNOSTIC_DATA] = self._empty_lists_to_none_in_dict(
