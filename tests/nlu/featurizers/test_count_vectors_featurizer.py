@@ -697,7 +697,4 @@ def test_additional_vocab_size_deprecation():
             {"additional_vocabulary_size": {TEXT: 5, RESPONSE: 10}},
             RasaNLUModelConfig(),
         )
-    assert (
-        "The parameter `additional_vocabulary_size` has been deprecated"
-        in warning[0].message.args[0]
-    )
+    assert "The parameter has been deprecated" in warning[0].message.args[0]
