@@ -514,9 +514,10 @@ def update_confidence_type(component_config: Dict[Text, Any]) -> Dict[Text, Any]
     if component_config[LOSS_TYPE] == MARGIN:
         rasa.shared.utils.io.raise_warning(
             f"Overriding defaults by setting {MODEL_CONFIDENCE} to "
-            f"{AUTO} as {LOSS_TYPE} is set to {MARGIN} in the configuration. This means that "
-            f"model's confidences will be computed as cosine similarities. "
-            f"Users are encouraged to shift to cross entropy loss by setting `{LOSS_TYPE}={CROSS_ENTROPY}`."
+            f"{AUTO} as {LOSS_TYPE} is set to {MARGIN} in the configuration. "
+            f"This means that model's confidences will be computed "
+            f"as cosine similarities. Users are encouraged to shift to "
+            f"cross entropy loss by setting `{LOSS_TYPE}={CROSS_ENTROPY}`."
         )
         component_config[MODEL_CONFIDENCE] = AUTO
     return component_config

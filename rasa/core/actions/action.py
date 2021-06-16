@@ -49,6 +49,7 @@ from rasa.shared.core.events import (
     Restarted,
     SessionStarted,
 )
+from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 from rasa.shared.core.domain import Domain
 
@@ -584,19 +585,14 @@ class RemoteAction(Action):
 
         Used for validation of the response returned from the
         Action endpoint."""
-        return {
+        schema = {
             "type": "object",
             "properties": {
-                "events": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {"event": {"type": "string"}},
-                    },
-                },
+                "events": EVENTS_SCHEMA,
                 "responses": {"type": "array", "items": {"type": "object"}},
             },
         }
+        return schema
 
     def _validate_action_result(self, result: Dict[Text, Any]) -> bool:
         from jsonschema import validate
@@ -633,7 +629,8 @@ class RemoteAction(Action):
                     "'response', use the `response` parameter instead of "
                     "`template` in `dispatcher.utter_message`. You can do that "
                     "by upgrading to Rasa SDK 2.4.1 or adapting your custom SDK.",
-                    docs=f"{rasa.shared.constants.DOCS_BASE_URL_ACTION_SERVER}/sdk-dispatcher",
+                    docs=f"{rasa.shared.constants.DOCS_BASE_URL_ACTION_SERVER}"
+                    f"/sdk-dispatcher",
                 )
             if generated_response:
                 draft = await nlg.generate(

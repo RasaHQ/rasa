@@ -120,8 +120,10 @@ class CRFEntityExtractor(EntityExtractor):
         "upper": lambda crf_token: crf_token.text.isupper(),
         "digit": lambda crf_token: crf_token.text.isdigit(),
         "pattern": lambda crf_token: crf_token.pattern,
-        "text_dense_features": lambda crf_token: CRFEntityExtractor._convert_dense_features_for_crfsuite(
-            crf_token
+        "text_dense_features": (
+            lambda crf_token: CRFEntityExtractor._convert_dense_features_for_crfsuite(
+                crf_token
+            )
         ),
         "entity": lambda crf_token: crf_token.entity_tag,
     }

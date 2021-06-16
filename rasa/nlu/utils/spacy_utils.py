@@ -51,8 +51,8 @@ class SpacyNLP(Component):
         except OSError:
             raise InvalidModelError(
                 f"Please confirm that {spacy_model_name} is an available spaCy model. "
-                f"You need to download one upfront. For example:\npython -m spacy download "
-                f"en_core_web_md\n"
+                f"You need to download one upfront. For example:\n"
+                f"python -m spacy download en_core_web_md\n"
                 f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
             )
 
@@ -124,14 +124,16 @@ class SpacyNLP(Component):
             if language_name not in fallback_mapping.keys():
                 raise InvalidModelError(
                     f"There is no fallback model for language '{language_name}'. "
-                    f"Please add a `model` property to `SpacyNLP` manually to prevent this. "
-                    f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
+                    f"Please add a `model` property to `SpacyNLP` manually "
+                    f"to prevent this. More informaton can be found on "
+                    f"{DOCS_URL_COMPONENTS}#spacynlp"
                 )
 
             spacy_model_name = fallback_mapping[language_name]
             if warn:
                 message = (
-                    f"SpaCy model is not properly configured! Please add a `model` property to `SpacyNLP`. "
+                    f"SpaCy model is not properly configured! "
+                    f"Please add a `model` property to `SpacyNLP`. "
                     f"Will use '{spacy_model_name}' as a fallback spaCy model. "
                     f"This fallback will be deprecated in Rasa 3.0"
                 )

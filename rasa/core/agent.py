@@ -438,7 +438,8 @@ class Agent:
 
         if hasattr(self.nlg, "templates"):
             rasa.shared.utils.io.raise_deprecation_warning(
-                "Please use the `responses` attribute instead of the `templates` attribute to manage responses.",
+                "Please use the `responses` attribute instead of the `templates` "
+                "attribute to manage responses.",
                 docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
             )
             self.nlg.templates = domain.responses if domain else {}
