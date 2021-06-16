@@ -520,6 +520,7 @@ class TEDPolicy(Policy):
 
         training_trackers = [t for t in training_trackers if not t.is_rule_tracker]
         # dealing with training data
+        logger.debug("Featurizing training trackers")
         tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
             training_trackers,
             domain,
@@ -528,11 +529,13 @@ class TEDPolicy(Policy):
             **kwargs,
         )
 
+        logger.debug("Creating label data")
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, e2e_features
         )
 
         # extract actual training data to feed to model
+        logger.debug("Creating model data")
         model_data = self._create_model_data(
             tracker_state_features, label_ids, entity_tags, encoded_all_labels
         )
@@ -563,7 +566,7 @@ class TEDPolicy(Policy):
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
             )
-
+        logger.debug("Creating data generators")
         (
             data_generator,
             validation_data_generator,
@@ -582,6 +585,7 @@ class TEDPolicy(Policy):
             self.tmp_checkpoint_dir,
         )
 
+        logger.debug("Fitting model")
         self.model.fit(
             data_generator,
             epochs=self.config[EPOCHS],
