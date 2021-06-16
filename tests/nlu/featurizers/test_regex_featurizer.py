@@ -580,6 +580,6 @@ def test_additional_patterns_deprecation():
             {"number_additional_patterns": 5}, RasaNLUModelConfig()
         )
     assert (
-        "The parameter `pattern_vocabulary_stats` has been deprecated"
+        "The parameter `number_additional_patterns` has been deprecated"
         in warning[0].message.args[0]
     )
