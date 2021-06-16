@@ -157,11 +157,12 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         ]
         if additional_size_attributes:
             rasa.shared.utils.io.raise_deprecation_warning(
-                f"The parameter `additional_vocabulary_size` has been specified for attributes - "
-                f"`{additional_size_attributes}`. The parameter  "
-                f"has been deprecated since the pipeline no longer creates an extra buffer for "
-                f"additional vocabulary. Any value assigned to this parameter will be ignored. "
-                f"You can omit specifying `additional_vocabulary_size` in future runs."
+                f"The parameter `additional_vocabulary_size` has been specified for "
+                f"attributes - `{additional_size_attributes}`. The parameter has been "
+                f"deprecated since the pipeline no longer creates an extra buffer for "
+                f"additional vocabulary. Any value assigned to "
+                f"this parameter will be ignored. You can omit specifying "
+                f"`additional_vocabulary_size` in future runs."
             )
 
     def _check_attribute_vocabulary(self, attribute: Text) -> bool:

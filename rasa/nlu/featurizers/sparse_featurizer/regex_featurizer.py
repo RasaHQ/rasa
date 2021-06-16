@@ -72,8 +72,8 @@ class RegexFeaturizer(SparseFeaturizer):
         if self.component_config["number_additional_patterns"]:
             rasa.shared.utils.io.raise_deprecation_warning(
                 "The parameter `number_additional_patterns` has been deprecated "
-                "since the pipeline does not create an extra buffer for new vocabulary anymore. "
-                "Any value assigned to this parameter will be ignored. "
+                "since the pipeline does not create an extra buffer for new vocabulary "
+                "anymore. Any value assigned to this parameter will be ignored. "
                 "You can omit specifying `number_additional_patterns` in future runs."
             )
 

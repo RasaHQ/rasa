@@ -639,7 +639,8 @@ def test_count_vector_featurizer_process_by_attribute(
 
 
 @pytest.mark.parametrize(
-    "initial_train_text, additional_train_text, initial_vocabulary_size, final_vocabulary_size",
+    "initial_train_text, additional_train_text, "
+    "initial_vocabulary_size, final_vocabulary_size",
     [
         ("am I the coolest person?", "yes, I am", 5, 6),
         ("the coolest person", "person the coolest", 3, 3),
