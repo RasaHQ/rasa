@@ -5,3 +5,4 @@ event_broker:
   url: localhost
   sasl_username: username
   sasl_password: password
+  sasl_mechanism: PLAIN
