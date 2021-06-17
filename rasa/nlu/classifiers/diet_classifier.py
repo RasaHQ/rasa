@@ -1343,7 +1343,7 @@ class DIET(TransformerRasaModel):
         data_generator = RasaBatchDataGenerator(model_data, batch_size=1)
         self.fit(data_generator, verbose=False)
 
-    def _find_dense_for_sparse_layer(self, layer, path):
+    def _find_dense_for_sparse_layer(self, layer: Any, path: List[Text]) -> List[Dict]:
         """Finds DenseForSparse layers recursively.
 
         For each layer returns its path in the layers dictionary
