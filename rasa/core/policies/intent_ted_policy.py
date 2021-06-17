@@ -7,7 +7,7 @@ from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_UNLIKELY_INTENT_NAME
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.events import UserUttered, ActionExecuted
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -442,16 +442,17 @@ class IntentTEDPolicy(TEDPolicy):
             return self._prediction(self._default_predictions(domain))
 
         # Prediction through the policy is skipped if:
-        # 1. Last event in the tracker was not of type `UserUttered`.
-        # This is to prevent the ensemble of policies from being stuck
-        # in a loop.
-        # 2. If the tracker does not contain any event of type `UserUttered` till now.
+        # 1. If the tracker does not contain any event of type `UserUttered` till now.
+        # 2. There is at least one event of type `ActionExecuted`
+        #    after the last `UserUttered` event.
         if not tracker.get_last_event_for(UserUttered) or (
-            tracker.events and not isinstance(tracker.events[-1], UserUttered)
+            tracker.events and tracker.action_executed_after_last_user_uttered()
         ):
             logger.debug(
                 f"Skipping predictions for {self.__class__.__name__} "
-                f"as the last event in tracker is not of type `UserUttered`."
+                f"as either there is no event of type `UserUttered` or "
+                f"there is an event of type `ActionExecuted` after "
+                f"the last `UserUttered`."
             )
             return self._prediction(self._default_predictions(domain))
 

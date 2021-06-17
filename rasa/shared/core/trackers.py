@@ -874,6 +874,24 @@ class DialogueStateTracker:
             ACTION_TEXT
         )
 
+    def action_executed_after_last_user_uttered(self) -> bool:
+        """
+
+        Returns:
+
+        """
+        last_user_uttered_index = -1
+        for index in range(len(self.events) - 1, -1, -1):
+            if isinstance(self.events[index], UserUttered):
+                last_user_uttered_index = index
+                break
+        if last_user_uttered_index == -1:
+            return False
+        for index in range(last_user_uttered_index + 1, len(self.events)):
+            if isinstance(self.events[index], ActionExecuted):
+                return True
+        return False
+
 
 def get_active_loop_name(state: State) -> Optional[Text]:
     """Get the name of current active loop.
