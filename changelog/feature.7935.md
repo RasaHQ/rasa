@@ -1,0 +1,1 @@
+IBM Watson Training Data Importer. This will allow to train a rasa bot using IBM Watson V2 Training data downloadable from IBM Workspaces. 
