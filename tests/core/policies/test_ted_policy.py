@@ -64,8 +64,8 @@ def get_checkpoint_dir_path(train_path: Path, ted_pos: Optional[int] = 0) -> Pat
         ted_pos: the position of TED in the policies listed in the config.
     """
     policy_dir_name = Path("policy_{}_{}".format(ted_pos, TEDPolicy.__name__))
-    policy_path = train_path / Path(DEFAULT_CORE_SUBDIRECTORY_NAME) / policy_dir_name
-    return Path(policy_path, "checkpoints")
+    policy_path = train_path / DEFAULT_CORE_SUBDIRECTORY_NAME / policy_dir_name
+    return policy_path / "checkpoints"
 
 
 def test_diagnostics():

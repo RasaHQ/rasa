@@ -76,7 +76,7 @@ def get_checkpoint_dir_path(path: Path, model_dir: Path) -> Path:
         path: the path passed to train for training output.
 
     """
-    return Path(path, model_dir, "checkpoints")
+    return path / model_dir / "checkpoints"
 
 
 @pytest.mark.parametrize(
@@ -579,7 +579,7 @@ async def test_train_model_checkpointing(
     component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-checkpointed-model"
-    model_dir = Path(tmp_path / model_name)
+    model_dir = tmp_path / model_name
     checkpoint_dir = get_checkpoint_dir_path(tmp_path, model_dir)
     assert not checkpoint_dir.is_dir()
 
