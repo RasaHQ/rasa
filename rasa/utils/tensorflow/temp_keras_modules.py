@@ -12,7 +12,7 @@ from typing import (
 
 import numpy as np
 import tensorflow as tf
-from keras.engine.training import _disallow_inside_tf_function
+from tensorflow.python.keras.engine.training import _disallow_inside_tf_function
 
 from tensorflow.python.keras.callbacks import Callback, History
 from tensorflow.python.keras.engine import training
