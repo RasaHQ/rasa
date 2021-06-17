@@ -687,7 +687,7 @@ def test_update_dense_layers():
     except (InvalidArgumentError):
         print("this needs to be fixed")
 
-    new_layer = DIET._update_dense_for_sparse_layer(
+    new_layer = DIET._create_dense_for_sparse_layer(
         dense_layer=layer, old_sizes=old_sizes, new_sizes=new_sizes, reg_lambda=0.02
     )
     try:

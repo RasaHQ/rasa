@@ -13,6 +13,11 @@ from rasa.utils.tensorflow.constants import (
     LINEAR_NORM,
     CROSS_ENTROPY,
 )
+from rasa.shared.nlu.constants import (
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+)
+
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 
 logger = logging.getLogger(__name__)
@@ -128,6 +133,12 @@ class DenseForSparse(tf.keras.layers.Dense):
     def get_bias_info(self) -> tf.Tensor:
         """Returns bias tensor."""
         return self.use_bias, self.bias
+
+    def get_feature_type(self) -> Text:
+        """Returns feature type"""
+        if FEATURE_TYPE_SENTENCE in self.name:
+            return FEATURE_TYPE_SENTENCE
+        return FEATURE_TYPE_SEQUENCE
 
     def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
         """Apply dense layer to sparse inputs.
