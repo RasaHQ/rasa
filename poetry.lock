@@ -2897,7 +2897,7 @@ make_nearest_neighbour_index = ["apache-beam", "annoy"]
 
 [[package]]
 name = "tensorflow-probability"
-version = "0.11.1"
+version = "0.12.2"
 description = "Probabilistic modeling and statistical inference in TensorFlow"
 category = "main"
 optional = false
@@ -2912,7 +2912,7 @@ numpy = ">=1.13.3"
 six = ">=1.10.0"
 
 [package.extras]
-jax = ["jax (==0.1.74)", "jaxlib (==0.1.52)"]
+jax = ["jax (<=0.2.11)", "jaxlib (<=0.1.64)"]
 tfds = ["tensorflow-datasets (>=2.2.0)"]
 
 [[package]]
@@ -3304,7 +3304,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6,<3.9"
-content-hash = "132e3fc8cf23539f52a262416fd51c8b92092f17a284ebb393928a1ac40589d3"
+content-hash = "3cf29b96fe62faee6a328134e507ec1fda185c8e78e95e9b668428b8df463fcf"
 
 [metadata.files]
 absl-py = [
@@ -5195,7 +5195,7 @@ tensorflow-hub = [
     {file = "tensorflow_hub-0.12.0-py2.py3-none-any.whl", hash = "sha256:822fe5f7338c95efcc3a534011c6689e4309ba2459def87194179c4de8a6e1fc"},
 ]
 tensorflow-probability = [
-    {file = "tensorflow_probability-0.11.1-py2.py3-none-any.whl", hash = "sha256:e9ce5288ccdb80b6e311d1a2904b5af618a7cd5791d79d6fd051a628087ec0ae"},
+    {file = "tensorflow_probability-0.12.2-py2.py3-none-any.whl", hash = "sha256:b14b27c276284231c2c093bedfeaebf584b688e8c522e5800bed3005263cc76c"},
 ]
 tensorflow-text = [
     {file = "tensorflow_text-2.3.0-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:beca0ca7b724a1c2d42190bf09364beefe3a49936ae39d953104940a6bea180f"},
