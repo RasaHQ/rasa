@@ -286,20 +286,20 @@ python-versions = "*"
 
 [[package]]
 name = "boto3"
-version = "1.17.95"
+version = "1.17.96"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
 
 [package.dependencies]
-botocore = ">=1.20.95,<1.21.0"
+botocore = ">=1.20.96,<1.21.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.4.0,<0.5.0"
 
 [[package]]
 name = "botocore"
-version = "1.20.95"
+version = "1.20.96"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -311,7 +311,7 @@ python-dateutil = ">=2.1,<3.0.0"
 urllib3 = ">=1.25.4,<1.27"
 
 [package.extras]
-crt = ["awscrt (==0.11.15)"]
+crt = ["awscrt (==0.11.24)"]
 
 [[package]]
 name = "cached-property"
@@ -2162,11 +2162,11 @@ pytest = ">=3.6.0"
 
 [[package]]
 name = "pytest-xdist"
-version = "2.2.1"
+version = "2.3.0"
 description = "pytest xdist plugin for distributed testing and loop-on-failing modes"
 category = "dev"
 optional = false
-python-versions = ">=3.5"
+python-versions = ">=3.6"
 
 [package.dependencies]
 execnet = ">=1.1"
@@ -2901,7 +2901,7 @@ python-versions = "*"
 
 [[package]]
 name = "tensorflow-hub"
-version = "0.12.0"
+version = "0.10.0"
 description = "TensorFlow Hub is a library to foster the publication, discovery, and consumption of reusable parts of machine learning models."
 category = "main"
 optional = false
@@ -2969,7 +2969,7 @@ python-versions = "*"
 
 [[package]]
 name = "thinc"
-version = "8.0.4"
+version = "8.0.5"
 description = "A refreshing functional take on deep learning, compatible with your favorite libraries"
 category = "main"
 optional = true
@@ -3325,7 +3325,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6,<3.9"
-content-hash = "88dd2962582644e4542e1b97713625c2b5b0bcbc0a9021ff6e8eadd0f1706a99"
+content-hash = "53a917838d3260d3fcf551a66e6cc509adf5dc1f91fe03258ee2de590672c068"
 
 [metadata.files]
 absl-py = [
@@ -3464,12 +3464,12 @@ boto = [
     {file = "boto-2.49.0.tar.gz", hash = "sha256:ea0d3b40a2d852767be77ca343b58a9e3a4b00d9db440efb8da74b4e58025e5a"},
 ]
 boto3 = [
-    {file = "boto3-1.17.95-py2.py3-none-any.whl", hash = "sha256:8e5af9c7ea16ce1c35b7c3220d073dea9735bb1790107820d475462500ae1eff"},
-    {file = "boto3-1.17.95.tar.gz", hash = "sha256:e61607211816c194dbe2701db48dcddc87cf19372e6f57a9ebe4dfe93dfe177c"},
+    {file = "boto3-1.17.96-py2.py3-none-any.whl", hash = "sha256:c7d6f3f09081440ca80500e679fec19f0b7597648ee380ae940ed29ad5c3768f"},
+    {file = "boto3-1.17.96.tar.gz", hash = "sha256:67a4b0578944f061fbfa05206eb5b10c5250374e9849743413739c539584b60e"},
 ]
 botocore = [
-    {file = "botocore-1.20.95-py2.py3-none-any.whl", hash = "sha256:240a9ef007292e986a4e11662f9038435d9d4fd242e083db160c86eb5c24af30"},
-    {file = "botocore-1.20.95.tar.gz", hash = "sha256:dc215f59735a3abde6c66a61f43f10d95bc18754d310da4e2037b3b8c4d8aa2d"},
+    {file = "botocore-1.20.96-py2.py3-none-any.whl", hash = "sha256:b18d2d016b371b769a88cb080088ce75582748b4a7efa5748e9ced4f23bdbc99"},
+    {file = "botocore-1.20.96.tar.gz", hash = "sha256:204f7403bfe1ab837784421ddd069fd880be99d946cb59cbf31c72296ea9507a"},
 ]
 cached-property = [
     {file = "cached-property-1.5.2.tar.gz", hash = "sha256:9fa5755838eecbb2d234c3aa390bd80fbd3ac6b6869109bfc1b499f7bd89a130"},
@@ -4708,8 +4708,8 @@ pytest-timeout = [
     {file = "pytest_timeout-1.4.2-py2.py3-none-any.whl", hash = "sha256:541d7aa19b9a6b4e475c759fd6073ef43d7cdc9a92d95644c260076eb257a063"},
 ]
 pytest-xdist = [
-    {file = "pytest-xdist-2.2.1.tar.gz", hash = "sha256:718887296892f92683f6a51f25a3ae584993b06f7076ce1e1fd482e59a8220a2"},
-    {file = "pytest_xdist-2.2.1-py3-none-any.whl", hash = "sha256:2447a1592ab41745955fb870ac7023026f20a5f0bfccf1b52a879bd193d46450"},
+    {file = "pytest-xdist-2.3.0.tar.gz", hash = "sha256:e8ecde2f85d88fbcadb7d28cb33da0fa29bca5cf7d5967fa89fc0e97e5299ea5"},
+    {file = "pytest_xdist-2.3.0-py3-none-any.whl", hash = "sha256:ed3d7da961070fce2a01818b51f6888327fb88df4379edeb6b9d990e789d9c8d"},
 ]
 python-crfsuite = [
     {file = "python-crfsuite-0.9.7.tar.gz", hash = "sha256:3b4538d2ce5007e4e42005818247bf43ade89ef08a66d158462e2f7c5d63cee7"},
@@ -5205,7 +5205,7 @@ tensorflow-estimator = [
     {file = "tensorflow_estimator-2.5.0-py2.py3-none-any.whl", hash = "sha256:d1fe76dee8b1dcab865d807a0246da0a9c4a635b1eba6e9545bf216c3aad6955"},
 ]
 tensorflow-hub = [
-    {file = "tensorflow_hub-0.12.0-py2.py3-none-any.whl", hash = "sha256:822fe5f7338c95efcc3a534011c6689e4309ba2459def87194179c4de8a6e1fc"},
+    {file = "tensorflow_hub-0.10.0-py2.py3-none-any.whl", hash = "sha256:6b0f4a5e4250445de352e4b171eaf1230df8d7be256f72cce0e5ce1268b4c335"},
 ]
 tensorflow-probability = [
     {file = "tensorflow_probability-0.11.1-py2.py3-none-any.whl", hash = "sha256:e9ce5288ccdb80b6e311d1a2904b5af618a7cd5791d79d6fd051a628087ec0ae"},
@@ -5231,19 +5231,19 @@ terminaltables = [
     {file = "terminaltables-3.1.0.tar.gz", hash = "sha256:f3eb0eb92e3833972ac36796293ca0906e998dc3be91fbe1f8615b331b853b81"},
 ]
 thinc = [
-    {file = "thinc-8.0.4-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:07d2d29327bb8043b61951211985a952862e104045ac9ce739d596680d153e16"},
-    {file = "thinc-8.0.4-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0ff2e340873e6789702a8a03b0dd67b22475782faf0445d8f1c1dc6b4de6ecc7"},
-    {file = "thinc-8.0.4-cp36-cp36m-win_amd64.whl", hash = "sha256:f1b84880235854d2abfdbebe70996a26f0103fa51eebbe8ec3ca0c3d8cfb9721"},
-    {file = "thinc-8.0.4-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:6b2505693268d80730c483f406d10eccf000ab08f9e7fe7ce0e4aca8ba411865"},
-    {file = "thinc-8.0.4-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c32c1d6101f5d500cf168082c96cc523574d805bb15650fda186d492d9329179"},
-    {file = "thinc-8.0.4-cp37-cp37m-win_amd64.whl", hash = "sha256:d6cb7913058e7da625c94b0be0a22d304d548546b2068b5a67ea4894c093489a"},
-    {file = "thinc-8.0.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:1ff35bdbbc386a367d53097bde8f8f9eefa0057967b68098376d60bc276c8d21"},
-    {file = "thinc-8.0.4-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:70b25331bbb178af46e2f2c7fb68836cc6b7baccfbdb71d6e18a479d2cecfcd4"},
-    {file = "thinc-8.0.4-cp38-cp38-win_amd64.whl", hash = "sha256:cb51fb74225549ebf4a9771d9c996b629b31e34d6c4c111a58cc5bae1cf524e3"},
-    {file = "thinc-8.0.4-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:d277f0adb33a7e88bb915726332c738899e7700700d11bbec9e2b7b57fd634bb"},
-    {file = "thinc-8.0.4-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e47682dcfd8eb3a2aba080c6534439f41dc119cb932f579c58c483144c7be381"},
-    {file = "thinc-8.0.4-cp39-cp39-win_amd64.whl", hash = "sha256:8fbfed3ed74e2c27133debd6f6912b75b28e9d11153a09be9fcf05d424edd26e"},
-    {file = "thinc-8.0.4.tar.gz", hash = "sha256:32016a5be62a2c4b5f86954ae30f8da78bacaa5966ea3ce56886cf9d7c7dcbe6"},
+    {file = "thinc-8.0.5-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:2a7059457f008c381c3c78a641685961b86348c8e49c76ee18628cd5e0018740"},
+    {file = "thinc-8.0.5-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:34822c0391c7a23457df5179fd38f3e445b6e748b92251d0b9fd1fe4937bad3d"},
+    {file = "thinc-8.0.5-cp36-cp36m-win_amd64.whl", hash = "sha256:26cbeb9b559339d6a7011089acdeb10e892518dc8b0eaae71a73308df3969829"},
+    {file = "thinc-8.0.5-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:af32887fadbe76b52e92c65d57ba462fd8ff58f1825ef05b4030273333460b2e"},
+    {file = "thinc-8.0.5-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b024a62ecc1cd3d6603291b20474edcc6db7858addd31acaa7033eeaa0f3e823"},
+    {file = "thinc-8.0.5-cp37-cp37m-win_amd64.whl", hash = "sha256:39a189f2048f996d1b7280b207baca18c32678bee70afc253dba11ab16291438"},
+    {file = "thinc-8.0.5-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:0bb4d5606f3dbc9b372ae3be820532ad602edb32481ba2903f3ae32d8e2e0c8f"},
+    {file = "thinc-8.0.5-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b55aa4f20e4a4097112d68bda001e5850ed46611bbd23cb303ff0fde6e76aa7c"},
+    {file = "thinc-8.0.5-cp38-cp38-win_amd64.whl", hash = "sha256:5b0b4ce6dcf410a70f74f5429c7517cdd9413f6a46b6495c2c4256ba3f4f35cb"},
+    {file = "thinc-8.0.5-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:b14875a5e01d17a7c0d16e9b5e6e475e8edd0ce784aeacaeaed856374426948f"},
+    {file = "thinc-8.0.5-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5b64ab2d7962772643f12a49f1f2b85b755507b45245e519e8ca76ac2cae9976"},
+    {file = "thinc-8.0.5-cp39-cp39-win_amd64.whl", hash = "sha256:7ea32851fc3abfa6671ff9098a46073f75b4fa994401ca72985a09e6d20c8b36"},
+    {file = "thinc-8.0.5.tar.gz", hash = "sha256:f23ace11ba990bb03c8f9667f1f8fb387d1ef9d41e803542e54c5bb209274cc4"},
 ]
 threadpoolctl = [
     {file = "threadpoolctl-2.1.0-py3-none-any.whl", hash = "sha256:38b74ca20ff3bb42caca8b00055111d74159ee95c4370882bbff2b93d24da725"},
