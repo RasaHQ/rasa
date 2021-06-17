@@ -125,11 +125,9 @@ class DenseForSparse(tf.keras.layers.Dense):
         """Returns kernel tensor."""
         return self.kernel
 
-    def get_bias(self) -> tf.Tensor:
-        """Returns bias tensor if it exists."""
-        if self.use_bias:
-            return self.bias
-        return None
+    def get_bias_info(self) -> tf.Tensor:
+        """Returns bias tensor."""
+        return self.use_bias, self.bias
 
     def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
         """Apply dense layer to sparse inputs.

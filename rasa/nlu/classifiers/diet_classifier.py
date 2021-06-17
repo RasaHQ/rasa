@@ -38,6 +38,8 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
 )
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
@@ -862,14 +864,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
         else:
-            old_feature_sizes = {
-                "text": {"sequence": [14, 2814, 13134], "sentence": [14, 2814, 13134]}
-            }
-            current_feature_sizes = {
-                "text": {"sequence": [14, 2815, 13134], "sentence": [14, 2815, 13134]}
-            }
-            self.model.adjust_layers(
-                self._data_example, current_feature_sizes, old_feature_sizes
+            self.model.adjust_sparse_layers(
+                data_example=self._data_example,
+                new_feature_sizes=model_data.get_sparse_feature_sizes(),
+                old_feature_sizes=self._sparse_feature_sizes,
             )
         self._sparse_feature_sizes = model_data.get_sparse_feature_sizes()
 
@@ -1262,7 +1260,7 @@ class DIET(TransformerRasaModel):
 
         self._prepare_layers()
 
-    def adjust_layers(
+    def adjust_sparse_layers(
         self,
         data_example: Dict[Text, List[FeatureArray]],
         new_feature_sizes: Dict[Text, Dict[Text, List[int]]],
@@ -1280,34 +1278,34 @@ class DIET(TransformerRasaModel):
             new_feature_sizes: sizes of current sparse features
             old_feature_sizes: sizes of sparse features the model was trained on before
         """
-        for attr in new_feature_sizes:
-            my_layers = self._get_dense_layers(attr)
-            old_sequence_size = old_feature_sizes[attr]["sequence"]
-            new_sequence_size = new_feature_sizes[attr]["sequence"]
-            old_sentence_size = old_feature_sizes[attr]["sentence"]
-            new_sentence_size = new_feature_sizes[attr]["sentence"]
+        for attribute in new_feature_sizes:
+            my_layers = self._get_dense_layers(attribute)
+            old_sequence_size = old_feature_sizes[attribute][FEATURE_TYPE_SEQUENCE]
+            new_sequence_size = new_feature_sizes[attribute][FEATURE_TYPE_SEQUENCE]
+            old_sentence_size = old_feature_sizes[attribute][FEATURE_TYPE_SENTENCE]
+            new_sentence_size = new_feature_sizes[attribute][FEATURE_TYPE_SENTENCE]
             if sum(old_sequence_size) < sum(new_sequence_size):
-                new_seq_layer = self._update_dense_layer(
-                    my_layers["sequence"],
+                new_seq_layer = self._update_dense_for_sparse_layer(
+                    my_layers[FEATURE_TYPE_SEQUENCE],
                     old_sequence_size,
                     new_sequence_size,
                     self.config[REGULARIZATION_CONSTANT],
                 )
-                self._tf_layers["sequence_layer." + attr]._tf_layers[
+                self._tf_layers[f"sequence_layer.{attribute}"]._tf_layers[
                     "feature_combining"
-                ]._tf_layers["sparse_dense.sequence"]._tf_layers[
+                ]._tf_layers[f"sparse_dense.{FEATURE_TYPE_SEQUENCE}"]._tf_layers[
                     "sparse_to_dense"
                 ] = new_seq_layer
             if sum(old_sentence_size) < sum(new_sentence_size):
-                new_sent_layer = self._update_dense_layer(
-                    my_layers["sentence"],
+                new_sent_layer = self._update_dense_for_sparse_layer(
+                    my_layers[FEATURE_TYPE_SENTENCE],
                     old_sentence_size,
                     new_sentence_size,
                     self.config[REGULARIZATION_CONSTANT],
                 )
-                self._tf_layers["sequence_layer." + attr]._tf_layers[
+                self._tf_layers[f"sequence_layer.{attribute}"]._tf_layers[
                     "feature_combining"
-                ]._tf_layers["sparse_dense.sentence"]._tf_layers[
+                ]._tf_layers[f"sparse_dense.{FEATURE_TYPE_SENTENCE}"]._tf_layers[
                     "sparse_to_dense"
                 ] = new_sent_layer
         self._compile_and_fit(data_example)
@@ -1329,27 +1327,26 @@ class DIET(TransformerRasaModel):
         data_generator = RasaBatchDataGenerator(model_data, batch_size=1)
         self.fit(data_generator, verbose=False)
 
-    def _get_dense_layers(self, attr: Text) -> Dict[Text, layers.DenseForSparse]:
+    def _get_dense_layers(self, attribute: Text) -> Dict[Text, layers.DenseForSparse]:
         """Finds DenseForSparse layers.
 
-        Finds DenseForSparse layers that need to be adjusted for fine-tuning
-        At this point, works for just attribute - text
+        Finds DenseForSparse layers that need to be adjusted for fine-tuning.
+        At this point works for just attribute - text
 
         Args:
-            attr: attribute to consider when getting the layers
+            attribute: attribute to consider when getting the layers
         Returns:
-            dictionary of a feature type(sequence/sentence) to a
-            corresponding DenseForSparse layer
+            A dictionary of feature type to DenseForSparse layer
         """
         dense_layers = {}
-        features = self._tf_layers["sequence_layer." + attr]._tf_layers[
+        feature_layers = self._tf_layers[f"sequence_layer.{attribute}"]._tf_layers[
             "feature_combining"
         ]
-        dense_layers["sequence"] = features._tf_layers[
-            "sparse_dense.sequence"
+        dense_layers[FEATURE_TYPE_SEQUENCE] = feature_layers._tf_layers[
+            f"sparse_dense.{FEATURE_TYPE_SEQUENCE}"
         ]._tf_layers["sparse_to_dense"]
-        dense_layers["sentence"] = features._tf_layers[
-            "sparse_dense.sentence"
+        dense_layers[FEATURE_TYPE_SENTENCE] = feature_layers._tf_layers[
+            f"sparse_dense.{FEATURE_TYPE_SENTENCE}"
         ]._tf_layers["sparse_to_dense"]
         return dense_layers
 
@@ -1362,7 +1359,7 @@ class DIET(TransformerRasaModel):
         }
 
     @staticmethod
-    def _update_dense_layer(
+    def _update_dense_for_sparse_layer(
         dense_layer: layers.DenseForSparse,
         old_sizes: List[int],
         new_sizes: List[int],
@@ -1378,32 +1375,29 @@ class DIET(TransformerRasaModel):
         Returns:
             updated DenseForSparse layer
         """
-        # get kernel, bias and output units of the existing layer
         kernel = dense_layer.get_kernel().numpy()
-        bias = dense_layer.get_bias().numpy()
+        use_bias, bias = dense_layer.get_bias_info()
+        bias = bias.numpy()
         units = dense_layer.units
-        # split kernel by feature sizes
+        # split kernel by feature sizes to update the layer accordingly
         kernel_splits = []
         start = 0
         for end in old_sizes:
             kernel_splits.append(kernel[start : start + end, :])
             start = end
-        # calculate how many features are added to each split
         additional_sizes = [
             new_size - old_size for new_size, old_size in zip(new_sizes, old_sizes)
         ]
-        # initialize weights according to those sizes
         std, mean = np.std(kernel), np.mean(kernel)
         additional_weights = [
             np.random.normal(mean, std, size=(num_rows, units)).astype(np.float32)
             for num_rows in additional_sizes
         ]
-        # merge existing weight splits with additional ones
         merged_weights = [
             np.vstack((existing, new))
             for existing, new in zip(kernel_splits, additional_weights)
         ]
-        # stack each split to form a new weight tensors
+        # stack each merged weight to form a new weight tensor
         new_weights = merged_weights[0]
         for weights in merged_weights[1:]:
             new_weights = np.vstack((new_weights, weights))
@@ -1412,6 +1406,7 @@ class DIET(TransformerRasaModel):
         new_layer = layers.DenseForSparse(
             reg_lambda=reg_lambda,
             units=units,
+            use_bias=use_bias,
             kernel_initializer=kernel_init,
             bias_initializer=bias_init,
         )
