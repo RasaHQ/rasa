@@ -231,6 +231,34 @@ class Message:
 
         return sequence_features, sentence_features
 
+    def get_sparse_feature_sizes(
+        self, attribute: Text, featurizers: Optional[List[Text]] = None
+    ) -> Dict[Text, List[int]]:
+        """Gets sparse feature sizes for the attribute given the list of featurizers.
+
+        If no featurizers are provided, all available features will be considered.
+
+        Args:
+            attribute: message attribute
+            featurizers: names of featurizers to consider
+
+        Returns:
+            Sparse feature sizes.
+        """
+        if featurizers is None:
+            featurizers = []
+
+        sequence_features, sentence_features = self._filter_sparse_features(
+            attribute, featurizers
+        )
+        sequence_sizes = [f.features.shape[1] for f in sequence_features]
+        sentence_sizes = [f.features.shape[1] for f in sentence_features]
+
+        return {
+            FEATURE_TYPE_SEQUENCE: sequence_sizes,
+            FEATURE_TYPE_SENTENCE: sentence_sizes,
+        }
+
     def get_dense_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
     ) -> Tuple[Optional["Features"], Optional["Features"]]:

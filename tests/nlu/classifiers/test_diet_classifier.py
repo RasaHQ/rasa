@@ -707,3 +707,33 @@ def test_update_dense_layers():
     second_chunk = layer.get_kernel().numpy()[old_sizes[0] :, :]
     new_second_chunk = new_layer.get_kernel().numpy()[new_sizes[0] :, :]
     assert np.array_equal(second_chunk, new_second_chunk)
+
+
+@pytest.mark.parametrize(
+    "initial_sparse_feature_sizes, final_sparse_feature_sizes, label_attribute",
+    [
+        (
+            {
+                TEXT: {FEATURE_TYPE_SEQUENCE: [10], FEATURE_TYPE_SENTENCE: [20]},
+                INTENT: {FEATURE_TYPE_SEQUENCE: [5], FEATURE_TYPE_SENTENCE: []},
+            },
+            {TEXT: {FEATURE_TYPE_SEQUENCE: [10], FEATURE_TYPE_SENTENCE: [20]}},
+            INTENT,
+        ),
+        (
+            {TEXT: {FEATURE_TYPE_SEQUENCE: [10], FEATURE_TYPE_SENTENCE: [20]}},
+            {TEXT: {FEATURE_TYPE_SEQUENCE: [10], FEATURE_TYPE_SENTENCE: [20]}},
+            INTENT,
+        ),
+    ],
+)
+def test_removing_label_sparse_feature_sizes(
+    initial_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    final_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    label_attribute: Text,
+):
+    sparse_feature_sizes = DIETClassifier._remove_label_sparse_feature_sizes(
+        sparse_feature_sizes=initial_sparse_feature_sizes,
+        label_attribute=label_attribute,
+    )
+    assert sparse_feature_sizes == final_sparse_feature_sizes

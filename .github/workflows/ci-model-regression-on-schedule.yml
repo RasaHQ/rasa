@@ -22,18 +22,26 @@ jobs:
     - name: Checkout main
       uses: actions/checkout@v2
 
-    - name: Download yq
-      run: |
-        curl --location https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64 -o yq
-        chmod +x yq
+    - name: Checkout dataset
+      uses: actions/checkout@v2
+      with:
+        repository: ${{ secrets.DATASET_REPOSITORY }}
+        token: ${{ secrets.ML_TEST_SA_PAT }}
+        path: 'dataset'
+        ref: "main"
+
+    - name: Download gomplate
+      run: |-
+        sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
+        sudo chmod +x /usr/local/bin/gomplate
 
     - name: Check if a configuration file exists
-      run: test -f .github/configs/mr-test-schedule.yaml
+      run: test -f .github/configs/mr-test-schedule.json
 
     - name: Set matrix values
       id: set-matrix
       shell: bash
-      run: echo "::set-output name=matrix::$(./yq -j r .github/configs/mr-test-schedule.yaml)"
+      run: echo "::set-output name=matrix::$(gomplate -d mapping=./dataset/dataset_config_mapping.json -d github=.github/configs/mr-test-schedule.json -f .github/templates/model_regression_test_config_to_json.tmpl)"
 
   deploy_runner_gpu:
     name: Deploy Github Runner - GPU
@@ -107,6 +115,7 @@ jobs:
           repository: ${{ secrets.DATASET_REPOSITORY }}
           token: ${{ secrets.ML_TEST_SA_PAT }}
           path: 'dataset'
+          ref: ${{ matrix.dataset_branch }}
 
       - name: Set DATASET and CONFIG variables
         id: set_dataset_config_vars
