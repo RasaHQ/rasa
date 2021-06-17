@@ -94,7 +94,7 @@ Return only the most likely label.
 **Returns**:
 
 tuple of first, the most probable label and second,
-its probability.
+         its probability.
 
 #### persist
 
