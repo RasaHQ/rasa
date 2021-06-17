@@ -59,6 +59,20 @@ Your test users had at least some instruction about what the bot was intended to
 
 *   Look at conversations where an “out_of_scope” intent or fallback behavior occurred. These could indicate a potential new skill, or just a misclassified user utterance.
 *   Look for user frustration, such as requests for transfer to a human.
+*   Look for conversations flagged as "surprising" conversations with the
+    help of [`IntentTEDPolicy`](./policies.mdx#intenttedpolicy)'s output: This can be done by running a [standalone
+    script]. The script does the following:
+    - Fetch real conversations from a tracker store.
+    - Run `rasa test` on the fetched conversations and write conversations for which `action_unlikely_intent`
+        is triggered in a separate warnings file.
+
+    Reviewing these subset of conversations can help understand if real users have taken a
+    conversation path which is not present in the training data and hence "surprising"
+    for machine learning policies like `TEDPolicy`. Adding these conversation paths back to
+    the training data as stories will help in more robust action prediction by policies such as `TEDPolicy`.
+    Users are encouraged to [adjust the `tolerance` parameter of
+    `IntentTEDPolicy`](./policies.mdx#intenttedpolicy) to control how
+    severely "surprising" a conversation should be to be flagged off in the warnings file.
 
 ### Annotate
 

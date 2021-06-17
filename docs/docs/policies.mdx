@@ -58,6 +58,8 @@ expected outcome in the case of a tie. They look like this, where higher numbers
 
 * 3 - `MemoizationPolicy` or `AugmentedMemoizationPolicy`
 
+* 2 - `IntentTEDPolicy`
+
 * 1 - `TEDPolicy`
 
 
@@ -395,6 +397,268 @@ for details.
 :::
 
 </details>
+
+
+### IntentTEDPolicy
+
+`IntentTEDPolicy` has the same model architecture as [`TEDPolicy`](./policies.mdx#ted-policy).
+The difference is at a task level. Instead of learning the best action to be triggered next,
+`IntentTEDPolicy` learns the set of intents that are most likely to be expressed by the user
+given the conversation context from training stories. It uses the learnt information at inference time by
+checking if the predicted intent by NLU is the most likely intent. If the intent predicted
+by NLU is indeed likely to occur given the conversation context, `IntentTEDPolicy` does not predict
+any action. Otherwise, it predicts a special action named
+[`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent) with a confidence of `1.00`.
+
+`IntentTEDPolicy` should be viewed as an aid for `TEDPolicy`. Since, `TEDPolicy` is expected to improve
+with better coverage of unique conversation paths that the assistant is expected to handle in the training data,
+`IntentTEDPolicy` helps in surfacing these unique conversation paths from past conversations. For example, if you had
+the following story in your training data:
+
+```yaml
+- story: book_restaurant_table
+  steps:
+  - intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
+  - action: restaurant_form
+  - active_loop: null
+  - slot_was_set:
+    - requested_slot: null
+```
+
+but an actual conversation might encounter interjections inside the form which you haven't accounted for:
+
+```yaml {10-13}
+- story: actual_conversation
+  steps:
+  - user: |
+        I'm looking for a restaurant.
+    intent: request_restaurant
+  - action: restaurant_form
+  - active_loop: restaurant_form
+  - slot_was_set:
+    - requested_slot: cuisine
+  - user: |
+        Does it matter? I want to be quick.
+    intent: deny
+```
+
+As soon as `deny` intent gets triggered, the policy handling the form will keep requesting for `cuisine` slot
+to be filled, as there is no other way to handle input inside the form according to the training stories.
+Reviewing such conversations are important so that you can account for them in the training data and
+subsequently, the assistant is able to handle them gracefully. `IntentTEDPolicy` can trigger an
+`action_unlikely_intent` action right after `deny` intent which is an indication that this conversation
+has taken a user turn that is not well represented by training stories and needs a review.
+
+To reduce false warnings, `IntentTEDPolicy` has two mechanisms in place at inference time:
+
+1. `IntentTEDPolicy`'s [priority](./policies.mdx#policy-priority) is intentionally kept lower than all
+[rule based policies](./policies.mdx#rule-based-policies). This ensures that if an `action_unlikely_intent`
+is predicted for the last intent, but there is a rule that can be triggered to predict
+the next action, the ensemble of policies is not affected by it and the winning prediction is
+still the one made by `RulePolicy`.
+
+2. `IntentTEDPolicy` does not predict an `action_unlikely_intent` if the last predicted intent
+isn't present in any of the training stories.
+
+As mentioned earlier, while `TEDPolicy` learns the next best action, `IntentTEDPolicy` learns the
+next likely intent that a user can express. Given a conversation context, there can only be a single correct action,
+whereas there can be multiple intents that are likely to occur in the same conversation context. Hence,
+`IntentTEDPolicy` uses a multi-label cross entropy loss function during training.
+
+#### Prediction of `action_unlikely_intent`
+
+After training the internal ML model, `IntentTEDPolicy` does the following for each intent:
+
+1. Collect conversation contexts from training stories for which the corresponding intent is not the correct intent.
+2. Run these conversation contexts through the trained ML model and capture the predicted scores for the corresponding intent.
+3. Compute multiple quantiles
+
+**Configuration:**
+
+You can pass configuration parameters to the `IntentTEDPolicy` using the `config.yml` file.
+If you want to fine-tune model's performance, start by modifying the following parameters:
+
+* `epochs`:
+  This parameter sets the number of times the algorithm will see the training data (default: `1`).
+  One `epoch` is equals to one forward pass and one backward pass of all the training examples.
+  Sometimes the model needs more epochs to properly learn.
+  Sometimes more epochs don't influence the performance.
+  The lower the number of epochs the faster the model is trained.
+  Here is how the config would look like:
+
+  ```yaml-rasa title="config.yml"
+  policies:
+  - name: IntentTEDPolicy
+    epochs: 200
+  ```
+
+* `max_history`:
+  This parameter controls how much dialogue history the model looks at to decide which
+  action to take next. Default `max_history` for this policy is `None`,
+  which means that the complete dialogue history since session restart is taken into
+  account. If you want to limit the model to only see a certain number of previous
+  dialogue turns, you can set `max_history` to a finite value.
+  Please note that you should pick `max_history` carefully, so that the model has enough
+  previous dialogue turns to create a correct prediction.
+  See [Featurizers](#featurizers) for more details.
+  Here is how the config would look like:
+
+  ```yaml-rasa title="config.yml"
+  policies:
+  - name: IntentTEDPolicy
+    max_history: 8
+  ```
+
+* `ignore_intents_list`:
+    This parameter lets you configure `IntentTEDPolicy` to ignore the prediction of `action_unlikely_intent` for
+    a subset of intents. You might want to do this if you come across a certain list of intents for which there
+    are too many false warnings generated by `IntentTEDPolicy`.
+
+* `tolerance`:
+    TODO: fill in
+
+The above configuration parameters are the ones you should try tweaking according to your use case and training data.
+However, additional parameters exist that can be adapted.
+
+<details><summary>More configurable parameters</summary>
+
+```
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| Parameter                             | Default Value          | Description                                                  |
++=======================================+========================+==============================================================+
+| hidden_layers_sizes                   | text: []               | Hidden layer sizes for layers before the embedding layers    |
+|                                       |                        | for user messages and bot messages in previous actions       |
+|                                       |                        | and labels. The number of hidden layers is                   |
+|                                       |                        | equal to the length of the corresponding list.               |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| dense_dimension                       | text: 128              | Dense dimension for sparse features to use after they are    |
+|                                       | intent: 20             | converted into dense features.                               |
+|                                       | action_name: 20        |                                                              |
+|                                       | label_intent: 20       |                                                              |
+|                                       | entities: 20           |                                                              |
+|                                       | slots: 20              |                                                              |
+|                                       | active_loop: 20        |                                                              |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| concat_dimension                      | text: 128              | Common dimension to which sequence and sentence features of  |
+|                                       |                        | different dimensions get converted before concatenation.     |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| encoding_dimension                    | 50                     | Dimension size of embedding vectors                          |
+|                                       |                        | before the dialogue transformer encoder.                     |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| transformer_size                      | text: 128              | Number of units in user text sequence transformer encoder.   |
+|                                       | dialogue: 128          | Number of units in dialogue transformer encoder.             |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| number_of_transformer_layers          | text: 1                | Number of layers in user text sequence transformer encoder.  |
+|                                       | dialogue: 1            | Number of layers in dialogue transformer encoder.            |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| number_of_attention_heads             | 4                      | Number of self-attention heads in transformers.              |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| unidirectional_encoder                | True                   | Use a unidirectional or bidirectional encoder                |
+|                                       |                        | for `text`, `action_text`, and `label_action_text`.          |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| use_key_relative_attention            | False                  | If 'True' use key relative embeddings in attention.          |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| use_value_relative_attention          | False                  | If 'True' use value relative embeddings in attention.        |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| max_relative_position                 | None                   | Maximum position for relative embeddings.                    |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| batch_size                            | [64, 256]              | Initial and final value for batch sizes.                     |
+|                                       |                        | Batch size will be linearly increased for each epoch.        |
+|                                       |                        | If constant `batch_size` is required, pass an int, e.g. `8`. |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| batch_strategy                        | "balanced"             | Strategy used when creating batches.                         |
+|                                       |                        | Can be either 'sequence' or 'balanced'.                      |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| epochs                                | 1                      | Number of epochs to train.                                   |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| random_seed                           | None                   | Set random seed to any 'int' to get reproducible results.    |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| learning_rate                         | 0.001                  | Initial learning rate for the optimizer.                     |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| embedding_dimension                   | 20                     | Dimension size of dialogue & system action embedding vectors.|
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| number_of_negative_examples           | 20                     | The number of incorrect labels. The algorithm will minimize  |
+|                                       |                        | their similarity to the user input during training.          |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| ranking_length                        | 10                     | Number of top actions to normalize scores for. Applicable    |
+|                                       |                        | only with loss type 'cross_entropy' and 'softmax'            |
+|                                       |                        | confidences. Set to 0 to disable normalization.              |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| scale_loss                            | True                   | Scale loss inverse proportionally to confidence of correct   |
+|                                       |                        | prediction.                                                  |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| regularization_constant               | 0.001                  | The scale of regularization.                                 |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| drop_rate_dialogue                    | 0.1                    | Dropout rate for embedding layers of dialogue features.      |
+|                                       |                        | Value should be between 0 and 1.                             |
+|                                       |                        | The higher the value the higher the regularization effect.   |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| drop_rate_label                       | 0.0                    | Dropout rate for embedding layers of label features.         |
+|                                       |                        | Value should be between 0 and 1.                             |
+|                                       |                        | The higher the value the higher the regularization effect.   |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| drop_rate_attention                   | 0.0                    | Dropout rate for attention. Value should be between 0 and 1. |
+|                                       |                        | The higher the value the higher the regularization effect.   |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| connection_density                    | 0.8                    | Sparsity of the weights in dense layers.                     |
+|                                       |                        | Value should be between 0 and 1.                             |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| use_sparse_input_dropout              | True                   | If 'True' apply dropout to sparse input tensors.             |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| use_dense_input_dropout               | True                   | If 'True' apply dropout to sparse features after they are    |
+|                                       |                        | converted into dense features.                               |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| evaluate_every_number_of_epochs       | 20                     | How often to calculate validation accuracy.                  |
+|                                       |                        | Set to '-1' to evaluate just once at the end of training.    |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| evaluate_on_number_of_examples        | 0                      | How many examples to use for hold out validation set.        |
+|                                       |                        | Large values may hurt performance, e.g. model accuracy.      |
+|                                       |                        | Keep at 0 if your data set contains a lot of unique examples |
+|                                       |                        | of dialogue turns.                                           |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| tensorboard_log_directory             | None                   | If you want to use tensorboard to visualize training         |
+|                                       |                        | metrics, set this option to a valid output directory. You    |
+|                                       |                        | can view the training metrics after training in tensorboard  |
+|                                       |                        | via 'tensorboard --logdir <path-to-given-directory>'.        |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| tensorboard_log_level                 | "epoch"                | Define when training metrics for tensorboard should be       |
+|                                       |                        | logged. Either after every epoch ('epoch') or for every      |
+|                                       |                        | training step ('batch').                                     |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| checkpoint_model                      | False                  | Save the best performing model during training. Models are   |
+|                                       |                        | stored to the location specified by `--out`. Only the one    |
+|                                       |                        | best model will be saved.                                    |
+|                                       |                        | Requires `evaluate_on_number_of_examples > 0` and            |
+|                                       |                        | `evaluate_every_number_of_epochs > 0`                        |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| featurizers                           | []                     | List of featurizer names (alias names). Only features        |
+|                                       |                        | coming from the listed names are used. If list is empty      |
+|                                       |                        | all available features are used.                             |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| ignore_intents_list                   | []                     |                                                              |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| tolerance                             | 0.0                    |                                                              |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+```
+
+</details>
+
+#### Tuning the tolerance parameter
+
+Users are also encouraged to tune the `tolerance` parameter in `IntentTEDPolicy`'s configuration to reduce the number
+of false warnings. As you increase the value of `tolerance` from `0` to `1` in steps of `0.05`,
+the number of false warnings should decrease. However, increasing the `tolerance` will
+also result in fewer triggers of `action_unlikely_intent` and hence more number of conversation
+paths not present in training stories missing from the set of flagged conversations. This is particularly helpful
+when you are [reviewing real conversations](./conversation-driven-development.mdx#review) that
+your assistant has processed.
+
+:::note
+`IntentTEDPolicy` is only trained on [stories](./stories.mdx) and not [rules](./rules.mdx) from the training data.
+
+:::
 
 ### Memoization Policy
 
