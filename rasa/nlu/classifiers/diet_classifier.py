@@ -1378,8 +1378,7 @@ class DIET(TransformerRasaModel):
         """
         layers = []
         for name, layer in self._tf_layers.items():
-            layer_attribute = name.split(".")[1]
-            if layer_attribute == attribute:
+            if attribute in name:
                 layers += self._find_dense_for_sparse_layer(layer=layer, path=[name])
         return layers
 
