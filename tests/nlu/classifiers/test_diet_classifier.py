@@ -76,7 +76,7 @@ def get_checkpoint_dir_path(path: Path, model_dir: Path) -> Path:
         path: the path passed to train for training output.
 
     """
-    return Path(path, model_dir, "checkpoints")
+    return path / model_dir / "checkpoints"
 
 
 @pytest.mark.parametrize(
@@ -576,11 +576,11 @@ async def test_train_tensorboard_logging(
 
 
 async def test_train_model_checkpointing(
-    component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-checkpointed-model"
-    model_dir = Path(tmpdir / model_name)
-    checkpoint_dir = get_checkpoint_dir_path(tmpdir, model_dir)
+    model_dir = tmp_path / model_name
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, model_dir)
     assert not checkpoint_dir.is_dir()
 
     _config = RasaNLUModelConfig(
@@ -602,7 +602,7 @@ async def test_train_model_checkpointing(
 
     await rasa.nlu.train.train(
         _config,
-        path=str(tmpdir),
+        path=str(tmp_path),
         data=nlu_data_path,
         component_builder=component_builder,
         fixed_model_name=model_name,
@@ -623,10 +623,10 @@ async def test_train_model_checkpointing(
 
 
 async def test_train_model_not_checkpointing(
-    component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-not-checkpointed-model"
-    checkpoint_dir = get_checkpoint_dir_path(tmpdir, Path(tmpdir, model_name))
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, tmp_path / model_name)
     assert not checkpoint_dir.is_dir()
 
     _config = RasaNLUModelConfig(
@@ -642,7 +642,7 @@ async def test_train_model_not_checkpointing(
 
     await rasa.nlu.train.train(
         _config,
-        path=str(tmpdir),
+        path=str(tmp_path),
         data=nlu_data_path,
         component_builder=component_builder,
         fixed_model_name=model_name,
@@ -652,10 +652,10 @@ async def test_train_model_not_checkpointing(
 
 
 async def test_train_fails_with_zero_eval_num_epochs(
-    component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-fail"
-    checkpoint_dir = get_checkpoint_dir_path(tmpdir, Path(tmpdir, model_name))
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, tmp_path / model_name)
     assert not checkpoint_dir.is_dir()
 
     _config = RasaNLUModelConfig(
@@ -678,7 +678,7 @@ async def test_train_fails_with_zero_eval_num_epochs(
         with pytest.warns(UserWarning) as warning:
             await rasa.nlu.train.train(
                 _config,
-                path=str(tmpdir),
+                path=str(tmp_path),
                 data=nlu_data_path,
                 component_builder=component_builder,
                 fixed_model_name=model_name,
@@ -688,16 +688,14 @@ async def test_train_fails_with_zero_eval_num_epochs(
         f"You have opted to save the best model, but the value of '{EVAL_NUM_EPOCHS}' "
         f"is not -1 or greater than 0. Training will fail."
     )
-    print(f"\n{warn_text}")
-    print(warning[2].message)
     assert len([w for w in warning if warn_text in str(w.message)]) == 1
 
 
 async def test_doesnt_checkpoint_with_zero_eval_num_examples(
-    component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-fail-checkpoint"
-    checkpoint_dir = get_checkpoint_dir_path(tmpdir, Path(tmpdir, model_name))
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, tmp_path / model_name)
     assert not checkpoint_dir.is_dir()
 
     _config = RasaNLUModelConfig(
@@ -719,7 +717,7 @@ async def test_doesnt_checkpoint_with_zero_eval_num_examples(
     with pytest.warns(UserWarning) as warning:
         await rasa.nlu.train.train(
             _config,
-            path=str(tmpdir),
+            path=str(tmp_path),
             data=nlu_data_path,
             component_builder=component_builder,
             fixed_model_name=model_name,
