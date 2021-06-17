@@ -17,6 +17,14 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 .. towncrier release notes start
 
+[1.10.26] - 2021-06-17
+^^^^^^^^^^^^^^^^^^^^^^
+
+Features
+--------
+- `#8876 <https://github.com/rasahq/rasa/issues/8876>`_: Added ``sasl_mechanism`` as an optional configurable parameter for the :ref:`event-brokers-kafka`.
+
+
 [1.10.25] - 2021-04-14
 ^^^^^^^^^^^^^^^^^^^^^^
 
