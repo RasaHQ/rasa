@@ -163,7 +163,13 @@ def _extract_paired_histogram_specification(
 
     Returns:
         The bins, values, ranges of either x-axis, and the range of the y-axis
+
+    Raises:
+        ValueError: If histogram_data does not contain values.
     """
+    if not histogram_data or not np.concatenate(histogram_data).size:
+        rasa.shared.utils.io.raise_warning("No data to plot paired histogram.")
+        raise ValueError("No data to plot paired histogram.")
     min_data_value = np.min(np.concatenate(histogram_data))
     max_data_value = np.max(np.concatenate(histogram_data))
     bin_width = (max_data_value - min_data_value) / num_bins
@@ -244,13 +250,19 @@ def plot_paired_histogram(
         )
         return
 
-    bins, tallies, x_ranges, y_range = _extract_paired_histogram_specification(
-        histogram_data,
-        num_bins,
-        density=density,
-        x_pad_fraction=x_pad_fraction,
-        y_pad_fraction=y_pad_fraction,
-    )
+    try:
+        bins, tallies, x_ranges, y_range = _extract_paired_histogram_specification(
+            histogram_data,
+            num_bins,
+            density=density,
+            x_pad_fraction=x_pad_fraction,
+            y_pad_fraction=y_pad_fraction,
+        )
+    except ValueError as e:
+        rasa.shared.utils.io.raise_warning(
+            f"Unable to plot paired histogram '{title}': {e}"
+        )
+        return
     yticks = [float(f"{x:.2f}") for x in bins]
 
     import matplotlib.pyplot as plt
