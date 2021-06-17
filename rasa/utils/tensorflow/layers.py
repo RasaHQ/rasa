@@ -135,7 +135,7 @@ class DenseForSparse(tf.keras.layers.Dense):
         return self.use_bias, self.bias
 
     def get_feature_type(self) -> Text:
-        """Returns feature type"""
+        """Returns feature type."""
         if FEATURE_TYPE_SENTENCE in self.name:
             return FEATURE_TYPE_SENTENCE
         return FEATURE_TYPE_SEQUENCE

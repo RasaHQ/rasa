@@ -1303,6 +1303,7 @@ class DIET(TransformerRasaModel):
                         path in the layers dictionary.
             new_feature_sizes: sizes of current sparse features.
             old_feature_sizes: sizes of sparse features the model was trained on before.
+
         Returns:
             whether the layer was updated or not.
         """
@@ -1371,6 +1372,7 @@ class DIET(TransformerRasaModel):
 
         Args:
             attribute: attribute to consider when getting the layers.
+
         Returns:
             A List of Dictionary containing layer data.
         """
@@ -1403,6 +1405,7 @@ class DIET(TransformerRasaModel):
             old_sizes: sizes of sparse features the model was trained on before.
             new_sizes: sizes of current sparse features.
             reg_lambda: regularization constant.
+
         Returns:
             new DenseForSparse layer.
         """
