@@ -39,6 +39,7 @@ def compare_featurized_states(
     Args:
         states1: Featurized states
         states2: More featurized states
+        ignore_origin: If `True`, do not return `False` if only the origin is different
 
     Returns:
         True if states are identical and False otherwise.
@@ -172,7 +173,7 @@ class TestTrackerFeaturizer:
             assert np.all(expected_array == actual_array)
 
     @pytest.mark.parametrize("ignore_action_unlikely_intent", [True, False])
-    def test_state_features_ignore_action_unlikely_intent(
+    def test_create_state_features_ignore_action_unlikely_intent(
         self,
         moodbot_domain: Domain,
         moodbot_features: Dict[Text, Dict[Text, Features]],
@@ -223,65 +224,88 @@ class TestTrackerFeaturizer:
         else:
             assert num_action_unlikely_intent_features == 2
 
+    @pytest.mark.parametrize("ignore_action_unlikely_intent", [True, False])
+    def test_prediction_states_ignore_action_unlikely_intent(
+        self, moodbot_domain: Domain, ignore_action_unlikely_intent: bool
+    ):
+        # The base class doesn't implement `prediction_states`
+        if self.TRACKER_FEATURIZER_CLASS == TrackerFeaturizer:
+            return
+
+        state_featurizer = self.SINGLE_STATE_FEATURIZER_CLASS()
+        tracker_featurizer = self.TRACKER_FEATURIZER_CLASS(state_featurizer)
+
+        tracker = DialogueStateTracker.from_events(
+            "default",
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ActionExecuted("utter_greet"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("mood_great"),
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ActionExecuted("utter_happy"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("goodbye"),
+            ],
+            domain=moodbot_domain,
+        )
+
+        actual_states = tracker_featurizer.prediction_states(
+            [tracker],
+            moodbot_domain,
+            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
+        )
+
+        expected_states = [
+            [
+                {},
+                {
+                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                    USER: {INTENT: "greet"},
+                },
+                {
+                    USER: {INTENT: "greet"},
+                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_UNLIKELY_INTENT_NAME},
+                },
+                {
+                    USER: {INTENT: "greet"},
+                    PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},
+                },
+                {
+                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                    USER: {INTENT: "mood_great"},
+                },
+                {
+                    USER: {INTENT: "mood_great"},
+                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_UNLIKELY_INTENT_NAME},
+                },
+                {
+                    USER: {INTENT: "mood_great"},
+                    PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
+                },
+                {
+                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                    USER: {INTENT: "goodbye"},
+                },
+            ]
+        ]
+
+        if ignore_action_unlikely_intent:
+            # Drop all action_unlikely_intent states
+            expected_states = [[expected_states[0][i] for i in {0, 1, 3, 4, 6, 7}]]
+
+        assert actual_states is not None
+        assert len(actual_states) == len(expected_states)
+
+        for actual, expected in zip(actual_states, expected_states):
+            assert actual == expected
+
 
 class TestFullDialogueTrackerFeaturizer(TestTrackerFeaturizer):
 
     TRACKER_FEATURIZER_CLASS = FullDialogueTrackerFeaturizer
-
-    def test_featurize_trackers(
-        self,
-        moodbot_tracker: DialogueStateTracker,
-        moodbot_domain: Domain,
-        moodbot_features: Dict[Text, Dict[Text, Features]],
-        moodbot_tracker_features_without_action_unlikely_intent: List[
-            List[Dict[Text, List[Features]]]
-        ],
-    ):
-        state_featurizer = self.SINGLE_STATE_FEATURIZER_CLASS()
-        tracker_featurizer = self.TRACKER_FEATURIZER_CLASS(state_featurizer)
-
-        (
-            actual_features,
-            actual_labels,
-            actual_entity_tags,
-        ) = tracker_featurizer.featurize_trackers(
-            [moodbot_tracker], moodbot_domain, RegexInterpreter()
-        )
-
-        expected_features = moodbot_tracker_features_without_action_unlikely_intent
-        expected_labels = np.array(
-            [
-                [
-                    moodbot_domain.index_for_action(ACTION_LISTEN_NAME),
-                    moodbot_domain.index_for_action("utter_greet"),
-                    moodbot_domain.index_for_action(ACTION_LISTEN_NAME),
-                    moodbot_domain.index_for_action("utter_cheer_up"),
-                    moodbot_domain.index_for_action("utter_did_that_help"),
-                    moodbot_domain.index_for_action(ACTION_LISTEN_NAME),
-                    moodbot_domain.index_for_action("utter_goodbye"),
-                ]
-            ]
-        )
-        # expected_labels = np.array([
-        #     list(map(moodbot_domain.index_for_action, [
-        #         ACTION_LISTEN_NAME,
-        #         "utter_greet",
-        #         ACTION_LISTEN_NAME,
-        #         "utter_cheer_up",
-        #         "utter_did_that_help",
-        #         ACTION_LISTEN_NAME,
-        #         "utter_goodbye",
-        #     ]))
-        # ])
-
-        assert compare_features_and_labels(
-            actual_features=actual_features,
-            expected_features=expected_features,
-            actual_labels=actual_labels,
-            expected_labels=expected_labels,
-            actual_entity_tags=actual_entity_tags,
-            expected_entity_tags=None,
-        )
 
     @pytest.mark.parametrize(
         "ignore_action_unlikely_intent", [True, False],
@@ -394,6 +418,61 @@ class TestFullDialogueTrackerFeaturizer(TestTrackerFeaturizer):
 
         for actual, expected in zip(actual_features, expected_features):
             assert compare_featurized_states(actual, expected)
+
+    def test_featurize_trackers(
+        self,
+        moodbot_tracker: DialogueStateTracker,
+        moodbot_domain: Domain,
+        moodbot_features: Dict[Text, Dict[Text, Features]],
+        moodbot_tracker_features_without_action_unlikely_intent: List[
+            List[Dict[Text, List[Features]]]
+        ],
+    ):
+        state_featurizer = self.SINGLE_STATE_FEATURIZER_CLASS()
+        tracker_featurizer = self.TRACKER_FEATURIZER_CLASS(state_featurizer)
+
+        (
+            actual_features,
+            actual_labels,
+            actual_entity_tags,
+        ) = tracker_featurizer.featurize_trackers(
+            [moodbot_tracker], moodbot_domain, RegexInterpreter()
+        )
+
+        expected_features = moodbot_tracker_features_without_action_unlikely_intent
+        expected_labels = np.array(
+            [
+                [
+                    moodbot_domain.index_for_action(ACTION_LISTEN_NAME),
+                    moodbot_domain.index_for_action("utter_greet"),
+                    moodbot_domain.index_for_action(ACTION_LISTEN_NAME),
+                    moodbot_domain.index_for_action("utter_cheer_up"),
+                    moodbot_domain.index_for_action("utter_did_that_help"),
+                    moodbot_domain.index_for_action(ACTION_LISTEN_NAME),
+                    moodbot_domain.index_for_action("utter_goodbye"),
+                ]
+            ]
+        )
+        # expected_labels = np.array([
+        #     list(map(moodbot_domain.index_for_action, [
+        #         ACTION_LISTEN_NAME,
+        #         "utter_greet",
+        #         ACTION_LISTEN_NAME,
+        #         "utter_cheer_up",
+        #         "utter_did_that_help",
+        #         ACTION_LISTEN_NAME,
+        #         "utter_goodbye",
+        #     ]))
+        # ])
+
+        assert compare_features_and_labels(
+            actual_features,
+            expected_features,
+            actual_labels,
+            expected_labels,
+            actual_entity_tags,
+            expected_entity_tags=None,
+        )
 
     def test_prediction_states(
         self, moodbot_tracker: DialogueStateTracker, moodbot_domain: Domain
@@ -569,6 +648,85 @@ class TestIntentMaxHistoryTrackerFeaturizer(TestMaxHistoryTrackerFeaturizer):
         assert expected_labels.size == actual_labels.size
         assert expected_labels.shape == actual_labels.shape
         assert np.all(expected_labels == actual_labels)
+
+    @pytest.mark.parametrize("ignore_action_unlikely_intent", [True, False])
+    def test_prediction_states_ignore_action_unlikely_intent(
+        self, moodbot_domain: Domain, ignore_action_unlikely_intent: bool
+    ):
+        """.
+
+        Overwritten because last user utterance should be removed.
+        """
+
+        state_featurizer = self.SINGLE_STATE_FEATURIZER_CLASS()
+        tracker_featurizer = self.TRACKER_FEATURIZER_CLASS(state_featurizer)
+
+        tracker = DialogueStateTracker.from_events(
+            "default",
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("greet"),
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ActionExecuted("utter_greet"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("mood_great"),
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ActionExecuted("utter_happy"),
+                ActionExecuted(ACTION_LISTEN_NAME),
+                user_uttered("goodbye"),
+            ],
+            domain=moodbot_domain,
+        )
+
+        actual_states = tracker_featurizer.prediction_states(
+            [tracker],
+            moodbot_domain,
+            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
+        )
+
+        expected_states = [
+            [
+                {},
+                {
+                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                    USER: {INTENT: "greet"},
+                },
+                {
+                    USER: {INTENT: "greet"},
+                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_UNLIKELY_INTENT_NAME},
+                },
+                {
+                    USER: {INTENT: "greet"},
+                    PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},
+                },
+                {
+                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                    USER: {INTENT: "mood_great"},
+                },
+                {
+                    USER: {INTENT: "mood_great"},
+                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_UNLIKELY_INTENT_NAME},
+                },
+                {
+                    USER: {INTENT: "mood_great"},
+                    PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
+                },
+                # {
+                #     PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+                #     USER: {INTENT: "goodbye"},
+                # },
+            ]
+        ]
+
+        if ignore_action_unlikely_intent:
+            # Drop all action_unlikely_intent states
+            expected_states = [[expected_states[0][i] for i in {0, 1, 3, 4, 6}]]
+
+        assert actual_states is not None
+        assert len(actual_states) == len(expected_states)
+
+        for actual, expected in zip(actual_states, expected_states):
+            assert actual == expected
 
 
 # def test_state_features_keep_action_unlikely_intent_full_dialogue_tracker_featurizer(
@@ -753,126 +911,125 @@ class TestIntentMaxHistoryTrackerFeaturizer(TestMaxHistoryTrackerFeaturizer):
 #         assert actual == expected
 
 
-def test_prediction_states_ignore_action_intent_unlikely_full_dialogue_featurizer(
-    moodbot_domain: Domain,
-):
+# def test_prediction_states_ignore_action_intent_unlikely_full_dialogue_featurizer(
+#     moodbot_domain: Domain,
+# ):
+#     state_featurizer = SingleStateFeaturizer()
+#     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
 
-    state_featurizer = SingleStateFeaturizer()
-    tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
+#     tracker = DialogueStateTracker.from_events(
+#         "default",
+#         [
+#             ActionExecuted(ACTION_LISTEN_NAME),
+#             user_uttered("greet"),
+#             ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+#             ActionExecuted("utter_greet"),
+#             ActionExecuted(ACTION_LISTEN_NAME),
+#             user_uttered("mood_great"),
+#             ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+#             ActionExecuted("utter_happy"),
+#             ActionExecuted(ACTION_LISTEN_NAME),
+#             user_uttered("goodbye"),
+#         ],
+#         domain=moodbot_domain,
+#     )
 
-    tracker = DialogueStateTracker.from_events(
-        "default",
-        [
-            ActionExecuted(ACTION_LISTEN_NAME),
-            user_uttered("greet"),
-            ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
-            ActionExecuted("utter_greet"),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            user_uttered("mood_great"),
-            ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
-            ActionExecuted("utter_happy"),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            user_uttered("goodbye"),
-        ],
-        domain=moodbot_domain,
-    )
+#     actual_states = tracker_featurizer.prediction_states(
+#         [tracker], moodbot_domain, ignore_action_unlikely_intent=True
+#     )
 
-    actual_states = tracker_featurizer.prediction_states(
-        [tracker], moodbot_domain, ignore_action_unlikely_intent=True
-    )
+#     expected_states = [
+#         [
+#             {},
+#             {
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+#                 USER: {INTENT: "greet"},
+#             },
+#             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
+#             {
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+#                 USER: {INTENT: "mood_great"},
+#             },
+#             {
+#                 USER: {INTENT: "mood_great"},
+#                 PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
+#             },
+#             {
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+#                 USER: {INTENT: "goodbye"},
+#             },
+#         ]
+#     ]
 
-    expected_states = [
-        [
-            {},
-            {
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                USER: {INTENT: "greet"},
-            },
-            {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
-            {
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                USER: {INTENT: "mood_great"},
-            },
-            {
-                USER: {INTENT: "mood_great"},
-                PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
-            },
-            {
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                USER: {INTENT: "goodbye"},
-            },
-        ]
-    ]
+#     assert actual_states is not None
+#     assert len(actual_states) == len(expected_states)
 
-    assert actual_states is not None
-    assert len(actual_states) == len(expected_states)
-
-    for actual, expected in zip(actual_states, expected_states):
-        assert actual == expected
+#     for actual, expected in zip(actual_states, expected_states):
+#         assert actual == expected
 
 
-def test_prediction_states_keeps_action_intent_unlikely_full_dialogue_featurizer(
-    moodbot_domain: Domain,
-):
+# def test_prediction_states_keeps_action_intent_unlikely_full_dialogue_featurizer(
+#     moodbot_domain: Domain,
+# ):
 
-    state_featurizer = SingleStateFeaturizer()
-    tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
+#     state_featurizer = SingleStateFeaturizer()
+#     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
 
-    tracker = DialogueStateTracker.from_events(
-        "default",
-        [
-            ActionExecuted(ACTION_LISTEN_NAME),
-            user_uttered("greet"),
-            ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
-            ActionExecuted("utter_greet"),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            user_uttered("mood_great"),
-            ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
-            ActionExecuted("utter_happy"),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            user_uttered("goodbye"),
-        ],
-        domain=moodbot_domain,
-    )
+#     tracker = DialogueStateTracker.from_events(
+#         "default",
+#         [
+#             ActionExecuted(ACTION_LISTEN_NAME),
+#             user_uttered("greet"),
+#             ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+#             ActionExecuted("utter_greet"),
+#             ActionExecuted(ACTION_LISTEN_NAME),
+#             user_uttered("mood_great"),
+#             ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+#             ActionExecuted("utter_happy"),
+#             ActionExecuted(ACTION_LISTEN_NAME),
+#             user_uttered("goodbye"),
+#         ],
+#         domain=moodbot_domain,
+#     )
 
-    actual_states = tracker_featurizer.prediction_states([tracker], moodbot_domain,)
+#     actual_states = tracker_featurizer.prediction_states([tracker], moodbot_domain,)
 
-    expected_states = [
-        [
-            {},
-            {
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                USER: {INTENT: "greet"},
-            },
-            {
-                USER: {INTENT: "greet"},
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_UNLIKELY_INTENT_NAME},
-            },
-            {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
-            {
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                USER: {INTENT: "mood_great"},
-            },
-            {
-                USER: {INTENT: "mood_great"},
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_UNLIKELY_INTENT_NAME},
-            },
-            {
-                USER: {INTENT: "mood_great"},
-                PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
-            },
-            {
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                USER: {INTENT: "goodbye"},
-            },
-        ]
-    ]
+#     expected_states = [
+#         [
+#             {},
+#             {
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+#                 USER: {INTENT: "greet"},
+#             },
+#             {
+#                 USER: {INTENT: "greet"},
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_UNLIKELY_INTENT_NAME},
+#             },
+#             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
+#             {
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+#                 USER: {INTENT: "mood_great"},
+#             },
+#             {
+#                 USER: {INTENT: "mood_great"},
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_UNLIKELY_INTENT_NAME},
+#             },
+#             {
+#                 USER: {INTENT: "mood_great"},
+#                 PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
+#             },
+#             {
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+#                 USER: {INTENT: "goodbye"},
+#             },
+#         ]
+#     ]
 
-    assert actual_states is not None
-    assert len(actual_states) == len(expected_states)
+#     assert actual_states is not None
+#     assert len(actual_states) == len(expected_states)
 
-    for actual, expected in zip(actual_states, expected_states):
-        assert actual == expected
+#     for actual, expected in zip(actual_states, expected_states):
+#         assert actual == expected
 
 
 @pytest.mark.parametrize("max_history", [None, 2])
@@ -1417,56 +1574,56 @@ def test_create_state_features_keep_action_unlikely_intent_max_history_featurize
         assert compare_featurized_states(actual, expected)
 
 
-@pytest.mark.parametrize("max_history", [None, 2])
-def test_prediction_states_with_max_history_tracker_featurizer(
-    moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
-    max_history: Optional[int],
-):
+# @pytest.mark.parametrize("max_history", [None, 2])
+# def test_prediction_states_with_max_history_tracker_featurizer(
+#     moodbot_tracker: DialogueStateTracker,
+#     moodbot_domain: Domain,
+#     max_history: Optional[int],
+# ):
 
-    state_featurizer = SingleStateFeaturizer()
-    tracker_featurizer = MaxHistoryTrackerFeaturizer(
-        state_featurizer, max_history=max_history
-    )
-    actual_states = tracker_featurizer.prediction_states(
-        [moodbot_tracker], moodbot_domain,
-    )
+#     state_featurizer = SingleStateFeaturizer()
+#     tracker_featurizer = MaxHistoryTrackerFeaturizer(
+#         state_featurizer, max_history=max_history
+#     )
+#     actual_states = tracker_featurizer.prediction_states(
+#         [moodbot_tracker], moodbot_domain,
+#     )
 
-    expected_states = [
-        [
-            {},
-            {
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                USER: {INTENT: "greet"},
-            },
-            {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
-            {
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                USER: {INTENT: "mood_unhappy"},
-            },
-            {
-                USER: {INTENT: "mood_unhappy"},
-                PREVIOUS_ACTION: {ACTION_NAME: "utter_cheer_up"},
-            },
-            {
-                USER: {INTENT: "mood_unhappy"},
-                PREVIOUS_ACTION: {ACTION_NAME: "utter_did_that_help"},
-            },
-            {
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                USER: {INTENT: "deny"},
-            },
-            {USER: {INTENT: "deny"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_goodbye"},},
-        ]
-    ]
-    if max_history is not None:
-        expected_states = [x[-max_history:] for x in expected_states]
+#     expected_states = [
+#         [
+#             {},
+#             {
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+#                 USER: {INTENT: "greet"},
+#             },
+#             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
+#             {
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+#                 USER: {INTENT: "mood_unhappy"},
+#             },
+#             {
+#                 USER: {INTENT: "mood_unhappy"},
+#                 PREVIOUS_ACTION: {ACTION_NAME: "utter_cheer_up"},
+#             },
+#             {
+#                 USER: {INTENT: "mood_unhappy"},
+#                 PREVIOUS_ACTION: {ACTION_NAME: "utter_did_that_help"},
+#             },
+#             {
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+#                 USER: {INTENT: "deny"},
+#             },
+#             {USER: {INTENT: "deny"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_goodbye"},},
+#         ]
+#     ]
+#     if max_history is not None:
+#         expected_states = [x[-max_history:] for x in expected_states]
 
-    assert actual_states is not None
-    assert len(actual_states) == len(expected_states)
+#     assert actual_states is not None
+#     assert len(actual_states) == len(expected_states)
 
-    for actual, expected in zip(actual_states, expected_states):
-        assert actual == expected
+#     for actual, expected in zip(actual_states, expected_states):
+#         assert actual == expected
 
 
 @pytest.mark.parametrize("max_history", [None, 2])
@@ -2276,66 +2433,66 @@ def test_prediction_states_hide_rule_states_intent_max_history_featurizer(
         assert actual == expected
 
 
-@pytest.mark.parametrize("max_history", [None, 3])
-def test_prediction_states_ignores_action_intent_unlikely_intent_max_history_featurizer(
-    moodbot_tracker: DialogueStateTracker,
-    moodbot_domain: Domain,
-    max_history: Optional[int],
-):
+# @pytest.mark.parametrize("max_history", [None, 3])
+# def test_prediction_states_ignores_action_intent_unlikely_intent_max_history_featurizer(
+#     moodbot_tracker: DialogueStateTracker,
+#     moodbot_domain: Domain,
+#     max_history: Optional[int],
+# ):
 
-    state_featurizer = IntentTokenizerSingleStateFeaturizer()
-    tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
-        state_featurizer, max_history=max_history
-    )
+#     state_featurizer = IntentTokenizerSingleStateFeaturizer()
+#     tracker_featurizer = IntentMaxHistoryTrackerFeaturizer(
+#         state_featurizer, max_history=max_history
+#     )
 
-    tracker = DialogueStateTracker.from_events(
-        "default",
-        [
-            ActionExecuted(ACTION_LISTEN_NAME),
-            user_uttered("greet"),
-            ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
-            ActionExecuted("utter_greet"),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            user_uttered("mood_great"),
-            ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
-            ActionExecuted("utter_happy"),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            user_uttered("goodbye"),
-        ],
-        domain=moodbot_domain,
-    )
+#     tracker = DialogueStateTracker.from_events(
+#         "default",
+#         [
+#             ActionExecuted(ACTION_LISTEN_NAME),
+#             user_uttered("greet"),
+#             ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+#             ActionExecuted("utter_greet"),
+#             ActionExecuted(ACTION_LISTEN_NAME),
+#             user_uttered("mood_great"),
+#             ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+#             ActionExecuted("utter_happy"),
+#             ActionExecuted(ACTION_LISTEN_NAME),
+#             user_uttered("goodbye"),
+#         ],
+#         domain=moodbot_domain,
+#     )
 
-    actual_states = tracker_featurizer.prediction_states(
-        [tracker], moodbot_domain, ignore_action_unlikely_intent=True
-    )
+#     actual_states = tracker_featurizer.prediction_states(
+#         [tracker], moodbot_domain, ignore_action_unlikely_intent=True
+#     )
 
-    expected_states = [
-        [
-            {},
-            {
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                USER: {INTENT: "greet"},
-            },
-            {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
-            {
-                PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                USER: {INTENT: "mood_great"},
-            },
-            {
-                USER: {INTENT: "mood_great"},
-                PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
-            },
-        ]
-    ]
+#     expected_states = [
+#         [
+#             {},
+#             {
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+#                 USER: {INTENT: "greet"},
+#             },
+#             {USER: {INTENT: "greet"}, PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},},
+#             {
+#                 PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
+#                 USER: {INTENT: "mood_great"},
+#             },
+#             {
+#                 USER: {INTENT: "mood_great"},
+#                 PREVIOUS_ACTION: {ACTION_NAME: "utter_happy"},
+#             },
+#         ]
+#     ]
 
-    if max_history is not None:
-        expected_states = [x[-max_history:] for x in expected_states]
+#     if max_history is not None:
+#         expected_states = [x[-max_history:] for x in expected_states]
 
-    assert actual_states is not None
-    assert len(actual_states) == len(expected_states)
+#     assert actual_states is not None
+#     assert len(actual_states) == len(expected_states)
 
-    for actual, expected in zip(actual_states, expected_states):
-        assert actual == expected
+#     for actual, expected in zip(actual_states, expected_states):
+#         assert actual == expected
 
 
 @pytest.mark.parametrize("max_history", [None, 3])
