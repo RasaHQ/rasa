@@ -600,9 +600,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
 
-        _ = loaded_policy.predict_action_probabilities(
-            tracker, default_domain, interpreter
-        )
+        loaded_policy.predict_action_probabilities(tracker, default_domain, interpreter)
 
         assert (
             "Skipping predictions for IntentTEDPolicy" in caplog.text
