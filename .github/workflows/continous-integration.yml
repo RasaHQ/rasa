@@ -125,7 +125,7 @@ jobs:
         working-directory: changelog
         run: |
           # List all unexpected files in changelog/
-          UNEXPECTED_FILES=$(ls -A --ignore={"README.md",".gitignore","_template.md.jinja2"})
+          UNEXPECTED_FILES=$(ls -A --ignore={"README.md",".gitignore","_template.jinja2"})
           # Exit with error if found any unexpected files
           [[ "$UNEXPECTED_FILES" ]] && \
           echo "Found the following unexpected files in changelogs/" && \

@@ -1,1 +1,0 @@
-Added ``sasl_mechanism`` as an optional configurable parameter for the :ref:`event-brokers-kafka`. 
