@@ -202,12 +202,13 @@ you to stream events to a message broker." />
     <div class="versions-content">
       <div>
         <span class="current-version">
-          viewing: 1.10.25
+          viewing: 1.10.26
         </span>
       </div>
       <div class="other-versions">
           <p>tags</p>
           <div class="dropdown-content">
+              <a href="../.././1.10.26/api/event-brokers/">1.10.26</a>
               <a href="../.././1.10.25/api/event-brokers/">1.10.25</a>
               <a href="../.././1.10.24/api/event-brokers/">1.10.24</a>
               <a href="../.././1.10.23/api/event-brokers/">1.10.23</a>
@@ -401,7 +402,7 @@ example:</p>
 </div>
 </div>
 <div class="section" id="kafka-event-broker">
-<h2><a class="toc-backref" href="#id6">Kafka Event Broker</a><a class="headerlink" href="#kafka-event-broker" title="Permalink to this headline">¶</a></h2>
+<span id="event-brokers-kafka"></span><h2><a class="toc-backref" href="#id6">Kafka Event Broker</a><a class="headerlink" href="#kafka-event-broker" title="Permalink to this headline">¶</a></h2>
 <p>It is possible to use <a class="reference external" href="https://kafka.apache.org/">Kafka</a> as main broker for your
 events. In this example we are going to use the <a class="reference external" href="https://kafka-python.readthedocs.io/en/master/usage.html">python-kafka</a> library, a Kafka client written in Python.</p>
 <div class="contents local topic" id="id3">
@@ -423,6 +424,7 @@ events. In this example we are going to use the <a class="reference external" hr
   <span class="n">partition_by_sender</span><span class="p">:</span> <span class="kc">True</span>
   <span class="n">sasl_username</span><span class="p">:</span> <span class="n">username</span>
   <span class="n">sasl_password</span><span class="p">:</span> <span class="n">password</span>
+  <span class="n">sasl_mechanism</span><span class="p">:</span> <span class="n">PLAIN</span>
   <span class="n">topic</span><span class="p">:</span> <span class="n">topic</span>
   <span class="n">security_protocol</span><span class="p">:</span> <span class="n">SASL_PLAINTEXT</span>
   <span class="nb">type</span><span class="p">:</span> <span class="n">kafka</span>
