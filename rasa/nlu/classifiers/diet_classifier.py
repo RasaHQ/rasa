@@ -1268,7 +1268,7 @@ class DIET(TransformerRasaModel):
 
         Updates sizes of DenseForSparse layers by comparing current sparse feature
         sizes to old ones. This must be done before fine-tuning starts to account for
-        sparse features that might have changed. If any layer is changed, compiles
+        any change in the size of sparse features that might have happened because of addition of new data. If any layer is changed, compiles
         the model and fits a sample data on it to activate updated layer(s).
 
         Args:
