@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_addons as tfa
 from typing import Text, List, Dict, Any, Union, Optional, Tuple, Callable
 
 from rasa.shared.nlu.constants import TEXT

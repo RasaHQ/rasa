@@ -610,7 +610,6 @@ class TransformerRasaModel(RasaModel):
                 f"tags.{name}",
             )
 
-
     @staticmethod
     def _last_token(x: tf.Tensor, sequence_lengths: tf.Tensor) -> tf.Tensor:
         last_sequence_index = tf.maximum(0, sequence_lengths - 1)

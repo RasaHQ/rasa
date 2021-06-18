@@ -23,6 +23,7 @@ from tensorflow.python.eager import context
 from tensorflow.python.keras.engine.data_adapter import DataHandler
 from tensorflow.python.keras.engine import base_layer
 
+
 # noinspection PyMethodOverriding
 class TmpKerasModel(tf.keras.models.Model):
     """Temporary solution. Keras model that uses a custom data adapter inside fit."""
@@ -114,7 +115,7 @@ class TmpKerasModel(tf.keras.models.Model):
         """
         # TODO: TF 2.5 verify this is the correct equivalent for
         #  training._keras_api_gauge
-        base_layer.keras_api_gauge.get_cell('fit').set(True)
+        base_layer.keras_api_gauge.get_cell("fit").set(True)
         # Legacy graph support is contained in `training_v1.Model`.
         version_utils.disallow_legacy_graph("Model", "fit")
         self._assert_compile_was_called()
