@@ -442,11 +442,12 @@ class IntentTEDPolicy(TEDPolicy):
             return self._prediction(self._default_predictions(domain))
 
         # Prediction through the policy is skipped if:
-        # 1. If the tracker does not contain any event of type `UserUttered` till now.
+        # 1. If the tracker does not contain any event of type `UserUttered`
+        #    till now.
         # 2. There is at least one event of type `ActionExecuted`
         #    after the last `UserUttered` event.
         if not tracker.get_last_event_for(UserUttered) or (
-            tracker.events and self._is_queried_for_first_time(tracker)
+            tracker.events and not self._is_queried_for_first_time(tracker)
         ):
             logger.debug(
                 f"Skipping predictions for {self.__class__.__name__} "
@@ -488,10 +489,11 @@ class IntentTEDPolicy(TEDPolicy):
         """Checks if query was made for the first time after latest `UserUttered`.
 
         Should check if there is an `ActionExecuted` after the last `UserUttered`.
-        If there is no `UserUttered` event in the tracker, then also it returns False.
+        Assumes there is at least one `UserUttered` event.
 
         Returns:
-            Whether the policy was queried for the first time after latest `UserUttered`.
+            Whether the policy was queried for the first time after latest
+            `UserUttered`.
         """
         last_user_uttered_index = -1
 
@@ -502,14 +504,12 @@ class IntentTEDPolicy(TEDPolicy):
             if isinstance(applied_events[index], UserUttered):
                 last_user_uttered_index = index
                 break
-        if last_user_uttered_index == -1:
-            return False
 
         # Find the first event of type `ActionExecuted` after the index found above.
         for index in range(last_user_uttered_index + 1, len(applied_events)):
             if isinstance(applied_events[index], ActionExecuted):
-                return True
-        return False
+                return False
+        return True
 
     def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
         """Checks if the intent should raise `action_unlikely_intent`.
