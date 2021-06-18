@@ -172,36 +172,36 @@ async def form_bot_agent(trained_async: Callable) -> Agent:
     return Agent.load_local_model(zipped_model, action_endpoint=endpoint)
 
 
-@pytest.fixture
-def moodbot_features(
-    request, moodbot_domain: Domain
-) -> Dict[Text, Dict[Text, Features]]:
-    """Makes intent and action features for the moodbot domain to faciliate
-    making expected state features.
+# @pytest.fixture
+# def moodbot_features(
+#     request, moodbot_domain: Domain
+# ) -> Dict[Text, Dict[Text, Features]]:
+#     """Makes intent and action features for the moodbot domain to faciliate
+#     making expected state features.
 
-    Returns:
-      A dict containing dicts for mapping action and intent names to features.
-    """
-    origin = getattr(request, "param", "SingleStateFeaturizer")
-    action_shape = (1, len(moodbot_domain.action_names_or_texts))
-    actions = {}
-    for index, action in enumerate(moodbot_domain.action_names_or_texts):
-        actions[action] = Features(
-            sparse.coo_matrix(([1.0], [[0], [index]]), shape=action_shape),
-            FEATURE_TYPE_SENTENCE,
-            ACTION_NAME,
-            origin,
-        )
-    intent_shape = (1, len(moodbot_domain.intents))
-    intents = {}
-    for index, intent in enumerate(moodbot_domain.intents):
-        intents[intent] = Features(
-            sparse.coo_matrix(([1.0], [[0], [index]]), shape=intent_shape),
-            FEATURE_TYPE_SENTENCE,
-            INTENT,
-            origin,
-        )
-    return {"intents": intents, "actions": actions}
+#     Returns:
+#       A dict containing dicts for mapping action and intent names to features.
+#     """
+#     origin = getattr(request, "param", "SingleStateFeaturizer")
+#     action_shape = (1, len(moodbot_domain.action_names_or_texts))
+#     actions = {}
+#     for index, action in enumerate(moodbot_domain.action_names_or_texts):
+#         actions[action] = Features(
+#             sparse.coo_matrix(([1.0], [[0], [index]]), shape=action_shape),
+#             FEATURE_TYPE_SENTENCE,
+#             ACTION_NAME,
+#             origin,
+#         )
+#     intent_shape = (1, len(moodbot_domain.intents))
+#     intents = {}
+#     for index, intent in enumerate(moodbot_domain.intents):
+#         intents[intent] = Features(
+#             sparse.coo_matrix(([1.0], [[0], [index]]), shape=intent_shape),
+#             FEATURE_TYPE_SENTENCE,
+#             INTENT,
+#             origin,
+#         )
+#     return {"intents": intents, "actions": actions}
 
 
 @pytest.fixture
@@ -212,37 +212,7 @@ def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
 
 
 @pytest.fixture
-def moodbot_events_with_action_unlikely_intent() -> List[Event]:
-    return [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        tests.core.utilities.user_uttered("greet"),
-        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
-        ActionExecuted("utter_greet"),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        tests.core.utilities.user_uttered("mood_unhappy"),
-        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
-        ActionExecuted("utter_cheer_up"),
-        ActionExecuted("utter_did_that_help"),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        tests.core.utilities.user_uttered("deny"),
-        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
-        ActionExecuted("utter_goodbye"),
-    ]
-
-
-@pytest.fixture
-def moodbot_tracker_with_action_unlikely_intent(
-    moodbot_domain: Domain, moodbot_events_with_action_unlikely_intent: List[Event]
-) -> DialogueStateTracker:
-    return DialogueStateTracker.from_events(
-        sender_id="default",
-        evts=moodbot_events_with_action_unlikely_intent,
-        domain=moodbot_domain,
-    )
-
-
-@pytest.fixture
-def moodbot_tracker_features_with_action_unlikely_intent(
+def moodbot_tracker_features_with_3_action_unlikely_intent(
     moodbot_features: Dict[Text, Dict[Text, Features]]
 ) -> List[List[Dict[Text, List[Features]]]]:
     return [
