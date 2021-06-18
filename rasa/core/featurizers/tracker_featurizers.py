@@ -44,7 +44,7 @@ class TrackerFeaturizer:
     """Base class for actual tracker featurizers."""
 
     def __init__(
-        self, state_featurizer: Optional[SingleStateFeaturizer] = None
+        self, state_featurizer: Optional[SingleStateFeaturizer] = None, **kwargs: Any,
     ) -> None:
         """Initializes the tracker featurizer.
 

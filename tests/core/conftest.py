@@ -5,7 +5,7 @@ from sanic.request import Request
 import uuid
 from datetime import datetime
 
-from typing import Generator, Callable, Dict, Text
+from typing import Generator, Callable, Dict, Text, List
 
 from scipy import sparse
 
@@ -15,7 +15,13 @@ import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.channels.channel import CollectingOutputChannel, OutputChannel
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ReminderScheduled, UserUttered, ActionExecuted
+from rasa.shared.core.events import (
+    ReminderScheduled,
+    UserUttered,
+    ActionExecuted,
+    Event,
+)
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator, NaturalLanguageGenerator
 from rasa.core.policies.memoization import Policy
 from rasa.core.processor import MessageProcessor
@@ -25,7 +31,7 @@ from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import INTENT, ACTION_NAME, FEATURE_TYPE_SENTENCE
-from tests.core.utilities import tracker_from_dialogue_file
+import tests.core.utilities
 
 
 class CustomSlot(Slot):
@@ -200,6 +206,96 @@ def moodbot_features(
 
 @pytest.fixture
 def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
-    return tracker_from_dialogue_file(
+    return tests.core.utilities.tracker_from_dialogue_file(
         "data/test_dialogues/moodbot.json", moodbot_domain
     )
+
+
+@pytest.fixture
+def moodbot_events_with_action_unlikely_intent() -> List[Event]:
+    return [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        tests.core.utilities.user_uttered("greet"),
+        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+        ActionExecuted("utter_greet"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        tests.core.utilities.user_uttered("mood_unhappy"),
+        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+        ActionExecuted("utter_cheer_up"),
+        ActionExecuted("utter_did_that_help"),
+        ActionExecuted(ACTION_LISTEN_NAME),
+        tests.core.utilities.user_uttered("deny"),
+        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+        ActionExecuted("utter_goodbye"),
+    ]
+
+
+@pytest.fixture
+def moodbot_tracker_with_action_unlikely_intent(
+    moodbot_domain: Domain, moodbot_events_with_action_unlikely_intent: List[Event]
+) -> DialogueStateTracker:
+    return DialogueStateTracker.from_events(
+        sender_id="default",
+        evts=moodbot_events_with_action_unlikely_intent,
+        domain=moodbot_domain,
+    )
+
+
+@pytest.fixture
+def moodbot_tracker_features_with_action_unlikely_intent(
+    moodbot_features: Dict[Text, Dict[Text, Features]]
+) -> List[List[Dict[Text, List[Features]]]]:
+    return [
+        {},
+        {
+            ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+            INTENT: [moodbot_features["intents"]["greet"]],
+        },
+        {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
+        {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
+        {
+            ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+            INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+        },
+        {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
+        {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+        {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
+        {
+            ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+            INTENT: [moodbot_features["intents"]["deny"]],
+        },
+        {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]},
+    ]
+
+
+@pytest.fixture
+def moodbot_tracker_features_without_action_unlikely_intent(
+    moodbot_features: Dict[Text, Dict[Text, Features]]
+) -> List[List[Dict[Text, List[Features]]]]:
+    return [
+        [
+            {},
+            {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["greet"]],
+            },
+            {ACTION_NAME: [moodbot_features["actions"]["utter_greet"]]},
+            {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["mood_unhappy"]],
+            },
+            {ACTION_NAME: [moodbot_features["actions"]["utter_cheer_up"]]},
+            {ACTION_NAME: [moodbot_features["actions"]["utter_did_that_help"]]},
+            {
+                ACTION_NAME: [moodbot_features["actions"][ACTION_LISTEN_NAME]],
+                INTENT: [moodbot_features["intents"]["deny"]],
+            },
+        ]
+    ]
+
+
+@pytest.fixture
+def moodbot_action_unlikely_intent_state_features(
+    moodbot_features: Dict[Text, Dict[Text, Features]]
+) -> Dict[Text, List[Features]]:
+    return {ACTION_NAME: [moodbot_features["actions"][ACTION_UNLIKELY_INTENT_NAME]]}
