@@ -446,7 +446,7 @@ class IntentTEDPolicy(TEDPolicy):
         # 2. There is at least one event of type `ActionExecuted`
         #    after the last `UserUttered` event.
         if not tracker.get_last_event_for(UserUttered) or (
-            tracker.events and tracker.action_executed_after_last_user_uttered()
+            tracker.events and self._is_queried_for_first_time(tracker)
         ):
             logger.debug(
                 f"Skipping predictions for {self.__class__.__name__} "
@@ -482,6 +482,34 @@ class IntentTEDPolicy(TEDPolicy):
             confidences,
             action_metadata=self._collect_action_metadata(domain, similarities),
         )
+
+    @staticmethod
+    def _is_queried_for_first_time(tracker: DialogueStateTracker) -> bool:
+        """Checks if query was made for the first time after latest `UserUttered`.
+
+        Should check if there is an `ActionExecuted` after the last `UserUttered`.
+        If there is no `UserUttered` event in the tracker, then also it returns False.
+
+        Returns:
+            Whether the policy was queried for the first time after latest `UserUttered`.
+        """
+        last_user_uttered_index = -1
+
+        applied_events = tracker.applied_events()
+
+        # Find index of last `UserUttered` event.
+        for index in range(len(applied_events) - 1, -1, -1):
+            if isinstance(applied_events[index], UserUttered):
+                last_user_uttered_index = index
+                break
+        if last_user_uttered_index == -1:
+            return False
+
+        # Find the first event of type `ActionExecuted` after the index found above.
+        for index in range(last_user_uttered_index + 1, len(applied_events)):
+            if isinstance(applied_events[index], ActionExecuted):
+                return True
+        return False
 
     def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
         """Checks if the intent should raise `action_unlikely_intent`.
