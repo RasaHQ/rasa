@@ -447,7 +447,7 @@ class IntentTEDPolicy(TEDPolicy):
         # 2. There is at least one event of type `ActionExecuted`
         #    after the last `UserUttered` event.
         if not tracker.get_last_event_for(UserUttered) or (
-            tracker.events and self._is_queried_for_first_time(tracker)
+            tracker.events and self._is_queried_before_action_executed(tracker)
         ):
             logger.debug(
                 f"Skipping predictions for {self.__class__.__name__} "
@@ -485,14 +485,14 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     @staticmethod
-    def _is_queried_for_first_time(tracker: DialogueStateTracker) -> bool:
-        """Checks if query was made for the first time after latest `UserUttered`.
+    def _is_queried_before_action_executed(tracker: DialogueStateTracker) -> bool:
+        """Checks if query was made before an `ActionExecuted` event.
 
         Should check if there is an `ActionExecuted` after the last `UserUttered`.
 
         Returns:
-            Whether the policy was queried for the first time after latest
-            `UserUttered`.
+            Whether the policy was queried after `UserUttered`
+            but before `ActionExecuted`.
         """
         applied_events = tracker.applied_events()
 
