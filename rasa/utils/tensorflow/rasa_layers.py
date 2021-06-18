@@ -29,8 +29,36 @@ from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.transformer import TransformerEncoder
 
+# class RasaCustomLayer(tf.keras.layers.Layer):
+#     def adjust_sparse_layers_for_incremental_training(self):
+#         for layer in self._tf_layers:
+#             if isinstance(layer, RasaCustomLayer):
+#                 layer.adjust_sparse_layers_for_incremental_training()
+#             elif isinstance(layer, DenseForSparse):
+#                 pass
+#         pass
 
-class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
+# for layer in self._tf_layers:
+# 	if isinstance(layer, RasaCustomLayer):
+# 		layer.adjust_sparse_layers_for_incremental_training()
+#
+#
+# {
+# 	sequence_layer.text: layer object
+#
+# }
+#
+# {
+# 	feature_combining.text: layer Object
+#
+# }
+#
+# {
+# 	dense_for_sparse_text_sequence: DenseForSparse object
+# }
+
+
+class ConcatenateSparseDenseFeatures(RasaCustomLayer):
     """Combines multiple sparse and dense feature tensors into one dense tensor.
 
     This layer combines features from various featurisers into a single feature array
@@ -202,7 +230,7 @@ class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer):
         return tf.concat(dense_features, axis=-1)
 
 
-class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
+class RasaFeatureCombiningLayer(RasaCustomLayer):
     """Combines multiple dense or sparse feature tensors into one.
 
     This layer combines features by following these steps:
@@ -540,7 +568,7 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
         return features_to_return, mask_combined_sequence_sentence
 
 
-class RasaSequenceLayer(tf.keras.layers.Layer):
+class RasaSequenceLayer(RasaCustomLayer):
     """Creates an embedding from all features for a sequence attribute; facilitates MLM.
 
     This layer combines all features for an attribute and embeds them using a
