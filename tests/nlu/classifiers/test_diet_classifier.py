@@ -470,7 +470,7 @@ async def test_margin_loss_is_not_normalized(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
-@pytest.mark.timeout(120, func_only=True)
+@pytest.mark.timeout(240, func_only=True)
 async def test_set_random_seed(component_builder, tmpdir, nlu_as_json_path: Text):
     """test if train result is the same for two runs of tf embedding"""
 
