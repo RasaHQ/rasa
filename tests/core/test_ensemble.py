@@ -462,7 +462,8 @@ def test_from_dict_does_not_change_passed_dict_parameter():
     }
 
     config_copy = copy.deepcopy(config)
-    PolicyEnsemble.from_dict(config_copy)
+    with pytest.warns(UserWarning):
+        PolicyEnsemble.from_dict(config_copy)
 
     assert config == config_copy
 

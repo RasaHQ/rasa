@@ -648,6 +648,7 @@ def test_model_finetuning_core(
     use_latest_model: bool,
 ):
     mocked_core_training = mock_core_training(monkeypatch)
+    # with pytest.warns(UserWarning):
     mock_agent_load = Mock(wraps=Agent.load)
     monkeypatch.setattr(Agent, "load", mock_agent_load)
 
@@ -673,15 +674,15 @@ def test_model_finetuning_core(
     )
     new_stories_path = tmp_path / "new_stories.yml"
     rasa.shared.utils.io.write_yaml(old_stories, new_stories_path)
-
-    train_core(
-        "data/test_moodbot/domain.yml",
-        str(new_config_path),
-        str(new_stories_path),
-        output=output,
-        model_to_finetune=trained_moodbot_path,
-        finetuning_epoch_fraction=0.2,
-    )
+    with pytest.warns(UserWarning):
+        train_core(
+            "data/test_moodbot/domain.yml",
+            str(new_config_path),
+            str(new_stories_path),
+            output=output,
+            model_to_finetune=trained_moodbot_path,
+            finetuning_epoch_fraction=0.2,
+        )
 
     mocked_core_training.assert_called_once()
     _, kwargs = mocked_core_training.call_args
@@ -706,7 +707,6 @@ def test_model_finetuning_core_with_default_epochs(
     del old_config["policies"][0]["epochs"]
     new_config_path = tmp_path / "new_config.yml"
     rasa.shared.utils.io.write_yaml(old_config, new_config_path)
-
     train_core(
         "data/test_moodbot/domain.yml",
         str(new_config_path),
@@ -715,11 +715,9 @@ def test_model_finetuning_core_with_default_epochs(
         model_to_finetune=trained_moodbot_path,
         finetuning_epoch_fraction=2,
     )
-
     mocked_core_training.assert_called_once()
     _, kwargs = mocked_core_training.call_args
     model_to_finetune = kwargs["model_to_finetune"]
-
     ted = model_to_finetune.policy_ensemble.policies[0]
     assert ted.config[EPOCHS] == TEDPolicy.defaults[EPOCHS] * 2
 

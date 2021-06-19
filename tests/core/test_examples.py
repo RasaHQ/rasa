@@ -71,6 +71,7 @@ async def test_formbot_example(form_bot_agent: Agent):
         input_text: Text, output_text: Text, slot: Optional[Text] = None
     ) -> None:
         with aioresponses() as mocked:
+            # with pytest.warns(UserWarning):
             mocked.post(
                 "https://example.com/webhooks/actions",
                 payload=response_for_slot(slot),
@@ -88,12 +89,14 @@ async def test_formbot_example(form_bot_agent: Agent):
         }
         with aioresponses() as mocked:
             # Request which rejects form execution
+            # with pytest.warns(UserWarning):
             mocked.post(
                 "https://example.com/webhooks/actions",
                 repeat=False,
                 exception=ClientResponseError(400, "", json.dumps(response_error)),
             )
             # Request after returning from unhappy path which sets next requested slot
+            # with pytest.warns(UserWarning):
             mocked.post(
                 "https://example.com/webhooks/actions",
                 payload=response_for_slot(slot),

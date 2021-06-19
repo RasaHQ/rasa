@@ -1,5 +1,3 @@
-import pytest
-
 from pathlib import Path
 from unittest.mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
@@ -106,14 +104,15 @@ async def test_training_script_with_max_history_set(
 
 
 async def test_training_script_with_restart_stories(tmp_path: Path, domain_path: Text):
-    await train(
-        domain_path,
-        "data/test_yaml_stories/stories_restart.yml",
-        str(tmp_path),
-        interpreter=RegexInterpreter(),
-        policy_config="data/test_config/max_hist_config.yml",
-        additional_arguments={},
-    )
+    with pytest.warns(UserWarning):
+        await train(
+            domain_path,
+            "data/test_yaml_stories/stories_restart.yml",
+            str(tmp_path),
+            interpreter=RegexInterpreter(),
+            policy_config="data/test_config/max_hist_config.yml",
+            additional_arguments={},
+        )
     assert True
 
 
@@ -131,23 +130,25 @@ async def test_random_seed(
     # policy_train = Mock()
     # monkeypatch.setattr(TED, "fit", policy_train)
 
-    agent_1 = await train(
-        domain_path,
-        stories_path,
-        str(tmp_path),
-        interpreter=RegexInterpreter(),
-        policy_config=policies_config,
-        additional_arguments={},
-    )
+    with pytest.warns(UserWarning):
+        agent_1 = await train(
+            domain_path,
+            stories_path,
+            str(tmp_path),
+            interpreter=RegexInterpreter(),
+            policy_config=policies_config,
+            additional_arguments={},
+        )
 
-    agent_2 = await train(
-        domain_path,
-        stories_path,
-        str(tmp_path),
-        interpreter=RegexInterpreter(),
-        policy_config=policies_config,
-        additional_arguments={},
-    )
+    with pytest.warns(UserWarning):
+        agent_2 = await train(
+            domain_path,
+            stories_path,
+            str(tmp_path),
+            interpreter=RegexInterpreter(),
+            policy_config=policies_config,
+            additional_arguments={},
+        )
 
     processor_1 = agent_1.create_processor()
     processor_2 = agent_2.create_processor()
@@ -169,14 +170,15 @@ async def test_trained_interpreter_passed_to_policies(
 
     interpreter = Mock(spec=RasaNLUInterpreter)
 
-    await train(
-        domain_path,
-        stories_path,
-        str(tmp_path),
-        interpreter=interpreter,
-        policy_config=policies_config,
-        additional_arguments={},
-    )
+    with pytest.warns(UserWarning):
+        await train(
+            domain_path,
+            stories_path,
+            str(tmp_path),
+            interpreter=interpreter,
+            policy_config=policies_config,
+            additional_arguments={},
+        )
 
     policy_train.assert_called_once()
 

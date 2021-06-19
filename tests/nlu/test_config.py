@@ -112,7 +112,6 @@ def test_set_attr_on_component():
 
 def test_override_defaults_supervised_embeddings_pipeline():
     builder = ComponentBuilder()
-
     _config = RasaNLUModelConfig(
         {
             "language": "en",
@@ -137,9 +136,10 @@ def test_override_defaults_supervised_embeddings_pipeline():
     )
     assert component1.component_config["pooling"] == "max"
 
-    component2 = builder.create_component(
-        _config.for_component(idx_classifier), _config
-    )
+    with pytest.warns(UserWarning):
+        component2 = builder.create_component(
+            _config.for_component(idx_classifier), _config
+        )
     assert component2.component_config["epochs"] == 10
     assert (
         component2.defaults["hidden_layers_sizes"].keys()
@@ -224,8 +224,16 @@ async def test_train_docker_and_docs_configs(
 def test_validate_required_components_from_data(
     config_path: Text, data_path: Text, expected_warning_excerpts: List[Text]
 ):
+    # with pytest.warns(UserWarning):
     loaded_config = config.load(config_path)
-    trainer = Trainer(loaded_config)
+    if (
+        config_path == "data/test_config/config_embedding_intent_response_selector.yml"
+        or config_path == "data/test_config/config_supervised_embeddings.yml"
+    ):
+        with pytest.warns(UserWarning):
+            trainer = Trainer(loaded_config)
+    else:
+        trainer = Trainer(loaded_config)
     training_data = rasa.shared.nlu.training_data.loading.load_data(data_path)
     with pytest.warns(UserWarning) as record:
         components.validate_required_components_from_data(

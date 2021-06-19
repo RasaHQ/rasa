@@ -869,7 +869,8 @@ async def test_should_predict_another_action(
 def test_get_next_action_probabilities_passes_interpreter_to_policies(
     monkeypatch: MonkeyPatch,
 ):
-    policy = TEDPolicy()
+    with pytest.warns(UserWarning):
+        policy = TEDPolicy()
     test_interpreter = Mock()
 
     def predict_action_probabilities(
@@ -911,7 +912,8 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
 def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
     predict_function: Callable,
 ):
-    policy = TEDPolicy()
+    with pytest.warns(UserWarning):
+        policy = TEDPolicy()
 
     policy.predict_action_probabilities = predict_function
 
