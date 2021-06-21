@@ -410,6 +410,7 @@ class IntentTEDPolicy(TEDPolicy):
         Returns:
             Metadata to be attached.
         """
+        query_intent_index = domain.intents.index(query_intent)
 
         def _compile_metadata_for_intent(
             intent_name: Text,
@@ -424,7 +425,6 @@ class IntentTEDPolicy(TEDPolicy):
                 "severity": severity,
             }
 
-        query_intent_index = domain.intents.index(query_intent)
         metadata = {
             "query_intent": _compile_metadata_for_intent(
                 query_intent,
