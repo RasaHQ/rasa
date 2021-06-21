@@ -401,18 +401,23 @@ for details.
 
 ### IntentTEDPolicy
 
+`IntentTEDPolicy` helps you review conversations and also allows your bot to react
+to unlikely user turns. It is an auxiliary policy that should only be used in
+conjunction with at least one other policy, as the only action that it can trigger
+is the special [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent) action.
+
 `IntentTEDPolicy` has the same model architecture as [`TEDPolicy`](./policies.mdx#ted-policy).
 The difference is at a task level. Instead of learning the best action to be triggered next,
 `IntentTEDPolicy` learns the set of intents that are most likely to be expressed by the user
-given the conversation context from training stories. It uses the learnt information at inference time by
+given the conversation context from training stories. It uses the learned information at inference time by
 checking if the predicted intent by NLU is the most likely intent. If the intent predicted
-by NLU is indeed likely to occur given the conversation context, `IntentTEDPolicy` does not predict
-any action. Otherwise, it predicts a special action named
-[`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent) with a confidence of `1.00`.
+by NLU is indeed likely to occur given the conversation context, `IntentTEDPolicy` does not trigger
+any action. Otherwise, it triggers an [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
+ with a confidence of `1.00`.
 
 `IntentTEDPolicy` should be viewed as an aid for `TEDPolicy`. Since, `TEDPolicy` is expected to improve
 with better coverage of unique conversation paths that the assistant is expected to handle in the training data,
-`IntentTEDPolicy` helps in surfacing these unique conversation paths from past conversations. For example, if you had
+`IntentTEDPolicy` helps to surface these unique conversation paths from past conversations. For example, if you had
 the following story in your training data:
 
 ```yaml
@@ -445,11 +450,10 @@ but an actual conversation might encounter interjections inside the form which y
 ```
 
 As soon as `deny` intent gets triggered, the policy handling the form will keep requesting for `cuisine` slot
-to be filled, as there is no other way to handle input inside the form according to the training stories.
-Reviewing such conversations are important so that you can account for them in the training data and
-subsequently, the assistant is able to handle them gracefully. `IntentTEDPolicy` can trigger an
-`action_unlikely_intent` action right after `deny` intent which is an indication that this conversation
-has taken a user turn that is not well represented by training stories and needs a review.
+to be filled, as the training stories don't say that this case should be treated differently.
+To help you identify that a special story that handles the user's `deny` intent might be missing at this point,
+ `IntentTEDPolicy` can trigger an `action_unlikely_intent` action right after `deny` intent.
+ Subsequently, you can improve your assistant by adding a new training story that handles this particular case.
 
 To reduce false warnings, `IntentTEDPolicy` has two mechanisms in place at inference time:
 
@@ -460,7 +464,7 @@ the next action, the ensemble of policies is not affected by it and the winning 
 still the one made by `RulePolicy`.
 
 2. `IntentTEDPolicy` does not predict an `action_unlikely_intent` if the last predicted intent
-isn't present in any of the training stories.
+isn't present in any of the training stories, which might happen if an intent is only used in rules.
 
 As mentioned earlier, while `TEDPolicy` learns the next best action, `IntentTEDPolicy` learns the
 next likely intent that a user can express. Given a conversation context, there can only be a single correct action,
@@ -469,11 +473,16 @@ whereas there can be multiple intents that are likely to occur in the same conve
 
 #### Prediction of `action_unlikely_intent`
 
-After training the internal ML model, `IntentTEDPolicy` does the following for each intent:
+`IntentTEDPolicy` is invoked immediately after a user utterance and can either
+trigger `action_unlikely_intent` or abstain (in which case other policies will predict actions).
+To determine if `action_unlikely_intent` should be triggered, `IntentTEDPolicy` computes a score
+ for the user's intent in the current dialogue context and checks if this score is below a
+ certain threshold score.
 
-1. Collect conversation contexts from training stories for which the corresponding intent is not the correct intent.
-2. Run these conversation contexts through the trained ML model and capture the predicted scores for the corresponding intent.
-3. Compute multiple quantiles
+This threshold score is learned at training time but can be adjusted at test time
+via the `tolerance` parameter.  The higher the `tolerance`, the lower the intent's
+score (the more unlikely the intent) needs to be before `IntentTEDPolicy` triggers
+the `action_unlikely_intent` action.
 
 **Configuration:**
 
@@ -483,7 +492,7 @@ If you want to fine-tune model's performance, start by modifying the following p
 * `epochs`:
   This parameter sets the number of times the algorithm will see the training data (default: `1`).
   One `epoch` is equals to one forward pass and one backward pass of all the training examples.
-  Sometimes the model needs more epochs to properly learn.
+  Sometimes the model needs more epochs to learn properly.
   Sometimes more epochs don't influence the performance.
   The lower the number of epochs the faster the model is trained.
   Here is how the config would look like:
@@ -517,7 +526,16 @@ If you want to fine-tune model's performance, start by modifying the following p
     are too many false warnings generated by `IntentTEDPolicy`.
 
 * `tolerance`:
-    TODO: fill in
+    The `tolerance` parameter is a number that ranges from `0.0` to `1.0` (inclusive).
+    It helps to adjust the threshold score used during prediction of `action_unlikely_intent`
+     at inference time. Here, `0.0` means that the score threshold is the one
+     that `IntentTEDPolicy` had determined at training time.
+    A tolerance of `1.0` means that the threshold score is so low that `IntentTED` would not
+    trigger `action_unlikely_intent` for any of the "negative examples" that it has encountered
+    during training. These negative examples are combinations of dialogue contexts and user
+    intents that are _incorrect_. `IntentTEDPolicy` generates these negative examples from your
+    training data by picking a random story part and pairing it with a random intent that doesn't
+     occur at this point.
 
 The above configuration parameters are the ones you should try tweaking according to your use case and training data.
 However, additional parameters exist that can be adapted.
@@ -647,13 +665,12 @@ However, additional parameters exist that can be adapted.
 
 #### Tuning the tolerance parameter
 
-Users are also encouraged to tune the `tolerance` parameter in `IntentTEDPolicy`'s configuration to reduce the number
+When [reviewing real conversations](./conversation-driven-development.mdx#review), users are
+ encouraged to tune the `tolerance` parameter in `IntentTEDPolicy`'s configuration to reduce the number
 of false warnings. As you increase the value of `tolerance` from `0` to `1` in steps of `0.05`,
 the number of false warnings should decrease. However, increasing the `tolerance` will
 also result in fewer triggers of `action_unlikely_intent` and hence more number of conversation
-paths not present in training stories missing from the set of flagged conversations. This is particularly helpful
-when you are [reviewing real conversations](./conversation-driven-development.mdx#review) that
-your assistant has processed.
+paths not present in training stories missing from the set of flagged conversations.
 
 :::note
 `IntentTEDPolicy` is only trained on [stories](./stories.mdx) and not [rules](./rules.mdx) from the training data.
