@@ -1,12 +1,12 @@
 import os
+import shutil
+from pathlib import Path
 from shutil import copyfile
-
-import pytest
 
 from rasa.core.test import CONFUSION_MATRIX_STORIES_FILE
 from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
-from rasa.shared.utils.io import list_files, write_yaml
+from rasa.shared.utils.io import list_files, write_yaml, write_text_file
 from typing import Callable
 from _pytest.pytester import RunResult
 
@@ -148,42 +148,28 @@ def test_test_core_comparison(
 
 
 def test_test_core_comparison_after_train(
-    run_in_simple_project: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult],
+    trained_rasa_model: str,
+    tmp_path: Path,
 ):
-    write_yaml(
-        {"language": "en", "policies": [{"name": "MemoizationPolicy"}]}, "config_1.yml"
-    )
+    path = Path(tmp_path / "comparison_models")
+    path.mkdir()
 
-    write_yaml(
-        {"language": "en", "policies": [{"name": "MemoizationPolicy"}]}, "config_2.yml"
-    )
+    run_one = Path(path / "run_1")
+    run_one.mkdir()
+    shutil.copy(trained_rasa_model, run_one)
 
-    run_in_simple_project(
-        "train",
-        "core",
-        "-c",
-        "config_1.yml",
-        "config_2.yml",
-        "--stories",
-        "data/stories.yml",
-        "--runs",
-        "2",
-        "--percentages",
-        "25",
-        "75",
-        "--out",
-        "comparison_models",
-    )
+    run_two = Path(path / "run_2")
+    run_two.mkdir()
+    shutil.copy(trained_rasa_model, run_two)
 
-    assert os.path.exists("comparison_models")
-    assert os.path.exists("comparison_models/run_1")
-    assert os.path.exists("comparison_models/run_2")
+    write_text_file("[1]", path / "num_stories.json")
 
     run_in_simple_project(
         "test",
         "core",
         "-m",
-        "comparison_models",
+        str(path),
         "--stories",
         "data/stories",
         "--evaluate-model-directory",

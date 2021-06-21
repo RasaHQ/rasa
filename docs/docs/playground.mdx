@@ -153,8 +153,9 @@ You can do this in Rasa using a form. In the code block below, we added the
 ```yaml-rasa live noResult assistantBuilder name=forms
 forms:
   newsletter_form:
-    email:
-    - type: from_text
+    required_slots:
+      email:
+      - type: from_text
 ```
 
 </AssistantBuilder.Code>

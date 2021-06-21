@@ -13,8 +13,6 @@ from rasa.shared.constants import DOCS_URL_CONNECTORS
 from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 from sanic.response import HTTPResponse
 
-from rasa.utils import common as common_utils
-
 logger = logging.getLogger(__name__)
 
 
@@ -47,12 +45,12 @@ class MattermostBot(OutputChannel):
 
         super(MattermostBot, self).__init__()
 
-    def _post_message_to_channel(self, channel_id: Text, message: Text):
+    def _post_message_to_channel(self, channel_id: Text, message: Text) -> Response:
         return self._post_data_to_channel(
             {"channel_id": channel_id, "message": message}
         )
 
-    def _post_data_to_channel(self, data) -> Response:
+    def _post_data_to_channel(self, data: Dict[Text, Any]) -> Response:
         """Send a message to a mattermost channel."""
 
         headers = {"Authorization": "Bearer " + self.token}
@@ -99,7 +97,7 @@ class MattermostBot(OutputChannel):
     ) -> None:
         """Sends buttons to the output."""
         # buttons are a list of objects: [(option_name, payload)]
-        # See https://docs.mattermost.com/developer/interactive-messages.html#message-buttons # noqa: W505
+        # See https://docs.mattermost.com/developer/interactive-messages.html#message-buttons # noqa: E501, W505
 
         actions = [
             {
@@ -202,7 +200,7 @@ class MattermostInput(InputChannel):
         bot_channel: Text,
         metadata: Optional[Dict],
         on_new_message: Callable[[UserMessage], Awaitable[None]],
-    ):
+    ) -> None:
         try:
             out_channel = MattermostBot(
                 self.url, self.token, bot_channel, self.webhook_url

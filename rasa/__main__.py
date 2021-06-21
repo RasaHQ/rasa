@@ -5,6 +5,7 @@ import platform
 import sys
 
 from rasa_sdk import __version__ as rasa_sdk_version
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 
 import rasa.telemetry
 import rasa.utils.io
@@ -82,17 +83,17 @@ def print_version() -> None:
     except ModuleNotFoundError:
         rasa_x_info = None
 
-    print(f"Rasa Version     : {version.__version__}")
-    print(f"Rasa SDK Version : {rasa_sdk_version}")
-    print(f"Rasa X Version   : {rasa_x_info}")
-    print(f"Python Version   : {platform.python_version()}")
-    print(f"Operating System : {platform.platform()}")
-    print(f"Python Path      : {sys.executable}")
+    print(f"Rasa Version      :         {version.__version__}")
+    print(f"Minimum Compatible Version: {MINIMUM_COMPATIBLE_VERSION}")
+    print(f"Rasa SDK Version  :         {rasa_sdk_version}")
+    print(f"Rasa X Version    :         {rasa_x_info}")
+    print(f"Python Version    :         {platform.python_version()}")
+    print(f"Operating System  :         {platform.platform()}")
+    print(f"Python Path       :         {sys.executable}")
 
 
 def main() -> None:
-    # Running as standalone python application
-
+    """Run as standalone python application."""
     parse_last_positional_argument_as_model_path()
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args()

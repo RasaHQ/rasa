@@ -1,25 +1,33 @@
 import json
 import logging
-import time
 from asyncio import AbstractEventLoop
-from typing import Any, Text, List, Optional, Union
+from typing import Any, Text, List, Optional, Union, Dict
 import time
 
 from rasa.core.brokers.broker import EventBroker
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.endpoints import EndpointConfig
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
 
+class KafkaProducerInitializationError(RasaException):
+    """Raised if the Kafka Producer cannot be properly initialized."""
+
+
 class KafkaEventBroker(EventBroker):
+    """Kafka event broker."""
+
     def __init__(
         self,
         url: Union[Text, List[Text], None],
         topic: Text = "rasa_core_events",
         client_id: Optional[Text] = None,
+        partition_by_sender: bool = False,
         sasl_username: Optional[Text] = None,
         sasl_password: Optional[Text] = None,
+        sasl_mechanism: Optional[Text] = "PLAIN",
         ssl_cafile: Optional[Text] = None,
         ssl_certfile: Optional[Text] = None,
         ssl_keyfile: Optional[Text] = None,
@@ -41,8 +49,14 @@ class KafkaEventBroker(EventBroker):
                 to servers and can be used to identify specific server-side log entries
                 that correspond to this client. Also submitted to `GroupCoordinator` for
                 logging with respect to producer group administration.
+            partition_by_sender: Flag to configure whether messages are partitioned by
+                sender_id or not
             sasl_username: Username for plain authentication.
             sasl_password: Password for plain authentication.
+            sasl_mechanism: Authentication mechanism when security_protocol is
+                configured for SASL_PLAINTEXT or SASL_SSL.
+                Valid values are: PLAIN, GSSAPI, OAUTHBEARER, SCRAM-SHA-256,
+                SCRAM-SHA-512. Default: `PLAIN`
             ssl_cafile: Optional filename of ca file to use in certificate
                 verification.
             ssl_certfile: Optional filename of file in pem format containing
@@ -58,19 +72,19 @@ class KafkaEventBroker(EventBroker):
         """
         import kafka
 
-        self.producer = None
+        self.producer: Optional[kafka.KafkaConsumer] = None
         self.url = url
         self.topic = topic
         self.client_id = client_id
+        self.partition_by_sender = partition_by_sender
         self.security_protocol = security_protocol.upper()
         self.sasl_username = sasl_username
         self.sasl_password = sasl_password
+        self.sasl_mechanism = sasl_mechanism
         self.ssl_cafile = ssl_cafile
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
-
-        self.producer: Optional[kafka.KafkaConsumer] = None
 
         logging.getLogger("kafka").setLevel(loglevel)
 
@@ -86,7 +100,12 @@ class KafkaEventBroker(EventBroker):
 
         return cls(broker_config.url, **broker_config.kwargs)
 
-    def publish(self, event, retries=60, retry_delay_in_seconds=5) -> None:
+    def publish(
+        self,
+        event: Dict[Text, Any],
+        retries: int = 60,
+        retry_delay_in_seconds: float = 5,
+    ) -> None:
         """Publishes events."""
         if self.producer is None:
             self._create_producer()
@@ -123,28 +142,18 @@ class KafkaEventBroker(EventBroker):
         import kafka
 
         if self.security_protocol == "PLAINTEXT":
-            self.producer = kafka.KafkaProducer(
-                client_id=self.client_id,
-                bootstrap_servers=self.url,
-                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
-                security_protocol=self.security_protocol,
-                ssl_check_hostname=False,
+            authentication_params = dict(
+                security_protocol=self.security_protocol, ssl_check_hostname=False,
             )
         elif self.security_protocol == "SASL_PLAINTEXT":
-            self.producer = kafka.KafkaProducer(
-                client_id=self.client_id,
-                bootstrap_servers=self.url,
-                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
+            authentication_params = dict(
                 sasl_plain_username=self.sasl_username,
                 sasl_plain_password=self.sasl_password,
-                sasl_mechanism="PLAIN",
+                sasl_mechanism=self.sasl_mechanism,
                 security_protocol=self.security_protocol,
             )
         elif self.security_protocol == "SSL":
-            self.producer = kafka.KafkaProducer(
-                client_id=self.client_id,
-                bootstrap_servers=self.url,
-                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
+            authentication_params = dict(
                 ssl_cafile=self.ssl_cafile,
                 ssl_certfile=self.ssl_certfile,
                 ssl_keyfile=self.ssl_keyfile,
@@ -152,10 +161,7 @@ class KafkaEventBroker(EventBroker):
                 security_protocol=self.security_protocol,
             )
         elif self.security_protocol == "SASL_SSL":
-            self.producer = kafka.KafkaProducer(
-                client_id=self.client_id,
-                bootstrap_servers=self.url,
-                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
+            authentication_params = dict(
                 sasl_plain_username=self.sasl_username,
                 sasl_plain_password=self.sasl_password,
                 ssl_cafile=self.ssl_cafile,
@@ -163,7 +169,7 @@ class KafkaEventBroker(EventBroker):
                 ssl_keyfile=self.ssl_keyfile,
                 ssl_check_hostname=self.ssl_check_hostname,
                 security_protocol=self.security_protocol,
-                sasl_mechanism="PLAIN",
+                sasl_mechanism=self.sasl_mechanism,
             )
         else:
             raise ValueError(
@@ -171,9 +177,28 @@ class KafkaEventBroker(EventBroker):
                 f"Invalid `security_protocol` ('{self.security_protocol}')."
             )
 
-    def _publish(self, event) -> None:
-        logger.debug(f"Calling kafka send({self.topic}, {event})")
-        self.producer.send(self.topic, event)
+        try:
+            self.producer = kafka.KafkaProducer(
+                client_id=self.client_id,
+                bootstrap_servers=self.url,
+                value_serializer=lambda v: json.dumps(v).encode(DEFAULT_ENCODING),
+                **authentication_params,
+            )
+        except AssertionError as e:
+            raise KafkaProducerInitializationError(
+                f"Cannot initialise `KafkaEventBroker`: {e}"
+            )
+
+    def _publish(self, event: Dict[Text, Any]) -> None:
+        if self.partition_by_sender:
+            partition_key = bytes(event.get("sender_id"), encoding=DEFAULT_ENCODING)
+        else:
+            partition_key = None
+
+        logger.debug(
+            f"Calling kafka send({self.topic}, value={event}, key={partition_key!s})"
+        )
+        self.producer.send(self.topic, value=event, key=partition_key)
 
     def _close(self) -> None:
         self.producer.close()

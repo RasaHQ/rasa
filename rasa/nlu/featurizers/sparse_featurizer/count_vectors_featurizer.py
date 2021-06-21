@@ -320,7 +320,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             rasa.shared.utils.io.raise_warning(
                 f"The out of vocabulary token '{self.OOV_token}' was configured, but "
                 f"could not be found in any one of the {training_data_type} "
-                f"training examples. All unseen words will be ignored during prediction.",
+                f"training examples. All unseen words will be "
+                f"ignored during prediction.",
                 docs=DOCS_URL_COMPONENTS + "#countvectorsfeaturizer",
             )
 
@@ -784,7 +785,9 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         return attribute_vocabularies
 
     @staticmethod
-    def _is_any_model_trained(attribute_vocabularies) -> bool:
+    def _is_any_model_trained(
+        attribute_vocabularies: Dict[Text, Optional[Dict[Text, int]]]
+    ) -> bool:
         """Check if any model got trained"""
 
         return any(value is not None for value in attribute_vocabularies.values())
@@ -875,12 +878,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["CountVectorsFeaturizer"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
+        """Loads trained component (see parent class for full docstring)."""
         file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)
 
