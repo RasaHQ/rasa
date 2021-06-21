@@ -397,8 +397,8 @@ class IntentTEDPolicy(TEDPolicy):
         self.compute_label_quantiles_post_training(model_data, label_ids)
 
     def _collect_action_metadata(
-        self, domain: Domain, similarities: np.array
-    ) -> Dict[Text, Dict[Text, float]]:
+        self, domain: Domain, similarities: np.array, query_intent: Text
+    ) -> Dict[Text, Any]:
         """Adds any metadata to be attached to the predicted action.
 
         Similarities for all intents and their thresholds are attached as metadata.
@@ -410,13 +410,45 @@ class IntentTEDPolicy(TEDPolicy):
         Returns:
             Metadata to be attached.
         """
-        metadata = {}
-        for intent_index, intent in enumerate(domain.intents):
-            if intent_index in self.label_thresholds:
-                metadata[intent] = {
-                    "score": similarities[0][intent_index],
-                    "threshold": self.label_thresholds[intent_index],
-                }
+
+        def _compile_metadata_for_intent(
+            intent_name: Text,
+            similarity_score: float,
+            threshold: Optional[float] = None,
+        ) -> Dict[Text, float]:
+            severity = similarity_score - threshold if threshold else 0
+            return {
+                "name": intent_name,
+                "score": similarity_score,
+                "threshold": threshold or 0,
+                "severity": severity,
+            }
+
+        query_intent_index = domain.intents.index(query_intent)
+        metadata = {
+            "query_intent": _compile_metadata_for_intent(
+                query_intent,
+                similarities[0][domain.intents.index(query_intent)],
+                self.label_thresholds.get(query_intent_index),
+            )
+        }
+
+        sorted_similarities = sorted(
+            [(index, similarity) for index, similarity in enumerate(similarities[0])],
+            key=lambda x: x[1],
+        )
+
+        all_intent_scores = []
+        for intent_index, similarity in sorted_similarities:
+            all_intent_scores.append(
+                _compile_metadata_for_intent(
+                    domain.intents[intent_index],
+                    similarity,
+                    self.label_thresholds.get(intent_index),
+                )
+            )
+
+        metadata["ranking"] = all_intent_scores
 
         return metadata
 
@@ -479,7 +511,9 @@ class IntentTEDPolicy(TEDPolicy):
 
         return self._prediction(
             confidences,
-            action_metadata=self._collect_action_metadata(domain, similarities),
+            action_metadata=self._collect_action_metadata(
+                domain, similarities, query_intent
+            ),
         )
 
     def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
