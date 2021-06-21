@@ -934,7 +934,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # if X contains all zeros do not predict some label
         if label_ids.size > 0:
             label = {
-                "id": hash(self.index_label_id_mapping[label_ids[0]]),
+                "id": str(hash(self.index_label_id_mapping[label_ids[0]])),
                 "name": self.index_label_id_mapping[label_ids[0]],
                 "confidence": message_sim[0],
             }
@@ -951,7 +951,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ranking = ranking[:output_length]
             label_ranking = [
                 {
-                    "id": hash(self.index_label_id_mapping[label_idx]),
+                    "id": str(hash(self.index_label_id_mapping[label_idx])),
                     "name": self.index_label_id_mapping[label_idx],
                     "confidence": score,
                 }
