@@ -446,9 +446,7 @@ class IntentTEDPolicy(TEDPolicy):
         #    till now.
         # 2. There is at least one event of type `ActionExecuted`
         #    after the last `UserUttered` event.
-        if not tracker.get_last_event_for(UserUttered) or (
-            tracker.events and self._is_queried_after_action_executed(tracker)
-        ):
+        if self._should_skip_prediction(tracker):
             logger.debug(
                 f"Skipping predictions for {self.__class__.__name__} "
                 f"as either there is no event of type `UserUttered` or "
@@ -485,23 +483,34 @@ class IntentTEDPolicy(TEDPolicy):
         )
 
     @staticmethod
-    def _is_queried_after_action_executed(tracker: DialogueStateTracker) -> bool:
-        """Checks if query was made after an `ActionExecuted` event.
+    def _should_skip_prediction(tracker: DialogueStateTracker) -> bool:
+        """Checks if the policy should skip making a prediction.
 
-        Should check if there is an `ActionExecuted` after the last `UserUttered`.
+        A prediction can be skipped if:
+            1. There is no event of type `UserUttered` in the tracker.
+            2. There is an event of type `ActionExecuted` after the last
+                `UserUttered` event. This is to prevent the dialogue manager
+                 from getting stuck in a prediction loop.
+                For example, if the last `ActionExecuted` event
+                contained `action_unlikely_intent` predicted by
+                `IntentTEDPolicy` and if `IntentTEDPolicy` runs inference
+                on the same tracker, it will predict `action_unlikely_intent`
+                again which would make the dialogue manager get stuck in a
+                prediction loop.
 
         Returns:
-            Whether the policy was queried after and `ActionExecuted`.
+            Whether prediction should be skipped.
         """
         applied_events = tracker.applied_events()
 
-        found_action = False
         for event in reversed(applied_events):
             if isinstance(event, ActionExecuted):
-                found_action = True
+                return True
             elif isinstance(event, UserUttered):
-                return found_action
-        return found_action
+                return False
+        # No event of type `ActionExecuted` and `UserUttered` means
+        # that there is nothing for `IntentTEDPolicy` to predict on.
+        return True
 
     def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
         """Checks if the intent should raise `action_unlikely_intent`.
