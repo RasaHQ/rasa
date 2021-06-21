@@ -60,8 +60,8 @@ class FallbackClassifier(IntentClassifier):
         if not self._should_fallback(message):
             return
 
-        # we assume that the confidence of fallback is 1 - confidence of top intent
-        confidence = 1 - message.data[INTENT][PREDICTED_CONFIDENCE_KEY]
+        # we assume that the confidence of fallback is the same as the fallback threshold.
+        confidence = self.component_config[THRESHOLD_KEY]
         message.data[INTENT] = _fallback_intent(confidence)
         message.data.setdefault(INTENT_RANKING_KEY, [])
         message.data[INTENT_RANKING_KEY].insert(0, _fallback_intent(confidence))
