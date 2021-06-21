@@ -1868,6 +1868,7 @@ class Domain:
         try:
             content = rasa.shared.utils.io.read_yaml_file(filename)
         except (RasaException, YamlSyntaxException):
+            logger.warning(f"The file {filename} could not be loaded as domain file. You can use https://yamlchecker.com/ to validate the YAML syntax of your file.")
             return False
 
         return any(key in content for key in ALL_DOMAIN_KEYS)
