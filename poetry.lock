@@ -656,7 +656,7 @@ testing = ["pre-commit"]
 
 [[package]]
 name = "fakeredis"
-version = "1.5.1"
+version = "1.5.2"
 description = "Fake implementation of redis API for testing purposes."
 category = "dev"
 optional = false
@@ -668,7 +668,7 @@ six = ">=1.12"
 sortedcontainers = "*"
 
 [package.extras]
-aioredis = ["aioredis"]
+aioredis = ["aioredis (<2)"]
 lua = ["lupa"]
 
 [[package]]
@@ -3304,7 +3304,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6,<3.9"
-content-hash = "5e7f812bfe6cef96737c7b65ab46e636926da2f77cb77913dad7456ef67d5d9a"
+content-hash = "132e3fc8cf23539f52a262416fd51c8b92092f17a284ebb393928a1ac40589d3"
 
 [metadata.files]
 absl-py = [
@@ -3704,8 +3704,8 @@ execnet = [
     {file = "execnet-1.8.1.tar.gz", hash = "sha256:7e3c2cdb6389542a91e9855a9cc7545fbed679e96f8808bcbb1beb325345b189"},
 ]
 fakeredis = [
-    {file = "fakeredis-1.5.1-py3-none-any.whl", hash = "sha256:afeb843b031697b3faff0eef8eedadef110741486b37e2bfb95167617785040f"},
-    {file = "fakeredis-1.5.1.tar.gz", hash = "sha256:7f85faf640a0da564d8342a7d62936b07f23f4a85f756118fbd35b55f64f281c"},
+    {file = "fakeredis-1.5.2-py3-none-any.whl", hash = "sha256:f1ffdb134538e6d7c909ddfb4fc5edeb4a73d0ea07245bc69b8135fbc4144b04"},
+    {file = "fakeredis-1.5.2.tar.gz", hash = "sha256:18fc1808d2ce72169d3f11acdb524a00ef96bd29970c6d34cfeb2edb3fc0c020"},
 ]
 fbmessenger = [
     {file = "fbmessenger-6.0.0-py2.py3-none-any.whl", hash = "sha256:82cffd6e2fe02bfcf8ed083c59bdddcfdaa594dd0040f0c49eabbaf0e58d974c"},
