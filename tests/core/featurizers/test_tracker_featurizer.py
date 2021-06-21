@@ -234,8 +234,8 @@ class TestTrackerFeaturizer:
             assert np.all(expected_array == actual_array)
 
     @pytest.mark.parametrize(
-        "ignore_action_unlikely_intent, max_history",
-        [(True, None), (True, 2), (False, None), (False, 2)],
+        "ignore_action_unlikely_intent, max_history, expected_num_action_unlikely_intent",
+        [(True, None, 0), (True, 2, 0), (False, None, 3), (False, 2, 3)],
     )
     def test_create_state_features_ignore_action_unlikely_intent(
         self,
@@ -245,6 +245,7 @@ class TestTrackerFeaturizer:
         moodbot_action_unlikely_intent_state_features: Dict[Text, Dict[Text, Features]],
         ignore_action_unlikely_intent: bool,
         max_history: Optional[int],
+        expected_num_action_unlikely_intent: int
     ):
         # The base class doesn't implement `create_state_features`
         if self.TRACKER_FEATURIZER_CLASS == TrackerFeaturizer:
@@ -254,6 +255,7 @@ class TestTrackerFeaturizer:
         tracker_featurizer = self.TRACKER_FEATURIZER_CLASS(
             state_featurizer, max_history=max_history
         )
+
         interpreter = RegexInterpreter()
         state_featurizer.prepare_for_training(moodbot_domain, interpreter)
         actual_features = tracker_featurizer.create_state_features(
@@ -266,17 +268,8 @@ class TestTrackerFeaturizer:
         num_action_unlikely_intent_features = count_features(
             actual_features, moodbot_action_unlikely_intent_state_features,
         )
-        if ignore_action_unlikely_intent:
-            assert num_action_unlikely_intent_features == 0
-        else:
-            if (
-                isinstance(tracker_featurizer, MaxHistoryTrackerFeaturizer)
-                and max_history is not None
-                and max_history == 2
-            ):
-                assert num_action_unlikely_intent_features == 1
-            else:
-                assert num_action_unlikely_intent_features == 3
+
+        assert num_action_unlikely_intent_features == expected_num_action_unlikely_intent
 
     @pytest.mark.parametrize("ignore_action_unlikely_intent", [True, False])
     def test_prediction_states_ignore_action_unlikely_intent(
@@ -660,6 +653,37 @@ class TestFullDialogueTrackerFeaturizer(TestTrackerFeaturizer):
 class TestMaxHistoryTrackerFeaturizer(TestTrackerFeaturizer):
 
     TRACKER_FEATURIZER_CLASS = MaxHistoryTrackerFeaturizer
+
+    @pytest.mark.parametrize(
+        "ignore_action_unlikely_intent, max_history, expected_num_action_unlikely_intent",
+        [
+            # Same as in base class
+            (True, None, 0), (True, 2, 0), (False, None, 3),
+            # In this case, `expected_num_action_unlikely_intent` is 1 instead of 3,
+            # because for max-history featurizers only one `action_unlikely_intent`
+            # is left after slicing.
+            (False, 2, 1)
+        ],
+    )
+    def test_create_state_features_ignore_action_unlikely_intent(
+        self,
+        moodbot_domain: Domain,
+        moodbot_features: Dict[Text, Dict[Text, Features]],
+        moodbot_tracker_with_3_action_unlikely_intent: DialogueStateTracker,
+        moodbot_action_unlikely_intent_state_features: Dict[Text, Dict[Text, Features]],
+        ignore_action_unlikely_intent: bool,
+        max_history: Optional[int],
+        expected_num_action_unlikely_intent: int
+    ):
+        super().test_create_state_features_ignore_action_unlikely_intent(
+            moodbot_domain,
+            moodbot_features,
+            moodbot_tracker_with_3_action_unlikely_intent,
+            moodbot_action_unlikely_intent_state_features,
+            ignore_action_unlikely_intent,
+            max_history,
+            expected_num_action_unlikely_intent,
+        )
 
 
 class TestIntentMaxHistoryTrackerFeaturizer(TestMaxHistoryTrackerFeaturizer):
