@@ -65,7 +65,6 @@ from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DEFAULT_SENDER_ID,
     UTTER_PREFIX,
-    DOCS_URL_DEFAULT_ACTIONS,
     DOCS_URL_POLICIES
 )
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
@@ -1140,9 +1139,8 @@ async def _validate_action(
     if action_name == ACTION_UNLIKELY_INTENT_NAME:
         print(
             f"The bot wants to run '{action_name}' "
-            f"({DOCS_URL_DEFAULT_ACTIONS}/#action_unlikely_intent) "
-            f"to indicate that this user message was unexpected "
-            f"given the context of the conversation. "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
             f"Check out IntentTEDPolicy ({DOCS_URL_POLICIES}/#intent-ted-policy) "
             f"to learn more. Press any key to continue…"
         )
