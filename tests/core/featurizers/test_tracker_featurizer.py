@@ -116,11 +116,13 @@ class TestTrackerFeaturizer:
     def moodbot_features(
         self, moodbot_domain: Domain
     ) -> Dict[Text, Dict[Text, Features]]:
-        """Makes intent and action features for the moodbot domain to faciliate
-        making expected state features.
+        """Creates intent and action features for the moodbot domain.
+
+        Args:
+            moodbot_domain: The domain fixture of Moodbot
 
         Returns:
-        A dict containing dicts for mapping action and intent names to features.
+            Mappings for action and intent names to features.
         """
         origin = self.SINGLE_STATE_FEATURIZER_CLASS.__name__
         action_shape = (1, len(moodbot_domain.action_names_or_texts))
@@ -267,7 +269,14 @@ class TestTrackerFeaturizer:
         if ignore_action_unlikely_intent:
             assert num_action_unlikely_intent_features == 0
         else:
-            assert num_action_unlikely_intent_features == 3
+            if (
+                isinstance(tracker_featurizer, MaxHistoryTrackerFeaturizer)
+                and max_history is not None
+                and max_history == 2
+            ):
+                assert num_action_unlikely_intent_features == 1
+            else:
+                assert num_action_unlikely_intent_features == 3
 
     @pytest.mark.parametrize("ignore_action_unlikely_intent", [True, False])
     def test_prediction_states_ignore_action_unlikely_intent(
