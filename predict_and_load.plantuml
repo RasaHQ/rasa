@@ -1,0 +1,98 @@
+
+@startuml Graph Loading and Prediction
+
+
+participant Rasa order 1
+participant Channel order 2
+participant Agent order 3
+participant GraphProcessor order 4
+participant GraphLoader order 5
+control GraphRunner <<Infrastructure>> order 6
+participant GraphNode order 7
+entity GraphComponent order 8
+database ModelPersistor <<Infrastructure>> order 9
+database ComponentPersistor <<Infrastructure>> order 10
+database ActionServer <<Infrastructure>> order 11
+database TrackerStore <<Infrastructure>> order 12
+
+
+== Creating the Persistor ==
+Rasa -> ModelPersistor: create(model_directory)
+Rasa <-- ModelPersistor: model_persistor
+
+== Loading the Graph ==
+Rasa -> GraphLoader: create(model_persistor, graph_runner_class)
+
+GraphLoader -> ModelPersistor: unpack_model
+GraphLoader <-- ModelPersistor: graph_schema, domain
+
+GraphLoader -> GraphRunner: graph_runner_class.create(graph_schema, model_persistor)
+
+GraphRunner -> GraphRunner: instantiate_graph()
+
+group instantiate_graph (for every graph node in schema)
+
+    GraphRunner -> ModelPersistor: create_component_persistor(node_name)
+    ModelPersistor -> ComponentPersistor: create
+    ModelPersistor <-- ComponentPersistor: component_persistor
+    GraphRunner <-- ModelPersistor: component_persistor
+
+    GraphRunner -> GraphNode: create(nodename, config, component_persistor)
+
+    GraphNode -> GraphComponent: create(config, component_persistor)
+        group if trained component
+            GraphComponent -> ComponentPersistor: get_resource
+            GraphComponent <-- ComponentPersistor: model_data
+        end
+    GraphNode <-- GraphComponent: graph_component
+
+    GraphRunner <-- GraphNode: graph_node
+end
+
+GraphLoader <-- GraphRunner: graph_runner
+Rasa <-- GraphLoader: graph_runner, graph_schema, domain
+
+
+== Creating the Processor ==
+
+Rasa -> GraphProcessor: create(graph_runner, graph_schema)
+Rasa <-- GraphProcessor: graph_processor
+
+Rasa -> Agent: initialize_processor(graph_processor, domain)
+Rasa <-- Agent
+
+== Prediction ==
+
+Channel -> Agent: handle_message(message)
+Agent -> TrackerStore: get_tracker(message, domain)
+Agent <-- TrackerStore: tracker
+Agent -> GraphProcessor: predict_until_next_turn(tracker, message)
+group loop until action_listen
+    GraphProcessor -> GraphRunner: run(targets, inputs)
+
+    == Running the graph ==
+    GraphRunner -> GraphRunner: insert_inputs_in_instantiated_graph(inputs)
+
+    GraphRunner -> GraphRunner: execute(instantiated_graph, targets)
+
+        entity GraphNode
+
+        group execute (for graph_node in sorted(graph_nodes))
+            GraphRunner -> GraphNode: run(inputs_from_previous_node)
+
+            GraphNode -> GraphComponent: run(inputs)
+            GraphNode <-- GraphComponent: output
+
+            GraphRunner <-- GraphNode: output
+        end
+
+    GraphProcessor <-- GraphRunner: results
+    GraphProcessor -> ActionServer: run_custom_action
+    GraphProcessor <-- ActionServer: events
+    GraphProcessor -> GraphProcessor: add_to_tracker
+end
+Agent <-- GraphProcessor: tracker
+Rasa <-- Agent: bot_mesage
+
+
+@enduml

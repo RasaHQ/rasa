@@ -1,0 +1,138 @@
+
+@startuml Graph Training with Fingerprinting and Caching
+
+
+' participant train order 1
+' participant GraphTrainer order 2
+' participant Cache order 3
+' participant ModelPersistor order 4
+' participant GraphRunner order 5
+' participant GraphNode order 6
+' participant GraphComponent order 7
+' participant Hook order 8
+
+actor user order 1
+participant train order 2
+participant GraphTrainer order 3
+database Cache <<Infrastructure>> order 4
+control GraphRunner <<Infrastructure>> order 5
+database ModelPersistor <<Infrastructure>> order 6
+participant GraphNode order 7
+entity GraphComponent order 8
+participant Hook order 9
+
+user -> train: train(config, training_data, output_path)
+note over train: we can also make the output_file a param of `train`?
+train -> ModelPersistor: create(output_filename)
+
+train <-- ModelPersistor
+
+train -> Cache: create
+train <-- Cache
+
+' train -> FingerprintStore: create
+' train <-- FingerprintStore
+||50|
+
+train -> GraphTrainer: create(model_persistor, cache, graph_runner_class)
+train <-- GraphTrainer
+train -> GraphTrainer: train(train_schema, predict_schema, training_filepaths)
+
+    == Preparing the Graph ==
+    GraphTrainer -> GraphRunner: graph_runner_class.create(train_schema, model_persistor)
+        
+        GraphRunner -> GraphRunner: instantiate_graph()
+
+        group instantiate_graph (for every graph node in schema)
+            ' note over InstantiatedGraph: component_persistor creation is missing
+            GraphRunner -> ModelPersistor: create_component_persistor(node_name)
+            note over GraphRunner: Could also create persistor via hooks but it seems like something we need for every graph
+            GraphRunner <-- ModelPersistor: component_persistor
+
+            GraphRunner -> GraphNode: init(nodename, config, component_persistor)
+
+
+            group if eagerInstantiation
+                GraphNode -> GraphComponent: init(config, component_persistor)
+                GraphNode <-- GraphComponent
+            end
+
+            GraphRunner <-- GraphNode
+        end
+
+
+    GraphTrainer <-- GraphRunner
+
+    GraphTrainer -> Hook: create hook for creating fingerprint key
+    GraphTrainer <-- Hook
+
+    GraphTrainer -> Hook: create hook for caching and fingerprinting output
+    GraphTrainer <-- Hook
+
+    == Actual Training ==
+
+    GraphTrainer -> GraphRunner: run(train_targets, training_filepaths, before_node_hooks, after_node_hooks)
+        GraphRunner -> GraphRunner: insert_inputs_in_instantiated_graph(training_filepaths)
+        
+        GraphRunner -> GraphRunner: execute(instantiated_graph, targets)
+
+            entity GraphNode
+
+
+            group execute (for graph_node in sorted(graph_nodes))
+                GraphRunner -> GraphNode: run(inputs_from_previous_node)
+
+                GraphNode -> Hook: run_before_hooks(nodename, config, inputs_from_previous_node)
+                group hook for fingerprint key
+                    Hook -> GraphTrainer:
+                    GraphTrainer -> Cache: create_fingerprint(node_name, config, inputs_from_previous_node)
+                    ' Cache -> Cache: fingerprint_config(config)
+                    
+                    ' group for every input
+                    '     Cache -> "Input/Output": fingerprint()
+                    '     Cache <-- "Input/Output"
+                    ' end
+
+                    ' Cache -> Cache: compute_fingerprint_key(node_name, config_fingerprint, input_fingerprints)
+
+                    GraphTrainer <-- Cache: fingerprint_key
+                    Hook <-- GraphTrainer: hook_metadata_for_node (includes fingerprint key)
+                end
+                GraphNode <-- Hook:
+
+                group if not eagerInstantiation
+                    GraphNode -> GraphComponent: init(config, component_persistor)
+                    GraphNode <-- GraphComponent
+                end
+
+                GraphNode -> GraphComponent: run(inputs)
+                GraphNode <-- GraphComponent: output
+
+                GraphNode -> Hook: run_after_hooks(nodename, config, output, hook_metadata_for_node)
+                group hook for caching / fingerprint creation
+                    Hook -> GraphTrainer: nodename, config, output, hook_metadata_for_node (i.e. fingerprint_key)
+                    GraphTrainer -> Cache: cache_output(fingerprint_key, output)
+                    group if output is cacheable:
+                    Cache -> Cache: cache(fingerprint_key, output)
+                    end
+                    Cache -> Cache: store_fingerprint_of_output(fingerprint_key, output)
+                    GraphTrainer <-- Cache:
+
+                end
+                GraphNode <-- Hook
+
+                GraphRunner <-- GraphNode
+            end
+
+    GraphTrainer <-- GraphRunner
+
+    GraphTrainer -> ModelPersistor: create_model_package()
+    GraphTrainer <-- ModelPersistor
+    GraphTrainer -> GraphRunner: init(predict_schema, model_persistor)
+    ... instantiation of predict graph ...
+    GraphTrainer <-- GraphRunner
+
+train <-- GraphTrainer: GraphRunner (for predictions)
+
+
+@enduml
