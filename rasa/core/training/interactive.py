@@ -61,7 +61,13 @@ from rasa.shared.core.events import (
     UserUtteranceReverted,
 )
 import rasa.core.interpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID, UTTER_PREFIX
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DEFAULT_SENDER_ID,
+    UTTER_PREFIX,
+    DOCS_URL_DEFAULT_ACTIONS,
+    DOCS_URL_POLICIES
+)
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
 from rasa.shared.core.training_data.visualization import (
@@ -1134,11 +1140,11 @@ async def _validate_action(
     if action_name == ACTION_UNLIKELY_INTENT_NAME:
         print(
             f"The bot wants to run '{action_name}' "
-            f"(https://rasa.com/docs/rasa/default-actions#action_unlikely_intent) "
+            f"({DOCS_URL_DEFAULT_ACTIONS}/#action_unlikely_intent) "
             f"to indicate that this user message was unexpected "
             f"given the context of the conversation. "
-            f"Check out IntentTEDPolicy to learn more. "
-            f"Press any key to continue…"
+            f"Check out IntentTEDPolicy ({DOCS_URL_POLICIES}/#intent-ted-policy) "
+            f"to learn more. Press any key to continue…"
         )
         input()
         is_correct = True
