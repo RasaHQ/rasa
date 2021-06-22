@@ -538,7 +538,6 @@ class TransformerRasaModel(RasaModel):
         self.config = config
         self.data_signature = data_signature
         self.label_signature = label_data.get_signature()
-
         self._check_data()
 
         label_batch = RasaDataGenerator.prepare_batch(label_data.data)

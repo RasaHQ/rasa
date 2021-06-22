@@ -693,8 +693,76 @@ def test_removing_label_sparse_feature_sizes(
     final_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
     label_attribute: Text,
 ):
+    """Tests if label attribute is removed from sparse feature sizes collection."""
     sparse_feature_sizes = DIETClassifier._remove_label_sparse_feature_sizes(
         sparse_feature_sizes=initial_sparse_feature_sizes,
         label_attribute=label_attribute,
     )
     assert sparse_feature_sizes == final_sparse_feature_sizes
+
+
+@pytest.mark.timeout(120, func_only=True)
+async def test_adjusting_layers_incremental_training(component_builder, tmpdir):
+    """Tests adjusting sparse layers to increased sparse feature sizes
+       during incremental training."""
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {"name": "DIETClassifier", LOSS_TYPE: "margin", EPOCHS: 1},
+    ]
+    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
+        _config,
+        path=str(tmpdir),
+        data="data/test_incremental_training/iter1/",
+        component_builder=component_builder,
+    )
+    assert trainer.pipeline
+    assert trained.pipeline
+
+    initial_layers = (
+        trained.pipeline[-1]
+        .model._tf_layers["sequence_layer.text"]
+        ._tf_layers["feature_combining"]
+    )
+    initial_sequence_layer = initial_layers._tf_layers[
+        "sparse_dense.sequence"
+    ]._tf_layers["sparse_to_dense"]
+    initial_sentence_layer = initial_layers._tf_layers[
+        "sparse_dense.sentence"
+    ]._tf_layers["sparse_to_dense"]
+
+    loaded = Interpreter.load(persisted_path, component_builder, new_config=_config,)
+    assert loaded.pipeline
+    assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
+        _config,
+        path=str(tmpdir),
+        data="data/test_incremental_training/",
+        component_builder=component_builder,
+        model_to_finetune=loaded,
+    )
+    assert trainer.pipeline
+    assert trained.pipeline
+
+    final_layers = (
+        trained.pipeline[-1]
+        .model._tf_layers["sequence_layer.text"]
+        ._tf_layers["feature_combining"]
+    )
+    final_sequence_layer = final_layers._tf_layers["sparse_dense.sequence"]._tf_layers[
+        "sparse_to_dense"
+    ]
+    final_sentence_layer = final_layers._tf_layers["sparse_dense.sentence"]._tf_layers[
+        "sparse_to_dense"
+    ]
+
+    new_tokens = 2
+    initial_sequence_size = initial_sequence_layer.get_kernel().shape[0]
+    initial_sentence_size = initial_sentence_layer.get_kernel().shape[0]
+    final_sequence_size = final_sequence_layer.get_kernel().shape[0]
+    final_sentence_size = final_sentence_layer.get_kernel().shape[0]
+
+    assert initial_sentence_size + new_tokens == final_sentence_size
+    assert initial_sequence_size + new_tokens == final_sequence_size

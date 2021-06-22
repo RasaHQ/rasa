@@ -4,7 +4,6 @@ import numpy as np
 from typing import Text, List, Dict, Any, Union, Optional, Tuple, Callable
 
 from rasa.shared.nlu.constants import TEXT
-import rasa.shared.utils.io
 from rasa.utils.tensorflow.model_data import FeatureSignature
 from rasa.utils.tensorflow.constants import (
     REGULARIZATION_CONSTANT,
@@ -81,12 +80,12 @@ class RasaCustomLayer(tf.keras.layers.Layer):
                     old_feature_sizes = old_sparse_feature_sizes[attribute][
                         feature_type
                     ]
-                    RasaCustomLayer._check_sparse_feature_decreased_sizes(
+                    self._check_sparse_feature_decreased_sizes(
                         new_sparse_feature_sizes=new_feature_sizes,
                         old_sparse_feature_sizes=old_feature_sizes,
                     )
                     if sum(new_feature_sizes) > sum(old_feature_sizes):
-                        new_layer = RasaCustomLayer._create_dense_for_sparse_layer(
+                        new_layer = self._create_dense_for_sparse_layer(
                             dense_layer=layer,
                             new_sparse_feature_sizes=new_feature_sizes,
                             old_sparse_feature_sizes=old_feature_sizes,
@@ -112,21 +111,18 @@ class RasaCustomLayer(tf.keras.layers.Layer):
             old_sparse_feature_sizes: sizes of sparse features the model was trained on
                                       before for a specific attribute and feature type.
         """
-        raise_warning = False
         for new_size, old_size in zip(
             new_sparse_feature_sizes, old_sparse_feature_sizes
         ):
             if new_size < old_size:
-                raise_warning = True
-        if raise_warning:
-            rasa.shared.utils.io.raise_warning(
-                "Sparse feature sizes are decreased."
-                "The NLU file was changed in a way that caused removing some"
-                "features from certain featurizers (This might have been "
-                "`LexicalSyntacticFeaturizer`). We don't support this behaviour"
-                "at this point. Possible ways to avoid this warning is to retrain"
-                "the model or undo the changes in the NLU file."
-            )
+                raise Exception(
+                    "Sparse feature sizes are decreased."
+                    "The NLU file was changed in a way that caused removing some"
+                    "features from certain featurizers (This might have been "
+                    "`LexicalSyntacticFeaturizer`). We don't support this behaviour"
+                    "at this point. One possible way to avoid this "
+                    "warning is retraining the model from scratch."
+                )
 
     @staticmethod
     def _create_dense_for_sparse_layer(

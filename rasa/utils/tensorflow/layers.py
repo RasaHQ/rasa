@@ -149,10 +149,11 @@ class DenseForSparse(tf.keras.layers.Dense):
 
     def get_attribute(self) -> Union[Text, None]:
         """Returns an attribute of the data that's fed to the layer."""
-        for attribute in [TEXT, LABEL]:
-            if attribute in self.name:
-                return attribute
-        return None
+        attribute = None
+        metadata = self.name.split(".")
+        if len(metadata) > 1:
+            attribute = metadata[1].split("_")[0]
+        return attribute
 
     def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
         """Apply dense layer to sparse inputs.

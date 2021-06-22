@@ -856,26 +856,42 @@ def test_sequence_layer_correct_output(
     assert mlm_boolean_mask.numpy().size == 0
 
 
-def test_warning_decreased_sparse_feature_sizes():
-    new_sparse_feature_sizes = [10, 4]
-    old_sparse_feature_sizes = [10, 5]
-    with pytest.warns(UserWarning) as warning:
+@pytest.mark.parametrize(
+    "new_sparse_feature_sizes, old_sparse_feature_sizes, raise_exception",
+    [([10, 4], [10, 5], True,), ([10, 5], [10, 5], False,),],
+)
+def test_raise_exception_decreased_sparse_feature_sizes(
+    new_sparse_feature_sizes: List[int],
+    old_sparse_feature_sizes: List[int],
+    raise_exception: bool,
+):
+    """Tests if exception is raised when sparse feature sizes decrease
+       during incremental training."""
+    if raise_exception:
+        with pytest.raises(Exception) as execinfo:
+            RasaCustomLayer._check_sparse_feature_decreased_sizes(
+                new_sparse_feature_sizes=new_sparse_feature_sizes,
+                old_sparse_feature_sizes=old_sparse_feature_sizes,
+            )
+        assert "Sparse feature sizes are decreased." in str(execinfo.value)
+    else:
         RasaCustomLayer._check_sparse_feature_decreased_sizes(
             new_sparse_feature_sizes=new_sparse_feature_sizes,
             old_sparse_feature_sizes=old_sparse_feature_sizes,
         )
-    assert "Sparse feature sizes are decreased." in warning[0].message.args[0]
 
 
 def test_create_dense_layers():
     """Tests if DenseForSparse layers are adjusted correctly."""
     layer = layers.DenseForSparse(units=10)
-    old_sizes = [70, 30]
-    new_sizes = [80, 30]
+    old_sparse_feature_sizes = [70, 30]
+    new_sparse_feature_sizes = [80, 30]
 
     try:
         random_input = tf.sparse.SparseTensor(
-            indices=[[0, 0], [1, 2]], values=[1, 2], dense_shape=[2, sum(old_sizes)]
+            indices=[[0, 0], [1, 2]],
+            values=[1, 2],
+            dense_shape=[2, sum(old_sparse_feature_sizes)],
         )
         layer(random_input)
     except InvalidArgumentError:
@@ -883,27 +899,29 @@ def test_create_dense_layers():
 
     new_layer = RasaCustomLayer._create_dense_for_sparse_layer(
         dense_layer=layer,
-        new_sparse_feature_sizes=new_sizes,
-        old_sparse_feature_sizes=old_sizes,
+        new_sparse_feature_sizes=new_sparse_feature_sizes,
+        old_sparse_feature_sizes=old_sparse_feature_sizes,
         attribute=TEXT,
         feature_type="sequence",
         reg_lambda=0.02,
     )
     try:
         random_input = tf.sparse.SparseTensor(
-            indices=[[0, 0], [1, 2]], values=[1, 2], dense_shape=[2, sum(new_sizes)]
+            indices=[[0, 0], [1, 2]],
+            values=[1, 2],
+            dense_shape=[2, sum(new_sparse_feature_sizes)],
         )
         new_layer(random_input)
     except InvalidArgumentError:
         print("this needs to be fixed")
 
     # check dimensions
-    assert new_layer.get_kernel().shape[0] == sum(new_sizes)
+    assert new_layer.get_kernel().shape[0] == sum(new_sparse_feature_sizes)
 
     # check chunks
-    first_chunk = layer.get_kernel().numpy()[: old_sizes[0], :]
-    new_first_chunk = new_layer.get_kernel().numpy()[: old_sizes[0], :]
+    first_chunk = layer.get_kernel().numpy()[: old_sparse_feature_sizes[0], :]
+    new_first_chunk = new_layer.get_kernel().numpy()[: old_sparse_feature_sizes[0], :]
     assert np.array_equal(first_chunk, new_first_chunk)
-    second_chunk = layer.get_kernel().numpy()[old_sizes[0] :, :]
-    new_second_chunk = new_layer.get_kernel().numpy()[new_sizes[0] :, :]
+    second_chunk = layer.get_kernel().numpy()[old_sparse_feature_sizes[0] :, :]
+    new_second_chunk = new_layer.get_kernel().numpy()[old_sparse_feature_sizes[0] :, :]
     assert np.array_equal(second_chunk, new_second_chunk)
