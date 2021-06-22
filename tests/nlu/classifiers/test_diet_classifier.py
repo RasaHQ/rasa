@@ -2,18 +2,15 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-import tensorflow as tf
 from unittest.mock import Mock
 from typing import List, Text, Dict, Any
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
-from tensorflow.python.framework.errors_impl import InvalidArgumentError
 from rasa.shared.nlu.training_data.features import Features
 import rasa.nlu.train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.utils.tensorflow import layers
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
@@ -671,43 +668,6 @@ async def test_process_gives_diagnostic_data(
     assert isinstance(diagnostic_data[name].get("attention_weights"), np.ndarray)
     assert "text_transformed" in diagnostic_data[name]
     assert isinstance(diagnostic_data[name].get("text_transformed"), np.ndarray)
-
-
-def test_update_dense_layers():
-    """Tests if _update_dense_layer() correctly updates a DenseForSparse layer."""
-    layer = layers.DenseForSparse(units=10)
-    old_sizes = [70, 30]
-    new_sizes = [80, 30]
-
-    try:
-        random_input = tf.sparse.SparseTensor(
-            indices=[[0, 0], [1, 2]], values=[1, 2], dense_shape=[2, sum(old_sizes)]
-        )
-        layer(random_input)
-    except (InvalidArgumentError):
-        print("this needs to be fixed")
-
-    new_layer = DIET._create_dense_for_sparse_layer(
-        dense_layer=layer, old_sizes=old_sizes, new_sizes=new_sizes, reg_lambda=0.02
-    )
-    try:
-        random_input = tf.sparse.SparseTensor(
-            indices=[[0, 0], [1, 2]], values=[1, 2], dense_shape=[2, sum(new_sizes)]
-        )
-        new_layer(random_input)
-    except (InvalidArgumentError):
-        print("this needs to be fixed")
-
-    # check dimensions
-    assert new_layer.get_kernel().shape[0] == sum(new_sizes)
-
-    # check chunks
-    first_chunk = layer.get_kernel().numpy()[: old_sizes[0], :]
-    new_first_chunk = new_layer.get_kernel().numpy()[: old_sizes[0], :]
-    assert np.array_equal(first_chunk, new_first_chunk)
-    second_chunk = layer.get_kernel().numpy()[old_sizes[0] :, :]
-    new_second_chunk = new_layer.get_kernel().numpy()[new_sizes[0] :, :]
-    assert np.array_equal(second_chunk, new_second_chunk)
 
 
 @pytest.mark.parametrize(

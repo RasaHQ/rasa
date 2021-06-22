@@ -44,7 +44,6 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
-from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.utils.tensorflow.constants import (
     LABEL,
     IDS,
@@ -352,7 +351,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
         self._label_data: Optional[RasaModelData] = None
-        self._data_example: Optional[Dict[Text, List[FeatureArray]]] = None
+        self._data_example: Optional[Dict[Text, Dict[Text, List[FeatureArray]]]] = None
 
         self.split_entities_config = self.init_split_entities()
 
@@ -864,8 +863,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         else:
             self.model.adjust_sparse_layers(
                 data_example=self._data_example,
-                new_feature_sizes=model_data.get_sparse_feature_sizes(),
-                old_feature_sizes=self._sparse_feature_sizes,
+                new_sparse_feature_sizes=model_data.get_sparse_feature_sizes(),
+                old_sparse_feature_sizes=self._sparse_feature_sizes,
             )
         self._sparse_feature_sizes = model_data.get_sparse_feature_sizes()
 
@@ -1257,193 +1256,6 @@ class DIET(TransformerRasaModel):
         self.all_labels_embed: Optional[tf.Tensor] = None
 
         self._prepare_layers()
-
-    def adjust_sparse_layers(
-        self,
-        data_example: Dict[Text, List[FeatureArray]],
-        new_feature_sizes: Dict[Text, Dict[Text, List[int]]],
-        old_feature_sizes: Dict[Text, Dict[Text, List[int]]],
-    ) -> None:
-        """Adjusts sizes of DenseForSparse layers.
-
-        Updates sizes of DenseForSparse layers by comparing current sparse feature
-        sizes to old ones. This must be done before fine-tuning starts to account for
-        any change in the size of sparse features that might have happened because of addition of new data. If any layer is changed, compiles
-        the model and fits a sample data on it to activate updated layer(s).
-
-        Args:
-            data_example: a data example that is stored in DIETClassifier class.
-            new_feature_sizes: sizes of current sparse features.
-            old_feature_sizes: sizes of sparse features the model was trained on before.
-        """
-        model_changed = False
-        for attribute in new_feature_sizes:
-            layer_dicts = self._get_dense_for_sparse_layers(attribute)
-            for layer_dict in layer_dicts:
-                layer_changed = self._update_dense_for_sparse_layer(
-                    layer_dict=layer_dict,
-                    new_feature_sizes=new_feature_sizes[attribute],
-                    old_feature_sizes=old_feature_sizes[attribute],
-                )
-                if layer_changed:
-                    model_changed = True
-        if model_changed:
-            self._compile_and_fit(data_example)
-
-    def _update_dense_for_sparse_layer(
-        self,
-        layer_dict: Dict[Text, Any],
-        new_feature_sizes: Dict[Text, List[int]],
-        old_feature_sizes: Dict[Text, List[int]],
-    ) -> bool:
-        """Updates given DenseForSparse layer based on new and old sparse feature sizes.
-
-        Args:
-            layer_dict: a dictionary that contains layer, its feature type and
-                        path in the layers dictionary.
-            new_feature_sizes: sizes of current sparse features.
-            old_feature_sizes: sizes of sparse features the model was trained on before.
-
-        Returns:
-            whether the layer was updated or not.
-        """
-        feature_type = layer_dict["feature_type"]
-        old_sizes = old_feature_sizes[feature_type]
-        new_sizes = new_feature_sizes[feature_type]
-        if old_sizes != new_sizes:
-            new_layer = self._create_dense_for_sparse_layer(
-                dense_layer=layer_dict["layer"],
-                old_sizes=old_sizes,
-                new_sizes=new_sizes,
-                reg_lambda=self.config[REGULARIZATION_CONSTANT],
-            )
-            layers = self._tf_layers
-            for index, name in enumerate(layer_dict["path"]):
-                if index == len(layer_dict["path"]) - 1:
-                    layers[name] = new_layer
-                else:
-                    layers = layers[name]._tf_layers
-            return True
-        return False
-
-    def _compile_and_fit(self, data_example: Dict[Text, List[FeatureArray]]) -> None:
-        """Compiles modified model and fits a sample data on it.
-
-        Args:
-            data_example: a data example that is stored in DIETClassifier class
-        """
-        self.compile(optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]))
-        label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None
-        label_sub_key = LABEL_SUB_KEY if self.config[INTENT_CLASSIFICATION] else None
-
-        model_data = RasaModelData(
-            label_key=label_key, label_sub_key=label_sub_key, data=data_example
-        )
-        self._update_data_signatures(model_data)
-        data_generator = RasaBatchDataGenerator(model_data, batch_size=1)
-        self.fit(data_generator, verbose=False)
-
-    def _find_dense_for_sparse_layer(self, layer: Any, path: List[Text]) -> List[Dict]:
-        """Finds DenseForSparse layers recursively.
-
-        For each layer returns its path in the layers dictionary
-        so that we're able to replace it.
-        """
-        layers = []
-        if hasattr(layer, "_tf_layers"):
-            for name, sub_layer in layer._tf_layers.items():
-                layers += self._find_dense_for_sparse_layer(sub_layer, path + [name])
-        else:
-            if hasattr(layer, "name") and "sparse_to_dense" in layer.name:
-                feature_type = layer.get_feature_type()
-                layers.append(
-                    {"layer": layer, "feature_type": feature_type, "path": path}
-                )
-        return layers
-
-    def _get_dense_for_sparse_layers(self, attribute: Text) -> List[Dict]:
-        """Returns DenseForSparse layers for a given attribute.
-
-        Finds DenseForSparse layers that need to be adjusted for fine-tuning.
-        At this point works for just attribute - text.
-        A layer dictionary could look like this:
-        {'layer': DenseForSparse object, 'feature_type': FEATURE_TYPE_SEQUENCE,
-        'path': ['feature_combining', 'sparse_dense.sequence', 'sparse_to_dense']}.
-
-        Args:
-            attribute: attribute to consider when getting the layers.
-
-        Returns:
-            A List of Dictionary containing layer data.
-        """
-        layers = []
-        for name, layer in self._tf_layers.items():
-            if attribute in name:
-                layers += self._find_dense_for_sparse_layer(layer=layer, path=[name])
-        return layers
-
-    def _update_data_signatures(self, model_data: RasaModelData) -> None:
-        self.data_signature = model_data.get_signature()
-        self.predict_data_signature = {
-            feature_name: features
-            for feature_name, features in self.data_signature.items()
-            if TEXT in feature_name
-        }
-
-    @staticmethod
-    def _create_dense_for_sparse_layer(
-        dense_layer: layers.DenseForSparse,
-        old_sizes: List[int],
-        new_sizes: List[int],
-        reg_lambda: float,
-    ) -> layers.DenseForSparse:
-        """Creates a new DenseForSparse layer based on a given one.
-
-        Args:
-            dense_layer: a DenseForSparse layer to be updated.
-            old_sizes: sizes of sparse features the model was trained on before.
-            new_sizes: sizes of current sparse features.
-            reg_lambda: regularization constant.
-
-        Returns:
-            new DenseForSparse layer.
-        """
-        kernel = dense_layer.get_kernel().numpy()
-        use_bias, bias = dense_layer.get_bias_info()
-        bias = bias.numpy()
-        units = dense_layer.units
-        # split kernel by feature sizes to update the layer accordingly
-        kernel_splits = []
-        start = 0
-        for end in old_sizes:
-            kernel_splits.append(kernel[start : start + end, :])
-            start = end
-        additional_sizes = [
-            new_size - old_size for new_size, old_size in zip(new_sizes, old_sizes)
-        ]
-        std, mean = np.std(kernel), np.mean(kernel)
-        additional_weights = [
-            np.random.normal(mean, std, size=(num_rows, units)).astype(np.float32)
-            for num_rows in additional_sizes
-        ]
-        merged_weights = [
-            np.vstack((existing, new))
-            for existing, new in zip(kernel_splits, additional_weights)
-        ]
-        # stack each merged weight to form a new weight tensor
-        new_weights = merged_weights[0]
-        for weights in merged_weights[1:]:
-            new_weights = np.vstack((new_weights, weights))
-        kernel_init = tf.constant_initializer(new_weights)
-        bias_init = tf.constant_initializer(bias)
-        new_layer = layers.DenseForSparse(
-            reg_lambda=reg_lambda,
-            units=units,
-            use_bias=use_bias,
-            kernel_initializer=kernel_init,
-            bias_initializer=bias_init,
-        )
-        return new_layer
 
     @staticmethod
     def _ordered_tag_specs(

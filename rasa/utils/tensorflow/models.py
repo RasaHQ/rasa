@@ -14,9 +14,10 @@ from typing import (
 )
 
 from rasa.shared.constants import DIAGNOSTIC_DATA
-from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     LABEL,
+    IDS,
+    INTENT_CLASSIFICATION,
     SENTENCE,
     SEQUENCE_LENGTH,
     RANDOM_SEED,
@@ -35,6 +36,11 @@ from rasa.utils.tensorflow.constants import (
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
 )
+from rasa.utils.tensorflow.model_data import (
+    RasaModelData,
+    FeatureSignature,
+    FeatureArray,
+)
 import rasa.utils.train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow import rasa_layers
@@ -44,8 +50,12 @@ from rasa.utils.tensorflow.data_generator import (
     RasaBatchDataGenerator,
 )
 from tensorflow.python.keras.utils import tf_utils
+from rasa.shared.nlu.constants import TEXT
 
 logger = logging.getLogger(__name__)
+
+LABEL_KEY = LABEL
+LABEL_SUB_KEY = IDS
 
 
 # noinspection PyMethodOverriding
@@ -538,6 +548,65 @@ class TransformerRasaModel(RasaModel):
 
         # set up tf layers
         self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
+
+    def adjust_sparse_layers(
+        self,
+        data_example: Dict[Text, Dict[Text, List[FeatureArray]]],
+        new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+        old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    ) -> None:
+        """Adjusts sizes of `DenseForSparse` layers.
+
+        Updates sizes of `DenseForSparse` layers by comparing current sparse feature
+        sizes to old ones. This must be done before fine-tuning starts to account
+        for any change in the size of sparse features that might have happened
+        because of addition of new data. The function compiles the model, fits a
+        sample data on it to activate updated layer(s) and updates the data signatures.
+
+        New and old sparse feature sizes could look like this:
+        {TEXT: {FEATURE_TYPE_SEQUENCE: [4, 24, 128], FEATURE_TYPE_SENTENCE: [4, 128]}}
+
+        Args:
+            data_example: a data example that is stored in `DIETClassifier` class.
+            new_sparse_feature_sizes: sizes of current sparse features.
+            old_sparse_feature_sizes: sizes of sparse features the model was
+                                      trained on before.
+        """
+        for name, layer in self._tf_layers.items():
+            if isinstance(layer, rasa_layers.RasaCustomLayer):
+                layer.adjust_sparse_layers_for_incremental_training(
+                    new_sparse_feature_sizes,
+                    old_sparse_feature_sizes,
+                    self.config[REGULARIZATION_CONSTANT],
+                )
+        self._compile_and_fit(data_example)
+
+    def _compile_and_fit(
+        self, data_example: Dict[Text, Dict[Text, List[FeatureArray]]]
+    ) -> None:
+        """Compiles modified model and fits a sample data on it.
+
+        Args:
+            data_example: a data example that is stored in DIETClassifier class
+        """
+        self.compile(optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]))
+        label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None
+        label_sub_key = LABEL_SUB_KEY if self.config[INTENT_CLASSIFICATION] else None
+
+        model_data = RasaModelData(
+            label_key=label_key, label_sub_key=label_sub_key, data=data_example
+        )
+        self._update_data_signatures(model_data)
+        data_generator = RasaBatchDataGenerator(model_data, batch_size=1)
+        self.fit(data_generator, verbose=False)
+
+    def _update_data_signatures(self, model_data: RasaModelData) -> None:
+        self.data_signature = model_data.get_signature()
+        self.predict_data_signature = {
+            feature_name: features
+            for feature_name, features in self.data_signature.items()
+            if TEXT in feature_name
+        }
 
     def _check_data(self) -> None:
         raise NotImplementedError

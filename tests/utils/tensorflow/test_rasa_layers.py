@@ -5,10 +5,12 @@ import numpy as np
 from typing import Text, Union, Any, Dict, List, Type
 
 from rasa.shared.nlu.constants import TEXT
+from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.rasa_layers import (
     ConcatenateSparseDenseFeatures,
     RasaFeatureCombiningLayer,
     RasaSequenceLayer,
+    RasaCustomLayer,
 )
 from rasa.utils.tensorflow.constants import (
     DENSE_INPUT_DROPOUT,
@@ -33,6 +35,7 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.model_data import FeatureSignature
+from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
 
 attribute_name = TEXT
@@ -851,3 +854,56 @@ def test_sequence_layer_correct_output(
     assert (mask_seq_sent.numpy() == mask_seq_sent_expected).all()
     assert token_ids.numpy().size == 0
     assert mlm_boolean_mask.numpy().size == 0
+
+
+def test_warning_decreased_sparse_feature_sizes():
+    new_sparse_feature_sizes = [10, 4]
+    old_sparse_feature_sizes = [10, 5]
+    with pytest.warns(UserWarning) as warning:
+        RasaCustomLayer._check_sparse_feature_decreased_sizes(
+            new_sparse_feature_sizes=new_sparse_feature_sizes,
+            old_sparse_feature_sizes=old_sparse_feature_sizes,
+        )
+    assert "Sparse feature sizes are decreased." in warning[0].message.args[0]
+
+
+def test_create_dense_layers():
+    """Tests if _create_dense_for_sparse_layer() correctly creates a DenseForSparse layer."""
+    layer = layers.DenseForSparse(units=10)
+    old_sizes = [70, 30]
+    new_sizes = [80, 30]
+
+    try:
+        random_input = tf.sparse.SparseTensor(
+            indices=[[0, 0], [1, 2]], values=[1, 2], dense_shape=[2, sum(old_sizes)]
+        )
+        layer(random_input)
+    except InvalidArgumentError:
+        print("this needs to be fixed")
+
+    new_layer = RasaCustomLayer._create_dense_for_sparse_layer(
+        dense_layer=layer,
+        new_sparse_feature_sizes=new_sizes,
+        old_sparse_feature_sizes=old_sizes,
+        attribute=TEXT,
+        feature_type="sequence",
+        reg_lambda=0.02,
+    )
+    try:
+        random_input = tf.sparse.SparseTensor(
+            indices=[[0, 0], [1, 2]], values=[1, 2], dense_shape=[2, sum(new_sizes)]
+        )
+        new_layer(random_input)
+    except InvalidArgumentError:
+        print("this needs to be fixed")
+
+    # check dimensions
+    assert new_layer.get_kernel().shape[0] == sum(new_sizes)
+
+    # check chunks
+    first_chunk = layer.get_kernel().numpy()[: old_sizes[0], :]
+    new_first_chunk = new_layer.get_kernel().numpy()[: old_sizes[0], :]
+    assert np.array_equal(first_chunk, new_first_chunk)
+    second_chunk = layer.get_kernel().numpy()[old_sizes[0] :, :]
+    new_second_chunk = new_layer.get_kernel().numpy()[new_sizes[0] :, :]
+    assert np.array_equal(second_chunk, new_second_chunk)

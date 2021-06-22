@@ -12,7 +12,9 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     LINEAR_NORM,
     CROSS_ENTROPY,
+    LABEL,
 )
+from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
@@ -126,19 +128,31 @@ class DenseForSparse(tf.keras.layers.Dense):
 
         super().__init__(kernel_regularizer=regularizer, **kwargs)
 
+    def get_units(self) -> int:
+        """Returns number of output units."""
+        return self.units
+
     def get_kernel(self) -> tf.Tensor:
         """Returns kernel tensor."""
         return self.kernel
 
-    def get_bias_info(self) -> tf.Tensor:
-        """Returns bias tensor."""
+    def get_bias_info(self) -> (bool, tf.Tensor):
+        """Returns whether the layer has a bias tensor and the bias tensor itself."""
         return self.use_bias, self.bias
 
-    def get_feature_type(self) -> Text:
-        """Returns feature type."""
-        if FEATURE_TYPE_SENTENCE in self.name:
-            return FEATURE_TYPE_SENTENCE
-        return FEATURE_TYPE_SEQUENCE
+    def get_feature_type(self):
+        """Returns a feature type of the data that's fed to the layer."""
+        for feature_type in [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE]:
+            if feature_type in self.name:
+                return feature_type
+        return None
+
+    def get_attribute(self):
+        """Returns an attribute of the data that's fed to the layer."""
+        for attribute in [TEXT, LABEL]:
+            if attribute in self.name:
+                return attribute
+        return None
 
     def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
         """Apply dense layer to sparse inputs.
