@@ -161,16 +161,16 @@ class EvaluationStore:
         )
 
     @staticmethod
-    def should_ignore_prediction(predicted_action: Text) -> bool:
-        """Indicates if the predicted action needs to be ignored and not added to the store.
+    def predicted_warning(predicted_action: Text) -> bool:
+        """Indicates if the predicted action needs to raise a warning.
 
-        Right now we only ignore the `action_unlikely_intent`.
+        Right now the only action that leads to a warning is an `action_unlikely_intent`.
 
         Args:
             predicted_action: A predicted action.
 
         Returns:
-            `True` if the prediction needs to be ignored, `False` otherwise.
+            `True` if the prediction needs to raise a warning, `False` otherwise.
         """
         return predicted_action == ACTION_UNLIKELY_INTENT_NAME
 
@@ -637,10 +637,10 @@ def _collect_action_executed_predictions(
             # that something else than the form was supposed to run.
             predicted_action = action.name()
 
-    should_ignore_prediction = action_executed_eval_store.should_ignore_prediction(
+    predicted_warning = action_executed_eval_store.predicted_warning(
         predicted_action
     )
-    if not should_ignore_prediction:
+    if not predicted_warning:
         action_executed_eval_store.add_to_store(
             action_predictions=[predicted_action], action_targets=[expected_action]
         )
@@ -649,7 +649,7 @@ def _collect_action_executed_predictions(
         action_executed_eval_store.has_prediction_target_mismatch()
     )
     if has_prediction_target_mismatch or (
-        should_ignore_prediction and predicted_action != expected_action
+        predicted_warning and predicted_action != expected_action
     ):
         partial_tracker.update(
             WronglyPredictedAction(
@@ -883,13 +883,13 @@ async def _collect_story_predictions(
 
 
 def _log_stories(
-    trackers: List[DialogueStateTracker], file_path: Text, comment: Text
+    trackers: List[DialogueStateTracker], file_path: Text, message_if_no_trackers: Text
 ) -> None:
     """Write given stories to the given file."""
 
     with open(file_path, "w", encoding=DEFAULT_ENCODING) as f:
         if not trackers:
-            f.write(f"# {comment}")
+            f.write(f"# {message_if_no_trackers}")
         else:
             stories = [tracker.as_story(include_source=True) for tracker in trackers]
             steps = [step for story in stories for step in story.story_steps]
