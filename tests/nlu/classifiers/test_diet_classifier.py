@@ -38,7 +38,7 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier, DIET
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData

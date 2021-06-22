@@ -868,7 +868,7 @@ def test_warning_decreased_sparse_feature_sizes():
 
 
 def test_create_dense_layers():
-    """Tests if _create_dense_for_sparse_layer() correctly creates a DenseForSparse layer."""
+    """Tests if DenseForSparse layers are adjusted correctly."""
     layer = layers.DenseForSparse(units=10)
     old_sizes = [70, 30]
     new_sizes = [80, 30]

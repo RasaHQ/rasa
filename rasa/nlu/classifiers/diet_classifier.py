@@ -20,7 +20,7 @@ from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
-from rasa.utils.tensorflow import rasa_layers, layers
+from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
