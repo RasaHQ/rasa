@@ -190,9 +190,9 @@ the Rasa SDK.
 
 ## action_unlikely_intent
 
-Rasa Open Source triggers `action_unlikely_intent` if [`IntentTEDPolicy`](./policies.mdx#intenttedpolicy)
-predicts it and no other [rule-based policy](./policies.mdx#rule-based-policies) has predicted an action. You can control how often this action is predicted
-by tuning the [`tolerance`](./policies.mdx#intenttedpolicy) parameter of `IntentTEDPolicy`.
+Rasa Open Source triggers `action_unlikely_intent` via [`IntentTEDPolicy`](./policies.mdx#intenttedpolicy).
+You can control how often this action is predicted by tuning the [`tolerance`](./policies.mdx#intenttedpolicy)
+parameter of `IntentTEDPolicy`.
 
 ### Customization
 
@@ -208,3 +208,18 @@ is triggered. For example, as a follow up you can trigger a hand-off to a human 
     - action: trigger_human_handoff
 ```
 
+Alternatively, you can also override it's behaviour as a `custom action`[./custom-actions.mdx]:
+
+```python
+class ActionUnlikelyIntent:
+
+    def name(self) -> Text:
+        return "action_unlikely_intent"
+
+    async def run(
+        self, dispatcher, tracker: Tracker, domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+
+        # Implement custom logic here
+        return []
+```
