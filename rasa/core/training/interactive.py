@@ -65,7 +65,7 @@ from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DEFAULT_SENDER_ID,
     UTTER_PREFIX,
-    DOCS_URL_POLICIES
+    DOCS_URL_POLICIES,
 )
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
@@ -1137,20 +1137,19 @@ async def _validate_action(
     Returns `True` if the prediction is correct, `False` otherwise."""
 
     if action_name == ACTION_UNLIKELY_INTENT_NAME:
-        print(
+        question = questionary.confirm(
             f"The bot wants to run '{action_name}' "
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
             f"Check out IntentTEDPolicy ({DOCS_URL_POLICIES}/#intent-ted-policy) "
             f"to learn more. Press any key to continue…"
         )
-        input()
-        is_correct = True
     else:
         question = questionary.confirm(
             f"The bot wants to run '{action_name}', correct?"
         )
-        is_correct = await _ask_questions(question, conversation_id, endpoint)
+
+    is_correct = await _ask_questions(question, conversation_id, endpoint)
 
     if not is_correct:
         action_name, is_new_action = await _request_action_from_user(
