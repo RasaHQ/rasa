@@ -47,7 +47,7 @@ async def test_action_unlikely_intent_1(
 ):
     file_name = tmp_path / "test_action_unlikely_intent_1.yml"
     file_name.write_text(
-        f"""
+        """
         version: "2.0"
         stories:
           - story: unlikely path
@@ -75,7 +75,7 @@ async def test_action_unlikely_intent_2(
 ):
     file_name = tmp_path / "test_action_unlikely_intent_2.yml"
     file_name.write_text(
-        f"""
+        """
         version: "2.0"
         stories:
           - story: unlikely path (with action_unlikely_intent)
@@ -104,7 +104,7 @@ async def test_action_unlikely_intent_complete(
 ):
     file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
     file_name.write_text(
-        f"""
+        """
         version: "2.0"
         stories:
           - story: happy path
@@ -166,7 +166,7 @@ async def test_action_unlikely_intent_wrong_story(
 ):
     file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
     file_name.write_text(
-        f"""
+        """
         version: "2.0"
         stories:
           - story: happy path
