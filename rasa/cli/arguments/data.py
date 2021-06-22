@@ -67,3 +67,4 @@ def set_validator_arguments(parser: argparse.ArgumentParser) -> None:
     )
     add_domain_param(parser)
     add_data_param(parser)
+# test PR to make sure CODEOWNERS changes work appropriately
