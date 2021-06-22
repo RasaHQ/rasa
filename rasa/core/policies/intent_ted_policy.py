@@ -85,6 +85,12 @@ from rasa.utils.tensorflow.constants import (
     LABEL_PAD_ID,
     POSITIVE_SCORES_KEY,
     NEGATIVE_SCORES_KEY,
+    RANKING_KEY,
+    SCORE_KEY,
+    THRESHOLD_KEY,
+    SEVERITY_KEY,
+    QUERY_INTENT_KEY,
+    NAME,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import (
@@ -401,54 +407,66 @@ class IntentTEDPolicy(TEDPolicy):
     ) -> Dict[Text, Any]:
         """Adds any metadata to be attached to the predicted action.
 
-        Similarities for all intents and their thresholds are attached as metadata.
+        Metadata schema looks like this:
+
+        {
+            "query_intent": <metadata of intent that was queried>,
+            "ranking": <sorted list of metadata corresponding to all intents.
+                        Sorting is based on predicted similarities.>
+        }
+
+        Each metadata dictionary looks like this:
+
+        {
+            "name": <name of intent>,
+            "score": <predicted similarity score>,
+            "threshold": <threshold used for intent>,
+            "severity": <absolute difference between score and threshold>
+        }
 
         Args:
             domain: Domain of the assistant.
             similarities: Predicted similarities for each intent.
+            query_intent: Name of intent queried in this round of inference.
 
         Returns:
             Metadata to be attached.
         """
         query_intent_index = domain.intents.index(query_intent)
 
-        def _compile_metadata_for_intent(
-            intent_name: Text,
-            similarity_score: float,
-            threshold: Optional[float] = None,
+        def _compile_metadata_for_label(
+            label_name: Text, similarity_score: float, threshold: Optional[float],
         ) -> Dict[Text, float]:
-            severity = similarity_score - threshold if threshold else 0
+            severity = abs(similarity_score - threshold) if threshold else None
             return {
-                "name": intent_name,
-                "score": similarity_score,
-                "threshold": threshold or 0,
-                "severity": severity,
+                NAME: label_name,
+                SCORE_KEY: similarity_score,
+                THRESHOLD_KEY: threshold,
+                SEVERITY_KEY: severity,
             }
 
         metadata = {
-            "query_intent": _compile_metadata_for_intent(
+            QUERY_INTENT_KEY: _compile_metadata_for_label(
                 query_intent,
                 similarities[0][domain.intents.index(query_intent)],
                 self.label_thresholds.get(query_intent_index),
             )
         }
 
+        # Ranking in descending order of predicted similarities
         sorted_similarities = sorted(
             [(index, similarity) for index, similarity in enumerate(similarities[0])],
-            key=lambda x: x[1],
+            key=lambda x: -x[1],
         )
 
-        all_intent_scores = []
-        for intent_index, similarity in sorted_similarities:
-            all_intent_scores.append(
-                _compile_metadata_for_intent(
-                    domain.intents[intent_index],
-                    similarity,
-                    self.label_thresholds.get(intent_index),
-                )
+        metadata[RANKING_KEY] = [
+            _compile_metadata_for_label(
+                domain.intents[intent_index],
+                similarity,
+                self.label_thresholds.get(intent_index),
             )
-
-        metadata["ranking"] = all_intent_scores
+            for intent_index, similarity in sorted_similarities
+        ]
 
         return metadata
 
