@@ -469,7 +469,8 @@ isn't present in any of the training stories, which might happen if an intent is
 As mentioned earlier, while `TEDPolicy` learns the next best action, `IntentTEDPolicy` learns the
 next likely intent that a user can express. Given a conversation context, there can only be a single correct action,
 whereas there can be multiple intents that are likely to occur in the same conversation context. Hence,
-`IntentTEDPolicy` uses a multi-label cross entropy loss function during training.
+`IntentTEDPolicy` uses a multi-label cross entropy loss function during training. Moreover, it uses
+the [`IntentMaxHistoryTrackerFeaturizer`](#3-intent-max-history) to treat intents as target labels instead of assistant actions or utterances.
 
 #### Prediction of `action_unlikely_intent`
 
@@ -504,14 +505,18 @@ If you want to fine-tune model's performance, start by modifying the following p
   ```
 
 * `max_history`:
-  This parameter controls how much dialogue history the model looks at to decide which
-  action to take next. Default `max_history` for this policy is `None`,
-  which means that the complete dialogue history since session restart is taken into
-  account. If you want to limit the model to only see a certain number of previous
+  This parameter controls how much dialogue history the model looks at before making an inference.
+  Default `max_history` for this policy is `None`, which means that the complete dialogue history
+  since session restart is taken into account. If you want to limit the model
+  to only see a certain number of previous
   dialogue turns, you can set `max_history` to a finite value.
   Please note that you should pick `max_history` carefully, so that the model has enough
   previous dialogue turns to create a correct prediction.
-  See [Featurizers](#featurizers) for more details.
+  Higher values of `max_history` can result in more frequent prediction of `action_unlikely_intent`
+  as the number of unique possible conversation paths increases as more dialogue context is taken
+  into account. Lowering the value of `max_history` will result in `action_unlikely_intent` being
+  triggered less often but can be a stronger indicator that the corresponding conversation path
+  is highly unique and hence unexpected.
   Here is how the config would look like:
 
   ```yaml-rasa title="config.yml"
@@ -987,35 +992,58 @@ default restart, label `2` a greeting and `3` indicates goodbye.
 
 #### Tracker Featurizers
 
-It's often useful to include a bit more history than just the current state
-when predicting an action. The `TrackerFeaturizer` iterates over tracker
-states and calls a `SingleStateFeaturizer` for each state to create numeric
-input features for a policy.
-The target labels correspond to bot actions or bot utterances
-represented as index in a list of all possible actions.
+A policy can be trained to learn two kinds of labels -
 
-There are two different tracker featurizers:
+1. The next most appropriate action to be triggered by the assistant. For example, [`TEDPolicy`](#tedpolicy) is trained to do this.
+2. The next most likely intent that a user can express. For example, [`IntentTEDPolicy`](#intenttedpolicy) is trained to do this.
+
+Hence, a tracker can be featurized to learn one of the above kind of labels.
+Depending on the policy, the target labels correspond to bot actions or bot utterances
+represented as index in a list of all possible actions or
+set of intents represented as index in a list of all possible intents.
+
+There are three different tracker featurizers:
 
 ##### 1. Full Dialogue
 
 `FullDialogueTrackerFeaturizer` creates a numerical representation of
 stories to feed to a recurrent neural network where the whole dialogue
 is fed to a network and the gradient is backpropagated from all time steps.
-The smaller dialogues are padded with `0` for all features.
+The target label is the most appropriate bot action or bot utterance which should be triggered in the
+context of the conversation.
+The `TrackerFeaturizer` iterates over tracker
+states and calls a `SingleStateFeaturizer` for each state to create numeric input features for a policy.
+
 
 ##### 2. Max History
 
-`MaxHistoryTrackerFeaturizer` creates an array of previous tracker
-states for each bot action or bot utterance, with the parameter
+`MaxHistoryTrackerFeaturizer` operates very similarly to `FullDialogueTrackerFeaturizer` as
+it creates an array of previous tracker states for each bot action or bot utterance but with the parameter
 `max_history` defining how many states go into each row of input features.
 If `max_history` is not specified, the algorithm takes
 the whole length of a dialogue into account.
-The smaller dialogues are padded with `0` for all features.
 Deduplication is performed to filter out duplicated turns (bot actions
 or bot utterances) in terms of their previous states.
 
 For some algorithms a flat feature vector is needed, so input features
 should be reshaped to `(num_unique_turns, max_history * num_input_features)`.
+
+##### 3. Intent Max History
+
+`IntentMaxHistoryTrackerFeaturizer` inherits from `MaxHistoryTrackerFeaturizer`. Since, it is used by
+[`IntentTEDPolicy`](#intenttedpolicy), the target labels that it creates is the set of intents that can be
+expressed by a user in the context of a conversation tracker. Unlike
+other tracker featurizers, there can be multiple target labels. Hence, it pads the
+list of target labels with `-1` values on the right to return an equally sized list of target labels
+for each input conversation tracker.
+
+Just like `MaxHistoryTrackerFeaturizer`, it also performs deduplication to
+filter out duplicated turns. However, it yields one featurized tracker per correct intent
+for the corresponding tracker. For example, if the correct labels for an input conversation tracker have the following
+indices - `[0, 2, 4]`, then the featurizer will yield three pairs of featurized trackers and target labels.
+The featurized trackers will be identical to each other but the target labels in each pair will be
+`[0, 2, 4]`, `[4, 0, 2]`, `[2, 4, 0]`.
+
 
 ## Custom Policies
 
