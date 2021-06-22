@@ -639,6 +639,7 @@ def _collect_action_executed_predictions(
 
     predicted_warning = action_executed_eval_store.predicted_warning(
         predicted_action
+
     )
     if not predicted_warning:
         action_executed_eval_store.add_to_store(

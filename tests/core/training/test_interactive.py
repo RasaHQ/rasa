@@ -16,7 +16,11 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.actions import action
 from rasa.core.training import interactive
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DEFAULT_SENDER_ID,
+    DOCS_URL_POLICIES,
+)
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, ActionExecuted, UserUttered
@@ -731,6 +735,51 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
     m = Mock(return_value=None)
     interactive._retry_on_error(m, "export_path", 1, a=2)
     m.assert_called_once_with("export_path", 1, a=2)
+
+
+@pytest.mark.parametrize(
+    "action_name, question",
+    [
+        (
+            "action_unlikely_intent",
+            f"The bot wants to run 'action_unlikely_intent' "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
+            f"Check out IntentTEDPolicy ({DOCS_URL_POLICIES}/#intent-ted-policy) "
+            f"to learn more. Press any key to continue…",
+        ),
+        ("action_other", "The bot wants to run 'action_other', correct?"),
+    ],
+)
+async def test_correct_question_for_action_name_was_asked(
+    monkeypatch: MonkeyPatch,
+    mock_endpoint: EndpointConfig,
+    action_name: Text,
+    question: Text,
+):
+    # mock those functions that shouldn't be called
+    monkeypatch.setattr(
+        interactive,
+        "retrieve_tracker",
+        asyncio.coroutine(
+            Mock(return_value=DialogueStateTracker.from_events("one", []))
+        ),
+    )
+    monkeypatch.setattr(
+        interactive, "_ask_questions", asyncio.coroutine(Mock(return_value=True))
+    )
+    monkeypatch.setattr(interactive, "_form_is_rejected", Mock(return_value=False))
+    monkeypatch.setattr(interactive, "_form_is_restored", Mock(return_value=False))
+    monkeypatch.setattr(interactive, "send_action", asyncio.coroutine(Mock()))
+
+    mocked_confirm = Mock(return_value=None)
+    monkeypatch.setattr(interactive.questionary, "confirm", mocked_confirm)
+
+    # validate the action and make sure that the correct question was asked
+    await interactive._validate_action(
+        action_name, "", 1.0, [], mock_endpoint, "conversation_id"
+    )
+    mocked_confirm.assert_called_once_with(question)
 
 
 def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
