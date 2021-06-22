@@ -436,7 +436,7 @@ class IntentTEDPolicy(TEDPolicy):
 
         def _compile_metadata_for_label(
             label_name: Text, similarity_score: float, threshold: Optional[float],
-        ) -> Dict[Text, float]:
+        ) -> Dict[Text, Optional[Union[Text, float]]]:
             severity = abs(similarity_score - threshold) if threshold else None
             return {
                 NAME: label_name,
