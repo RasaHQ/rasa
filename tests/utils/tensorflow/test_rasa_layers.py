@@ -923,5 +923,5 @@ def test_create_dense_layers():
     new_first_chunk = new_layer.get_kernel().numpy()[: old_sparse_feature_sizes[0], :]
     assert np.array_equal(first_chunk, new_first_chunk)
     second_chunk = layer.get_kernel().numpy()[old_sparse_feature_sizes[0] :, :]
-    new_second_chunk = new_layer.get_kernel().numpy()[old_sparse_feature_sizes[0] :, :]
+    new_second_chunk = new_layer.get_kernel().numpy()[new_sparse_feature_sizes[0] :, :]
     assert np.array_equal(second_chunk, new_second_chunk)
