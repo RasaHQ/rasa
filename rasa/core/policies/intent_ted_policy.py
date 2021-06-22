@@ -7,7 +7,7 @@ from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_UNLIKELY_INTENT_NAME
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.events import UserUttered, ActionExecuted
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -442,16 +442,16 @@ class IntentTEDPolicy(TEDPolicy):
             return self._prediction(self._default_predictions(domain))
 
         # Prediction through the policy is skipped if:
-        # 1. Last event in the tracker was not of type `UserUttered`.
-        # This is to prevent the ensemble of policies from being stuck
-        # in a loop.
-        # 2. If the tracker does not contain any event of type `UserUttered` till now.
-        if not tracker.get_last_event_for(UserUttered) or (
-            tracker.events and not isinstance(tracker.events[-1], UserUttered)
-        ):
+        # 1. If the tracker does not contain any event of type `UserUttered`
+        #    till now.
+        # 2. There is at least one event of type `ActionExecuted`
+        #    after the last `UserUttered` event.
+        if self._should_skip_prediction(tracker):
             logger.debug(
                 f"Skipping predictions for {self.__class__.__name__} "
-                f"as the last event in tracker is not of type `UserUttered`."
+                f"as either there is no event of type `UserUttered` or "
+                f"there is an event of type `ActionExecuted` after "
+                f"the last `UserUttered`."
             )
             return self._prediction(self._default_predictions(domain))
 
@@ -481,6 +481,36 @@ class IntentTEDPolicy(TEDPolicy):
             confidences,
             action_metadata=self._collect_action_metadata(domain, similarities),
         )
+
+    @staticmethod
+    def _should_skip_prediction(tracker: DialogueStateTracker) -> bool:
+        """Checks if the policy should skip making a prediction.
+
+        A prediction can be skipped if:
+            1. There is no event of type `UserUttered` in the tracker.
+            2. There is an event of type `ActionExecuted` after the last
+                `UserUttered` event. This is to prevent the dialogue manager
+                 from getting stuck in a prediction loop.
+                For example, if the last `ActionExecuted` event
+                contained `action_unlikely_intent` predicted by
+                `IntentTEDPolicy` and if `IntentTEDPolicy` runs inference
+                on the same tracker, it will predict `action_unlikely_intent`
+                again which would make the dialogue manager get stuck in a
+                prediction loop.
+
+        Returns:
+            Whether prediction should be skipped.
+        """
+        applied_events = tracker.applied_events()
+
+        for event in reversed(applied_events):
+            if isinstance(event, ActionExecuted):
+                return True
+            elif isinstance(event, UserUttered):
+                return False
+        # No event of type `ActionExecuted` and `UserUttered` means
+        # that there is nothing for `IntentTEDPolicy` to predict on.
+        return True
 
     def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
         """Checks if the intent should raise `action_unlikely_intent`.

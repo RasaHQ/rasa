@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
+import logging
 
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
@@ -20,6 +21,10 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
+    EntitiesAdded,
+    SlotSet,
+    ActionExecutionRejected,
+    ActiveLoop,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -33,6 +38,7 @@ from rasa.utils.tensorflow.constants import (
     NEGATIVE_SCORES_KEY,
 )
 from rasa.shared.nlu.constants import INTENT
+from rasa.shared.core.events import Event
 from rasa.utils.tensorflow import model_data_utils
 from tests.core.test_policies import train_trackers
 from tests.core.policies.test_ted_policy import TestTEDPolicy
@@ -531,6 +537,74 @@ class TestIntentTEDPolicy(TestTEDPolicy):
                 in loaded_policy.label_thresholds
             }
             assert expected_action_metadata == prediction.action_metadata
+
+    @pytest.mark.parametrize(
+        "tracker_events, should_skip",
+        [
+            ([], True),
+            ([ActionExecuted("action_listen")], True),
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered("hi", intent={"name": "greet"}),
+                ],
+                False,
+            ),
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered("hi", intent={"name": "greet"}),
+                    EntitiesAdded([{"name": "dummy"}]),
+                ],
+                False,
+            ),
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered("hi", intent={"name": "greet"}),
+                    SlotSet("name"),
+                ],
+                False,
+            ),
+            (
+                [
+                    ActiveLoop("loop"),
+                    ActionExecuted("action_listen"),
+                    UserUttered("hi", intent={"name": "greet"}),
+                    ActionExecutionRejected("loop"),
+                ],
+                False,
+            ),
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered("hi", intent={"name": "greet"}),
+                    ActionExecuted("utter_greet"),
+                ],
+                True,
+            ),
+        ],
+    )
+    def test_skip_predictions_to_prevent_loop(
+        self,
+        trained_policy: IntentTEDPolicy,
+        default_domain: Domain,
+        caplog: LogCaptureFixture,
+        tracker_events: List[Event],
+        should_skip: bool,
+        tmp_path: Path,
+    ):
+        caplog.set_level(logging.DEBUG)
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+        interpreter = RegexInterpreter()
+        tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
+        tracker.update_with_events(tracker_events, default_domain)
+
+        loaded_policy.predict_action_probabilities(tracker, default_domain, interpreter)
+
+        assert (
+            "Skipping predictions for IntentTEDPolicy" in caplog.text
+        ) == should_skip
 
     def test_label_embedding_collection(self, trained_policy: IntentTEDPolicy):
         label_ids = tf.constant([[[2], [-1]], [[1], [2]], [[0], [-1]]], dtype=tf.int32)
