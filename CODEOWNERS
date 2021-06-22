@@ -2,9 +2,7 @@
 # such as Rasa X. Hence, changes within this package require double checking.
 /docs/docs/prototype-an-assistant.mdx @ricwo @alwx
 /.github/workflows/ @RasaHQ/infrastructure
-*.py @RasaHQ/enable-squad
-/rasa/cli/ @RasaHQ/enable-squad
-/rasa/core/ @RasaHQ/enable-squad
+/rasa/**.py @RasaHQ/enable-squad
 /rasa/core/featurizers/ @RasaHQ/research
 /rasa/core/policies/*.py @RasaHQ/research
 /rasa/core/policies/ensemble.py @RasaHQ/enable-squad
@@ -12,29 +10,17 @@
 /rasa/core/policies/registry.py @RasaHQ/enable-squad
 /rasa/core/policies/__init__.py @RasaHQ/enable-squad
 /rasa/nlu/classifiers/ @RasaHQ/research
-/rasa/nlu/emulators/ @RasaHQ/enable-squad
-/rasa/nlu/extractors/ @RasaHQ/enable-squad
 /rasa/nlu/extractors/crf_entity_extractor.py @RasaHQ/research
 /rasa/nlu/extractors/extractor.py @RasaHQ/research
 /rasa/nlu/featurizers/ @RasaHQ/research
 /rasa/nlu/selectors/ @RasaHQ/research
 /rasa/nlu/tokenizers/ @RasaHQ/research
-/rasa/nlu/training_data/ @RasaHQ/enable-squad
 /rasa/nlu/utils/ @RasaHQ/research
-/rasa/nlu/utils/__init__.py @RasaHQ/enable-squad
-/rasa/nlu/*.py @RasaHQ/enable-squad
 /rasa/nlu/test.py @RasaHQ/research
-/rasa/shared/core/ @RasaHQ/enable-squad
-/rasa/shared/importers/ @RasaHQ/enable-squad
-/rasa/shared/nlu/training_data/ @RasaHQ/enable-squad
 /rasa/shared/nlu/training_data/feature.py @RasaHQ/research
 /rasa/shared/nlu/training_data/message.py @RasaHQ/research
 /rasa/shared/nlu/training_data/util.py @RasaHQ/enable-squad @RasaHQ/research
-/rasa/shared/nlu/*.py @RasaHQ/enable-squad
-/rasa/shared/utils/ @RasaHQ/enable-squad
-/rasa/shared/*.py @RasaHQ/enable-squad
-/rasa/utils/*.py @RasaHQ/enable-squad
 /rasa/utils/plotting.py @RasaHQ/research
 /rasa/utils/train_utils.py @RasaHQ/research
 /rasa/utils/tensorflow/ @RasaHQ/research
-/rasa/*.py @RasaHQ/enable-squad
+! /rasa/core/constants.py @RasaHQ/enable-squad
