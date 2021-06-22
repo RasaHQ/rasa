@@ -12,9 +12,7 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     LINEAR_NORM,
     CROSS_ENTROPY,
-    LABEL,
 )
-from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
