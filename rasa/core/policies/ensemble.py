@@ -48,6 +48,7 @@ from rasa.core.training import training
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core import registry
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.tensorflow.constants import EPOCHS
 
 logger = logging.getLogger(__name__)
@@ -194,6 +195,7 @@ class PolicyEnsemble:
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        e2e_features: Dict[Text, Message],
         **kwargs: Any,
     ) -> None:
         if training_trackers:
@@ -204,7 +206,7 @@ class PolicyEnsemble:
                     policy, training_trackers
                 )
                 policy.train(
-                    trackers_to_train, domain, interpreter=interpreter, **kwargs
+                    trackers_to_train, domain, interpreter, e2e_features, **kwargs
                 )
 
             self.action_fingerprints = training.create_action_fingerprints(

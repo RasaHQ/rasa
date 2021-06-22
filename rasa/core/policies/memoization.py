@@ -20,6 +20,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils.io import is_logging_disabled
 from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
 
@@ -174,6 +175,7 @@ class MemoizationPolicy(Policy):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
         **kwargs: Any,
     ) -> None:
         # only considers original trackers (no augmented ones)

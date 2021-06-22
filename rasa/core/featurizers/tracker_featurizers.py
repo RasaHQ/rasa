@@ -4,7 +4,7 @@ import jsonpickle
 import logging
 
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Union, Any
+from typing import Tuple, List, Optional, Dict, Text, Any, Union
 import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -20,6 +20,7 @@ from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.message import Message
 
 FEATURIZER_FILE = "featurizer.json"
 
@@ -83,10 +84,11 @@ class TrackerFeaturizer:
         self,
         trackers_as_states: List[List[State]],
         interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         return [
             [
-                self.state_featurizer.encode_state(state, interpreter)
+                self.state_featurizer.encode_state(state, interpreter, e2e_features)
                 for state in tracker_states
             ]
             for tracker_states in trackers_as_states
@@ -221,6 +223,7 @@ class TrackerFeaturizer:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
+        e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Tuple[
         List[List[Dict[Text, List["Features"]]]],
         np.ndarray,
@@ -260,7 +263,9 @@ class TrackerFeaturizer:
             trackers_as_entities,
         ) = self.training_states_actions_and_entities(trackers, domain)
 
-        tracker_state_features = self._featurize_states(trackers_as_states, interpreter)
+        tracker_state_features = self._featurize_states(
+            trackers_as_states, interpreter, e2e_features
+        )
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
         entity_tags = self._create_entity_tags(
             trackers_as_entities, interpreter, bilou_tagging
@@ -324,6 +329,7 @@ class TrackerFeaturizer:
         trackers: List[DialogueStateTracker],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        e2e_features: Dict[Text, Message],
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
@@ -334,6 +340,7 @@ class TrackerFeaturizer:
             trackers: A list of state trackers
             domain: The domain
             interpreter: The interpreter
+            e2e_features: precomputed features for lookup
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
@@ -355,7 +362,9 @@ class TrackerFeaturizer:
             ignore_rule_only_turns,
             rule_only_data,
         )
-        return self._featurize_states(trackers_as_states, interpreter)
+        return self._featurize_states(
+            trackers_as_states, interpreter, e2e_features=e2e_features
+        )
 
     def persist(self, path: Union[Text, Path]) -> None:
         """Persist the tracker featurizer to the given path.

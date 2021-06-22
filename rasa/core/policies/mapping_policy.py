@@ -22,6 +22,7 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import MAPPING_POLICY_PRIORITY
+from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -81,6 +82,7 @@ class MappingPolicy(Policy):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
         **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""

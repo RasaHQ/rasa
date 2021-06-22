@@ -372,11 +372,16 @@ class TEDPolicy(Policy):
         )
 
     def _create_label_data(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+        self,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_actions(domain, interpreter)
+        encoded_all_labels = state_featurizer.encode_all_actions(
+            domain, interpreter, e2e_features
+        )
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
@@ -560,6 +565,7 @@ class TEDPolicy(Policy):
         all_entity_tags,
         encoded_all_labels,
         interpreter,
+        e2e_features,
     ):
 
         batch_size = (
@@ -580,6 +586,7 @@ class TEDPolicy(Policy):
                 all_entity_tags,
                 encoded_all_labels,
                 interpreter,
+                e2e_features,
                 start,
                 end,
             )
@@ -596,6 +603,7 @@ class TEDPolicy(Policy):
         all_entity_tags,
         encoded_all_labels,
         interpreter,
+        e2e_features,
         start,
         end,
     ):
@@ -603,7 +611,7 @@ class TEDPolicy(Policy):
         label_ids = all_label_ids[start:end]
         entity_tags = all_entity_tags[start:end]
         tracker_state_features = self.featurizer._featurize_states(
-            tracker_as_states, interpreter
+            tracker_as_states, interpreter, e2e_features
         )
         model_data = self._create_model_data(
             tracker_state_features, label_ids, entity_tags, encoded_all_labels
@@ -618,6 +626,7 @@ class TEDPolicy(Policy):
         entity_tags,
         encoded_all_labels,
         interpreter,
+        e2e_features,
         data_types,
     ):
 
@@ -628,6 +637,7 @@ class TEDPolicy(Policy):
                 entity_tags,
                 encoded_all_labels,
                 interpreter,
+                e2e_features,
             ),
             output_types=data_types,
         ).prefetch(2)
@@ -639,6 +649,7 @@ class TEDPolicy(Policy):
         all_entity_tags,
         encoded_all_labels,
         interpreter,
+        e2e_features,
     ):
 
         model_data, batch, batch_data_types = self.extract_and_featurize_batch(
@@ -647,6 +658,7 @@ class TEDPolicy(Policy):
             all_entity_tags,
             encoded_all_labels,
             interpreter,
+            e2e_features,
             0,
             len(trackers_as_states),
         )
@@ -672,7 +684,9 @@ class TEDPolicy(Policy):
                 break
 
         example_tracker = DialogueStateTracker.from_events(
-            sender_id="example_tracker", evts=[ActionExecuted(ACTION_LISTEN_NAME)]
+            sender_id="example_tracker",
+            evts=[ActionExecuted(ACTION_LISTEN_NAME)],
+            slots=domain.slots,
         )
         events = []
         if INTENT in attributes_needed:
@@ -699,8 +713,8 @@ class TEDPolicy(Policy):
                     )
             if ACTION_TEXT in attributes_needed:
                 events.append(ActionExecuted(action_text=domain.action_texts[0]))
-            # if SLOTS in attributes_needed:
-            #     events.append(SlotSet(key=domain.slots[0].name, value=domain.slots[0].initial_value))
+            if SLOTS in attributes_needed:
+                events.append(SlotSet(key=domain.slots[0].name, value="cheap"))
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
 
         example_tracker.update_with_events(events, domain)
@@ -712,6 +726,7 @@ class TEDPolicy(Policy):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
         **kwargs: Any,
     ) -> None:
         """Train the policy on given training trackers."""
@@ -769,7 +784,7 @@ class TEDPolicy(Policy):
         # exit(0)
 
         self._label_data, encoded_all_labels = self._create_label_data(
-            domain, interpreter
+            domain, interpreter, e2e_features
         )
 
         # extract actual training data to feed to model
@@ -795,6 +810,7 @@ class TEDPolicy(Policy):
             example_entity_tags,
             encoded_all_labels,
             interpreter,
+            e2e_features,
         )
 
         # keep one example for persisting and loading
@@ -821,6 +837,7 @@ class TEDPolicy(Policy):
             entity_tags,
             encoded_all_labels,
             interpreter,
+            e2e_features,
             batch_data_types,
         )
         # (

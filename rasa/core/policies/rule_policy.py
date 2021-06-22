@@ -49,7 +49,7 @@ from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
 import rasa.core.training.training
-
+from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -768,6 +768,7 @@ class RulePolicy(MemoizationPolicy):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers.
