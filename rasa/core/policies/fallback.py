@@ -17,6 +17,7 @@ from rasa.core.constants import (
     DEFAULT_CORE_FALLBACK_THRESHOLD,
     DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
 )
+from rasa.shared.nlu.training_data.message import Message
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ class FallbackPolicy(Policy):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
         **kwargs: Any,
     ) -> None:
         """Does nothing. This policy is deterministic."""

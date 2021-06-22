@@ -137,7 +137,23 @@ class TmpKerasModel(tf.keras.models.Model):
         ):
             # Creates a `tf.data.Dataset` and handles batch and epoch iteration.
             # Use our own custom data handler to handle increasing batch size
-            data_handler = CustomDataHandler(
+            # data_handler = CustomDataHandler(
+            #     x=x,
+            #     y=y,
+            #     sample_weight=sample_weight,
+            #     batch_size=batch_size,
+            #     steps_per_epoch=steps_per_epoch,
+            #     initial_epoch=initial_epoch,
+            #     epochs=epochs,
+            #     shuffle=shuffle,
+            #     class_weight=class_weight,
+            #     max_queue_size=max_queue_size,
+            #     workers=workers,
+            #     use_multiprocessing=use_multiprocessing,
+            #     model=self,
+            #     steps_per_execution=self._steps_per_execution,
+            # )
+            data_handler = DataHandler(
                 x=x,
                 y=y,
                 sample_weight=sample_weight,

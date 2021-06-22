@@ -465,6 +465,8 @@ class RasaModel(TmpKerasModel):
                 shape.append(feature_dimension)
                 batch[idx].set_shape(shape)
 
+            if not batch[idx].shape:
+                batch[idx].set_shape([None] * number_of_dimensions)
             return batch[idx], idx + 1
 
         # convert to Tensor

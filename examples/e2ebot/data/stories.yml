@@ -36,3 +36,16 @@ stories:
   - action: utter_suggest_cuisine
   - user: "I had that yesterday"
   - action: utter_suggest_cuisine
+
+- story: PMUL1635.json
+  steps:
+  - user: 'I need to book a hotel in the [east](area) that has [4](stars) stars.  '
+#    entities:
+#    - area: east
+#    - stars: '4'
+  - bot: I can help you with that. What is your price range?
+  - user: That doesn't matter as long as it has free wifi and parking.
+  - bot: If you'd like something <price>, I recommend the <name>. For something <price>, I would recommend the <name>.
+#  - slot_was_set:
+#      - price: cheap
+  - bot: That's all I have

@@ -24,6 +24,7 @@ from rasa.shared.constants import (
     DEFAULT_CORE_SUBDIRECTORY_NAME,
     DOCS_URL_MIGRATION_GUIDE,
 )
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
@@ -48,6 +49,7 @@ from rasa.model import (
 )
 from rasa.nlu.utils import is_url
 import rasa.shared.utils.io
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
@@ -736,12 +738,16 @@ class Agent:
         )
 
     def train(
-        self, training_trackers: List[DialogueStateTracker], **kwargs: Any
+        self,
+        training_trackers: List[DialogueStateTracker],
+        e2e_features: Dict[Text, Message],
+        **kwargs: Any,
     ) -> None:
         """Train the policies / policy ensemble using dialogue data from file.
 
         Args:
             training_trackers: trackers to train on
+            e2e_features: lookup table for end to end features
             **kwargs: additional arguments passed to the underlying ML
                            trainer (e.g. keras parameters)
         """
@@ -751,7 +757,7 @@ class Agent:
         logger.debug(f"Agent trainer got kwargs: {kwargs}")
 
         self.policy_ensemble.train(
-            training_trackers, self.domain, interpreter=self.interpreter, **kwargs
+            training_trackers, self.domain, self.interpreter, e2e_features, **kwargs
         )
         self._set_fingerprint()
 

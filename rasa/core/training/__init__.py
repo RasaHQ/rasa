@@ -3,8 +3,6 @@ from typing import Text, List, Optional, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
     from rasa.shared.core.generator import TrackerWithCachedStates
-    from rasa.shared.core.training_data.structures import StoryGraph
-    from rasa.shared.importers.importer import TrainingDataImporter
 
 
 async def extract_story_graph(
@@ -72,18 +70,11 @@ async def load_data(
         list of loaded trackers
     """
     from rasa.shared.core.generator import TrainingDataGenerator
-    from rasa.shared.importers.importer import TrainingDataImporter
 
-    if resource_name:
-        if isinstance(resource_name, TrainingDataImporter):
-            graph = await resource_name.get_stories(
-                exclusion_percentage=exclusion_percentage
-            )
-        else:
-            graph = await extract_story_graph(
-                resource_name, domain, exclusion_percentage=exclusion_percentage
-            )
-
+    graph = await load_story_graph_from_resource(
+        resource_name, domain, exclusion_percentage
+    )
+    if graph:
         g = TrainingDataGenerator(
             graph,
             domain,
@@ -97,3 +88,23 @@ async def load_data(
         return g.generate()
     else:
         return []
+
+
+async def load_story_graph_from_resource(
+    resource_name: Optional[Union[Text, "TrainingDataImporter"]],
+    domain: "Domain",
+    exclusion_percentage: Optional[int] = None,
+) -> Optional["StoryGraph"]:
+    from rasa.shared.importers.importer import TrainingDataImporter
+
+    if resource_name:
+        if isinstance(resource_name, TrainingDataImporter):
+            return await resource_name.get_stories(
+                exclusion_percentage=exclusion_percentage
+            )
+        else:
+            return await extract_story_graph(
+                resource_name, domain, exclusion_percentage=exclusion_percentage
+            )
+    else:
+        return None

@@ -21,3 +21,12 @@ responses:
   - text: "how about sushi?"
   utter_search_restaurants:
   - text: "great! here's what I found ..."
+
+slots:
+ price:
+    type: text
+    influence_conversation: true
+
+entities:
+ - area
+ - stars

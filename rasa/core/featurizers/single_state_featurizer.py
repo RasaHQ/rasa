@@ -22,6 +22,7 @@ from rasa.shared.nlu.constants import (
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_TAGS,
+    TEXT,
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
@@ -229,6 +230,7 @@ class SingleStateFeaturizer:
         sub_state: SubState,
         interpreter: NaturalLanguageInterpreter,
         sparse: bool = False,
+        e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Dict[Text, List["Features"]]:
         # this method is called during both prediction and training,
         # `self._use_regex_interpreter == True` means that core was trained
@@ -240,13 +242,17 @@ class SingleStateFeaturizer:
         ):
             interpreter = RegexInterpreter()
 
-        message = Message(data=sub_state)
+        texts = [v for k, v in sub_state.items() if k in {ACTION_TEXT, TEXT}]
+        if len(texts) > 0 and texts[0] in e2e_features:
+            parsed_message = e2e_features[texts[0]]
+        else:
+            parsed_message = interpreter.featurize_message(Message(data=sub_state))
+
         # remove entities from possible attributes
         attributes = set(
             attribute for attribute in sub_state.keys() if attribute != ENTITIES
         )
 
-        parsed_message = interpreter.featurize_message(message)
         output = self._get_features_from_parsed_message(parsed_message, attributes)
 
         # check that name attributes have features
@@ -263,13 +269,17 @@ class SingleStateFeaturizer:
         return output
 
     def encode_state(
-        self, state: State, interpreter: NaturalLanguageInterpreter
+        self,
+        state: State,
+        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Dict[Text, List["Features"]]:
-        """Encode the given state with the help of the given interpreter.
+        """Encode the given state with interpreter or lookup.
 
         Args:
             state: The state to encode
-            interpreter: The interpreter used to encode the state
+            interpreter: The interpreter used to encode the state for unknown messages
+            e2e_features: A mapping of message text to parsed message with e2e features
 
         Returns:
             A dictionary of state_type to list of features.
@@ -278,13 +288,17 @@ class SingleStateFeaturizer:
         for state_type, sub_state in state.items():
             if state_type == PREVIOUS_ACTION:
                 state_features.update(
-                    self._extract_state_features(sub_state, interpreter, sparse=True)
+                    self._extract_state_features(
+                        sub_state, interpreter, sparse=True, e2e_features=e2e_features
+                    )
                 )
             # featurize user only if it is "real" user input,
             # i.e. input from a turn after action_listen
             if state_type == USER and is_prev_action_listen_in_state(state):
                 state_features.update(
-                    self._extract_state_features(sub_state, interpreter, sparse=True)
+                    self._extract_state_features(
+                        sub_state, interpreter, sparse=True, e2e_features=e2e_features
+                    )
                 )
                 if sub_state.get(ENTITIES):
                     state_features[ENTITIES] = self._create_features(
@@ -345,30 +359,39 @@ class SingleStateFeaturizer:
         }
 
     def _encode_action(
-        self, action: Text, interpreter: NaturalLanguageInterpreter
+        self,
+        action: Text,
+        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Dict[Text, List["Features"]]:
         if action in self.action_texts:
             action_as_sub_state = {ACTION_TEXT: action}
         else:
             action_as_sub_state = {ACTION_NAME: action}
 
-        return self._extract_state_features(action_as_sub_state, interpreter)
+        return self._extract_state_features(
+            action_as_sub_state, interpreter, e2e_features=e2e_features
+        )
 
     def encode_all_actions(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+        self,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> List[Dict[Text, List["Features"]]]:
         """Encode all action from the domain using the given interpreter.
 
         Args:
             domain: The domain that contains the actions.
             interpreter: The interpreter used to encode the actions.
+            e2e_features: A mapping of message text to parsed message with e2e features
 
         Returns:
             A list of encoded actions.
         """
 
         return [
-            self._encode_action(action, interpreter)
+            self._encode_action(action, interpreter, e2e_features)
             for action in domain.action_names_or_texts
         ]
 

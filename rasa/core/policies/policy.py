@@ -41,6 +41,7 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
 )
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
+from rasa.shared.nlu.training_data.message import Message
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -160,6 +161,7 @@ class Policy:
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
+        e2e_features: Optional[Dict[Text, Message]] = None,
         **kwargs: Any,
     ) -> Tuple[
         List[List[Dict[Text, List["Features"]]]],
@@ -189,7 +191,7 @@ class Policy:
               for all dialogue turns in all training trackers
         """
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
-            training_trackers, domain, interpreter, bilou_tagging
+            training_trackers, domain, interpreter, bilou_tagging, e2e_features
         )
 
         max_training_samples = kwargs.get("max_training_samples")
@@ -234,6 +236,7 @@ class Policy:
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        e2e_features: Dict[Text, Message],
         use_text_for_last_user_input: bool = False,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         """Transforms training tracker into a vector representation.
@@ -245,6 +248,7 @@ class Policy:
             tracker: The tracker to be featurized.
             domain: The Domain.
             interpreter: The NLU interpreter.
+            e2e_features: precomputed features
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
 
@@ -259,6 +263,7 @@ class Policy:
             [tracker],
             domain,
             interpreter,
+            e2e_features=e2e_features,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
             rule_only_data=self._rule_only_data,
@@ -269,6 +274,7 @@ class Policy:
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
+        e2e_features: Optional[Dict[Text, Message]] = None,
         **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers.
@@ -278,6 +284,7 @@ class Policy:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which can be used by the polices for featurization.
+            e2e_features: precomputed features for e2e messages
         """
         raise NotImplementedError("Policy must have the capacity to train.")
 
@@ -555,7 +562,7 @@ class PolicyPrediction:
             and self.policy_name == other.policy_name
             and self.policy_priority == other.policy_priority
             and self.events == other.events
-            and self.optional_events == other.events
+            and self.optional_events == other.optional_events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
             and self.is_no_user_prediction == other.is_no_user_prediction
             and self.hide_rule_turn == other.hide_rule_turn
