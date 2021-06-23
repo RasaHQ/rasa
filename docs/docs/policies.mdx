@@ -449,7 +449,7 @@ but an actual conversation might encounter interjections inside the form which y
     intent: deny
 ```
 
-As soon as `deny` intent gets triggered, the policy handling the form will keep requesting for `cuisine` slot
+As soon as the `deny` intent gets triggered, the policy handling the form will keep requesting for the `cuisine` slot
 to be filled, as the training stories don't say that this case should be treated differently.
 To help you identify that a special story that handles the user's `deny` intent might be missing at this point,
  `IntentTEDPolicy` can trigger an `action_unlikely_intent` action right after `deny` intent.
@@ -689,9 +689,10 @@ However, additional parameters exist that can be adapted.
 
 When [reviewing real conversations](./conversation-driven-development.mdx#review), users are
  encouraged to tune the `tolerance` parameter in `IntentTEDPolicy`'s configuration to reduce the number
-of false warnings. As you increase the value of `tolerance` from `0` to `1` in steps of `0.05`,
+of false warnings (intents that actually are likely given the conversation context).
+As you increase the value of `tolerance` from `0` to `1` in steps of `0.05`,
 the number of false warnings should decrease. However, increasing the `tolerance` will
-also result in fewer triggers of `action_unlikely_intent` and hence more number of conversation
+also result in fewer triggers of `action_unlikely_intent` and hence more conversation
 paths not present in training stories will be missing in the set of flagged conversations.
 
 :::note
@@ -999,8 +1000,8 @@ A policy can be trained to learn two kinds of labels -
 
 Hence, a tracker can be featurized to learn one of the above kind of labels.
 Depending on the policy, the target labels correspond to bot actions or bot utterances
-represented as index in a list of all possible actions or
-set of intents represented as index in a list of all possible intents.
+represented as an index in a list of all possible actions or
+set of intents represented as an index in a list of all possible intents.
 
 There are three different tracker featurizers:
 

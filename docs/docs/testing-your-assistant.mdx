@@ -382,7 +382,7 @@ incorrect action was predicted instead.
 The test script will also generate a warnings file called `results/stories_with_warnings.yml`.
 This file contains all test stories for which [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
 was predicted at any conversation turn but all actions from the original story were predicted correctly.
-However, if a test story originally consisted of `action_unlikely_intent` but wasn't predicted by
+However, if a test story originally included an `action_unlikely_intent` but wasn't predicted by
 the ensemble of policies, then the corresponding story will end up in `results/failed_test_stories.yml` as
 a failed story.
 
