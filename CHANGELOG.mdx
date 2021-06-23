@@ -16,6 +16,18 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.7.1] - 2021-06-16
+                       
+
+### Bugfixes
+- [#7286](https://github.com/rasahq/rasa/issues/7286): Best model checkpoint allows for metrics to be equal to previous best if at least one 
+  metric improves, rather than strict improvement for each metric.
+- [#8200](https://github.com/rasahq/rasa/issues/8200): Fixes a bug where multiple plots overlap each other and are rendered incorrectly when comparing performance across multiple NLU pipelines.
+- [#8812](https://github.com/rasahq/rasa/issues/8812): Don't evaluate entities if no entities present in test data.
+
+  Also, catch exception in `plot_paired_histogram` when data is empty.
+
+
 ## [2.7.0] - 2021-06-03
                        
 
