@@ -109,6 +109,7 @@ from rasa.utils.tensorflow.constants import (
     SOFTMAX,
     BILOU_FLAG,
 )
+from rasa.utils.tensorflow.data_generator import LazyRasaBatchGenerator
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
 
@@ -510,162 +511,6 @@ class TEDPolicy(Policy):
         return model_data
 
     @staticmethod
-    def prepare_batch(
-        data: Data, tuple_sizes: Optional[Dict[Text, int]] = None,
-    ) -> Tuple[Tuple[Optional[np.ndarray]], Tuple[Any]]:
-        """Slices model data into batch using given start and end value.
-
-        Args:
-            data: The data to prepare.
-            tuple_sizes: In case the feature is not present we propagate the batch with
-              None. Tuple sizes contains the number of how many None values to add for
-              what kind of feature.
-
-        Returns:
-            The features of the batch.
-        """
-        from rasa.utils.tensorflow.data_generator import RasaDataGenerator
-
-        batch_data = []
-        data_types = []
-        for key, attribute_data in data.items():
-            for sub_key, f_data in attribute_data.items():
-                # add None for not present values during processing
-                if not f_data:
-                    if tuple_sizes:
-                        batch_data += [None] * tuple_sizes[key]
-                    else:
-                        batch_data.append(None)
-                    continue
-
-                for v in f_data:
-                    # if start is not None and end is not None:
-                    #     _data = v[start:end]
-                    # elif start is not None:
-                    #     _data = v[start:]
-                    # elif end is not None:
-                    #     _data = v[:end]
-                    # else:
-                    #     _data = v[:]
-
-                    if v.is_sparse:
-                        batch_data.extend(RasaDataGenerator._scipy_matrix_to_values(v))
-                        data_types.extend([tf.int64, tf.float32, tf.int64])
-                    else:
-                        batch_data.append(RasaDataGenerator._pad_dense_data(v))
-                        data_types.extend([tf.float32])
-
-        # len of batch_data is equal to the number of keys in model data
-        return tuple(batch_data), tuple(data_types)
-
-    def generate_batches(
-        self,
-        trackers_as_states,
-        all_label_ids,
-        all_entity_tags,
-        encoded_all_labels,
-        interpreter,
-        e2e_features,
-    ):
-
-        batch_size = (
-            self.config[BATCH_SIZES][0]
-            if isinstance(self.config[BATCH_SIZES], list)
-            else self.config[BATCH_SIZES]
-        )
-        index = 0
-        while True:
-            start = index * batch_size
-            end = start + batch_size
-
-            if start >= len(trackers_as_states):
-                break
-            _, batch, _ = self.extract_and_featurize_batch(
-                trackers_as_states,
-                all_label_ids,
-                all_entity_tags,
-                encoded_all_labels,
-                interpreter,
-                e2e_features,
-                start,
-                end,
-            )
-
-            # return input and target data, as our target data is inside the input
-            # data return None for the target data]
-            yield batch
-            index += 1
-
-    def extract_and_featurize_batch(
-        self,
-        trackers_as_states,
-        all_label_ids,
-        all_entity_tags,
-        encoded_all_labels,
-        interpreter,
-        e2e_features,
-        start,
-        end,
-    ):
-        tracker_as_states = trackers_as_states[start:end]
-        label_ids = all_label_ids[start:end]
-        entity_tags = all_entity_tags[start:end]
-        tracker_state_features = self.featurizer._featurize_states(
-            tracker_as_states, interpreter, e2e_features
-        )
-        model_data = self._create_model_data(
-            tracker_state_features, label_ids, entity_tags, encoded_all_labels
-        )
-        batch, data_types = self.prepare_batch(model_data.data)
-        return model_data, batch, data_types
-
-    def create_data_generator(
-        self,
-        tracker_as_states,
-        label_ids,
-        entity_tags,
-        encoded_all_labels,
-        interpreter,
-        e2e_features,
-        data_types,
-    ):
-
-        return tf.data.Dataset.from_generator(
-            lambda: self.generate_batches(
-                tracker_as_states,
-                label_ids,
-                entity_tags,
-                encoded_all_labels,
-                interpreter,
-                e2e_features,
-            ),
-            output_types=data_types,
-        ).prefetch(2)
-
-    def _get_example_model_data_with_batch_signature(
-        self,
-        trackers_as_states,
-        all_label_ids,
-        all_entity_tags,
-        encoded_all_labels,
-        interpreter,
-        e2e_features,
-    ):
-
-        model_data, batch, batch_data_types = self.extract_and_featurize_batch(
-            trackers_as_states,
-            all_label_ids,
-            all_entity_tags,
-            encoded_all_labels,
-            interpreter,
-            e2e_features,
-            0,
-            len(trackers_as_states),
-        )
-
-        return model_data, batch_data_types
-
-    @staticmethod
     def _find_example_tracker_from_states(trackers_as_states, domain):
 
         from rasa.shared.core.events import ActionExecuted, UserUttered, SlotSet
@@ -801,17 +646,22 @@ class TEDPolicy(Policy):
         if self.config[ENTITY_RECOGNITION]:
             self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
 
-        (
-            model_data,
-            batch_data_types,
-        ) = self._get_example_model_data_with_batch_signature(
+        temp_data_generator = LazyRasaBatchGenerator(
+            self.config[BATCH_SIZES],
             example_trackers_as_states,
             example_label_ids,
             example_entity_tags,
             encoded_all_labels,
             interpreter,
             e2e_features,
+            self.featurizer,
+            self._create_model_data,
+            self.config[EPOCHS],
+            self.config[BATCH_STRATEGY],
+            True,
         )
+
+        (model_data, batch_data_types,) = temp_data_generator.get_data_signatures()
 
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
@@ -831,15 +681,6 @@ class TEDPolicy(Policy):
                 optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
             )
 
-        data_generator = self.create_data_generator(
-            trackers_as_states,
-            label_ids,
-            entity_tags,
-            encoded_all_labels,
-            interpreter,
-            e2e_features,
-            batch_data_types,
-        )
         # (
         #     data_generator,
         #     validation_data_generator,
@@ -851,6 +692,22 @@ class TEDPolicy(Policy):
         #     self.config[EVAL_NUM_EXAMPLES],
         #     self.config[RANDOM_SEED],
         # )
+
+        data_generator = LazyRasaBatchGenerator(
+            self.config[BATCH_SIZES],
+            trackers_as_states,
+            label_ids,
+            entity_tags,
+            encoded_all_labels,
+            interpreter,
+            e2e_features,
+            self.featurizer,
+            self._create_model_data,
+            self.config[EPOCHS],
+            self.config[BATCH_STRATEGY],
+            True,
+        )
+
         callbacks = rasa.utils.train_utils.create_common_callbacks(
             self.config[EPOCHS],
             self.config[TENSORBOARD_LOG_DIR],
