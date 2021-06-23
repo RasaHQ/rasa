@@ -91,7 +91,8 @@ def process_texts(
 
 
 @pytest.mark.parametrize(
-    "model_name, model_weights, texts, expected_shape, expected_sequence_vec, expected_cls_vec",
+    "model_name, model_weights, texts, expected_shape, "
+    "expected_sequence_vec, expected_cls_vec",
     [
         (
             "bert",
@@ -730,30 +731,3 @@ def test_lm_featurizer_correctly_handle_whitespace_token(
     result, _ = lm_featurizer._tokenize_example(message, TEXT)
 
     assert [(token.text, token.start) for token in result] == expected_feature_tokens
-
-
-@pytest.mark.parametrize(
-    "token_ids, max_sequence_length_model, resulting_length, padding_added",
-    [
-        ([[1] * 200], 512, 512, True),
-        ([[1] * 700], 512, 512, False),
-        ([[1] * 200], 200, 200, False),
-    ],
-)
-def test_input_padding(
-    token_ids: List[List[int]],
-    max_sequence_length_model: int,
-    resulting_length: int,
-    padding_added: bool,
-):
-    lm_featurizer = LanguageModelFeaturizer(
-        {"model_name": "bert"}, skip_model_load=True
-    )
-    lm_featurizer.pad_token_id = 0
-    padded_input = lm_featurizer._add_padding_to_batch(
-        token_ids, max_sequence_length_model
-    )
-    assert len(padded_input[0]) == resulting_length
-    if padding_added:
-        original_length = len(token_ids[0])
-        assert np.all(np.array(padded_input[0][original_length:]) == 0)

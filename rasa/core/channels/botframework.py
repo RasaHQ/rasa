@@ -208,7 +208,6 @@ class BotFrameworkInput(InputChannel):
 
         botframework_webhook = Blueprint("botframework_webhook", __name__)
 
-        # noinspection PyUnusedLocal
         @botframework_webhook.route("/", methods=["GET"])
         async def health(request: Request) -> HTTPResponse:
             return response.json({"status": "ok"})

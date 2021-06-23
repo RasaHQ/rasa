@@ -12,7 +12,7 @@ from rasa.core import run, interpreter, policies
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.core.utils import AvailableEndpoints
 
-CREDENTIALS_FILE = "examples/moodbot/credentials.yml"
+CREDENTIALS_FILE = "data/test_moodbot/credentials.yml"
 
 
 def test_create_http_input_channels():
@@ -54,7 +54,6 @@ def test_create_single_input_channels_by_class_wo_credentials():
     assert channels[0].name() == "rest"
 
 
-@pytest.mark.trains_model
 async def test_load_agent_on_start_with_good_model_file(
     trained_rasa_model: Text, rasa_server: Sanic, loop: AbstractEventLoop
 ):
@@ -67,9 +66,8 @@ async def test_load_agent_on_start_with_good_model_file(
     assert isinstance(agent.domain, rasa.shared.core.domain.Domain)
 
 
-@pytest.mark.trains_model
 async def test_load_agent_on_start_with_bad_model_file(
-    tmp_path: Path, rasa_server: Sanic, loop: AbstractEventLoop
+    tmp_path: Path, rasa_non_trained_server: Sanic, loop: AbstractEventLoop
 ):
     fake_model = tmp_path / "fake_model.tar.gz"
     fake_model.touch()
@@ -77,7 +75,7 @@ async def test_load_agent_on_start_with_bad_model_file(
 
     with pytest.warns(UserWarning) as warnings:
         agent = await run.load_agent_on_start(
-            fake_model_path, AvailableEndpoints(), None, rasa_server, loop
+            fake_model_path, AvailableEndpoints(), None, rasa_non_trained_server, loop
         )
         assert any(
             "fake_model.tar.gz' could not be loaded" in str(w.message) for w in warnings

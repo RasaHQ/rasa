@@ -55,7 +55,11 @@
         },
         "num_templates": {
           "type": "integer",
-          "description": "Number of templates defined in the domain."
+          "description": "Number of templates or responses defined in the domain."
+        },
+        "num_conditional_response_variations": {
+          "type": "integer",
+          "description": "Number of conditional response variations defined in the domain."
         },
         "num_slots": {
           "type": "integer",

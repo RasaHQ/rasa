@@ -1,12 +1,12 @@
 import os
+import shutil
+from pathlib import Path
 from shutil import copyfile
-
-import pytest
 
 from rasa.core.test import CONFUSION_MATRIX_STORIES_FILE
 from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
-from rasa.shared.utils.io import list_files, write_yaml
+from rasa.shared.utils.io import list_files, write_yaml, write_text_file
 from typing import Callable
 from _pytest.pytester import RunResult
 
@@ -34,7 +34,6 @@ def test_test_core_with_no_model(run_in_simple_project: Callable[..., RunResult]
     )
 
 
-@pytest.mark.trains_model
 def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
     write_yaml(
         {
@@ -51,7 +50,6 @@ def test_test(run_in_simple_project_with_model: Callable[..., RunResult]):
     assert os.path.exists("results/intent_confusion_matrix.png")
 
 
-@pytest.mark.trains_model
 def test_test_with_no_user_utterance(
     run_in_simple_project_with_model: Callable[..., RunResult]
 ):
@@ -85,7 +83,6 @@ def test_test_no_plot(run_in_simple_project: Callable[..., RunResult]):
     assert not os.path.exists("results/story_confmat.pdf")
 
 
-@pytest.mark.trains_model
 def test_test_nlu(run_in_simple_project_with_model: Callable[..., RunResult]):
     run_in_simple_project_with_model("test", "nlu", "--nlu", "data", "--successes")
 
@@ -101,7 +98,6 @@ def test_test_nlu_no_plot(run_in_simple_project: Callable[..., RunResult]):
     assert not os.path.exists("results/intent_confusion_matrix.png")
 
 
-@pytest.mark.trains_model
 def test_test_nlu_cross_validation(run_in_simple_project: Callable[..., RunResult]):
     run_in_simple_project(
         "test", "nlu", "--cross-validation", "-c", "config.yml", "-f", "2", "-r", "1"
@@ -132,7 +128,6 @@ def test_test_nlu_comparison(run_in_simple_project: Callable[..., RunResult]):
     assert os.path.exists("results/run_2")
 
 
-@pytest.mark.trains_model
 def test_test_core_comparison(
     run_in_simple_project_with_model: Callable[..., RunResult]
 ):
@@ -152,44 +147,29 @@ def test_test_core_comparison(
     assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
 
 
-@pytest.mark.trains_model
 def test_test_core_comparison_after_train(
-    run_in_simple_project: Callable[..., RunResult]
+    run_in_simple_project: Callable[..., RunResult],
+    trained_rasa_model: str,
+    tmp_path: Path,
 ):
-    write_yaml(
-        {"language": "en", "policies": [{"name": "MemoizationPolicy"}]}, "config_1.yml"
-    )
+    path = Path(tmp_path / "comparison_models")
+    path.mkdir()
 
-    write_yaml(
-        {"language": "en", "policies": [{"name": "MemoizationPolicy"}]}, "config_2.yml"
-    )
+    run_one = Path(path / "run_1")
+    run_one.mkdir()
+    shutil.copy(trained_rasa_model, run_one)
 
-    run_in_simple_project(
-        "train",
-        "core",
-        "-c",
-        "config_1.yml",
-        "config_2.yml",
-        "--stories",
-        "data/stories.yml",
-        "--runs",
-        "2",
-        "--percentages",
-        "25",
-        "75",
-        "--out",
-        "comparison_models",
-    )
+    run_two = Path(path / "run_2")
+    run_two.mkdir()
+    shutil.copy(trained_rasa_model, run_two)
 
-    assert os.path.exists("comparison_models")
-    assert os.path.exists("comparison_models/run_1")
-    assert os.path.exists("comparison_models/run_2")
+    write_text_file("[1]", path / "num_stories.json")
 
     run_in_simple_project(
         "test",
         "core",
         "-m",
-        "comparison_models",
+        str(path),
         "--stories",
         "data/stories",
         "--evaluate-model-directory",

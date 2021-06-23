@@ -3,6 +3,8 @@ import logging
 from asyncio import AbstractEventLoop
 from typing import Any, Dict, Text, Optional, Union
 
+import aiormq
+
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 from rasa.shared.exceptions import ConnectionException
@@ -31,6 +33,8 @@ class EventBroker:
         except (
             sqlalchemy.exc.OperationalError,
             aio_pika.exceptions.AMQPConnectionError,
+            aiormq.exceptions.ChannelNotFoundEntity,
+            *aio_pika.exceptions.CONNECTION_EXCEPTIONS,
         ) as error:
             raise ConnectionException("Cannot connect to event broker.") from error
 

@@ -22,7 +22,7 @@ from rasa.shared.utils.validation import KEY_TRAINING_DATA_FORMAT_VERSION
 @pytest.mark.parametrize(
     "file, schema",
     [
-        ("examples/moodbot/domain.yml", DOMAIN_SCHEMA_FILE),
+        ("data/test_moodbot/domain.yml", DOMAIN_SCHEMA_FILE),
         ("data/test_config/config_defaults.yml", CONFIG_SCHEMA_FILE),
         ("data/test_config/config_supervised_embeddings.yml", CONFIG_SCHEMA_FILE),
         ("data/test_config/config_crf_custom_features.yml", CONFIG_SCHEMA_FILE),
@@ -47,6 +47,41 @@ def test_validate_yaml_schema_raise_exception(file: Text, schema: Text):
         validation_utils.validate_yaml_schema(
             rasa.shared.utils.io.read_file(file), schema
         )
+
+
+def test_validate_yaml_schema_raise_exception_null_text():
+    domain = """
+    version: "2.0"
+    responses:
+      utter_ask_email:
+      - text: What is your email ID?
+      utter_ask_name:
+      - text: null
+    """
+    with pytest.raises(validation_utils.YamlValidationException) as e:
+        validation_utils.validate_yaml_schema(domain, DOMAIN_SCHEMA_FILE)
+
+    assert (
+        "Missing 'text' or 'custom' key in response or null 'text' value in response."
+        in str(e.value)
+    )
+
+
+def test_validate_yaml_schema_raise_exception_extra_hyphen_for_image():
+    domain = """
+        version: "2.0"
+        responses:
+          utter_cheer_up:
+          - image: https://i.imgur.com/nGF1K8f.jpg
+          - text: Here is something to cheer you up
+        """
+    with pytest.raises(validation_utils.YamlValidationException) as e:
+        validation_utils.validate_yaml_schema(domain, DOMAIN_SCHEMA_FILE)
+
+    assert (
+        "Missing 'text' or 'custom' key in response or null 'text' value in response."
+        in str(e.value)
+    )
 
 
 def test_example_training_data_is_valid():

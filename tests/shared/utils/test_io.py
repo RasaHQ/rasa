@@ -5,13 +5,11 @@ import uuid
 from collections import OrderedDict
 from pathlib import Path
 from typing import Callable, Text, List, Set, Any, Dict
-from _pytest.monkeypatch import MonkeyPatch
-from mock import Mock
 
 import pytest
 
 import rasa.shared
-from rasa.shared.exceptions import FileIOException, FileNotFoundException
+from rasa.shared.exceptions import FileIOException, FileNotFoundException, RasaException
 import rasa.shared.utils.io
 import rasa.shared.utils.validation
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
@@ -147,13 +145,13 @@ def test_read_yaml_string_with_env_var_not_exist():
     user: ${USER_NAME}
     password: ${PASSWORD}
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(RasaException):
         rasa.shared.utils.io.read_yaml(config_with_env_var_not_exist)
 
 
 def test_environment_variable_not_existing():
     content = "model: \n  test: ${variable}"
-    with pytest.raises(ValueError):
+    with pytest.raises(RasaException):
         rasa.shared.utils.io.read_yaml(content)
 
 
@@ -200,6 +198,26 @@ def test_environment_variable_dict_with_prefix_and_with_postfix():
     content = rasa.shared.utils.io.read_yaml(content)
 
     assert content["model"]["test"] == "dir/test/dir"
+
+
+def test_environment_variable_with_dollar_char():
+    os.environ["variable1"] = "$test1"
+    os.environ["variable2"] = "test2"
+    content = "model: \n  test1: ${variable1}\n  test2: ${variable2}"
+
+    content = rasa.shared.utils.io.read_yaml(content)
+
+    assert content["model"]["test1"] == "$test1"
+    assert content["model"]["test2"] == "test2"
+
+
+def test_environment_variable_with_dollar_char_in_the_middle():
+    os.environ["variable1"] = "test$123"
+    content = "model: \n  test1: ${variable1}"
+
+    content = rasa.shared.utils.io.read_yaml(content)
+
+    assert content["model"]["test1"] == "test$123"
 
 
 def test_emojis_in_yaml():
@@ -512,3 +530,30 @@ def test_read_invalid_config_file(tmp_path: Path, content: Text):
 
     with pytest.raises(rasa.shared.utils.validation.YamlValidationException):
         rasa.shared.utils.io.read_model_configuration(config_file)
+
+
+@pytest.mark.parametrize(
+    "file,keys,expected_result",
+    [
+        ("data/test_yaml_stories/stories.yml", ["stories"], True),
+        ("data/test_yaml_stories/stories.yml", ["something_else"], False),
+        ("data/test_yaml_stories/stories.yml", ["stories", "something_else"], True),
+        (
+            "data/test_domains/default_retrieval_intents.yml",
+            ["intents", "responses"],
+            True,
+        ),
+        ("data/test_yaml_stories/rules_without_stories.yml", ["rules"], True),
+        ("data/test_yaml_stories/rules_without_stories.yml", ["stories"], False),
+        ("data/test_stories/stories.md", ["something"], False),
+    ],
+)
+async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: bool):
+    assert rasa.shared.utils.io.is_key_in_yaml(file, *keys) == expected_result
+
+
+async def test_is_key_in_yaml_with_unicode_files():
+    # This shouldn't raise
+    assert rasa.shared.utils.io.is_key_in_yaml(
+        "./data/test_nlu_no_responses/nlu_with_unicode.yml", "nlu"
+    )

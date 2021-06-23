@@ -64,7 +64,7 @@ async def test_whole_loop():
     action = MyLoop()
     actual = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -109,7 +109,7 @@ async def test_loop_without_deactivate():
     action = MyLoop()
     actual = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )
@@ -150,7 +150,7 @@ async def test_loop_without_activate_and_without_deactivate():
     action = MyLoop()
     actual = await action.run(
         CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
         tracker,
         domain,
     )

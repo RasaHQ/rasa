@@ -1,0 +1,5 @@
+version: "2.0"
+rules:
+  - rule: request restaurant
+    steps:
+      - intent: request_restaurant
