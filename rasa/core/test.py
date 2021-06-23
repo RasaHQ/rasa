@@ -800,6 +800,45 @@ def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
     return len(in_training_data) / len(action_list) if action_list else 0
 
 
+def _sort_trackers_with_severity_of_warning(
+    trackers_to_sort: List[DialogueStateTracker],
+) -> List[DialogueStateTracker]:
+    """Sort the given trackers according to 'severity' of `action_unlikely_intent`.
+
+    Severity is calculated by `IntentTEDPolicy` as is attached as
+    metadata to `ActionExecuted` event.
+
+    Args:
+        trackers_to_sort: Trackers to be sorted
+
+    Returns:
+        Sorted trackers in descending order of severity.
+    """
+    tracker_severity_scores = []
+    for tracker in trackers_to_sort:
+        max_severity = 0
+        for event in tracker.applied_events():
+            if (
+                isinstance(event, ActionExecuted)
+                and event.action_name == ACTION_UNLIKELY_INTENT_NAME
+            ):
+                max_severity = max(
+                    max_severity,
+                    event.metadata.get("query_intent", {}).get("severity", 0),
+                )
+        tracker_severity_scores.append(max_severity)
+
+    sorted_trackers_with_severity = sorted(
+        [
+            (severity, tracker)
+            for severity, tracker in zip(tracker_severity_scores, trackers_to_sort)
+        ],
+        key=lambda x: -x[0],
+    )
+
+    return [tracker for (_, tracker) in sorted_trackers_with_severity]
+
+
 async def _collect_story_predictions(
     completed_trackers: List["DialogueStateTracker"],
     agent: "Agent",
@@ -866,6 +905,12 @@ async def _collect_story_predictions(
         [1] * len(completed_trackers),
         "END-TO-END" if use_e2e else "CONVERSATION",
         accuracy,
+    )
+
+    # Sort the stories according to `severity` of `action_unlikely_intent`
+    failed_stories = _sort_trackers_with_severity_of_warning(failed_stories)
+    stories_with_warnings = _sort_trackers_with_severity_of_warning(
+        stories_with_warnings
     )
 
     return (
