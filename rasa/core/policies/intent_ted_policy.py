@@ -406,7 +406,7 @@ class IntentTEDPolicy(TEDPolicy):
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array, query_intent: Text
     ) -> Dict[Text, Any]:
-        """Adds any metadata to be attached to the predicted action.
+        """Collects metadata to be attached to the predicted action.
 
         Metadata schema looks like this:
 
