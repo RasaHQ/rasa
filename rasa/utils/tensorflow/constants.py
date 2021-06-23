@@ -102,7 +102,7 @@ POSITIVE_SCORES_KEY = "positive_scores"
 
 NEGATIVE_SCORES_KEY = "negative_scores"
 
-RANKING_KEY = "ranking"
+RANKING_KEY = "label_ranking"
 QUERY_INTENT_KEY = "query_intent"
 SCORE_KEY = "score"
 THRESHOLD_KEY = "threshold"

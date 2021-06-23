@@ -37,6 +37,7 @@ from rasa.utils.tensorflow.constants import (
     SEVERITY_KEY,
     QUERY_INTENT_KEY,
     NAME,
+    RANKING_LENGTH,
 )
 from rasa.shared.nlu.constants import INTENT
 from rasa.utils.tensorflow import model_data_utils
@@ -558,13 +559,16 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             expected_extracted_label_embeddings == actual_extracted_label_embeddings
         )
 
-    @pytest.mark.parametrize("query_intent_index", [0, 1, 2, 5])
+    @pytest.mark.parametrize(
+        "query_intent_index, ranking_length", [(0, 0), (1, 3), (2, 1), (5, 0)]
+    )
     def test_collect_action_metadata(
         self,
         trained_policy: IntentTEDPolicy,
         default_domain: Domain,
         tmp_path: Path,
         query_intent_index: int,
+        ranking_length: int,
     ):
         loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
 
@@ -580,7 +584,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
                 all_thresholds[label_index] if label_index in all_thresholds else None
             )
             expected_severity = (
-                abs(expected_score - expected_threshold) if expected_threshold else None
+                expected_threshold - expected_score if expected_threshold else None
             )
 
             assert label_metadata.get(SCORE_KEY) == expected_score
@@ -590,6 +594,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         # Monkey-patch certain attributes of the policy to make the testing easier.
         label_thresholds = {0: 1.2, 1: -0.3, 4: -2.3, 5: 0.2}
         loaded_policy.label_thresholds = label_thresholds
+        loaded_policy.config[RANKING_LENGTH] = ranking_length
 
         # Some dummy similarities
         similarities = np.array([[3.2, 0.2, -1.2, -4.3, -5.1, 2.3]])
@@ -617,10 +622,15 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             query_intent_index,
         )
 
-        # Check if ranking is sorted correctly
+        # Check if ranking is sorted correctly and truncated to `ranking_length`
         sorted_label_similarities = sorted(
             [(index, score) for index, score in enumerate(similarities[0])],
             key=lambda x: -x[1],
+        )
+        sorted_label_similarities = (
+            sorted_label_similarities[:ranking_length]
+            if ranking_length
+            else sorted_label_similarities
         )
         expected_label_rankings = [
             default_domain.intents[index] for index, _ in sorted_label_similarities

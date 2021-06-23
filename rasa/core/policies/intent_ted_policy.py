@@ -175,7 +175,8 @@ class IntentTEDPolicy(TEDPolicy):
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
-        # Number of intents to store in predicted action metadata.
+        # Number of intents to store in ranking key of predicted action metadata.
+        # Set this to `0` to include all intents.
         RANKING_LENGTH: 10,
         # If 'True' scale loss inverse proportionally to the confidence
         # of the correct prediction
@@ -411,7 +412,9 @@ class IntentTEDPolicy(TEDPolicy):
 
         {
             "query_intent": <metadata of intent that was queried>,
-            "ranking": <sorted list of metadata corresponding to all intents.
+            "ranking": <sorted list of metadata corresponding to all intents
+                        (truncated by `ranking_length` parameter)
+                        It also includes the `query_intent`.
                         Sorting is based on predicted similarities.>
         }
 
@@ -423,6 +426,8 @@ class IntentTEDPolicy(TEDPolicy):
             "threshold": <threshold used for intent>,
             "severity": <absolute difference between score and threshold>
         }
+
+        The function also
 
         Args:
             domain: Domain of the assistant.
@@ -437,7 +442,7 @@ class IntentTEDPolicy(TEDPolicy):
         def _compile_metadata_for_label(
             label_name: Text, similarity_score: float, threshold: Optional[float],
         ) -> Dict[Text, Optional[Union[Text, float]]]:
-            severity = abs(similarity_score - threshold) if threshold else None
+            severity = threshold - similarity_score if threshold else None
             return {
                 NAME: label_name,
                 SCORE_KEY: similarity_score,
@@ -458,6 +463,9 @@ class IntentTEDPolicy(TEDPolicy):
             [(index, similarity) for index, similarity in enumerate(similarities[0])],
             key=lambda x: -x[1],
         )
+
+        if self.config[RANKING_LENGTH] > 0:
+            sorted_similarities = sorted_similarities[: self.config[RANKING_LENGTH]]
 
         metadata[RANKING_KEY] = [
             _compile_metadata_for_label(
