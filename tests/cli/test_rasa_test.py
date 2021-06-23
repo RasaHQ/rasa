@@ -190,7 +190,7 @@ def test_test_help(run: Callable[..., RunResult]):
                  [--evaluate-model-directory] [-u NLU]
                  [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
                  [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                 [--successes] [--no-errors] [--out OUT]
+                 [--successes] [--no-errors] [--no-warnings] [--out OUT]
                  {core,nlu} ..."""
 
     lines = help_text.split("\n")
@@ -206,7 +206,7 @@ def test_test_nlu_help(run: Callable[..., RunResult]):
     help_text = """usage: rasa test nlu [-h] [-v] [-vv] [--quiet] [-m MODEL] [-u NLU] [--out OUT]
                      [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
                      [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                     [--successes] [--no-errors]"""
+                     [--successes] [--no-errors] [--no-warnings]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -223,7 +223,7 @@ def test_test_core_help(run: Callable[..., RunResult]):
                       [--e2e] [--endpoints ENDPOINTS]
                       [--fail-on-prediction-errors] [--url URL]
                       [--evaluate-model-directory] [--no-plot] [--successes]
-                      [--no-errors]"""
+                      [--no-errors] [--no-warnings]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
