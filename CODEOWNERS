@@ -2,7 +2,7 @@
 # such as Rasa X. Hence, changes within this package require double checking.
 /docs/docs/prototype-an-assistant.mdx @ricwo @alwx
 /.github/workflows/ @RasaHQ/infrastructure
-/rasa/**.py @RasaHQ/enable-squad
+/rasa/ @RasaHQ/enable-squad
 /rasa/core/featurizers/ @RasaHQ/research
 /rasa/core/policies/*.py @RasaHQ/research
 /rasa/core/policies/ensemble.py @RasaHQ/enable-squad
