@@ -150,9 +150,14 @@ def test_batch_inference(
     )
 
 
-def test_adjusting_sparse_layers():
+def test_adjusting_sparse_layers(monkeypatch):
     """Tests adjusting sizes of `DenseForSparse` layers inside
     `TransformerRasaModel` object."""
+
+    def mock_check_data(self):
+        pass
+
+    monkeypatch.setattr(TransformerRasaModel, "_check_data", mock_check_data)
     # in this case, we have only one sparse featurizer
     initial_sparse_feature_size = 4
     final_sparse_feature_size = 5
