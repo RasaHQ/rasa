@@ -5,6 +5,7 @@ import uuid
 from collections import deque
 from pathlib import Path
 from typing import Any, Dict, List, Text, Tuple, Callable
+from tests.conftest import AsyncMock
 
 import mock
 import pytest
@@ -738,7 +739,7 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
 
 
 @pytest.mark.parametrize(
-    "action_name, question",
+    "action_name, question, is_marked_as_correct, sent_action_name",
     [
         (
             "action_unlikely_intent",
@@ -746,9 +747,32 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
             f"Check out IntentTEDPolicy ({DOCS_URL_POLICIES}/#intent-ted-policy) "
-            f"to learn more. Press any key to continue…",
+            f"to learn more.",
+            True,
+            "action_unlikely_intent",
         ),
-        ("action_other", "The bot wants to run 'action_other', correct?"),
+        (
+            "action_unlikely_intent",
+            f"The bot wants to run 'action_unlikely_intent' "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
+            f"Check out IntentTEDPolicy ({DOCS_URL_POLICIES}/#intent-ted-policy) "
+            f"to learn more.",
+            False,
+            "action_unlikely_intent",
+        ),
+        (
+            "action_test",
+            "The bot wants to run 'action_test', correct?",
+            True,
+            "action_test",
+        ),
+        (
+            "action_test",
+            "The bot wants to run 'action_test', correct?",
+            False,
+            "action_another_one",
+        ),
     ],
 )
 async def test_correct_question_for_action_name_was_asked(
@@ -756,30 +780,40 @@ async def test_correct_question_for_action_name_was_asked(
     mock_endpoint: EndpointConfig,
     action_name: Text,
     question: Text,
+    is_marked_as_correct: bool,
+    sent_action_name: Text,
 ):
-    # mock those functions that shouldn't be called
+    conversation_id = "conversation_id"
+    policy = "policy"
+    tracker = DialogueStateTracker.from_events("some_sender", [])
+
     monkeypatch.setattr(
         interactive,
         "retrieve_tracker",
-        asyncio.coroutine(
-            Mock(return_value=DialogueStateTracker.from_events("one", []))
-        ),
+        AsyncMock(return_value=tracker.current_state()),
     )
     monkeypatch.setattr(
-        interactive, "_ask_questions", asyncio.coroutine(Mock(return_value=True))
+        interactive, "_ask_questions", AsyncMock(return_value=is_marked_as_correct)
     )
-    monkeypatch.setattr(interactive, "_form_is_rejected", Mock(return_value=False))
-    monkeypatch.setattr(interactive, "_form_is_restored", Mock(return_value=False))
-    monkeypatch.setattr(interactive, "send_action", asyncio.coroutine(Mock()))
+    monkeypatch.setattr(
+        interactive,
+        "_request_action_from_user",
+        AsyncMock(return_value=("action_another_one", False,)),
+    )
+
+    mocked_send_action = AsyncMock()
+    monkeypatch.setattr(interactive, "send_action", mocked_send_action)
 
     mocked_confirm = Mock(return_value=None)
     monkeypatch.setattr(interactive.questionary, "confirm", mocked_confirm)
 
     # validate the action and make sure that the correct question was asked
     await interactive._validate_action(
-        action_name, "", 1.0, [], mock_endpoint, "conversation_id"
+        action_name, policy, 1.0, [], mock_endpoint, conversation_id
     )
     mocked_confirm.assert_called_once_with(question)
+    args, kwargs = mocked_send_action.call_args_list[-1]
+    assert args[2] == sent_action_name
 
 
 def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
