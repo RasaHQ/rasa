@@ -117,7 +117,6 @@ async def test_action_unlikely_intent_complete(
                   amazing
                 intent: mood_great
               - action: utter_happy
-        
           - story: unlikely path
             steps:
               - user: |
@@ -127,7 +126,6 @@ async def test_action_unlikely_intent_complete(
               - action: utter_did_that_help
               - intent: affirm
               - action: utter_happy
-        
           - story: unlikely path (with action_unlikely_intent)
             steps:
               - user: |
@@ -138,7 +136,6 @@ async def test_action_unlikely_intent_complete(
               - action: utter_did_that_help
               - intent: affirm
               - action: utter_happy
-        
           - story: happy path 2
             steps:
               - user: |

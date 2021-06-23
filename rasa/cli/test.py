@@ -78,7 +78,8 @@ def _print_core_test_execution_info(args: argparse.Namespace) -> None:
 
     if args.successes:
         rasa.shared.utils.cli.print_info(
-            f"Successful stories written to '{os.path.join(output, SUCCESSFUL_STORIES_FILE)}'"
+            f"Successful stories written to "
+            f"'{os.path.join(output, SUCCESSFUL_STORIES_FILE)}'"
         )
     if not args.no_errors:
         rasa.shared.utils.cli.print_info(
@@ -86,7 +87,8 @@ def _print_core_test_execution_info(args: argparse.Namespace) -> None:
         )
     if not args.no_warnings:
         rasa.shared.utils.cli.print_info(
-            f"Stories with prediction warnings written to '{os.path.join(output, STORIES_WITH_WARNINGS_FILE)}'"
+            f"Stories with prediction warnings written to "
+            f"'{os.path.join(output, STORIES_WITH_WARNINGS_FILE)}'"
         )
 
 

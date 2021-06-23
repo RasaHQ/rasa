@@ -164,7 +164,8 @@ class EvaluationStore:
     def predicted_warning(predicted_action: Text) -> bool:
         """Indicates if the predicted action needs to raise a warning.
 
-        Right now the only action that leads to a warning is an `action_unlikely_intent`.
+        Currently the only action that leads to a warning is
+        an `action_unlikely_intent`.
 
         Args:
             predicted_action: A predicted action.
