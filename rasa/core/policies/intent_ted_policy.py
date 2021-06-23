@@ -427,8 +427,6 @@ class IntentTEDPolicy(TEDPolicy):
             "severity": <absolute difference between score and threshold>
         }
 
-        The function also
-
         Args:
             domain: Domain of the assistant.
             similarities: Predicted similarities for each intent.
