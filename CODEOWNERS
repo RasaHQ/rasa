@@ -1,5 +1,3 @@
-# Code in the `rasa.shared` package is potentially re-used by downstream dependencies
-# such as Rasa X. Hence, changes within this package require double checking.
 /docs/docs/prototype-an-assistant.mdx @ricwo @alwx
 /.github/workflows/ @RasaHQ/infrastructure
 /rasa/ @RasaHQ/enable-squad
@@ -23,4 +21,3 @@
 /rasa/utils/plotting.py @RasaHQ/research
 /rasa/utils/train_utils.py @RasaHQ/research
 /rasa/utils/tensorflow/ @RasaHQ/research
-! /rasa/core/constants.py @RasaHQ/enable-squad
