@@ -885,7 +885,6 @@ def _log_stories(
     trackers: List[DialogueStateTracker], file_path: Text, message_if_no_trackers: Text
 ) -> None:
     """Write given stories to the given file."""
-
     with open(file_path, "w", encoding=DEFAULT_ENCODING) as f:
         if not trackers:
             f.write(f"# {message_if_no_trackers}")
