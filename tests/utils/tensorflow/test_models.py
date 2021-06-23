@@ -3,35 +3,20 @@ from typing import Dict, Text, Union, Tuple
 import numpy as np
 import tensorflow as tf
 
-from rasa.utils.tensorflow.models import RasaModel
+from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.model_data import FeatureArray
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.utils.tensorflow.constants import (
     LABEL,
     IDS,
-    INTENT_CLASSIFICATION,
     SENTENCE,
-    SEQUENCE_LENGTH,
     RANDOM_SEED,
-    EMBEDDING_DIMENSION,
     REGULARIZATION_CONSTANT,
-    SIMILARITY_TYPE,
     CONNECTION_DENSITY,
-    NUM_NEG,
-    LOSS_TYPE,
-    MAX_POS_SIM,
-    MAX_NEG_SIM,
     DENSE_DIMENSION,
-    USE_MAX_NEG_SIM,
-    NEGATIVE_MARGIN_SCALE,
-    SCALE_LOSS,
     LEARNING_RATE,
-    CONSTRAIN_SIMILARITIES,
-    MODEL_CONFIDENCE,
     SEQUENCE,
-    SHARE_HIDDEN_LAYERS,
-    ENTITY_RECOGNITION,
     SPARSE_INPUT_DROPOUT,
     DROP_RATE,
     DENSE_INPUT_DROPOUT,
@@ -53,14 +38,8 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
 )
 import scipy.sparse
-from rasa.utils.tensorflow import model_data_utils
-from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
-from rasa.nlu.classifiers.diet_classifier import DIET, DIETClassifier
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.utils.tensorflow import rasa_layers
-from rasa.utils.tensorflow.data_generator import (
-    RasaDataGenerator,
-    RasaBatchDataGenerator,
-)
 from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
 
