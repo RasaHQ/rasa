@@ -85,6 +85,12 @@ from rasa.utils.tensorflow.constants import (
     LABEL_PAD_ID,
     POSITIVE_SCORES_KEY,
     NEGATIVE_SCORES_KEY,
+    RANKING_KEY,
+    SCORE_KEY,
+    THRESHOLD_KEY,
+    SEVERITY_KEY,
+    QUERY_INTENT_KEY,
+    NAME,
 )
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.model_data import (
@@ -169,7 +175,8 @@ class IntentTEDPolicy(TEDPolicy):
         # The number of incorrect labels. The algorithm will minimize
         # their similarity to the user input during training.
         NUM_NEG: 20,
-        # Number of intents to store in predicted action metadata.
+        # Number of intents to store in ranking key of predicted action metadata.
+        # Set this to `0` to include all intents.
         RANKING_LENGTH: 10,
         # If 'True' scale loss inverse proportionally to the confidence
         # of the correct prediction
@@ -397,26 +404,75 @@ class IntentTEDPolicy(TEDPolicy):
         self.compute_label_quantiles_post_training(model_data, label_ids)
 
     def _collect_action_metadata(
-        self, domain: Domain, similarities: np.array
-    ) -> Dict[Text, Dict[Text, float]]:
-        """Adds any metadata to be attached to the predicted action.
+        self, domain: Domain, similarities: np.array, query_intent: Text
+    ) -> Dict[Text, Any]:
+        """Collects metadata to be attached to the predicted action.
 
-        Similarities for all intents and their thresholds are attached as metadata.
+        Metadata schema looks like this:
+
+        {
+            "query_intent": <metadata of intent that was queried>,
+            "ranking": <sorted list of metadata corresponding to all intents
+                        (truncated by `ranking_length` parameter)
+                        It also includes the `query_intent`.
+                        Sorting is based on predicted similarities.>
+        }
+
+        Each metadata dictionary looks like this:
+
+        {
+            "name": <name of intent>,
+            "score": <predicted similarity score>,
+            "threshold": <threshold used for intent>,
+            "severity": <absolute difference between score and threshold>
+        }
 
         Args:
             domain: Domain of the assistant.
             similarities: Predicted similarities for each intent.
+            query_intent: Name of intent queried in this round of inference.
 
         Returns:
             Metadata to be attached.
         """
-        metadata = {}
-        for intent_index, intent in enumerate(domain.intents):
-            if intent_index in self.label_thresholds:
-                metadata[intent] = {
-                    "score": similarities[0][intent_index],
-                    "threshold": self.label_thresholds[intent_index],
-                }
+        query_intent_index = domain.intents.index(query_intent)
+
+        def _compile_metadata_for_label(
+            label_name: Text, similarity_score: float, threshold: Optional[float],
+        ) -> Dict[Text, Optional[Union[Text, float]]]:
+            severity = threshold - similarity_score if threshold else None
+            return {
+                NAME: label_name,
+                SCORE_KEY: similarity_score,
+                THRESHOLD_KEY: threshold,
+                SEVERITY_KEY: severity,
+            }
+
+        metadata = {
+            QUERY_INTENT_KEY: _compile_metadata_for_label(
+                query_intent,
+                similarities[0][domain.intents.index(query_intent)],
+                self.label_thresholds.get(query_intent_index),
+            )
+        }
+
+        # Ranking in descending order of predicted similarities
+        sorted_similarities = sorted(
+            [(index, similarity) for index, similarity in enumerate(similarities[0])],
+            key=lambda x: -x[1],
+        )
+
+        if self.config[RANKING_LENGTH] > 0:
+            sorted_similarities = sorted_similarities[: self.config[RANKING_LENGTH]]
+
+        metadata[RANKING_KEY] = [
+            _compile_metadata_for_label(
+                domain.intents[intent_index],
+                similarity,
+                self.label_thresholds.get(intent_index),
+            )
+            for intent_index, similarity in sorted_similarities
+        ]
 
         return metadata
 
@@ -479,7 +535,9 @@ class IntentTEDPolicy(TEDPolicy):
 
         return self._prediction(
             confidences,
-            action_metadata=self._collect_action_metadata(domain, similarities),
+            action_metadata=self._collect_action_metadata(
+                domain, similarities, query_intent
+            ),
         )
 
     @staticmethod
