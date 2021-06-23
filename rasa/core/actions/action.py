@@ -884,3 +884,5 @@ class ActionDefaultAskRephrase(ActionBotResponse):
     def __init__(self) -> None:
         """Initializes action default ask rephrase."""
         super().__init__("utter_ask_rephrase", silent_fail=True)
+
+# test CODEOWNERS assigns the correct reviewer
