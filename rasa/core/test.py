@@ -848,7 +848,7 @@ async def _collect_story_predictions(
 
             if any(
                 type(event) == WronglyPredictedAction
-                and event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME
+                and story_eval_store.predicted_warning(event.action_name_prediction)
                 for event in predicted_tracker.events
             ):
                 stories_with_warnings.append(predicted_tracker)
