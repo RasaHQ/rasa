@@ -143,7 +143,7 @@ class DenseForSparse(tf.keras.layers.Dense):
     def get_feature_type(self) -> Union[Text, None]:
         """Returns a feature type of the data that's fed to the layer.
 
-        In order to correctly return the feature type, the function heavily relies
+        In order to correctly return a feature type, the function heavily relies
         on the name of `DenseForSparse` layer being in the following format:
         f"sparse_to_dense.{attribute}_{feature_type}".
 
@@ -158,7 +158,7 @@ class DenseForSparse(tf.keras.layers.Dense):
     def get_attribute(self) -> Union[Text, None]:
         """Returns an attribute of the data that's fed to the layer.
 
-        In order to correctly return the attribute, the function heavily relies
+        In order to correctly return an attribute, the function heavily relies
         on the name of `DenseForSparse` layer being in the following format:
         f"sparse_to_dense.{attribute}_{feature_type}".
 

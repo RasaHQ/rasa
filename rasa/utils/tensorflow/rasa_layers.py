@@ -35,7 +35,8 @@ from rasa.shared.exceptions import RasaException
 class RasaCustomLayer(tf.keras.layers.Layer):
     """Parent class for all classes in `rasa_layers.py`.
 
-    Allows adjusting `DenseForSparse` layers to all the child classes.
+    Allows a shared implementation for adjusting `DenseForSparse`
+    layers during incremental training.
 
     During fine-tuning sparse feature sizes might change due to addition of new data.
     If this happens, we need to adjust our `DenseForSparse` layers to a new size.
@@ -106,7 +107,7 @@ class RasaCustomLayer(tf.keras.layers.Layer):
     def _check_if_sparse_feature_sizes_decreased(
         new_sparse_feature_sizes: List[int], old_sparse_feature_sizes: List[int],
     ) -> None:
-        """Checks if the sizes of sparse features are decreased during fine-tuning.
+        """Checks if the sizes of sparse features have decreased during fine-tuning.
 
         Sparse feature sizes might decrease after changing the training data.
         This can happen for example with `LexicalSyntacticFeaturizer`.
@@ -127,12 +128,12 @@ class RasaCustomLayer(tf.keras.layers.Layer):
         ):
             if new_size < old_size:
                 raise RasaException(
-                    "Sparse feature sizes have decreased."
-                    "The NLU file was changed in a way that caused removing some"
-                    "features from certain featurizers (This might have been "
-                    "`LexicalSyntacticFeaturizer`). We don't support this behaviour"
-                    "at this point. One possible way to avoid this "
-                    "exception is retraining the model from scratch."
+                    "Sparse feature sizes have decreased from the last time training "
+                    "was run. The training data was changed in a way that resulted in "
+                    "some features not being present in the data anymore. This can "
+                    "happen if you had `LexicalSyntacticFeaturizer` in your pipeline. "
+                    "The pipeline cannot support incremental training in this setting."
+                    " We recommend you to retrain the model from scratch."
                 )
 
     @staticmethod
