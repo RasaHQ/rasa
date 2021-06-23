@@ -44,6 +44,7 @@ from rasa.core.policies.policy import Policy, SupportedData, PolicyPrediction
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.training import training
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -605,6 +606,12 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         policy_events = []
         for policy_name, prediction in predictions.items():
+            if policy_name.endswith("_" + RulePolicy.__name__):
+                continue
+            if policy_name.endswith("_" + MemoizationPolicy.__name__):
+                continue
+            if policy_name.endswith("_" + TEDPolicy.__name__) and not best_policy_name:
+                best_policy_name = policy_name
             policy_events += prediction.events
 
             # No user predictions (e.g. happy path loop predictions)
