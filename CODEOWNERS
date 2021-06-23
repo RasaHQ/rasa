@@ -1,4 +1,4 @@
-/docs/docs/prototype-an-assistant.mdx @ricwo @alwx
+/docs/docs/prototype-an-assistant.mdx @RasaHQ/enable-squad
 /.github/workflows/ @RasaHQ/infrastructure
 /rasa/ @RasaHQ/enable-squad
 /rasa/core/featurizers/ @RasaHQ/research
