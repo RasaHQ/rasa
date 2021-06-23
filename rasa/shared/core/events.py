@@ -1088,7 +1088,8 @@ class ReminderScheduled(Event):
     def __str__(self) -> Text:
         """Returns text representation of event."""
         return (
-            f"ReminderScheduled(intent: {self.intent}, trigger_date: {self.trigger_date_time}, "
+            f"ReminderScheduled(intent: {self.intent}, "
+            f"trigger_date: {self.trigger_date_time}, "
             f"entities: {self.entities}, name: {self.name})"
         )
 

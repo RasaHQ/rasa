@@ -39,7 +39,8 @@ def noop(*args, **kwargs):
 async def test_send_response(default_channel, default_tracker):
     text_only_message = {"text": "hey"}
     multiline_text_message = {
-        "text": "This message should come first:  \n\nThis is message two  \nThis as well\n\n"
+        "text": "This message should come first:  \n\n"
+        "This is message two  \nThis as well\n\n"
     }
     image_only_message = {"image": "https://i.imgur.com/nGF1K8f.jpg"}
     text_and_image_message = {
