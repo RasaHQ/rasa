@@ -134,19 +134,37 @@ class DenseForSparse(tf.keras.layers.Dense):
         """Returns kernel tensor."""
         return self.kernel
 
-    def get_bias_info(self) -> Tuple[bool, tf.Tensor]:
-        """Returns whether the layer has a bias tensor and the bias tensor itself."""
-        return self.use_bias, self.bias
+    def get_bias(self) -> Union[tf.Tensor, None]:
+        """Returns bias tensor."""
+        if self.use_bias:
+            return self.bias
+        return None
 
     def get_feature_type(self) -> Union[Text, None]:
-        """Returns a feature type of the data that's fed to the layer."""
+        """Returns a feature type of the data that's fed to the layer.
+
+        In order to correctly return the feature type, the function heavily relies
+        on the name of `DenseForSparse` layer being in the following format:
+        f"sparse_to_dense.{attribute}_{feature_type}".
+
+        Returns:
+            feature type of dense layer.
+        """
         for feature_type in [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE]:
             if feature_type in self.name:
                 return feature_type
         return None
 
     def get_attribute(self) -> Union[Text, None]:
-        """Returns an attribute of the data that's fed to the layer."""
+        """Returns an attribute of the data that's fed to the layer.
+
+        In order to correctly return the attribute, the function heavily relies
+        on the name of `DenseForSparse` layer being in the following format:
+        f"sparse_to_dense.{attribute}_{feature_type}".
+
+        Returns:
+            attribute of dense layers.
+        """
         attribute = None
         metadata = self.name.split(".")
         if len(metadata) > 1:

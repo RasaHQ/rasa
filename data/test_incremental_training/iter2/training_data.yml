@@ -1,0 +1,8 @@
+version: "2.0"
+nlu:
+- intent: affirm
+  examples: |
+    - indeed
+- intent: deny
+  examples: |
+    - never

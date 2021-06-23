@@ -538,7 +538,7 @@ class TransformerRasaModel(RasaModel):
         self.config = config
         self.data_signature = data_signature
         self.label_signature = label_data.get_signature()
-        self._check_data()
+        # self._check_data()
 
         label_batch = RasaDataGenerator.prepare_batch(label_data.data)
         self.tf_label_data = self.batch_to_model_data_format(
@@ -566,10 +566,30 @@ class TransformerRasaModel(RasaModel):
         {TEXT: {FEATURE_TYPE_SEQUENCE: [4, 24, 128], FEATURE_TYPE_SENTENCE: [4, 128]}}
 
         Args:
-            data_example: a data example that is stored in `DIETClassifier` class.
+            data_example: a data example that is stored with the ML component.
             new_sparse_feature_sizes: sizes of current sparse features.
             old_sparse_feature_sizes: sizes of sparse features the model was
-                                      trained on before.
+                                      previously trained on.
+        """
+        self._update_dense_for_sparse_layers(
+            new_sparse_feature_sizes, old_sparse_feature_sizes
+        )
+        self._compile_and_fit(data_example)
+
+    def _update_dense_for_sparse_layers(
+        self,
+        new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+        old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    ) -> None:
+        """Updates `DenseForSparse` layers.
+
+        `if` condition is necessary because only `RasaCustomLayer` can adjust
+        sparse layers for incremental training by default.
+
+        Args:
+            new_sparse_feature_sizes: sizes of current sparse features.
+            old_sparse_feature_sizes: sizes of sparse features the model was
+                                      previously trained on.
         """
         for name, layer in self._tf_layers.items():
             if isinstance(layer, rasa_layers.RasaCustomLayer):
@@ -578,7 +598,6 @@ class TransformerRasaModel(RasaModel):
                     old_sparse_feature_sizes,
                     self.config[REGULARIZATION_CONSTANT],
                 )
-        self._compile_and_fit(data_example)
 
     def _compile_and_fit(
         self, data_example: Dict[Text, Dict[Text, List[FeatureArray]]]
@@ -586,7 +605,7 @@ class TransformerRasaModel(RasaModel):
         """Compiles modified model and fits a sample data on it.
 
         Args:
-            data_example: a data example that is stored in DIETClassifier class
+            data_example: a data example that is stored with the ML component.
         """
         self.compile(optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]))
         label_key = LABEL_KEY if self.config[INTENT_CLASSIFICATION] else None

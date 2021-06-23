@@ -868,12 +868,12 @@ def test_raise_exception_decreased_sparse_feature_sizes(
     """Tests if exception is raised when sparse feature sizes decrease
        during incremental training."""
     if raise_exception:
-        with pytest.raises(Exception) as execinfo:
+        with pytest.raises(Exception) as exec_info:
             RasaCustomLayer._check_sparse_feature_decreased_sizes(
                 new_sparse_feature_sizes=new_sparse_feature_sizes,
                 old_sparse_feature_sizes=old_sparse_feature_sizes,
             )
-        assert "Sparse feature sizes are decreased." in str(execinfo.value)
+        assert "Sparse feature sizes are decreased." in str(exec_info.value)
     else:
         RasaCustomLayer._check_sparse_feature_decreased_sizes(
             new_sparse_feature_sizes=new_sparse_feature_sizes,
@@ -882,7 +882,7 @@ def test_raise_exception_decreased_sparse_feature_sizes(
 
 
 def test_create_dense_layers():
-    """Tests if DenseForSparse layers are adjusted correctly."""
+    """Tests if `DenseForSparse` layers are adjusted correctly."""
     layer = layers.DenseForSparse(units=10)
     old_sparse_feature_sizes = [70, 30]
     new_sparse_feature_sizes = [80, 30]
@@ -897,7 +897,7 @@ def test_create_dense_layers():
     except InvalidArgumentError:
         print("this needs to be fixed")
 
-    new_layer = RasaCustomLayer._create_dense_for_sparse_layer(
+    new_layer = RasaCustomLayer._replace_dense_for_sparse_layer(
         dense_layer=layer,
         new_sparse_feature_sizes=new_sparse_feature_sizes,
         old_sparse_feature_sizes=old_sparse_feature_sizes,

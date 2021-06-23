@@ -29,6 +29,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.transformer import TransformerEncoder
+from rasa.shared.exceptions import RasaException
 
 
 class RasaCustomLayer(tf.keras.layers.Layer):
@@ -54,10 +55,17 @@ class RasaCustomLayer(tf.keras.layers.Layer):
         Recursively looks through the layers until it finds all the `DenseForSparse`
         ones and adjusts those which have their sparse feature sizes increased.
 
+        This function heavily relies on the name of `DenseForSparse` layer being
+        in the following format - f"sparse_to_dense.{attribute}_{feature_type}" -
+        in order to correctly extract the attribute and feature type.
+
+        New and old sparse feature sizes could look like this:
+        {TEXT: {FEATURE_TYPE_SEQUENCE: [4, 24, 128], FEATURE_TYPE_SENTENCE: [4, 128]}}
+
         Args:
             new_sparse_feature_sizes: sizes of current sparse features.
             old_sparse_feature_sizes: sizes of sparse features the model was
-                                      trained on before.
+                                      previously trained on.
             reg_lambda: regularization constant.
         """
         for name, layer in self._tf_layers.items():
@@ -80,63 +88,69 @@ class RasaCustomLayer(tf.keras.layers.Layer):
                     old_feature_sizes = old_sparse_feature_sizes[attribute][
                         feature_type
                     ]
-                    self._check_sparse_feature_decreased_sizes(
+                    self._check_if_sparse_feature_sizes_decreased(
                         new_sparse_feature_sizes=new_feature_sizes,
                         old_sparse_feature_sizes=old_feature_sizes,
                     )
                     if sum(new_feature_sizes) > sum(old_feature_sizes):
-                        new_layer = self._create_dense_for_sparse_layer(
-                            dense_layer=layer,
+                        self._tf_layers[name] = self._replace_dense_for_sparse_layer(
+                            layer_to_replace=layer,
                             new_sparse_feature_sizes=new_feature_sizes,
                             old_sparse_feature_sizes=old_feature_sizes,
                             attribute=attribute,
                             feature_type=feature_type,
                             reg_lambda=reg_lambda,
                         )
-                        self._tf_layers[name] = new_layer
 
     @staticmethod
-    def _check_sparse_feature_decreased_sizes(
+    def _check_if_sparse_feature_sizes_decreased(
         new_sparse_feature_sizes: List[int], old_sparse_feature_sizes: List[int],
     ) -> None:
         """Checks if the sizes of sparse features are decreased during fine-tuning.
 
-        Sparse feature sizes might decrease after changing the nlu file. This can
-        happen for example with `LexicalSyntacticFeaturizer`. We don't support
-        this behaviour and we raise a warning if this happens.
+        Sparse feature sizes might decrease after changing the training data.
+        This can happen for example with `LexicalSyntacticFeaturizer`.
+        We don't support this behaviour and we raise an exception if this happens.
 
         Args:
             new_sparse_feature_sizes: sizes of current sparse features for a
                                       specific attribute and feature type.
             old_sparse_feature_sizes: sizes of sparse features the model was trained on
                                       before for a specific attribute and feature type.
+
+        Raises:
+            RasaException: When any of the sparse feature sizes decrease
+                           from the last time training was run.
         """
         for new_size, old_size in zip(
             new_sparse_feature_sizes, old_sparse_feature_sizes
         ):
             if new_size < old_size:
-                raise Exception(
-                    "Sparse feature sizes are decreased."
+                raise RasaException(
+                    "Sparse feature sizes have decreased."
                     "The NLU file was changed in a way that caused removing some"
                     "features from certain featurizers (This might have been "
                     "`LexicalSyntacticFeaturizer`). We don't support this behaviour"
                     "at this point. One possible way to avoid this "
-                    "warning is retraining the model from scratch."
+                    "exception is retraining the model from scratch."
                 )
 
     @staticmethod
-    def _create_dense_for_sparse_layer(
-        dense_layer: layers.DenseForSparse,
+    def _replace_dense_for_sparse_layer(
+        layer_to_replace: layers.DenseForSparse,
         new_sparse_feature_sizes: List[int],
         old_sparse_feature_sizes: List[int],
         attribute: Text,
         feature_type: Text,
         reg_lambda: float,
     ) -> layers.DenseForSparse:
-        """Creates a new `DenseForSparse` layer based on a given one.
+        """Replaces a `DenseForSparse` layer with a new one.
+
+        Replaces an existing `DenseForSparse` layer with a new one
+        in order to adapt it to incremental training.
 
         Args:
-            dense_layer: a `DenseForSparse` layer that is used to create a new one.
+            layer_to_replace: a `DenseForSparse` layer that is used to create a new one.
             new_sparse_feature_sizes: sizes of sparse features that will be
                                       the input of the layer.
             old_sparse_feature_sizes: sizes of sparse features that used to be
@@ -146,19 +160,20 @@ class RasaCustomLayer(tf.keras.layers.Layer):
             reg_lambda: regularization constant.
 
         Returns:
-            new `DenseForSparse` layer.
+            New `DenseForSparse` layer.
         """
-        kernel = dense_layer.get_kernel().numpy()
-        use_bias, bias = dense_layer.get_bias_info()
+        kernel = layer_to_replace.get_kernel().numpy()
+        bias = layer_to_replace.get_bias()
+        use_bias = False if bias is None else True
         if use_bias:
             bias = bias.numpy()
-        units = dense_layer.get_units()
+        units = layer_to_replace.get_units()
         # split kernel by feature sizes to update the layer accordingly
         kernel_splits = []
         splitting_index = 0
         for size in old_sparse_feature_sizes:
             kernel_splits.append(kernel[splitting_index : splitting_index + size, :])
-            splitting_index = size
+            splitting_index += size
         additional_sizes = [
             new_size - old_size
             for new_size, old_size in zip(
@@ -178,7 +193,7 @@ class RasaCustomLayer(tf.keras.layers.Layer):
         new_weights = np.vstack(merged_weights)
         kernel_init = tf.constant_initializer(new_weights)
         bias_init = tf.constant_initializer(bias)
-        new_layer = layers.DenseForSparse(
+        return layers.DenseForSparse(
             name=f"sparse_to_dense.{attribute}_{feature_type}",
             reg_lambda=reg_lambda,
             units=units,
@@ -186,7 +201,6 @@ class RasaCustomLayer(tf.keras.layers.Layer):
             kernel_initializer=kernel_init,
             bias_initializer=bias_init,
         )
-        return new_layer
 
 
 class ConcatenateSparseDenseFeatures(RasaCustomLayer):
