@@ -1,4 +1,4 @@
-from typing import Text, List, Optional, Union, TYPE_CHECKING
+from typing import Text, List, Optional, Union, TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from rasa.shared.core.domain import Domain
@@ -45,7 +45,7 @@ async def load_data(
     use_story_concatenation: bool = True,
     debug_plots: bool = False,
     exclusion_percentage: Optional[int] = None,
-) -> List["TrackerWithCachedStates"]:
+) -> Tuple[List["TrackerWithCachedStates"], Optional["StoryGraph"]]:
     """
     Load training data from a resource.
 
@@ -85,9 +85,9 @@ async def load_data(
             use_story_concatenation,
             debug_plots,
         )
-        return g.generate()
+        return g.generate(), graph
     else:
-        return []
+        return [], None
 
 
 async def load_story_graph_from_resource(

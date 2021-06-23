@@ -70,14 +70,12 @@ async def train(
         },
     )
     logger.debug("Loading trackers")
-    trackers = await agent.load_data(
+    trackers, story_graph = await agent.load_data(
         training_resource, exclusion_percentage=exclusion_percentage, **data_load_args
     )
     story_to_training_data_converter = StoryToTrainingDataConverter()
     message_to_e2e_features_converter = MessageToE2EFeatureConverter()
-    story_graph = await training.load_story_graph_from_resource(
-        training_resource, agent.domain, 0
-    )
+
     logger.debug("Converting stories to training data")
     training_data = story_to_training_data_converter.convert_for_training(story_graph)
     logger.debug("Featurizing messages")
