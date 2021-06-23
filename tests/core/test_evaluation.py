@@ -406,7 +406,7 @@ stories:
                     "accuracy": 2.0 / 3.0,
                     "total": 3,
                     "correct": 2,
-                    "with_warnings": 0
+                    "with_warnings": 0,
                 },
             },
         ],
