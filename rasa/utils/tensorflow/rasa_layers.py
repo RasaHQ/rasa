@@ -99,7 +99,7 @@ class RasaCustomLayer(tf.keras.layers.Layer):
     def _check_sparse_feature_decreased_sizes(
         new_sparse_feature_sizes: List[int], old_sparse_feature_sizes: List[int],
     ) -> None:
-        """Checks if the sizes of sparse features are decreased during fine-tuning.
+        """Checks if the sizes of sparse features have decreased during fine-tuning.
 
         Sparse feature sizes might decrease after changing the nlu file. This can
         happen for example with `LexicalSyntacticFeaturizer`. We don't support
