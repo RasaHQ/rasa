@@ -1,3 +1,4 @@
+import random
 from typing import List, Union, Text, Optional, Any, Tuple, Dict
 
 import logging
@@ -423,3 +424,171 @@ class RasaBatchDataGenerator(RasaDataGenerator):
             )
         else:
             return int(self.batch_size[0])
+
+
+class LazyRasaBatchGenerator(tf.keras.utils.Sequence):
+    def __init__(
+        self,
+        batch_size: Union[List[int], int],
+        trackers_as_states,
+        all_label_ids,
+        all_entity_tags,
+        encoded_all_labels,
+        interpreter,
+        e2e_features,
+        featurizer,
+        create_model_data_func,
+        epochs: int = 1,
+        batch_strategy: Text = SEQUENCE,
+        shuffle: bool = True,
+    ):
+
+        if isinstance(batch_size, list):
+            logger.debug(
+                "The provided batch size is a list, this data generator will use a "
+                "linear increasing batch size."
+            )
+
+        self._epochs = epochs
+        # we use `on_epoch_end` method to prepare data for the next epoch
+        # set current epoch to `-1`, so that `on_epoch_end` will increase it to `0`
+        self._current_epoch = -1
+        # actual batch size will be set inside `on_epoch_end`
+        self._current_batch_size = None
+        self.batch_size = batch_size
+        self.trackers_as_states = trackers_as_states
+        self.all_label_ids = all_label_ids
+        self.all_entity_tags = all_entity_tags
+        self.encoded_all_labels = encoded_all_labels
+        self.interpreter = interpreter
+        self.e2e_features = e2e_features
+        self.featurizer = featurizer
+        self.create_model_data_func = create_model_data_func
+        self.batch_strategy = batch_strategy
+        self.shuffle = shuffle
+        self.index = list(range(len(trackers_as_states)))
+        self.on_epoch_end()
+
+    def __len__(self) -> int:
+        """Number of batches in the Sequence.
+
+        Returns:
+            The number of batches in the Sequence.
+        """
+        # data was rebalanced, so need to recalculate number of examples
+        num_examples = len(self.trackers_as_states)
+        batch_size = self._current_batch_size
+        return num_examples // batch_size + int(num_examples % batch_size > 0)
+
+    def __getitem__(self, index: int) -> Tuple[Any, Any]:
+        """Gets batch at position `index`.
+
+        Arguments:
+            index: position of the batch in the Sequence.
+
+        Returns:
+            A batch (tuple of input data and target data).
+        """
+        start = index * self._current_batch_size
+        end = start + self._current_batch_size
+
+        # return input and target data, as our target data is inside the input
+        # data return None for the target data
+        _, batch, _ = self.extract_and_featurize_batch(start, end)
+        return batch, None
+
+    def get_data_signatures(self):
+        model_data, _, data_types = self.extract_and_featurize_batch(
+            0, len(self.trackers_as_states)
+        )
+        return model_data, data_types
+
+    def extract_and_featurize_batch(self, start: int, end: int):
+        tracker_as_states = [self.trackers_as_states[i] for i in self.index[start:end]]
+        label_ids = [self.all_label_ids[i] for i in self.index[start:end]]
+        entity_tags = [self.all_entity_tags[i] for i in self.index[start:end]]
+        tracker_state_features = self.featurizer._featurize_states(
+            tracker_as_states, self.interpreter, self.e2e_features
+        )
+        model_data = self.create_model_data_func(
+            tracker_state_features, label_ids, entity_tags, self.encoded_all_labels
+        )
+        batch, data_types = self.prepare_batch(model_data.data)
+        return model_data, batch, data_types
+
+    def on_epoch_end(self) -> None:
+        """Update the data after every epoch."""
+        self._current_epoch += 1
+        self._current_batch_size = self._linearly_increasing_batch_size()
+        # TODO: if wanted, make rebalancing work with tracker_as_states / label_ids
+        if self.shuffle:
+            random.shuffle(self.index)
+
+    def _linearly_increasing_batch_size(self) -> int:
+        """Linearly increase batch size with every epoch.
+
+        The idea comes from https://arxiv.org/abs/1711.00489.
+
+        Returns:
+            The batch size to use in this epoch.
+        """
+        if not isinstance(self.batch_size, list):
+            return int(self.batch_size)
+
+        if self._epochs > 1:
+            return int(
+                self.batch_size[0]
+                + self._current_epoch
+                * (self.batch_size[1] - self.batch_size[0])
+                / (self._epochs - 1)
+            )
+        else:
+            return int(self.batch_size[0])
+
+    @staticmethod
+    def prepare_batch(
+        data: Data, tuple_sizes: Optional[Dict[Text, int]] = None,
+    ) -> Tuple[Tuple[Optional[np.ndarray]], Tuple[Any]]:
+        """Slices model data into batch using given start and end value.
+
+        Args:
+            data: The data to prepare.
+            tuple_sizes: In case the feature is not present we propagate the batch with
+              None. Tuple sizes contains the number of how many None values to add for
+              what kind of feature.
+
+        Returns:
+            The features of the batch.
+        """
+
+        batch_data = []
+        data_types = []
+        for key, attribute_data in data.items():
+            for sub_key, f_data in attribute_data.items():
+                # add None for not present values during processing
+                if not f_data:
+                    if tuple_sizes:
+                        batch_data += [None] * tuple_sizes[key]
+                    else:
+                        batch_data.append(None)
+                    continue
+
+                for v in f_data:
+                    # if start is not None and end is not None:
+                    #     _data = v[start:end]
+                    # elif start is not None:
+                    #     _data = v[start:]
+                    # elif end is not None:
+                    #     _data = v[:end]
+                    # else:
+                    #     _data = v[:]
+
+                    if v.is_sparse:
+                        batch_data.extend(RasaDataGenerator._scipy_matrix_to_values(v))
+                        data_types.extend([tf.int64, tf.float32, tf.int64])
+                    else:
+                        batch_data.append(RasaDataGenerator._pad_dense_data(v))
+                        data_types.extend([tf.float32])
+
+        # len of batch_data is equal to the number of keys in model data
+        return tuple(batch_data), tuple(data_types)
