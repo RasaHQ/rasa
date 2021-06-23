@@ -123,6 +123,9 @@ class TestTrackerFeaturizer:
     ) -> Dict[Text, Dict[Text, Features]]:
         """Creates intent and action features for the moodbot domain.
 
+        This fixture is part of this test class because it depends on
+        the `SINGLE_STATE_FEATURIZER_CLASS`.
+
         Args:
             moodbot_domain: The domain fixture of Moodbot
 
@@ -155,7 +158,6 @@ class TestTrackerFeaturizer:
         return [
             ActionExecuted(ACTION_LISTEN_NAME),
             tests.core.utilities.user_uttered("greet"),
-            # ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
             ActionExecuted("utter_greet"),
             ActionExecuted(ACTION_LISTEN_NAME),
             tests.core.utilities.user_uttered("mood_unhappy"),
@@ -169,7 +171,7 @@ class TestTrackerFeaturizer:
         ]
 
     @pytest.fixture
-    def moodbot_tracker_with_3_action_unlikely_intent(
+    def moodbot_tracker_with_2_action_unlikely_intent(
         self,
         moodbot_domain: Domain,
         moodbot_events_with_2_action_unlikely_intent: List[Event],
@@ -180,7 +182,7 @@ class TestTrackerFeaturizer:
             domain=moodbot_domain,
         )
 
-    def test_fail_to_load_non_existent_featurizer(self):
+    def test_load_fails_on_non_existent_featurizer(self):
         assert self.TRACKER_FEATURIZER_CLASS.load("non_existent_class") is None
 
     def test_featurize_trackers_raises_on_missing_state_featurizer(
@@ -246,7 +248,7 @@ class TestTrackerFeaturizer:
         self,
         moodbot_domain: Domain,
         moodbot_features: Dict[Text, Dict[Text, Features]],
-        moodbot_tracker_with_3_action_unlikely_intent: DialogueStateTracker,
+        moodbot_tracker_with_2_action_unlikely_intent: DialogueStateTracker,
         moodbot_action_unlikely_intent_state_features: Dict[Text, Dict[Text, Features]],
         ignore_action_unlikely_intent: bool,
         max_history: Optional[int],
@@ -264,7 +266,7 @@ class TestTrackerFeaturizer:
         interpreter = RegexInterpreter()
         state_featurizer.prepare_for_training(moodbot_domain, interpreter)
         actual_features = tracker_featurizer.create_state_features(
-            [moodbot_tracker_with_3_action_unlikely_intent],
+            [moodbot_tracker_with_2_action_unlikely_intent],
             moodbot_domain,
             interpreter,
             ignore_action_unlikely_intent=ignore_action_unlikely_intent,
@@ -284,7 +286,7 @@ class TestTrackerFeaturizer:
         self,
         moodbot_domain: Domain,
         moodbot_features: Dict[Text, Dict[Text, Features]],
-        moodbot_tracker_with_3_action_unlikely_intent: DialogueStateTracker,
+        moodbot_tracker_with_2_action_unlikely_intent: DialogueStateTracker,
         moodbot_action_unlikely_intent_state_features: Dict[Text, Dict[Text, Features]],
         ignore_action_unlikely_intent: bool,
         max_history: Optional[int],
@@ -302,15 +304,11 @@ class TestTrackerFeaturizer:
         interpreter = RegexInterpreter()
         state_featurizer.prepare_for_training(moodbot_domain, interpreter)
         actual_features, _, _ = tracker_featurizer.featurize_trackers(
-            [moodbot_tracker_with_3_action_unlikely_intent],
+            [moodbot_tracker_with_2_action_unlikely_intent],
             moodbot_domain,
             interpreter,
             ignore_action_unlikely_intent=ignore_action_unlikely_intent,
         )
-
-        # print(f"max_history={max_history}")
-        # for f in actual_features:
-        #     print(len(f))
 
         num_action_unlikely_intent_features = count_features(
             actual_features, moodbot_action_unlikely_intent_state_features,
@@ -319,7 +317,7 @@ class TestTrackerFeaturizer:
         assert num_action_unlikely_intent_features == expected_num_action_unlikely_intent
 
     @pytest.mark.parametrize("ignore_action_unlikely_intent", [True, False])
-    def test_prediction_states_ignore_action_unlikely_intent(
+    def test_prediction_states(
         self, moodbot_domain: Domain, ignore_action_unlikely_intent: bool
     ):
         # The base class doesn't implement `prediction_states`
@@ -396,87 +394,16 @@ class TestTrackerFeaturizer:
         for actual, expected in zip(actual_states, expected_states):
             assert actual == expected
 
-
-class TestFullDialogueTrackerFeaturizer(TestTrackerFeaturizer):
-
-    TRACKER_FEATURIZER_CLASS = FullDialogueTrackerFeaturizer
-
-    @pytest.mark.parametrize(
-        "ignore_action_unlikely_intent", [True, False],
-    )
-    def test_trackers_ignore_action_unlikely_intent(
-        self,
-        moodbot_domain: Domain,
-        moodbot_features: Dict[Text, Dict[Text, Features]],
-        moodbot_events_with_2_action_unlikely_intent: List[Event],
-        moodbot_tracker_features_with_3_action_unlikely_intent: List[
-            List[Dict[Text, List[Features]]]
-        ],
-        moodbot_tracker_features_without_action_unlikely_intent: List[
-            List[Dict[Text, List[Features]]]
-        ],
-        moodbot_tracker_with_3_action_unlikely_intent: DialogueStateTracker,
-        ignore_action_unlikely_intent: bool,
-    ):
-        tracker = moodbot_tracker_with_3_action_unlikely_intent
-        state_featurizer = self.SINGLE_STATE_FEATURIZER_CLASS()
-        tracker_featurizer = self.TRACKER_FEATURIZER_CLASS(state_featurizer)
-
-        ignore_action_unlikely_intent = True
-
-        (
-            actual_features,
-            actual_labels,
-            entity_tags,
-        ) = tracker_featurizer.featurize_trackers(
-            [tracker],
-            moodbot_domain,
-            RegexInterpreter(),
-            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
-        )
-
-        expected_features = (
-            moodbot_tracker_features_without_action_unlikely_intent
-            if ignore_action_unlikely_intent
-            else moodbot_tracker_features_with_3_action_unlikely_intent
-        )
-        expected_labels = [
-            moodbot_domain.index_for_action(ACTION_LISTEN_NAME),
-            moodbot_domain.index_for_action(ACTION_UNLIKELY_INTENT_NAME),
-            moodbot_domain.index_for_action("utter_greet"),
-            moodbot_domain.index_for_action(ACTION_LISTEN_NAME),
-            moodbot_domain.index_for_action(ACTION_UNLIKELY_INTENT_NAME),
-            moodbot_domain.index_for_action("utter_cheer_up"),
-            moodbot_domain.index_for_action("utter_did_that_help"),
-            moodbot_domain.index_for_action(ACTION_LISTEN_NAME),
-            moodbot_domain.index_for_action(ACTION_UNLIKELY_INTENT_NAME),
-            moodbot_domain.index_for_action("utter_goodbye"),
-        ]
-
-        if ignore_action_unlikely_intent:
-            expected_labels = [
-                label
-                for label in expected_labels
-                if label != moodbot_domain.index_for_action(ACTION_UNLIKELY_INTENT_NAME)
-            ]
-
-        expected_labels = np.array([expected_labels])
-
-        assert compare_features_and_labels(
-            actual_features,
-            expected_features,
-            actual_labels,
-            expected_labels,
-            entity_tags,
-            None,
-        )
-
     def test_create_state_features(
         self,
         moodbot_tracker: DialogueStateTracker,
         moodbot_domain: Domain,
         moodbot_features: Dict[Text, Dict[Text, Features]],
     ):
+        # The base class doesn't implement `create_state_features`
+        if self.TRACKER_FEATURIZER_CLASS == TrackerFeaturizer:
+            return
+
         state_featurizer = self.SINGLE_STATE_FEATURIZER_CLASS()
         tracker_featurizer = self.TRACKER_FEATURIZER_CLASS(state_featurizer)
         interpreter = RegexInterpreter()
@@ -512,6 +439,11 @@ class TestFullDialogueTrackerFeaturizer(TestTrackerFeaturizer):
 
         for actual, expected in zip(actual_features, expected_features):
             assert compare_featurized_states(actual, expected)
+
+
+class TestFullDialogueTrackerFeaturizer(TestTrackerFeaturizer):
+
+    TRACKER_FEATURIZER_CLASS = FullDialogueTrackerFeaturizer
 
     def test_featurize_trackers(
         self,
@@ -567,55 +499,6 @@ class TestFullDialogueTrackerFeaturizer(TestTrackerFeaturizer):
             actual_entity_tags,
             expected_entity_tags=None,
         )
-
-    def test_prediction_states(
-        self, moodbot_tracker: DialogueStateTracker, moodbot_domain: Domain
-    ):
-        state_featurizer = self.SINGLE_STATE_FEATURIZER_CLASS()
-        tracker_featurizer = self.TRACKER_FEATURIZER_CLASS(state_featurizer)
-        actual_states = tracker_featurizer.prediction_states(
-            [moodbot_tracker], moodbot_domain,
-        )
-
-        expected_states = [
-            [
-                {},
-                {
-                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                    USER: {INTENT: "greet"},
-                },
-                {
-                    USER: {INTENT: "greet"},
-                    PREVIOUS_ACTION: {ACTION_NAME: "utter_greet"},
-                },
-                {
-                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                    USER: {INTENT: "mood_unhappy"},
-                },
-                {
-                    USER: {INTENT: "mood_unhappy"},
-                    PREVIOUS_ACTION: {ACTION_NAME: "utter_cheer_up"},
-                },
-                {
-                    USER: {INTENT: "mood_unhappy"},
-                    PREVIOUS_ACTION: {ACTION_NAME: "utter_did_that_help"},
-                },
-                {
-                    PREVIOUS_ACTION: {ACTION_NAME: ACTION_LISTEN_NAME},
-                    USER: {INTENT: "deny"},
-                },
-                {
-                    USER: {INTENT: "deny"},
-                    PREVIOUS_ACTION: {ACTION_NAME: "utter_goodbye"},
-                },
-            ]
-        ]
-
-        assert actual_states is not None
-        assert len(actual_states) == len(expected_states)
-
-        for actual, expected in zip(actual_states, expected_states):
-            assert actual == expected
 
     def test_prediction_states_hide_rule_states_with_full_dialogue_tracker_featurizer(
         self, moodbot_domain: Domain,
@@ -716,7 +599,7 @@ class TestMaxHistoryTrackerFeaturizer(TestTrackerFeaturizer):
         self,
         moodbot_domain: Domain,
         moodbot_features: Dict[Text, Dict[Text, Features]],
-        moodbot_tracker_with_3_action_unlikely_intent: DialogueStateTracker,
+        moodbot_tracker_with_2_action_unlikely_intent: DialogueStateTracker,
         moodbot_action_unlikely_intent_state_features: Dict[Text, Dict[Text, Features]],
         ignore_action_unlikely_intent: bool,
         max_history: Optional[int],
@@ -725,7 +608,7 @@ class TestMaxHistoryTrackerFeaturizer(TestTrackerFeaturizer):
         super().test_create_state_features_ignore_action_unlikely_intent(
             moodbot_domain,
             moodbot_features,
-            moodbot_tracker_with_3_action_unlikely_intent,
+            moodbot_tracker_with_2_action_unlikely_intent,
             moodbot_action_unlikely_intent_state_features,
             ignore_action_unlikely_intent,
             max_history,
@@ -766,7 +649,7 @@ class TestMaxHistoryTrackerFeaturizer(TestTrackerFeaturizer):
         self,
         moodbot_domain: Domain,
         moodbot_features: Dict[Text, Dict[Text, Features]],
-        moodbot_tracker_with_3_action_unlikely_intent: DialogueStateTracker,
+        moodbot_tracker_with_2_action_unlikely_intent: DialogueStateTracker,
         moodbot_action_unlikely_intent_state_features: Dict[Text, Dict[Text, Features]],
         ignore_action_unlikely_intent: bool,
         max_history: Optional[int],
@@ -775,7 +658,7 @@ class TestMaxHistoryTrackerFeaturizer(TestTrackerFeaturizer):
         super().test_featurize_trackers_ignore_action_unlikely_intent(
             moodbot_domain,
             moodbot_features,
-            moodbot_tracker_with_3_action_unlikely_intent, moodbot_action_unlikely_intent_state_features,
+            moodbot_tracker_with_2_action_unlikely_intent, moodbot_action_unlikely_intent_state_features,
             ignore_action_unlikely_intent, max_history, expected_num_action_unlikely_intent)
 
 
@@ -821,7 +704,7 @@ class TestIntentMaxHistoryTrackerFeaturizer(TestMaxHistoryTrackerFeaturizer):
         assert np.all(expected_labels == actual_labels)
 
     @pytest.mark.parametrize("ignore_action_unlikely_intent", [True, False])
-    def test_prediction_states_ignore_action_unlikely_intent(
+    def test_prediction_states(
         self, moodbot_domain: Domain, ignore_action_unlikely_intent: bool
     ):
         """.
@@ -920,7 +803,7 @@ class TestIntentMaxHistoryTrackerFeaturizer(TestMaxHistoryTrackerFeaturizer):
         self,
         moodbot_domain: Domain,
         moodbot_features: Dict[Text, Dict[Text, Features]],
-        moodbot_tracker_with_3_action_unlikely_intent: DialogueStateTracker,
+        moodbot_tracker_with_2_action_unlikely_intent: DialogueStateTracker,
         moodbot_action_unlikely_intent_state_features: Dict[Text, Dict[Text, Features]],
         ignore_action_unlikely_intent: bool,
         max_history: Optional[int],
@@ -929,5 +812,5 @@ class TestIntentMaxHistoryTrackerFeaturizer(TestMaxHistoryTrackerFeaturizer):
         super().test_featurize_trackers_ignore_action_unlikely_intent(
             moodbot_domain,
             moodbot_features,
-            moodbot_tracker_with_3_action_unlikely_intent, moodbot_action_unlikely_intent_state_features,
+            moodbot_tracker_with_2_action_unlikely_intent, moodbot_action_unlikely_intent_state_features,
             ignore_action_unlikely_intent, max_history, expected_num_action_unlikely_intent)
