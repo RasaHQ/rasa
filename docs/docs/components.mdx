@@ -256,6 +256,26 @@ now implements its behavior.
 
     Creates a token for every whitespace separated character sequence.
 
+    Any character not in: `a-zA-Z0-9_#@&` will be substituted with whitespace before
+    splitting on whitespace if the character fulfills any of the following conditions:
+    - the character follows a whitespace: `" !word"` &#8594; `"word"`
+    - the character precedes a whitespace: `"word! "` &#8594; `"word"`
+    - the character is at the beginning of the string: `"!word"` &#8594; `"word"`
+    - the character is at the end of the string: `"word!"` &#8594; `"word"`
+
+    Note that:
+    - `"wo!rd"` &#8594; `"wo!rd"`
+
+    In addition, any character not in: `a-zA-Z0-9_#@&.~:\/?[]()!$*+,;=-` will be
+    substituted with whitespace before splitting on whitespace if the character is not
+    between numbers:
+    - `"twenty{one"` &#8594; `"twenty"`, `"one"`         ("{"` is not between numbers)
+    - `"20{1"` &#8594; `"20{1"`                          ("{"` *is* between numbers)
+
+    Note that:
+    - `"name@example.com"` &#8594; `"name@example.com"`
+    - `"10,000.1"` &#8594; `"10,000.1"`
+    - `"1 - 2"` &#8594; `"1"`,`"2"`
 
 
   * **Configuration**
