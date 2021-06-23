@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict, Text
 import tensorflow as tf
 import numpy as np
 import pytest
@@ -36,6 +36,13 @@ from rasa.utils.tensorflow.constants import (
     IDS,
     POSITIVE_SCORES_KEY,
     NEGATIVE_SCORES_KEY,
+    RANKING_KEY,
+    SCORE_KEY,
+    THRESHOLD_KEY,
+    SEVERITY_KEY,
+    QUERY_INTENT_KEY,
+    NAME,
+    RANKING_LENGTH,
 )
 from rasa.shared.nlu.constants import INTENT
 from rasa.shared.core.events import Event
@@ -524,19 +531,10 @@ class TestIntentTEDPolicy(TestTEDPolicy):
                 == 1.0
             )
 
-            # Make sure metadata is correct.
-            expected_action_metadata = {
-                intent: {
-                    "score": similarities[0, 0, default_domain.intents.index(intent)],
-                    "threshold": loaded_policy.label_thresholds[
-                        default_domain.intents.index(intent)
-                    ],
-                }
-                for intent in default_domain.intents
-                if default_domain.intents.index(intent)
-                in loaded_policy.label_thresholds
-            }
-            assert expected_action_metadata == prediction.action_metadata
+            # Make sure metadata is set. The exact structure
+            # of the metadata is tested separately and
+            # not as part of this test.
+            assert prediction.action_metadata is not None
 
     @pytest.mark.parametrize(
         "tracker_events, should_skip",
@@ -634,3 +632,91 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         assert np.all(
             expected_extracted_label_embeddings == actual_extracted_label_embeddings
         )
+
+    @pytest.mark.parametrize(
+        "query_intent_index, ranking_length", [(0, 0), (1, 3), (2, 1), (5, 0)]
+    )
+    def test_collect_action_metadata(
+        self,
+        trained_policy: IntentTEDPolicy,
+        default_domain: Domain,
+        tmp_path: Path,
+        query_intent_index: int,
+        ranking_length: int,
+    ):
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+
+        def test_individual_label_metadata(
+            label_metadata: Dict[Text, Optional[float]],
+            all_thresholds: Dict[int, float],
+            all_similarities: np.array,
+            label_index: int,
+        ):
+
+            expected_score = all_similarities[0][label_index]
+            expected_threshold = (
+                all_thresholds[label_index] if label_index in all_thresholds else None
+            )
+            expected_severity = (
+                expected_threshold - expected_score if expected_threshold else None
+            )
+
+            assert label_metadata.get(SCORE_KEY) == expected_score
+            assert label_metadata.get(THRESHOLD_KEY) == expected_threshold
+            assert label_metadata.get(SEVERITY_KEY) == expected_severity
+
+        # Monkey-patch certain attributes of the policy to make the testing easier.
+        label_thresholds = {0: 1.2, 1: -0.3, 4: -2.3, 5: 0.2}
+        loaded_policy.label_thresholds = label_thresholds
+        loaded_policy.config[RANKING_LENGTH] = ranking_length
+
+        # Some dummy similarities
+        similarities = np.array([[3.2, 0.2, -1.2, -4.3, -5.1, 2.3]])
+
+        query_intent = default_domain.intents[query_intent_index]
+
+        metadata = loaded_policy._collect_action_metadata(
+            default_domain, similarities, query_intent=query_intent
+        )
+
+        # Expected outer-most keys
+        assert sorted(list(metadata.keys())) == sorted([QUERY_INTENT_KEY, RANKING_KEY])
+
+        # Schema validation for query intent key
+        assert sorted(list(metadata[QUERY_INTENT_KEY].keys())) == sorted(
+            [NAME, SCORE_KEY, THRESHOLD_KEY, SEVERITY_KEY]
+        )
+
+        # Test all elements of metadata for query intent
+        assert metadata[QUERY_INTENT_KEY].get(NAME) == query_intent
+        test_individual_label_metadata(
+            metadata.get(QUERY_INTENT_KEY),
+            label_thresholds,
+            similarities,
+            query_intent_index,
+        )
+
+        # Check if ranking is sorted correctly and truncated to `ranking_length`
+        sorted_label_similarities = sorted(
+            [(index, score) for index, score in enumerate(similarities[0])],
+            key=lambda x: -x[1],
+        )
+        sorted_label_similarities = (
+            sorted_label_similarities[:ranking_length]
+            if ranking_length
+            else sorted_label_similarities
+        )
+        expected_label_rankings = [
+            default_domain.intents[index] for index, _ in sorted_label_similarities
+        ]
+        collected_label_rankings = [
+            label_metadata.get(NAME) for label_metadata in metadata.get(RANKING_KEY)
+        ]
+        assert collected_label_rankings == expected_label_rankings
+
+        # Test all elements of metadata for all labels in ranking
+        for label_metadata in metadata.get(RANKING_KEY):
+            label_index = default_domain.intents.index(label_metadata.get(NAME))
+            test_individual_label_metadata(
+                label_metadata, label_thresholds, similarities, label_index
+            )
