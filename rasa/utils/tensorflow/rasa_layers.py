@@ -34,7 +34,7 @@ from rasa.utils.tensorflow.transformer import TransformerEncoder
 class RasaCustomLayer(tf.keras.layers.Layer):
     """Parent class for all classes in `rasa_layers.py`.
 
-    Allows adjusting `DenseForSparse` layers to all the child classes.
+    Allows a shared implementation for adjusting `DenseForSparse` layers during incremental training.
 
     During fine-tuning sparse feature sizes might change due to addition of new data.
     If this happens, we need to adjust our `DenseForSparse` layers to a new size.
