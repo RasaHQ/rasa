@@ -153,6 +153,13 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   or Korean user or bot utterances.
 
 
+## [2.5.2] - 2021-06-16
+                       
+
+### Features
+- [#8892](https://github.com/rasahq/rasa/issues/8892): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
+
+
 ## [2.5.1] - 2021-04-28
                        
 
@@ -403,6 +410,25 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#6484](https://github.com/rasahq/rasa/issues/6484), [#7737](https://github.com/rasahq/rasa/issues/7737), [#7879](https://github.com/rasahq/rasa/issues/7879), [#8016](https://github.com/rasahq/rasa/issues/8016)
+
+
+## [2.3.5] - 2021-06-16
+                       
+
+### Features
+- [#8860](https://github.com/rasahq/rasa/issues/8860): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
+
+### Improvements
+- [#7955](https://github.com/rasahq/rasa/issues/7955): Drastically improved finger printing time for large story graphs
+- [#8100](https://github.com/rasahq/rasa/issues/8100): Improved the [lock store](lock-stores.mdx) debug log message when the process has to
+  queue because other messages have to be processed before this item.
+
+### Bugfixes
+- [#4612](https://github.com/rasahq/rasa/issues/4612): Fixed the bug that OR statements in stories would break the check whether a model needs to be retrained
+- [#8649](https://github.com/rasahq/rasa/issues/8649): Updated `python-engineio` dependency version for compatibility with `python-socketio`.
+
+### Improved Documentation
+- [#8080](https://github.com/rasahq/rasa/issues/8080): Update links to Sanic docs in the documentation.
 
 
 ## [2.3.4] - 2021-02-26
@@ -1727,6 +1753,27 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#5784](https://github.com/rasahq/rasa/issues/5784), [#5788](https://github.com/rasahq/rasa/issues/5788), [#6199](https://github.com/rasahq/rasa/issues/6199), [#6403](https://github.com/rasahq/rasa/issues/6403), [#6735](https://github.com/rasahq/rasa/issues/6735)
+
+
+## [1.10.26] - 2021-06-17
+
+### Features
+- [#8876](https://github.com/rasahq/rasa/issues/8876): Added `sasl_mechanism` as an optional configurable parameter for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
+
+
+## [1.10.25] - 2021-04-14
+
+### Features
+- [#8429](https://github.com/rasahq/rasa/issues/8429): Added `partition_by_sender` flag to Kafka Producer to optionally associate events with Kafka partition based on sender_id.
+
+### Improvements
+- [#8345](https://github.com/rasahq/rasa/issues/8345): Improved the [lock store](lock-stores.mdx) debug log message when the process has to queue because other messages have to be processed before this item.
+
+
+## [1.10.24] - 2021-03-29
+
+### Bugfixes
+- [#8019](https://github.com/rasahq/rasa/issues/8019): Added `group_id` parameter back to `KafkaEventBroker` to fix error when instantiating event broker with a config containing the `group_id` parameter which is only relevant to the event consumer
 
 
 ## [1.10.23] - 2021-02-22
