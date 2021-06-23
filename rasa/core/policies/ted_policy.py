@@ -269,10 +269,11 @@ class TEDPolicy(Policy):
         MASKED_LM: False,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
-        # Small values may hurt performance, e.g. model accuracy.
+        # Small values may hurt performance.
         EVAL_NUM_EPOCHS: 20,
         # How many examples to use for hold out validation set
         # Large values may hurt performance, e.g. model accuracy.
+        # Set to 0 for no validation.
         EVAL_NUM_EXAMPLES: 0,
         # If you want to use tensorboard to visualize training and validation metrics,
         # set this option to a valid output directory.

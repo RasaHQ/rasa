@@ -215,10 +215,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         DENSE_INPUT_DROPOUT: True,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
-        # Small values may hurt performance, e.g. model accuracy.
+        # Small values may hurt performance.
         EVAL_NUM_EPOCHS: 20,
         # How many examples to use for hold out validation set
         # Large values may hurt performance, e.g. model accuracy.
+        # Set to 0 for no validation.
         EVAL_NUM_EXAMPLES: 0,
         # ## Model config
         # If 'True' intent classification is trained and intent predicted.
