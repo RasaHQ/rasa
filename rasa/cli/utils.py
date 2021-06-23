@@ -2,7 +2,8 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, NoReturn, Optional, TYPE_CHECKING, Text
+from types import FrameType
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Text
 
 from rasa.shared.constants import DEFAULT_MODELS_PATH
 import rasa.shared.utils.cli
@@ -175,7 +176,7 @@ def button_choices_from_message_data(
     """Return list of choices to present to the user.
 
     If allow_free_text_input is True, an additional option is added
-    at the end along with the template buttons that allows the user
+    at the end along with the response buttons that allows the user
     to type in free text.
     """
     choices = [
@@ -196,6 +197,7 @@ def payload_from_button_question(button_question: "Question") -> Text:
     return response
 
 
-def signal_handler(sig, frame) -> NoReturn:
+def signal_handler(_: int, __: FrameType) -> None:
+    """Kills Rasa when OS signal is received."""
     print("Goodbye 👋")
     sys.exit(0)

@@ -22,7 +22,7 @@ GROUP_COMPLETE_MATCH = 0
 
 # regex for: `[entity_text]((entity_type(:entity_synonym)?)|{entity_dict})`
 ENTITY_REGEX = re.compile(
-    r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\})"
+    r"\[(?P<entity_text>[^\]]+?)\](\((?P<entity>[^:)]+?)(?:\:(?P<value>[^)]+))?\)|\{(?P<entity_dict>[^}]+?)\})"  # noqa: E501, W505
 )
 
 

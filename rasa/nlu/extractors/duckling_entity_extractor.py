@@ -140,7 +140,9 @@ class DucklingEntityExtractor(EntityExtractor):
             else:
                 logger.error(
                     f"Failed to get a proper response from remote "
-                    f"duckling at '{parse_url}. Status Code: {response.status_code}. Response: {response.text}"
+                    f"duckling at '{parse_url}. "
+                    f"Status Code: {response.status_code}. "
+                    f"Response: {response.text}"
                 )
                 return []
         except (
@@ -162,7 +164,7 @@ class DucklingEntityExtractor(EntityExtractor):
     def _reference_time_from_message(message: Message) -> int:
         if message.time is not None:
             try:
-                return int(message.time) * 1000
+                return message.time * 1000
             except ValueError as e:
                 logging.warning(
                     "Could not parse timestamp {}. Instead "
@@ -200,11 +202,11 @@ class DucklingEntityExtractor(EntityExtractor):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["DucklingEntityExtractor"] = None,
         **kwargs: Any,
     ) -> "DucklingEntityExtractor":
-
+        """Loads trained component (see parent class for full docstring)."""
         language = model_metadata.get("language") if model_metadata else None
         return cls(meta, language)

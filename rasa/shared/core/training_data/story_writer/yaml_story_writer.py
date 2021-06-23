@@ -206,9 +206,10 @@ class YAMLStoryWriter(StoryWriter):
             result[KEY_USER_INTENT] = user_utterance.intent_name
 
         if hasattr(user_utterance, "inline_comment"):
-            result.yaml_add_eol_comment(
-                user_utterance.inline_comment(), KEY_USER_INTENT
-            )
+            if user_utterance.inline_comment():
+                result.yaml_add_eol_comment(
+                    user_utterance.inline_comment(), KEY_USER_INTENT
+                )
 
         if user_utterance.text and (
             # We only print the utterance text if it was an end-to-end prediction
@@ -227,8 +228,31 @@ class YAMLStoryWriter(StoryWriter):
         if len(user_utterance.entities) and not is_test_story:
             entities = []
             for entity in user_utterance.entities:
-                if entity["value"]:
-                    entities.append(OrderedDict([(entity["entity"], entity["value"])]))
+                if "value" in entity:
+                    if hasattr(user_utterance, "inline_comment_for_entity"):
+                        for predicted in user_utterance.predicted_entities:
+                            if predicted["start"] == entity["start"]:
+                                commented_entity = user_utterance.inline_comment_for_entity(  # noqa: E501
+                                    predicted, entity
+                                )
+                                if commented_entity:
+                                    entity_map = CommentedMap(
+                                        [(entity["entity"], entity["value"])]
+                                    )
+                                    entity_map.yaml_add_eol_comment(
+                                        commented_entity, entity["entity"],
+                                    )
+                                    entities.append(entity_map)
+                                else:
+                                    entities.append(
+                                        OrderedDict(
+                                            [(entity["entity"], entity["value"])]
+                                        )
+                                    )
+                    else:
+                        entities.append(
+                            OrderedDict([(entity["entity"], entity["value"])])
+                        )
                 else:
                     entities.append(entity["entity"])
             result[KEY_ENTITIES] = entities
@@ -265,7 +289,7 @@ class YAMLStoryWriter(StoryWriter):
         return result
 
     @staticmethod
-    def process_slot(event: SlotSet):
+    def process_slot(event: SlotSet) -> Dict[Text, List[Dict]]:
         """Converts a single `SlotSet` event into an ordered dict.
 
         Args:

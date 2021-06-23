@@ -5,10 +5,6 @@ from typing import Any, Dict, List, Text, Union
 
 from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.formats import MarkdownWriter, MarkdownReader
-from rasa.shared.nlu.training_data.formats.readerwriter import (
-    TrainingDataReader,
-    TrainingDataWriter,
-)
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io as io_utils
 
@@ -23,7 +19,7 @@ NLG_MARKDOWN_MARKER_REGEX = re.compile(r"##\s*.*\n\*[^:]*\/.*\n\s*\t*\-.*")
 
 
 class NLGMarkdownReader(MarkdownReader):
-    """Reads markdown training data containing NLG stories and creates a TrainingData object."""
+    """Reads markdown training data with NLG stories and creates TrainingData object."""
 
     def __init__(self, ignore_deprecation_warning: bool = False) -> None:
         """Creates reader. See parent class docstring for more information."""

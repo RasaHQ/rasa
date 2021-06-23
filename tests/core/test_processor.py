@@ -13,12 +13,12 @@ from unittest.mock import patch, Mock
 
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.actions.action import (
-    ActionUtterTemplate,
+    ActionBotResponse,
     ActionListen,
     ActionExecutionRejection,
 )
 import rasa.core.policies.policy
-from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 import tests.utilities
 
@@ -48,11 +48,13 @@ from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies import SimplePolicyEnsemble, PolicyEnsemble
 from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.processor import MessageProcessor
-from rasa.shared.core.slots import Slot, AnySlot
+from rasa.shared.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.constants import (
@@ -63,6 +65,7 @@ from rasa.shared.core.constants import (
     EXTERNAL_MESSAGE_PREFIX,
     IS_EXTERNAL,
     SESSION_START_METADATA_SLOT,
+    RULE_SNIPPET_ACTION_NAME,
 )
 
 import logging
@@ -522,6 +525,8 @@ async def test_has_session_expired(
 
 
 # noinspection PyProtectedMember
+
+
 async def test_update_tracker_session(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -615,6 +620,8 @@ async def test_custom_action_session_start_with_metadata(
 
 
 # noinspection PyProtectedMember
+
+
 async def test_update_tracker_session_with_slots(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -807,7 +814,7 @@ async def test_handle_message_with_session_start(
         SlotSet(entity, slot_1[entity]),
         DefinePrevUserUtteredFeaturization(False),
         ActionExecuted("utter_greet"),
-        BotUttered("hey there Core!", metadata={"template_name": "utter_greet"}),
+        BotUttered("hey there Core!", metadata={"utter_action": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
@@ -831,7 +838,7 @@ async def test_handle_message_with_session_start(
         ActionExecuted("utter_greet"),
         BotUttered(
             "hey there post-session start hello!",
-            metadata={"template_name": "utter_greet"},
+            metadata={"utter_action": "utter_greet"},
         ),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
@@ -897,10 +904,8 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
 @pytest.mark.parametrize(
     "predict_function",
     [
-        lambda tracker, domain, something_else: PolicyPrediction(
-            [1, 0, 2, 3], "some-policy"
-        ),
-        lambda tracker, domain, some_bool=True: PolicyPrediction([1, 0], "some-policy"),
+        lambda tracker, domain, _: PolicyPrediction([1, 0, 2, 3], "some-policy"),
+        lambda tracker, domain, _=True: PolicyPrediction([1, 0], "some-policy"),
     ],
 )
 def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
@@ -936,7 +941,8 @@ async def test_restart_triggers_session_start(
     default_processor: MessageProcessor,
     monkeypatch: MonkeyPatch,
 ):
-    # The rule policy is trained and used so as to allow the default action ActionRestart to be predicted
+    # The rule policy is trained and used so as to allow the default action
+    # ActionRestart to be predicted
     rule_policy = RulePolicy()
     rule_policy.train([], default_processor.domain, RegexInterpreter())
     monkeypatch.setattr(
@@ -977,7 +983,7 @@ async def test_restart_triggers_session_start(
         SlotSet(entity, slot_1[entity]),
         DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
         ActionExecuted("utter_greet"),
-        BotUttered("hey there name1!", metadata={"template_name": "utter_greet"}),
+        BotUttered("hey there name1!", metadata={"utter_action": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("/restart", {INTENT_NAME_KEY: "restart", "confidence": 1.0}),
         DefinePrevUserUtteredFeaturization(use_text_for_featurization=False),
@@ -1007,9 +1013,7 @@ async def test_handle_message_if_action_manually_rejects(
     async def mocked_run(self, *args: Any, **kwargs: Any) -> List[Event]:
         return rejection_events
 
-    monkeypatch.setattr(
-        ActionUtterTemplate, ActionUtterTemplate.run.__name__, mocked_run
-    )
+    monkeypatch.setattr(ActionBotResponse, ActionBotResponse.run.__name__, mocked_run)
     await default_processor.handle_message(message)
 
     tracker = default_processor.tracker_store.retrieve(conversation_id)
@@ -1178,7 +1182,7 @@ async def test_logging_of_end_to_end_action():
         intents=["greet"],
         entities=[],
         slots=[],
-        templates={},
+        responses={},
         action_names=[],
         forms={},
         action_texts=[end_to_end_action],
@@ -1234,3 +1238,106 @@ async def test_logging_of_end_to_end_action():
     ]
     for event, expected in zip(tracker.events, expected_events):
         assert event == expected
+
+
+def test_predict_next_action_with_hidden_rules():
+    rule_intent = "rule_intent"
+    rule_action = "rule_action"
+    story_intent = "story_intent"
+    story_action = "story_action"
+    rule_slot = "rule_slot"
+    story_slot = "story_slot"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {rule_intent}
+        - {story_intent}
+        actions:
+        - {rule_action}
+        - {story_action}
+        slots:
+          {rule_slot}:
+            type: text
+          {story_slot}:
+            type: text
+        """
+    )
+
+    rule = TrackerWithCachedStates.from_events(
+        "rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": rule_intent}),
+            ActionExecuted(rule_action),
+            SlotSet(rule_slot, rule_slot),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    story = TrackerWithCachedStates.from_events(
+        "story",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": story_intent}),
+            ActionExecuted(story_action),
+            SlotSet(story_slot, story_slot),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+    interpreter = RegexInterpreter()
+    ensemble = SimplePolicyEnsemble(policies=[RulePolicy(), MemoizationPolicy()])
+    ensemble.train([rule, story], domain, interpreter)
+
+    tracker_store = InMemoryTrackerStore(domain)
+    lock_store = InMemoryLockStore()
+    processor = MessageProcessor(
+        interpreter,
+        ensemble,
+        domain,
+        tracker_store,
+        lock_store,
+        TemplatedNaturalLanguageGenerator(domain.templates),
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "casd",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": rule_intent}),
+        ],
+        slots=domain.slots,
+    )
+    action, prediction = processor.predict_next_action(tracker)
+    assert action._name == rule_action
+    assert prediction.hide_rule_turn
+
+    processor._log_action_on_tracker(
+        tracker, action, [SlotSet(rule_slot, rule_slot)], prediction
+    )
+
+    action, prediction = processor.predict_next_action(tracker)
+    assert isinstance(action, ActionListen)
+    assert prediction.hide_rule_turn
+
+    processor._log_action_on_tracker(tracker, action, None, prediction)
+
+    tracker.events.append(UserUttered(intent={"name": story_intent}))
+
+    # rules are hidden correctly if memo policy predicts next actions correctly
+    action, prediction = processor.predict_next_action(tracker)
+    assert action._name == story_action
+    assert not prediction.hide_rule_turn
+
+    processor._log_action_on_tracker(
+        tracker, action, [SlotSet(story_slot, story_slot)], prediction
+    )
+
+    action, prediction = processor.predict_next_action(tracker)
+    assert isinstance(action, ActionListen)
+    assert not prediction.hide_rule_turn

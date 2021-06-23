@@ -43,7 +43,6 @@ KEY_ENTITIES = "entities"
 KEY_USER_INTENT = "intent"
 KEY_USER_MESSAGE = "user"
 KEY_SLOT_NAME = "slot_was_set"
-KEY_SLOT_VALUE = "value"
 KEY_ACTIVE_LOOP = "active_loop"
 KEY_ACTION = "action"
 KEY_BOT_END_TO_END_MESSAGE = "bot"
@@ -82,11 +81,15 @@ class YAMLStoryReader(StoryReader):
             reader._is_used_for_training,
         )
 
-    def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
+    def read_from_file(
+        self, filename: Union[Text, Path], skip_validation: bool = False
+    ) -> List[StoryStep]:
         """Read stories or rules from file.
 
         Args:
             filename: Path to the story/rule file.
+            skip_validation: `True` if the file was already validated
+                e.g. when it was stored in the database.
 
         Returns:
             `StoryStep`s read from `filename`.
@@ -96,22 +99,29 @@ class YAMLStoryReader(StoryReader):
             return self.read_from_string(
                 rasa.shared.utils.io.read_file(
                     filename, rasa.shared.utils.io.DEFAULT_ENCODING
-                )
+                ),
+                skip_validation,
             )
         except YamlException as e:
             e.filename = filename
             raise e
 
-    def read_from_string(self, string: Text) -> List[StoryStep]:
+    def read_from_string(
+        self, string: Text, skip_validation: bool = False
+    ) -> List[StoryStep]:
         """Read stories or rules from a string.
 
         Args:
             string: Unprocessed YAML file content.
+            skip_validation: `True` if the string was already validated
+                e.g. when it was stored in the database.
 
         Returns:
             `StoryStep`s read from `string`.
         """
-        rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
+        if not skip_validation:
+            rasa.shared.utils.validation.validate_yaml_schema(string, CORE_SCHEMA_FILE)
+
         yaml_content = rasa.shared.utils.io.read_yaml(string)
 
         return self.read_from_parsed_yaml(yaml_content)
@@ -159,27 +169,9 @@ class YAMLStoryReader(StoryReader):
             YamlException: if the file seems to be a YAML file (extension) but
                 can not be read / parsed.
         """
-        return rasa.shared.data.is_likely_yaml_file(file_path) and cls.is_key_in_yaml(
-            file_path, KEY_STORIES, KEY_RULES
-        )
-
-    @classmethod
-    def is_key_in_yaml(cls, file_path: Union[Text, Path], *keys: Text) -> bool:
-        """Check if all keys are contained in the parsed dictionary from a yaml file.
-
-        Arguments:
-            file_path: path to the yaml file
-            keys: keys to look for
-
-        Returns:
-              `True` if all the keys are contained in the file, `False` otherwise.
-
-        Raises:
-            YamlException: if the file seems to be a YAML file (extension) but
-                can not be read / parsed.
-        """
-        content = rasa.shared.utils.io.read_yaml_file(file_path)
-        return any(key in content for key in keys)
+        return rasa.shared.data.is_likely_yaml_file(
+            file_path
+        ) and rasa.shared.utils.io.is_key_in_yaml(file_path, KEY_STORIES, KEY_RULES)
 
     @classmethod
     def _has_test_prefix(cls, file_path: Text) -> bool:
@@ -370,7 +362,15 @@ class YAMLStoryReader(StoryReader):
     def _user_intent_from_step(
         self, step: Dict[Text, Any]
     ) -> Tuple[Text, Optional[Text]]:
-        user_intent = step.get(KEY_USER_INTENT, "").strip()
+        try:
+            user_intent = step.get(KEY_USER_INTENT, "").strip()
+        except AttributeError:
+            rasa.shared.utils.io.raise_warning(
+                f"Issue found in '{self.source_name}':\n"
+                f"Missing intent value in {self._get_item_title()} step: {step} .",
+                docs=self._get_docs_link(),
+            )
+            user_intent = ""
 
         if not user_intent and KEY_USER_MESSAGE not in step:
             rasa.shared.utils.io.raise_warning(

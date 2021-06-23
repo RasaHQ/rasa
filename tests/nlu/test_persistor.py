@@ -1,53 +1,16 @@
-import os
+from typing import Text
+
 import pytest
 from unittest.mock import patch
 
 from moto import mock_s3
 
-from rasa.nlu import persistor, train
-from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu import persistor
+from rasa.nlu.persistor import Persistor
 
 
 class Object:
     pass
-
-
-# noinspection PyPep8Naming
-async def test_list_method_method_in_AWS_persistor(component_builder, tmp_path):
-    with mock_s3():
-        # artificially create a persisted model
-        _config = RasaNLUModelConfig(
-            {"pipeline": [{"name": "KeywordIntentClassifier"}]}
-        )
-
-        os.environ["BUCKET_NAME"] = "rasa-test"
-        os.environ["AWS_DEFAULT_REGION"] = "us-west-1"
-
-        (trained, _, persisted_path) = await train(
-            _config,
-            data="data/test/demo-rasa-small.json",
-            path=str(tmp_path),
-            storage="aws",
-            component_builder=component_builder,
-        )
-
-        # We need to create the bucket since this is all in Moto's 'virtual' AWS
-        # account
-        awspersistor = persistor.AWSPersistor(os.environ["BUCKET_NAME"])
-        result = awspersistor.list_models()
-
-        assert len(result) == 1
-
-
-# noinspection PyPep8Naming
-def test_list_models_method_raise_exeception_in_AWS_persistor():
-    with mock_s3():
-        os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
-
-        awspersistor = persistor.AWSPersistor("rasa-test", region_name="foo")
-        result = awspersistor.list_models()
-
-        assert result == []
 
 
 # noinspection PyPep8Naming
@@ -79,100 +42,17 @@ def test_s3_private_retrieve_tar():
         assert retrieveArgs[1].name == "model.tar.gz"
 
 
-# noinspection PyPep8Naming
-def test_list_models_method_in_GCS_persistor():
-    # noinspection PyUnusedLocal
-    def mocked_init(self, *args, **kwargs):
-        self._model_dir_and_model_from_filename = lambda x: {
-            "blob_name": ("project", "model_name")
-        }[x]
-        self.bucket = Object()
+class TestPersistor(Persistor):
+    def _retrieve_tar(self, filename: Text) -> Text:
+        pass
 
-        def mocked_list_blobs():
-            filter_result = Object()
-            filter_result.name = "blob_name"
-            return (filter_result,)
-
-        self.bucket.list_blobs = mocked_list_blobs
-
-    with patch.object(persistor.GCSPersistor, "__init__", mocked_init):
-        result = persistor.GCSPersistor("").list_models()
-
-    assert result == ["model_name"]
-
-
-# noinspection PyPep8Naming
-def test_list_models_method_raise_exeception_in_GCS_persistor():
-    # noinspection PyUnusedLocal
-    def mocked_init(self, *args, **kwargs):
-        self._model_dir_and_model_from_filename = lambda x: {
-            "blob_name": ("project", "model_name")
-        }[x]
-        self.bucket = Object()
-
-        def mocked_list_blobs():
-            raise ValueError
-
-        self.bucket.list_blobs = mocked_list_blobs
-
-    with patch.object(persistor.GCSPersistor, "__init__", mocked_init):
-        result = persistor.GCSPersistor("").list_models()
-
-    assert result == []
-
-
-# noinspection PyPep8Naming
-def test_list_models_method_in_Azure_persistor():
-    # noinspection PyUnusedLocal
-    def mocked_init(self, *args, **kwargs):
-        self._model_dir_and_model_from_filename = lambda x: {
-            "blob_name": ("project", "model_name")
-        }[x]
-        self.blob_service = Object()
-        self.container_name = "test"
-
-        # noinspection PyUnusedLocal
-        def mocked_container_client():
-            def list_blobs():
-                filter_result = Object()
-                filter_result.name = "blob_name"
-                return (filter_result,)
-
-            container_client = Object()
-            container_client.list_blobs = list_blobs
-            return container_client
-
-        self._container_client = mocked_container_client
-
-    with patch.object(persistor.AzurePersistor, "__init__", mocked_init):
-        result = persistor.AzurePersistor("", "", "").list_models()
-
-    assert result == ["model_name"]
-
-
-# noinspection PyPep8Naming
-def test_list_models_method_raise_exeception_in_Azure_persistor():
-    def mocked_init(self, *args, **kwargs):
-        self._model_dir_and_model_from_filename = lambda x: {"blob_name": ("project",)}[
-            x
-        ]
-        self.blob_client = Object()
-
-        # noinspection PyUnusedLocal
-        def mocked_list_blobs(container_name, prefix=None):
-            raise ValueError
-
-        self.blob_client.list_blobs = mocked_list_blobs
-
-    with patch.object(persistor.AzurePersistor, "__init__", mocked_init):
-        result = persistor.AzurePersistor("", "", "").list_models()
-
-    assert result == []
+    def _persist_tar(self, filekey: Text, tarname: Text) -> None:
+        pass
 
 
 def test_get_external_persistor():
-    p = persistor.get_persistor("rasa.nlu.persistor.Persistor")
-    assert isinstance(p, persistor.Persistor)
+    p = persistor.get_persistor("tests.nlu.test_persistor.TestPersistor")
+    assert isinstance(p, TestPersistor)
 
 
 def test_raise_exception_in_get_external_persistor():
@@ -184,8 +64,8 @@ def test_raise_exception_in_get_external_persistor():
 @pytest.mark.parametrize(
     "model, archive", [("model.tar.gz", "model.tar.gz"), ("model", "model.tar.gz")]
 )
-def test_retrieve_tar_archive(model, archive):
-    with patch.object(persistor.Persistor, "_decompress") as f:
-        with patch.object(persistor.Persistor, "_retrieve_tar") as f:
-            persistor.Persistor().retrieve(model, "dst")
+def test_retrieve_tar_archive(model: Text, archive: Text):
+    with patch.object(TestPersistor, "_decompress") as f:
+        with patch.object(TestPersistor, "_retrieve_tar") as f:
+            TestPersistor().retrieve(model, "dst")
         f.assert_called_once_with(archive)

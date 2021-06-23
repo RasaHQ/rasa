@@ -7,8 +7,9 @@ from typing import List, Text, Dict, Any
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.features import Features
-from rasa.nlu import train
+import rasa.nlu.train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.constants import (
@@ -28,11 +29,13 @@ from rasa.utils.tensorflow.constants import (
     TENSORBOARD_LOG_DIR,
     EVAL_NUM_EPOCHS,
     EVAL_NUM_EXAMPLES,
+    CONSTRAIN_SIMILARITIES,
     CHECKPOINT_MODEL,
     BILOU_FLAG,
     ENTITY_RECOGNITION,
     INTENT_CLASSIFICATION,
     MODEL_CONFIDENCE,
+    LINEAR_NORM,
 )
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -42,9 +45,6 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils import train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
-from tests.conftest import DEFAULT_NLU_DATA
-from tests.nlu.conftest import DEFAULT_DATA_PATH
-from rasa.core.agent import Agent
 
 
 def test_compute_default_label_features():
@@ -63,6 +63,20 @@ def test_compute_default_label_features():
         assert isinstance(o, np.ndarray)
         assert o[0][i] == 1
         assert o.shape == (1, len(label_features))
+
+
+def get_checkpoint_dir_path(path: Path, model_dir: Path) -> Path:
+    """
+    Produce the path of the checkpoint directory for DIET.
+
+    This is coupled to the persist method of DIET.
+
+    Args:
+        model_dir: the model directory
+        path: the path passed to train for training output.
+
+    """
+    return path / model_dir / "checkpoints"
 
 
 @pytest.mark.parametrize(
@@ -176,10 +190,10 @@ async def _train_persist_load_with_different_settings(
 ):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
-        data="data/examples/rasa/demo-rasa-multi-intent.md",
+        data="data/examples/rasa/demo-rasa-multi-intent.yml",
         component_builder=component_builder,
     )
 
@@ -197,6 +211,7 @@ async def _train_persist_load_with_different_settings(
 
 
 @pytest.mark.skip_on_windows
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_different_settings_non_windows(
     component_builder: ComponentBuilder, tmp_path: Path
 ):
@@ -217,6 +232,7 @@ async def test_train_persist_load_with_different_settings_non_windows(
     )
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_different_settings(component_builder, tmpdir):
     pipeline = [
         {"name": "WhitespaceTokenizer"},
@@ -231,6 +247,7 @@ async def test_train_persist_load_with_different_settings(component_builder, tmp
     )
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_only_entity_recognition(
     component_builder, tmpdir
 ):
@@ -252,6 +269,7 @@ async def test_train_persist_load_with_only_entity_recognition(
     )
 
 
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_only_intent_classification(
     component_builder, tmpdir
 ):
@@ -273,7 +291,9 @@ async def test_train_persist_load_with_only_intent_classification(
     )
 
 
-async def test_raise_error_on_incorrect_pipeline(component_builder, tmp_path: Path):
+async def test_raise_error_on_incorrect_pipeline(
+    component_builder, tmp_path: Path, nlu_as_json_path: Text
+):
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
@@ -285,10 +305,10 @@ async def test_raise_error_on_incorrect_pipeline(component_builder, tmp_path: Pa
     )
 
     with pytest.raises(Exception) as e:
-        await train(
+        await rasa.nlu.train.train(
             _config,
             path=str(tmp_path),
-            data=DEFAULT_DATA_PATH,
+            data=nlu_as_json_path,
             component_builder=component_builder,
         )
 
@@ -304,31 +324,31 @@ def as_pipeline(*components):
     [
         (
             {RANDOM_SEED: 42, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             10,
             True,
         ),  # default config
         (
             {RANDOM_SEED: 42, RANKING_LENGTH: 0, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
             False,
         ),  # no normalization
         (
             {RANDOM_SEED: 42, RANKING_LENGTH: 3, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             3,
             True,
         ),  # lower than default ranking_length
         (
             {RANDOM_SEED: 42, RANKING_LENGTH: 12, EPOCHS: 1},
-            "data/test/many_intents.md",
+            "data/test/many_intents.yml",
             LABEL_RANKING_LENGTH,
             False,
         ),  # higher than default ranking_length
         (
             {RANDOM_SEED: 42, EPOCHS: 1},
-            DEFAULT_NLU_DATA,
+            "data/test_moodbot/data/nlu.yml",
             7,
             True,
         ),  # less intents than default ranking_length
@@ -338,7 +358,7 @@ async def test_softmax_normalization(
     component_builder,
     tmp_path,
     classifier_params,
-    data_path,
+    data_path: Text,
     output_length,
     output_should_sum_to_1,
 ):
@@ -349,8 +369,11 @@ async def test_softmax_normalization(
     pipeline[2].update(classifier_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
-        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
+        _config,
+        path=str(tmp_path),
+        data=data_path,
+        component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
 
@@ -370,29 +393,24 @@ async def test_softmax_normalization(
 
 
 @pytest.mark.parametrize(
-    "classifier_params, prediction_min, prediction_max, output_length",
+    "classifier_params, data_path",
     [
         (
-            {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"},
-            -1,
-            1,
-            LABEL_RANKING_LENGTH,
-        ),
-        (
-            {RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"},
-            -1e9,
-            1e9,
-            LABEL_RANKING_LENGTH,
+            {
+                RANDOM_SEED: 42,
+                EPOCHS: 1,
+                MODEL_CONFIDENCE: LINEAR_NORM,
+                RANKING_LENGTH: -1,
+            },
+            "data/test_moodbot/data/nlu.yml",
         ),
     ],
 )
-async def test_cross_entropy_without_normalization(
+async def test_inner_linear_normalization(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
-    prediction_min: float,
-    prediction_max: float,
-    output_length: int,
+    data_path: Text,
     monkeypatch: MonkeyPatch,
 ):
     pipeline = as_pipeline(
@@ -402,10 +420,10 @@ async def test_cross_entropy_without_normalization(
     pipeline[2].update(classifier_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
-        data="data/test/many_intents.md",
+        data=data_path,
         component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
@@ -416,23 +434,17 @@ async def test_cross_entropy_without_normalization(
     parse_data = loaded.parse("hello")
     intent_ranking = parse_data.get("intent_ranking")
 
-    # check that the output was correctly truncated
-    assert len(intent_ranking) == output_length
-
-    intent_confidences = [intent.get("confidence") for intent in intent_ranking]
-
-    # check each confidence is in range
-    confidence_in_range = [
-        prediction_min <= confidence <= prediction_max
-        for confidence in intent_confidences
-    ]
-    assert all(confidence_in_range)
-
-    # normalize shouldn't have been called
-    mock.normalize.assert_not_called()
+    # check whether normalization had the expected effect
+    output_sums_to_1 = sum(
+        [intent.get("confidence") for intent in intent_ranking]
+    ) == pytest.approx(1)
+    assert output_sums_to_1
 
     # check whether the normalization of rankings is reflected in intent prediction
     assert parse_data.get("intent") == intent_ranking[0]
+
+    # normalize shouldn't have been called
+    mock.normalize.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -452,10 +464,10 @@ async def test_margin_loss_is_not_normalized(
     monkeypatch.setattr(train_utils, "normalize", mock.normalize)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
-        data="data/test/many_intents.md",
+        data="data/test/many_intents.yml",
         component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
@@ -473,7 +485,8 @@ async def test_margin_loss_is_not_normalized(
     assert parse_data.get("intent") == intent_ranking[0]
 
 
-async def test_set_random_seed(component_builder, tmpdir):
+@pytest.mark.timeout(120, func_only=True)
+async def test_set_random_seed(component_builder, tmpdir, nlu_as_json_path: Text):
     """test if train result is the same for two runs of tf embedding"""
 
     # set fixed random seed
@@ -489,17 +502,17 @@ async def test_set_random_seed(component_builder, tmpdir):
     )
 
     # first run
-    (trained_a, _, persisted_path_a) = await train(
+    (trained_a, _, persisted_path_a) = await rasa.nlu.train.train(
         _config,
         path=tmpdir.strpath + "_a",
-        data=DEFAULT_DATA_PATH,
+        data=nlu_as_json_path,
         component_builder=component_builder,
     )
     # second run
-    (trained_b, _, persisted_path_b) = await train(
+    (trained_b, _, persisted_path_b) = await rasa.nlu.train.train(
         _config,
         path=tmpdir.strpath + "_b",
-        data=DEFAULT_DATA_PATH,
+        data=nlu_as_json_path,
         component_builder=component_builder,
     )
 
@@ -511,10 +524,14 @@ async def test_set_random_seed(component_builder, tmpdir):
     assert result_a == result_b
 
 
-async def test_train_tensorboard_logging(component_builder, tmpdir):
-    from pathlib import Path
-
-    tensorboard_log_dir = Path(tmpdir.strpath) / "tensorboard"
+@pytest.mark.parametrize("log_level", ["epoch", "batch"])
+async def test_train_tensorboard_logging(
+    log_level: Text,
+    component_builder: ComponentBuilder,
+    tmpdir: Path,
+    nlu_data_path: Text,
+):
+    tensorboard_log_dir = Path(tmpdir / "tensorboard")
 
     assert not tensorboard_log_dir.exists()
 
@@ -522,12 +539,21 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "CountVectorsFeaturizer",
+                    "analyzer": "char_wb",
+                    "min_ngram": 3,
+                    "max_ngram": 17,
+                    "max_features": 10,
+                    "min_df": 5,
+                },
                 {
                     "name": "DIETClassifier",
-                    EPOCHS: 3,
-                    TENSORBOARD_LOG_LEVEL: "epoch",
+                    EPOCHS: 1,
+                    TENSORBOARD_LOG_LEVEL: log_level,
                     TENSORBOARD_LOG_DIR: str(tensorboard_log_dir),
+                    MODEL_CONFIDENCE: "linear_norm",
+                    CONSTRAIN_SIMILARITIES: True,
                     EVAL_NUM_EXAMPLES: 15,
                     EVAL_NUM_EPOCHS: 1,
                 },
@@ -536,25 +562,26 @@ async def test_train_tensorboard_logging(component_builder, tmpdir):
         }
     )
 
-    await train(
+    await rasa.nlu.train.train(
         _config,
-        path=tmpdir.strpath,
-        data="data/examples/rasa/demo-rasa-multi-intent.md",
+        path=str(tmpdir),
+        data=nlu_data_path,
         component_builder=component_builder,
     )
 
     assert tensorboard_log_dir.exists()
 
     all_files = list(tensorboard_log_dir.rglob("*.*"))
-    assert len(all_files) == 3
+    assert len(all_files) == 2
 
 
 async def test_train_model_checkpointing(
-    component_builder: ComponentBuilder, tmpdir: Path
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-checkpointed-model"
-    best_model_file = Path(str(tmpdir), model_name)
-    assert not best_model_file.exists()
+    model_dir = tmp_path / model_name
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, model_dir)
+    assert not checkpoint_dir.is_dir()
 
     _config = RasaNLUModelConfig(
         {
@@ -563,9 +590,9 @@ async def test_train_model_checkpointing(
                 {"name": "CountVectorsFeaturizer"},
                 {
                     "name": "DIETClassifier",
-                    EPOCHS: 5,
-                    EVAL_NUM_EXAMPLES: 10,
+                    EPOCHS: 2,
                     EVAL_NUM_EPOCHS: 1,
+                    EVAL_NUM_EXAMPLES: 10,
                     CHECKPOINT_MODEL: True,
                 },
             ],
@@ -573,25 +600,136 @@ async def test_train_model_checkpointing(
         }
     )
 
-    await train(
+    await rasa.nlu.train.train(
         _config,
-        path=str(tmpdir),
-        data="data/examples/rasa/demo-rasa.md",
+        path=str(tmp_path),
+        data=nlu_data_path,
         component_builder=component_builder,
         fixed_model_name=model_name,
     )
 
-    assert best_model_file.exists()
+    assert checkpoint_dir.is_dir()
 
     """
-    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+    Tricky to validate the *exact* number of files that should be there, however there
+    must be at least the following:
         - metadata.json
         - checkpoint
         - component_1_CountVectorsFeaturizer (as per the pipeline above)
         - component_2_DIETClassifier files (more than 1 file)
     """
-    all_files = list(best_model_file.rglob("*.*"))
+    all_files = list(model_dir.rglob("*.*"))
     assert len(all_files) > 4
+
+
+async def test_train_model_not_checkpointing(
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
+):
+    model_name = "nlu-not-checkpointed-model"
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, tmp_path / model_name)
+    assert not checkpoint_dir.is_dir()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", EPOCHS: 2, CHECKPOINT_MODEL: False},
+            ],
+            "language": "en",
+        }
+    )
+
+    await rasa.nlu.train.train(
+        _config,
+        path=str(tmp_path),
+        data=nlu_data_path,
+        component_builder=component_builder,
+        fixed_model_name=model_name,
+    )
+
+    assert not checkpoint_dir.is_dir()
+
+
+async def test_train_fails_with_zero_eval_num_epochs(
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
+):
+    model_name = "nlu-fail"
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, tmp_path / model_name)
+    assert not checkpoint_dir.is_dir()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "DIETClassifier",
+                    EPOCHS: 1,
+                    CHECKPOINT_MODEL: True,
+                    EVAL_NUM_EPOCHS: 0,
+                    EVAL_NUM_EXAMPLES: 10,
+                },
+            ],
+            "language": "en",
+        }
+    )
+    with pytest.raises(InvalidConfigException):
+        with pytest.warns(UserWarning) as warning:
+            await rasa.nlu.train.train(
+                _config,
+                path=str(tmp_path),
+                data=nlu_data_path,
+                component_builder=component_builder,
+                fixed_model_name=model_name,
+            )
+    assert not checkpoint_dir.is_dir()
+    warn_text = (
+        f"You have opted to save the best model, but the value of '{EVAL_NUM_EPOCHS}' "
+        f"is not -1 or greater than 0. Training will fail."
+    )
+    assert len([w for w in warning if warn_text in str(w.message)]) == 1
+
+
+async def test_doesnt_checkpoint_with_zero_eval_num_examples(
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
+):
+    model_name = "nlu-fail-checkpoint"
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, tmp_path / model_name)
+    assert not checkpoint_dir.is_dir()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "DIETClassifier",
+                    EPOCHS: 2,
+                    CHECKPOINT_MODEL: True,
+                    EVAL_NUM_EXAMPLES: 0,
+                    EVAL_NUM_EPOCHS: 1,
+                },
+            ],
+            "language": "en",
+        }
+    )
+    with pytest.warns(UserWarning) as warning:
+        await rasa.nlu.train.train(
+            _config,
+            path=str(tmp_path),
+            data=nlu_data_path,
+            component_builder=component_builder,
+            fixed_model_name=model_name,
+        )
+
+    assert not checkpoint_dir.is_dir()
+    warn_text = (
+        f"You have opted to save the best model, but the value of "
+        f"'{EVAL_NUM_EXAMPLES}' is not greater than 0. No checkpoint model "
+        f"will be saved."
+    )
+    assert len([w for w in warning if warn_text in str(w.message)]) == 1
 
 
 @pytest.mark.parametrize(
@@ -601,6 +739,7 @@ async def test_train_model_checkpointing(
         {RANDOM_SEED: 1, EPOCHS: 1, BILOU_FLAG: True},
     ],
 )
+@pytest.mark.timeout(120, func_only=True)
 async def test_train_persist_load_with_composite_entities(
     classifier_params, component_builder, tmpdir
 ):
@@ -612,10 +751,10 @@ async def test_train_persist_load_with_composite_entities(
 
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=tmpdir.strpath,
-        data="data/test/demo-rasa-composite-entities.md",
+        data="data/test/demo-rasa-composite-entities.yml",
         component_builder=component_builder,
     )
 
@@ -629,14 +768,11 @@ async def test_train_persist_load_with_composite_entities(
     assert loaded.parse(text) == trained.parse(text)
 
 
-async def test_process_gives_diagnostic_data(trained_nlu_moodbot_path: Text,):
+async def test_process_gives_diagnostic_data(
+    response_selector_interpreter: Interpreter,
+):
     """Tests if processing a message returns attention weights as numpy array."""
-    with rasa.model.unpack_model(trained_nlu_moodbot_path) as unpacked_model_directory:
-        _, nlu_model_directory = rasa.model.get_model_subdirectories(
-            unpacked_model_directory
-        )
-        interpreter = Interpreter.load(nlu_model_directory)
-
+    interpreter = response_selector_interpreter
     message = Message(data={TEXT: "hello"})
     for component in interpreter.pipeline:
         component.process(message)
@@ -644,7 +780,7 @@ async def test_process_gives_diagnostic_data(trained_nlu_moodbot_path: Text,):
     diagnostic_data = message.get(DIAGNOSTIC_DATA)
 
     # The last component is DIETClassifier, which should add attention weights
-    name = f"component_{len(interpreter.pipeline) - 1}_DIETClassifier"
+    name = f"component_{len(interpreter.pipeline) - 2}_DIETClassifier"
     assert isinstance(diagnostic_data, dict)
     assert name in diagnostic_data
     assert "attention_weights" in diagnostic_data[name]

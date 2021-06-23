@@ -287,7 +287,20 @@ TEST_MIGRATED_MAPPING_POLICIES = [
         {"policies": [{"name": "MemoizationPolicy"}, {"name": "MappingPolicy"}]},
         {"intents": ["greet", "leave"]},
         {
-            "config": {"policies": [{"name": "MemoizationPolicy"}]},
+            "config": {
+                "policies": [{"name": "MemoizationPolicy"}, {"name": "RulePolicy"}]
+            },
+            "domain_intents": ["greet", "leave"],
+            "rules": [],
+            "rules_count": 0,
+        },
+    ),
+    # MappingPolicy only but no rules
+    (
+        {"policies": [{"name": "MappingPolicy"}]},
+        {"intents": ["greet", "leave"]},
+        {
+            "config": {"policies": [{"name": "RulePolicy"}]},
             "domain_intents": ["greet", "leave"],
             "rules": [],
             "rules_count": 0,
@@ -307,7 +320,8 @@ TEST_MIGRATED_MAPPING_POLICIES = [
             "domain_intents": ["greet", "leave"],
             "rules": [
                 {
-                    "rule": "Rule to map `greet` intent to `action_greet` (automatic conversion)",
+                    "rule": "Rule to map `greet` intent to"
+                    " `action_greet` (automatic conversion)",
                     "steps": [{"intent": "greet"}, {"action": "action_greet"}],
                 }
             ],

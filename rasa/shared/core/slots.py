@@ -45,11 +45,12 @@ class Slot:
                 influence the predictions of the dialogue polices.
         """
         self.name = name
-        self.value = initial_value
+        self._value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
         self.auto_fill = auto_fill
         self.influence_conversation = influence_conversation
+        self._has_been_set = False
 
     def feature_dimensionality(self) -> int:
         """How many features this single slot creates.
@@ -98,7 +99,25 @@ class Slot:
         )
 
     def reset(self) -> None:
+        """Resets the slot's value to the initial value."""
         self.value = self.initial_value
+        self._has_been_set = False
+
+    @property
+    def value(self) -> Any:
+        """Gets the slot's value."""
+        return self._value
+
+    @value.setter
+    def value(self, value: Any) -> None:
+        """Sets the slot's value."""
+        self._value = value
+        self._has_been_set = True
+
+    @property
+    def has_been_set(self) -> bool:
+        """Indicates if the slot's value has been set."""
+        return self._has_been_set
 
     def __str__(self) -> Text:
         return f"{self.__class__.__name__}({self.name}: {self.value})"
@@ -107,7 +126,7 @@ class Slot:
         return f"<{self.__class__.__name__}({self.name}: {self.value})>"
 
     @staticmethod
-    def resolve_by_type(type_name) -> Type["Slot"]:
+    def resolve_by_type(type_name: Text) -> Type["Slot"]:
         """Returns a slots class by its type name."""
         for cls in rasa.shared.utils.common.all_subclasses(Slot):
             if cls.type_name == type_name:
@@ -246,8 +265,20 @@ class ListSlot(Slot):
             # we couldn't convert the value to a list - using default value
             return [0.0]
 
+    @Slot.value.setter
+    def value(self, value: Any) -> None:
+        """Sets the slot's value."""
+        if value and not isinstance(value, list):
+            # Make sure we always store list items
+            value = [value]
+
+        # Call property setter of superclass
+        super(ListSlot, self.__class__).value.fset(self, value)
+
 
 class UnfeaturizedSlot(Slot):
+    """Deprecated slot type to represent slots which don't influence conversations."""
+
     type_name = "unfeaturized"
 
     def __init__(
@@ -258,6 +289,18 @@ class UnfeaturizedSlot(Slot):
         auto_fill: bool = True,
         influence_conversation: bool = False,
     ) -> None:
+        """Creates unfeaturized slot.
+
+        Args:
+            name: The name of the slot.
+            initial_value: Its initial value.
+            value_reset_delay: After how many turns the slot should be reset to the
+                initial_value. This is behavior is currently not implemented.
+            auto_fill: `True` if it should be auto-filled by entities with the same
+                name.
+            influence_conversation: `True` if it should be featurized. Only `False`
+                is allowed. Any other value will lead to a `InvalidSlotConfigError`.
+        """
         if influence_conversation:
             raise InvalidSlotConfigError(
                 f"An {UnfeaturizedSlot.__name__} cannot be featurized. "

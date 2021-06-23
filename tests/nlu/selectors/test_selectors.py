@@ -2,12 +2,12 @@ from pathlib import Path
 
 import pytest
 import numpy as np
-from typing import List, Dict, Text, Any
+from typing import List, Dict, Text, Any, Optional, Union
 from mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
-from rasa.nlu import train
+import rasa.nlu.train
 from rasa.nlu.components import ComponentBuilder
 from rasa.shared.nlu.training_data import util
 from rasa.nlu.config import RasaNLUModelConfig
@@ -18,13 +18,14 @@ from rasa.utils.tensorflow.constants import (
     MASKED_LM,
     NUM_TRANSFORMER_LAYERS,
     TRANSFORMER_SIZE,
-    EVAL_NUM_EPOCHS,
-    EVAL_NUM_EXAMPLES,
+    CONSTRAIN_SIMILARITIES,
     CHECKPOINT_MODEL,
     MODEL_CONFIDENCE,
     RANDOM_SEED,
     RANKING_LENGTH,
     LOSS_TYPE,
+    HIDDEN_LAYERS_SIZES,
+    LABEL,
 )
 from rasa.utils import train_utils
 from rasa.shared.nlu.constants import TEXT
@@ -59,10 +60,10 @@ from tests.nlu.classifiers.test_diet_classifier import as_pipeline
 def test_train_selector(pipeline, component_builder, tmpdir):
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -77,7 +78,6 @@ def test_train_selector(pipeline, component_builder, tmpdir):
 
     loaded = Interpreter.load(persisted_path, component_builder)
     parsed = loaded.parse("hello")
-
     assert loaded.pipeline
     assert parsed is not None
     assert (parsed.get("response_selector").get("all_retrieval_intents")) == [
@@ -93,13 +93,10 @@ def test_train_selector(pipeline, component_builder, tmpdir):
         parsed.get("response_selector")
         .get("default")
         .get("response")
-        .get("template_name")
+        .get("utter_action")
     ) is not None
     assert (
-        parsed.get("response_selector")
-        .get("default")
-        .get("response")
-        .get("response_templates")
+        parsed.get("response_selector").get("default").get("response").get("responses")
     ) is not None
 
     ranking = parsed.get("response_selector").get("default").get("ranking")
@@ -114,10 +111,10 @@ def test_preprocess_selector_multiple_retrieval_intents():
 
     # use some available data
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data_extra_intent = TrainingData(
         [
@@ -149,10 +146,10 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
 
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -180,10 +177,10 @@ def test_resolve_intent_response_key_from_label(
 
     # use data that include some responses
     training_data = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.md"
+        "data/examples/rasa/demo-rasa.yml"
     )
     training_data_responses = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa-responses.md"
+        "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
 
@@ -219,12 +216,19 @@ async def test_train_model_checkpointing(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "CountVectorsFeaturizer",
+                    "analyzer": "char_wb",
+                    "min_ngram": 3,
+                    "max_ngram": 17,
+                    "max_features": 10,
+                    "min_df": 5,
+                },
                 {
                     "name": "ResponseSelector",
                     EPOCHS: 5,
-                    EVAL_NUM_EXAMPLES: 10,
-                    EVAL_NUM_EPOCHS: 1,
+                    MODEL_CONFIDENCE: "linear_norm",
+                    CONSTRAIN_SIMILARITIES: True,
                     CHECKPOINT_MODEL: True,
                 },
             ],
@@ -232,7 +236,7 @@ async def test_train_model_checkpointing(
         }
     )
 
-    await train(
+    await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
         data="data/test_selectors",
@@ -243,7 +247,8 @@ async def test_train_model_checkpointing(
     assert best_model_file.exists()
 
     """
-    Tricky to validate the *exact* number of files that should be there, however there must be at least the following:
+    Tricky to validate the *exact* number of files that should be there, however there
+    must be at least the following:
         - metadata.json
         - checkpoint
         - component_1_CountVectorsFeaturizer (as per the pipeline above)
@@ -261,10 +266,10 @@ async def _train_persist_load_with_different_settings(
 ):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
-    (trainer, trained, persisted_path) = await train(
+    (trainer, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
-        data="data/examples/rasa/demo-rasa.md",
+        data="data/examples/rasa/demo-rasa.yml",
         component_builder=component_builder,
     )
 
@@ -296,16 +301,11 @@ async def test_train_persist_load(component_builder: ComponentBuilder, tmpdir: P
     )
 
 
-async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path):
+async def test_process_gives_diagnostic_data(
+    response_selector_interpreter: Interpreter,
+):
     """Tests if processing a message returns attention weights as numpy array."""
-
-    with rasa.model.unpack_model(
-        trained_response_selector_bot
-    ) as unpacked_model_directory:
-        _, nlu_model_directory = rasa.model.get_model_subdirectories(
-            unpacked_model_directory
-        )
-        interpreter = Interpreter.load(nlu_model_directory)
+    interpreter = response_selector_interpreter
 
     message = Message(data={TEXT: "hello"})
     for component in interpreter.pipeline:
@@ -322,22 +322,18 @@ async def test_process_gives_diagnostic_data(trained_response_selector_bot: Path
     # The `attention_weights` key should exist, regardless of there being a transformer
     assert "attention_weights" in diagnostic_data[name]
     # By default, ResponseSelector has `number_of_transformer_layers = 0`
+    # in which case the attention weights should be None.
     assert diagnostic_data[name].get("attention_weights") is None
 
 
 @pytest.mark.parametrize(
-    "classifier_params, prediction_min, prediction_max, output_length",
-    [
-        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "cosine"}, -1, 1, 9),
-        ({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "inner"}, -1e9, 1e9, 9),
-    ],
+    "classifier_params, output_length",
+    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 9)],
 )
-async def test_cross_entropy_without_normalization(
+async def test_cross_entropy_with_linear_norm(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
-    prediction_min: float,
-    prediction_max: float,
     output_length: int,
     monkeypatch: MonkeyPatch,
 ):
@@ -348,7 +344,7 @@ async def test_cross_entropy_without_normalization(
     pipeline[2].update(classifier_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
         data="data/test_selectors",
@@ -367,12 +363,9 @@ async def test_cross_entropy_without_normalization(
 
     response_confidences = [response.get("confidence") for response in response_ranking]
 
-    # check each confidence is in range
-    confidence_in_range = [
-        prediction_min <= confidence <= prediction_max
-        for confidence in response_confidences
-    ]
-    assert all(confidence_in_range)
+    # check whether normalization had the expected effect
+    output_sums_to_1 = sum(response_confidences) == pytest.approx(1)
+    assert output_sums_to_1
 
     # normalize shouldn't have been called
     mock.normalize.assert_not_called()
@@ -397,7 +390,7 @@ async def test_margin_loss_is_not_normalized(
     monkeypatch.setattr(train_utils, "normalize", mock.normalize)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmp_path),
         data="data/test_selectors",
@@ -437,8 +430,11 @@ async def test_softmax_ranking(
     pipeline[2].update(classifier_params)
 
     _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await train(
-        _config, path=str(tmp_path), data=data_path, component_builder=component_builder
+    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
+        _config,
+        path=str(tmp_path),
+        data=data_path,
+        component_builder=component_builder,
     )
     loaded = Interpreter.load(persisted_path, component_builder)
 
@@ -446,3 +442,111 @@ async def test_softmax_ranking(
     response_ranking = parse_data.get("response_selector").get("default").get("ranking")
     # check that the output was correctly truncated after normalization
     assert len(response_ranking) == output_length
+
+
+@pytest.mark.parametrize(
+    "config, should_raise_warning",
+    [
+        # hidden layers left at defaults
+        ({}, False),
+        ({NUM_TRANSFORMER_LAYERS: 5}, True),
+        ({NUM_TRANSFORMER_LAYERS: 0}, False),
+        ({NUM_TRANSFORMER_LAYERS: -1}, False),
+        # hidden layers explicitly enabled
+        ({HIDDEN_LAYERS_SIZES: {TEXT: [10], LABEL: [11]}}, False),
+        (
+            {NUM_TRANSFORMER_LAYERS: 5, HIDDEN_LAYERS_SIZES: {TEXT: [10], LABEL: [11]}},
+            True,
+        ),
+        (
+            {NUM_TRANSFORMER_LAYERS: 0, HIDDEN_LAYERS_SIZES: {TEXT: [10], LABEL: [11]}},
+            False,
+        ),
+        (
+            {
+                NUM_TRANSFORMER_LAYERS: -1,
+                HIDDEN_LAYERS_SIZES: {TEXT: [10], LABEL: [11]},
+            },
+            False,
+        ),
+        # hidden layers explicitly disabled
+        ({HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []}}, False),
+        (
+            {NUM_TRANSFORMER_LAYERS: 5, HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []}},
+            False,
+        ),
+        (
+            {NUM_TRANSFORMER_LAYERS: 0, HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []}},
+            False,
+        ),
+        (
+            {NUM_TRANSFORMER_LAYERS: -1, HIDDEN_LAYERS_SIZES: {TEXT: [], LABEL: []}},
+            False,
+        ),
+    ],
+)
+def test_warning_when_transformer_and_hidden_layers_enabled(
+    config: Dict[Text, Union[int, Dict[Text, List[int]]]], should_raise_warning: bool
+):
+    """ResponseSelector recommends disabling hidden layers if transformer is enabled."""
+    with pytest.warns(UserWarning) as records:
+        _ = ResponseSelector(component_config=config)
+    warning_str = "We recommend to disable the hidden layers when using a transformer"
+
+    if should_raise_warning:
+        assert len(records) > 0
+        # Check all warnings since there may be multiple other warnings we don't care
+        # about in this test case.
+        assert any(warning_str in record.message.args[0] for record in records)
+    else:
+        # Check all warnings since there may be multiple other warnings we don't care
+        # about in this test case.
+        assert not any(warning_str in record.message.args[0] for record in records)
+
+
+@pytest.mark.parametrize(
+    "config, should_set_default_transformer_size",
+    [
+        # transformer enabled
+        ({NUM_TRANSFORMER_LAYERS: 5}, True),
+        ({TRANSFORMER_SIZE: 0, NUM_TRANSFORMER_LAYERS: 5}, True),
+        ({TRANSFORMER_SIZE: -1, NUM_TRANSFORMER_LAYERS: 5}, True),
+        ({TRANSFORMER_SIZE: None, NUM_TRANSFORMER_LAYERS: 5}, True),
+        ({TRANSFORMER_SIZE: 10, NUM_TRANSFORMER_LAYERS: 5}, False),
+        # transformer disabled (by default)
+        ({}, False),
+        ({TRANSFORMER_SIZE: 0}, False),
+        ({TRANSFORMER_SIZE: -1}, False),
+        ({TRANSFORMER_SIZE: None}, False),
+        ({TRANSFORMER_SIZE: 10}, False),
+        # transformer disabled explicitly
+        ({NUM_TRANSFORMER_LAYERS: 0}, False),
+        ({TRANSFORMER_SIZE: 0, NUM_TRANSFORMER_LAYERS: 0}, False),
+        ({TRANSFORMER_SIZE: -1, NUM_TRANSFORMER_LAYERS: 0}, False),
+        ({TRANSFORMER_SIZE: None, NUM_TRANSFORMER_LAYERS: 0}, False),
+        ({TRANSFORMER_SIZE: 10, NUM_TRANSFORMER_LAYERS: 0}, False),
+    ],
+)
+def test_sets_integer_transformer_size_when_needed(
+    config: Dict[Text, Optional[int]], should_set_default_transformer_size: bool,
+):
+    """ResponseSelector ensures sensible transformer size when transformer enabled."""
+    default_transformer_size = 256
+    with pytest.warns(UserWarning) as records:
+        selector = ResponseSelector(component_config=config)
+
+    warning_str = f"positive size is required when using `{NUM_TRANSFORMER_LAYERS} > 0`"
+
+    if should_set_default_transformer_size:
+        assert len(records) > 0
+        # check that the specific warning was raised
+        assert any(warning_str in record.message.args[0] for record in records)
+        # check that transformer size got set to the new default
+        assert selector.component_config[TRANSFORMER_SIZE] == default_transformer_size
+    else:
+        # check that the specific warning was not raised
+        assert not any(warning_str in record.message.args[0] for record in records)
+        # check that transformer size was not changed
+        assert selector.component_config[TRANSFORMER_SIZE] == config.get(
+            TRANSFORMER_SIZE, None  # None is the default transformer size
+        )

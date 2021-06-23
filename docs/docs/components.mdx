@@ -106,11 +106,8 @@ word vectors in your pipeline.
 
 * **Configuration**
 
-  You need to specify the language model to use.
-  By default the language configured in the pipeline will be used as the language model name.
-  If the spaCy model to be used has a name that is different from the language tag (`"en"`, `"de"`, etc.),
-  the model name can be specified using the configuration variable `model`.
-  The name will be passed to `spacy.load(name)`.
+  You need to specify the language model to use. The name will be passed to `spacy.load(name)`.
+  You can find more information on the available models on the [spaCy documentation](https://spacy.io/usage/models).
 
   ```yaml-rasa
   pipeline:
@@ -130,12 +127,12 @@ word vectors in your pipeline.
   [installing SpaCy](./installation.mdx#dependencies-for-spacy).
 
   In addition to SpaCy's pretrained language models, you can also use this component to
-  load fastText vectors, which are available for [hundreds of languages](https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md).
-  If you want to incorporate a custom model you've found into spaCy, check out their page on
-  [adding languages](https://spacy.io/usage/adding-languages/). As described in the documentation, you need to
-  register your language model and link it to the language identifier, which will allow Rasa to load and use your new language
-  by passing in your language identifier as the `language` option.
+  attach spaCy models that you've trained yourself.
 
+:::caution Fallback
+Rasa Open Source will try to fallback to a common model on your behalf if you don't pass a `model` setting. This is a
+temporary feature we've introduced as part of the spaCy 3.0 migration but the fallback will be removed in Rasa Open Source 3.0.0.
+:::
 
 ### HFTransformersNLP
 
@@ -259,6 +256,26 @@ now implements its behavior.
 
     Creates a token for every whitespace separated character sequence.
 
+    Any character not in: `a-zA-Z0-9_#@&` will be substituted with whitespace before
+    splitting on whitespace if the character fulfills any of the following conditions:
+    - the character follows a whitespace: `" !word"` &#8594; `"word"`
+    - the character precedes a whitespace: `"word! "` &#8594; `"word"`
+    - the character is at the beginning of the string: `"!word"` &#8594; `"word"`
+    - the character is at the end of the string: `"word!"` &#8594; `"word"`
+
+    Note that:
+    - `"wo!rd"` &#8594; `"wo!rd"`
+
+    In addition, any character not in: `a-zA-Z0-9_#@&.~:\/?[]()!$*+,;=-` will be
+    substituted with whitespace before splitting on whitespace if the character is not
+    between numbers:
+    - `"twenty{one"` &#8594; `"twenty"`, `"one"`         ("{"` is not between numbers)
+    - `"20{1"` &#8594; `"20{1"`                          ("{"` *is* between numbers)
+
+    Note that:
+    - `"name@example.com"` &#8594; `"name@example.com"`
+    - `"10,000.1"` &#8594; `"10,000.1"`
+    - `"1 - 2"` &#8594; `"1"`,`"2"`
 
 
   * **Configuration**
@@ -465,11 +482,6 @@ now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be
       "model_url": None
     ```
 
-  :::note
-  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
-  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
-
-  :::
 
 
   ### LanguageModelTokenizer
@@ -690,8 +702,15 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```yaml-rasa
   pipeline:
   - name: "ConveRTFeaturizer"
+  # Remote URL/Local directory of model files(Required)
+  "model_url": None
   ```
 
+  :::caution
+  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
+  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
+
+  :::
 
 ### LanguageModelFeaturizer
 
@@ -1474,6 +1493,19 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
+  * `constrain_similarities`:
+    This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
+    This helps in keeping similarities between input and negative labels to smaller values.
+    This should help in better generalization of the model to real world test sets.
+
+  * `model_confidence`:
+    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
+    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
+    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
+
+    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
+
+
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -1532,7 +1564,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | or 'inner'.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
-|                                 |                  | or 'margin'.                                                 |
+|                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
+|                                 |                  | "model_confidence=cosine",                                   |
+|                                 |                  | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | ranking_length                  | 10               | Number of top intents to normalize scores for. Applicable    |
 |                                 |                  | only with loss type 'cross_entropy' and 'softmax'            |
@@ -1594,7 +1628,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
 |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
-|                                 |                  | training step ('minibatch').                                 |
+|                                 |                  | training step ('batch').                                 |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | featurizers                     | []               | List of featurizer names (alias names). Only features        |
 |                                 |                  | coming from the listed names are used. If list is empty      |
@@ -1623,16 +1657,13 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | approximately bounded. Used only if `loss_type=cross_entropy`|
 +---------------------------------+------------------+--------------------------------------------------------------+
 | model_confidence                | "softmax"        | Affects how model's confidence for each intent               |
-|                                 |                  | is computed. It can take three values                        |
+|                                 |                  | is computed. It can take two values:                         |
 |                                 |                  | 1. `softmax` - Similarities between input and intent         |
 |                                 |                  | embeddings are post-processed with a softmax function,       |
 |                                 |                  | as a result of which confidence for all intents sum up to 1. |
-|                                 |                  | 2. `cosine` - Cosine similarity between input and intent     |
-|                                 |                  | embeddings. Confidence for each intent is in the             |
-|                                 |                  | range `[-1,1]`.                                              |
-|                                 |                  | 3. `inner` - Dot product similarity between input and intent |
-|                                 |                  | embeddings. Confidence for each intent is in an unbounded    |
-|                                 |                  | range.                                                       |
+|                                 |                  | 2. `linear_norm` - Linearly normalized dot product similarity|
+|                                 |                  | between input and intent embeddings. Confidence for each     |
+|                                 |                  | intent will be in the range `[0,1]`                          |
 |                                 |                  | This parameter does not affect the confidence for entity     |
 |                                 |                  | prediction.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
@@ -1653,7 +1684,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 * **Short**
 
   Classifies a message with the intent `nlu_fallback` if the NLU intent classification
-  scores are ambiguous. The confidence is set to `1 - top intent confidence`.
+  scores are ambiguous. The confidence is set to be the same as the `fallback threshold`.
 
 * **Outputs**
 
@@ -1733,7 +1764,28 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 Entity extractors extract entities, such as person names or locations, from the user message.
 
+:::note
+  If you use multiple entity extractors, we advise that each extractor targets an exclusive
+  set of entity types. For example, use [Duckling](components.mdx#ducklingentityextractor) to extract dates and times, and
+  [DIETClassifier](components.mdx#dietclassifier-1) to extract person names. Otherwise, if multiple extractors
+  target the same entity types, it is very likely that entities will be extracted multiple times.
 
+  For example, if you use two or more general purpose extractors like [MitieEntityExtractor](components.mdx#mitieentityextractor),
+  [DIETClassifier](components.mdx#dietclassifier-1), or [CRFEntityExtractor](components.mdx#crfentityextractor),
+  the entity types in your training data will be found and
+  extracted by all of them. If the [slots](domain.mdx#slots) you are filling with your entity types are of type `text`,
+  then the last extractor in your pipeline will win. If the slot is of type `list`, then all results
+  will be added to the list, including duplicates.
+
+  Another, less obvious case of duplicate/overlapping extraction can happen even if extractors focus on different
+  entity types. Imagine a food delivery bot and a user message like `I would like to order the Monday special`.
+  Hypothetically, if your time extractor's performance isn't very good, it might extract `Monday` here as a time for the order,
+  and your other extractor might extract `Monday special` as the meal.
+  If you struggle with overlapping entities of this sort, it might make sense to add additional training data
+  to improve your extractor. If that does not suffice, you can add a
+  [custom component](components.mdx#custom-components) that resolves conflicts in entity
+  extraction according to your own logic.
+:::
 ### MitieEntityExtractor
 
 
@@ -2004,7 +2056,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   :::
 
 
-### DucklingHTTPExtractor
+### DucklingEntityExtractor
 
 
 * **Short**
@@ -2036,7 +2088,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
           "start": 48,
           "value": "2017-04-10T00:00:00.000+02:00",
           "confidence": 1.0,
-          "extractor": "DucklingHTTPExtractor"
+          "extractor": "DucklingEntityExtractor"
       }]
   }
   ```
@@ -2076,7 +2128,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   ```yaml-rasa
   pipeline:
-  - name: "DucklingHTTPExtractor"
+  - name: "DucklingEntityExtractor"
     # url of the running duckling server
     url: "http://localhost:8000"
     # dimensions to extract
@@ -2133,6 +2185,28 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   This component only uses those regex features that have a name equal to one of the entities defined in the
   training data. Make sure to annotate at least one example per entity.
+
+  :::note
+  When you use this extractor in combination with [MitieEntityExtractor](components.mdx#mitieentityextractor),
+  [CRFEntityExtractor](components.mdx#crfentityextractor), or [DIETClassifier](components.mdx#dietclassifier-1) it can
+  lead to multiple extraction of entities. Especially if many training sentences have entity annotations for
+  the entity types for which you also have defined regexes. See the big info box at the start of the
+  [entity extractor section](components.mdx#entity-extractors) for more info on multiple extraction.
+
+  In the case where you seem to need both this RegexEntityExtractor and another of the aforementioned
+  statistical extractors, we advise you to consider one of the following two options.
+
+  Option 1 is advisable when you have exclusive entity types for each type of extractor. To make the
+  sure the extractors don't interfere with one another annotate only one example sentence for each
+  regex/lookup entity type, but not more.
+
+  Option 2 is useful when you want to use regexes matches as additional signal for your statistical extractor,
+  but you don't have separate entity types. In this case you will want to 1) add the
+  [RegexFeaturizer](components.mdx#regexfeaturizer) before the extractors in your pipeline 2)
+  annotate all your entity examples in the training data and 3) remove the RegexEntityExtractor from your pipeline.
+  This way, your statistical extractors will receive additional signal about the presence of regex matches
+  and will be able to statistically determine when to rely on these matches and when not to.
+  :::
 
 
 * **Configuration**
@@ -2415,7 +2489,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   | similarity_type                 | "auto"           | Type of similarity measure to use, either 'auto' or 'cosine' |
   |                                 |                  | or 'inner'.                                                  |
   +---------------------------------+------------------+--------------------------------------------------------------+
-  | loss_type                       | "softmax"        | The type of the loss function, either 'softmax' or 'margin'. |
+  | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
+  |                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
+  |                                 |                  | "model_confidence=cosine",                                   |
+  |                                 |                  | which is deprecated (see changelog for 2.3.4).               |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
   |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
@@ -2478,7 +2555,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   +---------------------------------+------------------+--------------------------------------------------------------+
   | tensorboard_log_level           | "epoch"          | Define when training metrics for tensorboard should be       |
   |                                 |                  | logged. Either after every epoch ('epoch') or for every      |
-  |                                 |                  | training step ('minibatch').                                 |
+  |                                 |                  | training step ('batch').                                 |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | featurizers                     | []               | List of featurizer names (alias names). Only features        |
   |                                 |                  | coming from the listed names are used. If list is empty      |
@@ -2519,7 +2596,7 @@ Selectors predict a bot response from a set of candidate responses.
 * **Outputs**
 
   A dictionary with the key as the retrieval intent of the response selector
-   and value containing predicted response templates, confidence and the response key under the retrieval intent
+   and value containing predicted responses, confidence and the response key under the retrieval intent
 
 
 
@@ -2537,7 +2614,7 @@ Selectors predict a bot response from a set of candidate responses.
     and stores two properties:
 
     * `response`: The predicted response key under the corresponding retrieval intent,
-    prediction's confidence and the associated response templates.
+    prediction's confidence and the associated responses.
 
     * `ranking`: Ranking with confidences of top 10 candidate response keys.
 
@@ -2551,7 +2628,7 @@ Selectors predict a bot response from a set of candidate responses.
               "id": 1388783286124361986,
               "confidence": 0.7,
               "intent_response_key": "chitchat/ask_weather",
-              "response_templates": [
+              "responses": [
                 {
                   "text": "It's sunny in Berlin today",
                   "image": "https://i.imgur.com/nGF1K8f.jpg"
@@ -2560,7 +2637,7 @@ Selectors predict a bot response from a set of candidate responses.
                   "text": "I think it's about to rain."
                 }
               ],
-              "template_name": "utter_chitchat/ask_weather"
+              "utter_action": "utter_chitchat/ask_weather"
              },
             "ranking": [
               {
@@ -2582,7 +2659,7 @@ Selectors predict a bot response from a set of candidate responses.
     If the `retrieval_intent` parameter of a particular response selector was left to its default value,
     the corresponding response selector will be identified as `default` in the returned output.
 
-    ```json {4}
+    ```json {3}
     {
         "response_selector": {
           "default": {
@@ -2590,7 +2667,7 @@ Selectors predict a bot response from a set of candidate responses.
               "id": 1388783286124361986,
               "confidence": 0.7,
               "intent_response_key": "chitchat/ask_weather",
-              "response_templates": [
+              "responses": [
                 {
                   "text": "It's sunny in Berlin today",
                   "image": "https://i.imgur.com/nGF1K8f.jpg"
@@ -2599,7 +2676,7 @@ Selectors predict a bot response from a set of candidate responses.
                   "text": "I think it's about to rain."
                 }
               ],
-              "template_name": "utter_chitchat/ask_weather"
+              "utter_action": "utter_chitchat/ask_weather"
              },
             "ranking": [
               {
@@ -2688,14 +2765,25 @@ Selectors predict a bot response from a set of candidate responses.
     set `weight_sparsity` to 1 as this would result in all kernel weights being 0, i.e. the model is not able
     to learn.
 
+  * `constrain_similarities`:
+    This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
+    This helps in keeping similarities between input and negative labels to smaller values.
+    This should help in better generalization of the model to real world test sets.
+
+  * `model_confidence`:
+    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
+    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
+    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
+
+    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
+
   The component can also be configured to train a response selector for a particular retrieval intent.
   The parameter `retrieval_intent` sets the name of the retrieval intent for which this response selector model is trained.
   Default is `None`, i.e. the model is trained for all retrieval intents.
 
   In its default configuration, the component uses the retrieval intent with the response key(e.g. `faq/ask_name`) as the label for training.
-  Alternatively, it can also be configured to use the text of the response templates as the training label
-  by switching `use_text_as_label` to `True`. In this mode, the component will use the first available response
-  template which has a text attribute for training. If none are found, it falls back to using the retrieval intent
+  Alternatively, it can also be configured to use the text of the responses as the training label
+  by switching `use_text_as_label` to `True`. In this mode, the component will use the first available response which has a text attribute for training. If none are found, it falls back to using the retrieval intent
   combined with the response key as the label.
 
   :::note examples and tutorials
@@ -2716,14 +2804,19 @@ However, additional parameters exist that can be adapted.
 +=================================+===================+==============================================================+
 | hidden_layers_sizes             | text: [256, 128]  | Hidden layer sizes for layers before the embedding layers    |
 |                                 | label: [256, 128] | for user messages and labels. The number of hidden layers is |
-|                                 |                   | equal to the length of the corresponding.                    |
+|                                 |                   | equal to the length of the corresponding list. We recommend  |
+|                                 |                   | disabling the hidden layers (by providing empty lists) when  |
+|                                 |                   | the transformer is enabled.                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | share_hidden_layers             | False             | Whether to share the hidden layer weights between user       |
 |                                 |                   | messages and labels.                                         |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| transformer_size                | None              | Number of units in transformer.                              |
+| transformer_size                | None              | Number of units in the transformer. When a positive value is |
+|                                 |                   | provided for `number_of_transformer_layers`, the default size|
+|                                 |                   | becomes `256`.                                               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| number_of_transformer_layers    | 0                 | Number of transformer layers.                                |
+| number_of_transformer_layers    | 0                 | Number of transformer layers; positive values enable the     |
+|                                 |                   | transformer.                                                 |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | number_of_attention_heads       | 4                 | Number of attention heads in transformer.                    |
 +---------------------------------+-------------------+--------------------------------------------------------------+
@@ -2763,7 +2856,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | or 'inner'.                                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"   | The type of the loss function, either 'cross_entropy'        |
-|                                 |                   | or 'margin'.                                                 |
+|                                 |                   | or 'margin'. Type 'margin' is only compatible with           |
+|                                 |                   | "model_confidence=cosine",                                   |
+|                                 |                   | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | ranking_length                  | 10                | Number of top responses to normalize scores for. Applicable  |
 |                                 |                   | only with loss type 'cross_entropy' and 'softmax'            |
@@ -2806,6 +2901,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | evaluate_on_number_of_examples  | 0                 | How many examples to use for hold out validation set.        |
 |                                 |                   | Large values may hurt performance, e.g. model accuracy.      |
+|                                 |                   | Set to 0 for no validation.                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | use_masked_language_model       | False             | If 'True' random tokens of the input message will be masked  |
 |                                 |                   | and the model should predict those tokens.                   |
@@ -2824,7 +2920,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"           | Define when training metrics for tensorboard should be       |
 |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
-|                                 |                   | training step ("minibatch").                                 |
+|                                 |                   | training step ("batch").                                     |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | featurizers                     | []                | List of featurizer names (alias names). Only features        |
 |                                 |                   | coming from the listed names are used. If list is empty      |
@@ -2841,16 +2937,13 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | approximately bounded. Used only if `loss_type=cross_entropy`|
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | model_confidence                | "softmax"         | Affects how model's confidence for each response label       |
-|                                 |                   | is computed. It can take three values                        |
+|                                 |                   | is computed. It can take two values:                         |
 |                                 |                   | 1. `softmax` - Similarities between input and response label |
 |                                 |                   | embeddings are post-processed with a softmax function,       |
 |                                 |                   | as a result of which confidence for all labels sum up to 1.  |
-|                                 |                   | 2. `cosine` - Cosine similarity between input and response   |
-|                                 |                   | label embeddings. Confidence for each label is in the        |
-|                                 |                   | range `[-1,1]`.                                              |
-|                                 |                   | 3. `inner` - Dot product similarity between input and        |
-|                                 |                   | response label embeddings. Confidence for each label is in an|
-|                                 |                   | unbounded range.                                             |
+|                                 |                   | 2. `linear_norm` - Linearly normalized dot product similarity|
+|                                 |                   | between input and response label embeddings. Confidence for  |
+|                                 |                   | each label is in the range `[0, 1]`.                         |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 ```
 

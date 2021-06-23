@@ -8,6 +8,7 @@ from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_DATA_PATH,
+    DEFAULT_CONVERSATION_TEST_PATH,
 )
 import rasa.shared.utils.io
 import rasa.shared.core.constants
@@ -24,6 +25,7 @@ from rasa.shared.importers.multi_project import MultiProjectImporter
 from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.constants import ACTION_TEXT, ACTION_NAME, INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils.validation import YamlValidationException
 
 
 @pytest.fixture()
@@ -72,6 +74,11 @@ async def test_combined_file_importer_with_single_importer(project: Text):
     actual_stories = await combined.get_stories()
 
     assert actual_stories.as_story_string() == expected_stories.as_story_string()
+
+    expected_tests = await importer.get_conversation_tests()
+    actual_tests = await combined.get_conversation_tests()
+
+    assert actual_tests.as_story_string() == expected_tests.as_story_string()
 
 
 @pytest.mark.parametrize(
@@ -143,6 +150,9 @@ async def test_nlu_only(project: Text):
 
     stories = await actual.get_stories()
     assert stories.is_empty()
+
+    conversation_tests = await actual.get_stories()
+    assert conversation_tests.is_empty()
 
     domain = await actual.get_domain()
     assert domain.is_empty()
@@ -319,8 +329,8 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = "data/test_domains/default_retrieval_intents.yml"
     data_paths = [
-        "data/test_nlu/default_retrieval_intents.md",
-        "data/test_responses/default.md",
+        "data/test/stories_default_retrieval_intents.yml",
+        "data/test_responses/default.yml",
     ]
     importer = TrainingDataImporter.load_from_dict(
         {}, config_path, domain_path, data_paths
@@ -331,15 +341,15 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
 
     assert domain.retrieval_intents == ["chitchat"]
     assert domain.intent_properties["chitchat"].get("is_retrieval_intent")
-    assert domain.retrieval_intent_templates == nlu_data.responses
-    assert domain.templates != nlu_data.responses
+    assert domain.retrieval_intent_responses == nlu_data.responses
+    assert domain.responses != nlu_data.responses
     assert "utter_chitchat" in domain.action_names_or_texts
 
 
 async def test_nlu_data_domain_sync_responses(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = "data/test_domains/default.yml"
-    data_paths = ["data/test_nlg/test_responses.yml"]
+    data_paths = ["data/test_responses/responses_utter_rasa.yml"]
 
     importer = TrainingDataImporter.load_from_dict(
         {}, config_path, domain_path, data_paths
@@ -349,4 +359,35 @@ async def test_nlu_data_domain_sync_responses(project: Text):
         domain = await importer.get_domain()
 
     # Responses were sync between "test_responses.yml" and the "domain.yml"
-    assert "utter_rasa" in domain.templates.keys()
+    assert "utter_rasa" in domain.responses.keys()
+
+
+def test_importer_with_invalid_model_config(tmp_path: Path):
+    invalid = {"version": "2.0", "policies": ["name"]}
+    config_file = tmp_path / "config.yml"
+    rasa.shared.utils.io.write_yaml(invalid, config_file)
+
+    with pytest.raises(YamlValidationException):
+        TrainingDataImporter.load_from_config(str(config_file))
+
+
+async def test_importer_with_unicode_files():
+    importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=["./data/test_nlu_no_responses/nlu_with_unicode.yml"]
+    )
+
+    # None of these should raise
+    nlu_data = await importer.get_nlu_data()
+    assert not nlu_data.is_empty()
+
+    await importer.get_stories()
+    await importer.get_domain()
+
+
+async def test_read_conversation_tests(project: Text):
+    importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=[str(Path(project) / DEFAULT_CONVERSATION_TEST_PATH)]
+    )
+
+    test_stories = await importer.get_conversation_tests()
+    assert len(test_stories.story_steps) == 7
