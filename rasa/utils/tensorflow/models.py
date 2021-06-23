@@ -627,7 +627,7 @@ class TransformerRasaModel(RasaModel):
         }
 
     def _check_data(self) -> None:
-        raise NotImplementedError
+        pass
 
     def _prepare_layers(self) -> None:
         raise NotImplementedError
