@@ -637,10 +637,7 @@ def _collect_action_executed_predictions(
             # that something else than the form was supposed to run.
             predicted_action = action.name()
 
-    predicted_warning = action_executed_eval_store.predicted_warning(
-        predicted_action
-
-    )
+    predicted_warning = action_executed_eval_store.predicted_warning(predicted_action)
     if not predicted_warning:
         action_executed_eval_store.add_to_store(
             action_predictions=[predicted_action], action_targets=[expected_action]

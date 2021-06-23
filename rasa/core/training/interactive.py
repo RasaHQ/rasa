@@ -1142,14 +1142,17 @@ async def _validate_action(
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
             f"Check out IntentTEDPolicy ({DOCS_URL_POLICIES}/#intent-ted-policy) "
-            f"to learn more. Press any key to continue…"
+            f"to learn more."
         )
     else:
         question = questionary.confirm(
             f"The bot wants to run '{action_name}', correct?"
         )
 
-    is_correct = await _ask_questions(question, conversation_id, endpoint)
+    is_correct = (
+        await _ask_questions(question, conversation_id, endpoint)
+        or action_name == ACTION_UNLIKELY_INTENT_NAME
+    )
 
     if not is_correct:
         action_name, is_new_action = await _request_action_from_user(
