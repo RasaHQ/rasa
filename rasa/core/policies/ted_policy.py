@@ -776,6 +776,7 @@ class TEDPolicy(Policy):
             callbacks=callbacks,
             verbose=False,
             shuffle=False,  # we use custom shuffle inside data generator
+            workers=3,
         )
 
     def _featurize_tracker_for_e2e(
