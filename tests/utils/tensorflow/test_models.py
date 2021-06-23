@@ -157,8 +157,10 @@ def test_adjusting_sparse_layers(monkeypatch):
     def mock_check_data(self):
         pass
 
+    # `_check_data` is not implemented in `TransformerRasaModel`
+    # so we have to monkeypatch it
     monkeypatch.setattr(TransformerRasaModel, "_check_data", mock_check_data)
-    # in this case, we have only one sparse featurizer
+    # in this test we use only one sparse featurizer
     initial_sparse_feature_size = 4
     final_sparse_feature_size = 5
     config = {
