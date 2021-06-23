@@ -116,12 +116,10 @@ class RasaCustomLayer(tf.keras.layers.Layer):
         ):
             if new_size < old_size:
                 raise Exception(
-                    "Sparse feature sizes are decreased."
-                    "The NLU file was changed in a way that caused removing some"
-                    "features from certain featurizers (This might have been "
-                    "`LexicalSyntacticFeaturizer`). We don't support this behaviour"
-                    "at this point. One possible way to avoid this "
-                    "warning is retraining the model from scratch."
+                    "Sparse feature sizes have decreased from the last time training was run."
+                    "The training data was changed in a way that resulted in some"
+                    "features not being present in the data anymore. This can happen if you had "
+                    "`LexicalSyntacticFeaturizer` in your pipeline. The pipeline cannot support incremental training in this setting. We recommend you to retrain the model from scratch."
                 )
 
     @staticmethod
