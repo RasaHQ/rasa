@@ -23,6 +23,7 @@ from rasa.shared.core.constants import (
     SLOTS,
     FOLLOWUP_ACTION,
     SESSION_START_METADATA_SLOT,
+    ACTION_EXTRACT_SLOTS,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -52,6 +53,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.lock_store import LockStore
 from rasa.core.policies.ensemble import PolicyEnsemble
 import rasa.core.tracker_store
+from rasa.core.actions.action import ActionExtractSlots
 import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
@@ -94,6 +96,14 @@ class MessageProcessor:
 
         # preprocess message if necessary
         tracker = await self.log_message(message, should_save_tracker=False)
+
+        # extract slots after every user message
+        silent_slot_extraction = ActionExtractSlots(ACTION_EXTRACT_SLOTS)
+        events = await silent_slot_extraction.run(
+            output_channel=None, nlg=self.nlg, tracker=tracker, domain=self.domain
+        )
+        tracker.update_with_events(events, self.domain)
+        self._save_tracker(tracker)
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state

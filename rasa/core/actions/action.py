@@ -35,9 +35,17 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
+    ACTION_EXTRACT_SLOTS,
 )
 from rasa.shared.exceptions import RasaException
-from rasa.shared.nlu.constants import INTENT_NAME_KEY, INTENT_RANKING_KEY
+from rasa.shared.nlu.constants import (
+    INTENT_NAME_KEY,
+    INTENT_RANKING_KEY,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_GROUP,
+    ENTITY_ATTRIBUTE_ROLE,
+)
 from rasa.shared.core.events import (
     UserUtteranceReverted,
     UserUttered,
@@ -51,8 +59,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
-from rasa.shared.core.domain import Domain
-
+from rasa.shared.core.domain import Domain, SlotMapping
 
 if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
@@ -77,6 +84,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionDefaultAskRephrase(),
         TwoStageFallbackAction(action_endpoint),
         ActionBack(),
+        ActionExtractSlots,
     ]
 
 
@@ -884,3 +892,67 @@ class ActionDefaultAskRephrase(ActionBotResponse):
     def __init__(self) -> None:
         """Initializes action default ask rephrase."""
         super().__init__("utter_ask_rephrase", silent_fail=True)
+
+
+class ActionExtractSlots(Action):
+    """Silent action that runs after each user utterance.
+     Sets slots to extracted values from user message."""
+
+    def __init__(self, action_name: Text) -> None:
+        self.name = action_name
+
+    def name(self) -> Text:
+        """Returns action_extract_slots name."""
+        return ACTION_EXTRACT_SLOTS
+
+    async def run(
+        self,
+        output_channel: Optional["OutputChannel"],
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        slot_events = []
+        extracted_entities = tracker.latest_message.entities
+
+        for slot in domain.slots:
+            for mapping in slot.slot_mappings:
+                should_fill_entity_slot = (
+                    mapping["type"] == str(SlotMapping.FROM_ENTITY)
+                    and SlotMapping.intent_is_desired(mapping, tracker)
+                    and SlotMapping.entity_is_desired(
+                        mapping, slot, extracted_entities, tracker,
+                    )
+                )
+                should_fill_trigger_slot = mapping["type"] == str(
+                    SlotMapping.FROM_TRIGGER_INTENT
+                ) and SlotMapping.intent_is_desired(mapping, tracker)
+                should_fill_intent_slot = mapping["type"] == str(
+                    SlotMapping.FROM_INTENT
+                ) and SlotMapping.intent_is_desired(mapping, tracker)
+                should_fill_text_slot = mapping["type"] == str(
+                    SlotMapping.FROM_TEXT
+                ) and SlotMapping.intent_is_desired(mapping, tracker)
+
+                if should_fill_entity_slot:
+                    value = [
+                        x.get(ENTITY_ATTRIBUTE_VALUE)
+                        for x in extracted_entities
+                        if x.get(ENTITY_ATTRIBUTE_TYPE) == mapping.get("entity")
+                        and x.get(ENTITY_ATTRIBUTE_GROUP) == mapping.get("group")
+                        and x.get(ENTITY_ATTRIBUTE_ROLE) == mapping.get("role")
+                    ]
+                elif should_fill_trigger_slot or should_fill_intent_slot:
+                    value = [mapping.get("value")]
+                elif should_fill_text_slot:
+                    value = [tracker.latest_message.text]
+                else:
+                    value = None
+
+                if value:
+                    if slot.type_name == "list":
+                        slot_events.append(SlotSet(slot.name, value))
+                    else:
+                        slot_events.append(SlotSet(slot.name, value[-1]))
+
+        return slot_events

@@ -1952,6 +1952,58 @@ class SlotMapping(Enum):
                     f"for slot '{slot_name}'."
                 )
 
+    def intent_is_desired(
+        self, slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+    ) -> bool:
+        """Check whether user intent matches intent conditions."""
+        mapping_intents = slot_mapping.get("intent", [])
+        mapping_not_intents = slot_mapping.get("not_intent", [])
+
+        intent = tracker.latest_message.intent.get("name")
+
+        intent_not_blocked = not mapping_intents and intent not in mapping_not_intents
+
+        return intent_not_blocked or intent in mapping_intents
+
+    def entity_is_desired(
+        self,
+        mapping: Dict[Text, Any],
+        slot: Slot,
+        extracted_entities: List[Dict],
+        tracker: DialogueStateTracker,
+    ) -> bool:
+        """Check whether slot should be filled by an entity in the input or not.
+
+        Args:
+            mapping: Slot mapping.
+            slot: The slot to be filled.
+            extracted_entities: List of entities extracted from last user message.
+            tracker: The tracker.
+
+        Returns:
+            True, if slot should be filled, false otherwise.
+        """
+        # slot name is equal to the entity type
+        slot_equals_entity = slot.name == mapping.get("entity")
+        slot_mapping_entity_mismatch = True
+
+        for entity in extracted_entities:
+            if mapping.get("entity") == entity["entity"]:
+                slot_mapping_entity_mismatch = False
+                break
+
+        if (
+            mapping.get("role") is None and mapping.get("group") is None
+        ) or slot_mapping_entity_mismatch:
+            slot_fulfils_entity_mapping = False
+        else:
+            matching_values = tracker.get_latest_entity_values(
+                mapping.get("entity"), mapping.get("role"), mapping.get("group"),
+            )
+            slot_fulfils_entity_mapping = matching_values is not None
+
+        return slot_equals_entity or slot_fulfils_entity_mapping
+
 
 def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> None:
     if isinstance(forms, list):
@@ -2007,9 +2059,7 @@ def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> 
 
         for slot in form_slots:
             if slot not in domain_slots:
-                raise InvalidDomain(
-                    f"The slot '{slot}' is not mapped in domain slots."
-                )
+                raise InvalidDomain(f"The slot '{slot}' is not mapped in domain slots.")
 
 
 def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
@@ -2022,8 +2072,6 @@ def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
     for slot_name, properties in domain_slots.items():
         mappings = properties.get("mappings")
         if mappings is None:
-            raise InvalidDomain(
-                   f"The slot '{slot_name}' has no mappings defined."
-            )
+            raise InvalidDomain(f"The slot '{slot_name}' has no mappings defined.")
         for slot_mapping in mappings:
             SlotMapping.validate(slot_mapping, slot_name)
