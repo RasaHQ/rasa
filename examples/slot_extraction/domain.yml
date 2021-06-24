@@ -1,0 +1,70 @@
+version: "2.0"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - mood_great
+  - mood_unhappy
+  - bot_challenge
+  - pet_to_cheer_up
+
+entities:
+  - animal
+
+slots:
+  pet_kind:
+    type: text
+    influence_conversation: false
+    slot_mappings:
+      - type: from_entity
+        entity: animal
+        not_intent: bot_challenge
+  mood:
+    type: text
+    influence_conversation: false
+    slot_mappings:
+      - type: from_intent
+        value: "fantastic"
+        intent: mood_great
+        not_intent: mood_unhappy
+      - type: from_intent
+        value: "unhappy"
+        intent: mood_unhappy
+        not_intent: mood_great
+
+responses:
+  utter_greet:
+  - text: "Hey! How are you?"
+
+  utter_enquire_pet:
+  - text: "A pet can cheer you up. What pet would make you happiest?"
+
+  utter_cheer_up:
+  - text: "Here is something to cheer you up:"
+    image: "https://i.imgur.com/nGF1K8f.jpg"
+
+  utter_did_that_help:
+  - text: "Did that help you?"
+
+  utter_happy:
+  - text: "Great, carry on!"
+
+  utter_sorry:
+  - text: "I'm sorry I couldn't be of assistance!"
+
+  utter_goodbye:
+  - text: "Bye"
+
+  utter_iamabot:
+  - text: "I am a bot, powered by Rasa."
+
+#forms:
+#  pet_ownership:
+#    required_slots:
+#      - pet_kind
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

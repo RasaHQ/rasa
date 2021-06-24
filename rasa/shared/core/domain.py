@@ -941,7 +941,7 @@ class Domain:
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
+            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT, mappings=[])
         )
 
     def index_for_action(self, action_name: Text) -> int:
@@ -1952,8 +1952,9 @@ class SlotMapping(Enum):
                     f"for slot '{slot_name}'."
                 )
 
+    @staticmethod
     def intent_is_desired(
-        self, slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
+        slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker",
     ) -> bool:
         """Check whether user intent matches intent conditions."""
         mapping_intents = slot_mapping.get("intent", [])
@@ -1965,12 +1966,12 @@ class SlotMapping(Enum):
 
         return intent_not_blocked or intent in mapping_intents
 
+    @staticmethod
     def entity_is_desired(
-        self,
         mapping: Dict[Text, Any],
         slot: Slot,
         extracted_entities: List[Dict],
-        tracker: DialogueStateTracker,
+        tracker: "DialogueStateTracker",
     ) -> bool:
         """Check whether slot should be filled by an entity in the input or not.
 
@@ -2070,7 +2071,7 @@ def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
         )
 
     for slot_name, properties in domain_slots.items():
-        mappings = properties.get("mappings")
+        mappings = properties.get("slot_mappings")
         if mappings is None:
             raise InvalidDomain(f"The slot '{slot_name}' has no mappings defined.")
         for slot_mapping in mappings:

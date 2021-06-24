@@ -27,7 +27,7 @@ class Slot:
     def __init__(
         self,
         name: Text,
-        mappings: List[Dict[Text, Any]],
+        slot_mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = False,
@@ -46,7 +46,7 @@ class Slot:
                 influence the predictions of the dialogue polices.
         """
         self.name = name
-        self.slot_mappings = mappings
+        self.slot_mappings = slot_mappings
         self._value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
@@ -159,6 +159,7 @@ class FloatSlot(Slot):
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Optional[float] = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
@@ -167,7 +168,7 @@ class FloatSlot(Slot):
         influence_conversation: bool = True,
     ) -> None:
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name, mappings, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -287,6 +288,7 @@ class UnfeaturizedSlot(Slot):
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
@@ -321,7 +323,7 @@ class UnfeaturizedSlot(Slot):
         )
 
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name, mappings, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
 
     def _as_feature(self) -> List[float]:
@@ -337,6 +339,7 @@ class CategoricalSlot(Slot):
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         values: Optional[List[Any]] = None,
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
@@ -344,7 +347,7 @@ class CategoricalSlot(Slot):
         influence_conversation: bool = True,
     ) -> None:
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name, mappings, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
         self.values = [str(v).lower() for v in values] if values else []
 
@@ -413,6 +416,7 @@ class AnySlot(Slot):
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
@@ -428,7 +432,7 @@ class AnySlot(Slot):
             )
 
         super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name, mappings, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
 
     def __eq__(self, other: Any) -> bool:

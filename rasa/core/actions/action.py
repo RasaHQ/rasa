@@ -84,7 +84,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionDefaultAskRephrase(),
         TwoStageFallbackAction(action_endpoint),
         ActionBack(),
-        ActionExtractSlots,
+        ActionExtractSlots(),
     ]
 
 
@@ -897,9 +897,6 @@ class ActionDefaultAskRephrase(ActionBotResponse):
 class ActionExtractSlots(Action):
     """Silent action that runs after each user utterance.
      Sets slots to extracted values from user message."""
-
-    def __init__(self, action_name: Text) -> None:
-        self.name = action_name
 
     def name(self) -> Text:
         """Returns action_extract_slots name."""

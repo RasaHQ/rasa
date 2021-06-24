@@ -98,11 +98,12 @@ class MessageProcessor:
         tracker = await self.log_message(message, should_save_tracker=False)
 
         # extract slots after every user message
-        silent_slot_extraction = ActionExtractSlots(ACTION_EXTRACT_SLOTS)
+        silent_slot_extraction = ActionExtractSlots()
         events = await silent_slot_extraction.run(
             output_channel=None, nlg=self.nlg, tracker=tracker, domain=self.domain
         )
         tracker.update_with_events(events, self.domain)
+        self._log_slots(tracker)
         self._save_tracker(tracker)
 
         if not self.policy_ensemble or not self.domain:
