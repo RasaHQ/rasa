@@ -15,7 +15,7 @@
 /rasa/nlu/tokenizers/ @RasaHQ/research
 /rasa/nlu/utils/ @RasaHQ/research
 /rasa/nlu/test.py @RasaHQ/research
-/rasa/shared/nlu/training_data/feature.py @RasaHQ/research
+/rasa/shared/nlu/training_data/features.py @RasaHQ/research
 /rasa/shared/nlu/training_data/message.py @RasaHQ/research
 /rasa/shared/nlu/training_data/util.py @RasaHQ/enable-squad @RasaHQ/research
 /rasa/utils/plotting.py @RasaHQ/research
