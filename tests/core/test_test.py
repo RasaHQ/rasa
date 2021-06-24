@@ -24,6 +24,14 @@ def _probabilities_with_action_unlikely_intent_for(intent_name: Text):
             isinstance(latest_event, UserUttered)
             and latest_event.parse_data["intent"]["name"] == intent_name
         ):
+            # Here we return `action_unlikely_intent` if the name of the latest intent
+            # matches `intent_name`.
+            # We need to do it because every time the tests are run,
+            # training will result in different model weights which will
+            # result in different predictions of `action_unlikely_intent`.
+            # Because we're not testing `IntentTEDPolicy` here we simply trigger it
+            # predicting `action_unlikely_intent` in a specified moment
+            # to make the tests deterministic.
             return PolicyPrediction.for_action_name(domain, "action_unlikely_intent")
         return _original(self, tracker, domain, interpreter, **kwargs)
 
