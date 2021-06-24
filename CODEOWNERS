@@ -2,7 +2,7 @@
 /.github/workflows/ @RasaHQ/infrastructure
 /rasa/ @RasaHQ/enable-squad
 /rasa/core/featurizers/ @RasaHQ/research
-/rasa/core/policies/*.py @RasaHQ/research
+/rasa/core/policies/ @RasaHQ/research
 /rasa/core/policies/ensemble.py @RasaHQ/enable-squad
 /rasa/core/policies/policy.py @RasaHQ/enable-squad
 /rasa/core/policies/registry.py @RasaHQ/enable-squad
