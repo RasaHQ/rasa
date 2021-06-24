@@ -3,11 +3,6 @@ import logging
 import os
 from typing import List, Optional, Text, Dict, Union, Any
 
-from rasa.core.test import (
-    FAILED_STORIES_FILE,
-    SUCCESSFUL_STORIES_FILE,
-    STORIES_WITH_WARNINGS_FILE,
-)
 from rasa.cli import SubParsersAction
 import rasa.shared.data
 from rasa.shared.exceptions import YamlException
@@ -75,6 +70,12 @@ def add_subparser(
 
 def _print_core_test_execution_info(args: argparse.Namespace) -> None:
     output = args.out or DEFAULT_RESULTS_PATH
+
+    from rasa.core.test import (
+        FAILED_STORIES_FILE,
+        SUCCESSFUL_STORIES_FILE,
+        STORIES_WITH_WARNINGS_FILE,
+    )
 
     if args.successes:
         rasa.shared.utils.cli.print_info(
