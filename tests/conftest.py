@@ -276,6 +276,11 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
 
 
 @pytest.fixture(scope="session")
+async def mood_agent(trained_moodbot_path: Text) -> Agent:
+    return await load_agent(model_path=trained_moodbot_path)
+
+
+@pytest.fixture(scope="session")
 def _domain(domain_path: Text) -> Domain:
     return Domain.load(domain_path)
 
