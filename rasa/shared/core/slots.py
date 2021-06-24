@@ -27,9 +27,10 @@ class Slot:
     def __init__(
         self,
         name: Text,
+        mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
+        auto_fill: bool = False,
         influence_conversation: bool = True,
     ) -> None:
         """Create a Slot.
@@ -45,6 +46,7 @@ class Slot:
                 influence the predictions of the dialogue polices.
         """
         self.name = name
+        self.slot_mappings = mappings
         self._value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
@@ -147,6 +149,7 @@ class Slot:
             "initial_value": self.initial_value,
             "auto_fill": self.auto_fill,
             "influence_conversation": self.influence_conversation,
+            "slot_mappings": self.slot_mappings,
         }
 
 

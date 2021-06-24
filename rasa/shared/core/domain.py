@@ -201,13 +201,17 @@ class Domain:
             The instantiated `Domain` object.
         """
         responses = data.get(KEY_RESPONSES, {})
-        slots = cls.collect_slots(data.get(KEY_SLOTS, {}))
+
+        domain_slots = data.get(KEY_SLOTS, {})
+        _validate_slot_mappings(domain_slots)
+        slots = cls.collect_slots(domain_slots)
+
         additional_arguments = data.get("config", {})
         session_config = cls._get_session_config(data.get(SESSION_CONFIG_KEY, {}))
         intents = data.get(KEY_INTENTS, {})
         forms = data.get(KEY_FORMS, {})
 
-        _validate_slot_mappings(forms)
+        _validate_forms(forms, domain_slots)
 
         return cls(
             intents,
@@ -1908,12 +1912,11 @@ class SlotMapping(Enum):
         return self.name.lower()
 
     @staticmethod
-    def validate(mapping: Dict[Text, Any], form_name: Text, slot_name: Text) -> None:
+    def validate(mapping: Dict[Text, Any], slot_name: Text) -> None:
         """Validates a slot mapping.
 
         Args:
             mapping: The mapping which is validated.
-            form_name: The name of the form which uses this slot mapping.
             slot_name: The name of the slot which is mapped by this mapping.
 
         Raises:
@@ -1922,8 +1925,7 @@ class SlotMapping(Enum):
         if not isinstance(mapping, dict):
             raise InvalidDomain(
                 f"Please make sure that the slot mappings for slot '{slot_name}' in "
-                f"your form '{form_name}' are valid dictionaries. Please see "
-                f"{DOCS_URL_FORMS} for more information."
+                f"your domain are valid dictionaries."
             )
 
         validations = {
@@ -1938,9 +1940,8 @@ class SlotMapping(Enum):
 
         if required_keys is None:
             raise InvalidDomain(
-                f"Your form '{form_name}' uses an invalid slot mapping of type "
-                f"'{mapping_type}' for slot '{slot_name}'. Please see "
-                f"{DOCS_URL_FORMS} for more information."
+                f"Your slot mapping uses an invalid slot mapping of type "
+                f"'{mapping_type}' for slot '{slot_name}'."
             )
 
         for required_key in required_keys:
@@ -1948,12 +1949,11 @@ class SlotMapping(Enum):
                 raise InvalidDomain(
                     f"You need to specify a value for the key "
                     f"'{required_key}' in the slot mapping of type '{mapping_type}' "
-                    f"for slot '{slot_name}' in the form '{form_name}'. Please see "
-                    f"{DOCS_URL_FORMS} for more information."
+                    f"for slot '{slot_name}'."
                 )
 
 
-def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
+def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> None:
     if isinstance(forms, list):
         if not all(isinstance(form_name, str) for form_name in forms):
             raise InvalidDomain(
@@ -1988,33 +1988,42 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
             )
 
         if REQUIRED_SLOTS_KEY in form_data:
-            slots = forms[form_name].get(REQUIRED_SLOTS_KEY)
+            form_slots = forms[form_name].get(REQUIRED_SLOTS_KEY)
         else:
             rasa.shared.utils.io.raise_deprecation_warning(
-                f"The definition of slot mappings in your form "
+                f"The definition of slots in your form "
                 f"should always be preceded by the keyword `{REQUIRED_SLOTS_KEY}`. "
                 f"The lack of this keyword will be deprecated in "
                 f"Rasa Open Source 3.0.0. Please see {DOCS_URL_FORMS} "
                 f"for more information.",
             )
-            slots = form_data
+            form_slots = form_data
 
-        if not isinstance(slots, Dict):
+        if not isinstance(form_slots, list):
             raise InvalidDomain(
-                f"The slots for form '{form_name}' were specified "
-                f"as '{type(slots)}'. They need to be specified "
-                f"as dictionary. Please see {DOCS_URL_FORMS} "
-                f"for more information."
+                f"The contents of required slots for form '{form_name}' were specified"
+                f"as '{type(form_slots)}'. They need to be specified as list."
             )
 
-        for slot_name, slot_mappings in slots.items():
-            if not isinstance(slot_mappings, list):
+        for slot in form_slots:
+            if slot not in domain_slots:
                 raise InvalidDomain(
-                    f"The slot mappings for slot '{slot_name}' in "
-                    f"form '{form_name}' have type '{type(slot_mappings)}'. "
-                    f"It is required to provide a list of slot "
-                    f"mappings. Please see {DOCS_URL_FORMS} "
-                    f"for more information."
+                    f"The slot '{slot}' is not mapped in domain slots."
                 )
-            for slot_mapping in slot_mappings:
-                SlotMapping.validate(slot_mapping, form_name, slot_name)
+
+
+def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
+    if not isinstance(domain_slots, Dict):
+        raise InvalidDomain(
+            f"Slots were specified as '{type(domain_slots)}'. "
+            f"They need to be specified as dictionary."
+        )
+
+    for slot_name, properties in domain_slots.items():
+        mappings = properties.get("mappings")
+        if mappings is None:
+            raise InvalidDomain(
+                   f"The slot '{slot_name}' has no mappings defined."
+            )
+        for slot_mapping in mappings:
+            SlotMapping.validate(slot_mapping, slot_name)
