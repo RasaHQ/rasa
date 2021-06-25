@@ -152,6 +152,10 @@ rasa interactive
 
 This will first train a model and then start an interactive shell session.
 You can then correct your assistants predictions as you talk to it.
+Please, note that if [`IntentTEDPolicy`](./policies.mdx#intenttedpolicy) is
+included in the pipeline, `action_unlikely_intent` can be predicted at any conversation turn.
+You can then choose to confirm or deny the action prediction, but this choice doesn't matter
+as running this action doesn't have any implications.
 
 If you provide a trained model using the `--model` argument, training is skipped
 and that model will be loaded instead.
