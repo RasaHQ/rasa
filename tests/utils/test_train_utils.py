@@ -23,6 +23,10 @@ from rasa.utils.tensorflow.constants import (
     AUTO,
     LINEAR_NORM,
     TOLERANCE,
+    CHECKPOINT_MODEL,
+    EVAL_NUM_EPOCHS,
+    EVAL_NUM_EXAMPLES,
+    EPOCHS,
 )
 from rasa.shared.exceptions import InvalidConfigException
 
@@ -173,3 +177,110 @@ def test_tolerance_setting(
             train_utils._check_tolerance_setting(component_config)
     else:
         train_utils._check_tolerance_setting(component_config)
+
+
+@pytest.mark.parametrize(
+    "component_config",
+    [
+        (
+            {
+                CHECKPOINT_MODEL: True,
+                EVAL_NUM_EPOCHS: -2,
+                EVAL_NUM_EXAMPLES: 10,
+                EPOCHS: 5,
+            }
+        ),
+        (
+            {
+                CHECKPOINT_MODEL: True,
+                EVAL_NUM_EPOCHS: 0,
+                EVAL_NUM_EXAMPLES: 10,
+                EPOCHS: 5,
+            }
+        ),
+    ],
+)
+def test_warning_incorrect_eval_num_epochs(component_config: Dict[Text, Text]):
+    with pytest.warns(UserWarning) as record:
+        train_utils._check_evaluation_setting(component_config)
+        assert len(record) == 1
+        assert (
+            f"'{EVAL_NUM_EPOCHS}' is not -1 or greater than 0. Training will fail"
+            in record[0].message.args[0]
+        )
+
+
+@pytest.mark.parametrize(
+    "component_config",
+    [
+        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: 10, EPOCHS: 5}),
+        ({CHECKPOINT_MODEL: False, EVAL_NUM_EPOCHS: 10, EPOCHS: 5}),
+    ],
+)
+def test_warning_eval_num_epochs_greater_than_epochs(
+    component_config: Dict[Text, Text]
+):
+    warning = (
+        f"the value of '{EVAL_NUM_EPOCHS}' is greater than the value of "
+        f"'{EPOCHS}'. No evaluation will occur."
+    )
+    with pytest.warns(UserWarning) as record:
+        train_utils._check_evaluation_setting(component_config)
+        assert len(record) == 1
+        if component_config[CHECKPOINT_MODEL]:
+            warning = (
+                f"You have opted to save the best model, but {warning} "
+                "No checkpoint model will be saved."
+            )
+        assert warning in record[0].message.args[0]
+
+
+@pytest.mark.parametrize(
+    "component_config",
+    [
+        ({CHECKPOINT_MODEL: True, EVAL_NUM_EPOCHS: 1, EVAL_NUM_EXAMPLES: 0, EPOCHS: 5}),
+        (
+            {
+                CHECKPOINT_MODEL: True,
+                EVAL_NUM_EPOCHS: 1,
+                EVAL_NUM_EXAMPLES: -1,
+                EPOCHS: 5,
+            }
+        ),
+    ],
+)
+def test_warning_incorrect_eval_num_examples(component_config: Dict[Text, Text]):
+    with pytest.warns(UserWarning) as record:
+        train_utils._check_evaluation_setting(component_config)
+        assert len(record) == 1
+        assert (
+            f"'{EVAL_NUM_EXAMPLES}' is not greater than 0. No checkpoint model "
+            f"will be saved"
+        ) in record[0].message.args[0]
+
+
+@pytest.mark.parametrize(
+    "component_config",
+    [
+        (
+            {
+                CHECKPOINT_MODEL: False,
+                EVAL_NUM_EPOCHS: 0,
+                EVAL_NUM_EXAMPLES: 0,
+                EPOCHS: 5,
+            }
+        ),
+        (
+            {
+                CHECKPOINT_MODEL: True,
+                EVAL_NUM_EPOCHS: 1,
+                EVAL_NUM_EXAMPLES: 10,
+                EPOCHS: 5,
+            }
+        ),
+    ],
+)
+def test_no_warning_correct_checkpoint_setting(component_config: Dict[Text, Text]):
+    with pytest.warns(None) as record:
+        train_utils._check_evaluation_setting(component_config)
+        assert len(record) == 0

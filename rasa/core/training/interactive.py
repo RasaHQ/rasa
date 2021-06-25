@@ -44,6 +44,7 @@ from rasa.shared.core.constants import (
     LOOP_REJECTED,
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
+    ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.core import run, utils
 import rasa.core.train
@@ -60,7 +61,12 @@ from rasa.shared.core.events import (
     UserUtteranceReverted,
 )
 import rasa.core.interpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID, UTTER_PREFIX
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DEFAULT_SENDER_ID,
+    UTTER_PREFIX,
+    DOCS_URL_POLICIES,
+)
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
 from rasa.shared.core.training_data.visualization import (
@@ -1130,9 +1136,23 @@ async def _validate_action(
 
     Returns `True` if the prediction is correct, `False` otherwise."""
 
-    question = questionary.confirm(f"The bot wants to run '{action_name}', correct?")
+    if action_name == ACTION_UNLIKELY_INTENT_NAME:
+        question = questionary.confirm(
+            f"The bot wants to run '{action_name}' "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
+            f"Check out IntentTEDPolicy ({DOCS_URL_POLICIES}/#intent-ted-policy) "
+            f"to learn more."
+        )
+    else:
+        question = questionary.confirm(
+            f"The bot wants to run '{action_name}', correct?"
+        )
 
-    is_correct = await _ask_questions(question, conversation_id, endpoint)
+    is_correct = (
+        await _ask_questions(question, conversation_id, endpoint)
+        or action_name == ACTION_UNLIKELY_INTENT_NAME
+    )
 
     if not is_correct:
         action_name, is_new_action = await _request_action_from_user(

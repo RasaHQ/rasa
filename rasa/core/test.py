@@ -1,6 +1,6 @@
 import logging
 import os
-import warnings
+import warnings as pywarnings
 import typing
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
@@ -8,7 +8,10 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 from rasa import telemetry
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.test import EntityEvaluationResult, evaluate_entities
-from rasa.shared.core.constants import POLICIES_THAT_EXTRACT_ENTITIES
+from rasa.shared.core.constants import (
+    POLICIES_THAT_EXTRACT_ENTITIES,
+    ACTION_UNLIKELY_INTENT_NAME,
+)
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
@@ -79,7 +82,7 @@ CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
 REPORT_STORIES_FILE = "story_report.json"
 FAILED_STORIES_FILE = "failed_test_stories.yml"
 SUCCESSFUL_STORIES_FILE = "successful_test_stories.yml"
-
+STORIES_WITH_WARNINGS_FILE = "stories_with_warnings.yml"
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +92,7 @@ StoryEvaluation = namedtuple(
         "evaluation_store",
         "failed_stories",
         "successful_stories",
+        "stories_with_warnings",
         "action_list",
         "in_training_data_fraction",
     ],
@@ -155,6 +159,21 @@ class EvaluationStore:
             or self.entity_predictions != self.entity_targets
             or self.action_predictions != self.action_targets
         )
+
+    @staticmethod
+    def predicted_warning(predicted_action: Text) -> bool:
+        """Indicates if the predicted action needs to raise a warning.
+
+        Currently the only action that leads to a warning is
+        an `action_unlikely_intent`.
+
+        Args:
+            predicted_action: A predicted action.
+
+        Returns:
+            `True` if the prediction needs to raise a warning, `False` otherwise.
+        """
+        return predicted_action == ACTION_UNLIKELY_INTENT_NAME
 
     @staticmethod
     def _compare_entities(
@@ -584,18 +603,18 @@ def _collect_action_executed_predictions(
 
     action_executed_eval_store = EvaluationStore()
 
-    gold_action_name = event.action_name
-    gold_action_text = event.action_text
-    gold = gold_action_name or gold_action_text
+    expected_action_name = event.action_name
+    expected_action_text = event.action_text
+    expected_action = expected_action_name or expected_action_text
 
     policy_entity_result = None
 
     if circuit_breaker_tripped:
         prediction = PolicyPrediction([], policy_name=None)
-        predicted = "circuit breaker tripped"
+        predicted_action = "circuit breaker tripped"
     else:
         action, prediction = processor.predict_next_action(partial_tracker)
-        predicted = action.name()
+        predicted_action = action.name()
 
         policy_entity_result = _get_e2e_entity_evaluation_result(
             processor, partial_tracker, prediction
@@ -603,9 +622,9 @@ def _collect_action_executed_predictions(
 
         if (
             prediction.policy_name
-            and predicted != gold
+            and predicted_action != expected_action
             and _form_might_have_been_rejected(
-                processor.domain, partial_tracker, predicted
+                processor.domain, partial_tracker, predicted_action
             )
         ):
             # Wrong action was predicted,
@@ -617,24 +636,31 @@ def _collect_action_executed_predictions(
             # Even if the prediction is also wrong, we don't have to undo the emulation
             # of the action rejection as we know that the user explicitly specified
             # that something else than the form was supposed to run.
-            predicted = action.name()
+            predicted_action = action.name()
 
-    action_executed_eval_store.add_to_store(
-        action_predictions=[predicted], action_targets=[gold]
+    predicted_warning = action_executed_eval_store.predicted_warning(predicted_action)
+    if not predicted_warning:
+        action_executed_eval_store.add_to_store(
+            action_predictions=[predicted_action], action_targets=[expected_action]
+        )
+
+    has_prediction_target_mismatch = (
+        action_executed_eval_store.has_prediction_target_mismatch()
     )
-
-    if action_executed_eval_store.has_prediction_target_mismatch():
+    if has_prediction_target_mismatch or (
+        predicted_warning and predicted_action != expected_action
+    ):
         partial_tracker.update(
             WronglyPredictedAction(
-                gold_action_name,
-                gold_action_text,
-                predicted,
+                expected_action_name,
+                expected_action_text,
+                predicted_action,
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
             )
         )
-        if fail_on_prediction_errors:
+        if fail_on_prediction_errors and has_prediction_target_mismatch:
             story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
             error_msg = (
                 f"Model predicted a wrong action. Failed Story: " f"\n\n{story_dump}"
@@ -651,7 +677,7 @@ def _collect_action_executed_predictions(
     else:
         partial_tracker.update(
             ActionExecuted(
-                predicted,
+                predicted_action,
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
@@ -719,19 +745,20 @@ async def _predict_tracker_actions(
             if entity_result:
                 policy_entity_results.append(entity_result)
 
-            tracker_eval_store.merge_store(action_executed_result)
-            tracker_actions.append(
-                {
-                    "action": action_executed_result.action_targets[0],
-                    "predicted": action_executed_result.action_predictions[0],
-                    "policy": prediction.policy_name,
-                    "confidence": prediction.max_confidence,
-                }
-            )
-            should_predict_another_action = processor.should_predict_another_action(
-                action_executed_result.action_predictions[0]
-            )
-            num_predicted_actions += 1
+            if action_executed_result.action_targets:
+                tracker_eval_store.merge_store(action_executed_result)
+                tracker_actions.append(
+                    {
+                        "action": action_executed_result.action_targets[0],
+                        "predicted": action_executed_result.action_predictions[0],
+                        "policy": prediction.policy_name,
+                        "confidence": prediction.max_confidence,
+                    }
+                )
+                should_predict_another_action = processor.should_predict_another_action(
+                    action_executed_result.action_predictions[0]
+                )
+                num_predicted_actions += 1
 
         elif use_e2e and isinstance(event, UserUttered):
             # This means that user utterance didn't have a user message, only intent,
@@ -783,8 +810,9 @@ async def _collect_story_predictions(
     from tqdm import tqdm
 
     story_eval_store = EvaluationStore()
-    failed = []
-    success = []
+    failed_stories = []
+    successful_stories = []
+    stories_with_warnings = []
     correct_dialogues = []
     number_of_stories = len(completed_trackers)
 
@@ -811,11 +839,18 @@ async def _collect_story_predictions(
 
         if tracker_results.has_prediction_target_mismatch():
             # there is at least one wrong prediction
-            failed.append(predicted_tracker)
+            failed_stories.append(predicted_tracker)
             correct_dialogues.append(0)
         else:
+            successful_stories.append(predicted_tracker)
             correct_dialogues.append(1)
-            success.append(predicted_tracker)
+
+            if any(
+                type(event) == WronglyPredictedAction
+                and story_eval_store.predicted_warning(event.action_name_prediction)
+                for event in predicted_tracker.events
+            ):
+                stories_with_warnings.append(predicted_tracker)
 
     logger.info("Finished collecting predictions.")
 
@@ -835,8 +870,9 @@ async def _collect_story_predictions(
     return (
         StoryEvaluation(
             evaluation_store=story_eval_store,
-            failed_stories=failed,
-            successful_stories=success,
+            failed_stories=failed_stories,
+            successful_stories=successful_stories,
+            stories_with_warnings=stories_with_warnings,
             action_list=action_list,
             in_training_data_fraction=in_training_data_fraction,
         ),
@@ -845,12 +881,13 @@ async def _collect_story_predictions(
     )
 
 
-def _log_stories(trackers: List[DialogueStateTracker], file_path: Text) -> None:
+def _log_stories(
+    trackers: List[DialogueStateTracker], file_path: Text, message_if_no_trackers: Text
+) -> None:
     """Write given stories to the given file."""
-
     with open(file_path, "w", encoding=DEFAULT_ENCODING) as f:
         if not trackers:
-            f.write("# None of the test stories failed - all good!")
+            f.write(f"# {message_if_no_trackers}")
         else:
             stories = [tracker.as_story(include_source=True) for tracker in trackers]
             steps = [step for story in stories for step in story.story_steps]
@@ -867,6 +904,7 @@ async def test(
     disable_plotting: bool = False,
     successes: bool = False,
     errors: bool = True,
+    warnings: bool = True,
 ) -> Dict[Text, Any]:
     """Run the evaluation of the stories, optionally plot the results.
 
@@ -882,6 +920,7 @@ async def test(
         successes: boolean indicating whether to write down successful predictions or
             not
         errors: boolean indicating whether to write down incorrect predictions or not
+        warnings: boolean indicating whether to write down prediction warnings or not
 
     Returns:
         Evaluation summary.
@@ -897,10 +936,10 @@ async def test(
 
     evaluation_store = story_evaluation.evaluation_store
 
-    with warnings.catch_warnings():
+    with pywarnings.catch_warnings():
         from sklearn.exceptions import UndefinedMetricWarning
 
-        warnings.simplefilter("ignore", UndefinedMetricWarning)
+        pywarnings.simplefilter("ignore", UndefinedMetricWarning)
 
         targets, predictions = evaluation_store.serialise()
 
@@ -912,12 +951,14 @@ async def test(
             # Add conversation level accuracy to story report.
             num_failed = len(story_evaluation.failed_stories)
             num_correct = len(story_evaluation.successful_stories)
+            num_warnings = len(story_evaluation.stories_with_warnings)
             num_convs = num_failed + num_correct
             if num_convs:
                 conv_accuracy = num_correct / num_convs
                 report["conversation_accuracy"] = {
                     "accuracy": conv_accuracy,
                     "correct": num_correct,
+                    "with_warnings": num_warnings,
                     "total": num_convs,
                 }
             report_filename = os.path.join(out_directory, REPORT_STORIES_FILE)
@@ -960,11 +1001,19 @@ async def test(
         _log_stories(
             story_evaluation.failed_stories,
             os.path.join(out_directory, FAILED_STORIES_FILE),
+            "None of the test stories failed - all good!",
         )
     if successes and out_directory:
         _log_stories(
             story_evaluation.successful_stories,
             os.path.join(out_directory, SUCCESSFUL_STORIES_FILE),
+            "None of the test stories succeeded :(",
+        )
+    if warnings and out_directory:
+        _log_stories(
+            story_evaluation.stories_with_warnings,
+            os.path.join(out_directory, STORIES_WITH_WARNINGS_FILE),
+            "No warnings for test stories",
         )
 
     return {
