@@ -505,11 +505,12 @@ If you want to fine-tune model's performance, start by modifying the following p
   dialogue turns, you can set `max_history` to a finite value.
   Please note that you should pick `max_history` carefully, so that the model has enough
   previous dialogue turns to create a correct prediction.
-  Higher values of `max_history` can result in more frequent prediction of `action_unlikely_intent`
+  Depending on your dataset, higher values of `max_history` can result in more frequent prediction of `action_unlikely_intent`
   as the number of unique possible conversation paths increases as more dialogue context is taken
-  into account. Lowering the value of `max_history` will result in `action_unlikely_intent` being
-  triggered less often but can be a stronger indicator that the corresponding conversation path
+  into account. Similarly, lowering the value of `max_history` can result in `action_unlikely_intent` being
+  triggered less often but can also be a stronger indicator that the corresponding conversation path
   is highly unique and hence unexpected.
+  We recommend you to set the `max_history` of `IntentTEDPolicy` equal to that of `TEDPolicy`.
   Here is how the config would look like:
 
   ```yaml-rasa title="config.yml"
