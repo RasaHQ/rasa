@@ -1,6 +1,6 @@
 from pathlib import Path
 import pytest
-
+from typing import Text
 from rasa.nlu.components import ComponentBuilder
 from rasa.utils.tensorflow.constants import EPOCHS
 import rasa.nlu.train
@@ -37,7 +37,6 @@ async def test_adjusting_layers_incremental_training(
             "min_ngram": 1,
             "max_ngram": 4,
         },
-        {"name": "DIETClassifier", EPOCHS: 1},
         {"name": "ResponseSelector", EPOCHS: 1},
     ]
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
@@ -108,3 +107,70 @@ async def test_adjusting_layers_incremental_training(
     assert final_rs_sentence_size == sum(
         new_sparse_feature_sizes[FEATURE_TYPE_SENTENCE]
     )
+
+
+@pytest.mark.timeout(120)
+@pytest.mark.parametrize(
+    "iter1_path, iter2_path, should_raise_exception",
+    [
+        (
+            "data/test_incremental_training/",
+            "data/test_incremental_training/iter1",
+            True,
+        ),
+        (
+            "data/test_incremental_training/iter1",
+            "data/test_incremental_training/",
+            False,
+        ),
+    ],
+)
+async def test_sparse_feature_sizes_decreased_incremental_training(
+    iter1_path: Text,
+    iter2_path: Text,
+    should_raise_exception: bool,
+    component_builder: ComponentBuilder,
+    tmpdir: Path,
+):
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "LexicalSyntacticFeaturizer"},
+        {"name": "RegexFeaturizer"},
+        {"name": "CountVectorsFeaturizer"},
+        {
+            "name": "CountVectorsFeaturizer",
+            "analyzer": "char_wb",
+            "min_ngram": 1,
+            "max_ngram": 4,
+        },
+        {"name": "ResponseSelector", EPOCHS: 1},
+    ]
+    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+
+    (_, trained, persisted_path) = await rasa.nlu.train.train(
+        _config, path=str(tmpdir), data=iter1_path, component_builder=component_builder,
+    )
+    assert trained.pipeline
+
+    loaded = Interpreter.load(persisted_path, component_builder, new_config=_config,)
+    assert loaded.pipeline
+    assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
+    if should_raise_exception:
+        with pytest.raises(Exception) as exec_info:
+            (_, trained, _) = await rasa.nlu.train.train(
+                _config,
+                path=str(tmpdir),
+                data=iter2_path,
+                component_builder=component_builder,
+                model_to_finetune=loaded,
+            )
+        assert "Sparse feature sizes have decreased" in str(exec_info.value)
+    else:
+        (_, trained, _) = await rasa.nlu.train.train(
+            _config,
+            path=str(tmpdir),
+            data=iter2_path,
+            component_builder=component_builder,
+            model_to_finetune=loaded,
+        )
+        assert trained.pipeline
