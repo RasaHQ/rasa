@@ -62,3 +62,10 @@ POSTGRESQL_SCHEMA = "POSTGRESQL_SCHEMA"
 # Names of the environment variables defining PostgreSQL pool size and max overflow
 POSTGRESQL_POOL_SIZE = "SQL_POOL_SIZE"
 POSTGRESQL_MAX_OVERFLOW = "SQL_MAX_OVERFLOW"
+
+# File names for testing
+CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
+REPORT_STORIES_FILE = "story_report.json"
+FAILED_STORIES_FILE = "failed_test_stories.yml"
+SUCCESSFUL_STORIES_FILE = "successful_test_stories.yml"
+STORIES_WITH_WARNINGS_FILE = "stories_with_warnings.yml"

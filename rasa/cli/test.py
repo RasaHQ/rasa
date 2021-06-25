@@ -9,6 +9,11 @@ from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
 from rasa.cli.arguments import test as arguments
+from rasa.core.constants import (
+    FAILED_STORIES_FILE,
+    SUCCESSFUL_STORIES_FILE,
+    STORIES_WITH_WARNINGS_FILE,
+)
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
     DEFAULT_E2E_TESTS_PATH,
@@ -70,12 +75,6 @@ def add_subparser(
 
 def _print_core_test_execution_info(args: argparse.Namespace) -> None:
     output = args.out or DEFAULT_RESULTS_PATH
-
-    from rasa.core.test import (
-        FAILED_STORIES_FILE,
-        SUCCESSFUL_STORIES_FILE,
-        STORIES_WITH_WARNINGS_FILE,
-    )
 
     if args.successes:
         rasa.shared.utils.cli.print_info(

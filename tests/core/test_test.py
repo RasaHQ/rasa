@@ -5,15 +5,14 @@ import pytest
 
 import rasa.core.test
 from rasa.core.policies.ensemble import SimplePolicyEnsemble
+from rasa.core.policies.policy import PolicyPrediction
+from rasa.shared.core.events import UserUttered
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.capture import CaptureFixture
 from rasa.core.agent import Agent
 
 
 def _probabilities_with_action_unlikely_intent_for(intent_name: Text):
-    from rasa.core.policies.policy import PolicyPrediction
-    from rasa.shared.core.events import UserUttered
-
     _original = SimplePolicyEnsemble.probabilities_using_best_policy
 
     def probabilities_using_best_policy(
@@ -27,7 +26,7 @@ def _probabilities_with_action_unlikely_intent_for(intent_name: Text):
             # Here we return `action_unlikely_intent` if the name of the latest intent
             # matches `intent_name`.
             # We need to do it because every time the tests are run,
-            # training will result in different model weights which will
+            # training will result in different model weights which might
             # result in different predictions of `action_unlikely_intent`.
             # Because we're not testing `IntentTEDPolicy` here we simply trigger it
             # predicting `action_unlikely_intent` in a specified moment
