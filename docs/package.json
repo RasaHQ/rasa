@@ -47,7 +47,7 @@
     "@rasahq/docusaurus-theme-tabula": "^0.8.3",
     "classnames": "^2.2.6",
     "clsx": "^1.1.1",
-    "core-js": "^3.6.5",
+    "core-js": "^3.15.1",
     "fibers": "^5.0.0",
     "fs-extra": "^9.0.1",
     "globby": "^10.0.1",
