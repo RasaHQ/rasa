@@ -40,7 +40,6 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.model_data import FeatureSignature
-from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
 
 attribute_name = TEXT

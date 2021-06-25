@@ -3,33 +3,14 @@ from typing import Dict, Text, Union, Tuple
 import numpy as np
 import tensorflow as tf
 
-from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
+from rasa.utils.tensorflow.models import RasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.model_data import FeatureArray
-from rasa.shared.nlu.constants import TEXT, INTENT
+from rasa.shared.nlu.constants import TEXT
 from rasa.utils.tensorflow.constants import (
     LABEL,
     IDS,
     SENTENCE,
-    RANDOM_SEED,
-    REGULARIZATION_CONSTANT,
-    CONNECTION_DENSITY,
-    DENSE_DIMENSION,
-    LEARNING_RATE,
-    SEQUENCE,
-    SPARSE_INPUT_DROPOUT,
-    DROP_RATE,
-    DENSE_INPUT_DROPOUT,
-    HIDDEN_LAYERS_SIZES,
-    MASKED_LM,
-    NUM_TRANSFORMER_LAYERS,
-    NUM_HEADS,
-    TRANSFORMER_SIZE,
-    UNIDIRECTIONAL_ENCODER,
-    DROP_RATE_ATTENTION,
-    KEY_RELATIVE_ATTENTION,
-    VALUE_RELATIVE_ATTENTION,
-    MAX_RELATIVE_POSITION,
 )
 
 

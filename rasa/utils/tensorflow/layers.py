@@ -22,7 +22,6 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
-    ENTITIES,
     ACTION_NAME,
     ACTION_TEXT,
 )
