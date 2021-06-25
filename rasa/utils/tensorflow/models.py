@@ -548,19 +548,16 @@ class TransformerRasaModel(RasaModel):
         # set up tf layers
         self._tf_layers: Dict[Text, tf.keras.layers.Layer] = {}
 
-    def adjust_sparse_layers(
+    def adjust_for_incremental_training(
         self,
         data_example: Dict[Text, Dict[Text, List[FeatureArray]]],
         new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
         old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
     ) -> None:
-        """Adjusts sizes of `DenseForSparse` layers.
+        """Adjusts the model for incremental training.
 
-        Updates sizes of `DenseForSparse` layers by comparing current sparse feature
-        sizes to old ones. This must be done before fine-tuning starts to account
-        for any change in the size of sparse features that might have happened
-        because of addition of new data. The function compiles the model, fits a
-        sample data on it to activate updated layer(s) and updates the data signatures.
+        The function updates `DenseForSparse` layers, compiles the model
+        and updates the data signatures.
 
         New and old sparse feature sizes could look like this:
         {TEXT: {FEATURE_TYPE_SEQUENCE: [4, 24, 128], FEATURE_TYPE_SENTENCE: [4, 128]}}
@@ -574,7 +571,7 @@ class TransformerRasaModel(RasaModel):
         self._update_dense_for_sparse_layers(
             new_sparse_feature_sizes, old_sparse_feature_sizes
         )
-        self._compile_and_fit(data_example)
+        self._compile_and_update(data_example)
 
     def _update_dense_for_sparse_layers(
         self,
@@ -583,8 +580,10 @@ class TransformerRasaModel(RasaModel):
     ) -> None:
         """Updates `DenseForSparse` layers.
 
-        `if` condition is necessary because only `RasaCustomLayer` can adjust
-        sparse layers for incremental training by default.
+        Updates sizes of `DenseForSparse` layers by comparing current sparse feature
+        sizes to old ones. This must be done before fine-tuning starts to account
+        for any change in the size of sparse features that might have happened
+        because of addition of new data.
 
         Args:
             new_sparse_feature_sizes: sizes of current sparse features.
@@ -592,6 +591,8 @@ class TransformerRasaModel(RasaModel):
                                       previously trained on.
         """
         for name, layer in self._tf_layers.items():
+            # `if` condition is necessary because only `RasaCustomLayer`
+            # can adjust sparse layers for incremental training by default.
             if isinstance(layer, rasa_layers.RasaCustomLayer):
                 layer.adjust_sparse_layers_for_incremental_training(
                     new_sparse_feature_sizes,
@@ -599,10 +600,10 @@ class TransformerRasaModel(RasaModel):
                     self.config[REGULARIZATION_CONSTANT],
                 )
 
-    def _compile_and_fit(
+    def _compile_and_update(
         self, data_example: Dict[Text, Dict[Text, List[FeatureArray]]]
     ) -> None:
-        """Compiles modified model and fits a sample data on it.
+        """Compiles modified model and updates the data signatures.
 
         Args:
             data_example: a data example that is stored with the ML component.
@@ -615,8 +616,6 @@ class TransformerRasaModel(RasaModel):
             label_key=label_key, label_sub_key=label_sub_key, data=data_example
         )
         self._update_data_signatures(model_data)
-        data_generator = RasaBatchDataGenerator(model_data, batch_size=1)
-        self.fit(data_generator, verbose=False)
 
     def _update_data_signatures(self, model_data: RasaModelData) -> None:
         self.data_signature = model_data.get_signature()

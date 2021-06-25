@@ -1,7 +1,18 @@
 import pytest
 import numpy as np
 import tensorflow as tf
-from rasa.utils.tensorflow.layers import RandomlyConnectedDense
+from rasa.utils.tensorflow.layers import RandomlyConnectedDense, DenseForSparse
+from typing import Text, Union
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    ACTION_NAME,
+    ACTION_TEXT,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+)
+from rasa.utils.tensorflow.constants import LABEL
+from rasa.core.constants import DIALOGUE
 
 
 @pytest.mark.parametrize(
@@ -49,3 +60,47 @@ def test_randomly_connected_dense_all_inputs_connected():
         x = np.roll(x, 1)
         y = layer(np.expand_dims(x, 0))
         assert tf.reduce_sum(y).numpy() != 0.0
+
+
+@pytest.mark.parametrize(
+    "feature_type, expected_feature_type",
+    [
+        (FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SENTENCE),
+        (FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SEQUENCE),
+        ("sentenc", None),
+        ("unknown_feature_type", None),
+    ],
+)
+def test_dense_for_sparse_get_feature_type(
+    feature_type: Text, expected_feature_type: Union[Text, None]
+):
+    some_attribute = "attribute"
+    layer = DenseForSparse(
+        name=f"sparse_to_dense.{some_attribute}_{feature_type}", units=10,
+    )
+    assert layer.get_feature_type() == expected_feature_type
+
+
+@pytest.mark.parametrize(
+    "attribute, expected_attribute",
+    [
+        (TEXT, TEXT),
+        (INTENT, INTENT),
+        (LABEL, LABEL),
+        (DIALOGUE, DIALOGUE),
+        (ACTION_NAME, ACTION_NAME),
+        (ACTION_TEXT, ACTION_TEXT),
+        (f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_NAME}"),
+        (f"{LABEL}_{ACTION_TEXT}", f"{LABEL}_{ACTION_TEXT}"),
+        ("txt", None),
+        ("unknown_attribute", None),
+    ],
+)
+def test_dense_for_sparse_get_attribute(
+    attribute: Text, expected_attribute: Union[Text, None]
+):
+    some_feature_type = "type"
+    layer = DenseForSparse(
+        name=f"sparse_to_dense.{attribute}_{some_feature_type}", units=10,
+    )
+    assert layer.get_attribute() == expected_attribute

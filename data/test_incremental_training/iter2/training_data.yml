@@ -3,6 +3,11 @@ nlu:
 - intent: affirm
   examples: |
     - indeed
-- intent: deny
+    - that's right 12345
+- intent: mood/unhappy
   examples: |
-    - never
+    - I'm a disappointment
+    - I feel lonely
+- regex: zipcode
+  examples: |
+    - [0-9]{5}

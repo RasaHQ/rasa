@@ -854,7 +854,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
             )
         else:
-            self.model.adjust_sparse_layers(
+            self.model.adjust_for_incremental_training(
                 data_example=self._data_example,
                 new_sparse_feature_sizes=model_data.get_sparse_feature_sizes(),
                 old_sparse_feature_sizes=self._sparse_feature_sizes,

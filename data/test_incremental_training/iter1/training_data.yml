@@ -42,7 +42,7 @@ nlu:
     - hey dude
     - moin
     - hello there
-- intent: mood_great
+- intent: mood/great
   examples: |
     - I am feeling very good
     - extremely good
@@ -55,7 +55,7 @@ nlu:
     - so good
     - wonderful
     - I am going to save the world
-- intent: mood_unhappy
+- intent: mood/unhappy
   examples: |
     - very sad
     - so saad
@@ -68,3 +68,6 @@ nlu:
     - so sad
     - I am sad
     - I'm so sad
+- regex: greet
+  examples: |
+    - hey[^\s]*

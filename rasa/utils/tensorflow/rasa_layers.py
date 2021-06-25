@@ -38,7 +38,7 @@ class RasaCustomLayer(tf.keras.layers.Layer):
     Allows a shared implementation for adjusting `DenseForSparse`
     layers during incremental training.
 
-    During fine-tuning sparse feature sizes might change due to addition of new data.
+    During fine-tuning, sparse feature sizes might change due to addition of new data.
     If this happens, we need to adjust our `DenseForSparse` layers to a new size.
     `ConcatenateSparseDenseFeatures`, `RasaSequenceLayer` and
     `RasaFeatureCombiningLayer` all inherit from `RasaCustomLayer` and thus can
@@ -193,8 +193,8 @@ class RasaCustomLayer(tf.keras.layers.Layer):
         # stack each merged weight to form a new weight tensor
         new_weights = np.vstack(merged_weights)
         kernel_init = tf.constant_initializer(new_weights)
-        bias_init = tf.constant_initializer(bias)
-        return layers.DenseForSparse(
+        bias_init = tf.constant_initializer(bias) if use_bias else None
+        new_layer = layers.DenseForSparse(
             name=f"sparse_to_dense.{attribute}_{feature_type}",
             reg_lambda=reg_lambda,
             units=units,
@@ -202,6 +202,8 @@ class RasaCustomLayer(tf.keras.layers.Layer):
             kernel_initializer=kernel_init,
             bias_initializer=bias_init,
         )
+        new_layer.build(input_shape=new_weights.shape[0])
+        return new_layer
 
 
 class ConcatenateSparseDenseFeatures(RasaCustomLayer):

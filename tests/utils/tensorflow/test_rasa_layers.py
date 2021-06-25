@@ -4,7 +4,11 @@ import numpy as np
 
 from typing import Text, Union, Any, Dict, List, Type
 
-from rasa.shared.nlu.constants import TEXT
+from rasa.shared.nlu.constants import (
+    TEXT,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+)
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.rasa_layers import (
     ConcatenateSparseDenseFeatures,
@@ -32,6 +36,7 @@ from rasa.utils.tensorflow.constants import (
     SENTENCE,
     SEQUENCE,
     MASKED_LM,
+    LABEL,
 )
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.model_data import FeatureSignature
@@ -858,7 +863,7 @@ def test_sequence_layer_correct_output(
 
 @pytest.mark.parametrize(
     "new_sparse_feature_sizes, old_sparse_feature_sizes, raise_exception",
-    [([10, 4], [10, 5], True,), ([10, 5], [10, 5], False,),],
+    [([10, 4], [10, 5], True,), ([10, 5], [10, 5], False,), ([12, 8], [10, 5], False,)],
 )
 def test_raise_exception_decreased_sparse_feature_sizes(
     new_sparse_feature_sizes: List[int],
@@ -881,47 +886,155 @@ def test_raise_exception_decreased_sparse_feature_sizes(
         )
 
 
-def test_create_dense_layers():
+@pytest.mark.parametrize(
+    "new_sparse_feature_sizes, old_sparse_feature_sizes, feature_type",
+    [
+        ([10, 10, 10], [3, 2, 3], FEATURE_TYPE_SENTENCE),
+        ([10, 10, 10], [1, 5, 2], FEATURE_TYPE_SEQUENCE),
+        ([3, 3, 3], [3, 3, 3], FEATURE_TYPE_SEQUENCE),
+        ([8], [3], FEATURE_TYPE_SENTENCE),
+    ],
+)
+def test_replace_dense_for_sparse_layers(
+    new_sparse_feature_sizes: List[int],
+    old_sparse_feature_sizes: List[int],
+    feature_type: Text,
+):
     """Tests if `DenseForSparse` layers are adjusted correctly."""
-    layer = layers.DenseForSparse(units=10)
-    old_sparse_feature_sizes = [70, 30]
-    new_sparse_feature_sizes = [80, 30]
-
-    try:
-        random_input = tf.sparse.SparseTensor(
-            indices=[[0, 0], [1, 2]],
-            values=[1, 2],
-            dense_shape=[2, sum(old_sparse_feature_sizes)],
-        )
-        layer(random_input)
-    except InvalidArgumentError:
-        print("this needs to be fixed")
+    output_units = 10
+    kernel_initializer = tf.constant_initializer(
+        np.random.random((sum(old_sparse_feature_sizes), output_units))
+    )
+    layer = layers.DenseForSparse(
+        units=output_units, kernel_initializer=kernel_initializer
+    )
+    layer.build(input_shape=sum(old_sparse_feature_sizes))
 
     new_layer = RasaCustomLayer._replace_dense_for_sparse_layer(
         layer_to_replace=layer,
         new_sparse_feature_sizes=new_sparse_feature_sizes,
         old_sparse_feature_sizes=old_sparse_feature_sizes,
         attribute=TEXT,
-        feature_type="sequence",
+        feature_type=feature_type,
         reg_lambda=0.02,
     )
-    try:
-        random_input = tf.sparse.SparseTensor(
-            indices=[[0, 0], [1, 2]],
-            values=[1, 2],
-            dense_shape=[2, sum(new_sparse_feature_sizes)],
-        )
-        new_layer(random_input)
-    except InvalidArgumentError:
-        print("this needs to be fixed")
 
     # check dimensions
     assert new_layer.get_kernel().shape[0] == sum(new_sparse_feature_sizes)
+    # check if the existing weights were preserved
+    chunk_index, new_chunk_index = 0, 0
+    kernel, new_kernel = layer.get_kernel().numpy(), new_layer.get_kernel().numpy()
+    for old_size, new_size in zip(old_sparse_feature_sizes, new_sparse_feature_sizes):
+        chunk = kernel[chunk_index : chunk_index + old_size, :]
+        new_chunk = new_kernel[new_chunk_index : new_chunk_index + old_size, :]
+        assert np.array_equal(chunk, new_chunk)
+        chunk_index += old_size
+        new_chunk_index += new_size
 
-    # check chunks
-    first_chunk = layer.get_kernel().numpy()[: old_sparse_feature_sizes[0], :]
-    new_first_chunk = new_layer.get_kernel().numpy()[: old_sparse_feature_sizes[0], :]
-    assert np.array_equal(first_chunk, new_first_chunk)
-    second_chunk = layer.get_kernel().numpy()[old_sparse_feature_sizes[0] :, :]
-    new_second_chunk = new_layer.get_kernel().numpy()[new_sparse_feature_sizes[0] :, :]
-    assert np.array_equal(second_chunk, new_second_chunk)
+
+@pytest.mark.parametrize(
+    "new_sparse_feature_sizes, old_sparse_feature_sizes",
+    [
+        (
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [10, 5],
+                    FEATURE_TYPE_SEQUENCE: [5, 10, 5],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [5], FEATURE_TYPE_SENTENCE: []},
+            },
+            {
+                TEXT: {FEATURE_TYPE_SENTENCE: [5, 2], FEATURE_TYPE_SEQUENCE: [3, 5, 2]},
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+        ),
+        (
+            {
+                TEXT: {FEATURE_TYPE_SENTENCE: [5, 2], FEATURE_TYPE_SEQUENCE: [3, 5, 2]},
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+            {
+                TEXT: {FEATURE_TYPE_SENTENCE: [5, 2], FEATURE_TYPE_SEQUENCE: [3, 5, 2]},
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+        ),
+    ],
+)
+def test_adjust_sparse_layers_for_incremental_training(
+    new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+):
+    """Tests if `adjust_sparse_layers_for_incremental_training` finds and updates
+    every `DenseForSparse` layer that has its sparse feature sizes increased."""
+
+    def init_sparse_to_dense_layer(
+        attribute, feature_type, input_size, output_size, reg_lambda
+    ):
+        kernel_initializer = tf.constant_initializer(
+            np.random.random((input_size, output_size))
+        )
+        layer = layers.DenseForSparse(
+            name=f"sparse_to_dense.{attribute}_{feature_type}",
+            kernel_initializer=kernel_initializer,
+            reg_lambda=reg_lambda,
+            units=output_size,
+        )
+        layer.build(input_shape=input_size)
+        return layer
+
+    units, reg_lambda = 10, 0.02
+    bottom_custom_layer = RasaCustomLayer()
+    layer_text_sequence = init_sparse_to_dense_layer(
+        attribute=TEXT,
+        feature_type=FEATURE_TYPE_SEQUENCE,
+        input_size=sum(old_sparse_feature_sizes[TEXT][FEATURE_TYPE_SEQUENCE]),
+        output_size=units,
+        reg_lambda=reg_lambda,
+    )
+    bottom_tf_layers = {"other_layer": object, "sparse_to_dense": layer_text_sequence}
+    bottom_custom_layer._tf_layers = bottom_tf_layers
+    middle_custom_layer = RasaCustomLayer()
+    layer_label_sequence = init_sparse_to_dense_layer(
+        attribute=LABEL,
+        feature_type=FEATURE_TYPE_SEQUENCE,
+        input_size=sum(old_sparse_feature_sizes[LABEL][FEATURE_TYPE_SEQUENCE]),
+        output_size=units,
+        reg_lambda=reg_lambda,
+    )
+    middle_tf_layers = {
+        "other_layer": object,
+        "sparse_to_dense": layer_label_sequence,
+        "another_custom_layer": bottom_custom_layer,
+    }
+    middle_custom_layer._tf_layers = middle_tf_layers
+    top_custom_layer = RasaCustomLayer()
+    layer_text_sentence = init_sparse_to_dense_layer(
+        attribute=TEXT,
+        feature_type=FEATURE_TYPE_SENTENCE,
+        input_size=sum(old_sparse_feature_sizes[TEXT][FEATURE_TYPE_SENTENCE]),
+        output_size=units,
+        reg_lambda=reg_lambda,
+    )
+    top_tf_layers = {
+        "other_layer": object,
+        "sparse_to_dense": layer_text_sentence,
+        "another_custom_layer": middle_custom_layer,
+    }
+    top_custom_layer._tf_layers = top_tf_layers
+
+    top_custom_layer.adjust_sparse_layers_for_incremental_training(
+        new_sparse_feature_sizes=new_sparse_feature_sizes,
+        old_sparse_feature_sizes=old_sparse_feature_sizes,
+        reg_lambda=reg_lambda,
+    )
+    custom_layers = [bottom_custom_layer, middle_custom_layer, top_custom_layer]
+    for custom_layer in custom_layers:
+        dense_layer = custom_layer._tf_layers["sparse_to_dense"]
+        layer_attribute = dense_layer.get_attribute()
+        layer_feature_type = dense_layer.get_feature_type()
+        layer_expected_size = sum(
+            new_sparse_feature_sizes[layer_attribute][layer_feature_type]
+        )
+        layer_final_size = dense_layer.get_kernel().shape[0]
+        assert layer_attribute and layer_feature_type
+        assert layer_final_size == layer_expected_size
