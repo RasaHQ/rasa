@@ -77,7 +77,7 @@ def test_randomly_connected_dense_all_inputs_connected():
         (f"some_name.{DIALOGUE}_{FEATURE_TYPE_SEQUENCE}", FEATURE_TYPE_SEQUENCE),
         (f"some_name.{TEXT}_sentenc", None),
         (f"sparse_to_dense.{TEXT}_squence", None),
-        (f"some_name", None),
+        ("some_name", None),
     ],
 )
 def test_dense_for_sparse_get_feature_type(
