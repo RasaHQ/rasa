@@ -59,7 +59,7 @@ Your test users had at least some instruction about what the bot was intended to
 
 *   Look at conversations where an “out_of_scope” intent or fallback behavior occurred. These could indicate a potential new skill, or just a misclassified user utterance.
 *   Look for user frustration, such as requests for transfer to a human.
-*   If the assistant was trained with [`IntentTEDPolicy`](./policies.mdx#intenttedpolicy) included in the pipeline,
+*   If the assistant was trained with [`IntentTEDPolicy`](./policies.mdx#intented-policy) included in the pipeline,
     you can look for conversations where `action_unlikely_intent` is predicted at any conversation turn.
     An `action_unlikely_intent` is predicted when the last intent expressed by the user is
     unexpected in the current conversation context. You can also filter out such conversations by

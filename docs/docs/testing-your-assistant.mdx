@@ -382,20 +382,20 @@ incorrect action was predicted instead.
 The test script will also generate a warnings file called `results/stories_with_warnings.yml`.
 This file contains all test stories for which [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
 was predicted at any conversation turn but all actions from the original story were predicted correctly.
-However, if a test story originally included an `action_unlikely_intent` but wasn't predicted by
-the ensemble of policies, then the corresponding story will end up in `results/failed_test_stories.yml` as
+However, if a test story originally included an `action_unlikely_intent`, for example to ensure [a rule triggers what
+happens after an `action_unlikely_intent`](./default-actions.mdx#customization-1) but the ensemble of
+policies failed to do so, then the corresponding story will end up in `results/failed_test_stories.yml` as
 a failed story.
 
 The stories are sorted by the severity of `action_unlikely_intent`'s prediction.
 This severity is calculated by `IntentTEDPolicy` itself at prediction time.
-Higher the severity, the more unlikely is the intent and hence reviewing that particular
+The higher the severity, the more unlikely is the intent and hence reviewing that particular
 conversation path becomes more critical.
 
 It should be noted that `action_unlikely_intent` is predicted by
-[`IntentTEDPolicy`](./policies.mdx#intenttedpolicy) which employs a machine learning based model
-under the hood and hence can result in multiple false warnings as well. Users are encouraged to go through the
-stories in the warnings file and verify if the conversation path is already present in one of the
-training stories and add it as a training story if it isn't.
+[`IntentTEDPolicy`](./policies.mdx#intented-policy) which employs a machine learning based model
+under the hood and hence can result in false warnings as well. You can choose to ignore such warnings
+if the conversation paths in these stories are already present in the training stories.
 
 ### Comparing Policy Configurations
 

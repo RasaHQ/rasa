@@ -400,7 +400,7 @@ for details.
 </details>
 
 
-### IntentTEDPolicy
+### IntentTED Policy
 
 `IntentTEDPolicy` helps you review conversations and also allows your bot to react
 to unlikely user turns. It is an auxiliary policy that should only be used in
@@ -421,7 +421,7 @@ with better coverage of unique conversation paths that the assistant is expected
 `IntentTEDPolicy` helps to surface these unique conversation paths from past conversations. For example, if you had
 the following story in your training data:
 
-```yaml
+```yaml-rasa title="stories.yml"
 - story: book_restaurant_table
   steps:
   - intent: request_restaurant
@@ -435,7 +435,7 @@ the following story in your training data:
 
 but an actual conversation might encounter interjections inside the form which you haven't accounted for:
 
-```yaml {10-13}
+```yaml-rasa {10-13} title="stories.yml"
 - story: actual_conversation
   steps:
   - user: |
@@ -459,19 +459,11 @@ To help you identify that a special story that handles the user's `deny` intent 
 To reduce false warnings, `IntentTEDPolicy` has two mechanisms in place at inference time:
 
 1. `IntentTEDPolicy`'s [priority](./policies.mdx#policy-priority) is intentionally kept lower than all
-[rule based policies](./policies.mdx#rule-based-policies). This ensures that if an `action_unlikely_intent`
-is predicted for the last intent, but there is a rule that can be triggered to predict
-the next action, the ensemble of policies is not affected by it and the winning prediction is
-still the one made by `RulePolicy`.
+[rule based policies](./policies.mdx#rule-based-policies) since rules may exist for situations that are novel for
+`TEDPolicy` or `IntentTEDPolicy`.
 
 2. `IntentTEDPolicy` does not predict an `action_unlikely_intent` if the last predicted intent
 isn't present in any of the training stories, which might happen if an intent is only used in rules.
-
-As mentioned earlier, while `TEDPolicy` learns the next best action, `IntentTEDPolicy` learns the
-next likely intent that a user can express. Given a conversation context, there can only be a single correct action,
-whereas there can be multiple intents that are likely to occur in the same conversation context. Hence,
-`IntentTEDPolicy` uses a multi-label cross entropy loss function during training. Moreover, it uses
-the [`IntentMaxHistoryTrackerFeaturizer`](#3-intent-max-history) to treat intents as target labels instead of assistant actions or utterances.
 
 #### Prediction of `action_unlikely_intent`
 
@@ -481,7 +473,7 @@ To determine if `action_unlikely_intent` should be triggered, `IntentTEDPolicy` 
  for the user's intent in the current dialogue context and checks if this score is below a
  certain threshold score.
 
-This threshold score is learned at training time but can be adjusted at test time
+This threshold score is learned at training time but can be adjusted at inference time
 via the `tolerance` parameter.  The higher the `tolerance`, the lower the intent's
 score (the more unlikely the intent) needs to be before `IntentTEDPolicy` triggers
 the `action_unlikely_intent` action.
@@ -508,7 +500,7 @@ If you want to fine-tune model's performance, start by modifying the following p
 * `max_history`:
   This parameter controls how much dialogue history the model looks at before making an inference.
   Default `max_history` for this policy is `None`, which means that the complete dialogue history
-  since session restart is taken into account. If you want to limit the model
+  since session (re)start is taken into account. If you want to limit the model
   to only see a certain number of previous
   dialogue turns, you can set `max_history` to a finite value.
   Please note that you should pick `max_history` carefully, so that the model has enough
@@ -527,7 +519,7 @@ If you want to fine-tune model's performance, start by modifying the following p
   ```
 
 * `ignore_intents_list`:
-    This parameter lets you configure `IntentTEDPolicy` to ignore the prediction of `action_unlikely_intent` for
+    This parameter lets you configure `IntentTEDPolicy` to not predict `action_unlikely_intent` for
     a subset of intents. You might want to do this if you come across a certain list of intents for which there
     are too many false warnings generated.
 
@@ -536,7 +528,7 @@ If you want to fine-tune model's performance, start by modifying the following p
     It helps to adjust the threshold score used during prediction of `action_unlikely_intent`
     at inference time. Here, `0.0` means that the score threshold is the one
     that `IntentTEDPolicy` had determined at training time.
-    A tolerance of `1.0` means that the threshold score is so low that `IntentTED` would not
+    A tolerance of `1.0` means that the threshold score is so low that `IntentTEDPolicy` would not
     trigger `action_unlikely_intent` for any of the "negative examples" that it has encountered
     during training. These negative examples are combinations of dialogue contexts and user
     intents that are _incorrect_. `IntentTEDPolicy` generates these negative examples from your
@@ -544,7 +536,7 @@ If you want to fine-tune model's performance, start by modifying the following p
      occur at this point.
 
 The above configuration parameters are the ones you should try tweaking according to your use case and training data.
-However, additional parameters exist that can be adapted.
+However, additional parameters exist that you could adapt.
 
 <details><summary>More configurable parameters</summary>
 
@@ -688,8 +680,8 @@ However, additional parameters exist that can be adapted.
 
 #### Tuning the tolerance parameter
 
-When [reviewing real conversations](./conversation-driven-development.mdx#review), users are
- encouraged to tune the `tolerance` parameter in `IntentTEDPolicy`'s configuration to reduce the number
+When [reviewing real conversations](./conversation-driven-development.mdx#review), we encourage you
+to tune the `tolerance` parameter in `IntentTEDPolicy`'s configuration to reduce the number
 of false warnings (intents that actually are likely given the conversation context).
 As you increase the value of `tolerance` from `0` to `1` in steps of `0.05`,
 the number of false warnings should decrease. However, increasing the `tolerance` will
@@ -997,14 +989,14 @@ default restart, label `2` a greeting and `3` indicates goodbye.
 A policy can be trained to learn two kinds of labels -
 
 1. The next most appropriate action to be triggered by the assistant. For example, [`TEDPolicy`](#ted-policy) is trained to do this.
-2. The next most likely intent that a user can express. For example, [`IntentTEDPolicy`](#intenttedpolicy) is trained to do this.
+2. The next most likely intent that a user can express. For example, [`IntentTEDPolicy`](#intented-policy) is trained to do this.
 
 Hence, a tracker can be featurized to learn one of the above kind of labels.
 Depending on the policy, the target labels correspond to bot actions or bot utterances
 represented as an index in a list of all possible actions or
 set of intents represented as an index in a list of all possible intents.
 
-There are three different tracker featurizers:
+Tracker Featurizers come in three different flavours:
 
 ##### 1. Full Dialogue
 
@@ -1033,10 +1025,10 @@ should be reshaped to `(num_unique_turns, max_history * num_input_features)`.
 ##### 3. Intent Max History
 
 `IntentMaxHistoryTrackerFeaturizer` inherits from `MaxHistoryTrackerFeaturizer`. Since, it is used by
-[`IntentTEDPolicy`](#intenttedpolicy), the target labels that it creates is the set of intents that can be
+[`IntentTEDPolicy`](#intented-policy), the target labels that it creates are the intents that can be
 expressed by a user in the context of a conversation tracker. Unlike
 other tracker featurizers, there can be multiple target labels. Hence, it pads the
-list of target labels with `-1` values on the right to return an equally sized list of target labels
+list of target labels with a constant value (`-1`) on the right to return an equally sized list of target labels
 for each input conversation tracker.
 
 Just like `MaxHistoryTrackerFeaturizer`, it also performs deduplication to
