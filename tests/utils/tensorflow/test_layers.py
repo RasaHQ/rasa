@@ -63,44 +63,55 @@ def test_randomly_connected_dense_all_inputs_connected():
 
 
 @pytest.mark.parametrize(
-    "feature_type, expected_feature_type",
+    "layer_name, expected_feature_type",
     [
-        (FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SENTENCE),
-        (FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SEQUENCE),
-        ("sentenc", None),
-        ("unknown_feature_type", None),
+        (f"sparse_to_dense.{TEXT}_{FEATURE_TYPE_SENTENCE}", FEATURE_TYPE_SENTENCE),
+        (
+            f"sparse_to_dense.{LABEL}_{ACTION_TEXT}_{FEATURE_TYPE_SENTENCE}",
+            FEATURE_TYPE_SENTENCE,
+        ),
+        (
+            f"sparse_to_dense.{LABEL}_{ACTION_NAME}_{FEATURE_TYPE_SEQUENCE}",
+            FEATURE_TYPE_SEQUENCE,
+        ),
+        (f"some_name.{DIALOGUE}_{FEATURE_TYPE_SEQUENCE}", FEATURE_TYPE_SEQUENCE),
+        (f"some_name.{TEXT}_sentenc", None),
+        (f"sparse_to_dense.{TEXT}_squence", None),
+        (f"some_name", None),
     ],
 )
 def test_dense_for_sparse_get_feature_type(
-    feature_type: Text, expected_feature_type: Union[Text, None]
+    layer_name: Text, expected_feature_type: Union[Text, None]
 ):
-    some_attribute = "attribute"
-    layer = DenseForSparse(
-        name=f"sparse_to_dense.{some_attribute}_{feature_type}", units=10,
-    )
+    layer = DenseForSparse(name=layer_name, units=10,)
     assert layer.get_feature_type() == expected_feature_type
 
 
 @pytest.mark.parametrize(
-    "attribute, expected_attribute",
+    "layer_name, expected_attribute",
     [
-        (TEXT, TEXT),
-        (INTENT, INTENT),
-        (LABEL, LABEL),
-        (DIALOGUE, DIALOGUE),
-        (ACTION_NAME, ACTION_NAME),
-        (ACTION_TEXT, ACTION_TEXT),
-        (f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_NAME}"),
-        (f"{LABEL}_{ACTION_TEXT}", f"{LABEL}_{ACTION_TEXT}"),
-        ("txt", None),
-        ("unknown_attribute", None),
+        (f"sparse_to_dense.{TEXT}_{FEATURE_TYPE_SEQUENCE}", TEXT),
+        (f"sparse_to_dense.{INTENT}_{FEATURE_TYPE_SENTENCE}", INTENT),
+        (f"other_name.{LABEL}_{FEATURE_TYPE_SENTENCE}", LABEL),
+        (f"other_name.{DIALOGUE}_{FEATURE_TYPE_SENTENCE}", DIALOGUE),
+        (f"sparse_to_dense.{ACTION_NAME}_{FEATURE_TYPE_SEQUENCE}", ACTION_NAME),
+        (f"other_name.{ACTION_TEXT}_{FEATURE_TYPE_SENTENCE}", ACTION_TEXT),
+        (
+            f"other_name.{LABEL}_{ACTION_NAME}_{FEATURE_TYPE_SENTENCE}",
+            f"{LABEL}_{ACTION_NAME}",
+        ),
+        (
+            f"sparse_to_dense.{LABEL}_{ACTION_TEXT}_{FEATURE_TYPE_SEQUENCE}",
+            f"{LABEL}_{ACTION_TEXT}",
+        ),
+        ("some_name", None),
+        ("sparse_to_dense", None),
+        (f"sparse_to_dense.{TEXT}", None),
+        (f"sparse_to_dense.labl_{FEATURE_TYPE_SEQUENCE}", None),
     ],
 )
 def test_dense_for_sparse_get_attribute(
-    attribute: Text, expected_attribute: Union[Text, None]
+    layer_name: Text, expected_attribute: Union[Text, None]
 ):
-    some_feature_type = "type"
-    layer = DenseForSparse(
-        name=f"sparse_to_dense.{attribute}_{some_feature_type}", units=10,
-    )
+    layer = DenseForSparse(name=layer_name, units=10,)
     assert layer.get_attribute() == expected_attribute

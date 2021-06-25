@@ -29,7 +29,6 @@ from rasa.utils.tensorflow.constants import (
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 from rasa.utils.tensorflow.transformer import TransformerEncoder
-from rasa.shared.exceptions import RasaException
 
 
 class RasaCustomLayer(tf.keras.layers.Layer):
@@ -89,10 +88,6 @@ class RasaCustomLayer(tf.keras.layers.Layer):
                     old_feature_sizes = old_sparse_feature_sizes[attribute][
                         feature_type
                     ]
-                    self._check_if_sparse_feature_sizes_decreased(
-                        new_sparse_feature_sizes=new_feature_sizes,
-                        old_sparse_feature_sizes=old_feature_sizes,
-                    )
                     if sum(new_feature_sizes) > sum(old_feature_sizes):
                         self._tf_layers[name] = self._replace_dense_for_sparse_layer(
                             layer_to_replace=layer,
@@ -102,39 +97,6 @@ class RasaCustomLayer(tf.keras.layers.Layer):
                             feature_type=feature_type,
                             reg_lambda=reg_lambda,
                         )
-
-    @staticmethod
-    def _check_if_sparse_feature_sizes_decreased(
-        new_sparse_feature_sizes: List[int], old_sparse_feature_sizes: List[int],
-    ) -> None:
-        """Checks if the sizes of sparse features have decreased during fine-tuning.
-
-        Sparse feature sizes might decrease after changing the training data.
-        This can happen for example with `LexicalSyntacticFeaturizer`.
-        We don't support this behaviour and we raise an exception if this happens.
-
-        Args:
-            new_sparse_feature_sizes: sizes of current sparse features for a
-                                      specific attribute and feature type.
-            old_sparse_feature_sizes: sizes of sparse features the model was trained on
-                                      before for a specific attribute and feature type.
-
-        Raises:
-            RasaException: When any of the sparse feature sizes decrease
-                           from the last time training was run.
-        """
-        for new_size, old_size in zip(
-            new_sparse_feature_sizes, old_sparse_feature_sizes
-        ):
-            if new_size < old_size:
-                raise RasaException(
-                    "Sparse feature sizes have decreased from the last time training "
-                    "was run. The training data was changed in a way that resulted in "
-                    "some features not being present in the data anymore. This can "
-                    "happen if you had `LexicalSyntacticFeaturizer` in your pipeline. "
-                    "The pipeline cannot support incremental training in this setting."
-                    " We recommend you to retrain the model from scratch."
-                )
 
     @staticmethod
     def _replace_dense_for_sparse_layer(
@@ -202,7 +164,6 @@ class RasaCustomLayer(tf.keras.layers.Layer):
             kernel_initializer=kernel_init,
             bias_initializer=bias_init,
         )
-        new_layer.build(input_shape=new_weights.shape[0])
         return new_layer
 
 

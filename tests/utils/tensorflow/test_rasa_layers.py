@@ -861,31 +861,6 @@ def test_sequence_layer_correct_output(
 
 
 @pytest.mark.parametrize(
-    "new_sparse_feature_sizes, old_sparse_feature_sizes, raise_exception",
-    [([10, 4], [10, 5], True,), ([10, 5], [10, 5], False,), ([12, 8], [10, 5], False,)],
-)
-def test_raise_exception_decreased_sparse_feature_sizes(
-    new_sparse_feature_sizes: List[int],
-    old_sparse_feature_sizes: List[int],
-    raise_exception: bool,
-):
-    """Tests if exception is raised when sparse feature sizes decrease
-       during incremental training."""
-    if raise_exception:
-        with pytest.raises(Exception) as exec_info:
-            RasaCustomLayer._check_if_sparse_feature_sizes_decreased(
-                new_sparse_feature_sizes=new_sparse_feature_sizes,
-                old_sparse_feature_sizes=old_sparse_feature_sizes,
-            )
-        assert "Sparse feature sizes have decreased" in str(exec_info.value)
-    else:
-        RasaCustomLayer._check_if_sparse_feature_sizes_decreased(
-            new_sparse_feature_sizes=new_sparse_feature_sizes,
-            old_sparse_feature_sizes=old_sparse_feature_sizes,
-        )
-
-
-@pytest.mark.parametrize(
     "new_sparse_feature_sizes, old_sparse_feature_sizes, feature_type",
     [
         ([10, 10, 10], [3, 2, 3], FEATURE_TYPE_SENTENCE),
@@ -917,6 +892,7 @@ def test_replace_dense_for_sparse_layers(
         feature_type=feature_type,
         reg_lambda=0.02,
     )
+    new_layer.build(input_shape=sum(new_sparse_feature_sizes))
 
     # check dimensions
     assert new_layer.get_kernel().shape[0] == sum(new_sparse_feature_sizes)
@@ -938,22 +914,31 @@ def test_replace_dense_for_sparse_layers(
             {
                 TEXT: {
                     FEATURE_TYPE_SENTENCE: [10, 5],
-                    FEATURE_TYPE_SEQUENCE: [5, 10, 5],
+                    FEATURE_TYPE_SEQUENCE: [5, 10, 15],
                 },
                 LABEL: {FEATURE_TYPE_SEQUENCE: [5], FEATURE_TYPE_SENTENCE: []},
             },
             {
-                TEXT: {FEATURE_TYPE_SENTENCE: [5, 2], FEATURE_TYPE_SEQUENCE: [3, 5, 2]},
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
                 LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
             },
         ),
         (
             {
-                TEXT: {FEATURE_TYPE_SENTENCE: [5, 2], FEATURE_TYPE_SEQUENCE: [3, 5, 2]},
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
                 LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
             },
             {
-                TEXT: {FEATURE_TYPE_SENTENCE: [5, 2], FEATURE_TYPE_SEQUENCE: [3, 5, 2]},
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
                 LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
             },
         ),
@@ -1034,6 +1019,7 @@ def test_adjust_sparse_layers_for_incremental_training(
         layer_expected_size = sum(
             new_sparse_feature_sizes[layer_attribute][layer_feature_type]
         )
+        dense_layer.build(input_shape=layer_expected_size)
         layer_final_size = dense_layer.get_kernel().shape[0]
         assert layer_attribute and layer_feature_type
         assert layer_final_size == layer_expected_size

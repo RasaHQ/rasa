@@ -51,6 +51,7 @@ from rasa.utils.tensorflow.data_generator import (
 )
 from tensorflow.python.keras.utils import tf_utils
 from rasa.shared.nlu.constants import TEXT
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -556,8 +557,11 @@ class TransformerRasaModel(RasaModel):
     ) -> None:
         """Adjusts the model for incremental training.
 
-        The function updates `DenseForSparse` layers, compiles the model
-        and updates the data signatures.
+        First we should check if any of the sparse feature sizes has decreased
+        and raise an exception if this happens.
+        if none of them have decreased and any of them has increased, then the
+        function updates `DenseForSparse` layers, compiles the model, fits a sample
+        data on it to activate adjusted layer(s) and updates the data signatures.
 
         New and old sparse feature sizes could look like this:
         {TEXT: {FEATURE_TYPE_SEQUENCE: [4, 24, 128], FEATURE_TYPE_SENTENCE: [4, 128]}}
@@ -568,10 +572,84 @@ class TransformerRasaModel(RasaModel):
             old_sparse_feature_sizes: sizes of sparse features the model was
                                       previously trained on.
         """
-        self._update_dense_for_sparse_layers(
-            new_sparse_feature_sizes, old_sparse_feature_sizes
+        self._check_if_sparse_feature_sizes_decreased(
+            new_sparse_feature_sizes=new_sparse_feature_sizes,
+            old_sparse_feature_sizes=old_sparse_feature_sizes,
         )
-        self._compile_and_update(data_example)
+        if self._sparse_feature_sizes_have_increased(
+            new_sparse_feature_sizes=new_sparse_feature_sizes,
+            old_sparse_feature_sizes=old_sparse_feature_sizes,
+        ):
+            self._update_dense_for_sparse_layers(
+                new_sparse_feature_sizes, old_sparse_feature_sizes
+            )
+            self._compile_and_fit(data_example)
+
+    @staticmethod
+    def _check_if_sparse_feature_sizes_decreased(
+        new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+        old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    ) -> None:
+        """Checks if the sizes of sparse features have decreased during fine-tuning.
+
+        Sparse feature sizes might decrease after changing the training data.
+        This can happen for example with `LexicalSyntacticFeaturizer`.
+        We don't support this behaviour and we raise an exception if this happens.
+
+        Args:
+            new_sparse_feature_sizes: sizes of current sparse features.
+            old_sparse_feature_sizes: sizes of sparse features the model was
+                                      previously trained on.
+
+        Raises:
+            RasaException: When any of the sparse feature sizes decrease
+                           from the last time training was run.
+        """
+        for attribute, new_feature_sizes in new_sparse_feature_sizes.items():
+            old_feature_sizes = old_sparse_feature_sizes[attribute]
+            for feature_type, new_sizes in new_feature_sizes.items():
+                old_sizes = old_feature_sizes[feature_type]
+                for new_size, old_size in zip(new_sizes, old_sizes):
+                    if new_size < old_size:
+                        raise RasaException(
+                            "Sparse feature sizes have decreased from the last time "
+                            "training was run. The training data was changed in a way "
+                            "that resulted in some features not being present in the "
+                            "data anymore. This can happen if you had "
+                            "`LexicalSyntacticFeaturizer` in your pipeline. "
+                            "The pipeline cannot support incremental training "
+                            "in this setting. We recommend you to retrain "
+                            "the model from scratch."
+                        )
+
+    @staticmethod
+    def _sparse_feature_sizes_have_increased(
+        new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+        old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    ) -> bool:
+        """Checks if the sizes of sparse features have increased during fine-tuning.
+
+        If there's any sparse feature size that has increased after changing the
+        training data, we need to look for the corresponding `DenseForSparse` layer
+        and adjust it. On the other hand, if none of them have increased, we don't
+        need to change anything. This function helps us with making the decision.
+
+        Note that the function assumes that none of the sparse feature sizes
+        have decreased. In other words, it should get valid arguments in order
+        to function well.
+
+        Args:
+            new_sparse_feature_sizes: sizes of current sparse features.
+            old_sparse_feature_sizes: sizes of sparse features the model was
+                                      previously trained on.
+        """
+        for attribute, new_feature_sizes in new_sparse_feature_sizes.items():
+            old_feature_sizes = old_sparse_feature_sizes[attribute]
+            for feature_type, new_sizes in new_feature_sizes.items():
+                old_sizes = old_feature_sizes[feature_type]
+                if sum(new_sizes) > sum(old_sizes):
+                    return True
+        return False
 
     def _update_dense_for_sparse_layers(
         self,
@@ -600,10 +678,10 @@ class TransformerRasaModel(RasaModel):
                     self.config[REGULARIZATION_CONSTANT],
                 )
 
-    def _compile_and_update(
+    def _compile_and_fit(
         self, data_example: Dict[Text, Dict[Text, List[FeatureArray]]]
     ) -> None:
-        """Compiles modified model and updates the data signatures.
+        """Compiles modified model and fits a sample data on it.
 
         Args:
             data_example: a data example that is stored with the ML component.
@@ -616,6 +694,8 @@ class TransformerRasaModel(RasaModel):
             label_key=label_key, label_sub_key=label_sub_key, data=data_example
         )
         self._update_data_signatures(model_data)
+        data_generator = RasaBatchDataGenerator(model_data, batch_size=1)
+        self.fit(data_generator, verbose=False)
 
     def _update_data_signatures(self, model_data: RasaModelData) -> None:
         self.data_signature = model_data.get_signature()
