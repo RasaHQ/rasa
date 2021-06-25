@@ -19,7 +19,6 @@ nlu:
 
 - intent: goodbye
   examples: |
-    - good afternoon
     - cu
     - good by
     - cee you later
@@ -83,6 +82,8 @@ nlu:
     - extremly sad
     - so saad
     - so sad
+    - grumpy
+    - tired
 
 - intent: bot_challenge
   examples: |
@@ -94,8 +95,10 @@ nlu:
 - intent: pet_to_cheer_up
   examples: |
     - A [dog](animal) would make me happy.
+    - A (kitten)(animal) would make me happiest.
     - I prefer a [cat](animal).
     - I would love to have a [turtle](animal).
+    - A [puppy](animal)
 
 - lookup: animal
   examples: |

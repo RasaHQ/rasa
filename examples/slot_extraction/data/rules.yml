@@ -16,3 +16,9 @@ rules:
   steps:
       - intent: mood_unhappy
       - action: utter_enquire_pet
+
+- rule: ask feedback
+  steps:
+    - intent: pet_to_cheer_up
+    - action: utter_cheer_up
+    - action: utter_did_that_help

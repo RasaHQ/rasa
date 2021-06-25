@@ -168,7 +168,12 @@ class FloatSlot(Slot):
         influence_conversation: bool = True,
     ) -> None:
         super().__init__(
-            name, mappings, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name,
+            mappings,
+            initial_value,
+            value_reset_delay,
+            auto_fill,
+            influence_conversation,
         )
         self.max_value = max_value
         self.min_value = min_value
@@ -323,7 +328,12 @@ class UnfeaturizedSlot(Slot):
         )
 
         super().__init__(
-            name, mappings, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name,
+            mappings,
+            initial_value,
+            value_reset_delay,
+            auto_fill,
+            influence_conversation,
         )
 
     def _as_feature(self) -> List[float]:
@@ -347,7 +357,12 @@ class CategoricalSlot(Slot):
         influence_conversation: bool = True,
     ) -> None:
         super().__init__(
-            name, mappings, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name,
+            mappings,
+            initial_value,
+            value_reset_delay,
+            auto_fill,
+            influence_conversation,
         )
         self.values = [str(v).lower() for v in values] if values else []
 
@@ -432,7 +447,12 @@ class AnySlot(Slot):
             )
 
         super().__init__(
-            name, mappings, initial_value, value_reset_delay, auto_fill, influence_conversation
+            name,
+            mappings,
+            initial_value,
+            value_reset_delay,
+            auto_fill,
+            influence_conversation,
         )
 
     def __eq__(self, other: Any) -> bool:

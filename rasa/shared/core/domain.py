@@ -1984,18 +1984,18 @@ class SlotMapping(Enum):
         Returns:
             True, if slot should be filled, false otherwise.
         """
-        # slot name is equal to the entity type
-        slot_equals_entity = slot.name == mapping.get("entity")
         slot_mapping_entity_mismatch = True
 
         for entity in extracted_entities:
-            if mapping.get("entity") == entity["entity"]:
+            if (
+                mapping.get("entity") == entity["entity"]
+                and mapping.get("role") == entity.get("role")
+                and mapping.get("group") == entity.get("group")
+            ):
                 slot_mapping_entity_mismatch = False
                 break
 
-        if (
-            mapping.get("role") is None and mapping.get("group") is None
-        ) or slot_mapping_entity_mismatch:
+        if slot_mapping_entity_mismatch:
             slot_fulfils_entity_mapping = False
         else:
             matching_values = tracker.get_latest_entity_values(
@@ -2003,7 +2003,7 @@ class SlotMapping(Enum):
             )
             slot_fulfils_entity_mapping = matching_values is not None
 
-        return slot_equals_entity or slot_fulfils_entity_mapping
+        return slot_fulfils_entity_mapping
 
 
 def _validate_forms(forms: Union[Dict, List], domain_slots: Dict[Text, Any]) -> None:
