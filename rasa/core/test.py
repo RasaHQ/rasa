@@ -6,6 +6,13 @@ from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa import telemetry
+from rasa.core.constants import (
+    CONFUSION_MATRIX_STORIES_FILE,
+    REPORT_STORIES_FILE,
+    FAILED_STORIES_FILE,
+    SUCCESSFUL_STORIES_FILE,
+    STORIES_WITH_WARNINGS_FILE,
+)
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.test import EntityEvaluationResult, evaluate_entities
 from rasa.shared.core.constants import (
@@ -77,12 +84,6 @@ if typing.TYPE_CHECKING:
         },
         total=False,
     )
-
-CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
-REPORT_STORIES_FILE = "story_report.json"
-FAILED_STORIES_FILE = "failed_test_stories.yml"
-SUCCESSFUL_STORIES_FILE = "successful_test_stories.yml"
-STORIES_WITH_WARNINGS_FILE = "stories_with_warnings.yml"
 
 logger = logging.getLogger(__name__)
 

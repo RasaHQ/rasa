@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 from shutil import copyfile
 
-from rasa.core.test import CONFUSION_MATRIX_STORIES_FILE
+from rasa.core.constants import CONFUSION_MATRIX_STORIES_FILE
 from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.shared.utils.io import list_files, write_yaml, write_text_file
