@@ -19,3 +19,15 @@ updates:
       - dependency-name: pytest-asyncio
         versions:
           - "> 0.10.0"
+  - package-ecosystem: npm
+    directory: "/docs"
+    schedule:
+      interval: monthly
+      time: '13:00'
+    pull-request-branch-name:
+      separator: "-"
+    open-pull-requests-limit: 10
+    reviewers:
+      - RasaHQ/enable-squad
+    labels:
+      - type:dependencies
