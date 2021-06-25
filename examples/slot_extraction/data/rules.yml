@@ -22,3 +22,19 @@ rules:
     - intent: pet_to_cheer_up
     - action: utter_cheer_up
     - action: utter_did_that_help
+
+- rule: activate form
+  steps:
+    - intent: request_form
+    - action: test_form
+    - active_loop: test_form
+
+- rule: submit form
+  condition:
+  - active_loop: test_form
+  steps:
+  - action: test_form
+  - active_loop: null
+  - slot_was_set:
+      - requested_slot: null
+  - action: utter_submit

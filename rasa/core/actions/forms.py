@@ -59,7 +59,7 @@ class FormAction(LoopAction):
         Returns:
             A list of slot names.
         """
-        return list(domain.slot_mapping_for_form(self.name()).keys())
+        return domain.slot_mapping_for_form(self.name())
 
     def from_entity(
         self,
@@ -98,11 +98,14 @@ class FormAction(LoopAction):
 
         If None, map requested slot to an entity with the same name
         """
-        requested_slot_mappings = self._to_list(
-            domain.slot_mapping_for_form(self.name()).get(
-                slot_to_fill, self.from_entity(slot_to_fill),
-            )
-        )
+        # requested_slot_mappings = self._to_list(
+        #     domain.slot_mapping_for_form(self.name()).get(
+        #         slot_to_fill, self.from_entity(slot_to_fill),
+        #     )
+        # )
+        domain_slots = domain.as_dict().get("slots")
+        requested_slot_mappings = domain_slots.get(slot_to_fill).get("slot_mappings")
+
         # check provided slot mappings
         for requested_slot_mapping in requested_slot_mappings:
             if (
@@ -145,7 +148,9 @@ class FormAction(LoopAction):
         """
         unique_entity_slot_mappings = set()
         duplicate_entity_slot_mappings = set()
-        for slot_mappings in domain.slot_mapping_for_form(self.name()).values():
+        domain_slots = domain.as_dict().get("slots")
+        for slot_name in domain.slot_mapping_for_form(self.name()):
+            slot_mappings = domain_slots.get(slot_name).get("slot_mappings")
             for slot_mapping in slot_mappings:
                 if slot_mapping.get("type") == str(SlotMapping.FROM_ENTITY):
                     mapping_as_string = json.dumps(slot_mapping, sort_keys=True)

@@ -286,7 +286,7 @@ class Validator:
 
         for form in self.domain.form_names:
             form_slots = self.domain.slot_mapping_for_form(form)
-            for slot in form_slots.keys():
+            for slot in form_slots:
                 if slot in domain_slot_names:
                     continue
                 else:

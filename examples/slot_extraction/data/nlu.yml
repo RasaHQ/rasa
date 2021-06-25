@@ -92,6 +92,11 @@ nlu:
     - am I talking to a bot?
     - am I talking to a human?
 
+- intent: request_form
+  examples: |
+    - I'd like to enter some details.
+    - I have to provide some information.
+
 - intent: pet_to_cheer_up
   examples: |
     - A [dog](animal) would make me happy.

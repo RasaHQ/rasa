@@ -887,6 +887,7 @@ class Domain:
             self.slots.append(
                 TextSlot(
                     rasa.shared.core.constants.REQUESTED_SLOT,
+                    slot_mappings=[],
                     influence_conversation=False,
                 )
             )
@@ -1876,7 +1877,7 @@ class Domain:
 
         return any(key in content for key in ALL_DOMAIN_KEYS)
 
-    def slot_mapping_for_form(self, form_name: Text) -> Dict[Text, Any]:
+    def slot_mapping_for_form(self, form_name: Text) -> List[Text]:
         """Retrieve the slot mappings for a form which are defined in the domain.
 
         Options:
@@ -1890,13 +1891,13 @@ class Domain:
             form_name: The name of the form.
 
         Returns:
-            The slot mapping or an empty dictionary in case no mapping was found.
+            The list of slot names or an empty list in case no required_slots were found.
         """
         form = self.forms.get(form_name)
         if form:
             return form[REQUIRED_SLOTS_KEY]
 
-        return {}
+        return []
 
 
 class SlotMapping(Enum):

@@ -9,6 +9,7 @@ intents:
   - mood_unhappy
   - bot_challenge
   - pet_to_cheer_up
+  - request_form
 
 entities:
   - animal
@@ -60,10 +61,13 @@ responses:
   utter_iamabot:
   - text: "I am a bot, powered by Rasa."
 
-#forms:
-#  pet_ownership:
-#    required_slots:
-#      - pet_kind
+  utter_submit:
+  - text: "Your information has been recorded."
+
+forms:
+  test_form:
+    required_slots:
+      - pet_kind
 
 session_config:
   session_expiration_time: 60
