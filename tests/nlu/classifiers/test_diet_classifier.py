@@ -7,6 +7,7 @@ from typing import List, Text, Dict, Any
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
+from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.features import Features
 import rasa.nlu.train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
@@ -62,6 +63,20 @@ def test_compute_default_label_features():
         assert isinstance(o, np.ndarray)
         assert o[0][i] == 1
         assert o.shape == (1, len(label_features))
+
+
+def get_checkpoint_dir_path(path: Path, model_dir: Path) -> Path:
+    """
+    Produce the path of the checkpoint directory for DIET.
+
+    This is coupled to the persist method of DIET.
+
+    Args:
+        model_dir: the model directory
+        path: the path passed to train for training output.
+
+    """
+    return path / model_dir / "checkpoints"
 
 
 @pytest.mark.parametrize(
@@ -561,29 +576,23 @@ async def test_train_tensorboard_logging(
 
 
 async def test_train_model_checkpointing(
-    component_builder: ComponentBuilder, tmpdir: Path, nlu_data_path: Text,
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
 ):
     model_name = "nlu-checkpointed-model"
-    best_model_file = Path(str(tmpdir), model_name)
-    assert not best_model_file.exists()
+    model_dir = tmp_path / model_name
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, model_dir)
+    assert not checkpoint_dir.is_dir()
 
     _config = RasaNLUModelConfig(
         {
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
-                {
-                    "name": "CountVectorsFeaturizer",
-                    "analyzer": "char_wb",
-                    "min_ngram": 3,
-                    "max_ngram": 17,
-                    "max_features": 10,
-                    "min_df": 5,
-                },
+                {"name": "CountVectorsFeaturizer"},
                 {
                     "name": "DIETClassifier",
-                    EPOCHS: 5,
-                    CONSTRAIN_SIMILARITIES: True,
-                    MODEL_CONFIDENCE: "linear_norm",
+                    EPOCHS: 2,
+                    EVAL_NUM_EPOCHS: 1,
+                    EVAL_NUM_EXAMPLES: 10,
                     CHECKPOINT_MODEL: True,
                 },
             ],
@@ -593,13 +602,13 @@ async def test_train_model_checkpointing(
 
     await rasa.nlu.train.train(
         _config,
-        path=str(tmpdir),
+        path=str(tmp_path),
         data=nlu_data_path,
         component_builder=component_builder,
         fixed_model_name=model_name,
     )
 
-    assert best_model_file.exists()
+    assert checkpoint_dir.is_dir()
 
     """
     Tricky to validate the *exact* number of files that should be there, however there
@@ -609,8 +618,118 @@ async def test_train_model_checkpointing(
         - component_1_CountVectorsFeaturizer (as per the pipeline above)
         - component_2_DIETClassifier files (more than 1 file)
     """
-    all_files = list(best_model_file.rglob("*.*"))
+    all_files = list(model_dir.rglob("*.*"))
     assert len(all_files) > 4
+
+
+async def test_train_model_not_checkpointing(
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
+):
+    model_name = "nlu-not-checkpointed-model"
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, tmp_path / model_name)
+    assert not checkpoint_dir.is_dir()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", EPOCHS: 2, CHECKPOINT_MODEL: False},
+            ],
+            "language": "en",
+        }
+    )
+
+    await rasa.nlu.train.train(
+        _config,
+        path=str(tmp_path),
+        data=nlu_data_path,
+        component_builder=component_builder,
+        fixed_model_name=model_name,
+    )
+
+    assert not checkpoint_dir.is_dir()
+
+
+async def test_train_fails_with_zero_eval_num_epochs(
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
+):
+    model_name = "nlu-fail"
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, tmp_path / model_name)
+    assert not checkpoint_dir.is_dir()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "DIETClassifier",
+                    EPOCHS: 1,
+                    CHECKPOINT_MODEL: True,
+                    EVAL_NUM_EPOCHS: 0,
+                    EVAL_NUM_EXAMPLES: 10,
+                },
+            ],
+            "language": "en",
+        }
+    )
+    with pytest.raises(InvalidConfigException):
+        with pytest.warns(UserWarning) as warning:
+            await rasa.nlu.train.train(
+                _config,
+                path=str(tmp_path),
+                data=nlu_data_path,
+                component_builder=component_builder,
+                fixed_model_name=model_name,
+            )
+    assert not checkpoint_dir.is_dir()
+    warn_text = (
+        f"You have opted to save the best model, but the value of '{EVAL_NUM_EPOCHS}' "
+        f"is not -1 or greater than 0. Training will fail."
+    )
+    assert len([w for w in warning if warn_text in str(w.message)]) == 1
+
+
+async def test_doesnt_checkpoint_with_zero_eval_num_examples(
+    component_builder: ComponentBuilder, tmp_path: Path, nlu_data_path: Text,
+):
+    model_name = "nlu-fail-checkpoint"
+    checkpoint_dir = get_checkpoint_dir_path(tmp_path, tmp_path / model_name)
+    assert not checkpoint_dir.is_dir()
+
+    _config = RasaNLUModelConfig(
+        {
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {
+                    "name": "DIETClassifier",
+                    EPOCHS: 2,
+                    CHECKPOINT_MODEL: True,
+                    EVAL_NUM_EXAMPLES: 0,
+                    EVAL_NUM_EPOCHS: 1,
+                },
+            ],
+            "language": "en",
+        }
+    )
+    with pytest.warns(UserWarning) as warning:
+        await rasa.nlu.train.train(
+            _config,
+            path=str(tmp_path),
+            data=nlu_data_path,
+            component_builder=component_builder,
+            fixed_model_name=model_name,
+        )
+
+    assert not checkpoint_dir.is_dir()
+    warn_text = (
+        f"You have opted to save the best model, but the value of "
+        f"'{EVAL_NUM_EXAMPLES}' is not greater than 0. No checkpoint model "
+        f"will be saved."
+    )
+    assert len([w for w in warning if warn_text in str(w.message)]) == 1
 
 
 @pytest.mark.parametrize(
