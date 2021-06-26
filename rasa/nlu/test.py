@@ -1265,7 +1265,9 @@ def get_eval_data(
         interpreter
     )
 
-    should_eval_entities = is_entity_extractor_present(interpreter)
+    should_eval_entities = (
+        is_entity_extractor_present(interpreter) and len(test_data.entities) > 0
+    )
 
     for example in tqdm(test_data.nlu_examples):
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)

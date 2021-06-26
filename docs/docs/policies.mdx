@@ -334,6 +334,7 @@ However, additional parameters exist that can be adapted.
 |                                       |                        | Large values may hurt performance, e.g. model accuracy.      |
 |                                       |                        | Keep at 0 if your data set contains a lot of unique examples |
 |                                       |                        | of dialogue turns.                                           |
+|                                       |                        | Set to 0 for no validation.                                  |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | tensorboard_log_directory             | None                   | If you want to use tensorboard to visualize training         |
 |                                       |                        | metrics, set this option to a valid output directory. You    |
@@ -342,7 +343,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | tensorboard_log_level                 | "epoch"                | Define when training metrics for tensorboard should be       |
 |                                       |                        | logged. Either after every epoch ('epoch') or for every      |
-|                                       |                        | training step ('batch').                                 |
+|                                       |                        | training step ('batch').                                     |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | checkpoint_model                      | False                  | Save the best performing model during training. Models are   |
 |                                       |                        | stored to the location specified by `--out`. Only the one    |
