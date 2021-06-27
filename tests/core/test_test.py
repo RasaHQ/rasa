@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Text
+from typing import Text, Optional, Dict, Any, List
 
 import pytest
 
@@ -10,9 +10,20 @@ from rasa.shared.core.events import UserUttered
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.capture import CaptureFixture
 from rasa.core.agent import Agent
+from rasa.utils.tensorflow.constants import (
+    QUERY_INTENT_KEY,
+    NAME,
+    THRESHOLD_KEY,
+    SEVERITY_KEY,
+    SCORE_KEY,
+)
+from rasa.core.constants import STORIES_WITH_WARNINGS_FILE
 
 
-def _probabilities_with_action_unlikely_intent_for(intent_name: Text):
+def _probabilities_with_action_unlikely_intent_for(
+    intent_names: List[Text],
+    metadata_for_intent: Optional[Dict[Text, Dict[Text, Any]]] = None,
+):
     _original = SimplePolicyEnsemble.probabilities_using_best_policy
 
     def probabilities_using_best_policy(
@@ -21,17 +32,25 @@ def _probabilities_with_action_unlikely_intent_for(intent_name: Text):
         latest_event = tracker.events[-1]
         if (
             isinstance(latest_event, UserUttered)
-            and latest_event.parse_data["intent"]["name"] == intent_name
+            and latest_event.parse_data["intent"]["name"] in intent_names
         ):
-            # Here we return `action_unlikely_intent` if the name of the latest intent
-            # matches `intent_name`.
+            intent_name = latest_event.parse_data["intent"]["name"]
+            # Here we return `action_unlikely_intent` if the name of the
+            # latest intent is present in `intent_names`. Accompanying
+            # metadata is fetched from `metadata_for_intent` if it is present.
             # We need to do it because every time the tests are run,
             # training will result in different model weights which might
             # result in different predictions of `action_unlikely_intent`.
             # Because we're not testing `IntentTEDPolicy` here we simply trigger it
             # predicting `action_unlikely_intent` in a specified moment
             # to make the tests deterministic.
-            return PolicyPrediction.for_action_name(domain, "action_unlikely_intent")
+            return PolicyPrediction.for_action_name(
+                domain,
+                "action_unlikely_intent",
+                action_metadata=metadata_for_intent.get(intent_name)
+                if metadata_for_intent
+                else None,
+            )
         return _original(self, tracker, domain, interpreter, **kwargs)
 
     return probabilities_using_best_policy
@@ -77,7 +96,7 @@ async def test_action_unlikely_intent_1(
     monkeypatch.setattr(
         SimplePolicyEnsemble,
         "probabilities_using_best_policy",
-        _probabilities_with_action_unlikely_intent_for("mood_unhappy"),
+        _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
     )
 
     file_name = tmp_path / "test_action_unlikely_intent_1.yml"
@@ -111,7 +130,7 @@ async def test_action_unlikely_intent_2(
     monkeypatch.setattr(
         SimplePolicyEnsemble,
         "probabilities_using_best_policy",
-        _probabilities_with_action_unlikely_intent_for("mood_unhappy"),
+        _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
     )
 
     file_name = tmp_path / "test_action_unlikely_intent_2.yml"
@@ -146,7 +165,7 @@ async def test_action_unlikely_intent_complete(
     monkeypatch.setattr(
         SimplePolicyEnsemble,
         "probabilities_using_best_policy",
-        _probabilities_with_action_unlikely_intent_for("mood_unhappy"),
+        _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
     )
 
     file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
@@ -211,7 +230,7 @@ async def test_action_unlikely_intent_wrong_story(
     monkeypatch.setattr(
         SimplePolicyEnsemble,
         "probabilities_using_best_policy",
-        _probabilities_with_action_unlikely_intent_for("mood_unhappy"),
+        _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
     )
 
     file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
@@ -240,3 +259,88 @@ async def test_action_unlikely_intent_wrong_story(
     assert result["report"]["conversation_accuracy"]["correct"] == 0
     assert result["report"]["conversation_accuracy"]["with_warnings"] == 0
     assert result["report"]["conversation_accuracy"]["total"] == 1
+
+
+async def test_multiple_warnings_sorted_on_severity(
+    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+):
+    metadata_for_intents = {
+        "mood_unhappy": {
+            QUERY_INTENT_KEY: {
+                NAME: "mood_unhappy",
+                SEVERITY_KEY: 2.0,
+                THRESHOLD_KEY: 0.0,
+                SCORE_KEY: -2.0,
+            }
+        },
+        "mood_great": {
+            QUERY_INTENT_KEY: {
+                NAME: "mood_great",
+                SEVERITY_KEY: 1.2,
+                THRESHOLD_KEY: 0.2,
+                SCORE_KEY: -1.0,
+            }
+        },
+        "affirm": {
+            QUERY_INTENT_KEY: {
+                NAME: "affirm",
+                SEVERITY_KEY: 4.2,
+                THRESHOLD_KEY: 0.2,
+                SCORE_KEY: -4.0,
+            }
+        },
+    }
+    monkeypatch.setattr(
+        SimplePolicyEnsemble,
+        "probabilities_using_best_policy",
+        _probabilities_with_action_unlikely_intent_for(
+            ["mood_unhappy", "mood_great", "affirm"], metadata_for_intents
+        ),
+    )
+
+    file_name = tmp_path / "test_mutliple_action_unlikely_intents.yml"
+    file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+          - story: path 1
+            steps:
+              - user: |
+                  hello there!
+                intent: greet
+              - action: utter_greet
+              - user: |
+                  amazing
+                intent: mood_great
+              - action: utter_happy
+              
+          - story: path 2
+            steps:
+              - user: |
+                  hello there!
+                intent: greet
+              - action: utter_greet
+              - user: |
+                  very sad
+                intent: mood_unhappy
+              - action: utter_cheer_up
+              - action: utter_did_that_help
+              - user: |
+                  yes
+                intent: affirm
+              - action: utter_happy
+        """
+    )
+
+    result = await rasa.core.test.test(
+        str(file_name),
+        intent_ted_policy_moodbot_agent,
+        # out_directory=str(tmp_path),
+        out_directory="./results_testing",
+    )
+
+    warnings_file = tmp_path / STORIES_WITH_WARNINGS_FILE
+
+    # print(result)
+
+    # assert False
