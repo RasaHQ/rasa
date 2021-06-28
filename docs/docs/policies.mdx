@@ -402,6 +402,14 @@ for details.
 
 ### IntentTED Policy
 
+:::caution
+This feature is experimental.
+We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+However, the functionality might be changed or removed in the future.
+If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
+
+:::
+
 `IntentTEDPolicy` helps you review conversations and also allows your bot to react
 to unlikely user turns. It is an auxiliary policy that should only be used in
 conjunction with at least one other policy, as the only action that it can trigger
@@ -688,6 +696,7 @@ As you increase the value of `tolerance` from `0` to `1` in steps of `0.05`,
 the number of false warnings should decrease. However, increasing the `tolerance` will
 also result in fewer triggers of `action_unlikely_intent` and hence more conversation
 paths not present in training stories will be missing in the set of flagged conversations.
+If you change the `max_history` value and retrain a model, you might have to re-adjust the `tolerance` value as well.
 
 :::note
 `IntentTEDPolicy` is only trained on [stories](./stories.mdx) and not [rules](./rules.mdx) from the training data.

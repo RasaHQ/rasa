@@ -208,7 +208,7 @@ is triggered. For example, as a follow up you can trigger a hand-off to a human 
     - action: trigger_human_handoff
 ```
 
-Alternatively, you can also override it's behaviour as a `custom action`[./custom-actions.mdx]:
+Alternatively, you can also override it's behaviour as a [`custom action`](./custom-actions.mdx):
 
 ```python
 class ActionUnlikelyIntent:
@@ -223,3 +223,8 @@ class ActionUnlikelyIntent:
         # Implement custom logic here
         return []
 ```
+
+:::note
+`action_unlikely_intent` cannot be included in the training stories. It can **only** be added to rules.
+
+:::
