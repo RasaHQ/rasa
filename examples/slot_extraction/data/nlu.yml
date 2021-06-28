@@ -85,6 +85,14 @@ nlu:
     - grumpy
     - tired
 
+- intent: mood_neutral
+  examples: |
+    - I'm feeling ok
+    - not too bad
+    - alright
+    - fine
+    - I'm good
+
 - intent: bot_challenge
   examples: |
     - are you a bot?

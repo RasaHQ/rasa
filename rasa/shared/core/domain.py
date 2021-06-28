@@ -1970,7 +1970,6 @@ class SlotMapping(Enum):
     @staticmethod
     def entity_is_desired(
         mapping: Dict[Text, Any],
-        slot: Slot,
         extracted_entities: List[Dict],
         tracker: "DialogueStateTracker",
     ) -> bool:
@@ -1978,7 +1977,6 @@ class SlotMapping(Enum):
 
         Args:
             mapping: Slot mapping.
-            slot: The slot to be filled.
             extracted_entities: List of entities extracted from last user message.
             tracker: The tracker.
 

@@ -7,6 +7,7 @@ intents:
   - deny
   - mood_great
   - mood_unhappy
+  - mood_neutral
   - bot_challenge
   - pet_to_cheer_up
   - request_form
@@ -35,6 +36,12 @@ slots:
         value: "unhappy"
         intent: mood_unhappy
         not_intent: mood_great
+      - type: from_intent
+        value: "neutral"
+        intent: mood_neutral
+        condition:
+          active_loop: another_form
+          requested_slot: mood
 
 responses:
   utter_greet:

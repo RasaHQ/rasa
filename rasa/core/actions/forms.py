@@ -98,11 +98,6 @@ class FormAction(LoopAction):
 
         If None, map requested slot to an entity with the same name
         """
-        # requested_slot_mappings = self._to_list(
-        #     domain.slot_mapping_for_form(self.name()).get(
-        #         slot_to_fill, self.from_entity(slot_to_fill),
-        #     )
-        # )
         domain_slots = domain.as_dict().get("slots")
         requested_slot_mappings = domain_slots.get(slot_to_fill).get("slot_mappings")
 
@@ -384,7 +379,8 @@ class FormAction(LoopAction):
         Returns:
             a dictionary with one key being the name of the slot to fill
             and its value being the slot value, or an empty dictionary
-            if no slot value was found.
+            if no slot value was found or the slot mapping condition
+            did not match the form.
         """
         logger.debug(f"Trying to extract requested slot '{slot_to_fill}' ...")
 
@@ -414,6 +410,18 @@ class FormAction(LoopAction):
                     raise InvalidDomain("Provided slot mapping type is not supported")
 
                 if value is not None:
+                    condition_dict = requested_slot_mapping.get("condition")
+                    # check if found condition matches form
+                    if condition_dict:
+                        condition_loop = condition_dict.get("active_loop")
+                        if condition_loop != self.name():
+                            return {}
+
+                        condition_requested_slot = condition_dict.get("requested_slot")
+                        if condition_requested_slot:
+                            if condition_requested_slot != slot_to_fill:
+                                return {}
+
                     logger.debug(
                         f"Successfully extracted '{value}' for requested slot "
                         f"'{slot_to_fill}'"

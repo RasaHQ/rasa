@@ -918,7 +918,7 @@ class ActionExtractSlots(Action):
                     mapping["type"] == str(SlotMapping.FROM_ENTITY)
                     and SlotMapping.intent_is_desired(mapping, tracker)
                     and SlotMapping.entity_is_desired(
-                        mapping, slot, extracted_entities, tracker,
+                        mapping, extracted_entities, tracker,
                     )
                 )
                 should_fill_trigger_slot = mapping["type"] == str(
@@ -944,6 +944,9 @@ class ActionExtractSlots(Action):
                 elif should_fill_text_slot:
                     value = [tracker.latest_message.text]
                 else:
+                    value = None
+
+                if mapping.get("condition"):
                     value = None
 
                 if value:

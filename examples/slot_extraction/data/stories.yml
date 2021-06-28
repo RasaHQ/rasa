@@ -6,7 +6,9 @@ stories:
   steps:
   - intent: greet
   - action: utter_greet
-  - intent: mood_great
+  - or:
+      - intent: mood_neutral
+      - intent: mood_great
   - action: utter_happy
 
 - story: sad path 1
