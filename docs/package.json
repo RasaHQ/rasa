@@ -83,7 +83,7 @@
     ]
   },
   "devDependencies": {
-    "netlify-cli": "^2.59.0",
+    "netlify-cli": "^3.39.0",
     "remark-cli": "^8.0.1",
     "remark-lint": "^7.0.1",
     "remark-lint-no-dead-urls": "^1.1.0",
