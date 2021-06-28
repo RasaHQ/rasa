@@ -38,3 +38,19 @@ rules:
   - slot_was_set:
       - requested_slot: null
   - action: utter_submit
+
+- rule: activate another form
+  steps:
+    - intent: trigger_another_form
+    - action: another_form
+    - active_loop: another_form
+
+- rule: submit another form
+  condition:
+  - active_loop: another_form
+  steps:
+  - action: another_form
+  - active_loop: null
+  - slot_was_set:
+      - requested_slot: null
+  - action: utter_submit

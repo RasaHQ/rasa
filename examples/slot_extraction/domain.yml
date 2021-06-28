@@ -10,6 +10,7 @@ intents:
   - bot_challenge
   - pet_to_cheer_up
   - request_form
+  - trigger_another_form
 
 entities:
   - animal
@@ -68,6 +69,11 @@ forms:
   test_form:
     required_slots:
       - pet_kind
+
+  another_form:
+    required_slots:
+      - pet_kind
+      - mood
 
 session_config:
   session_expiration_time: 60
