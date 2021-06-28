@@ -8,6 +8,7 @@ intents:
   - mood_great
   - mood_unhappy
   - mood_neutral
+  - holiday
   - bot_challenge
   - pet_to_cheer_up
   - request_form
@@ -42,6 +43,12 @@ slots:
         condition:
           active_loop: another_form
           requested_slot: mood
+  timeout:
+    type: bool
+    influence_conversation: false
+    slot_mappings:
+      - type: custom
+        action: action_extract_timeout
 
 responses:
   utter_greet:
@@ -72,6 +79,9 @@ responses:
   utter_submit:
   - text: "Your information has been recorded."
 
+  utter_holiday:
+  - text: "I strongly encourage you to take some time off to avoid burn-out."
+
 forms:
   test_form:
     required_slots:
@@ -81,6 +91,9 @@ forms:
     required_slots:
       - pet_kind
       - mood
+
+actions:
+  - action_extract_timeout
 
 session_config:
   session_expiration_time: 60

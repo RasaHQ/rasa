@@ -1907,6 +1907,7 @@ class SlotMapping(Enum):
     FROM_INTENT = 1
     FROM_TRIGGER_INTENT = 2
     FROM_TEXT = 3
+    CUSTOM = 4
 
     def __str__(self) -> Text:
         """Returns a string representation of the object."""
@@ -1934,6 +1935,7 @@ class SlotMapping(Enum):
             str(SlotMapping.FROM_INTENT): ["value"],
             str(SlotMapping.FROM_TRIGGER_INTENT): ["value"],
             str(SlotMapping.FROM_TEXT): [],
+            str(SlotMapping.CUSTOM): ["action"],
         }
 
         mapping_type = mapping.get("type")

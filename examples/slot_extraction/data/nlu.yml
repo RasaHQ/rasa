@@ -93,6 +93,11 @@ nlu:
     - fine
     - I'm good
 
+- intent: holiday
+  examples: |
+    - I need some holiday.
+    - I should book some holiday.
+
 - intent: bot_challenge
   examples: |
     - are you a bot?

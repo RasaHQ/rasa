@@ -23,6 +23,11 @@ rules:
     - action: utter_cheer_up
     - action: utter_did_that_help
 
+- rule: encourage holiday taking
+  steps:
+    - intent: holiday
+    - action: utter_holiday
+
 - rule: activate form
   steps:
     - intent: request_form

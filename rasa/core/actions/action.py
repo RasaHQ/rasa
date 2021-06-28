@@ -664,7 +664,7 @@ class RemoteAction(Action):
 
     async def run(
         self,
-        output_channel: "OutputChannel",
+        output_channel: Optional["OutputChannel"],
         nlg: "NaturalLanguageGenerator",
         tracker: "DialogueStateTracker",
         domain: "Domain",
@@ -914,6 +914,8 @@ class ActionExtractSlots(Action):
 
         for slot in domain.slots:
             for mapping in slot.slot_mappings:
+                should_fill_custom_slot = mapping["type"] == str(SlotMapping.CUSTOM)
+
                 should_fill_entity_slot = (
                     mapping["type"] == str(SlotMapping.FROM_ENTITY)
                     and SlotMapping.intent_is_desired(mapping, tracker)
@@ -943,6 +945,19 @@ class ActionExtractSlots(Action):
                     value = [mapping.get("value")]
                 elif should_fill_text_slot:
                     value = [tracker.latest_message.text]
+                elif should_fill_custom_slot:
+                    all_events = await RemoteAction(
+                        mapping.get("action"),
+                        action_endpoint=EndpointConfig(
+                            url="http://localhost:5055/webhook"
+                        ),
+                    ).run(output_channel, nlg, tracker, domain)
+                    for event in all_events[::-1]:
+                        if isinstance(event, SlotSet):
+                            slot_events.append(event)
+                        else:
+                            break
+                    value = None
                 else:
                     value = None
 
