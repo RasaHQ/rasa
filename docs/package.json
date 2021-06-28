@@ -34,7 +34,7 @@
     "@docusaurus/plugin-sitemap": "2.0.0-alpha.63",
     "@docusaurus/theme-search-algolia": "2.0.0-alpha.63",
     "@fortawesome/fontawesome-svg-core": "^1.2.30",
-    "@fortawesome/free-solid-svg-icons": "^5.14.0",
+    "@fortawesome/free-solid-svg-icons": "^5.15.3",
     "@fortawesome/react-fontawesome": "^0.1.11",
     "@lunelson/sass-calc": "^1.2.0",
     "@lunelson/sass-lerp": "^1.0.0",
