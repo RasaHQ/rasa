@@ -443,14 +443,14 @@ class PolicyEnsemble:
                 try:
                     policy_object = constr_func(**policy)
                 except TypeError as e:
-                    raise Exception(f"Could not initialize {policy_name}. {e}")
+                    raise Exception(f"Could not initialize {policy_name}. {e}") from e
                 parsed_policies.append(policy_object)
-            except (ImportError, AttributeError):
+            except (ImportError, AttributeError) as e:
                 raise InvalidPolicyConfig(
                     f"Module for policy '{policy_name}' could not "
                     f"be loaded. Please make sure the "
                     f"name is a valid policy."
-                )
+                ) from e
 
         cls._check_if_rule_policy_used_with_rule_like_policies(parsed_policies)
 
