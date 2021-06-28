@@ -21,6 +21,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
@@ -264,10 +265,11 @@ class TEDPolicy(Policy):
         MASKED_LM: False,
         # ## Evaluation parameters
         # How often calculate validation accuracy.
-        # Small values may hurt performance, e.g. model accuracy.
+        # Small values may hurt performance.
         EVAL_NUM_EPOCHS: 20,
         # How many examples to use for hold out validation set
         # Large values may hurt performance, e.g. model accuracy.
+        # Set to 0 for no validation.
         EVAL_NUM_EXAMPLES: 0,
         # If you want to use tensorboard to visualize training and validation metrics,
         # set this option to a valid output directory.
@@ -360,7 +362,6 @@ class TEDPolicy(Policy):
         )
 
         self.config = rasa.utils.train_utils.update_confidence_type(self.config)
-
         rasa.utils.train_utils.validate_configuration_settings(self.config)
 
         self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
@@ -964,7 +965,7 @@ class TED(TransformerRasaModel):
 
     def _check_data(self) -> None:
         if not any(key in [INTENT, TEXT] for key in self.data_signature.keys()):
-            raise ValueError(
+            raise RasaException(
                 f"No user features specified. "
                 f"Cannot train '{self.__class__.__name__}' model."
             )

@@ -10,6 +10,7 @@ env:
   GKE_ZONE: us-central1
   GCLOUD_VERSION: "318.0.0"
   GITHUB_ISSUE_LABELS: '["type:bug :bug:", "tool:model-regression-tests"]'
+  PERFORMANCE_DROP_THRESHOLD: -0.05
 
 jobs:
   read_test_configuration:
@@ -45,7 +46,7 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          curl -o gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           chmod 755 gomplate
 
       - name: Render deployment template
@@ -89,6 +90,8 @@ jobs:
       # Determine where CUDA and Nvidia libraries are located. TensorFlow looks for libraries in the given paths
       LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
       ACCELERATOR_TYPE: "GPU"
+      GITHUB_ISSUE_TITLE: 'Scheduled Model Regression Test Failed'
+
     runs-on: [self-hosted, gpu]
     strategy:
       max-parallel: 1
@@ -295,44 +298,68 @@ jobs:
           name: report.json
           path: ./report.json
 
-      - name: Pick an assignee randomly
+      - name: Check duplicate issue
         if: failure()
-        id: pick_assignee
-        run: |
-          ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
-          # Randomly select an item from assignees list
-          ASSIGNEE=${ASSIGNEES_LIST[ $(( RANDOM % ${#ASSIGNEES_LIST[@]} )) ]}
-          echo "::set-output name=assignee::$ASSIGNEE"
-
-      - name: Open GitHub Issue 📬
-        if: failure()
-        uses: rishabhgupta/git-action-issue@v2
-        id: open_issue
+        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+        id: issue-exists
         with:
-            token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
-            title: "Scheduled Model Regression Test Failed"
-            body: "*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br> Scheduled Model Regression Test failed. <br> **Configuration**: ${{ matrix.config }} <br> **Dataset**: ${{ matrix.dataset}}"
-            assignees: ${{ steps.pick_assignee.outputs.assignee }}
+          result-encoding: string
+          github-token: ${{ github.token }}
+          script: |
+            // Get all open issues
+            const opts = await github.issues.listForRepo.endpoint.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ${{ env.GITHUB_ISSUE_LABELS }}
+            });
+            const issues = await github.paginate(opts)
 
-      - name: Add Label to the Issue
-        if: failure()
-        id: add_label
+            // Check if issue exist by comparing title and body
+            for (const issue of issues) {
+              if (issue.title.includes('${{ env.GITHUB_ISSUE_TITLE }}') &&
+                  issue.body.includes('${{ matrix.dataset }}') &&
+                  issue.body.includes('${{ matrix.config }}')) {
+                  console.log(`Found an exist issue \#${issue.number}. Skip the following steps.`);
+                  return 'true'
+                }
+            }
+            return 'false'
+
+      - name: Select a member from managers team randomly
+        if: failure() && steps.issue-exists.outputs.result == 'false'
         run: |
-          # Get issue number
-          ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.number')
-          echo "::set-output name=issue_number::$ISSUE_NUMBER"
+          MEMBERS=$(curl \
+                      -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                      -H "Accept: application/vnd.github.v3+json" \
+                      https://api.github.com/orgs/RasaHQ/teams/research/members)
+          # Make sure we get a list of members
+          [[ -z "$MEMBERS" ]] && echo "Could not find any members from the team." || true
 
-          # Add label to the issue
-          curl \
-            -X POST \
-            -H "Authorization: token ${{ secrets.RASABOT_GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
-            -d '{"labels": ${{ env.GITHUB_ISSUE_LABELS }}}'
+          # Shuffle the list, then select the first member as the assignee for the issue
+          ASSIGNEE=$(echo $MEMBERS | jq -r '.[].login' | shuf | head -n1)
+          echo ASSIGNEE="$ASSIGNEE" >> $GITHUB_ENV
+
+      - name: Create GitHub Issue 📬
+        id: create-issue
+        if: failure() && steps.issue-exists.outputs.result == 'false'
+        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            var issue = await github.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '${{ env.GITHUB_ISSUE_TITLE }}',
+              labels: ${{ env.GITHUB_ISSUE_LABELS }},
+              assignees: ['${{ env.ASSIGNEE }}'],
+              body: '*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br> Scheduled Model Regression Test failed. <br> **Configuration**: `${{ matrix.config }}` <br> **Dataset**: `${{ matrix.dataset}}`'
+            })
+            return issue.data.number
 
       - name: Notify Slack of Failure 😱
-        if: failure()
-        uses: 8398a7/action-slack@v3
+        if: failure()  && steps.issue-exists.outputs.result == 'false'
+        uses: 8398a7/action-slack@f3635935f58910a6d6951b73efe9037c960c8c04  # v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -355,7 +382,7 @@ jobs:
                 },
                 {
                   title: 'GitHub Issue',
-                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.add_label.outputs.issue_number }}`,
+                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.create-issue.outputs.result }}`,
                   short: false
                 },
                 {
@@ -377,6 +404,8 @@ jobs:
     needs:
     - deploy_runner_gpu
     - model_regression_test_gpu
+    env:
+      GITHUB_ISSUE_TITLE: 'Scheduled Model Regression Test Performance Drops'
 
     steps:
       - name: Checkout
@@ -408,7 +437,7 @@ jobs:
 
       - name: Download gomplate
         run: |-
-          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.6.0/gomplate_linux-amd64
+          sudo curl -o /usr/local/bin/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/v3.9.0/gomplate_linux-amd64
           sudo chmod +x /usr/local/bin/gomplate
 
       - name: Analyse Performance 🔍
@@ -420,57 +449,83 @@ jobs:
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
           echo "::set-output name=report_description::${OUTPUT}"
 
-          # Remove all (-0.00) from OUTPUT.
-          # We don't want to count (-0.00) as a performance drop
-          OUTPUT=${OUTPUT//(-0.00)/}
+          IS_DROPPED=false
 
-          # Any (negatives) found means there is a performance drops.
-          if [[ "${OUTPUT}" =~ \(-[0-9.]+\) ]]; then
-            echo "Some test performance scores decreased."
-            echo "::set-output name=is_dropped::true"
-          else
-            echo "No test performance drops."
-            echo "::set-output name=is_dropped::false"
-          fi
+          # Loop through all negative values within parentheses
+          # Set IS_DROPPED to true if there is any value lower
+          # than the threshold
+          for x in $(grep -o '\(-[0-9.]\+\)' <<< $OUTPUT); do
+            if (( $(bc -l <<< "${{ env.PERFORMANCE_DROP_THRESHOLD }} > $x") )); then
+              IS_DROPPED=true
+              echo "The decrease of some test performance is > ${{ env.PERFORMANCE_DROP_THRESHOLD }}. Executing the following steps..."
+              break
+            fi
+          done
 
-      - name: Pick an assignee randomly
+          echo "::set-output name=is_dropped::$IS_DROPPED"
+
+      - name: Check duplicate issue
         if: steps.performance.outputs.is_dropped == 'true'
-        id: pick_assignee
-        run: |
-          ASSIGNEES_LIST=("dakshvar22" "Ghostvv" "JEM-Mosig" "tttthomasssss" "samsucik" "koernerfelicia" "kedz" "aeshky")
-          # Randomly select an item from assignees list
-          ASSIGNEE=${ASSIGNEES_LIST[ $(( RANDOM % ${#ASSIGNEES_LIST[@]} )) ]}
-          echo "::set-output name=assignee::$ASSIGNEE"
-
-      - name: Open GitHub Issue 📬
-        if: steps.performance.outputs.is_dropped == 'true'
-        uses: rishabhgupta/git-action-issue@v2
-        id: open_issue
+        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+        id: issue-exists
         with:
-            token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
-            title: "Scheduled Model Regression Test Performance Drops"
-            body: "*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br> ${{ steps.performance.outputs.report_description }}"
-            assignees: ${{ steps.pick_assignee.outputs.assignee }}
+          result-encoding: string
+          github-token: ${{ github.token }}
+          script: |
+            // Get all open issues based on labels
+            const opts = await github.issues.listForRepo.endpoint.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ${{ env.GITHUB_ISSUE_LABELS }}
+            });
+            const issues = await github.paginate(opts)
 
-      - name: Add Label to the Issue
-        if: steps.performance.outputs.is_dropped == 'true'
-        id: add_label
+            // Check if issue exist by comparing title
+            for (const issue of issues) {
+              if (issue.title.includes('${{ env.GITHUB_ISSUE_TITLE }}') ) {
+                  console.log(`Found an exist issue \#${issue.number}. Skip the following steps.`);
+                  return 'true'
+                }
+            }
+            return 'false'
+
+
+      - name: Select a member from managers team randomly
+        if:  steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
         run: |
-          # Get issue number
-          ISSUE_NUMBER=$(echo '${{ steps.open_issue.outputs.issue }}' | jq -r '.number')
-          echo "::set-output name=issue_number::$ISSUE_NUMBER"
+          MEMBERS=$(curl \
+                      -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                      -H "Accept: application/vnd.github.v3+json" \
+                      https://api.github.com/orgs/RasaHQ/teams/research/members)
+          # Make sure we get a list of members
+          [[ -z "$MEMBERS" ]] && echo "Could not find any members from the team." || true
 
-          # Add label to the issue
-          curl \
-            -X POST \
-            -H "Authorization: token ${{ secrets.RASABOT_GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/$GITHUB_REPOSITORY/issues/${ISSUE_NUMBER}/labels \
-            -d '{"labels": ${{ env.GITHUB_ISSUE_LABELS }}}'
+          # Shuffle the list, then select the first member as the assignee for the issue
+          ASSIGNEE=$(echo $MEMBERS | jq -r '.[].login' | shuf | head -n1)
+          echo ASSIGNEE="$ASSIGNEE" >> $GITHUB_ENV
+
+      - name: Create GitHub Issue 📬
+        id: create-issue
+        if:  steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
+        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            var issue = await github.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '${{ env.GITHUB_ISSUE_TITLE }}',
+              labels: ${{ env.GITHUB_ISSUE_LABELS }},
+              assignees: ['${{ env.ASSIGNEE }}'],
+              body: '"*This PR is automatically created by the Scheduled Model Regression Test workflow. Checkout the Github Action Run [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).* <br> --- <br> **Description of Problem:** <br>  Some test performance scores **decreased**. Please look at the following table for more details. <br> ${{ steps.performance.outputs.report_description }}"'
+            })
+            return issue.data.number
+
 
       - name: Notify Slack when Performance Drops 💬
-        if: steps.performance.outputs.is_dropped == 'true'
-        uses: 8398a7/action-slack@v3
+        if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
+        uses: 8398a7/action-slack@f3635935f58910a6d6951b73efe9037c960c8c04 #v3
         with:
           status: custom
           fields: workflow,job,commit,repo,ref,author,took
@@ -483,7 +538,7 @@ jobs:
                 text: 'Scheduled model regression test performance drops :chart_with_downwards_trend:',
                 fields: [{
                   title: 'GitHub Issue',
-                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.add_label.outputs.issue_number }}`,
+                  value: `https://github.com/${{ github.repository }}/issues/${{ steps.create-issue.outputs.result }}`,
                   short: false
                 },
                 {
