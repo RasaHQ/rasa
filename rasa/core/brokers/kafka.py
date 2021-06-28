@@ -34,7 +34,7 @@ class KafkaEventBroker(EventBroker):
         ssl_check_hostname: bool = False,
         security_protocol: Text = "SASL_PLAINTEXT",
         loglevel: Union[int, Text] = logging.ERROR,
-        convert_intent_ids_to_string: bool = False,
+        convert_intent_id_to_string: bool = False,
         **kwargs: Any,
     ) -> None:
         """Kafka event broker.
@@ -69,8 +69,8 @@ class KafkaEventBroker(EventBroker):
             security_protocol: Protocol used to communicate with brokers.
                 Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.
             loglevel: Logging level of the kafka logger.
-            convert_intent_ids_to_string: Optional flag to configure whether intent ID's
-                are converted from an integer to a string. 
+            convert_intent_id_to_string: Optional flag to configure whether intent ID's
+                are converted from an integer to a string.
         """
         import kafka
 
@@ -206,8 +206,12 @@ class KafkaEventBroker(EventBroker):
         self.producer.send(self.topic, value=event, key=partition_key)
 
     def _convert_intent_id_to_string(self, event: Dict[Text, Any]) -> Dict[Text, Any]:
-        if event.get("event", "") == "user" and "id" in event.get("parse_data", {}).get("intent", {}):
-            event["parse_data"]["intent"]["id"] = str(event["parse_data"]["intent"]["id"])
+        if event.get("event", "") == "user" and "id" in event.get("parse_data", {}).get(
+            "intent", {}
+        ):
+            event["parse_data"]["intent"]["id"] = str(
+                event["parse_data"]["intent"]["id"]
+            )
         return event
 
     def _close(self) -> None:
