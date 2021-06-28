@@ -37,7 +37,7 @@ optional arguments:
   --conversation-id CONVERSATION_ID
                         Specify the id of the conversation the messages are
                         in. Defaults to a UUID that will be randomly
-                        generated. (default: 9c7ca2bfae90479c89dd8ed9b821ae22)
+                        generated. (default: 4118ba819b3e48ab816c1055086bc124)
   --endpoints ENDPOINTS
                         Configuration file for the model server and the
                         connectors as a yml file. (default: endpoints.yml)
