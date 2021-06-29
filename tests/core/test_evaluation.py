@@ -12,12 +12,14 @@ from rasa.core.test import (
     _create_data_generator,
     _collect_story_predictions,
     test as evaluate_stories,
-    FAILED_STORIES_FILE,
+    _clean_entity_results,
+)
+from rasa.core.constants import (
     CONFUSION_MATRIX_STORIES_FILE,
     REPORT_STORIES_FILE,
+    FAILED_STORIES_FILE,
     SUCCESSFUL_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
-    _clean_entity_results,
 )
 from rasa.core.policies.memoization import MemoizationPolicy
 

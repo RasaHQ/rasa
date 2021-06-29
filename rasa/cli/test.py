@@ -3,17 +3,17 @@ import logging
 import os
 from typing import List, Optional, Text, Dict, Union, Any
 
-from rasa.core.test import (
-    FAILED_STORIES_FILE,
-    SUCCESSFUL_STORIES_FILE,
-    STORIES_WITH_WARNINGS_FILE,
-)
 from rasa.cli import SubParsersAction
 import rasa.shared.data
 from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
 from rasa.cli.arguments import test as arguments
+from rasa.core.constants import (
+    FAILED_STORIES_FILE,
+    SUCCESSFUL_STORIES_FILE,
+    STORIES_WITH_WARNINGS_FILE,
+)
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
     DEFAULT_E2E_TESTS_PATH,

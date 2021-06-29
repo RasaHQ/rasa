@@ -4,8 +4,37 @@ from typing import Text
 import pytest
 
 import rasa.core.test
+from rasa.core.policies.ensemble import SimplePolicyEnsemble
+from rasa.core.policies.policy import PolicyPrediction
+from rasa.shared.core.events import UserUttered
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.capture import CaptureFixture
 from rasa.core.agent import Agent
+
+
+def _probabilities_with_action_unlikely_intent_for(intent_name: Text):
+    _original = SimplePolicyEnsemble.probabilities_using_best_policy
+
+    def probabilities_using_best_policy(
+        self, tracker, domain, interpreter, **kwargs,
+    ) -> PolicyPrediction:
+        latest_event = tracker.events[-1]
+        if (
+            isinstance(latest_event, UserUttered)
+            and latest_event.parse_data["intent"]["name"] == intent_name
+        ):
+            # Here we return `action_unlikely_intent` if the name of the latest intent
+            # matches `intent_name`.
+            # We need to do it because every time the tests are run,
+            # training will result in different model weights which might
+            # result in different predictions of `action_unlikely_intent`.
+            # Because we're not testing `IntentTEDPolicy` here we simply trigger it
+            # predicting `action_unlikely_intent` in a specified moment
+            # to make the tests deterministic.
+            return PolicyPrediction.for_action_name(domain, "action_unlikely_intent")
+        return _original(self, tracker, domain, interpreter, **kwargs)
+
+    return probabilities_using_best_policy
 
 
 async def test_testing_warns_if_action_unknown(
@@ -43,8 +72,14 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
 
 
 async def test_action_unlikely_intent_1(
-    tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
 ):
+    monkeypatch.setattr(
+        SimplePolicyEnsemble,
+        "probabilities_using_best_policy",
+        _probabilities_with_action_unlikely_intent_for("mood_unhappy"),
+    )
+
     file_name = tmp_path / "test_action_unlikely_intent_1.yml"
     file_name.write_text(
         """
@@ -71,8 +106,14 @@ async def test_action_unlikely_intent_1(
 
 
 async def test_action_unlikely_intent_2(
-    tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
 ):
+    monkeypatch.setattr(
+        SimplePolicyEnsemble,
+        "probabilities_using_best_policy",
+        _probabilities_with_action_unlikely_intent_for("mood_unhappy"),
+    )
+
     file_name = tmp_path / "test_action_unlikely_intent_2.yml"
     file_name.write_text(
         """
@@ -100,8 +141,14 @@ async def test_action_unlikely_intent_2(
 
 
 async def test_action_unlikely_intent_complete(
-    tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
 ):
+    monkeypatch.setattr(
+        SimplePolicyEnsemble,
+        "probabilities_using_best_policy",
+        _probabilities_with_action_unlikely_intent_for("mood_unhappy"),
+    )
+
     file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
     file_name.write_text(
         """
@@ -159,8 +206,14 @@ async def test_action_unlikely_intent_complete(
 
 
 async def test_action_unlikely_intent_wrong_story(
-    tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
 ):
+    monkeypatch.setattr(
+        SimplePolicyEnsemble,
+        "probabilities_using_best_policy",
+        _probabilities_with_action_unlikely_intent_for("mood_unhappy"),
+    )
+
     file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
     file_name.write_text(
         """
