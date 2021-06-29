@@ -16,6 +16,7 @@ from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaException
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
@@ -391,9 +392,22 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         Args:
             existing_vocabulary: existing vocabulary
             vocabulary: set of new tokens
+
+        Raises:
+            RasaException: if `use_shared_vocab` is set to True and there are new
+                           vocabulary items added during incremental training.
         """
         for token in vocabulary:
             if token not in existing_vocabulary:
+                if self.use_shared_vocab:
+                    raise RasaException(
+                        "Using a shared vocabulary is not supported during "
+                        "incremental training. It requires dynamically adjusting "
+                        "layers that correspond to label attributes such as "
+                        "INTENT_RESPONSE_KEY, INTENT, etc. This is currently not "
+                        "possible. In order to avoid this exception we suggest to "
+                        "set `use_shared_vocab` to False."
+                    )
                 existing_vocabulary[token] = len(existing_vocabulary)
 
     def _set_vocabulary(

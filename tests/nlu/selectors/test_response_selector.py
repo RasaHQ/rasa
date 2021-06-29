@@ -10,8 +10,10 @@ from rasa.shared.nlu.constants import (
     TEXT,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
+    INTENT_RESPONSE_KEY,
 )
 from rasa.nlu.model import Interpreter
+from rasa.shared.nlu.training_data.loading import load_data
 
 
 @pytest.mark.timeout(120)
@@ -25,7 +27,9 @@ async def test_adjusting_layers_incremental_training(
        Checking if they were replaced correctly is also important
        and is done in `test_replace_dense_for_sparse_layers`
        in `test_rasa_layers.py`.
-       """
+    """
+    iter1_data_path = "data/test_incremental_training/iter1/"
+    iter2_data_path = "data/test_incremental_training/"
     pipeline = [
         {"name": "WhitespaceTokenizer"},
         {"name": "LexicalSyntacticFeaturizer"},
@@ -44,10 +48,12 @@ async def test_adjusting_layers_incremental_training(
     (_, trained, persisted_path) = await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
-        data="data/test_incremental_training/iter1/",
+        data=iter1_data_path,
         component_builder=component_builder,
     )
     assert trained.pipeline
+    old_data_signature = trained.pipeline[-1].model.data_signature
+    old_predict_data_signature = trained.pipeline[-1].model.predict_data_signature
     message = Message.build(text="Rasa is great!")
     trained.featurize_message(message)
     old_sparse_feature_sizes = message.get_sparse_feature_sizes(attribute=TEXT)
@@ -78,7 +84,7 @@ async def test_adjusting_layers_incremental_training(
     (_, trained, _) = await rasa.nlu.train.train(
         _config,
         path=str(tmpdir),
-        data="data/test_incremental_training/",
+        data=iter2_data_path,
         component_builder=component_builder,
         model_to_finetune=loaded,
     )
@@ -107,6 +113,67 @@ async def test_adjusting_layers_incremental_training(
     assert final_rs_sentence_size == sum(
         new_sparse_feature_sizes[FEATURE_TYPE_SENTENCE]
     )
+    # check if the data signatures were correctly updated
+    new_data_signature = trained.pipeline[-1].model.data_signature
+    new_predict_data_signature = trained.pipeline[-1].model.predict_data_signature
+    expected_sequence_units = sum(new_sparse_feature_sizes[FEATURE_TYPE_SEQUENCE])
+    expected_sentence_units = sum(new_sparse_feature_sizes[FEATURE_TYPE_SENTENCE])
+    iter2_data = load_data(iter2_data_path)
+    expected_sequence_lengths = len(
+        [
+            message
+            for message in iter2_data.training_examples
+            if message.get(INTENT_RESPONSE_KEY)
+        ]
+    )
+    for attribute, attribute_signature in new_data_signature.items():
+        if attribute == TEXT:
+            assert (
+                new_data_signature[attribute][FEATURE_TYPE_SEQUENCE][0].units
+                == expected_sequence_units
+            )
+            assert (
+                new_data_signature[attribute][FEATURE_TYPE_SENTENCE][0].units
+                == expected_sentence_units
+            )
+            assert (
+                new_data_signature[attribute]["sequence_lengths"][0].units
+                == expected_sequence_lengths
+            )
+            assert (
+                new_predict_data_signature[attribute][FEATURE_TYPE_SEQUENCE][0].units
+                == expected_sequence_units
+            )
+            assert (
+                new_predict_data_signature[attribute][FEATURE_TYPE_SENTENCE][0].units
+                == expected_sentence_units
+            )
+            assert (
+                new_predict_data_signature[attribute]["sequence_lengths"][0].units
+                == expected_sequence_lengths
+            )
+        else:
+            for feature_type in attribute_signature:
+                if feature_type != "sequence_lengths":
+                    assert (
+                        new_data_signature[attribute][feature_type]
+                        == old_data_signature[attribute][feature_type]
+                    )
+                    if attribute in new_predict_data_signature:
+                        assert (
+                            new_predict_data_signature[attribute][feature_type]
+                            == old_predict_data_signature[attribute][feature_type]
+                        )
+                else:
+                    assert (
+                        new_data_signature[attribute][feature_type][0].units
+                        == expected_sequence_lengths
+                    )
+                    if attribute in new_predict_data_signature:
+                        assert (
+                            new_predict_data_signature[attribute][feature_type][0].units
+                            == expected_sequence_lengths
+                        )
 
 
 @pytest.mark.timeout(120)

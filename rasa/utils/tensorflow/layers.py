@@ -185,7 +185,7 @@ class DenseForSparse(tf.keras.layers.Dense):
         f"sparse_to_dense.{attribute}_{feature_type}".
 
         Returns:
-            attribute of dense layers.
+            attribute of the layer.
         """
         metadata = self.name.split(".")
         if len(metadata) > 1:

@@ -861,18 +861,19 @@ def test_sequence_layer_correct_output(
 
 
 @pytest.mark.parametrize(
-    "new_sparse_feature_sizes, old_sparse_feature_sizes, feature_type",
+    "new_sparse_feature_sizes, old_sparse_feature_sizes, feature_type, use_bias",
     [
-        ([10, 10, 10], [3, 2, 3], FEATURE_TYPE_SENTENCE),
-        ([10, 10, 10], [1, 5, 2], FEATURE_TYPE_SEQUENCE),
-        ([3, 3, 3], [3, 3, 3], FEATURE_TYPE_SEQUENCE),
-        ([8], [3], FEATURE_TYPE_SENTENCE),
+        ([10, 10, 10], [3, 2, 3], FEATURE_TYPE_SENTENCE, True),
+        ([10, 10, 10], [1, 5, 2], FEATURE_TYPE_SEQUENCE, False),
+        ([3, 3, 3], [3, 3, 3], FEATURE_TYPE_SEQUENCE, True),
+        ([8], [3], FEATURE_TYPE_SENTENCE, False),
     ],
 )
 def test_replace_dense_for_sparse_layers(
     new_sparse_feature_sizes: List[int],
     old_sparse_feature_sizes: List[int],
     feature_type: Text,
+    use_bias: bool,
 ):
     """Tests if `DenseForSparse` layers are adjusted correctly."""
     output_units = 10
@@ -880,7 +881,7 @@ def test_replace_dense_for_sparse_layers(
         np.random.random((sum(old_sparse_feature_sizes), output_units))
     )
     layer = layers.DenseForSparse(
-        units=output_units, kernel_initializer=kernel_initializer
+        units=output_units, kernel_initializer=kernel_initializer, use_bias=use_bias
     )
     layer.build(input_shape=sum(old_sparse_feature_sizes))
 
@@ -896,6 +897,13 @@ def test_replace_dense_for_sparse_layers(
 
     # check dimensions
     assert new_layer.get_kernel().shape[0] == sum(new_sparse_feature_sizes)
+
+    # check if bias tensor was preserved correctly
+    if use_bias:
+        assert np.array_equal(layer.get_bias().numpy(), new_layer.get_bias().numpy())
+    else:
+        assert new_layer.get_bias() is None
+
     # check if the existing weights were preserved
     chunk_index, new_chunk_index = 0, 0
     kernel, new_kernel = layer.get_kernel().numpy(), new_layer.get_kernel().numpy()

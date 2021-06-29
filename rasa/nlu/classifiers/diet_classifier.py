@@ -805,7 +805,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_attribute = (
             INTENT if self.component_config[INTENT_CLASSIFICATION] else None
         )
-
         model_data = self._create_model_data(
             training_data.nlu_examples,
             label_id_index_mapping,

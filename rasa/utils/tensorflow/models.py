@@ -559,7 +559,7 @@ class TransformerRasaModel(RasaModel):
 
         First we should check if any of the sparse feature sizes has decreased
         and raise an exception if this happens.
-        if none of them have decreased and any of them has increased, then the
+        If none of them have decreased and any of them has increased, then the
         function updates `DenseForSparse` layers, compiles the model, fits a sample
         data on it to activate adjusted layer(s) and updates the data signatures.
 
@@ -642,6 +642,9 @@ class TransformerRasaModel(RasaModel):
             new_sparse_feature_sizes: sizes of current sparse features.
             old_sparse_feature_sizes: sizes of sparse features the model was
                                       previously trained on.
+
+        Returns:
+            `True` if any of the sparse feature sizes has increased, `False` otherwise.
         """
         for attribute, new_feature_sizes in new_sparse_feature_sizes.items():
             old_feature_sizes = old_sparse_feature_sizes[attribute]
