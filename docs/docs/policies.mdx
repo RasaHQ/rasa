@@ -438,7 +438,7 @@ the following story in your training data:
   - action: restaurant_form
   - active_loop: null
   - slot_was_set:
-    - requested_slot: null
+    requested_slot: null
 ```
 
 but an actual conversation might encounter interjections inside the form which you haven't accounted for:
@@ -452,7 +452,7 @@ but an actual conversation might encounter interjections inside the form which y
   - action: restaurant_form
   - active_loop: restaurant_form
   - slot_was_set:
-    - requested_slot: cuisine
+    requested_slot: cuisine
   - user: |
         Does it matter? I want to be quick.
     intent: deny
