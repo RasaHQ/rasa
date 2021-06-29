@@ -10,6 +10,7 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import NUMBER_OF_TRAINING_STORIES_FILE, PERCENTAGE_KEY
 from rasa.core import training
+from rasa.shared.core.constants import DEFAULT_ACTION_NAMES
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, Event, ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -75,9 +76,11 @@ async def train(
     )
     story_to_training_data_converter = StoryToTrainingDataConverter()
     message_to_e2e_features_converter = MessageToE2EFeatureConverter()
-
+    domain = domain_file
     logger.debug("Converting stories to training data")
-    training_data = story_to_training_data_converter.convert_for_training(story_graph)
+    training_data = story_to_training_data_converter.convert_for_training(
+        story_graph, domain
+    )
     logger.debug("Featurizing messages")
     for msg in training_data.training_examples:
         interpreter.featurize_message(msg)
@@ -204,11 +207,29 @@ def do_interactive_learning(
 
 
 class StoryToTrainingDataConverter:
-    def convert_for_training(self, story_graph: StoryGraph) -> TrainingData:
-        messages = []
-        for step in story_graph.story_steps:
-            messages += self._convert_tracker_to_messages(step.events)
+    def convert_for_training(
+        self, story_graph: StoryGraph, domain: Domain
+    ) -> TrainingData:
+        user_actions = [
+            ActionExecuted(user_action) for user_action in domain.user_actions
+        ]
+        end_to_end_actions = [
+            ActionExecuted(action_text=action_text)
+            for action_text in domain.action_texts
+        ]
+        default_actions = [
+            ActionExecuted(default_action) for default_action in DEFAULT_ACTION_NAMES
+        ]
 
+        user_events = []
+        for step in story_graph.story_steps:
+            user_events += [
+                event for event in step.events if isinstance(event, UserUttered)
+            ]
+
+        messages = self._convert_tracker_to_messages(
+            user_actions + end_to_end_actions + default_actions + user_events
+        )
         # Workaround: add at least one end to end message to initialize
         # the `CountVectorizer` for e2e. Alternatives: Store information or simply config
         messages.append(
@@ -250,7 +271,11 @@ class MessageToE2EFeatureConverter:
     def convert(self, training_data: TrainingData) -> Dict[Text, Message]:
         additional_features = {}
         for message in training_data.training_examples:
-            texts = [v for k, v in message.data.items() if k in {ACTION_TEXT, TEXT}]
+            texts = [
+                v
+                for k, v in message.data.items()
+                if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
+            ]
             if len(texts) > 0:
                 additional_features[texts[0]] = message
 

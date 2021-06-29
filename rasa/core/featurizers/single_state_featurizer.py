@@ -242,7 +242,11 @@ class SingleStateFeaturizer:
         ):
             interpreter = RegexInterpreter()
 
-        texts = [v for k, v in sub_state.items() if k in {ACTION_TEXT, TEXT}]
+        texts = [
+            v
+            for k, v in sub_state.items()
+            if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
+        ]
         if len(texts) > 0 and texts[0] in e2e_features:
             parsed_message = e2e_features[texts[0]]
         else:

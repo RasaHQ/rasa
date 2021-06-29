@@ -584,7 +584,7 @@ class TEDPolicy(Policy):
         )
         events = []
         if INTENT in attributes_needed:
-            events.append(UserUttered(text="hello", intent={"name": domain.intents[0]}))
+            events.append(UserUttered(text="hi", intent={"name": domain.intents[0]}))
             if ACTION_NAME in attributes_needed:
                 events.append(ActionExecuted(action_name=domain.user_actions[0]))
             if ACTION_TEXT in attributes_needed:
@@ -594,7 +594,7 @@ class TEDPolicy(Policy):
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
 
         if TEXT in attributes_needed:
-            events.append(UserUttered(text="hello"))
+            events.append(UserUttered(text="hi"))
             if ACTION_NAME in attributes_needed:
                 if len(domain.user_actions) > 0:
                     # use first custom action
