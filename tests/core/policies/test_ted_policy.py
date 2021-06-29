@@ -480,7 +480,8 @@ class TestTEDPolicy(PolicyTestCollection):
             tracker_without_action, default_domain, interpreter
         )
 
-        # If the weights didn't change then both trackers should result in same prediction.
+        # If the weights didn't change then both trackers
+        # should result in same prediction.
         assert (
             prediction_with_action.probabilities
             == prediction_without_action.probabilities

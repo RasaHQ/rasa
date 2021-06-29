@@ -756,7 +756,8 @@ def test_rule_action_wins_over_action_unlikely_intent(
             UserUttered(text="goodbye", intent={"name": "goodbye"}),
         ],
     )
-    prediction = intent_ted_policy_moodbot_agent.policy_ensemble.probabilities_using_best_policy(
+    policy_ensemble = intent_ted_policy_moodbot_agent.policy_ensemble
+    prediction = policy_ensemble.probabilities_using_best_policy(
         tracker, domain, NaturalLanguageInterpreter()
     )
 
@@ -782,7 +783,8 @@ def test_ensemble_prevents_multiple_action_unlikely_intents(
         ],
     )
 
-    prediction = intent_ted_policy_moodbot_agent.policy_ensemble.probabilities_using_best_policy(
+    policy_ensemble = intent_ted_policy_moodbot_agent.policy_ensemble
+    prediction = policy_ensemble.probabilities_using_best_policy(
         tracker, domain, NaturalLanguageInterpreter()
     )
 
