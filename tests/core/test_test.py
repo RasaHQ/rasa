@@ -4,6 +4,7 @@ from typing import Text, Optional, Dict, Any, List
 import pytest
 
 import rasa.core.test
+import rasa.shared.utils.io
 from rasa.core.policies.ensemble import SimplePolicyEnsemble
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.core.events import UserUttered
@@ -261,35 +262,66 @@ async def test_action_unlikely_intent_wrong_story(
     assert result["report"]["conversation_accuracy"]["total"] == 1
 
 
+@pytest.mark.parametrize(
+    "metadata_for_intents, order",
+    [
+        ({
+             "mood_unhappy": {
+                 QUERY_INTENT_KEY: {
+                     NAME: "mood_unhappy",
+                     SEVERITY_KEY: 2.0,
+                     THRESHOLD_KEY: 0.0,
+                     SCORE_KEY: -2.0,
+                 }
+             },
+             "mood_great": {
+                 QUERY_INTENT_KEY: {
+                     NAME: "mood_great",
+                     SEVERITY_KEY: 3.0,
+                     THRESHOLD_KEY: 0.2,
+                     SCORE_KEY: -1.0,
+                 }
+             },
+             "affirm": {
+                 QUERY_INTENT_KEY: {
+                     NAME: "affirm",
+                     SEVERITY_KEY: 4.2,
+                     THRESHOLD_KEY: 0.2,
+                     SCORE_KEY: -4.0,
+                 }
+             },
+         }, ["path2", "path1"]),
+        ({
+             "mood_unhappy": {
+                 QUERY_INTENT_KEY: {
+                     NAME: "mood_unhappy",
+                     SEVERITY_KEY: 2.0,
+                     THRESHOLD_KEY: 0.0,
+                     SCORE_KEY: -2.0,
+                 }
+             },
+             "mood_great": {
+                 QUERY_INTENT_KEY: {
+                     NAME: "mood_great",
+                     SEVERITY_KEY: 5.0,
+                     THRESHOLD_KEY: 0.2,
+                     SCORE_KEY: -1.0,
+                 }
+             },
+             "affirm": {
+                 QUERY_INTENT_KEY: {
+                     NAME: "affirm",
+                     SEVERITY_KEY: 4.2,
+                     THRESHOLD_KEY: 0.2,
+                     SCORE_KEY: -4.0,
+                 }
+             },
+         }, ["path1", "path2"])
+    ]
+)
 async def test_multiple_warnings_sorted_on_severity(
-    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent, metadata_for_intents: Dict, order: List[Text]
 ):
-    metadata_for_intents = {
-        "mood_unhappy": {
-            QUERY_INTENT_KEY: {
-                NAME: "mood_unhappy",
-                SEVERITY_KEY: 2.0,
-                THRESHOLD_KEY: 0.0,
-                SCORE_KEY: -2.0,
-            }
-        },
-        "mood_great": {
-            QUERY_INTENT_KEY: {
-                NAME: "mood_great",
-                SEVERITY_KEY: 1.2,
-                THRESHOLD_KEY: 0.2,
-                SCORE_KEY: -1.0,
-            }
-        },
-        "affirm": {
-            QUERY_INTENT_KEY: {
-                NAME: "affirm",
-                SEVERITY_KEY: 4.2,
-                THRESHOLD_KEY: 0.2,
-                SCORE_KEY: -4.0,
-            }
-        },
-    }
     monkeypatch.setattr(
         SimplePolicyEnsemble,
         "probabilities_using_best_policy",
@@ -329,18 +361,15 @@ async def test_multiple_warnings_sorted_on_severity(
                   yes
                 intent: affirm
               - action: utter_happy
+              
         """
     )
 
     result = await rasa.core.test.test(
-        str(file_name),
-        intent_ted_policy_moodbot_agent,
-        # out_directory=str(tmp_path),
-        out_directory="./results_testing",
+        str(file_name), intent_ted_policy_moodbot_agent, out_directory=str(tmp_path),
     )
 
     warnings_file = tmp_path / STORIES_WITH_WARNINGS_FILE
-
-    # print(result)
-
-    # assert False
+    warnings_data = rasa.shared.utils.io.read_yaml_file(warnings_file)
+    for index, item in enumerate(order):
+        assert warnings_data["stories"][index]["story"].startswith(item)
