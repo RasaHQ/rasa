@@ -1001,7 +1001,7 @@ default restart, label `2` a greeting and `3` indicates goodbye.
 A policy can be trained to learn two kinds of labels -
 
 1. The next most appropriate action to be triggered by the assistant. For example, [`TEDPolicy`](#ted-policy) is trained to do this.
-2. The next most likely intent that a user can express. For example, [`IntentTEDPolicy`](#intented-policy) is trained to do this.
+2. The next most likely intent that a user can express. For example, [`IntentTEDPolicy`](#intentted-policy) is trained to do this.
 
 Hence, a tracker can be featurized to learn one of the above kind of labels.
 Depending on the policy, the target labels correspond to bot actions or bot utterances
@@ -1037,7 +1037,7 @@ should be reshaped to `(num_unique_turns, max_history * num_input_features)`.
 ##### 3. Intent Max History
 
 `IntentMaxHistoryTrackerFeaturizer` inherits from `MaxHistoryTrackerFeaturizer`. Since, it is used by
-[`IntentTEDPolicy`](#intented-policy), the target labels that it creates are the intents that can be
+[`IntentTEDPolicy`](#intentted-policy), the target labels that it creates are the intents that can be
 expressed by a user in the context of a conversation tracker. Unlike
 other tracker featurizers, there can be multiple target labels. Hence, it pads the
 list of target labels with a constant value (`-1`) on the right to return an equally sized list of target labels

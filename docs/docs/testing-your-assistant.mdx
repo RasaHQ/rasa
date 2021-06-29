@@ -382,8 +382,8 @@ incorrect action was predicted instead.
 The test script will also generate a warnings file called `results/stories_with_warnings.yml`.
 This file contains all test stories for which [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
 was predicted at any conversation turn but all actions from the original story were predicted correctly.
-However, if a test story originally included an `action_unlikely_intent`, for example to ensure [a rule triggers what
-happens after an `action_unlikely_intent`](./default-actions.mdx#customization-1) but the ensemble of
+However, if a test story originally included an `action_unlikely_intent`, for example to ensure [a rule is designed to
+trigger the conversation path after an `action_unlikely_intent`](./default-actions.mdx#customization-1) but the ensemble of
 policies failed to do so, then the corresponding story will end up in `results/failed_test_stories.yml` as
 a failed story.
 
@@ -393,7 +393,7 @@ The higher the severity, the more unlikely is the intent and hence reviewing tha
 conversation path becomes more critical.
 
 It should be noted that `action_unlikely_intent` is predicted by
-[`IntentTEDPolicy`](./policies.mdx#intented-policy) which employs a machine learning based model
+[`IntentTEDPolicy`](./policies.mdx#intentted-policy) which employs a machine learning based model
 under the hood and hence can result in false warnings as well. You can choose to ignore such warnings
 if the conversation paths in these stories are already present in the training stories.
 
