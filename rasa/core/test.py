@@ -816,7 +816,7 @@ def _sort_trackers_with_severity_of_warning(
 ) -> List[DialogueStateTracker]:
     """Sort the given trackers according to 'severity' of `action_unlikely_intent`.
 
-    Severity is calculated by `IntentTEDPolicy` as is attached as
+    Severity is calculated by `IntentTEDPolicy` and is attached as
     metadata to `ActionExecuted` event.
 
     Args:
@@ -918,18 +918,12 @@ async def _collect_story_predictions(
         accuracy,
     )
 
-    # Sort the stories according to `severity` of `action_unlikely_intent`
-    failed_stories = _sort_trackers_with_severity_of_warning(failed_stories)
-    stories_with_warnings = _sort_trackers_with_severity_of_warning(
-        stories_with_warnings
-    )
-
     return (
         StoryEvaluation(
             evaluation_store=story_eval_store,
-            failed_stories=failed_stories,
+            failed_stories=_sort_trackers_with_severity_of_warning(failed_stories),
             successful_stories=successful_stories,
-            stories_with_warnings=stories_with_warnings,
+            stories_with_warnings=_sort_trackers_with_severity_of_warning(stories_with_warnings),
             action_list=action_list,
             in_training_data_fraction=in_training_data_fraction,
         ),
