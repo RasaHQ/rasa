@@ -56,7 +56,7 @@
     "postcss-pseudo-any": "^1.0.1",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
-    "react-live": "^2.2.2",
+    "react-live": "^2.2.3",
     "react-promise": "^3.0.2",
     "react-router-dom": "^5.2.0",
     "redoc": "^2.0.0-rc.31",
