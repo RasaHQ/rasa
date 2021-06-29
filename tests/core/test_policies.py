@@ -37,6 +37,7 @@ from rasa.shared.core.events import (
     Event,
     UserUttered,
     EntitiesAdded,
+    SlotSet,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
@@ -499,13 +500,15 @@ class TestMemoizationPolicy(PolicyTestCollection):
                 [
                     ActionExecuted("action_listen"),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
+                    SlotSet("name", "Peter"),
                     ActionExecuted("action_unlikely_intent"),
                 ],
                 [
                     ActionExecuted("action_listen"),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    SlotSet("name", "Peter"),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
                 ],
             ),
         ],
@@ -519,10 +522,10 @@ class TestMemoizationPolicy(PolicyTestCollection):
     ):
         interpreter = RegexInterpreter()
         tracker_with_action = DialogueStateTracker.from_events(
-            "test 1", evts=tracker_events_with_action
+            "test 1", evts=tracker_events_with_action, slots=default_domain.slots
         )
         tracker_without_action = DialogueStateTracker.from_events(
-            "test 2", evts=tracker_events_without_action
+            "test 2", evts=tracker_events_without_action, slots=default_domain.slots
         )
         prediction_with_action = trained_policy.predict_action_probabilities(
             tracker_with_action, default_domain, interpreter
@@ -531,7 +534,8 @@ class TestMemoizationPolicy(PolicyTestCollection):
             tracker_without_action, default_domain, interpreter
         )
 
-        # Memoization shouldn't be affected.
+        # Memoization shouldn't be affected with the
+        # presence of action_unlikely_intent.
         assert (
             prediction_with_action.probabilities
             == prediction_without_action.probabilities

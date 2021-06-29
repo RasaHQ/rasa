@@ -687,8 +687,9 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             tracker_without_action, default_domain, interpreter
         )
 
-        # If the weights didn't change then both trackers should result in same prediction.
-        # For `IntentTEDPolicy`, the real prediction is inside action metadata.
+        # If the weights didn't change then both trackers
+        # should result in same prediction. For `IntentTEDPolicy`, the real
+        # prediction is inside action metadata.
         assert (
             prediction_with_action.action_metadata
             == prediction_without_action.action_metadata

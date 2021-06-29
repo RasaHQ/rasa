@@ -1,9 +1,8 @@
 from pathlib import Path
-from typing import Text, List
+from typing import Text
 
 import pytest
 
-from rasa.core.policies.policy import PolicyPrediction
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 
 from rasa.core import training
@@ -37,13 +36,13 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     LoopInterrupted,
     FollowupAction,
-    Event,
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.rule_policy import RulePolicy, InvalidRule, RULES
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
+from tests.core.test_utils import assert_predicted_action
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
@@ -778,22 +777,6 @@ def test_faq_rule():
     )
 
     assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
-
-
-def assert_predicted_action(
-    prediction: PolicyPrediction,
-    domain: Domain,
-    expected_action_name: Text,
-    confidence: float = 1.0,
-    is_end_to_end_prediction: bool = False,
-    is_no_user_prediction: bool = False,
-) -> None:
-    assert prediction.max_confidence == confidence
-    index_of_predicted_action = prediction.max_confidence_index
-    prediction_action_name = domain.action_names_or_texts[index_of_predicted_action]
-    assert prediction_action_name == expected_action_name
-    assert prediction.is_end_to_end_prediction == is_end_to_end_prediction
-    assert prediction.is_no_user_prediction == is_no_user_prediction
 
 
 async def test_predict_form_action_if_in_form():
