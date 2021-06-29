@@ -921,9 +921,11 @@ async def _collect_story_predictions(
     return (
         StoryEvaluation(
             evaluation_store=story_eval_store,
-            failed_stories=_sort_trackers_with_severity_of_warning(failed_stories),
+            failed_stories=failed_stories,
             successful_stories=successful_stories,
-            stories_with_warnings=_sort_trackers_with_severity_of_warning(stories_with_warnings),
+            stories_with_warnings=_sort_trackers_with_severity_of_warning(
+                stories_with_warnings
+            ),
             action_list=action_list,
             in_training_data_fraction=in_training_data_fraction,
         ),

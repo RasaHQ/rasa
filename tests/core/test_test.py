@@ -266,67 +266,71 @@ async def test_action_unlikely_intent_wrong_story(
     "metadata_for_intents, story_order",
     [
         (
-                {
-                    "mood_unhappy": {
-                        QUERY_INTENT_KEY: {
-                            NAME: "mood_unhappy",
-                            SEVERITY_KEY: 2.0,
-                            THRESHOLD_KEY: 0.0,
-                            SCORE_KEY: -2.0,
-                        }
-                    },
-                    "mood_great": {
-                        QUERY_INTENT_KEY: {
-                            NAME: "mood_great",
-                            SEVERITY_KEY: 3.0,
-                            THRESHOLD_KEY: 0.2,
-                            SCORE_KEY: -1.0,
-                        }
-                    },
-                    "affirm": {
-                        QUERY_INTENT_KEY: {
-                            NAME: "affirm",
-                            SEVERITY_KEY: 4.2,
-                            THRESHOLD_KEY: 0.2,
-                            SCORE_KEY: -4.0,
-                        }
-                    },
+            {
+                "mood_unhappy": {
+                    QUERY_INTENT_KEY: {
+                        NAME: "mood_unhappy",
+                        SEVERITY_KEY: 2.0,
+                        THRESHOLD_KEY: 0.0,
+                        SCORE_KEY: -2.0,
+                    }
                 },
-                ["path 2", "path 1"]
+                "mood_great": {
+                    QUERY_INTENT_KEY: {
+                        NAME: "mood_great",
+                        SEVERITY_KEY: 3.0,
+                        THRESHOLD_KEY: 0.2,
+                        SCORE_KEY: -1.0,
+                    }
+                },
+                "affirm": {
+                    QUERY_INTENT_KEY: {
+                        NAME: "affirm",
+                        SEVERITY_KEY: 4.2,
+                        THRESHOLD_KEY: 0.2,
+                        SCORE_KEY: -4.0,
+                    }
+                },
+            },
+            ["path 2", "path 1"],
         ),
         (
-                {
-                    "mood_unhappy": {
-                        QUERY_INTENT_KEY: {
-                            NAME: "mood_unhappy",
-                            SEVERITY_KEY: 2.0,
-                            THRESHOLD_KEY: 0.0,
-                            SCORE_KEY: -2.0,
-                        }
-                    },
-                    "mood_great": {
-                        QUERY_INTENT_KEY: {
-                            NAME: "mood_great",
-                            SEVERITY_KEY: 5.0,
-                            THRESHOLD_KEY: 0.2,
-                            SCORE_KEY: -1.0,
-                        }
-                    },
-                    "affirm": {
-                        QUERY_INTENT_KEY: {
-                            NAME: "affirm",
-                            SEVERITY_KEY: 4.2,
-                            THRESHOLD_KEY: 0.2,
-                            SCORE_KEY: -4.0,
-                        }
-                    },
+            {
+                "mood_unhappy": {
+                    QUERY_INTENT_KEY: {
+                        NAME: "mood_unhappy",
+                        SEVERITY_KEY: 2.0,
+                        THRESHOLD_KEY: 0.0,
+                        SCORE_KEY: -2.0,
+                    }
                 },
-                ["path 1", "path 2"]
-        )
-    ]
+                "mood_great": {
+                    QUERY_INTENT_KEY: {
+                        NAME: "mood_great",
+                        SEVERITY_KEY: 5.0,
+                        THRESHOLD_KEY: 0.2,
+                        SCORE_KEY: -1.0,
+                    }
+                },
+                "affirm": {
+                    QUERY_INTENT_KEY: {
+                        NAME: "affirm",
+                        SEVERITY_KEY: 4.2,
+                        THRESHOLD_KEY: 0.2,
+                        SCORE_KEY: -4.0,
+                    }
+                },
+            },
+            ["path 1", "path 2"],
+        ),
+    ],
 )
 async def test_multiple_warnings_sorted_on_severity(
-        monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent, metadata_for_intents: Dict, story_order: List[Text]
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    intent_ted_policy_moodbot_agent: Agent,
+    metadata_for_intents: Dict,
+    story_order: List[Text],
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -336,7 +340,7 @@ async def test_multiple_warnings_sorted_on_severity(
         ),
     )
 
-    file_name = tmp_path / "test_mutliple_action_unlikely_intents.yml"
+    file_name = tmp_path / "test_multiple_action_unlikely_intents.yml"
     file_name.write_text(
         """
         version: "2.0"
@@ -367,7 +371,6 @@ async def test_multiple_warnings_sorted_on_severity(
                   yes
                 intent: affirm
               - action: utter_happy
-              
         """
     )
 
