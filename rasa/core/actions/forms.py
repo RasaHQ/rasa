@@ -311,6 +311,17 @@ class FormAction(LoopAction):
                 slot_mappings = self.get_mappings_for_slot(slot, domain)
 
                 for slot_mapping in slot_mappings:
+                    condition_dict = slot_mapping.get("condition")
+                    # check if found condition matches form
+                    if condition_dict:
+                        condition_loop = condition_dict.get("active_loop")
+                        if condition_loop != self.name():
+                            continue
+
+                        condition_requested_slot = condition_dict.get("requested_slot")
+                        if condition_requested_slot:
+                            continue
+
                     # check whether the slot should be filled by an entity in the input
                     should_fill_entity_slot = (
                         slot_mapping["type"] == str(SlotMapping.FROM_ENTITY)

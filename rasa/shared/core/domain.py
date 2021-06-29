@@ -1891,7 +1891,7 @@ class Domain:
             form_name: The name of the form.
 
         Returns:
-            The list of slot names or an empty list in case no required_slots were found.
+            The list of slot names or an empty list if no required_slots were found.
         """
         form = self.forms.get(form_name)
         if form:

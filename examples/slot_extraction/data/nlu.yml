@@ -115,6 +115,18 @@ nlu:
     - Trigger another form.
     - Test to trigger another form.
 
+- intent: trigger_restaurant_form
+  examples: |
+    - Trigger the restaurant form.
+    - Start the restaurant form.
+
+- intent: two_entities
+  examples: |
+    - I'm searching for a [Greek](cuisine) restaurant in [London](city).
+    - I'm searching for a [Thai](cuisine) restaurant in [London](city).
+    - I'm searching for a [Greek](cuisine) restaurant in [Berlin](city).
+    - I'm searching for a [Thai](cuisine) restaurant in [Berlin](city).
+
 - intent: pet_to_cheer_up
   examples: |
     - A (kitten)(animal) would make me happiest.
@@ -132,3 +144,13 @@ nlu:
     - cat
     - puppy
     - kitten
+
+- lookup: city
+  examples: |
+    - London
+    - Berlin
+
+- lookup: cuisine
+  examples: |
+    - Greek
+    - Thai

@@ -59,3 +59,19 @@ rules:
   - slot_was_set:
       - requested_slot: null
   - action: utter_submit
+
+- rule: activate restaurant form
+  steps:
+    - intent: trigger_restaurant_form
+    - action: restaurant_form
+    - active_loop: restaurant_form
+
+- rule: submit restaurant form
+  condition:
+  - active_loop: restaurant_form
+  steps:
+  - action: restaurant_form
+  - active_loop: null
+  - slot_was_set:
+      - requested_slot: null
+  - action: utter_submit

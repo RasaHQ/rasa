@@ -13,9 +13,13 @@ intents:
   - pet_to_cheer_up
   - request_form
   - trigger_another_form
+  - two_entities
+  - trigger_restaurant_form
 
 entities:
   - animal
+  - cuisine
+  - city
 
 slots:
   pet_kind:
@@ -49,6 +53,21 @@ slots:
     slot_mappings:
       - type: custom
         action: action_extract_timeout
+  location:
+    type: text
+    influence_conversation: false
+    slot_mappings:
+      - type: from_entity
+        entity: city
+        condition:
+          active_loop: restaurant_form
+          requested_slot: location
+  cuisine:
+    type: text
+    influence_conversation: false
+    slot_mappings:
+      - type: from_entity
+        entity: cuisine
 
 responses:
   utter_greet:
@@ -91,6 +110,11 @@ forms:
     required_slots:
       - pet_kind
       - mood
+
+  restaurant_form:
+    required_slots:
+      - cuisine
+      - location
 
 actions:
   - action_extract_timeout

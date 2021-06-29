@@ -23,7 +23,6 @@ from rasa.shared.core.constants import (
     SLOTS,
     FOLLOWUP_ACTION,
     SESSION_START_METADATA_SLOT,
-    ACTION_EXTRACT_SLOTS,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
