@@ -34,7 +34,7 @@
     "@docusaurus/plugin-sitemap": "2.0.0-alpha.63",
     "@docusaurus/theme-search-algolia": "2.0.0-alpha.63",
     "@fortawesome/fontawesome-svg-core": "^1.2.30",
-    "@fortawesome/free-solid-svg-icons": "^5.14.0",
+    "@fortawesome/free-solid-svg-icons": "^5.15.3",
     "@fortawesome/react-fontawesome": "^0.1.11",
     "@lunelson/sass-calc": "^1.2.0",
     "@lunelson/sass-lerp": "^1.0.0",
@@ -47,7 +47,7 @@
     "@rasahq/docusaurus-theme-tabula": "^0.8.3",
     "classnames": "^2.2.6",
     "clsx": "^1.1.1",
-    "core-js": "^3.6.5",
+    "core-js": "^3.15.1",
     "fibers": "^5.0.0",
     "fs-extra": "^9.0.1",
     "globby": "^10.0.1",
@@ -60,7 +60,7 @@
     "react-promise": "^3.0.2",
     "react-router-dom": "^5.2.0",
     "redoc": "^2.0.0-rc.31",
-    "remark": "^12.0.0",
+    "remark": "^13.0.0",
     "remark-collapse": "^0.1.2",
     "remark-sources": "^1.0.1",
     "sass": "^1.26.10",
@@ -83,11 +83,11 @@
     ]
   },
   "devDependencies": {
-    "netlify-cli": "^2.59.0",
+    "netlify-cli": "^3.39.0",
     "remark-cli": "^8.0.1",
-    "remark-lint": "^7.0.1",
+    "remark-lint": "^8.0.0",
     "remark-lint-no-dead-urls": "^1.1.0",
-    "remark-validate-links": "^10.0.2",
+    "remark-validate-links": "^10.0.4",
     "toml": "^3.0.0"
   },
   "resolutions": {
