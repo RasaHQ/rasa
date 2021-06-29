@@ -430,6 +430,7 @@ with better coverage of unique conversation paths that the assistant is expected
 the following story in your training data:
 
 ```yaml-rasa title="stories.yml"
+stories:
 - story: book_restaurant_table
   steps:
   - intent: request_restaurant
@@ -438,12 +439,13 @@ the following story in your training data:
   - action: restaurant_form
   - active_loop: null
   - slot_was_set:
-    requested_slot: null
+    - requested_slot: null
 ```
 
 but an actual conversation might encounter interjections inside the form which you haven't accounted for:
 
-```yaml-rasa {10-13} title="stories.yml"
+```yaml-rasa {11-14} title="stories.yml"
+stories:
 - story: actual_conversation
   steps:
   - user: |
@@ -452,7 +454,7 @@ but an actual conversation might encounter interjections inside the form which y
   - action: restaurant_form
   - active_loop: restaurant_form
   - slot_was_set:
-    requested_slot: cuisine
+    - requested_slot: cuisine
   - user: |
         Does it matter? I want to be quick.
     intent: deny
