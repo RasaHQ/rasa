@@ -1,11 +1,12 @@
 from pathlib import Path
 from typing import List, Any, Text, Optional, Union
-
+from _pytest.monkeypatch import MonkeyPatch
 from _pytest.capture import CaptureFixture
 import pytest
 from _pytest.logging import LogCaptureFixture
 import logging
 import copy
+import numpy as np
 
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
@@ -37,6 +38,26 @@ from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
 )
+from rasa.core.agent import Agent
+from rasa.core.policies.intent_ted_policy import IntentTEDPolicy
+from tests.core.test_utils import assert_predicted_action
+
+
+def _action_unlikely_intent_for(intent_name: Text):
+    _original = IntentTEDPolicy.predict_action_probabilities
+
+    def predict_action_probabilities(
+        self, tracker, domain, interpreter, **kwargs,
+    ) -> PolicyPrediction:
+        latest_event = tracker.events[-1]
+        if (
+            isinstance(latest_event, UserUttered)
+            and latest_event.parse_data["intent"]["name"] == intent_name
+        ):
+            return PolicyPrediction.for_action_name(domain, "action_unlikely_intent")
+        return _original(self, tracker, domain, interpreter, **kwargs)
+
+    return predict_action_probabilities
 
 
 class WorkingPolicy(Policy):
@@ -711,4 +732,66 @@ def test_is_not_in_training_data(
     assert (
         SimplePolicyEnsemble.is_not_in_training_data(policy_name, confidence)
         == not_in_training_data
+    )
+
+
+def test_rule_action_wins_over_action_unlikely_intent(
+    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+):
+    # The original training data consists of a rule for `goodbye` intent.
+    # We monkey-patch IntentTEDPolicy to always predict action_unlikely_intent
+    # if last user intent was goodbye. The predicted action from ensemble
+    # should be utter_goodbye and not action_unlikely_intent.
+    monkeypatch.setattr(
+        IntentTEDPolicy,
+        "predict_action_probabilities",
+        _action_unlikely_intent_for("goodbye"),
+    )
+
+    domain = Domain.load("data/test_moodbot/domain.yml")
+    tracker = DialogueStateTracker.from_events(
+        "rule triggering tracker",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(text="goodbye", intent={"name": "goodbye"}),
+        ],
+    )
+    policy_ensemble = intent_ted_policy_moodbot_agent.policy_ensemble
+    prediction = policy_ensemble.probabilities_using_best_policy(
+        tracker, domain, NaturalLanguageInterpreter()
+    )
+
+    assert_predicted_action(prediction, domain, "utter_goodbye")
+
+
+def test_ensemble_prevents_multiple_action_unlikely_intents(
+    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+):
+    monkeypatch.setattr(
+        IntentTEDPolicy,
+        "predict_action_probabilities",
+        _action_unlikely_intent_for("greet"),
+    )
+
+    domain = Domain.load("data/test_moodbot/domain.yml")
+    tracker = DialogueStateTracker.from_events(
+        "rule triggering tracker",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(text="hello", intent={"name": "greet"}),
+            ActionExecuted("action_unlikely_intent"),
+        ],
+    )
+
+    policy_ensemble = intent_ted_policy_moodbot_agent.policy_ensemble
+    prediction = policy_ensemble.probabilities_using_best_policy(
+        tracker, domain, NaturalLanguageInterpreter()
+    )
+
+    # prediction cannot be action_unlikely_intent for sure because
+    # the last event is not of type UserUttered and that's the
+    # first condition for `IntentTEDPolicy` to make a prediction
+    assert (
+        domain.action_names_or_texts[np.argmax(prediction.probabilities)]
+        != "action_unlikely_intent"
     )

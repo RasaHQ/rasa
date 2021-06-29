@@ -604,6 +604,97 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             "Skipping predictions for IntentTEDPolicy" in caplog.text
         ) == should_skip
 
+    @pytest.mark.parametrize(
+        "tracker_events_with_action, tracker_events_without_action",
+        [
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted("utter_greet"),
+                    UserUttered(text="sad", intent={"name": "thank_you"}),
+                ],
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted("utter_greet"),
+                    UserUttered(text="sad", intent={"name": "thank_you"}),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted("utter_greet"),
+                    UserUttered(text="sad", intent={"name": "thank_you"}),
+                ],
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted("utter_greet"),
+                    UserUttered(text="sad", intent={"name": "thank_you"}),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted("some_form"),
+                    ActiveLoop("some_form"),
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="default", intent={"name": "default"}),
+                    ActionExecuted("action_unlikely_intent"),
+                    UserUttered(text="sad", intent={"name": "thank_you"}),
+                ],
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted("some_form"),
+                    ActiveLoop("some_form"),
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="default", intent={"name": "default"}),
+                    UserUttered(text="sad", intent={"name": "thank_you"}),
+                ],
+            ),
+        ],
+    )
+    def test_ignore_action_unlikely_intent(
+        self,
+        trained_policy: IntentTEDPolicy,
+        default_domain: Domain,
+        tracker_events_with_action: List[Event],
+        tracker_events_without_action: List[Event],
+        tmp_path: Path,
+    ):
+        loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
+        interpreter = RegexInterpreter()
+        tracker_with_action = DialogueStateTracker.from_events(
+            "test 1", evts=tracker_events_with_action
+        )
+        tracker_without_action = DialogueStateTracker.from_events(
+            "test 2", evts=tracker_events_without_action
+        )
+        prediction_with_action = loaded_policy.predict_action_probabilities(
+            tracker_with_action, default_domain, interpreter
+        )
+        prediction_without_action = loaded_policy.predict_action_probabilities(
+            tracker_without_action, default_domain, interpreter
+        )
+
+        # If the weights didn't change then both trackers
+        # should result in same prediction. For `IntentTEDPolicy`, the real
+        # prediction is inside action metadata.
+        assert (
+            prediction_with_action.action_metadata
+            == prediction_without_action.action_metadata
+        )
+
     def test_label_embedding_collection(self, trained_policy: IntentTEDPolicy):
         label_ids = tf.constant([[[2], [-1]], [[1], [2]], [[0], [-1]]], dtype=tf.int32)
 
