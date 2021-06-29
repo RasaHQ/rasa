@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Text
+from typing import Text, List
 
 import pytest
 
@@ -37,6 +37,7 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     LoopInterrupted,
     FollowupAction,
+    Event,
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -2968,3 +2969,105 @@ def test_rule_with_multiple_slots():
         RegexInterpreter(),
     )
     assert_predicted_action(prediction, domain, utter_1)
+
+
+def test_include_action_unlikely_intent():
+    intent_1 = "intent_1"
+    intent_2 = "intent_2"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    value_1 = "value_1"
+    value_2 = "value_2"
+    slot_1 = "slot_1"
+    slot_2 = "slot_2"
+    domain = Domain.from_yaml(
+        f"""
+                version: "2.0"
+                intents:
+                - {intent_1}
+                actions:
+                - {utter_1}
+                - {utter_2}
+
+                slots:
+                  {slot_1}:
+                    type: categorical
+                    values:
+                     - {value_1}
+                     - {value_2}
+                  {slot_2}:
+                    type: categorical
+                    values:
+                     - {value_1}
+                     - {value_2}
+                """
+    )
+    rule_1 = TrackerWithCachedStates.from_events(
+        "normal rule",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1},),
+            SlotSet(slot_1, value_1),
+            SlotSet(slot_2, value_2),
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+
+    rule_2 = TrackerWithCachedStates.from_events(
+        "rule with action_unlikely_intent",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted("action_unlikely_intent"),
+            ActionExecuted(utter_2),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    policy = RulePolicy()
+    policy.train([rule_1, rule_2], domain, RegexInterpreter())
+
+    # Verify rule 1 gets affected by the presence of action_unlikely_intent
+    # in between. This is slightly hypothetical because an
+    # action_unlikely_intent can only occur right after UserUttered,
+    # but if there was already a rule which should have been triggered
+    # after UserUttered then that would have overruled the action_unlikely_intent
+    # prediction. The test is to show that rule policy does not
+    # ignore action_unlikely_intent.
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", intent={"name": intent_1},),
+        SlotSet(slot_2, value_2),
+        SlotSet(slot_1, value_1),
+        ActionExecuted("action_unlikely_intent"),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, utter_2)
+
+    # Check if the presence of action_unlikely_intent
+    # anywhere else also triggers utter_2
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("dummy", intent={"name": intent_2},),
+        ActionExecuted("action_unlikely_intent"),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, utter_2)

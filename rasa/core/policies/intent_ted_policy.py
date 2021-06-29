@@ -101,6 +101,7 @@ from rasa.utils.tensorflow.model_data import (
 
 import rasa.utils.io as io_utils
 from rasa.core.exceptions import RasaCoreException
+from rasa.shared.utils.common import mark_as_experimental_feature
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -276,6 +277,8 @@ class IntentTEDPolicy(TEDPolicy):
         self.config[BILOU_FLAG] = False
         self.config[SIMILARITY_TYPE] = INNER
         self.config[LOSS_TYPE] = CROSS_ENTROPY
+
+        mark_as_experimental_feature("IntentTED Policy")
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:

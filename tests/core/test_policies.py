@@ -36,6 +36,7 @@ from rasa.shared.core.events import (
     ConversationPaused,
     Event,
     UserUttered,
+    EntitiesAdded,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
@@ -479,6 +480,62 @@ class TestMemoizationPolicy(PolicyTestCollection):
         for states in new_story_states:
             state_key = loaded_policy._create_feature_key(states)
             assert state_key in loaded_policy.lookup
+
+    @pytest.mark.parametrize(
+        "tracker_events_with_action, tracker_events_without_action",
+        [
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted("action_unlikely_intent"),
+                ],
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted("action_unlikely_intent"),
+                ],
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                ],
+            ),
+        ],
+    )
+    def test_ignore_action_unlikely_intent(
+        self,
+        trained_policy: MemoizationPolicy,
+        default_domain: Domain,
+        tracker_events_with_action: List[Event],
+        tracker_events_without_action: List[Event],
+    ):
+        interpreter = RegexInterpreter()
+        tracker_with_action = DialogueStateTracker.from_events(
+            "test 1", evts=tracker_events_with_action
+        )
+        tracker_without_action = DialogueStateTracker.from_events(
+            "test 2", evts=tracker_events_without_action
+        )
+        prediction_with_action = trained_policy.predict_action_probabilities(
+            tracker_with_action, default_domain, interpreter
+        )
+        prediction_without_action = trained_policy.predict_action_probabilities(
+            tracker_without_action, default_domain, interpreter
+        )
+
+        # Memoization shouldn't be affected.
+        assert (
+            prediction_with_action.probabilities
+            == prediction_without_action.probabilities
+        )
 
 
 class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):

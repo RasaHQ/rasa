@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from unittest.mock import Mock
 import numpy as np
 import pytest
@@ -49,6 +49,7 @@ from rasa.shared.nlu.constants import ACTION_NAME
 from rasa.utils.tensorflow import model_data_utils
 from tests.core.test_policies import PolicyTestCollection
 from rasa.shared.constants import DEFAULT_SENDER_ID, DEFAULT_CORE_SUBDIRECTORY_NAME
+from rasa.shared.core.events import Event, EntitiesAdded, SlotSet, ActiveLoop
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
@@ -402,6 +403,85 @@ class TestTEDPolicy(PolicyTestCollection):
         assert (
             batch_slots_sentence_shape[1] == seq_len
             or batch_slots_sentence_shape[1] == 0
+        )
+
+    @pytest.mark.parametrize(
+        "tracker_events_with_action, tracker_events_without_action",
+        [
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted("action_unlikely_intent"),
+                ],
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted("utter_greet"),
+                ],
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted("utter_greet"),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted("some_form"),
+                    ActiveLoop("some_form"),
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="default", intent={"name": "default"}),
+                    ActionExecuted("action_unlikely_intent"),
+                ],
+                [
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted("some_form"),
+                    ActiveLoop("some_form"),
+                    ActionExecuted("action_listen"),
+                    UserUttered(text="default", intent={"name": "default"}),
+                ],
+            ),
+        ],
+    )
+    def test_ignore_action_unlikely_intent(
+        self,
+        trained_policy: TEDPolicy,
+        default_domain: Domain,
+        tracker_events_with_action: List[Event],
+        tracker_events_without_action: List[Event],
+    ):
+        interpreter = RegexInterpreter()
+        tracker_with_action = DialogueStateTracker.from_events(
+            "test 1", evts=tracker_events_with_action
+        )
+        tracker_without_action = DialogueStateTracker.from_events(
+            "test 2", evts=tracker_events_without_action
+        )
+        prediction_with_action = trained_policy.predict_action_probabilities(
+            tracker_with_action, default_domain, interpreter
+        )
+        prediction_without_action = trained_policy.predict_action_probabilities(
+            tracker_without_action, default_domain, interpreter
+        )
+
+        # If the weights didn't change then both trackers should result in same prediction.
+        assert (
+            prediction_with_action.probabilities
+            == prediction_without_action.probabilities
         )
 
 
