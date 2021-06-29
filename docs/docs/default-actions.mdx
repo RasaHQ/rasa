@@ -211,7 +211,7 @@ is triggered. For example, as a follow up you can trigger a hand-off to a human 
 Alternatively, you can also override it's behaviour as a [`custom action`](./custom-actions.mdx):
 
 ```python
-class ActionUnlikelyIntent:
+class ActionUnlikelyIntent(Action):
 
     def name(self) -> Text:
         return "action_unlikely_intent"
