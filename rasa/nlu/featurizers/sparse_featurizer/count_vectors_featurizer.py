@@ -401,12 +401,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             if token not in existing_vocabulary:
                 if self.use_shared_vocab:
                     raise RasaException(
-                        "Using a shared vocabulary is not supported during "
-                        "incremental training. It requires dynamically adjusting "
-                        "layers that correspond to label attributes such as "
-                        "INTENT_RESPONSE_KEY, INTENT, etc. This is currently not "
-                        "possible. In order to avoid this exception we suggest to "
-                        "set `use_shared_vocab` to False."
+                        "Using a shared vocabulary in `CountVectorsFeaturizer` is not "
+                        "supported during incremental training since it requires "
+                        "dynamically adjusting layers that correspond to label "
+                        f"attributes such as {INTENT_RESPONSE_KEY}, {INTENT}, etc. "
+                        "This is currently not possible. In order to avoid this "
+                        "exception we suggest to set `use_shared_vocab=False` or train"
+                        " from scratch."
                     )
                 existing_vocabulary[token] = len(existing_vocabulary)
 
