@@ -200,11 +200,9 @@ class EvaluationStore:
     def serialise(self) -> Tuple[PredictionList, PredictionList]:
         """Turn targets and predictions to lists of equal size for sklearn."""
         texts = sorted(
-            list(
-                set(
-                    [e.get("text", "") for e in self.entity_targets]
-                    + [e.get("text", "") for e in self.entity_predictions]
-                )
+            set(
+                [str(e.get("text", "")) for e in self.entity_targets]
+                + [str(e.get("text", "")) for e in self.entity_predictions]
             )
         )
 
