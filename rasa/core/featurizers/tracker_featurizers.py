@@ -797,7 +797,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         logger.debug(
             f"Creating states and {self.LABEL_NAME} label examples from "
-            f"collected trackers (by {type(self).__name__}({type(self.state_featurizer).__name__}))..."
+            f"collected trackers "
+            f"(by {type(self).__name__}({type(self.state_featurizer).__name__}))..."
         )
         pbar = tqdm(
             trackers,
@@ -1039,7 +1040,8 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
         logger.debug(
             f"Creating states and {self.LABEL_NAME} label examples from "
-            f"collected trackers (by {type(self).__name__}({type(self.state_featurizer).__name__}))..."
+            f"collected trackers "
+            f"(by {type(self).__name__}({type(self.state_featurizer).__name__}))..."
         )
         pbar = tqdm(
             trackers,
