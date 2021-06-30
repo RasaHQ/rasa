@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 from typing import List, Dict, Text, Any, Optional, Union
-from mock import Mock
+from unittest.mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model

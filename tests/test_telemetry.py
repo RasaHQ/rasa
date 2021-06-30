@@ -6,7 +6,7 @@ from typing import Any, Dict, Generator, Text
 
 from _pytest.monkeypatch import MonkeyPatch
 import jsonschema
-from mock import Mock
+from unittest.mock import Mock
 import pytest
 import responses
 
