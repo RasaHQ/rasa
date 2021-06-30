@@ -20,6 +20,6 @@ from rasa.core.policies.mapping_policy import MappingPolicy  # noqa: F401
 
 from rasa.core.policies.rule_policy import RulePolicy  # noqa: F401
 
-from rasa.core.policies.unexpected_intent_policy import (
+from rasa.core.policies.unexpected_intent_policy import (  # noqa: F401
     UnexpecTEDIntentPolicy,
-)  # noqa: F401
+)

@@ -39,7 +39,6 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
 )
-from rasa.core.agent import Agent
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 from tests.core import test_utils
 
