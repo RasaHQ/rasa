@@ -29,6 +29,7 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
     PREVIOUS_ACTION,
     USER,
+    ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import (
@@ -487,25 +488,25 @@ class TestMemoizationPolicy(PolicyTestCollection):
         [
             (
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                 ],
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
                 ],
             ),
             (
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
                     EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
                     SlotSet("name", "Peter"),
-                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                 ],
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
                     SlotSet("name", "Peter"),
                     EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),

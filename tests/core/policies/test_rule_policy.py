@@ -25,6 +25,7 @@ from rasa.shared.core.constants import (
     LOOP_NAME,
     RULE_ONLY_SLOTS,
     RULE_ONLY_LOOPS,
+    ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME, ENTITY_ATTRIBUTE_TYPE
 from rasa.shared.core.domain import Domain
@@ -42,7 +43,7 @@ from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.rule_policy import RulePolicy, InvalidRule, RULES
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-from tests.core.test_utils import assert_predicted_action
+from tests.core import test_utils
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
@@ -218,7 +219,9 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(action_probabilities_1, domain, UTTER_GREET_ACTION)
+    test_utils.assert_predicted_action(
+        action_probabilities_1, domain, UTTER_GREET_ACTION
+    )
 
 
 def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value_explicit():  # noqa: E501
@@ -291,7 +294,9 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(action_probabilities_2, domain, UTTER_GREET_ACTION)
+    test_utils.assert_predicted_action(
+        action_probabilities_2, domain, UTTER_GREET_ACTION
+    )
 
 
 def test_restrict_multiple_user_inputs_in_rules():
@@ -776,7 +781,7 @@ def test_faq_rule():
         new_conversation, domain, RegexInterpreter()
     )
 
-    assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
+    test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
 
 async def test_predict_form_action_if_in_form():
@@ -819,7 +824,9 @@ async def test_predict_form_action_if_in_form():
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, form_name, is_no_user_prediction=True)
+    test_utils.assert_predicted_action(
+        prediction, domain, form_name, is_no_user_prediction=True
+    )
 
 
 async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule():
@@ -873,7 +880,9 @@ async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule():
     prediction = policy.predict_action_probabilities(
         loop_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, loop_name, is_no_user_prediction=True)
+    test_utils.assert_predicted_action(
+        prediction, domain, loop_name, is_no_user_prediction=True
+    )
 
 
 async def test_predict_form_action_if_multiple_turns():
@@ -923,7 +932,9 @@ async def test_predict_form_action_if_multiple_turns():
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, form_name, is_no_user_prediction=True)
+    test_utils.assert_predicted_action(
+        prediction, domain, form_name, is_no_user_prediction=True
+    )
 
 
 async def test_predict_slot_initial_value_not_required_in_rule():
@@ -974,7 +985,7 @@ slots:
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, "action1")
+    test_utils.assert_predicted_action(prediction, domain, "action1")
 
 
 async def test_predict_slot_with_initial_slot_matches_rule():
@@ -1022,7 +1033,7 @@ slots:
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, "action1")
+    test_utils.assert_predicted_action(prediction, domain, "action1")
 
 
 async def test_predict_action_listen_after_form():
@@ -1067,7 +1078,7 @@ async def test_predict_action_listen_after_form():
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(
+    test_utils.assert_predicted_action(
         prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
     )
 
@@ -1120,7 +1131,7 @@ async def test_dont_predict_form_if_already_finished():
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
+    test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
 
 async def test_form_unhappy_path():
@@ -1165,7 +1176,7 @@ async def test_form_unhappy_path():
     prediction = policy.predict_action_probabilities(
         unhappy_form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
+    test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
 
 async def test_form_unhappy_path_from_general_rule():
@@ -1209,7 +1220,7 @@ async def test_form_unhappy_path_from_general_rule():
         RegexInterpreter(),
     )
     # check that general rule action is predicted
-    assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
+    test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
     # Check that RulePolicy triggers form again after handling unhappy path
     conversation_events.append(ActionExecuted(UTTER_GREET_ACTION))
@@ -1221,7 +1232,7 @@ async def test_form_unhappy_path_from_general_rule():
         RegexInterpreter(),
     )
     # check that action_listen from general rule is overwritten by form action
-    assert_predicted_action(prediction, domain, form_name)
+    test_utils.assert_predicted_action(prediction, domain, form_name)
 
 
 async def test_form_unhappy_path_from_in_form_rule():
@@ -1286,7 +1297,7 @@ async def test_form_unhappy_path_from_in_form_rule():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, handle_rejection_action_name)
+    test_utils.assert_predicted_action(prediction, domain, handle_rejection_action_name)
 
     # Check that RulePolicy triggers form again after handling unhappy path
     conversation_events.append(ActionExecuted(handle_rejection_action_name))
@@ -1297,7 +1308,7 @@ async def test_form_unhappy_path_from_in_form_rule():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, form_name)
+    test_utils.assert_predicted_action(prediction, domain, form_name)
 
 
 async def test_form_unhappy_path_from_story():
@@ -1360,7 +1371,7 @@ async def test_form_unhappy_path_from_story():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
+    test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
     # Check that RulePolicy doesn't trigger form or action_listen
     # after handling unhappy path
@@ -1441,7 +1452,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, handle_rejection_action_name)
+    test_utils.assert_predicted_action(prediction, domain, handle_rejection_action_name)
 
     # Check that RulePolicy predicts action_listen
     conversation_events.append(ActionExecuted(handle_rejection_action_name))
@@ -1452,7 +1463,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
+    test_utils.assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
 
     # Check that RulePolicy triggers form again after handling unhappy path
     conversation_events.append(ActionExecuted(ACTION_LISTEN_NAME))
@@ -1462,7 +1473,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
     prediction = policy.predict_action_probabilities(
         tracker, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, form_name)
+    test_utils.assert_predicted_action(prediction, domain, form_name)
     # check that RulePolicy entered unhappy path based on the training story
     assert prediction.events == [LoopInterrupted(True)]
 
@@ -1620,7 +1631,7 @@ async def test_form_activation_rule():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, form_name)
+    test_utils.assert_predicted_action(prediction, domain, form_name)
 
 
 async def test_failing_form_activation_due_to_no_rule():
@@ -1712,7 +1723,7 @@ def test_form_submit_rule():
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, submit_action_name)
+    test_utils.assert_predicted_action(prediction, domain, submit_action_name)
 
 
 def test_immediate_submit():
@@ -1771,7 +1782,7 @@ def test_immediate_submit():
     prediction = policy.predict_action_probabilities(
         form_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, submit_action_name)
+    test_utils.assert_predicted_action(prediction, domain, submit_action_name)
 
 
 @pytest.fixture(scope="session")
@@ -1817,7 +1828,9 @@ async def test_rule_policy_slot_filling_from_text(
     prediction = trained_rule_policy.predict_action_probabilities(
         form_conversation, trained_rule_policy_domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, trained_rule_policy_domain, "utter_stop")
+    test_utils.assert_predicted_action(
+        prediction, trained_rule_policy_domain, "utter_stop"
+    )
 
 
 async def test_one_stage_fallback_rule():
@@ -1875,7 +1888,7 @@ async def test_one_stage_fallback_rule():
     prediction = policy.predict_action_probabilities(
         tracker, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, ACTION_DEFAULT_FALLBACK_NAME)
+    test_utils.assert_predicted_action(prediction, domain, ACTION_DEFAULT_FALLBACK_NAME)
 
     # Fallback action reverts fallback events, next action is `ACTION_LISTEN`
     conversation_events += await ActionDefaultFallback().run(
@@ -1897,7 +1910,7 @@ async def test_one_stage_fallback_rule():
     prediction = policy.predict_action_probabilities(
         tracker, domain, RegexInterpreter()
     )
-    assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
+    test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
 
 
 @pytest.mark.parametrize(
@@ -1933,7 +1946,7 @@ def test_default_actions(intent_name: Text, expected_action_name: Text):
         new_conversation, domain, RegexInterpreter()
     )
 
-    assert_predicted_action(prediction, domain, expected_action_name)
+    test_utils.assert_predicted_action(prediction, domain, expected_action_name)
 
 
 @pytest.mark.parametrize(
@@ -1978,7 +1991,7 @@ def test_e2e_beats_default_actions(intent_name: Text):
     prediction = policy.predict_action_probabilities(
         new_conversation, domain, RegexInterpreter()
     )
-    assert_predicted_action(
+    test_utils.assert_predicted_action(
         prediction, domain, UTTER_GREET_ACTION, is_end_to_end_prediction=True
     )
 
@@ -2026,7 +2039,7 @@ def test_predict_core_fallback(
         new_conversation, domain, RegexInterpreter()
     )
 
-    assert_predicted_action(
+    test_utils.assert_predicted_action(
         prediction, domain, expected_prediction, expected_confidence
     )
 
@@ -2098,7 +2111,7 @@ def test_hide_rule_turn():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
+    test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
     assert prediction.hide_rule_turn
 
     conversation_events += [
@@ -2111,7 +2124,7 @@ def test_hide_rule_turn():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
+    test_utils.assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
     assert prediction.hide_rule_turn
 
     conversation_events += [
@@ -2218,7 +2231,7 @@ def test_hide_rule_turn_with_slots():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, some_action)
+    test_utils.assert_predicted_action(prediction, domain, some_action)
     assert prediction.hide_rule_turn
 
     conversation_events += [
@@ -2232,7 +2245,7 @@ def test_hide_rule_turn_with_slots():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
+    test_utils.assert_predicted_action(prediction, domain, ACTION_LISTEN_NAME)
     assert prediction.hide_rule_turn
 
     conversation_events += [
@@ -2315,7 +2328,7 @@ def test_hide_rule_turn_no_last_action_listen():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, action_after_chitchat)
+    test_utils.assert_predicted_action(prediction, domain, action_after_chitchat)
     assert prediction.hide_rule_turn
 
     conversation_events += [
@@ -2404,7 +2417,7 @@ def test_hide_rule_turn_with_loops():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, form_name)
+    test_utils.assert_predicted_action(prediction, domain, form_name)
     assert prediction.hide_rule_turn
 
     conversation_events += [
@@ -2418,7 +2431,7 @@ def test_hide_rule_turn_with_loops():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(
+    test_utils.assert_predicted_action(
         prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
     )
     assert prediction.hide_rule_turn
@@ -2479,7 +2492,7 @@ def test_do_not_hide_rule_turn_with_loops_in_stories():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, form_name)
+    test_utils.assert_predicted_action(prediction, domain, form_name)
     assert not prediction.hide_rule_turn
 
     conversation_events += [
@@ -2493,7 +2506,7 @@ def test_do_not_hide_rule_turn_with_loops_in_stories():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(
+    test_utils.assert_predicted_action(
         prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
     )
     assert not prediction.hide_rule_turn
@@ -2541,7 +2554,7 @@ def test_hide_rule_turn_with_loops_as_followup_action():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, form_name)
+    test_utils.assert_predicted_action(prediction, domain, form_name)
     assert not prediction.hide_rule_turn
 
     conversation_events += [
@@ -2555,7 +2568,7 @@ def test_hide_rule_turn_with_loops_as_followup_action():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(
+    test_utils.assert_predicted_action(
         prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
     )
     assert not prediction.hide_rule_turn
@@ -2572,7 +2585,7 @@ def test_hide_rule_turn_with_loops_as_followup_action():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
+    test_utils.assert_predicted_action(prediction, domain, UTTER_GREET_ACTION)
     assert prediction.hide_rule_turn
 
     conversation_events += [
@@ -2587,7 +2600,7 @@ def test_hide_rule_turn_with_loops_as_followup_action():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(
+    test_utils.assert_predicted_action(
         prediction, domain, ACTION_LISTEN_NAME, is_no_user_prediction=True
     )
     tracker = DialogueStateTracker.from_events(
@@ -2886,7 +2899,7 @@ def test_rule_with_multiple_entities():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, utter_1)
+    test_utils.assert_predicted_action(prediction, domain, utter_1)
 
 
 def test_rule_with_multiple_slots():
@@ -2951,7 +2964,7 @@ def test_rule_with_multiple_slots():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, utter_1)
+    test_utils.assert_predicted_action(prediction, domain, utter_1)
 
 
 def test_include_action_unlikely_intent():
@@ -3007,7 +3020,7 @@ def test_include_action_unlikely_intent():
         slots=domain.slots,
         evts=[
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
-            ActionExecuted("action_unlikely_intent"),
+            ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
             ActionExecuted(utter_2),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -3028,7 +3041,7 @@ def test_include_action_unlikely_intent():
         UserUttered("haha", intent={"name": intent_1},),
         SlotSet(slot_2, value_2),
         SlotSet(slot_1, value_1),
-        ActionExecuted("action_unlikely_intent"),
+        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
     ]
     prediction = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
@@ -3037,14 +3050,14 @@ def test_include_action_unlikely_intent():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, utter_2)
+    test_utils.assert_predicted_action(prediction, domain, utter_2)
 
     # Check if the presence of action_unlikely_intent
     # anywhere else also triggers utter_2
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
         UserUttered("dummy", intent={"name": intent_2},),
-        ActionExecuted("action_unlikely_intent"),
+        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
     ]
     prediction = policy.predict_action_probabilities(
         DialogueStateTracker.from_events(
@@ -3053,4 +3066,4 @@ def test_include_action_unlikely_intent():
         domain,
         RegexInterpreter(),
     )
-    assert_predicted_action(prediction, domain, utter_2)
+    test_utils.assert_predicted_action(prediction, domain, utter_2)

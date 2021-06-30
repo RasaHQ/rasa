@@ -101,15 +101,13 @@ from rasa.utils.tensorflow.model_data import (
 
 import rasa.utils.io as io_utils
 from rasa.core.exceptions import RasaCoreException
-from rasa.shared.utils.common import mark_as_experimental_feature
+from rasa.shared.utils import common
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
-
-SAVE_MODEL_FILE_NAME = "intent_ted_policy"
 
 
 class IntentTEDPolicy(TEDPolicy):
@@ -278,7 +276,7 @@ class IntentTEDPolicy(TEDPolicy):
         self.config[SIMILARITY_TYPE] = INNER
         self.config[LOSS_TYPE] = CROSS_ENTROPY
 
-        mark_as_experimental_feature("IntentTED Policy")
+        common.mark_as_experimental_feature("IntentTED Policy")
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
@@ -301,7 +299,7 @@ class IntentTEDPolicy(TEDPolicy):
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
-        return SAVE_MODEL_FILE_NAME
+        return "intent_ted_policy"
 
     def _assemble_label_data(
         self, attribute_data: Data, domain: Domain
@@ -587,14 +585,14 @@ class IntentTEDPolicy(TEDPolicy):
             # This means the intent was never present in a story
             logger.debug(
                 f"Query intent index {domain.intents.index(intent)} not "
-                f"found in label thresholds - {self.label_thresholds}."
-                f"Check for `action_unlikely_intent` prediction will be skipped."
+                f"found in label thresholds - {self.label_thresholds}. "
+                f"Check for `{ACTION_UNLIKELY_INTENT_NAME}` prediction will be skipped."
             )
             return False
         if intent in self.config[IGNORE_INTENTS_LIST]:
             logger.debug(
                 f"Query intent {intent} found in {IGNORE_INTENTS_LIST}. "
-                f"Check for `action_unlikely_intent` prediction will be skipped."
+                f"Check for `{ACTION_UNLIKELY_INTENT_NAME}` prediction will be skipped."
             )
             return False
 
@@ -618,7 +616,7 @@ class IntentTEDPolicy(TEDPolicy):
         Returns:
             Whether query intent is likely or not.
         """
-        logger.debug(f"Querying for intent {query_intent}")
+        logger.debug(f"Querying for intent {query_intent}.")
 
         if not self._should_check_for_intent(query_intent, domain):
             return False
@@ -639,11 +637,11 @@ class IntentTEDPolicy(TEDPolicy):
         logger.debug(
             f"Score for intent `{query_intent}` is "
             f"{query_intent_similarity}, while "
-            f"threshold is {self.label_thresholds[query_intent_id]}"
+            f"threshold is {self.label_thresholds[query_intent_id]}."
         )
         logger.debug(
             f"Top 5 intents(in ascending order) that "
-            f"are likely here are: {sorted_intent_scores[-5:]}"
+            f"are likely here are: {sorted_intent_scores[-5:]}."
         )
 
         # If score for query intent is below threshold and
@@ -757,7 +755,7 @@ class IntentTEDPolicy(TEDPolicy):
     def _pick_thresholds(
         label_quantiles: Dict[int, List[float]], tolerance: float
     ) -> Dict[int, float]:
-        """Compute a threshold for each label id.
+        """Computes a threshold for each label id.
 
         Uses tolerance which is the percentage of negative
         trackers for which predicted score should be equal

@@ -16,7 +16,7 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 from rasa.core.policies.intent_ted_policy import IntentTEDPolicy
-from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
+from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME, ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -598,66 +598,73 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
 
-        loaded_policy.predict_action_probabilities(tracker, default_domain, interpreter)
+        prediction = loaded_policy.predict_action_probabilities(
+            tracker, default_domain, interpreter
+        )
 
         assert (
             "Skipping predictions for IntentTEDPolicy" in caplog.text
         ) == should_skip
+
+        if should_skip:
+            assert prediction.probabilities == loaded_policy._default_predictions(
+                default_domain
+            )
 
     @pytest.mark.parametrize(
         "tracker_events_with_action, tracker_events_without_action",
         [
             (
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                     ActionExecuted("utter_greet"),
                     UserUttered(text="sad", intent={"name": "thank_you"}),
                 ],
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    ActionExecuted("utter_greet"),
-                    UserUttered(text="sad", intent={"name": "thank_you"}),
-                ],
-            ),
-            (
-                [
-                    ActionExecuted("action_listen"),
-                    UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
-                    ActionExecuted("action_unlikely_intent"),
-                    ActionExecuted("utter_greet"),
-                    UserUttered(text="sad", intent={"name": "thank_you"}),
-                ],
-                [
-                    ActionExecuted("action_listen"),
-                    UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
                     ActionExecuted("utter_greet"),
                     UserUttered(text="sad", intent={"name": "thank_you"}),
                 ],
             ),
             (
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    ActionExecuted("action_unlikely_intent"),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                    ActionExecuted("utter_greet"),
+                    UserUttered(text="sad", intent={"name": "thank_you"}),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted("utter_greet"),
+                    UserUttered(text="sad", intent={"name": "thank_you"}),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                     ActionExecuted("some_form"),
                     ActiveLoop("some_form"),
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="default", intent={"name": "default"}),
-                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                     UserUttered(text="sad", intent={"name": "thank_you"}),
                 ],
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                     ActionExecuted("some_form"),
                     ActiveLoop("some_form"),
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="default", intent={"name": "default"}),
                     UserUttered(text="sad", intent={"name": "thank_you"}),
                 ],

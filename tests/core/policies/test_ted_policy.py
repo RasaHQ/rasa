@@ -14,7 +14,7 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -412,48 +412,48 @@ class TestTEDPolicy(PolicyTestCollection):
         [
             (
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                 ],
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                ],
-            ),
-            (
-                [
-                    ActionExecuted("action_listen"),
-                    UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
-                    ActionExecuted("action_unlikely_intent"),
-                    ActionExecuted("utter_greet"),
-                ],
-                [
-                    ActionExecuted("action_listen"),
-                    UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
-                    ActionExecuted("utter_greet"),
                 ],
             ),
             (
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    ActionExecuted("action_unlikely_intent"),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                    ActionExecuted("utter_greet"),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted("utter_greet"),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                     ActionExecuted("some_form"),
                     ActiveLoop("some_form"),
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="default", intent={"name": "default"}),
-                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                 ],
                 [
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    ActionExecuted("action_unlikely_intent"),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                     ActionExecuted("some_form"),
                     ActiveLoop("some_form"),
-                    ActionExecuted("action_listen"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="default", intent={"name": "default"}),
                 ],
             ),

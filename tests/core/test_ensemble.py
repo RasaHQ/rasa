@@ -37,10 +37,11 @@ from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.core.agent import Agent
 from rasa.core.policies.intent_ted_policy import IntentTEDPolicy
-from tests.core.test_utils import assert_predicted_action
+from tests.core import test_utils
 
 
 def _action_unlikely_intent_for(intent_name: Text):
@@ -54,7 +55,7 @@ def _action_unlikely_intent_for(intent_name: Text):
             isinstance(latest_event, UserUttered)
             and latest_event.parse_data["intent"]["name"] == intent_name
         ):
-            return PolicyPrediction.for_action_name(domain, "action_unlikely_intent")
+            return PolicyPrediction.for_action_name(domain, ACTION_UNLIKELY_INTENT_NAME)
         return _original(self, tracker, domain, interpreter, **kwargs)
 
     return predict_action_probabilities
@@ -761,7 +762,7 @@ def test_rule_action_wins_over_action_unlikely_intent(
         tracker, domain, NaturalLanguageInterpreter()
     )
 
-    assert_predicted_action(prediction, domain, "utter_goodbye")
+    test_utils.assert_predicted_action(prediction, domain, "utter_goodbye")
 
 
 def test_ensemble_prevents_multiple_action_unlikely_intents(
@@ -779,7 +780,7 @@ def test_ensemble_prevents_multiple_action_unlikely_intents(
         evts=[
             ActionExecuted(ACTION_LISTEN_NAME),
             UserUttered(text="hello", intent={"name": "greet"}),
-            ActionExecuted("action_unlikely_intent"),
+            ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
         ],
     )
 
@@ -793,5 +794,5 @@ def test_ensemble_prevents_multiple_action_unlikely_intents(
     # first condition for `IntentTEDPolicy` to make a prediction
     assert (
         domain.action_names_or_texts[np.argmax(prediction.probabilities)]
-        != "action_unlikely_intent"
+        != ACTION_UNLIKELY_INTENT_NAME
     )

@@ -10,6 +10,7 @@ from rasa.shared.core.events import UserUttered
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.capture import CaptureFixture
 from rasa.core.agent import Agent
+from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
 
 
 def _probabilities_with_action_unlikely_intent_for(intent_name: Text):
@@ -31,7 +32,7 @@ def _probabilities_with_action_unlikely_intent_for(intent_name: Text):
             # Because we're not testing `IntentTEDPolicy` here we simply trigger it
             # predicting `action_unlikely_intent` in a specified moment
             # to make the tests deterministic.
-            return PolicyPrediction.for_action_name(domain, "action_unlikely_intent")
+            return PolicyPrediction.for_action_name(domain, ACTION_UNLIKELY_INTENT_NAME)
         return _original(self, tracker, domain, interpreter, **kwargs)
 
     return probabilities_using_best_policy
