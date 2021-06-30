@@ -727,6 +727,9 @@ def test_use_shared_vocab_exception(
     if use_shared_vocab:
         with pytest.raises(Exception) as exec_info:
             new_cvf.train(data)
-        assert "Using a shared vocabulary is not supported" in str(exec_info.value)
+        assert (
+            "Using a shared vocabulary in `CountVectorsFeaturizer` is not supported"
+            in str(exec_info.value)
+        )
     else:
         new_cvf.train(data)

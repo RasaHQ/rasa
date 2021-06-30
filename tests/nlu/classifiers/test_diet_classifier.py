@@ -46,6 +46,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils import train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data.loading import load_data
+from rasa.utils.tensorflow.model_data_utils import FeatureArray
 
 
 def test_compute_default_label_features():
@@ -922,58 +923,54 @@ async def test_adjusting_layers_incremental_training(
     # check if the data signatures were correctly updated
     new_data_signature = trained.pipeline[-1].model.data_signature
     new_predict_data_signature = trained.pipeline[-1].model.predict_data_signature
-    expected_sequence_units = sum(new_sparse_feature_sizes[FEATURE_TYPE_SEQUENCE])
-    expected_sentence_units = sum(new_sparse_feature_sizes[FEATURE_TYPE_SENTENCE])
     iter2_data = load_data(iter2_data_path)
     expected_sequence_lengths = len(iter2_data.training_examples)
-    for attribute, attribute_signature in new_data_signature.items():
-        if attribute == TEXT:
-            assert (
-                new_data_signature[attribute][FEATURE_TYPE_SEQUENCE][0].units
-                == expected_sequence_units
-            )
-            assert (
-                new_data_signature[attribute][FEATURE_TYPE_SENTENCE][0].units
-                == expected_sentence_units
-            )
-            assert (
-                new_data_signature[attribute]["sequence_lengths"][0].units
-                == expected_sequence_lengths
-            )
-            assert (
-                new_predict_data_signature[attribute][FEATURE_TYPE_SEQUENCE][0].units
-                == expected_sequence_units
-            )
-            assert (
-                new_predict_data_signature[attribute][FEATURE_TYPE_SENTENCE][0].units
-                == expected_sentence_units
-            )
-            assert (
-                new_predict_data_signature[attribute]["sequence_lengths"][0].units
-                == expected_sequence_lengths
-            )
-        else:
-            for feature_type in attribute_signature:
-                if feature_type != "sequence_lengths":
-                    assert (
-                        new_data_signature[attribute][feature_type]
-                        == old_data_signature[attribute][feature_type]
+
+    def test_data_signatures(
+        new_signature: Dict[Text, Dict[Text, List[FeatureArray]]],
+        old_signature: Dict[Text, Dict[Text, List[FeatureArray]]],
+    ):
+        # Wherever attribute / feature_type signature is not
+        # expected to change, directly compare it to old data signature.
+        # Else compute its expected signature and compare
+        attributes_expected_to_change = [TEXT]
+        feature_types_expected_to_change = [
+            FEATURE_TYPE_SEQUENCE,
+            FEATURE_TYPE_SENTENCE,
+        ]
+
+        for attribute, signatures in new_signature.items():
+
+            for feature_type, feature_signatures in signatures.items():
+
+                if feature_type == "sequence_lengths":
+                    assert feature_signatures[0].units == expected_sequence_lengths
+
+                elif feature_type not in feature_types_expected_to_change:
+                    assert feature_signatures == old_signature.get(attribute).get(
+                        feature_type
                     )
-                    if attribute in new_predict_data_signature:
-                        assert (
-                            new_predict_data_signature[attribute][feature_type]
-                            == old_predict_data_signature[attribute][feature_type]
-                        )
                 else:
-                    assert (
-                        new_data_signature[attribute][feature_type][0].units
-                        == expected_sequence_lengths
-                    )
-                    if attribute in new_predict_data_signature:
-                        assert (
-                            new_predict_data_signature[attribute][feature_type][0].units
-                            == expected_sequence_lengths
-                        )
+                    for index, feature_signature in enumerate(feature_signatures):
+                        if (
+                            feature_signature.is_sparse
+                            and attribute in attributes_expected_to_change
+                        ):
+                            assert feature_signature.units == sum(
+                                new_sparse_feature_sizes.get(feature_type)
+                            )
+                        else:
+                            # dense signature or attributes that are not
+                            # expected to change can be compared directly
+                            assert (
+                                feature_signature.units
+                                == old_signature.get(attribute)
+                                .get(feature_type)[index]
+                                .units
+                            )
+
+    test_data_signatures(new_data_signature, old_data_signature)
+    test_data_signatures(new_predict_data_signature, old_predict_data_signature)
 
 
 @pytest.mark.timeout(120)
