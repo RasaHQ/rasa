@@ -15,7 +15,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
 )
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
-from rasa.core.policies.intent_ted_policy import IntentTEDPolicy
+from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME, ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -51,11 +51,11 @@ from tests.core.test_policies import train_trackers
 from tests.core.policies.test_ted_policy import TestTEDPolicy
 
 
-class TestIntentTEDPolicy(TestTEDPolicy):
+class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> IntentTEDPolicy:
-        return IntentTEDPolicy(featurizer=featurizer, priority=priority)
+    ) -> UnexpecTEDIntentPolicy:
+        return UnexpecTEDIntentPolicy(featurizer=featurizer, priority=priority)
 
     @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:
@@ -65,24 +65,24 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         return featurizer
 
     @staticmethod
-    def persist_and_load_policy(trained_policy: IntentTEDPolicy, tmp_path: Path):
+    def persist_and_load_policy(trained_policy: UnexpecTEDIntentPolicy, tmp_path: Path):
         trained_policy.persist(tmp_path)
-        return IntentTEDPolicy.load(tmp_path)
+        return UnexpecTEDIntentPolicy.load(tmp_path)
 
     @pytest.mark.skip
     def test_normalization(
         self,
-        trained_policy: IntentTEDPolicy,
+        trained_policy: UnexpecTEDIntentPolicy,
         tracker: DialogueStateTracker,
         default_domain: Domain,
         monkeypatch: MonkeyPatch,
     ):
-        # No normalization is done for IntentTEDPolicy and
+        # No normalization is done for UnexpecTEDIntentPolicy and
         # hence this test is overridden to do nothing.
         assert True
 
     def test_label_data_assembly(
-        self, trained_policy: IntentTEDPolicy, default_domain: Domain
+        self, trained_policy: UnexpecTEDIntentPolicy, default_domain: Domain
     ):
         interpreter = RegexInterpreter()
 
@@ -139,13 +139,13 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         policy.train(training_trackers, default_domain, RegexInterpreter())
 
         assert (
-            "Can not train 'IntentTEDPolicy'. No data was provided. "
+            "Can not train 'UnexpecTEDIntentPolicy'. No data was provided. "
             "Skipping training of the policy." in caplog.text
         )
 
     async def test_prepared_data_for_threshold_prediction(
         self,
-        trained_policy: IntentTEDPolicy,
+        trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         stories_path: Path,
     ):
@@ -175,7 +175,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
                 ]
             )
         }
-        label_id_similarities = IntentTEDPolicy._collect_label_id_grouped_scores(
+        label_id_similarities = UnexpecTEDIntentPolicy._collect_label_id_grouped_scores(
             outputs, label_ids
         )
 
@@ -284,7 +284,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
                 0.2,
             ],
         }
-        thresholds = IntentTEDPolicy._compute_label_quantiles(label_id_scores)
+        thresholds = UnexpecTEDIntentPolicy._compute_label_quantiles(label_id_scores)
         assert sorted(list(thresholds.keys())) == sorted(
             list(expected_thresholds.keys())
         )
@@ -293,7 +293,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
 
     async def test_post_training_threshold_computation(
         self,
-        trained_policy: IntentTEDPolicy,
+        trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         stories_path: Path,
     ):
@@ -377,7 +377,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
             ],
             4: [0.2 - (index * 0.3) for index in range(20)],
         }
-        thresholds = IntentTEDPolicy._pick_thresholds(
+        thresholds = UnexpecTEDIntentPolicy._pick_thresholds(
             label_id_tolerance_thresholds, tolerance
         )
         assert sorted(list(thresholds.keys())) == sorted(
@@ -392,7 +392,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
     )
     def test_unlikely_intent_check(
         self,
-        trained_policy: IntentTEDPolicy,
+        trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         predicted_similarity: float,
         threshold_value: float,
@@ -415,7 +415,10 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         assert is_unlikely == unlikely_intent_prediction
 
     def test_should_check_for_intent(
-        self, trained_policy: IntentTEDPolicy, default_domain: Domain, tmp_path: Path
+        self,
+        trained_policy: UnexpecTEDIntentPolicy,
+        default_domain: Domain,
+        tmp_path: Path,
     ):
         loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
 
@@ -443,7 +446,10 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         )
 
     def test_no_action_unlikely_intent_prediction(
-        self, trained_policy: IntentTEDPolicy, default_domain: Domain, tmp_path: Path
+        self,
+        trained_policy: UnexpecTEDIntentPolicy,
+        default_domain: Domain,
+        tmp_path: Path,
     ):
         loaded_policy = self.persist_and_load_policy(trained_policy, tmp_path)
 
@@ -484,7 +490,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
     )
     def test_action_unlikely_intent_prediction(
         self,
-        trained_policy: IntentTEDPolicy,
+        trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         predicted_similarity,
         threshold_value,
@@ -585,7 +591,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
     )
     def test_skip_predictions_to_prevent_loop(
         self,
-        trained_policy: IntentTEDPolicy,
+        trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         caplog: LogCaptureFixture,
         tracker_events: List[Event],
@@ -603,7 +609,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         )
 
         assert (
-            "Skipping predictions for IntentTEDPolicy" in caplog.text
+            "Skipping predictions for UnexpecTEDIntentPolicy" in caplog.text
         ) == should_skip
 
         if should_skip:
@@ -673,7 +679,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
     )
     def test_ignore_action_unlikely_intent(
         self,
-        trained_policy: IntentTEDPolicy,
+        trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         tracker_events_with_action: List[Event],
         tracker_events_without_action: List[Event],
@@ -695,14 +701,14 @@ class TestIntentTEDPolicy(TestTEDPolicy):
         )
 
         # If the weights didn't change then both trackers
-        # should result in same prediction. For `IntentTEDPolicy`, the real
+        # should result in same prediction. For `UnexpecTEDIntentPolicy`, the real
         # prediction is inside action metadata.
         assert (
             prediction_with_action.action_metadata
             == prediction_without_action.action_metadata
         )
 
-    def test_label_embedding_collection(self, trained_policy: IntentTEDPolicy):
+    def test_label_embedding_collection(self, trained_policy: UnexpecTEDIntentPolicy):
         label_ids = tf.constant([[[2], [-1]], [[1], [2]], [[0], [-1]]], dtype=tf.int32)
 
         all_label_embeddings = np.random.random((10, 20))
@@ -736,7 +742,7 @@ class TestIntentTEDPolicy(TestTEDPolicy):
     )
     def test_collect_action_metadata(
         self,
-        trained_policy: IntentTEDPolicy,
+        trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         tmp_path: Path,
         query_intent_index: int,

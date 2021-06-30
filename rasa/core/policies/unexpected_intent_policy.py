@@ -110,8 +110,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class IntentTEDPolicy(TEDPolicy):
-    """`IntentTEDPolicy` has the same model architecture as `TEDPolicy`.
+class UnexpecTEDIntentPolicy(TEDPolicy):
+    """`UnexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.
 
     The difference is at a task level.
     Instead of predicting the next probable action, this policy
@@ -226,7 +226,7 @@ class IntentTEDPolicy(TEDPolicy):
         # For each intent, the tolerance is the percentage of
         # negative training instances (trackers for which
         # the corresponding intent is not the correct label) that
-        # would be ignored by `IntentTEDPolicy`. This is converted
+        # would be ignored by `UnexpecTEDIntentPolicy`. This is converted
         # into a similarity threshold by identifying the similarity
         # score for the (1 - tolerance) percentile of negative
         # examples. Any tracker with a similarity score below this
@@ -552,7 +552,8 @@ class IntentTEDPolicy(TEDPolicy):
                  from getting stuck in a prediction loop.
                 For example, if the last `ActionExecuted` event
                 contained `action_unlikely_intent` predicted by
-                `IntentTEDPolicy` and if `IntentTEDPolicy` runs inference
+                `UnexpecTEDIntentPolicy` and
+                if `UnexpecTEDIntentPolicy` runs inference
                 on the same tracker, it will predict `action_unlikely_intent`
                 again which would make the dialogue manager get stuck in a
                 prediction loop.
@@ -568,7 +569,7 @@ class IntentTEDPolicy(TEDPolicy):
             elif isinstance(event, UserUttered):
                 return False
         # No event of type `ActionExecuted` and `UserUttered` means
-        # that there is nothing for `IntentTEDPolicy` to predict on.
+        # that there is nothing for `UnexpecTEDIntentPolicy` to predict on.
         return True
 
     def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
@@ -814,7 +815,7 @@ class IntentTEDPolicy(TEDPolicy):
         featurizer: TrackerFeaturizer,
         model_utilities: Dict[Text, Any],
         should_finetune: bool,
-    ) -> "IntentTEDPolicy":
+    ) -> "UnexpecTEDIntentPolicy":
         return cls(
             featurizer=featurizer,
             priority=model_utilities["priority"],

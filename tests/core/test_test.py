@@ -29,7 +29,7 @@ def _probabilities_with_action_unlikely_intent_for(intent_name: Text):
             # We need to do it because every time the tests are run,
             # training will result in different model weights which might
             # result in different predictions of `action_unlikely_intent`.
-            # Because we're not testing `IntentTEDPolicy` here we simply trigger it
+            # Because we're not testing `UnexpecTEDIntentPolicy` here we simply trigger it
             # predicting `action_unlikely_intent` in a specified moment
             # to make the tests deterministic.
             return PolicyPrediction.for_action_name(domain, ACTION_UNLIKELY_INTENT_NAME)

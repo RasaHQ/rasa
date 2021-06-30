@@ -40,12 +40,12 @@ from rasa.shared.core.constants import (
     ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.core.agent import Agent
-from rasa.core.policies.intent_ted_policy import IntentTEDPolicy
+from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 from tests.core import test_utils
 
 
 def _action_unlikely_intent_for(intent_name: Text):
-    _original = IntentTEDPolicy.predict_action_probabilities
+    _original = UnexpecTEDIntentPolicy.predict_action_probabilities
 
     def predict_action_probabilities(
         self, tracker, domain, interpreter, **kwargs,
@@ -740,11 +740,11 @@ def test_rule_action_wins_over_action_unlikely_intent(
     monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
 ):
     # The original training data consists of a rule for `goodbye` intent.
-    # We monkey-patch IntentTEDPolicy to always predict action_unlikely_intent
+    # We monkey-patch UnexpecTEDIntentPolicy to always predict action_unlikely_intent
     # if last user intent was goodbye. The predicted action from ensemble
     # should be utter_goodbye and not action_unlikely_intent.
     monkeypatch.setattr(
-        IntentTEDPolicy,
+        UnexpecTEDIntentPolicy,
         "predict_action_probabilities",
         _action_unlikely_intent_for("goodbye"),
     )
@@ -769,7 +769,7 @@ def test_ensemble_prevents_multiple_action_unlikely_intents(
     monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
 ):
     monkeypatch.setattr(
-        IntentTEDPolicy,
+        UnexpecTEDIntentPolicy,
         "predict_action_probabilities",
         _action_unlikely_intent_for("greet"),
     )
@@ -791,7 +791,7 @@ def test_ensemble_prevents_multiple_action_unlikely_intents(
 
     # prediction cannot be action_unlikely_intent for sure because
     # the last event is not of type UserUttered and that's the
-    # first condition for `IntentTEDPolicy` to make a prediction
+    # first condition for `UnexpecTEDIntentPolicy` to make a prediction
     assert (
         domain.action_names_or_texts[np.argmax(prediction.probabilities)]
         != ACTION_UNLIKELY_INTENT_NAME
