@@ -942,7 +942,7 @@ class Domain:
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT, mappings=[])
+            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT, slot_mappings=[])
         )
 
     def index_for_action(self, action_name: Text) -> int:
@@ -2072,8 +2072,6 @@ def _validate_slot_mappings(domain_slots: Dict[Text, Any]) -> None:
         )
 
     for slot_name, properties in domain_slots.items():
-        mappings = properties.get("slot_mappings")
-        if mappings is None:
-            raise InvalidDomain(f"The slot '{slot_name}' has no mappings defined.")
+        mappings = properties.get("slot_mappings") or []
         for slot_mapping in mappings:
             SlotMapping.validate(slot_mapping, slot_name)
