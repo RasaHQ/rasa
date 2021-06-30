@@ -558,6 +558,7 @@ def test_sets_integer_transformer_size_when_needed(
             TRANSFORMER_SIZE, None  # None is the default transformer size
         )
 
+
 @pytest.mark.timeout(120)
 async def test_adjusting_layers_incremental_training(
     component_builder: ComponentBuilder, tmpdir: Path
