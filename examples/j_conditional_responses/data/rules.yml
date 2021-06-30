@@ -1,0 +1,29 @@
+version: "2.0"
+
+rules:
+
+- rule: Say hello
+  conversation_start: true
+  steps:
+  - intent: greet
+  - action: utter_greet
+
+- rule: Say goodbye
+  steps:
+  - intent: goodbye
+  - action: utter_goodbye
+
+- rule: Say 'I am a bot' anytime the user challenges
+  steps:
+  - intent: bot_challenge
+  - action: utter_iamabot
+
+- rule: List abilities
+  steps:
+  - intent: ask_what_can_do
+  - action: utter_abilities
+
+- rule: Tell time
+  steps:
+  - intent: ask_time
+  - action: utter_tell_time

@@ -1,0 +1,96 @@
+version: "2.0"
+
+intents:
+  - greet
+  - goodbye
+  - ask_what_can_do
+  - ask_time
+  - bot_challenge
+
+slots:
+  num_ask_what_can_do:
+    type: any
+    influence_conversation: false
+  current_daytime:
+    type: categorical
+    values:
+      - morning
+      - noon
+      - evening
+    influence_conversation: false
+  current_time:
+    type: text
+    influence_conversation: false
+  dummy:
+    type: any
+    influence_conversation: false
+    slot_mappings:
+      - type: custom
+        action: slot_mapping_action
+
+responses:
+  utter_greet:
+    - text: Good morning!
+      condition:
+        - type: slot
+          name: current_daytime
+          value: morning
+    - text: Hello!
+      condition:
+        - type: slot
+          name: current_daytime
+          value: noon
+    - text: Good evening!
+      condition:
+        - type: slot
+          name: current_daytime
+          value: evening
+
+  utter_abilities:
+    - text: I can tell you the time.
+      condition:
+        - type: slot
+          name: num_ask_what_can_do
+          value: "1"
+    - text: As I've said, I can tell you the time.
+      condition:
+        - type: slot
+          name: num_ask_what_can_do
+          value: "2"
+    - text: I really can only tell you the time. Nothing more!
+      condition:
+        - type: slot
+          name: num_ask_what_can_do
+          value: "3"
+    - text: It's too late to tell you.
+      condition:
+        - type: slot
+          name: num_ask_what_can_do
+          value: "4+"
+
+  utter_tell_time:
+    - text: "It is {current_time}"
+
+  utter_goodbye:
+    - text: Bye! Have a great day!
+      condition:
+        - type: slot
+          name: current_daytime
+          value: morning
+    - text: Bye! Enjoy the rest of your day!
+      condition:
+        - type: slot
+          name: current_daytime
+          value: noon
+    - text: Good night!
+      condition:
+        - type: slot
+          name: current_daytime
+          value: evening
+
+  utter_iamabot:
+    - text: "I am a bot, powered by Rasa."
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
