@@ -12,13 +12,37 @@ from rasa.utils.tensorflow.constants import (
     INNER,
     LINEAR_NORM,
     CROSS_ENTROPY,
+    LABEL,
 )
+from rasa.core.constants import DIALOGUE
+from rasa.shared.nlu.constants import (
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    ACTION_NAME,
+    ACTION_TEXT,
+)
+
 from rasa.utils.tensorflow.exceptions import TFLayerConfigException
 
 logger = logging.getLogger(__name__)
 
 # https://github.com/tensorflow/addons#gpu-and-cpu-custom-ops-1
 tfa.options.TF_ADDONS_PY_OPS = True
+
+POSSIBLE_ATTRIBUTES = [
+    TEXT,
+    INTENT,
+    LABEL,
+    DIALOGUE,
+    ACTION_NAME,
+    ACTION_TEXT,
+    f"{LABEL}_{ACTION_NAME}",
+    f"{LABEL}_{ACTION_TEXT}",
+]
 
 
 class SparseDropout(tf.keras.layers.Dropout):
@@ -120,6 +144,56 @@ class DenseForSparse(tf.keras.layers.Dense):
             regularizer = None
 
         super().__init__(kernel_regularizer=regularizer, **kwargs)
+
+    def get_units(self) -> int:
+        """Returns number of output units."""
+        return self.units
+
+    def get_kernel(self) -> tf.Tensor:
+        """Returns kernel tensor."""
+        return self.kernel
+
+    def get_bias(self) -> Union[tf.Tensor, None]:
+        """Returns bias tensor."""
+        if self.use_bias:
+            return self.bias
+        return None
+
+    def get_feature_type(self) -> Union[Text, None]:
+        """Returns a feature type of the data that's fed to the layer.
+
+        In order to correctly return a feature type, the function heavily relies
+        on the name of `DenseForSparse` layer to contain the feature type.
+        Acceptable values of feature types are `FEATURE_TYPE_SENTENCE`
+        and `FEATURE_TYPE_SEQUENCE`.
+
+        Returns:
+            feature type of dense layer.
+        """
+        for feature_type in [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE]:
+            if feature_type in self.name:
+                return feature_type
+        return None
+
+    def get_attribute(self) -> Union[Text, None]:
+        """Returns the attribute for which this layer was constructed.
+
+        For example: TEXT, LABEL, etc.
+
+        In order to correctly return an attribute, the function heavily relies
+        on the name of `DenseForSparse` layer being in the following format:
+        f"sparse_to_dense.{attribute}_{feature_type}".
+
+        Returns:
+            attribute of the layer.
+        """
+        metadata = self.name.split(".")
+        if len(metadata) > 1:
+            attribute_splits = metadata[1].split("_")[:-1]
+            attribute = "_".join(attribute_splits)
+            if attribute in POSSIBLE_ATTRIBUTES:
+                return attribute
+        return None
 
     def call(self, inputs: tf.SparseTensor) -> tf.Tensor:
         """Apply dense layer to sparse inputs.

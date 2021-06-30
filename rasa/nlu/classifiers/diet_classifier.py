@@ -103,7 +103,6 @@ from rasa.utils.tensorflow.constants import (
 
 logger = logging.getLogger(__name__)
 
-
 SPARSE = "sparse"
 DENSE = "dense"
 LABEL_KEY = LABEL
@@ -353,7 +352,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
         self._label_data: Optional[RasaModelData] = None
-        self._data_example: Optional[Dict[Text, List[FeatureArray]]] = None
+        self._data_example: Optional[Dict[Text, Dict[Text, List[FeatureArray]]]] = None
 
         self.split_entities_config = self.init_split_entities()
 
@@ -561,7 +560,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_features = self._extract_features(e, attribute)
             for feature_key, feature_value in label_features.items():
                 features[feature_key].append(feature_value)
-
         sequence_features = []
         sentence_features = []
         for feature_name, feature_value in features.items():
@@ -573,7 +571,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 sentence_features.append(
                     FeatureArray(np.array(feature_value), number_of_dimensions=3)
                 )
-
         return sequence_features, sentence_features
 
     @staticmethod
@@ -616,7 +613,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # Sort the list of tuples based on label_idx
         labels_idx_examples = sorted(labels_idx_examples, key=lambda x: x[0])
         labels_example = [example for (_, example) in labels_idx_examples]
-
         # Collect features, precomputed if they exist, else compute on the fly
         if self._check_labels_features_exist(labels_example, attribute):
             (
@@ -630,7 +626,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_data = RasaModelData()
         label_data.add_features(LABEL, SEQUENCE, sequence_features)
         label_data.add_features(LABEL, SENTENCE, sentence_features)
-
         if label_data.does_feature_not_exist(
             LABEL, SENTENCE
         ) and label_data.does_feature_not_exist(LABEL, SEQUENCE):
@@ -705,7 +700,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             featurizers=self.component_config[FEATURIZERS],
             bilou_tagging=self.component_config[BILOU_FLAG],
         )
-
         attribute_data, _ = model_data_utils.convert_to_data_format(
             features_for_examples, consider_dialogue_dimension=False
         )
@@ -717,7 +711,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
         # Current implementation doesn't yet account for updating sparse
         # feature sizes of label attributes. That's why we remove them.
-        sparse_feature_sizes = DIETClassifier._remove_label_sparse_feature_sizes(
+        sparse_feature_sizes = self._remove_label_sparse_feature_sizes(
             sparse_feature_sizes=sparse_feature_sizes, label_attribute=label_attribute
         )
         model_data.add_sparse_feature_sizes(sparse_feature_sizes)
@@ -756,7 +750,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             for example in training_data:
                 if example.get(label_attribute):
                     label_ids.append(label_id_dict[example.get(label_attribute)])
-
             # explicitly add last dimension to label_ids
             # to track correctly dynamic sequences
             model_data.add_features(
@@ -812,7 +805,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         label_attribute = (
             INTENT if self.component_config[INTENT_CLASSIFICATION] else None
         )
-
         model_data = self._create_model_data(
             training_data.nlu_examples,
             label_id_index_mapping,
@@ -841,7 +833,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 f"Skipping training of the classifier."
             )
             return
-
         if self.component_config.get(INTENT_CLASSIFICATION):
             if not self._check_enough_labels(model_data):
                 logger.error(
@@ -861,6 +852,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.model = self._instantiate_model_class(model_data)
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.component_config[LEARNING_RATE])
+            )
+        else:
+            self.model.adjust_for_incremental_training(
+                data_example=self._data_example,
+                new_sparse_feature_sizes=model_data.get_sparse_feature_sizes(),
+                old_sparse_feature_sizes=self._sparse_feature_sizes,
             )
         self._sparse_feature_sizes = model_data.get_sparse_feature_sizes()
 

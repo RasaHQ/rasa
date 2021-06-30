@@ -251,7 +251,6 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     ],
 )
 def test_count_vector_featurizer_oov_words(sentence, expected):
-
     ftr = CountVectorsFeaturizer(
         {"OOV_token": "__oov__", "OOV_words": ["oov_word0", "OOV_word1"],}
     )
@@ -286,7 +285,6 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     ],
 )
 def test_count_vector_featurizer_using_tokens(tokens, expected):
-
     ftr = CountVectorsFeaturizer()
 
     # using empty string instead of real text string to make sure
@@ -347,7 +345,6 @@ def test_count_vector_featurizer_char(sentence, expected):
 
 
 def test_count_vector_featurizer_persist_load(tmp_path: Path):
-
     # set non default values to config
     config = {
         "analyzer": "char",
@@ -437,7 +434,6 @@ def test_count_vector_featurizer_persist_load(tmp_path: Path):
 
 
 def test_count_vectors_featurizer_train():
-
     featurizer = CountVectorsFeaturizer.create({}, RasaNLUModelConfig())
 
     sentence = "Hey how are you today ?"
@@ -653,7 +649,6 @@ def test_cvf_incremental_training(
     final_vocabulary_size: int,
     tmp_path: Path,
 ):
-
     tk = WhitespaceTokenizer()
     initial_cvf = CountVectorsFeaturizer()
     train_message = Message(data={"text": initial_train_text})
@@ -698,3 +693,43 @@ def test_additional_vocab_size_deprecation():
             RasaNLUModelConfig(),
         )
     assert "The parameter has been deprecated" in warning[0].message.args[0]
+
+
+@pytest.mark.parametrize(
+    "initial_train_text, additional_train_text, " "use_shared_vocab",
+    [("am I the coolest person?", "no", True), ("rasa rasa", "sara sara", False),],
+)
+def test_use_shared_vocab_exception(
+    initial_train_text: Text,
+    additional_train_text: Text,
+    use_shared_vocab: bool,
+    tmp_path: Path,
+):
+    """Tests if an exception is raised when `use_shared_vocab` is set to True
+    during incremental training."""
+    tk = WhitespaceTokenizer()
+    initial_cvf = CountVectorsFeaturizer(
+        component_config={"use_shared_vocab": use_shared_vocab}
+    )
+    train_message = Message(data={"text": initial_train_text})
+    data = TrainingData([train_message])
+    tk.train(data)
+    initial_cvf.train(data)
+
+    file_dict = initial_cvf.persist("ftr", tmp_path)
+    meta = initial_cvf.component_config.copy()
+    meta.update(file_dict)
+    new_cvf = CountVectorsFeaturizer.load(meta, tmp_path, should_finetune=True)
+
+    additional_train_message = Message(data={"text": additional_train_text})
+    data = TrainingData([train_message, additional_train_message])
+    tk.train(data)
+    if use_shared_vocab:
+        with pytest.raises(Exception) as exec_info:
+            new_cvf.train(data)
+        assert (
+            "Using a shared vocabulary in `CountVectorsFeaturizer` is not supported"
+            in str(exec_info.value)
+        )
+    else:
+        new_cvf.train(data)
