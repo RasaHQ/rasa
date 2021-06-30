@@ -212,6 +212,9 @@ class KafkaEventBroker(EventBroker):
             event["parse_data"]["intent"]["id"] = str(
                 event["parse_data"]["intent"]["id"]
             )
+            for idx, parse_data in enumerate(event["intent_ranking"]):
+                parse_data["id"] = str(parse_data["id"])
+                event["intent_ranking"][idx] = parse_data
         return event
 
     def _close(self) -> None:
