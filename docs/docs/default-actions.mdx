@@ -190,9 +190,9 @@ the Rasa SDK.
 
 ## action_unlikely_intent
 
-Rasa Open Source triggers `action_unlikely_intent` via [`IntentTEDPolicy`](./policies.mdx#intentted-policy).
-You can control how often this action is predicted by tuning the [`tolerance`](./policies.mdx#intentted-policy)
-parameter of `IntentTEDPolicy`.
+Rasa Open Source triggers `action_unlikely_intent` via [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy).
+You can control how often this action is predicted by tuning the [`tolerance`](./policies.mdx#unexpected-intent-policy)
+parameter of `UnexpecTEDIntentPolicy`.
 
 ### Customization
 
@@ -226,7 +226,7 @@ class ActionUnlikelyIntent(Action):
 
 :::note
 Since `action_unlikely_intent` can be triggered at any conversation step during inference,
-all policies which are trained on only story data, for example - `TEDPolicy`, `IntentTEDPolicy`,
+all policies which are trained on only story data, for example - `TEDPolicy`, `UnexpecTEDIntentPolicy`,
 `MemoizationPolicy` ignore its presence in the tracker when making a prediction. However, `RulePolicy`
 takes its presence into account so that [conversation behaviour is customizable](./default-actions.mdx#customization-1).
 

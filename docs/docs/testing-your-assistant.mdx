@@ -388,12 +388,12 @@ policies failed to do so, then the corresponding story will end up in `results/f
 a failed story.
 
 The stories are sorted by the severity of `action_unlikely_intent`'s prediction.
-This severity is calculated by `IntentTEDPolicy` itself at prediction time.
+This severity is calculated by [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy) itself at prediction time.
 The higher the severity, the more unlikely is the intent and hence reviewing that particular
 conversation path becomes more critical.
 
 It should be noted that `action_unlikely_intent` is predicted by
-[`IntentTEDPolicy`](./policies.mdx#intentted-policy) which employs a machine learning based model
+`UnexpecTEDIntentPolicy` which employs a machine learning based model
 under the hood and hence can result in false warnings as well. You can choose to ignore such warnings
 if the conversation paths in these stories are already present in the training stories.
 
