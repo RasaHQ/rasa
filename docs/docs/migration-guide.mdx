@@ -12,18 +12,18 @@ how you can migrate from one version to another.
 
 ## Rasa 2.7 to 2.8
 
-:::caution
-This is a release **breaking backwards compatibility of machine learning models**.
-I don't think we need this, but will still leave here to discuss.
-:::
-
 ### Incremental Training
 
-From now on new sparse features will be added dynamically during incremental training.
-In other words, we won't create an extra buffer in advance for additional vocabulary items,
-but will dynamically allocate space for them when we actually need it.
-This means there's no need to specify `additional_vocabulary_size` for `CountVectorsFeaturizer` or
-`number_additional_patterns` for `RegexFeaturizer`.
+Users don't need to specify an additional buffer size for sparse featurizers anymore during incremental training.
+
+Space for new sparse features are created dynamically inside the downstream machine learning
+models - `DIETClassifier`, `ResponseSelector`. In other words, no extra buffer is created in
+advance for additional vocabulary items and space will be dynamically allocated for them inside the model.
+
+This means there's no need to specify `additional_vocabulary_size` for
+[`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer) or
+`number_additional_patterns` for [`RegexFeaturizer`](./components.mdx#regexfeaturizer).
+These parameters are now deprecated.
 
 **Before**
 ```yaml
@@ -34,6 +34,7 @@ pipeline:
   - name: "CountVectorsFeaturizer"
     additional_vocabulary_size: {text: 100, response: 20}
 ```
+
 **Now**
 ```yaml
 pipeline:
