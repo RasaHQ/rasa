@@ -306,7 +306,7 @@ async def test_kafka_broker_convert_intent_id_to_string():
         "parse_data": {
             "entities": [],
             "intent": {"confidence": 0.54, "name": "greet", "id": 7703045398849936579},
-            "message_id": null,
+            "message_id": "987654321",
             "metadata": {},
             "text": "/greet",
             "intent_ranking": [
@@ -317,9 +317,8 @@ async def test_kafka_broker_convert_intent_id_to_string():
         },
         "event": "user",
         "text": "/greet",
-        "input_channel": null,
-        "message_id": null,
-        "metadata": {},
+        "input_channel": "rest",
+        "message_id": "987654321",
     }
     actual = KafkaEventBroker(
         "localhost",
