@@ -117,8 +117,6 @@ async def test_adjusting_layers_incremental_training(
     # check if the data signatures were correctly updated
     new_data_signature = trained.pipeline[-1].model.data_signature
     new_predict_data_signature = trained.pipeline[-1].model.predict_data_signature
-    expected_sequence_units = sum(new_sparse_feature_sizes[FEATURE_TYPE_SEQUENCE])
-    expected_sentence_units = sum(new_sparse_feature_sizes[FEATURE_TYPE_SENTENCE])
     iter2_data = load_data(iter2_data_path)
     expected_sequence_lengths = len(
         [
