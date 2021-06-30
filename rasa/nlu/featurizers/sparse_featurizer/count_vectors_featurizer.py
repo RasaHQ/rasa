@@ -148,7 +148,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             self.OOV_token = self.OOV_token.lower()
             if self.OOV_words:
                 self.OOV_words = [w.lower() for w in self.OOV_words]
-
         additional_size_attributes = [
             key
             for key, value in self.component_config[
