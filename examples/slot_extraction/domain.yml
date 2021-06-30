@@ -101,6 +101,18 @@ responses:
   utter_holiday:
   - text: "I strongly encourage you to take some time off to avoid burn-out."
 
+  utter_ask_pet_kind:
+  - text: "What pet do you like?"
+
+  utter_ask_mood:
+  - text: "How are you feeling?"
+
+  utter_ask_cuisine:
+  - text: "Cuisine?"
+  
+  utter_ask_location:
+  - text: "Where?"
+
 forms:
   test_form:
     required_slots:
