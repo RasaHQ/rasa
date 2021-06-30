@@ -1,6 +1,6 @@
 from pathlib import Path
 from collections import defaultdict
-
+from abc import abstractmethod
 import jsonpickle
 import logging
 
@@ -23,6 +23,7 @@ from rasa.utils.tensorflow.constants import LABEL_PAD_ID
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
+from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
 
 FEATURIZER_FILE = "featurizer.json"
 
@@ -279,6 +280,7 @@ class TrackerFeaturizer:
         )
         return trackers_as_states, trackers_as_labels
 
+    @abstractmethod
     def training_states_labels_and_entities(
         self,
         trackers: List[DialogueStateTracker],
@@ -320,7 +322,7 @@ class TrackerFeaturizer:
             bilou_tagging: Whether to consider bilou tagging.
         """
         if self.state_featurizer is None:
-            raise ValueError(
+            raise InvalidTrackerFeaturizerUsageError(
                 f"Instance variable 'state_featurizer' is not set. "
                 f"During initialization set 'state_featurizer' to an instance of "
                 f"'{SingleStateFeaturizer.__class__.__name__}' class "
@@ -451,7 +453,7 @@ class TrackerFeaturizer:
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
         ignore_action_unlikely_intent: bool = False,
-    ) -> List[List[Dict[Text, List["Features"]]]]:
+    ) -> List[List[Dict[Text, List[Features]]]]:
         """Creates state features for prediction.
 
         Args:
@@ -794,13 +796,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         hashed_examples = set()
 
         logger.debug(
-            "Creating states and {} label examples from "
-            "collected trackers (by {}({}))..."
-            "".format(
-                self.LABEL_NAME,
-                type(self).__name__,
-                type(self.state_featurizer).__name__,
-            )
+            f"Creating states and {self.LABEL_NAME} label examples from "
+            f"collected trackers (by {type(self).__name__}({type(self.state_featurizer).__name__}))..."
         )
         pbar = tqdm(
             trackers,
@@ -1041,13 +1038,8 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         ] = defaultdict(list)
 
         logger.debug(
-            "Creating states and {} label examples from "
-            "collected trackers (by {}({}))..."
-            "".format(
-                self.LABEL_NAME,
-                type(self).__name__,
-                type(self.state_featurizer).__name__,
-            )
+            f"Creating states and {self.LABEL_NAME} label examples from "
+            f"collected trackers (by {type(self).__name__}({type(self.state_featurizer).__name__}))..."
         )
         pbar = tqdm(
             trackers,
@@ -1159,6 +1151,8 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             Filtered states with last `action_listen` removed.
         """
         for states in trackers_as_states:
+            if not states:
+                continue
             last_state = states[-1]
             if is_prev_action_listen_in_state(last_state):
                 del states[-1]
