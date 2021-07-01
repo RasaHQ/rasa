@@ -62,7 +62,7 @@
     "redoc": "^2.0.0-rc.31",
     "remark": "^13.0.0",
     "remark-collapse": "^0.1.2",
-    "remark-sources": "^1.0.1",
+    "remark-sources": "^1.1.0",
     "sass": "^1.26.10",
     "sass-loader": "^9.0.3",
     "styled-components": "^4.2.0",
