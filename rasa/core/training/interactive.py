@@ -1142,7 +1142,7 @@ async def _validate_action(
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
             f"Check out UnexpecTEDIntentPolicy "
-            f"({DOCS_URL_POLICIES}/#unexpected-intent-policy) "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
             f"to learn more."
         )
     else:

@@ -747,7 +747,7 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
             f"Check out UnexpecTEDIntentPolicy "
-            f"({DOCS_URL_POLICIES}/#unexpected-intent-policy) "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
             f"to learn more.",
             True,
             "action_unlikely_intent",
@@ -758,7 +758,7 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
             f"Check out UnexpecTEDIntentPolicy "
-            f"({DOCS_URL_POLICIES}/#unexpected-intent-policy) "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
             f"to learn more.",
             False,
             "action_unlikely_intent",

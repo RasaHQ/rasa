@@ -299,7 +299,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
-        return "intent_ted_policy"
+        return "unexpected_intent_policy"
 
     def _assemble_label_data(
         self, attribute_data: Data, domain: Domain
