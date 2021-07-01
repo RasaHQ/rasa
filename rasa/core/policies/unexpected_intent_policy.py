@@ -276,7 +276,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         self.config[SIMILARITY_TYPE] = INNER
         self.config[LOSS_TYPE] = CROSS_ENTROPY
 
-        common.mark_as_experimental_feature("IntentTED Policy")
+        common.mark_as_experimental_feature("UnexpecTED Intent Policy")
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
