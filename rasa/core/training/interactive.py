@@ -1141,7 +1141,8 @@ async def _validate_action(
             f"The bot wants to run '{action_name}' "
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
-            f"Check out IntentTEDPolicy ({DOCS_URL_POLICIES}/#intent-ted-policy) "
+            f"Check out UnexpecTEDIntentPolicy "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
             f"to learn more."
         )
     else:

@@ -25,7 +25,7 @@ policies: # even here
 # # See https://rasa.com/docs/rasa/policies for more information.
 #   - name: MemoizationPolicy
 #   - name: RulePolicy
-#   - name: IntentTEDPolicy
+#   - name: UnexpecTEDIntentPolicy
 #     max_history: 5
 #     epochs: 100
 #   - name: TEDPolicy
