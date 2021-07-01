@@ -265,7 +265,7 @@ class SingleStateFeaturizer:
     def encode_state(
         self, state: State, interpreter: NaturalLanguageInterpreter
     ) -> Dict[Text, List[Features]]:
-        """Encode the given state with the help of the given interpreter.
+        """Encodes the given state with the help of the given interpreter.
 
         Args:
             state: The state to encode
@@ -304,7 +304,7 @@ class SingleStateFeaturizer:
         interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
     ) -> Dict[Text, List[Features]]:
-        """Encode the given entity data with the help of the given interpreter.
+        """Encodes the given entity data with the help of the given interpreter.
 
         Produce numeric entity tags for tokens.
 
@@ -357,7 +357,7 @@ class SingleStateFeaturizer:
     def encode_all_labels(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> List[Dict[Text, List[Features]]]:
-        """Encode all labels from the domain using the given interpreter.
+        """Encodes all labels from the domain using the given interpreter.
 
         Args:
             domain: The domain that contains the labels.
@@ -374,7 +374,7 @@ class SingleStateFeaturizer:
     def encode_all_actions(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> List[Dict[Text, List[Features]]]:
-        """Encode all actions from the domain using the given interpreter.
+        """Encodes all actions from the domain using the given interpreter.
 
         This method is deprecated and will be removed in Rasa Open Source 3.0.0 .
         It is recommended to use `encode_all_labels` instead.
@@ -402,7 +402,7 @@ class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     def _encode_intent(
         self, intent: Text, interpreter: NaturalLanguageInterpreter
     ) -> Dict[Text, List[Features]]:
-        """Extract a numeric representation of an intent.
+        """Extracts a numeric representation of an intent.
 
         Args:
             intent: Intent to be encoded.
@@ -418,7 +418,7 @@ class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     def encode_all_labels(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> List[Dict[Text, List[Features]]]:
-        """Encode all relevant labels from the domain using the given interpreter.
+        """Encodes all relevant labels from the domain using the given interpreter.
 
         Args:
             domain: The domain that contains the labels.

@@ -285,9 +285,7 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def intent_ted_policy_agent(
-    trained_intent_ted_policy_path: Text,
-) -> Agent:
+async def intent_ted_policy_agent(trained_intent_ted_policy_path: Text,) -> Agent:
     return await load_agent(model_path=trained_intent_ted_policy_path)
 
 
