@@ -90,7 +90,9 @@ class ConveRTFeaturizer(DenseFeaturizer):
         self.sequence_encoding_signature: Any = self._get_signature(
             "encode_sequence", self.module
         )
-        self.sentence_encoding_signature: Any = self._get_signature("default", self.module)
+        self.sentence_encoding_signature: Any = self._get_signature(
+            "default", self.module
+        )
 
     @staticmethod
     def _validate_model_files_exist(model_directory: Text) -> None:
