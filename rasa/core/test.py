@@ -847,7 +847,7 @@ async def _collect_story_predictions(
             correct_dialogues.append(1)
 
             if any(
-                type(event) == WronglyPredictedAction
+                isinstance(event, WronglyPredictedAction)
                 and story_eval_store.predicted_warning(event.action_name_prediction)
                 for event in predicted_tracker.events
             ):

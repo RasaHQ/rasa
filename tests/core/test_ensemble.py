@@ -737,7 +737,7 @@ def test_is_not_in_training_data(
 
 
 def test_rule_action_wins_over_action_unlikely_intent(
-    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_agent: Agent
 ):
     # The original training data consists of a rule for `goodbye` intent.
     # We monkey-patch IntentTEDPolicy to always predict action_unlikely_intent
@@ -757,7 +757,7 @@ def test_rule_action_wins_over_action_unlikely_intent(
             UserUttered(text="goodbye", intent={"name": "goodbye"}),
         ],
     )
-    policy_ensemble = intent_ted_policy_moodbot_agent.policy_ensemble
+    policy_ensemble = intent_ted_policy_agent.policy_ensemble
     prediction = policy_ensemble.probabilities_using_best_policy(
         tracker, domain, NaturalLanguageInterpreter()
     )
@@ -766,7 +766,7 @@ def test_rule_action_wins_over_action_unlikely_intent(
 
 
 def test_ensemble_prevents_multiple_action_unlikely_intents(
-    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_agent: Agent
 ):
     monkeypatch.setattr(
         IntentTEDPolicy,
@@ -784,7 +784,7 @@ def test_ensemble_prevents_multiple_action_unlikely_intents(
         ],
     )
 
-    policy_ensemble = intent_ted_policy_moodbot_agent.policy_ensemble
+    policy_ensemble = intent_ted_policy_agent.policy_ensemble
     prediction = policy_ensemble.probabilities_using_best_policy(
         tracker, domain, NaturalLanguageInterpreter()
     )
