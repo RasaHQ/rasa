@@ -18,6 +18,7 @@ from rasa.utils.tensorflow.model_data import RasaModelData, FeatureSignature
 from rasa.utils.tensorflow.constants import (
     LABEL,
     SENTENCE,
+    SEQUENCE,
     SEQUENCE_LENGTH,
     RANDOM_SEED,
     EMBEDDING_DIMENSION,
@@ -88,7 +89,7 @@ class RasaModel(TmpKerasModel):
         np.random.seed(self.random_seed)
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -110,7 +111,7 @@ class RasaModel(TmpKerasModel):
         pass
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 
@@ -118,12 +119,14 @@ class RasaModel(TmpKerasModel):
             batch_in: The batch.
 
         Returns:
-            The output to predict.
+            a (possibly nested) dictionary mapping the names
+            or (keys and sub-keys) of predicted items
+            to the corresponding tensors
         """
         raise NotImplementedError
 
     def train_step(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, float]:
         """Performs a train step using the given batch.
 
@@ -172,7 +175,7 @@ class RasaModel(TmpKerasModel):
         return self._get_metric_results()
 
     def test_step(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, float]:
         """Tests the model using the given batch.
 
@@ -196,7 +199,7 @@ class RasaModel(TmpKerasModel):
         return self._get_metric_results()
 
     def predict_step(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, tf.Tensor]:
         """Predicts the output for the given batch.
 
@@ -218,7 +221,7 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def _dynamic_signature(
-        batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> List[List[tf.TensorSpec]]:
         element_spec = []
         for tensor in batch_in:
@@ -232,7 +235,7 @@ class RasaModel(TmpKerasModel):
         return [element_spec]
 
     def _rasa_predict(
-        self, batch_in: Tuple[np.ndarray]
+        self, batch_in: Tuple[np.ndarray, ...]
     ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
         """Custom prediction method that builds tf graph on the first call.
 
@@ -410,7 +413,7 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def batch_to_model_data_format(
-        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
+        batch: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]],
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
     ) -> Dict[Text, Dict[Text, List[tf.Tensor]]]:
         """Convert input batch tensors into batch data format.
@@ -450,7 +453,7 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def _convert_dense_features(
-        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
+        batch: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]],
         feature_dimension: int,
         idx: int,
         number_of_dimensions: int,
@@ -475,7 +478,7 @@ class RasaModel(TmpKerasModel):
 
     @staticmethod
     def _convert_sparse_features(
-        batch: Union[Tuple[tf.Tensor], Tuple[np.ndarray]],
+        batch: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]],
         feature_dimension: int,
         idx: int,
         number_of_dimensions: int,
@@ -629,11 +632,31 @@ class TransformerRasaModel(RasaModel):
     def _get_sequence_feature_lengths(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text
     ) -> tf.Tensor:
-        """Fetches the sequence lengths of real tokens per input example.
+        """Assumes that the batch data contains sequence-level features for the given key,
+        tries to fetch the sequence length information for that key from the given
+        batch, and turns it into a tensor.
 
-        The number of real tokens for an example is the same as the length of the
+        If no sequence length information is present, it assumes the respective
+        sequence-level features are all empty and hence returns a tensor containing
+        0s only. This is useful in case we deal with empty sequences e.g. when
+        considering edge cases where an architecture boils down to just using
+        sentence-level features but could in general also process sequence-level features
+        (cf. `ResponseSelector`).
+
+        Remember, the number of real tokens for an example is the same as the length of the
         sequence of the sequence-level (token-level) features for that input example.
+
+        Returns:
+           a tensor of shape (batch_size, ), always
+
+        Raises:
+           a ValueError in case no SEQUENCE subkey can be found for the given key
         """
+        if SEQUENCE not in tf_batch_data[key]:
+            raise ValueError(f"Expected a sequence-level feature for {key}.")
+            # Note that eliminating this check would eliminate the need to set
+            # dummy values in e.g. the ResponseSelector's batch_predict but then
+            # we'd loose this check everywhere.
         if key in tf_batch_data and SEQUENCE_LENGTH in tf_batch_data[key]:
             return tf.cast(tf_batch_data[key][SEQUENCE_LENGTH][0], dtype=tf.int32)
 
@@ -643,11 +666,16 @@ class TransformerRasaModel(RasaModel):
     def _get_sentence_feature_lengths(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text,
     ) -> tf.Tensor:
-        """Fetches the sequence lengths of sentence-level features per input example.
+        """Returns a tensor filled with 1s if there are sentence-level features
+        stored in the given batch (i.e. there is a SEQUENCE subkey present).
+        Otherwise, a tensor of 0s is returned.
 
         This is needed because we treat sentence-level features as token-level features
         with 1 token per input example. Hence, the sequence lengths returned by this
         function are all 1s if sentence-level features are present, and 0s otherwise.
+
+        Returns:
+            a tensor of shape (batch_size, ), always
         """
         batch_dim = self._get_batch_dim(tf_batch_data[key])
 
@@ -694,7 +722,7 @@ class TransformerRasaModel(RasaModel):
         return loss, f1, logits
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -707,7 +735,7 @@ class TransformerRasaModel(RasaModel):
         raise NotImplementedError
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 

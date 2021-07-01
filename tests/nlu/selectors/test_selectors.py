@@ -26,6 +26,7 @@ from rasa.utils.tensorflow.constants import (
     LOSS_TYPE,
     HIDDEN_LAYERS_SIZES,
     LABEL,
+    USE_TEXT_AS_LABEL,
 )
 from rasa.utils import train_utils
 from rasa.shared.nlu.constants import TEXT
@@ -53,6 +54,15 @@ from tests.nlu.classifiers.test_diet_classifier import as_pipeline
                 MASKED_LM: True,
                 TRANSFORMER_SIZE: 256,
                 NUM_TRANSFORMER_LAYERS: 1,
+            },
+        ],
+        [
+            {"name": "WhitespaceTokenizer"},
+            {"name": "CountVectorsFeaturizer"},
+            {
+                "name": "ResponseSelector",
+                USE_TEXT_AS_LABEL: True,
+                NUM_TRANSFORMER_LAYERS: 0,
             },
         ],
     ],

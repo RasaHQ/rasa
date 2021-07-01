@@ -541,20 +541,25 @@ class RasaFeatureCombiningLayer(tf.keras.layers.Layer):
 
 
 class RasaSequenceLayer(tf.keras.layers.Layer):
-    """Creates an embedding from all features for a sequence attribute; facilitates MLM.
+    """Creates a sequence of embeddings from all features for the specified attribute
+    and optionally creates MLM training examples on the fly.
 
-    This layer combines all features for an attribute and embeds them using a
-    transformer, optionally doing masked language modeling. The layer is meant only for
-    attributes with sequence-level features, such as `text`, `response` and
-    `action_text`.
-
-    Internally, this layer applies the following steps:
-    1. Combine features using `RasaFeatureCombiningLayer`.
-    2. Apply a dense layer(s) to the combined features.
+    More precisely, this layer applies the following steps:
+    1. Combine features using the `RasaFeatureCombiningLayer` which
+       combines sparse and dense sequence features (position-wise, in the
+       case of sequence features) and appends the combined sentence features to the
+       sequential features.
+    2. Apply a dense layer (position-wise) to the combined features.
     3. Optionally, and only during training for the `text` attribute, apply masking to
-        the features and create further helper variables for masked language modeling.
-    4. Embed the features using a transformer, effectively reducing variable-length
-        sequences of features to fixed-size embeddings.
+        the resulting features and create further helper variables for masked language
+        modeling. Note that this is only done if the given attribute is the text attribute
+        and only if sequence-level (token-level) features are present, because
+        MLM requires token-level information.
+    4. Pass the resulting embeddings through a transformer.
+
+    Note that in case you don't pass any sequence features, this layer boils down
+    to just passing the combination of sparse and dense sentence features through a
+    feed forward network.
 
     Arguments:
         attribute: Name of attribute (e.g. `text` or `label`) whose features will be
@@ -599,8 +604,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
             seq_length, seq_length)`, empty tensor if the transformer has 0 layers.
 
     Raises:
-        A `TFLayerConfigException` if no feature signatures for sequence-level features
-            are provided.
+        A `TFLayerConfigException` if no feature signatures is provided.
 
     Attributes:
         output_units: The last dimension size of the layer's first output (`outputs`).
@@ -619,9 +623,9 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         config: Dict[Text, Any],
     ) -> None:
         """Creates a new `RasaSequenceLayer` object."""
-        if not attribute_signature or not attribute_signature.get(SEQUENCE, []):
+        if not attribute_signature:
             raise TFLayerConfigException(
-                "The attribute signature must contain some sequence-level feature"
+                "The attribute signature must contain some features"
                 "signatures but none were found."
             )
 
@@ -646,7 +650,7 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         self._prepare_masked_language_modeling(attribute, attribute_signature, config)
 
         transformer_layers, transformer_units = self._prepare_transformer(
-            attribute, config
+            attribute, attribute_signature, config
         )
         self._has_transformer = transformer_layers > 0
 
@@ -673,12 +677,25 @@ class RasaSequenceLayer(tf.keras.layers.Layer):
         return transformer_layers, transformer_units
 
     def _prepare_transformer(
-        self, attribute: Text, config: Dict[Text, Any]
+        self,
+        attribute: Text,
+        attribute_signature: Dict[Text, List[FeatureSignature]],
+        config: Dict[Text, Any],
     ) -> Tuple[int, int]:
         """Creates a transformer & returns its number of layers and output units."""
         transformer_layers, transformer_units = self._get_transformer_dimensions(
             attribute, config
         )
+        if transformer_layers > 0:
+            if SEQUENCE not in attribute_signature:
+                raise TFLayerConfigException(
+                    "The attribute signature must contain some sequence feature"
+                    "signatures since the transformer layers expects sequential input"
+                    "but none were found."
+                )
+        # else: note that if transformer_layers is 0 it doesn't matter whether
+        # there are sequence features for the given attribute, because the result
+        # of prepare_transformer_layer will just pass on the input
         self._tf_layers[self.TRANSFORMER] = prepare_transformer_layer(
             attribute_name=attribute,
             config=config,

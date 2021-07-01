@@ -15,6 +15,11 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.components import Component
 from rasa.nlu.featurizers.featurizer import Featurizer
 from rasa.nlu.model import Metadata
+from rasa.nlu.extractors.extractor import EntityTagSpec
+from rasa.utils.tensorflow import rasa_layers
+from rasa.utils.tensorflow.model_data import RasaModelData
+from rasa.utils.tensorflow.models import RasaModel
+
 from rasa.nlu.classifiers.diet_classifier import (
     DIETClassifier,
     DIET,
@@ -23,8 +28,6 @@ from rasa.nlu.classifiers.diet_classifier import (
     SENTENCE,
     SEQUENCE,
 )
-from rasa.nlu.extractors.extractor import EntityTagSpec
-from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -98,8 +101,6 @@ from rasa.shared.nlu.constants import (
     PREDICTED_CONFIDENCE_KEY,
 )
 
-from rasa.utils.tensorflow.model_data import RasaModelData
-from rasa.utils.tensorflow.models import RasaModel
 
 logger = logging.getLogger(__name__)
 
@@ -273,24 +274,27 @@ class ResponseSelector(DIETClassifier):
         """
         component_config = component_config or {}
 
-        # the following properties cannot be adapted for the ResponseSelector
+        # Fill in defaults that are expected by DIET but cannot be specified
+        # for the ResponseSelector
         component_config[INTENT_CLASSIFICATION] = True
         component_config[ENTITY_RECOGNITION] = False
         component_config[BILOU_FLAG] = None
-
-        # Initialize defaults
-        self.responses = responses or {}
-        self.all_retrieval_intents = all_retrieval_intents or []
-        self.retrieval_intent = None
-        self.use_text_as_label = False
 
         super().__init__(
             component_config,
             index_label_id_mapping,
             entity_tag_specs,
             model,
-            finetune_mode=finetune_mode,
+            finetune_mode,
         )
+
+        self.retrieval_intent = self.component_config[RETRIEVAL_INTENT]
+        self.use_text_as_label = self.component_config[USE_TEXT_AS_LABEL]
+        self.label_attribute = (
+            RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
+        )
+        self.responses = responses or {}
+        self.all_retrieval_intents = all_retrieval_intents or []
 
     @property
     def label_key(self) -> Text:
@@ -306,10 +310,6 @@ class ResponseSelector(DIETClassifier):
             return DIET2DIET
         else:
             return DIET2BOW
-
-    def _load_selector_params(self, config: Dict[Text, Any]) -> None:
-        self.retrieval_intent = config[RETRIEVAL_INTENT]
-        self.use_text_as_label = config[USE_TEXT_AS_LABEL]
 
     def _warn_about_transformer_and_hidden_layers_enabled(
         self, selector_name: Text
@@ -373,6 +373,13 @@ class ResponseSelector(DIETClassifier):
                 TRANSFORMER_SIZE
             ] = self.default_transformer_size_when_enabled
 
+    def _check_config_parameters(self) -> None:
+        """Checks that component configuration makes sense; corrects it where needed."""
+        super()._check_config_parameters()
+        # Once general DIET-related parameters have been checked, check also the ones
+        # specific to ResponseSelector.
+        self._check_config_params_when_transformer_enabled()
+
     def _check_config_params_when_transformer_enabled(self) -> None:
         """Checks & corrects config parameters when the transformer is enabled.
 
@@ -380,19 +387,12 @@ class ResponseSelector(DIETClassifier):
         interdependent and some defaults should change when the transformer is enabled.
         """
         if self.component_config[NUM_TRANSFORMER_LAYERS] > 0:
+            retrieval_intent = self.component_config[RETRIEVAL_INTENT]
             selector_name = "ResponseSelector" + (
-                f"({self.retrieval_intent})" if self.retrieval_intent else ""
+                f"({retrieval_intent})" if retrieval_intent else ""
             )
             self._warn_about_transformer_and_hidden_layers_enabled(selector_name)
             self._warn_and_correct_transformer_size(selector_name)
-
-    def _check_config_parameters(self) -> None:
-        """Checks that component configuration makes sense; corrects it where needed."""
-        super()._check_config_parameters()
-        self._load_selector_params(self.component_config)
-        # Once general DIET-related parameters have been checked, check also the ones
-        # specific to ResponseSelector.
-        self._check_config_params_when_transformer_enabled()
 
     def _set_message_property(
         self, message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
@@ -431,10 +431,8 @@ class ResponseSelector(DIETClassifier):
                 "all retrieval intents."
             )
 
-        label_attribute = RESPONSE if self.use_text_as_label else INTENT_RESPONSE_KEY
-
         label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=label_attribute
+            training_data, attribute=self.label_attribute
         )
 
         self.responses = training_data.responses
@@ -446,13 +444,13 @@ class ResponseSelector(DIETClassifier):
         self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
 
         self._label_data = self._create_label_data(
-            training_data, label_id_index_mapping, attribute=label_attribute
+            training_data, label_id_index_mapping,
         )
 
         model_data = self._create_model_data(
             training_data.intent_examples,
-            label_id_index_mapping,
-            label_attribute=label_attribute,
+            training=True,
+            label_id_dict=label_id_index_mapping,
         )
 
         self._check_input_dimension_consistency(model_data)
@@ -597,6 +595,7 @@ class ResponseSelector(DIETClassifier):
                 if TEXT in feature_name
             },
         )
+
         return cls.model_class(meta[USE_TEXT_AS_LABEL]).load(
             tf_model_file,
             model_data_example,
@@ -638,6 +637,26 @@ class ResponseSelector(DIETClassifier):
         model.all_retrieval_intents = meta.get("all_retrieval_intents", [])
 
         return model
+
+    def _ignore_sequence_features_for_tf_label_data(self,) -> bool:
+        """returns False if we want to skip sequence-level features
+        and retain only sentence-level features during the `label_data`
+        creation. T
+        """
+        return (
+            self.component_config[NUM_TRANSFORMER_LAYERS] == 0
+            and self.label_attribute == RESPONSE
+        )
+
+    def _ignore_sequence_features_for_model_data(self) -> bool:
+        """returns False iff we want `_create_model_data` to ignore
+        all sequence features. Hence, in that case the training data
+        will only contain sentence-level features.
+        """
+        return (
+            self._ignore_sequence_features_for_tf_label_data()
+            and self.use_text_as_label
+        )
 
 
 class DIET2BOW(DIET):
@@ -746,6 +765,13 @@ class DIET2DIET(DIET):
             (self.text_name, self.config),
             (self.label_name, label_config),
         ]:
+            if self.config.get(NUM_TRANSFORMER_LAYERS) == 0:
+                if SENTENCE not in self.data_signature[attribute]:
+                    raise ValueError(
+                        "Expected sentence-level features since the number of transformer "
+                        "layers is set to 0 (and hence, sequence features alone will not be used)."
+                    )
+
             self._tf_layers[
                 f"sequence_layer.{attribute}"
             ] = rasa_layers.RasaSequenceLayer(
@@ -760,6 +786,14 @@ class DIET2DIET(DIET):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
+        # Edge Case: In some cases, the label_data preparation will have
+        # skipped sequence-level features because they are not needed for
+        # the architecture (cf. `_ignore_sequence_features_for_label_data`).
+        _ = self.tf_label_data[LABEL].setdefault(SEQUENCE, [])
+
+        # Note that the following function does not mind if no SEQUENCE_LENGTH
+        # subkey is present. The SEQUENCE key is enough to indicate that LABEL
+        # has (empty) sequence-level features.
         sequence_feature_lengths = self._get_sequence_feature_lengths(
             self.tf_label_data, LABEL
         )
@@ -794,7 +828,7 @@ class DIET2DIET(DIET):
         return all_label_ids, all_labels_embed
 
     def batch_loss(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> tf.Tensor:
         """Calculates the loss for the given batch.
 
@@ -806,10 +840,20 @@ class DIET2DIET(DIET):
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        # Process all features for text.
+        # Edge Case: In some cases, the model_data preparation will have
+        # skipped sequence-level features because they are not needed for
+        # the architecture (cf. `_ignore_sequence_features_for_model_data`).
+        _ = tf_batch_data[TEXT].setdefault(SEQUENCE, [])
+        _ = tf_batch_data[LABEL].setdefault(SEQUENCE, [])
+        # Note that the following _get_sequence_feature_lengths calls do
+        # not mind if no SEQUENCE_LENGTH subkey is present.
+        # The SEQUENCE key is enough to indicate that the
+        # respective key has (empty) sequence-level features.
+
         sequence_feature_lengths_text = self._get_sequence_feature_lengths(
             tf_batch_data, TEXT
         )
+
         (
             text_transformed,
             text_in,
@@ -887,7 +931,7 @@ class DIET2DIET(DIET):
         return tf.math.add_n(losses)
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]:
         """Predicts the output of the given batch.
 
@@ -900,6 +944,15 @@ class DIET2DIET(DIET):
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
         )
+
+        # Edge Case: In some cases, the model_data preparation will have
+        # skipped sequence-level features because they are not needed for
+        # the architecture (cf. `_ignore_sequence_features_for_model_data`).
+        _ = tf_batch_data[TEXT].setdefault(SEQUENCE, [])
+        # Note that the following _get_sequence_feature_lengths call does
+        # not mind if no SEQUENCE_LENGTH subkey is present.
+        # The SEQUENCE key is enough to indicate that the
+        # respective key has (empty) sequence-level features.
 
         sequence_feature_lengths = self._get_sequence_feature_lengths(
             tf_batch_data, TEXT

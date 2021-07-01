@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import scipy.sparse
 from collections import defaultdict, OrderedDict
-from typing import List, Optional, Text, Dict, Tuple, Union, Any
+from typing import List, Optional, Text, Dict, Tuple, Union, Any, Set
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
@@ -27,6 +27,7 @@ TAG_ID_ORIGIN = "tag_id_origin"
 def featurize_training_examples(
     training_examples: List[Message],
     attributes: List[Text],
+    types: Optional[Set[Text]],
     entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
     featurizers: Optional[List[Text]] = None,
     bilou_tagging: bool = False,
@@ -39,6 +40,7 @@ def featurize_training_examples(
     Args:
         training_examples: the list of training examples
         attributes: the attributes to consider
+        types: feature types to consider; if set to None all types (i.e. sequence and sentence) will be considered
         entity_tag_specs: the entity specs
         featurizers: the featurizers to consider
         bilou_tagging: indicates whether BILOU tagging should be used or not
@@ -58,10 +60,15 @@ def featurize_training_examples(
                     attribute_to_features[attribute].append(
                         get_tag_ids(example, tag_spec, bilou_tagging)
                     )
+
             elif attribute in example.data:
                 attribute_to_features[attribute] = example.get_all_features(
                     attribute, featurizers
                 )
+            if types:  # filter results by type
+                attribute_to_features[attribute] = [
+                    f for f in attribute_to_features[attribute] if f.type in types
+                ]
         output.append(attribute_to_features)
 
     return output
