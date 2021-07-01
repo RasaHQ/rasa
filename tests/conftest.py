@@ -229,7 +229,7 @@ async def trained_moodbot_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_intent_ted_policy_moodbot_path(trained_async: Callable) -> Text:
+async def trained_intent_ted_policy_path(trained_async: Callable) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/intent_ted_policy_config.yml",
@@ -285,10 +285,10 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
 
 
 @pytest.fixture(scope="session")
-async def intent_ted_policy_moodbot_agent(
-    trained_intent_ted_policy_moodbot_path: Text,
+async def intent_ted_policy_agent(
+    trained_intent_ted_policy_path: Text,
 ) -> Agent:
-    return await load_agent(model_path=trained_intent_ted_policy_moodbot_path)
+    return await load_agent(model_path=trained_intent_ted_policy_path)
 
 
 @pytest.fixture(scope="session")
