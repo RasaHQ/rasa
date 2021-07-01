@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Text, Optional, Dict, Any, List
+from typing import Text, Optional, Dict, Any, List, Callable
 
 import pytest
 
@@ -24,7 +24,7 @@ from rasa.core.constants import STORIES_WITH_WARNINGS_FILE
 def _probabilities_with_action_unlikely_intent_for(
     intent_names: List[Text],
     metadata_for_intent: Optional[Dict[Text, Dict[Text, Any]]] = None,
-):
+) -> Callable:
     _original = SimplePolicyEnsemble.probabilities_using_best_policy
 
     def probabilities_using_best_policy(

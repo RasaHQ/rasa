@@ -840,11 +840,9 @@ def _sort_trackers_with_severity_of_warning(
         tracker_severity_scores.append(max_severity)
 
     sorted_trackers_with_severity = sorted(
-        [
-            (severity, tracker)
-            for severity, tracker in zip(tracker_severity_scores, trackers_to_sort)
-        ],
-        key=lambda x: -x[0],
+        zip(tracker_severity_scores, trackers_to_sort),
+        # tuple unpacking is not supported in python 3.x that's why it might look a bit weird
+        key=lambda severity_tracker_tuple: -severity_tracker_tuple[0],
     )
 
     return [tracker for (_, tracker) in sorted_trackers_with_severity]
