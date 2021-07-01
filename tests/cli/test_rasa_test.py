@@ -4,8 +4,8 @@ from pathlib import Path
 from shutil import copyfile
 
 from rasa.core.constants import (
-    CONFUSION_MATRIX_STORIES_FILE, 
-    STORIES_WITH_WARNINGS_FILE
+    CONFUSION_MATRIX_STORIES_FILE,
+    STORIES_WITH_WARNINGS_FILE,
 )
 from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
@@ -34,7 +34,12 @@ def test_test_core_warnings(run_in_simple_project_with_model: Callable[..., RunR
             "policies": [
                 {"name": "MemoizationPolicy", "max_history": 3},
                 {"name": "IntentTEDPolicy", "max_history": 5, "epochs": 100},
-                {"name": "TEDPolicy", "max_history": 5, "epochs": 100, "constrain_similarities": True},
+                {
+                    "name": "TEDPolicy",
+                    "max_history": 5,
+                    "epochs": 100,
+                    "constrain_similarities": True,
+                },
                 {"name": "RulePolicy"},
             ],
         },
