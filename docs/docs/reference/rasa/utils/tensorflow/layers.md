@@ -89,6 +89,65 @@ it is flattened prior to the initial dot product with `kernel`.
   For instance, for a 2D input with shape `(batch_size, input_dim)`,
   the output would have shape `(batch_size, units)`.
 
+#### get\_units
+
+```python
+ | get_units() -> int
+```
+
+Returns number of output units.
+
+#### get\_kernel
+
+```python
+ | get_kernel() -> tf.Tensor
+```
+
+Returns kernel tensor.
+
+#### get\_bias
+
+```python
+ | get_bias() -> Union[tf.Tensor, None]
+```
+
+Returns bias tensor.
+
+#### get\_feature\_type
+
+```python
+ | get_feature_type() -> Union[Text, None]
+```
+
+Returns a feature type of the data that&#x27;s fed to the layer.
+
+In order to correctly return a feature type, the function heavily relies
+on the name of `DenseForSparse` layer to contain the feature type.
+Acceptable values of feature types are `FEATURE_TYPE_SENTENCE`
+and `FEATURE_TYPE_SEQUENCE`.
+
+**Returns**:
+
+  feature type of dense layer.
+
+#### get\_attribute
+
+```python
+ | get_attribute() -> Union[Text, None]
+```
+
+Returns the attribute for which this layer was constructed.
+
+For example: TEXT, LABEL, etc.
+
+In order to correctly return an attribute, the function heavily relies
+on the name of `DenseForSparse` layer being in the following format:
+f&quot;sparse_to_dense.{attribute}_{feature_type}&quot;.
+
+**Returns**:
+
+  attribute of the layer.
+
 #### call
 
 ```python

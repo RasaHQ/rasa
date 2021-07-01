@@ -5,13 +5,15 @@ title: rasa.utils.tensorflow.model_data_utils
 #### featurize\_training\_examples
 
 ```python
-featurize_training_examples(training_examples: List[Message], attributes: List[Text], entity_tag_specs: Optional[List["EntityTagSpec"]] = None, featurizers: Optional[List[Text]] = None, bilou_tagging: bool = False) -> List[Dict[Text, List["Features"]]]
+featurize_training_examples(training_examples: List[Message], attributes: List[Text], entity_tag_specs: Optional[List["EntityTagSpec"]] = None, featurizers: Optional[List[Text]] = None, bilou_tagging: bool = False) -> Tuple[List[Dict[Text, List["Features"]]], Dict[Text, Dict[Text, List[int]]]]
 ```
 
 Converts training data into a list of attribute to features.
 
 Possible attributes are, for example, INTENT, RESPONSE, TEXT, ACTION_TEXT,
 ACTION_NAME or ENTITIES.
+Also returns sparse feature sizes for each attribute. It could look like this:
+{TEXT: {FEATURE_TYPE_SEQUENCE: [16, 32], FEATURE_TYPE_SENTENCE: [16, 32]}}.
 
 **Arguments**:
 
@@ -25,6 +27,7 @@ ACTION_NAME or ENTITIES.
 **Returns**:
 
   A list of attribute to features.
+  A dictionary of attribute to feature sizes.
 
 #### get\_tag\_ids
 

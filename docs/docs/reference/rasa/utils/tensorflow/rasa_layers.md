@@ -2,10 +2,52 @@
 sidebar_label: rasa.utils.tensorflow.rasa_layers
 title: rasa.utils.tensorflow.rasa_layers
 ---
+## RasaCustomLayer Objects
+
+```python
+class RasaCustomLayer(tf.keras.layers.Layer)
+```
+
+Parent class for all classes in `rasa_layers.py`.
+
+Allows a shared implementation for adjusting `DenseForSparse`
+layers during incremental training.
+
+During fine-tuning, sparse feature sizes might change due to addition of new data.
+If this happens, we need to adjust our `DenseForSparse` layers to a new size.
+`ConcatenateSparseDenseFeatures`, `RasaSequenceLayer` and
+`RasaFeatureCombiningLayer` all inherit from `RasaCustomLayer` and thus can
+change their own `DenseForSparse` layers if it&#x27;s needed.
+
+#### adjust\_sparse\_layers\_for\_incremental\_training
+
+```python
+ | adjust_sparse_layers_for_incremental_training(new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]], old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]], reg_lambda: float) -> None
+```
+
+Finds and adjusts `DenseForSparse` layers during incremental training.
+
+Recursively looks through the layers until it finds all the `DenseForSparse`
+ones and adjusts those which have their sparse feature sizes increased.
+
+This function heavily relies on the name of `DenseForSparse` layer being
+in the following format - f&quot;sparse_to_dense.{attribute}_{feature_type}&quot; -
+in order to correctly extract the attribute and feature type.
+
+New and old sparse feature sizes could look like this:
+{TEXT: {FEATURE_TYPE_SEQUENCE: [4, 24, 128], FEATURE_TYPE_SENTENCE: [4, 128]}}
+
+**Arguments**:
+
+- `new_sparse_feature_sizes` - sizes of current sparse features.
+- `old_sparse_feature_sizes` - sizes of sparse features the model was
+  previously trained on.
+- `reg_lambda` - regularization constant.
+
 ## ConcatenateSparseDenseFeatures Objects
 
 ```python
-class ConcatenateSparseDenseFeatures(tf.keras.layers.Layer)
+class ConcatenateSparseDenseFeatures(RasaCustomLayer)
 ```
 
 Combines multiple sparse and dense feature tensors into one dense tensor.
@@ -80,7 +122,7 @@ Combines sparse and dense feature tensors into one tensor.
 ## RasaFeatureCombiningLayer Objects
 
 ```python
-class RasaFeatureCombiningLayer(tf.keras.layers.Layer)
+class RasaFeatureCombiningLayer(RasaCustomLayer)
 ```
 
 Combines multiple dense or sparse feature tensors into one.
@@ -179,7 +221,7 @@ Combines multiple 3-D dense/sparse feature tensors into one.
 ## RasaSequenceLayer Objects
 
 ```python
-class RasaSequenceLayer(tf.keras.layers.Layer)
+class RasaSequenceLayer(RasaCustomLayer)
 ```
 
 Creates an embedding from all features for a sequence attribute; facilitates MLM.

@@ -28,7 +28,7 @@ and additional hidden layers are added together with dropout.
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None, index_label_id_mapping: Optional[Dict[int, Text]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, model: Optional[RasaModel] = None, all_retrieval_intents: Optional[List[Text]] = None, responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None, finetune_mode: bool = False) -> None
+ | __init__(component_config: Optional[Dict[Text, Any]] = None, index_label_id_mapping: Optional[Dict[int, Text]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, model: Optional[RasaModel] = None, all_retrieval_intents: Optional[List[Text]] = None, responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None, finetune_mode: bool = False, sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None) -> None
 ```
 
 Declare instance variables with default values.
@@ -43,6 +43,7 @@ Declare instance variables with default values.
 - `responses` - All responses defined in the data.
 - `finetune_mode` - If `True` loads the model with pre-trained weights,
   otherwise initializes it with random weights.
+- `sparse_feature_sizes` - Sizes of the sparse features the model was trained on.
 
 #### preprocess\_train\_data
 

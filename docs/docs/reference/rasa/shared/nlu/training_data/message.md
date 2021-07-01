@@ -125,6 +125,26 @@ If no featurizers are provided, all available features will be considered.
 
   Sparse features.
 
+#### get\_sparse\_feature\_sizes
+
+```python
+ | get_sparse_feature_sizes(attribute: Text, featurizers: Optional[List[Text]] = None) -> Dict[Text, List[int]]
+```
+
+Gets sparse feature sizes for the attribute given the list of featurizers.
+
+If no featurizers are provided, all available features will be considered.
+
+**Arguments**:
+
+- `attribute` - message attribute
+- `featurizers` - names of featurizers to consider
+  
+
+**Returns**:
+
+  Sparse feature sizes.
+
 #### get\_dense\_features
 
 ```python

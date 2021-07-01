@@ -363,6 +363,36 @@ Adds a feature array of lengths of sequences to data under given key.
 - `from_key` - The key to take the lengths from
 - `from_sub_key` - The sub-key to take the lengths from
 
+#### add\_sparse\_feature\_sizes
+
+```python
+ | add_sparse_feature_sizes(sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]) -> None
+```
+
+Adds a dictionary of feature sizes for different attributes.
+
+**Arguments**:
+
+- `sparse_feature_sizes` - a dictionary of attribute that has sparse
+  features to a dictionary of a feature type
+  to a list of different sparse feature sizes.
+
+#### get\_sparse\_feature\_sizes
+
+```python
+ | get_sparse_feature_sizes() -> Dict[Text, Dict[Text, List[int]]]
+```
+
+Get feature sizes of the model.
+
+sparse_feature_sizes is a dictionary of attribute that has sparse features to
+a dictionary of a feature type to a list of different sparse feature sizes.
+
+**Returns**:
+
+  A dictionary of key and sub-key to a list of feature signatures
+  (same structure as the data attribute).
+
 #### split
 
 ```python
