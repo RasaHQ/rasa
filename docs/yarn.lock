@@ -15969,10 +15969,10 @@ remark-parse@^9.0.0:
   dependencies:
     mdast-util-from-markdown "^0.8.0"
 
-remark-sources@^1.0.1, remark-sources@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/remark-sources/-/remark-sources-1.0.3.tgz#932b7a42c4d32d04325181fb16a109dffa37c3d7"
-  integrity sha512-ecw4s6aD0VffjJFxwCrgcOnX1DcXVYCPuwMv8PCAw6y7vJhkPcEDq+GLLYl0yABlmJeDD1r6bcXLHDgr6vcAPA==
+remark-sources@^1.0.3, remark-sources@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/remark-sources/-/remark-sources-1.1.0.tgz#f9b060876907a5ebcd156052b21d491b52857bb0"
+  integrity sha512-PGk/1N2IqXCZGDZ0LBHfz1aPgz1JSNpsrqIlDP2HTyLaLeW9yDUZCtHbloqEuN2Na7XvxpxxA1c/K3qS7GNVsQ==
   dependencies:
     njct "^8.0.0"
     unist-util-visit-children "^1.1.4"
