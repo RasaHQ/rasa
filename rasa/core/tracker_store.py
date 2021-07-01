@@ -965,7 +965,15 @@ class SQLTrackerStore(TrackerStore):
 
         self._create_database(self.engine, db)
         self.engine.dispose()
-        engine_url.database = db
+        engine_url = sa.engine.url.URL(
+            drivername=engine_url.drivername,
+            username=engine_url.username,
+            password=engine_url.password,
+            host=engine_url.host,
+            port=engine_url.port,
+            database=db,
+            query=engine_url.query,
+        )
         self.engine = create_engine(engine_url)
 
     @staticmethod

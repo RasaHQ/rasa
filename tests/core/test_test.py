@@ -74,7 +74,7 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
 
 
 async def test_action_unlikely_intent_1(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -108,7 +108,7 @@ async def test_action_unlikely_intent_1(
 
 
 async def test_action_unlikely_intent_2(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -143,7 +143,7 @@ async def test_action_unlikely_intent_2(
 
 
 async def test_action_unlikely_intent_complete(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -208,7 +208,7 @@ async def test_action_unlikely_intent_complete(
 
 
 async def test_action_unlikely_intent_wrong_story(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
