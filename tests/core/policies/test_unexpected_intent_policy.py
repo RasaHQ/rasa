@@ -10,9 +10,9 @@ import logging
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
-from rasa.core.featurizers.tracker_featurizers import (
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.intent_max_history_tracker_featurizer import (
     IntentMaxHistoryTrackerFeaturizer,
-    TrackerFeaturizer,
 )
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
