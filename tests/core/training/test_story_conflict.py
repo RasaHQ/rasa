@@ -131,10 +131,10 @@ async def test_find_conflicts_multiple_stories():
     assert "and 2 other trackers" in str(conflicts[0])
 
 
-async def test_find_unpredictable_actions():
+async def test_find_unlearnable_actions():
     trackers, domain = await _setup_trackers_for_testing(
         "data/test_domains/default.yml",
-        "data/test_yaml_stories/stories_unpredictable.yml",
+        "data/test_yaml_stories/stories_intent_ted_unlearnable.yml",
     )
 
     # Create a list of `StoryConflict` objects

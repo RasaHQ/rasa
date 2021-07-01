@@ -175,7 +175,7 @@ def find_story_conflicts(
         trackers, domain, max_history, tokenizer
     )
 
-    unpredictable_state_action_mapping = _find_unpredictable_actions(
+    unlearnable_state_action_mapping = _find_unlearnable_actions(
         trackers, domain, max_history, tokenizer
     )
 
@@ -185,7 +185,7 @@ def find_story_conflicts(
         trackers,
         domain,
         max_history,
-        {**conflicting_state_action_mapping, **unpredictable_state_action_mapping},
+        {**conflicting_state_action_mapping, **unlearnable_state_action_mapping},
         tokenizer,
     )
 
@@ -255,14 +255,14 @@ def _find_conflicting_states(
     }
 
 
-def _unpredictable_action(event: Event) -> bool:
-    """Identifies if the action cannot be predicted by policies that use story data.
+def _unlearnable_action(event: Event) -> bool:
+    """Identifies if the action cannot be learned by policies that use story data.
 
     Args:
         event: An event to be checked.
 
     Returns:
-        `True` if the event can be predicted, `False` otherwise.
+        `True` if the event can be learned, `False` otherwise.
     """
     return (
         isinstance(event, ActionExecuted)
@@ -270,13 +270,13 @@ def _unpredictable_action(event: Event) -> bool:
     )
 
 
-def _find_unpredictable_actions(
+def _find_unlearnable_actions(
     trackers: List[TrackerWithCachedStates],
     domain: Domain,
     max_history: Optional[int],
     tokenizer: Optional[Tokenizer],
 ) -> Dict[int, Optional[List[Text]]]:
-    """Identifies all states that contain actions that cannot be predicted.
+    """Identifies all states that contain actions that cannot be learned.
 
     Args:
         trackers: Trackers that contain the states.
@@ -286,7 +286,7 @@ def _find_unpredictable_actions(
 
     Returns:
         A dictionary mapping state-hashes to a list of action-hashes
-        that cannot be predicted.
+        that cannot be learned.
     """
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
@@ -294,7 +294,7 @@ def _find_unpredictable_actions(
     for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
         hashed_state = element.sliced_states_hash
         current_hash = hash(element.event)
-        if _unpredictable_action(element.event):
+        if _unlearnable_action(element.event):
             state_action_mapping[hashed_state] += [current_hash]
 
     return state_action_mapping

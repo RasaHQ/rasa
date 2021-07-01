@@ -106,6 +106,7 @@ def run_core_test(args: argparse.Namespace) -> None:
 
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
+    args.warnings = not args.no_warnings
 
     rasa.shared.utils.io.create_directory(output)
 
