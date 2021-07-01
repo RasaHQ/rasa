@@ -30,11 +30,13 @@ def featurize_training_examples(
     entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
     featurizers: Optional[List[Text]] = None,
     bilou_tagging: bool = False,
-) -> List[Dict[Text, List["Features"]]]:
+) -> Tuple[List[Dict[Text, List["Features"]]], Dict[Text, Dict[Text, List[int]]]]:
     """Converts training data into a list of attribute to features.
 
     Possible attributes are, for example, INTENT, RESPONSE, TEXT, ACTION_TEXT,
     ACTION_NAME or ENTITIES.
+    Also returns sparse feature sizes for each attribute. It could look like this:
+    {TEXT: {FEATURE_TYPE_SEQUENCE: [16, 32], FEATURE_TYPE_SENTENCE: [16, 32]}}.
 
     Args:
         training_examples: the list of training examples
@@ -45,6 +47,7 @@ def featurize_training_examples(
 
     Returns:
         A list of attribute to features.
+        A dictionary of attribute to feature sizes.
     """
     output = []
 
@@ -64,7 +67,44 @@ def featurize_training_examples(
                 )
         output.append(attribute_to_features)
 
-    return output
+    sparse_feature_sizes = {}
+    if output and training_examples:
+        sparse_feature_sizes = _collect_sparse_feature_sizes(
+            featurized_example=output[0],
+            training_example=training_examples[0],
+            featurizers=featurizers,
+        )
+    return output, sparse_feature_sizes
+
+
+def _collect_sparse_feature_sizes(
+    featurized_example: Dict[Text, List["Features"]],
+    training_example: Message,
+    featurizers: Optional[List[Text]] = None,
+) -> Dict[Text, Dict[Text, List[int]]]:
+    """Collects sparse feature sizes for all attributes that have sparse features.
+
+    Returns sparse feature sizes for each attribute. It could look like this:
+    {TEXT: {FEATURE_TYPE_SEQUENCE: [16, 32], FEATURE_TYPE_SENTENCE: [16, 32]}}.
+
+    Args:
+        featurized_example: a featurized example
+        training_example: a training example
+        featurizers: the featurizers to consider
+
+    Returns:
+        A dictionary of attribute to feature sizes.
+    """
+    sparse_feature_sizes = {}
+    sparse_attributes = []
+    for attribute, features in featurized_example.items():
+        if features and features[0].is_sparse():
+            sparse_attributes.append(attribute)
+    for attribute in sparse_attributes:
+        sparse_feature_sizes[attribute] = training_example.get_sparse_feature_sizes(
+            attribute=attribute, featurizers=featurizers
+        )
+    return sparse_feature_sizes
 
 
 def get_tag_ids(

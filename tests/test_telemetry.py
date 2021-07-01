@@ -6,7 +6,7 @@ from typing import Any, Dict, Generator, Text
 
 from _pytest.monkeypatch import MonkeyPatch
 import jsonschema
-from mock import Mock
+from unittest.mock import Mock
 import pytest
 import responses
 
@@ -93,8 +93,8 @@ async def test_events_schema(
 
     assert mock.call_count == 15
 
-    for call in mock.call_args_list:
-        event = call.args[0]
+    for args, _ in mock.call_args_list:
+        event = args[0]
         # `metrics_id` automatically gets added to all event but is
         # not part of the schema so we need to remove it before validation
         del event["properties"]["metrics_id"]
