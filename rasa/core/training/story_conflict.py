@@ -264,7 +264,10 @@ def _unpredictable_action(event: Event) -> bool:
     Returns:
         `True` if the event can be predicted, `False` otherwise.
     """
-    return event.__str__() == ACTION_UNLIKELY_INTENT_NAME
+    return (
+        isinstance(event, ActionExecuted)
+        and event.action_name == ACTION_UNLIKELY_INTENT_NAME
+    )
 
 
 def _find_unpredictable_actions(
