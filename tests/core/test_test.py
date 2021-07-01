@@ -54,7 +54,7 @@ def _probabilities_with_action_unlikely_intent_for(
                 if metadata_for_intent
                 else None,
             )
-          
+
         return _original(self, tracker, domain, interpreter, **kwargs)
 
     return probabilities_using_best_policy
@@ -331,7 +331,7 @@ async def test_action_unlikely_intent_wrong_story(
 async def test_multiple_warnings_sorted_on_severity(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
-    intent_ted_policy_moodbot_agent: Agent,
+    unexpected_intent_policy_agent: Agent,
     metadata_for_intents: Dict,
     story_order: List[Text],
 ):
@@ -378,7 +378,7 @@ async def test_multiple_warnings_sorted_on_severity(
     )
 
     await rasa.core.test.test(
-        str(file_name), intent_ted_policy_moodbot_agent, out_directory=str(tmp_path),
+        str(file_name), unexpected_intent_policy_agent, out_directory=str(tmp_path),
     )
 
     warnings_file = tmp_path / STORIES_WITH_WARNINGS_FILE
