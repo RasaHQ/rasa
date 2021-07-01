@@ -229,7 +229,7 @@ async def trained_moodbot_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
-async def trained_unexpected_intent_policy_path(trained_async: Callable,) -> Text:
+async def trained_unexpected_intent_policy_path(trained_async: Callable) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/unexpected_intent_policy_config.yml",
