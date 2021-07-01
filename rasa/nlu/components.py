@@ -535,7 +535,7 @@ class Component(metaclass=ComponentMetaclass):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = rasa.utils.train_utils.override_defaults(
+        self.component_config: Dict[Text, Any] = rasa.utils.train_utils.override_defaults(
             self.defaults, component_config
         )
 

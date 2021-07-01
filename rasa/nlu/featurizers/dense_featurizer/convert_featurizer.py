@@ -87,10 +87,10 @@ class ConveRTFeaturizer(DenseFeaturizer):
         self.module = train_utils.load_tf_hub_model(self.model_url)
 
         self.tokenize_signature = self._get_signature("tokenize", self.module)
-        self.sequence_encoding_signature = self._get_signature(
+        self.sequence_encoding_signature: Any = self._get_signature(
             "encode_sequence", self.module
         )
-        self.sentence_encoding_signature = self._get_signature("default", self.module)
+        self.sentence_encoding_signature: Any = self._get_signature("default", self.module)
 
     @staticmethod
     def _validate_model_files_exist(model_directory: Text) -> None:
