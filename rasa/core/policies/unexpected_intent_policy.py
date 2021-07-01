@@ -101,6 +101,7 @@ from rasa.utils.tensorflow.model_data import (
 
 import rasa.utils.io as io_utils
 from rasa.core.exceptions import RasaCoreException
+from rasa.shared.utils import common
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -108,11 +109,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-SAVE_MODEL_FILE_NAME = "intent_ted_policy"
 
-
-class IntentTEDPolicy(TEDPolicy):
-    """`IntentTEDPolicy` has the same model architecture as `TEDPolicy`.
+class UnexpecTEDIntentPolicy(TEDPolicy):
+    """`UnexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.
 
     The difference is at a task level.
     Instead of predicting the next probable action, this policy
@@ -227,7 +226,7 @@ class IntentTEDPolicy(TEDPolicy):
         # For each intent, the tolerance is the percentage of
         # negative training instances (trackers for which
         # the corresponding intent is not the correct label) that
-        # would be ignored by `IntentTEDPolicy`. This is converted
+        # would be ignored by `UnexpecTEDIntentPolicy`. This is converted
         # into a similarity threshold by identifying the similarity
         # score for the (1 - tolerance) percentile of negative
         # examples. Any tracker with a similarity score below this
@@ -277,6 +276,8 @@ class IntentTEDPolicy(TEDPolicy):
         self.config[SIMILARITY_TYPE] = INNER
         self.config[LOSS_TYPE] = CROSS_ENTROPY
 
+        common.mark_as_experimental_feature("UnexpecTED Intent Policy")
+
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
         return IntentMaxHistoryTrackerFeaturizer(
@@ -298,7 +299,7 @@ class IntentTEDPolicy(TEDPolicy):
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
-        return SAVE_MODEL_FILE_NAME
+        return "unexpected_intent_policy"
 
     def _assemble_label_data(
         self, attribute_data: Data, domain: Domain
@@ -551,7 +552,8 @@ class IntentTEDPolicy(TEDPolicy):
                  from getting stuck in a prediction loop.
                 For example, if the last `ActionExecuted` event
                 contained `action_unlikely_intent` predicted by
-                `IntentTEDPolicy` and if `IntentTEDPolicy` runs inference
+                `UnexpecTEDIntentPolicy` and
+                if `UnexpecTEDIntentPolicy` runs inference
                 on the same tracker, it will predict `action_unlikely_intent`
                 again which would make the dialogue manager get stuck in a
                 prediction loop.
@@ -567,7 +569,7 @@ class IntentTEDPolicy(TEDPolicy):
             elif isinstance(event, UserUttered):
                 return False
         # No event of type `ActionExecuted` and `UserUttered` means
-        # that there is nothing for `IntentTEDPolicy` to predict on.
+        # that there is nothing for `UnexpecTEDIntentPolicy` to predict on.
         return True
 
     def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
@@ -584,14 +586,14 @@ class IntentTEDPolicy(TEDPolicy):
             # This means the intent was never present in a story
             logger.debug(
                 f"Query intent index {domain.intents.index(intent)} not "
-                f"found in label thresholds - {self.label_thresholds}."
-                f"Check for `action_unlikely_intent` prediction will be skipped."
+                f"found in label thresholds - {self.label_thresholds}. "
+                f"Check for `{ACTION_UNLIKELY_INTENT_NAME}` prediction will be skipped."
             )
             return False
         if intent in self.config[IGNORE_INTENTS_LIST]:
             logger.debug(
                 f"Query intent {intent} found in {IGNORE_INTENTS_LIST}. "
-                f"Check for `action_unlikely_intent` prediction will be skipped."
+                f"Check for `{ACTION_UNLIKELY_INTENT_NAME}` prediction will be skipped."
             )
             return False
 
@@ -615,7 +617,7 @@ class IntentTEDPolicy(TEDPolicy):
         Returns:
             Whether query intent is likely or not.
         """
-        logger.debug(f"Querying for intent {query_intent}")
+        logger.debug(f"Querying for intent {query_intent}.")
 
         if not self._should_check_for_intent(query_intent, domain):
             return False
@@ -636,11 +638,11 @@ class IntentTEDPolicy(TEDPolicy):
         logger.debug(
             f"Score for intent `{query_intent}` is "
             f"{query_intent_similarity}, while "
-            f"threshold is {self.label_thresholds[query_intent_id]}"
+            f"threshold is {self.label_thresholds[query_intent_id]}."
         )
         logger.debug(
             f"Top 5 intents(in ascending order) that "
-            f"are likely here are: {sorted_intent_scores[-5:]}"
+            f"are likely here are: {sorted_intent_scores[-5:]}."
         )
 
         # If score for query intent is below threshold and
@@ -754,7 +756,7 @@ class IntentTEDPolicy(TEDPolicy):
     def _pick_thresholds(
         label_quantiles: Dict[int, List[float]], tolerance: float
     ) -> Dict[int, float]:
-        """Compute a threshold for each label id.
+        """Computes a threshold for each label id.
 
         Uses tolerance which is the percentage of negative
         trackers for which predicted score should be equal
@@ -813,7 +815,7 @@ class IntentTEDPolicy(TEDPolicy):
         featurizer: TrackerFeaturizer,
         model_utilities: Dict[Text, Any],
         should_finetune: bool,
-    ) -> "IntentTEDPolicy":
+    ) -> "UnexpecTEDIntentPolicy":
         return cls(
             featurizer=featurizer,
             priority=model_utilities["priority"],

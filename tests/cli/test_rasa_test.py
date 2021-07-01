@@ -3,7 +3,10 @@ import shutil
 from pathlib import Path
 from shutil import copyfile
 
-from rasa.core.constants import CONFUSION_MATRIX_STORIES_FILE
+from rasa.core.constants import (
+    CONFUSION_MATRIX_STORIES_FILE, 
+    STORIES_WITH_WARNINGS_FILE
+)
 from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.shared.utils.io import list_files, write_yaml, write_text_file
@@ -21,6 +24,44 @@ def test_test_core_no_plot(run_in_simple_project: Callable[..., RunResult]):
     run_in_simple_project("test", "core", "--no-plot")
 
     assert not os.path.exists(f"results/{CONFUSION_MATRIX_STORIES_FILE}")
+
+
+def test_test_core_warnings(run_in_simple_project_with_model: Callable[..., RunResult]):
+    write_yaml(
+        {
+            "language": "en",
+            "pipeline": [],
+            "policies": [
+                {"name": "MemoizationPolicy", "max_history": 3},
+                {"name": "IntentTEDPolicy", "max_history": 5, "epochs": 100},
+                {"name": "TEDPolicy", "max_history": 5, "epochs": 100, "constrain_similarities": True},
+                {"name": "RulePolicy"},
+            ],
+        },
+        "config.yml",
+    )
+
+    simple_test_story_yaml = """
+version: "2.0"
+stories:
+- story: unlikely path
+  steps:
+  - user: |
+      very terrible
+    intent: mood_unhappy
+  - action: utter_cheer_up
+  - action: utter_did_that_help
+  - intent: affirm
+  - action: utter_happy
+"""
+    with open("tests/test_stories.yaml", "w") as f:
+        f.write(simple_test_story_yaml)
+
+    run_in_simple_project_with_model("test", "core", "--no-warnings")
+    assert not os.path.exists(f"results/{STORIES_WITH_WARNINGS_FILE}")
+
+    run_in_simple_project_with_model("test", "core")
+    assert os.path.exists(f"results/{STORIES_WITH_WARNINGS_FILE}")
 
 
 def test_test_core_with_no_model(run_in_simple_project: Callable[..., RunResult]):

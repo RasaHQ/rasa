@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Text, Tuple, Callable
 from tests.conftest import AsyncMock
 
-import mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from mock import Mock
+import unittest.mock
+from unittest.mock import Mock
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -746,7 +746,8 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
             f"The bot wants to run 'action_unlikely_intent' "
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
-            f"Check out IntentTEDPolicy ({DOCS_URL_POLICIES}/#intent-ted-policy) "
+            f"Check out UnexpecTEDIntentPolicy "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
             f"to learn more.",
             True,
             "action_unlikely_intent",
@@ -756,7 +757,8 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
             f"The bot wants to run 'action_unlikely_intent' "
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
-            f"Check out IntentTEDPolicy ({DOCS_URL_POLICIES}/#intent-ted-policy) "
+            f"Check out UnexpecTEDIntentPolicy "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
             f"to learn more.",
             False,
             "action_unlikely_intent",
@@ -822,7 +824,7 @@ def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
     m = Mock(side_effect=PermissionError())
     with pytest.raises(PermissionError):
         interactive._retry_on_error(m, "export_path", 1, a=2)
-    c = mock.call("export_path", 1, a=2)
+    c = unittest.mock.call("export_path", 1, a=2)
     m.assert_has_calls([c, c, c])
 
 

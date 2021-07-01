@@ -133,8 +133,6 @@ LABEL_FEATURES_TO_ENCODE = [
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
 
-SAVE_MODEL_FILE_NAME = "ted_policy"
-
 
 class TEDPolicy(Policy):
     """Transformer Embedding Dialogue (TED) Policy is described in
@@ -326,7 +324,7 @@ class TEDPolicy(Policy):
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> None:
-        """Declare instance variables with default values."""
+        """Declares instance variables with default values."""
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
             kwargs.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE),
             self.defaults.get(
@@ -375,7 +373,7 @@ class TEDPolicy(Policy):
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
-        return SAVE_MODEL_FILE_NAME
+        return "ted_policy"
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
@@ -653,7 +651,7 @@ class TEDPolicy(Policy):
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
-        """Train the policy on given training trackers.
+        """Trains the policy on given training trackers.
 
         Args:
             training_trackers: List of training trackers to be used

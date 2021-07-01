@@ -27,6 +27,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
+from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
 
 
 def test_fail_to_load_non_existent_featurizer():
@@ -116,7 +117,7 @@ def test_convert_intent_labels_to_ids(domain: Domain):
 def test_featurize_trackers_raises_on_missing_state_featurizer(domain: Domain):
     tracker_featurizer = TrackerFeaturizer()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidTrackerFeaturizerUsageError):
         tracker_featurizer.featurize_trackers([], domain, RegexInterpreter())
 
 

@@ -221,11 +221,9 @@ class EvaluationStore:
     def serialise(self) -> Tuple[PredictionList, PredictionList]:
         """Turn targets and predictions to lists of equal size for sklearn."""
         texts = sorted(
-            list(
-                set(
-                    [e.get("text", "") for e in self.entity_targets]
-                    + [e.get("text", "") for e in self.entity_predictions]
-                )
+            set(
+                [str(e.get("text", "")) for e in self.entity_targets]
+                + [str(e.get("text", "")) for e in self.entity_predictions]
             )
         )
 
@@ -895,7 +893,7 @@ async def _collect_story_predictions(
             correct_dialogues.append(1)
 
             if any(
-                type(event) == WronglyPredictedAction
+                isinstance(event, WronglyPredictedAction)
                 and story_eval_store.predicted_warning(event.action_name_prediction)
                 for event in predicted_tracker.events
             ):

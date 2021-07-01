@@ -168,7 +168,7 @@ async def form_bot_agent(trained_async: Callable) -> Agent:
 
 @pytest.fixture
 def moodbot_features(
-    request, moodbot_domain: Domain
+    request: Request, moodbot_domain: Domain
 ) -> Dict[Text, Dict[Text, Features]]:
     """Makes intent and action features for the moodbot domain to faciliate
     making expected state features.

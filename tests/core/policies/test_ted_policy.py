@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from unittest.mock import Mock
 import numpy as np
 import pytest
@@ -14,11 +14,14 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
+    Event,
+    EntitiesAdded,
+    ActiveLoop,
 )
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
@@ -402,6 +405,86 @@ class TestTEDPolicy(PolicyTestCollection):
         assert (
             batch_slots_sentence_shape[1] == seq_len
             or batch_slots_sentence_shape[1] == 0
+        )
+
+    @pytest.mark.parametrize(
+        "tracker_events_with_action, tracker_events_without_action",
+        [
+            (
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                    ActionExecuted("utter_greet"),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted("utter_greet"),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                    ActionExecuted("some_form"),
+                    ActiveLoop("some_form"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="default", intent={"name": "default"}),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                    ActionExecuted("some_form"),
+                    ActiveLoop("some_form"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="default", intent={"name": "default"}),
+                ],
+            ),
+        ],
+    )
+    def test_ignore_action_unlikely_intent(
+        self,
+        trained_policy: TEDPolicy,
+        default_domain: Domain,
+        tracker_events_with_action: List[Event],
+        tracker_events_without_action: List[Event],
+    ):
+        interpreter = RegexInterpreter()
+        tracker_with_action = DialogueStateTracker.from_events(
+            "test 1", evts=tracker_events_with_action
+        )
+        tracker_without_action = DialogueStateTracker.from_events(
+            "test 2", evts=tracker_events_without_action
+        )
+        prediction_with_action = trained_policy.predict_action_probabilities(
+            tracker_with_action, default_domain, interpreter
+        )
+        prediction_without_action = trained_policy.predict_action_probabilities(
+            tracker_without_action, default_domain, interpreter
+        )
+
+        # If the weights didn't change then both trackers
+        # should result in same prediction.
+        assert (
+            prediction_with_action.probabilities
+            == prediction_without_action.probabilities
         )
 
 

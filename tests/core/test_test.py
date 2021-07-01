@@ -19,6 +19,7 @@ from rasa.utils.tensorflow.constants import (
     SCORE_KEY,
 )
 from rasa.core.constants import STORIES_WITH_WARNINGS_FILE
+from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
 
 
 def _probabilities_with_action_unlikely_intent_for(
@@ -42,16 +43,18 @@ def _probabilities_with_action_unlikely_intent_for(
             # We need to do it because every time the tests are run,
             # training will result in different model weights which might
             # result in different predictions of `action_unlikely_intent`.
-            # Because we're not testing `IntentTEDPolicy` here we simply trigger it
+            # Because we're not testing `UnexpecTEDIntentPolicy`,
+            # here we simply trigger it by
             # predicting `action_unlikely_intent` in a specified moment
             # to make the tests deterministic.
             return PolicyPrediction.for_action_name(
                 domain,
-                "action_unlikely_intent",
+                ACTION_UNLIKELY_INTENT_NAME,
                 action_metadata=metadata_for_intent.get(intent_name)
                 if metadata_for_intent
                 else None,
             )
+          
         return _original(self, tracker, domain, interpreter, **kwargs)
 
     return probabilities_using_best_policy
@@ -92,7 +95,7 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
 
 
 async def test_action_unlikely_intent_1(
-    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -118,7 +121,7 @@ async def test_action_unlikely_intent_1(
     )
 
     result = await rasa.core.test.test(
-        str(file_name), intent_ted_policy_moodbot_agent, out_directory=str(tmp_path),
+        str(file_name), unexpected_intent_policy_agent, out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 1
@@ -126,7 +129,7 @@ async def test_action_unlikely_intent_1(
 
 
 async def test_action_unlikely_intent_2(
-    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -153,7 +156,7 @@ async def test_action_unlikely_intent_2(
     )
 
     result = await rasa.core.test.test(
-        str(file_name), intent_ted_policy_moodbot_agent, out_directory=str(tmp_path),
+        str(file_name), unexpected_intent_policy_agent, out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 1
@@ -161,7 +164,7 @@ async def test_action_unlikely_intent_2(
 
 
 async def test_action_unlikely_intent_complete(
-    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -217,7 +220,7 @@ async def test_action_unlikely_intent_complete(
     )
 
     result = await rasa.core.test.test(
-        str(file_name), intent_ted_policy_moodbot_agent, out_directory=str(tmp_path),
+        str(file_name), unexpected_intent_policy_agent, out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 4
@@ -226,7 +229,7 @@ async def test_action_unlikely_intent_complete(
 
 
 async def test_action_unlikely_intent_wrong_story(
-    monkeypatch: MonkeyPatch, tmp_path: Path, intent_ted_policy_moodbot_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -254,7 +257,7 @@ async def test_action_unlikely_intent_wrong_story(
     )
 
     result = await rasa.core.test.test(
-        str(file_name), intent_ted_policy_moodbot_agent, out_directory=str(tmp_path),
+        str(file_name), unexpected_intent_policy_agent, out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 0
