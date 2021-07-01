@@ -59,7 +59,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     def _pad_label_ids(label_ids: List[List[int]]) -> List[List[int]]:
         """Pads label ids so that all are of the same length.
 
-        The pad value LABEL_PAD_ID is set in `rasa.utils.tensorflow.constants`.
+        The pad value `LABEL_PAD_ID` is set in `rasa.utils.tensorflow.constants`.
 
         Args:
             label_ids: Label ids of varying lengths

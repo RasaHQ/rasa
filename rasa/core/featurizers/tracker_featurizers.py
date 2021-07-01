@@ -161,7 +161,7 @@ class TrackerFeaturizer:
             event: The event from which to extract entities.
 
         Returns:
-            Intent text and entities if no intent is present.
+            Event text and entities if no intent is present.
         """
         # train stories support both text and intent,
         # but if intent is present, the text is ignored
@@ -739,7 +739,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         """Hashes states (and optionally label).
 
         Produces a hash of the tracker state sequence (and optionally the labels).
-        If labels is None, labels is not hashed.
+        If `labels` is `None`, labels don't get hashed.
 
         Args:
             tracker: The tracker that produced `states`.
