@@ -509,16 +509,6 @@ def test_correct_output_shape(
             RasaFeatureCombiningLayer,
             {"attribute_signature": {"sequence": [], "sentence": []}},
         ),
-        # Sequence layer breaks on no sequence-level features
-        (
-            RasaSequenceLayer,
-            {
-                "attribute_signature": {
-                    "sequence": [],
-                    "sentence": [feature_dense_sent_1],
-                }
-            },
-        ),
     ],
 )
 def test_raises_exception_when_missing_features(
@@ -526,6 +516,31 @@ def test_raises_exception_when_missing_features(
 ) -> None:
     with pytest.raises(TFLayerConfigException):
         layer_class(**layer_args, attribute=attribute_name, config=model_config_basic)
+
+
+@pytest.mark.parametrize(
+    "layer_class, layer_args",
+    [
+        # Sequence layer does not break on no sequence-level features
+        (
+            RasaSequenceLayer,
+            {
+                "attribute_signature": {
+                    "sequence": [],
+                    "sentence": [
+                        FeatureSignature(
+                            is_sparse=True, units=2, number_of_dimensions=3
+                        ),
+                    ],
+                }
+            },
+        ),
+    ],
+)
+def test_raises_no_exception_when_missing_sequences(
+    layer_class: Type[tf.keras.layers.Layer], layer_args: Dict[Text, Any]
+) -> None:
+    layer_class(**layer_args, attribute=attribute_name, config=model_config_basic)
 
 
 def test_concat_sparse_dense_raises_exception_when_inconsistent_sparse_features() -> None:  # noqa: E501
