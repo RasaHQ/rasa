@@ -43,7 +43,6 @@ from rasa.shared.exceptions import RasaException
 # from a separatedly installable pytest-cli plugin.
 pytest_plugins = ["pytester"]
 
-
 # these tests are run separately
 collect_ignore_glob = ["docs/*.py"]
 
