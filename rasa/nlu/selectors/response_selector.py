@@ -769,8 +769,9 @@ class DIET2DIET(DIET):
             if self.config.get(NUM_TRANSFORMER_LAYERS) == 0:
                 if SENTENCE not in self.data_signature[attribute]:
                     raise ValueError(
-                        "Expected sentence-level features since the number of transformer "
-                        "layers is set to 0 (and hence, sequence features alone will not be used)."
+                        "Expected sentence-level features since the number "
+                        "of transformer layers is set to 0 (and hence, sequence "
+                        "features alone will not be used)."
                     )
 
             self._tf_layers[

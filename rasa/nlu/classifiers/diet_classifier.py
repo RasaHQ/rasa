@@ -659,7 +659,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         First, this method extracts **one training example for each label**.
         If all of these training examples contain at least one feature,
-        then this method just extracts these (cf. `_extract_labels_precomputed_features()`).
+        then this method just extracts these
+        (cf. `_extract_labels_precomputed_features()`).
         Otherwise, it computes one-hot encodings (i.e. sentence level features).
         The resulting features are stored under the LABEL key (and the
         corresponding subkey) in a new RasaDataModel.
@@ -860,9 +861,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if training and self.component_config[INTENT_CLASSIFICATION]:
             label_ids = self._add_label_id_features(model_data, messages, label_id_dict)
 
-            # if no label features have been found before (see above RasaModel creation),
-            # then we load the default label features that should've been computed by an
-            # self._create_label_data() call (cf. check at the beginning of this function).
+            # if no label features have been found before (see above RasaModel
+            # creation), then we load the default label features that should've been
+            # computed by an self._create_label_data() call (cf. check at the beginning
+            # of this function).
             if model_data.does_feature_not_exist(
                 self.label_attribute, SENTENCE
             ) and model_data.does_feature_not_exist(self.label_attribute, SEQUENCE):

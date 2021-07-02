@@ -42,7 +42,8 @@ def featurize_training_examples(
     Args:
         training_examples: the list of training examples
         attributes: the attributes to consider
-        types: feature types to consider; if set to None all types (i.e. sequence and sentence) will be considered
+        types: feature types to consider; if set to None all types
+          (i.e. sequence and sentence) will be considered
         entity_tag_specs: the entity specs
         featurizers: the featurizers to consider
         bilou_tagging: indicates whether BILOU tagging should be used or not

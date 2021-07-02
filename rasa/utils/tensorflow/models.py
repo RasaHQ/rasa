@@ -801,19 +801,20 @@ class TransformerRasaModel(RasaModel):
     def _get_sequence_feature_lengths(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text
     ) -> tf.Tensor:
-        """Assumes that the batch data contains sequence-level features for the given key,
-        tries to fetch the sequence length information for that key from the given
+        """Assumes that the batch data contains sequence-level features for the given
+        key, tries to fetch the sequence length information for that key from the given
         batch, and turns it into a tensor.
 
         If no sequence length information is present, it assumes the respective
         sequence-level features are all empty and hence returns a tensor containing
         0s only. This is useful in case we deal with empty sequences e.g. when
         considering edge cases where an architecture boils down to just using
-        sentence-level features but could in general also process sequence-level features
-        (cf. `ResponseSelector`).
+        sentence-level features but could in general also process sequence-level
+        features (cf. `ResponseSelector`).
 
-        Remember, the number of real tokens for an example is the same as the length of the
-        sequence of the sequence-level (token-level) features for that input example.
+        Remember, the number of real tokens for an example is the same as the length
+        of the sequence of the sequence-level (token-level) features for that input
+        example.
 
         Returns:
            a tensor of shape (batch_size, ), always

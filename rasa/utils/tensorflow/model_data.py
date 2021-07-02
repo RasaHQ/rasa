@@ -159,7 +159,11 @@ class FeatureArray(np.ndarray):
         super(FeatureArray, self).__setstate__(state[0:-3], **kwargs)
 
     def __str__(self) -> Text:
-        return f"{self.__class__.__name__}(number_of_dimensions={self.number_of_dimensions}, is_sparse={self.is_sparse}, units={self.units}, shape={self.shape})"
+        return (
+            f"{self.__class__.__name__}"
+            f"(number_of_dimensions={self.number_of_dimensions}, "
+            f"is_sparse={self.is_sparse}, units={self.units}, shape={self.shape})"
+        )
 
     # pytype: enable=attribute-error
 
