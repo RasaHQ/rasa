@@ -592,7 +592,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             return False
         if intent in self.config[IGNORE_INTENTS_LIST]:
             logger.debug(
-                f"Query intent {intent} found in {IGNORE_INTENTS_LIST}. "
+                f"Query intent `{intent}` found in `{IGNORE_INTENTS_LIST}`. "
                 f"Check for `{ACTION_UNLIKELY_INTENT_NAME}` prediction will be skipped."
             )
             return False
@@ -604,7 +604,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
     ) -> bool:
         """Checks if the query intent is probable according to model's predictions.
 
-        If the similarity prediction for the intent of
+        If the similarity prediction for the intent
         is lower than the threshold calculated for that
         intent during training, the corresponding user
         intent is unlikely.
@@ -617,7 +617,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         Returns:
             Whether query intent is likely or not.
         """
-        logger.debug(f"Querying for intent {query_intent}.")
+        logger.debug(f"Querying for intent `{query_intent}`.")
 
         if not self._should_check_for_intent(query_intent, domain):
             return False
@@ -637,12 +637,12 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         logger.debug(
             f"Score for intent `{query_intent}` is "
-            f"{query_intent_similarity}, while "
-            f"threshold is {self.label_thresholds[query_intent_id]}."
+            f"`{query_intent_similarity}`, while "
+            f"threshold is `{self.label_thresholds[query_intent_id]}`."
         )
         logger.debug(
-            f"Top 5 intents(in ascending order) that "
-            f"are likely here are: {sorted_intent_scores[-5:]}."
+            f"Top 5 intents (in ascending order) that "
+            f"are likely here are: `{sorted_intent_scores[-5:]}`."
         )
 
         # If score for query intent is below threshold and
@@ -652,7 +652,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             and query_intent_id != sorted_intent_scores[-1][0]
         ):
             logger.debug(
-                f"Intent {query_intent}-{query_intent_id} unlikely to occur here."
+                f"Intent `{query_intent}-{query_intent_id}` " f"unlikely to occur here."
             )
             return True
 
@@ -700,6 +700,9 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         # Get only unique scores so that duplicate
         # trackers created because of permutations are pruned out.
+        # CAUTION: There is an extremely low chance that two different
+        # trackers predicted the same score for a label. We overlook
+        # that possibility here.
         unique_label_id_scores = {
             label_id: {
                 POSITIVE_SCORES_KEY: list(set(scores[POSITIVE_SCORES_KEY])),
@@ -834,12 +837,6 @@ class IntentTED(TED):
     However, it has been re-purposed to predict multiple
     labels (intents) instead of a single label (action).
     """
-
-    def _prepare_label_classification_layers(self, predictor_attribute: Text) -> None:
-        """Prepares layers & loss for the final label prediction step."""
-        self._prepare_embed_layers(predictor_attribute)
-        self._prepare_embed_layers(LABEL)
-        self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
     def _prepare_dot_product_loss(
         self, name: Text, scale_loss: bool, prefix: Text = "loss",
