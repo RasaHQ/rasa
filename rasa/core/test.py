@@ -321,6 +321,7 @@ class WronglyPredictedAction(ActionExecuted):
         return f"predicted: {self.action_name_prediction}"
 
     def as_story_string(self) -> Text:
+        """Returns the story equivalent representation."""
         return f"{self.action_name}   <!-- {self.inline_comment()} -->"
 
     def __repr__(self) -> Text:
@@ -337,9 +338,11 @@ class EndToEndUserUtterance(UserUttered):
     """End-to-end user utterance.
 
     Mostly used to print the full end-to-end user message in the
-    `failed_test_stories.yml` output file."""
+    `failed_test_stories.yml` output file.
+    """
 
     def as_story_string(self, e2e: bool = True) -> Text:
+        """Returns the story equivalent representation."""
         return super().as_story_string(e2e=True)
 
 
