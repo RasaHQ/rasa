@@ -222,8 +222,8 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     ) -> List[List[State]]:
         """Removes the last state in a tracker if the previous action is `action_listen`.
 
-        States with the previous action equal to action_listen correspond to states with
-        a new user intent. This information is what UnexpecTEDIntentPolicy is trying to
+        States with the previous action equal to `action_listen` correspond to states with
+        a new user intent. This information is what `UnexpecTEDIntentPolicy` is trying to
         predict so it needs to be removed before obtaining a prediction.
 
         Args:
