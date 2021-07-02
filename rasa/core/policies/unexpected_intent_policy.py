@@ -628,13 +628,14 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         }
         sorted_intent_scores = sorted(
             [
-                (intent_label, score)
-                for intent_label, score in predicted_intent_scores.items()
+                (domain.intents[label_index], score)
+                for label_index, score in predicted_intent_scores.items()
             ],
             key=lambda x: x[1],
         )
         query_intent_id = domain.intents.index(query_intent)
         query_intent_similarity = similarities[0][query_intent_id]
+        highest_likely_intent_id = domain.intents.index(sorted_intent_scores[-1][0])
 
         logger.debug(
             f"Score for intent `{query_intent}` is "
@@ -650,7 +651,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         # the query intent is not the top likely intent
         if (
             query_intent_similarity < self.label_thresholds[query_intent_id]
-            and query_intent_id != sorted_intent_scores[-1][0]
+            and query_intent_id != highest_likely_intent_id
         ):
             logger.debug(
                 f"Intent `{query_intent}-{query_intent_id}` unlikely to occur here."
