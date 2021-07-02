@@ -20,16 +20,26 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.core.constants import STORIES_WITH_WARNINGS_FILE
 from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.domain import Domain
+from rasa.shared.nlu.interpreter import RegexInterpreter
 
 
 def _probabilities_with_action_unlikely_intent_for(
     intent_names: List[Text],
     metadata_for_intent: Optional[Dict[Text, Dict[Text, Any]]] = None,
-) -> Callable[List, PolicyPrediction]:
+) -> Callable[
+    [SimplePolicyEnsemble, DialogueStateTracker, Domain, RegexInterpreter, Any],
+    PolicyPrediction,
+]:
     _original = SimplePolicyEnsemble.probabilities_using_best_policy
 
     def probabilities_using_best_policy(
-        self, tracker, domain, interpreter, **kwargs,
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: RegexInterpreter,
+        **kwargs: Any,
     ) -> PolicyPrediction:
         latest_event = tracker.events[-1]
         if (
