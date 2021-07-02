@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import Text, Optional, Dict, Any, List, Callable
-import textwrap
 import pytest
 
 import rasa.core.test
