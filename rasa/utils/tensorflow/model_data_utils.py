@@ -27,10 +27,10 @@ TAG_ID_ORIGIN = "tag_id_origin"
 def featurize_training_examples(
     training_examples: List[Message],
     attributes: List[Text],
-    types: Optional[Set[Text]],
     entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
     featurizers: Optional[List[Text]] = None,
     bilou_tagging: bool = False,
+    types: Optional[Set[Text]] = None,
 ) -> Tuple[List[Dict[Text, List["Features"]]], Dict[Text, Dict[Text, List[int]]]]:
     """Converts training data into a list of attribute to features.
 
@@ -74,13 +74,13 @@ def featurize_training_examples(
                     f for f in attribute_to_features[attribute] if f.type in types
                 ]
         output.append(attribute_to_features)
-
     sparse_feature_sizes = {}
     if output and training_examples:
         sparse_feature_sizes = _collect_sparse_feature_sizes(
             featurized_example=output[0],
             training_example=training_examples[0],
             featurizers=featurizers,
+            types=types,
         )
     return output, sparse_feature_sizes
 
@@ -89,6 +89,7 @@ def _collect_sparse_feature_sizes(
     featurized_example: Dict[Text, List["Features"]],
     training_example: Message,
     featurizers: Optional[List[Text]] = None,
+    types: Optional[Set[Text]] = None,
 ) -> Dict[Text, Dict[Text, List[int]]]:
     """Collects sparse feature sizes for all attributes that have sparse features.
 
@@ -99,6 +100,7 @@ def _collect_sparse_feature_sizes(
         featurized_example: a featurized example
         training_example: a training example
         featurizers: the featurizers to consider
+        types: the feature types to consider
 
     Returns:
         A dictionary of attribute to feature sizes.
@@ -112,6 +114,12 @@ def _collect_sparse_feature_sizes(
         sparse_feature_sizes[attribute] = training_example.get_sparse_feature_sizes(
             attribute=attribute, featurizers=featurizers
         )
+        if types:  # filter results by type
+            sparse_feature_sizes[attribute] = {
+                key: val
+                for key, val in sparse_feature_sizes[attribute].items()
+                if key in types
+            }
     return sparse_feature_sizes
 
 
