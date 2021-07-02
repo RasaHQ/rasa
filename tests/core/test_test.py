@@ -353,44 +353,10 @@ async def test_multiple_warnings_sorted_on_severity(
         ),
     )
 
-    file_name = tmp_path / "test_multiple_action_unlikely_intents.yml"
-    file_name.write_text(
-        textwrap.dedent(
-            """
-        version: "2.0"
-        stories:
-          - story: path 1
-            steps:
-              - user: |
-                  hello there!
-                intent: greet
-              - action: utter_greet
-              - user: |
-                  amazing
-                intent: mood_great
-              - action: utter_happy
-
-          - story: path 2
-            steps:
-              - user: |
-                  hello there!
-                intent: greet
-              - action: utter_greet
-              - user: |
-                  very sad
-                intent: mood_unhappy
-              - action: utter_cheer_up
-              - action: utter_did_that_help
-              - user: |
-                  yes
-                intent: affirm
-              - action: utter_happy
-        """
-        )
-    )
-
     await rasa.core.test.test(
-        str(file_name), unexpected_intent_policy_agent, out_directory=str(tmp_path),
+        "data/test_yaml_stories/test_multiple_action_unlikely_intent_warnings.yml",
+        unexpected_intent_policy_agent,
+        out_directory=str(tmp_path),
     )
 
     warnings_file = tmp_path / STORIES_WITH_WARNINGS_FILE
