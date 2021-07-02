@@ -44,7 +44,6 @@ from rasa.shared.core.constants import (
     LOOP_INTERRUPTED,
     ACTION_SESSION_START_NAME,
     FOLLOWUP_ACTION,
-    ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.shared.core.conversation import Dialogue
 from rasa.shared.core.events import (
@@ -904,19 +903,6 @@ def is_prev_action_listen_in_state(state: State) -> bool:
     """
     prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
     return prev_action_name == ACTION_LISTEN_NAME
-
-
-def is_prev_action_unlikely_intent_in_state(state: State) -> bool:
-    """Checks if action_unlikely_intent is the previous executed action.
-
-    Args:
-        state: The state for which the check should be performed
-
-    Return:
-        boolean value indicating whether action_unlikely_intent is previous action
-    """
-    prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
-    return prev_action_name == ACTION_UNLIKELY_INTENT_NAME
 
 
 def get_trackers_for_conversation_sessions(
