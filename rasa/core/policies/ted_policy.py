@@ -135,9 +135,11 @@ PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIAL
 
 
 class TEDPolicy(Policy):
-    """Transformer Embedding Dialogue (TED) Policy is described in
-    https://arxiv.org/abs/1910.00486.
-    This policy has a pre-defined architecture, which comprises the
+    """Transformer Embedding Dialogue (TED) Policy.
+
+    The model architecture is described in
+    detail in https://arxiv.org/abs/1910.00486.
+    In summary, the architecture comprises of the
     following steps:
         - concatenate user input (user intent and entities), previous system actions,
           slots and active forms for each time step into an input vector to
@@ -979,7 +981,7 @@ class TEDPolicy(Policy):
 
         if not model_path.exists():
             logger.error(
-                f"Failed to load TED policy model. Path "
+                f"Failed to load {cls.__class__.__name__} model. Path "
                 f"'{model_path.absolute()}' doesn't exist."
             )
             return
