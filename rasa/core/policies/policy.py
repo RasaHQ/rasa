@@ -537,6 +537,7 @@ class PolicyPrediction:
         action_name: Text,
         policy_name: Optional[Text] = None,
         confidence: float = 1.0,
+        action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> "PolicyPrediction":
         """Create a prediction for a given action.
 
@@ -545,13 +546,16 @@ class PolicyPrediction:
             action_name: The action which should be predicted.
             policy_name: The policy which did the prediction.
             confidence: The prediction confidence.
+            action_metadata: Additional metadata to be attached with the prediction.
 
         Returns:
             The prediction.
         """
         probabilities = confidence_scores_for(action_name, confidence, domain)
 
-        return PolicyPrediction(probabilities, policy_name)
+        return PolicyPrediction(
+            probabilities, policy_name, action_metadata=action_metadata
+        )
 
     def __eq__(self, other: Any) -> bool:
         """Checks if the two objects are equal.
