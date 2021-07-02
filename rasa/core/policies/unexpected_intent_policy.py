@@ -871,14 +871,14 @@ class IntentTED(TED):
 
         indices = tf.cast(label_ids[:, :, 0], tf.int32)
 
-        # Find padding indices. They should have a value -1
-        padding_indices = tf.where(tf.equal(indices, -1))
+        # Find padding indices. They should have a value equal to `LABEL_PAD_ID`
+        padding_indices = tf.where(tf.equal(indices, LABEL_PAD_ID))
 
         # Create a tensor of ones which will serve as updates to original `indices`
         updates_to_indices = tf.ones((tf.shape(padding_indices)[0]), dtype=tf.int32)
 
         # Add the tensor of 1s to indices with padding.
-        # So, effectively -1s become 0. This is fine because
+        # So, effectively `LABEL_PAD_ID=-1` becomes 0. This is fine because
         # we don't change the original label indices but only
         # make them 'compatible' for the `tf.gather` op below.
         indices_to_gather = tf.cast(

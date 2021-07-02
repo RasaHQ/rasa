@@ -22,7 +22,7 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DOCS_URL_POLICIES,
 )
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -742,7 +742,7 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
     "action_name, question, is_marked_as_correct, sent_action_name",
     [
         (
-            "action_unlikely_intent",
+            ACTION_UNLIKELY_INTENT_NAME,
             f"The bot wants to run 'action_unlikely_intent' "
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
@@ -750,10 +750,10 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
             f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
             f"to learn more.",
             True,
-            "action_unlikely_intent",
+            ACTION_UNLIKELY_INTENT_NAME,
         ),
         (
-            "action_unlikely_intent",
+            ACTION_UNLIKELY_INTENT_NAME,
             f"The bot wants to run 'action_unlikely_intent' "
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
@@ -761,7 +761,7 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
             f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
             f"to learn more.",
             False,
-            "action_unlikely_intent",
+            ACTION_UNLIKELY_INTENT_NAME,
         ),
         (
             "action_test",
