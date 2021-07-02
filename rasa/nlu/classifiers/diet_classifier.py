@@ -860,10 +860,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if training and self.component_config[INTENT_CLASSIFICATION]:
             label_ids = self._add_label_id_features(model_data, messages, label_id_dict)
 
-        if training:
-            # TODO: check why tests pass despite/because label_ids being  empty at this point
-            # if we're not in intent_classification mode...
-
             # if no label features have been found before (see above RasaModel creation),
             # then we load the default label features that should've been computed by an
             # self._create_label_data() call (cf. check at the beginning of this function).
@@ -877,13 +873,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     self._use_default_label_features(np.array(label_ids)),
                 )
 
-            # as label_attribute can have different values, e.g. INTENT or RESPONSE,
+            # As label_attribute can have different values, e.g. INTENT or RESPONSE,
             # copy over the features to the LABEL key to make
-            # it easier to access the label features inside the model itself
-            subkeys_to_consider = [SENTENCE, SEQUENCE_LENGTH, MASK]
-            if not types_to_consider or SEQUENCE in types_to_consider:
-                subkeys_to_consider += [SEQUENCE]
-            for subkey in subkeys_to_consider:
+            # it easier to access the label features inside the model itself.
+            # Note that update_key doesn't update any keys that aren't there.
+            for subkey in [SENTENCE, SEQUENCE_LENGTH, MASK, SEQUENCE]:
                 model_data.update_key(self.label_attribute, subkey, LABEL_KEY, subkey)
 
         model_data.add_lengths(LABEL_KEY, SEQUENCE_LENGTH, LABEL_KEY, SEQUENCE)
