@@ -839,7 +839,8 @@ def _sort_trackers_with_severity_of_warning(
 
     sorted_trackers_with_severity = sorted(
         zip(tracker_severity_scores, trackers_to_sort),
-        # tuple unpacking is not supported in python 3.x that's why it might look a bit weird
+        # tuple unpacking is not supported in
+        # python 3.x that's why it might look a bit weird
         key=lambda severity_tracker_tuple: -severity_tracker_tuple[0],
     )
 
