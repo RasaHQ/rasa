@@ -173,6 +173,10 @@ class TrackerFeaturizer:
     def _remove_user_text_if_intent(trackers_as_states: List[List[State]]) -> None:
         """Deletes user text from state dictionaries if intent is present.
 
+        Only featurizing either the intent or user text is currently supported. When
+        both are present in a state, the user text is removed so that only the intent
+        is featurized.
+
         `trackers_as_states` is modified in place.
 
         Args:
