@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Text, Optional, Dict, Any, List, Callable
-
+import textwrap
 import pytest
 
 import rasa.core.test
@@ -355,7 +355,8 @@ async def test_multiple_warnings_sorted_on_severity(
 
     file_name = tmp_path / "test_multiple_action_unlikely_intents.yml"
     file_name.write_text(
-        """
+        textwrap.dedent(
+            """
         version: "2.0"
         stories:
           - story: path 1
@@ -385,6 +386,7 @@ async def test_multiple_warnings_sorted_on_severity(
                 intent: affirm
               - action: utter_happy
         """
+        )
     )
 
     await rasa.core.test.test(
