@@ -4,10 +4,8 @@ from tqdm import tqdm
 import numpy as np
 import logging
 
-from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer,
-    is_prev_action_listen_in_state,
-)
+import rasa.shared.core.trackers
+from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
@@ -58,8 +56,6 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     @staticmethod
     def _pad_label_ids(label_ids: List[List[int]]) -> List[List[int]]:
         """Pads label ids so that all are of the same length.
-
-        The pad value `LABEL_PAD_ID` is set in `rasa.utils.tensorflow.constants`.
 
         Args:
             label_ids: Label ids of varying lengths
@@ -220,11 +216,11 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     def _cleanup_last_user_state_with_action_listen(
         trackers_as_states: List[List[State]],
     ) -> List[List[State]]:
-        """Removes the last state in a tracker if the previous action is `action_listen`.
+        """Removes the last tracker state if the previous action is `action_listen`.
 
-        States with the previous action equal to `action_listen` correspond to states with
-        a new user intent. This information is what `UnexpecTEDIntentPolicy` is trying to
-        predict so it needs to be removed before obtaining a prediction.
+        States with the previous action equal to `action_listen` correspond to states
+        with a new user intent. This information is what `UnexpecTEDIntentPolicy` is
+        trying to predict so it needs to be removed before obtaining a prediction.
 
         Args:
             trackers_as_states: Trackers converted to states
@@ -236,7 +232,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             if not states:
                 continue
             last_state = states[-1]
-            if is_prev_action_listen_in_state(last_state):
+            if rasa.shared.core.trackers.is_prev_action_listen_in_state(last_state):
                 del states[-1]
 
         return trackers_as_states

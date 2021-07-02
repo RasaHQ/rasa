@@ -10,11 +10,9 @@ import numpy as np
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import Event, ActionExecuted, UserUttered
-from rasa.shared.core.trackers import (
-    DialogueStateTracker,
-    is_prev_action_listen_in_state,
-    is_prev_action_unlikely_intent_in_state,
-)
+import rasa.shared.core.trackers
+from rasa.shared.core.trackers import DialogueStateTracker
+
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import USER, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
@@ -114,7 +112,7 @@ class TrackerFeaturizer:
             trackers_as_actions: A list of tracker labels.
 
         Returns:
-            Trackers as label ids.
+            Label IDs for each tracker
         """
         # store labels in numpy arrays so that it corresponds to np arrays of input
         # features
@@ -394,7 +392,7 @@ class TrackerFeaturizer:
         for states in trackers_as_states:
             last_state = states[-1]
             # only update the state of the real user utterance
-            if not is_prev_action_listen_in_state(last_state):
+            if not rasa.shared.core.trackers.is_prev_action_listen_in_state(last_state):
                 continue
 
             if use_text_for_last_user_input:
@@ -525,20 +523,13 @@ class TrackerFeaturizer:
         return [
             state
             for state in states
-            if not is_prev_action_unlikely_intent_in_state(state)
+            if not rasa.shared.core.trackers.is_prev_action_unlikely_intent_in_state(
+                state
+            )
         ]
 
     @staticmethod
     def _remove_action_unlikely_intent_from_events(events: List[Event]) -> List[Event]:
-        """Removes `action_unlikely_intent` from an event list.
-
-        Args:
-            events: A list of events produced by a `DialogueStateTracker`
-                instance.
-
-        Returns:
-            Filtered events with `action_unlikely_intent` removed.
-        """
         return [
             event
             for event in events
