@@ -592,7 +592,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             return False
         if intent in self.config[IGNORE_INTENTS_LIST]:
             logger.debug(
-                f"Query intent `{intent}` found in `{IGNORE_INTENTS_LIST}`. "
+                f"Query intent `{intent}` found in "
+                f"`{IGNORE_INTENTS_LIST}={self.config[IGNORE_INTENTS_LIST]}`. "
                 f"Check for `{ACTION_UNLIKELY_INTENT_NAME}` prediction will be skipped."
             )
             return False
@@ -652,7 +653,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             and query_intent_id != sorted_intent_scores[-1][0]
         ):
             logger.debug(
-                f"Intent `{query_intent}-{query_intent_id}` " f"unlikely to occur here."
+                f"Intent `{query_intent}-{query_intent_id}` unlikely to occur here."
             )
             return True
 
