@@ -678,8 +678,7 @@ class RasaFeatureCombiningLayer(RasaCustomLayer):
 
 
 class RasaSequenceLayer(RasaCustomLayer):
-    """Creates a sequence of embeddings from all features for the specified attribute
-    and optionally creates MLM training examples on the fly.
+    """A sequence-to-sequence model for embeddings that optionally creates MLM examples.
 
     More precisely, this layer applies the following steps:
     1. Combine features using the `RasaFeatureCombiningLayer` which

@@ -462,10 +462,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _check_labels_features_exist(
         self, labels_example: List[Message], attribute: Text
     ) -> bool:
-        """Checks whether there is at least one kind of feature
-        (computed by one of the configured relevant featurizers)
-        attached to each label example."""
+        """Checks whether there is at least one kind of feature per label.
 
+        Only checks whether one of the configured relevant featurizers has attached
+        some feature to each of the labels.
+        """
         return all(
             label_example.features_present(
                 attribute, self.component_config[FEATURIZERS]
@@ -474,9 +475,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
     def _ignore_sequence_features_for_tf_label_data(self) -> bool:
-        """returns False if we want to skip sequence-level features
-        and retain only sentence-level features during the `label_data`
-        creation. This is the case if...
+        """Returns wether we skip sequence-level features during `label_data` creation.
+
+        This is the case if...
         - we don't use the transformer, and
         - we don't want to do entity recognition, and
         - the target is not some sequence (which we check
@@ -490,17 +491,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
     def _ignore_sequence_features_for_model_data(self) -> bool:
-        """returns False iff we want `_create_model_data` to ignore
-        all sequence features. Hence, in that case the training data
-        will only contain sentence-level features.
-        """
+        """Returns wether `_create_model_data` ingores all sequence features."""
         return False
 
     def _extract_label_features(
         self, message: Message, label_attribute: Text
     ) -> Dict[Tuple[Text, Text], Union[scipy.sparse.spmatrix, np.ndarray]]:
-        """Extracts features for the given label_attribute from the given message
-        and combines features of the same feature type (i.e. sparse or dense features)
+        """Extracts and combines features from the given messages.
+
+        Extracts all features for the given label_attribute from the given message,
+        then combines features of the same feature type (i.e. sparse or dense features)
         separately for each feature level (i.e. sequence and sentence).
 
         Note that if `_ignore_sequence_features_for_tf_label_data(label_attribute`)
@@ -509,12 +509,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         dictionary will not contain any `(*,SEQUENCE)` keys.
 
         Args:
-           Message: any message
+           message: any message
+           label_attribute: attribute for which features should be collected
         Returns:
            a dictionary mapping keys that take the form
           `([SPARSE|DENSE],[SEQUENCE|SENTENCE])' to a sparse or dense matrix
         """
-
         (
             sparse_sequence_features,
             sparse_sentence_features,
@@ -581,7 +581,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _extract_labels_precomputed_features(
         self, label_examples: List[Message], label_attribute: Text = INTENT
     ) -> Tuple[List[FeatureArray], List[FeatureArray]]:
-        """Collects features for all given messages:
+        """Collects and combines the label_attribute related features from all messages.
 
         For each message, it extracts the features and combines features of the same
         feature type and level combination into a single sparse or dense matrix.
@@ -605,7 +605,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             (of length at most 2, one for sparse and one for dense features, with
             sparse features first)
         """
-
         # for each label_example, collect sparse and dense feature (matrices) in lists
         collected_features: Dict[
             Tuple[Text, Text], List[Union[np.ndarray, scipy.sparse.spmatrix]]
@@ -658,9 +657,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Creates a rasa data model that represents the specified labels.
 
         First, this method extracts **one training example for each label**.
-        If all of these training examples contain at least one feature,
-        then this method just extracts these
-        (cf. `_extract_labels_precomputed_features()`).
+        If all of these training examples contain at least one feature, then this
+        method just extracts these (cf. `_extract_labels_precomputed_features()`).
         Otherwise, it computes one-hot encodings (i.e. sentence level features).
         The resulting features are stored under the LABEL key (and the
         corresponding subkey) in a new RasaDataModel.
@@ -677,9 +675,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             training_data: a training data object holding messages
             label_attribute: the message attribute which corresponds to the label
             label_id_dict: a dictionary mapping all relevant labels to some ID (int)
+
         Returns:
             a RasaDataModel that contains, for each kind of feature (see above),
             list with one `FeatureArray` per label
+
         Raises:
             a ValueError if some label does not
         """
@@ -748,11 +748,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return label_data
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[FeatureArray]:
-        """grabs sentence level features for the LABEL key from the
-        RasaDataModel that has been pre-computed during training.
+        """Grabs the pre-computed sentence level default features for the LABEL key.
 
         In case that no features had been present during training for
-        the label key, these sentence level features are the one-hot
+        the label key, these sentence level default features are the one-hot
         features that have been computed via `_compute_default_label_features`.
 
         Otherwise, this function will return some precomputed features
@@ -782,8 +781,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Prepare data for training and create a RasaModelData object.
 
         Args:
-          label_attribute: only if this is not None, label data will be added
-            to the resulting RasaModelData
+          messages: the list of messages to be turned into a RasaModelData
+          training: whether we're in training mode and should add label data
+          label_id_dict: a mappig from labels (Text) to label ids (ints) that is
+            only required for label data creation (i.e. if `training` is set to `True`)
         """
         from rasa.utils.tensorflow import model_data_utils
 

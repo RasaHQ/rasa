@@ -801,7 +801,9 @@ class TransformerRasaModel(RasaModel):
     def _get_sequence_feature_lengths(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text
     ) -> tf.Tensor:
-        """Assumes that the batch data contains sequence-level features for the given
+        """Tries to create sequence length information for the given key.
+
+        Assumes that the batch data contains sequence-level features for the given
         key, tries to fetch the sequence length information for that key from the given
         batch, and turns it into a tensor.
 
@@ -836,7 +838,9 @@ class TransformerRasaModel(RasaModel):
     def _get_sentence_feature_lengths(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text,
     ) -> tf.Tensor:
-        """Returns a tensor filled with 1s if there are sentence-level features
+        """Creates sentence length information for the given key.
+
+        Returns a tensor filled with 1s if there are sentence-level features
         stored in the given batch (i.e. there is a SEQUENCE subkey present).
         Otherwise, a tensor of 0s is returned.
 

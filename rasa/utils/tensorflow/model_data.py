@@ -375,9 +375,6 @@ class RasaModelData:
                 out_data[key][sub_key] = [feature[:1] for feature in features]
         return out_data
 
-    def nunique(self, key: Text, sub_key: Optional[Text] = None) -> bool:
-        return len(np.unique(self.get(key, sub_key)))
-
     def does_feature_exist(self, key: Text, sub_key: Optional[Text] = None) -> bool:
         """Check if feature key (and sub-key) is present and features are available.
 

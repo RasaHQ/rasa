@@ -301,10 +301,12 @@ class ResponseSelector(DIETClassifier):
 
     @property
     def label_key(self) -> Text:
+        """Returns the generic `label` key."""
         return LABEL_KEY
 
     @property
     def label_sub_key(self) -> Text:
+        """Returns the generic `id` key."""
         return LABEL_SUB_KEY
 
     @staticmethod
@@ -642,18 +644,14 @@ class ResponseSelector(DIETClassifier):
         return model
 
     def _ignore_sequence_features_for_tf_label_data(self,) -> bool:
-        """returns False iff we want `_create_label_data` to ignore
-        all sequence features.
-        """
+        """Whether we skip sequence-level features during `label_data` creation."""
         return (
             self.component_config[NUM_TRANSFORMER_LAYERS] == 0
             and self.label_attribute == RESPONSE
         )
 
     def _ignore_sequence_features_for_model_data(self) -> bool:
-        """returns False iff we want `_create_model_data` to ignore
-        all sequence features.
-        """
+        """Wether we skip sequence-level features during `model_data` creation."""
         return (
             self._ignore_sequence_features_for_tf_label_data()
             and self.use_text_as_label
@@ -661,6 +659,8 @@ class ResponseSelector(DIETClassifier):
 
 
 class DIET2BOW(DIET):
+    """Diet 2 BOW transformer implementation."""
+
     def _create_metrics(self) -> None:
         # self.metrics preserve order
         # output losses first
