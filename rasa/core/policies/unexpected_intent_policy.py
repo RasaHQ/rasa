@@ -4,6 +4,11 @@ import tensorflow as tf
 from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
 
+try:
+    from typing import TypedDict
+except ImportError:
+    from mypy_extensions import TypedDict
+
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_UNLIKELY_INTENT_NAME
@@ -108,6 +113,23 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+UnexpecTEDIntentPolicyMetadata = TypedDict(
+    "UnexpecTEDIntentPolicyMetadata",
+    {
+        QUERY_INTENT_KEY: Text,
+        RANKING_KEY: {
+            List[
+                {
+                    NAME: Text,
+                    SCORE_KEY: float,
+                    THRESHOLD_KEY: float,
+                    SEVERITY_KEY: float,
+                }
+            ]
+        },
+    },
+)
 
 
 class UnexpecTEDIntentPolicy(TEDPolicy):
@@ -449,7 +471,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
                 SEVERITY_KEY: severity,
             }
 
-        metadata = {
+        metadata: UnexpecTEDIntentPolicyMetadata = {
             QUERY_INTENT_KEY: _compile_metadata_for_label(
                 query_intent,
                 similarities[0][domain.intents.index(query_intent)],
