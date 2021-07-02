@@ -267,6 +267,7 @@ class RasaModelData:
         self.label_sub_key = label_sub_key
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
+        self.sparse_feature_sizes = None
 
     def __str__(self) -> Text:
         def to_str(item: Any, indent: int = 0) -> Text:
@@ -567,6 +568,30 @@ class RasaModelData:
                 )
             self.data[key][sub_key].extend([lengths])
             break
+
+    def add_sparse_feature_sizes(
+        self, sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]
+    ) -> None:
+        """Adds a dictionary of feature sizes for different attributes.
+
+        Args:
+            sparse_feature_sizes: a dictionary of attribute that has sparse
+                           features to a dictionary of a feature type
+                           to a list of different sparse feature sizes.
+        """
+        self.sparse_feature_sizes = sparse_feature_sizes
+
+    def get_sparse_feature_sizes(self) -> Dict[Text, Dict[Text, List[int]]]:
+        """Get feature sizes of the model.
+
+        sparse_feature_sizes is a dictionary of attribute that has sparse features to
+        a dictionary of a feature type to a list of different sparse feature sizes.
+
+        Returns:
+            A dictionary of key and sub-key to a list of feature signatures
+            (same structure as the data attribute).
+        """
+        return self.sparse_feature_sizes
 
     def split(
         self, number_of_test_examples: int, random_seed: int

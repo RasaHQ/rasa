@@ -259,6 +259,7 @@ class ResponseSelector(DIETClassifier):
         all_retrieval_intents: Optional[List[Text]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
         finetune_mode: bool = False,
+        sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None,
     ) -> None:
         """Declare instance variables with default values.
 
@@ -271,6 +272,7 @@ class ResponseSelector(DIETClassifier):
             responses: All responses defined in the data.
             finetune_mode: If `True` loads the model with pre-trained weights,
                 otherwise initializes it with random weights.
+            sparse_feature_sizes: Sizes of the sparse features the model was trained on.
         """
         component_config = component_config or {}
 
@@ -285,7 +287,8 @@ class ResponseSelector(DIETClassifier):
             index_label_id_mapping,
             entity_tag_specs,
             model,
-            finetune_mode,
+            sparse_feature_sizes=sparse_feature_sizes,
+            finetune_mode=finetune_mode,
         )
 
         self.retrieval_intent = self.component_config[RETRIEVAL_INTENT]
@@ -639,9 +642,8 @@ class ResponseSelector(DIETClassifier):
         return model
 
     def _ignore_sequence_features_for_tf_label_data(self,) -> bool:
-        """returns False if we want to skip sequence-level features
-        and retain only sentence-level features during the `label_data`
-        creation. T
+        """returns False iff we want `_create_label_data` to ignore
+        all sequence features.
         """
         return (
             self.component_config[NUM_TRANSFORMER_LAYERS] == 0
@@ -650,8 +652,7 @@ class ResponseSelector(DIETClassifier):
 
     def _ignore_sequence_features_for_model_data(self) -> bool:
         """returns False iff we want `_create_model_data` to ignore
-        all sequence features. Hence, in that case the training data
-        will only contain sentence-level features.
+        all sequence features.
         """
         return (
             self._ignore_sequence_features_for_tf_label_data()
