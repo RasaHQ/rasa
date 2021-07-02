@@ -27,7 +27,7 @@ from rasa.shared.core.constants import (
     RULE_ONLY_SLOTS,
     RULE_ONLY_LOOPS,
 )
-from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME
+from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_NAME, ENTITY_ATTRIBUTE_TYPE
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -150,7 +150,7 @@ def test_potential_contradiction_resolved_by_conversation_start():
     )
 
 
-def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value():
+def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value():  # noqa: E501
     # Two rules that contradict each other except that one of them applies only at
     # conversation start -> ensure that this isn't flagged as a contradiction.
     # Specifically, this checks that the conversation-start-checking logic doesn't
@@ -221,7 +221,7 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
     assert_predicted_action(action_probabilities_1, domain, UTTER_GREET_ACTION)
 
 
-def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value_explicit():
+def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value_explicit():  # noqa: E501
     # Two rules that contradict each other except that one of them applies only at
     # conversation start -> ensure that this isn't flagged as a contradiction.
     # Specifically, this checks that the conversation-start-checking logic doesn't
@@ -710,8 +710,8 @@ async def test_rule_policy_finetune(
         == len(trained_rule_policy.lookup["rules"]) + 1
     )
     assert (
-        """[{"prev_action": {"action_name": "action_listen"}, "user": {"intent": "stopp"}}]"""
-        in loaded_policy.lookup["rules"]
+        """[{"prev_action": {"action_name": "action_listen"}, """
+        """"user": {"intent": "stopp"}}]""" in loaded_policy.lookup["rules"]
     )
 
 
@@ -2101,9 +2101,7 @@ def test_hide_rule_turn():
         ],
     )
     policy = RulePolicy()
-    policy.train(
-        [GREET_RULE, chitchat_story], domain, RegexInterpreter(),
-    )
+    policy.train([GREET_RULE, chitchat_story], domain, RegexInterpreter())
 
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -2664,9 +2662,7 @@ def test_remove_action_listen_prediction_if_contradicts_with_story():
         ],
     )
     policy = RulePolicy()
-    policy.train(
-        [rule, story], domain, RegexInterpreter(),
-    )
+    policy.train([rule, story], domain, RegexInterpreter())
     prediction_source = [{PREVIOUS_ACTION: {ACTION_NAME: utter_1}}]
     key = policy._create_feature_key(prediction_source)
     assert key not in policy.lookup[RULES]
@@ -2718,9 +2714,7 @@ def test_keep_action_listen_prediction_after_predictable_action():
     # prediction of action_listen should only be removed if it occurs after the first
     # action (unpredictable)
     with pytest.raises(InvalidRule):
-        policy.train(
-            [rule, story], domain, RegexInterpreter(),
-        )
+        policy.train([rule, story], domain, RegexInterpreter())
 
 
 def test_keep_action_listen_prediction_if_last_prediction():
@@ -2762,9 +2756,7 @@ def test_keep_action_listen_prediction_if_last_prediction():
     policy = RulePolicy()
     # prediction of action_listen should only be removed if it's not the last prediction
     with pytest.raises(InvalidRule):
-        policy.train(
-            [rule, story], domain, RegexInterpreter(),
-        )
+        policy.train([rule, story], domain, RegexInterpreter())
 
 
 def test_keep_action_listen_prediction_if_contradicts_with_rule():
@@ -2807,9 +2799,7 @@ def test_keep_action_listen_prediction_if_contradicts_with_rule():
     )
     policy = RulePolicy()
     with pytest.raises(InvalidRule):
-        policy.train(
-            [rule, other_rule], domain, RegexInterpreter(),
-        )
+        policy.train([rule, other_rule], domain, RegexInterpreter())
 
 
 def test_raise_contradiction_if_rule_contradicts_with_story():
@@ -2850,6 +2840,131 @@ def test_raise_contradiction_if_rule_contradicts_with_story():
     )
     policy = RulePolicy()
     with pytest.raises(InvalidRule):
-        policy.train(
-            [rule, story], domain, RegexInterpreter(),
-        )
+        policy.train([rule, story], domain, RegexInterpreter())
+
+
+def test_rule_with_multiple_entities():
+    intent_1 = "intent_1"
+    entity_1 = "entity_1"
+    entity_2 = "entity_2"
+    utter_1 = "utter_1"
+    domain = Domain.from_yaml(
+        f"""
+        version: "2.0"
+        intents:
+        - {intent_1}
+        entities:
+        - {entity_1}
+        - {entity_2}
+        actions:
+        - {utter_1}
+        """
+    )
+
+    rule = TrackerWithCachedStates.from_events(
+        "rule without action_listen",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(
+                intent={"name": intent_1},
+                entities=[
+                    {ENTITY_ATTRIBUTE_TYPE: entity_1},
+                    {ENTITY_ATTRIBUTE_TYPE: entity_2},
+                ],
+            ),
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    policy = RulePolicy()
+    policy.train([rule], domain, RegexInterpreter())
+
+    # the order of entities in the entities list doesn't matter for prediction
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered(
+            "haha",
+            intent={"name": intent_1},
+            entities=[
+                {ENTITY_ATTRIBUTE_TYPE: entity_2},
+                {ENTITY_ATTRIBUTE_TYPE: entity_1},
+            ],
+        ),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, utter_1)
+
+
+def test_rule_with_multiple_slots():
+    intent_1 = "intent_1"
+    utter_1 = "utter_1"
+    utter_2 = "utter_2"
+    value_1 = "value_1"
+    value_2 = "value_2"
+    slot_1 = "slot_1"
+    slot_2 = "slot_2"
+    domain = Domain.from_yaml(
+        f"""
+            version: "2.0"
+            intents:
+            - {intent_1}
+            actions:
+            - {utter_1}
+            - {utter_2}
+
+            slots:
+              {slot_1}:
+                type: categorical
+                values:
+                 - {value_1}
+                 - {value_2}
+              {slot_2}:
+                type: categorical
+                values:
+                 - {value_1}
+                 - {value_2}
+            """
+    )
+    rule = TrackerWithCachedStates.from_events(
+        "rule without action_listen",
+        domain=domain,
+        slots=domain.slots,
+        evts=[
+            ActionExecuted(RULE_SNIPPET_ACTION_NAME),
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": intent_1},),
+            SlotSet(slot_1, value_1),
+            SlotSet(slot_2, value_2),
+            ActionExecuted(utter_1),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        is_rule_tracker=True,
+    )
+    policy = RulePolicy()
+    policy.train([rule], domain, RegexInterpreter())
+
+    # the order of slots set doesn't matter for prediction
+    conversation_events = [
+        ActionExecuted(ACTION_LISTEN_NAME),
+        UserUttered("haha", intent={"name": intent_1},),
+        SlotSet(slot_2, value_2),
+        SlotSet(slot_1, value_1),
+    ]
+    prediction = policy.predict_action_probabilities(
+        DialogueStateTracker.from_events(
+            "casd", evts=conversation_events, slots=domain.slots
+        ),
+        domain,
+        RegexInterpreter(),
+    )
+    assert_predicted_action(prediction, domain, utter_1)

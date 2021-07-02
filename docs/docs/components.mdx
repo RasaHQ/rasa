@@ -256,6 +256,26 @@ now implements its behavior.
 
     Creates a token for every whitespace separated character sequence.
 
+    Any character not in: `a-zA-Z0-9_#@&` will be substituted with whitespace before
+    splitting on whitespace if the character fulfills any of the following conditions:
+    - the character follows a whitespace: `" !word"` &#8594; `"word"`
+    - the character precedes a whitespace: `"word! "` &#8594; `"word"`
+    - the character is at the beginning of the string: `"!word"` &#8594; `"word"`
+    - the character is at the end of the string: `"word!"` &#8594; `"word"`
+
+    Note that:
+    - `"wo!rd"` &#8594; `"wo!rd"`
+
+    In addition, any character not in: `a-zA-Z0-9_#@&.~:\/?[]()!$*+,;=-` will be
+    substituted with whitespace before splitting on whitespace if the character is not
+    between numbers:
+    - `"twenty{one"` &#8594; `"twenty"`, `"one"`         ("{"` is not between numbers)
+    - `"20{1"` &#8594; `"20{1"`                          ("{"` *is* between numbers)
+
+    Note that:
+    - `"name@example.com"` &#8594; `"name@example.com"`
+    - `"10,000.1"` &#8594; `"10,000.1"`
+    - `"1 - 2"` &#8594; `"1"`,`"2"`
 
 
   * **Configuration**
@@ -462,11 +482,6 @@ now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be
       "model_url": None
     ```
 
-  :::note
-  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
-  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
-
-  :::
 
 
   ### LanguageModelTokenizer
@@ -687,8 +702,15 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```yaml-rasa
   pipeline:
   - name: "ConveRTFeaturizer"
+  # Remote URL/Local directory of model files(Required)
+  "model_url": None
   ```
 
+  :::caution
+  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
+  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
+
+  :::
 
 ### LanguageModelFeaturizer
 
@@ -833,29 +855,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     "use_word_boundaries": True
   ```
 
-  **Configuring for incremental training**
-
-  To ensure that `sparse_features` are of fixed size during
-  [incremental training](./command-line-interface.mdx#incremental-training), the
-  component should be configured to account for additional patterns that may be
-  added to the training data in future. To do so, configure the `number_additional_patterns`
-  parameter while training the base model from scratch:
-
-  ```yaml-rasa {3}
-  pipeline:
-  - name: RegexFeaturizer
-    number_additional_patterns: 10
-  ```
-
-  If not configured by the user, the component will use twice the number of
-  patterns currently present in the training data (including lookup tables and regex patterns)
-  as the default value for `number_additional_patterns`.
-  This number is kept at a minimum of 10 in order to avoid running out of additional
-  slots for new patterns too frequently during incremental training.
-  Once the component runs out of additional pattern slots, the new patterns are dropped
-  and not considered during featurization. At this point, it is advisable
-  to retrain a new model from scratch.
-
 
 ### CountVectorsFeaturizer
 
@@ -980,35 +979,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     "use_shared_vocab": False
   ```
 
-  **Configuring for incremental training**
-
-  To ensure that `sparse_features` are of fixed size during
-  [incremental training](./command-line-interface.mdx#incremental-training), the
-  component should be configured to account for additional vocabulary tokens
-  that may be added as part of new training examples in the future.
-  To do so, configure the `additional_vocabulary_size` parameter while training the base model from scratch:
-
-  ```yaml-rasa {3-6}
-  pipeline:
-  - name: CountVectorsFeaturizer
-    additional_vocabulary_size:
-      text: 1000
-      response: 1000
-      action_text: 1000
-  ```
-
-  As in the above example, you can define additional vocabulary size for each of
-  `text` (user messages), `response` (bot responses used by `ResponseSelector`) and
-  `action_text` (bot responses not used by `ResponseSelector`). If you are building a shared
-  vocabulary (`use_shared_vocab=True`), you only need to define a value for the `text` attribute.
-  If any of the attribute is not configured by the user, the component takes half of the current
-  vocabulary size as the default value for the attribute's `additional_vocabulary_size`.
-  This number is kept at a minimum of 1000 in order to avoid running out of additional vocabulary
-  slots too frequently during incremental training. Once the component runs out of additional vocabulary slots,
-  the new vocabulary tokens are dropped and not considered during featurization. At this point,
-  it is advisable to retrain a new model from scratch.
-
-
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -1060,10 +1030,6 @@ However, additional parameters exist that can be adapted.
 | alias                     | CountVectorFeaturizer   | Alias name of featurizer.                                    |
 +---------------------------+-------------------------+--------------------------------------------------------------+
 | use_lemma                 | True                    | Use the lemma of words for featurization.                    |
-+---------------------------+-------------------------+--------------------------------------------------------------+
-| additional_vocabulary_size| text: 1000              | Size of additional vocabulary to account for incremental     |
-|                           | response: 1000          | training while training a model from scratch                 |
-|                           | action_text: 1000       |                                                              |
 +---------------------------+-------------------------+--------------------------------------------------------------+
 ```
 
@@ -1542,7 +1508,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | or 'inner'.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
-|                                 |                  | or 'margin'.                                                 |
+|                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
+|                                 |                  | "model_confidence=cosine",                                   |
+|                                 |                  | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | ranking_length                  | 10               | Number of top intents to normalize scores for. Applicable    |
 |                                 |                  | only with loss type 'cross_entropy' and 'softmax'            |
@@ -1660,7 +1628,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 * **Short**
 
   Classifies a message with the intent `nlu_fallback` if the NLU intent classification
-  scores are ambiguous. The confidence is set to `1 - top intent confidence`.
+  scores are ambiguous. The confidence is set to be the same as the `fallback threshold`.
 
 * **Outputs**
 
@@ -1742,7 +1710,7 @@ Entity extractors extract entities, such as person names or locations, from the 
 
 :::note
   If you use multiple entity extractors, we advise that each extractor targets an exclusive
-  set of entity types. For example, use [Duckling](components.mdx#ducklinghttpextractor) to extract dates and times, and
+  set of entity types. For example, use [Duckling](components.mdx#ducklingentityextractor) to extract dates and times, and
   [DIETClassifier](components.mdx#dietclassifier-1) to extract person names. Otherwise, if multiple extractors
   target the same entity types, it is very likely that entities will be extracted multiple times.
 
@@ -2032,7 +2000,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   :::
 
 
-### DucklingHTTPExtractor
+### DucklingEntityExtractor
 
 
 * **Short**
@@ -2064,7 +2032,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
           "start": 48,
           "value": "2017-04-10T00:00:00.000+02:00",
           "confidence": 1.0,
-          "extractor": "DucklingHTTPExtractor"
+          "extractor": "DucklingEntityExtractor"
       }]
   }
   ```
@@ -2104,7 +2072,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   ```yaml-rasa
   pipeline:
-  - name: "DucklingHTTPExtractor"
+  - name: "DucklingEntityExtractor"
     # url of the running duckling server
     url: "http://localhost:8000"
     # dimensions to extract
@@ -2465,7 +2433,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   | similarity_type                 | "auto"           | Type of similarity measure to use, either 'auto' or 'cosine' |
   |                                 |                  | or 'inner'.                                                  |
   +---------------------------------+------------------+--------------------------------------------------------------+
-  | loss_type                       | "softmax"        | The type of the loss function, either 'softmax' or 'margin'. |
+  | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
+  |                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
+  |                                 |                  | "model_confidence=cosine",                                   |
+  |                                 |                  | which is deprecated (see changelog for 2.3.4).               |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
   |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
@@ -2632,7 +2603,7 @@ Selectors predict a bot response from a set of candidate responses.
     If the `retrieval_intent` parameter of a particular response selector was left to its default value,
     the corresponding response selector will be identified as `default` in the returned output.
 
-    ```json {4}
+    ```json {3}
     {
         "response_selector": {
           "default": {
@@ -2777,14 +2748,19 @@ However, additional parameters exist that can be adapted.
 +=================================+===================+==============================================================+
 | hidden_layers_sizes             | text: [256, 128]  | Hidden layer sizes for layers before the embedding layers    |
 |                                 | label: [256, 128] | for user messages and labels. The number of hidden layers is |
-|                                 |                   | equal to the length of the corresponding.                    |
+|                                 |                   | equal to the length of the corresponding list. We recommend  |
+|                                 |                   | disabling the hidden layers (by providing empty lists) when  |
+|                                 |                   | the transformer is enabled.                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | share_hidden_layers             | False             | Whether to share the hidden layer weights between user       |
 |                                 |                   | messages and labels.                                         |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| transformer_size                | None              | Number of units in transformer.                              |
+| transformer_size                | None              | Number of units in the transformer. When a positive value is |
+|                                 |                   | provided for `number_of_transformer_layers`, the default size|
+|                                 |                   | becomes `256`.                                               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| number_of_transformer_layers    | 0                 | Number of transformer layers.                                |
+| number_of_transformer_layers    | 0                 | Number of transformer layers; positive values enable the     |
+|                                 |                   | transformer.                                                 |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | number_of_attention_heads       | 4                 | Number of attention heads in transformer.                    |
 +---------------------------------+-------------------+--------------------------------------------------------------+
@@ -2824,7 +2800,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | or 'inner'.                                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"   | The type of the loss function, either 'cross_entropy'        |
-|                                 |                   | or 'margin'.                                                 |
+|                                 |                   | or 'margin'. Type 'margin' is only compatible with           |
+|                                 |                   | "model_confidence=cosine",                                   |
+|                                 |                   | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | ranking_length                  | 10                | Number of top responses to normalize scores for. Applicable  |
 |                                 |                   | only with loss type 'cross_entropy' and 'softmax'            |
@@ -2867,6 +2845,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | evaluate_on_number_of_examples  | 0                 | How many examples to use for hold out validation set.        |
 |                                 |                   | Large values may hurt performance, e.g. model accuracy.      |
+|                                 |                   | Set to 0 for no validation.                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | use_masked_language_model       | False             | If 'True' random tokens of the input message will be masked  |
 |                                 |                   | and the model should predict those tokens.                   |
@@ -2885,7 +2864,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"           | Define when training metrics for tensorboard should be       |
 |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
-|                                 |                   | training step ("batch").                                 |
+|                                 |                   | training step ("batch").                                     |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | featurizers                     | []                | List of featurizer names (alias names). Only features        |
 |                                 |                   | coming from the listed names are used. If list is empty      |

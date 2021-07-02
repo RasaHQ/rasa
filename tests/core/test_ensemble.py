@@ -377,7 +377,8 @@ def test_policy_loading_load_returns_none(tmp_path: Path, caplog: LogCaptureFixt
         ensemble = PolicyEnsemble.load(str(tmp_path))
         assert (
             caplog.records.pop().msg
-            == "Failed to load policy tests.core.test_ensemble.LoadReturnsNonePolicy: load returned None"
+            == "Failed to load policy tests.core.test_ensemble."
+            "LoadReturnsNonePolicy: load returned None"
         )
         assert len(ensemble.policies) == 0
 
@@ -453,7 +454,7 @@ def test_from_dict_does_not_change_passed_dict_parameter():
                     {
                         "name": "MaxHistoryTrackerFeaturizer",
                         "max_history": 5,
-                        "state_featurizer": [{"name": "BinarySingleStateFeaturizer"}],
+                        "state_featurizer": [{"name": "SingleStateFeaturizer"}],
                     }
                 ],
             }

@@ -126,8 +126,12 @@ class TrackerStore:
             BotoCoreError,
             pymongo.errors.ConnectionFailure,
             sqlalchemy.exc.OperationalError,
+            ConnectionError,
+            pymongo.errors.OperationFailure,
         ) as error:
-            raise ConnectionException("Cannot connect to tracker store.") from error
+            raise ConnectionException(
+                "Cannot connect to tracker store." + str(error)
+            ) from error
 
     def get_or_create_tracker(
         self,
@@ -359,7 +363,8 @@ class RedisTrackerStore(TrackerStore):
             self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX
         else:
             logger.warning(
-                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
+                f"Using default '{self.key_prefix}' instead."
             )
 
     def _get_key_prefix(self) -> Text:
@@ -960,7 +965,15 @@ class SQLTrackerStore(TrackerStore):
 
         self._create_database(self.engine, db)
         self.engine.dispose()
-        engine_url.database = db
+        engine_url = sa.engine.url.URL(
+            drivername=engine_url.drivername,
+            username=engine_url.username,
+            password=engine_url.password,
+            host=engine_url.host,
+            port=engine_url.port,
+            database=db,
+            query=engine_url.query,
+        )
         self.engine = create_engine(engine_url)
 
     @staticmethod
@@ -1135,7 +1148,9 @@ class SQLTrackerStore(TrackerStore):
         number_of_events_since_last_session = self._event_query(
             session,
             tracker.sender_id,
-            fetch_events_from_all_sessions=self.retrieve_events_from_previous_conversation_sessions,
+            fetch_events_from_all_sessions=(
+                self.retrieve_events_from_previous_conversation_sessions
+            ),
         ).count()
 
         return itertools.islice(

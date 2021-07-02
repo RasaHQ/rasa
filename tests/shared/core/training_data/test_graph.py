@@ -59,8 +59,10 @@ async def test_consistent_fingerprints():
     story_graph = StoryGraph(story_steps)
 
     # read again
-    story_steps_2 = await rasa.shared.core.training_data.loading.load_data_from_resource(
-        stories_path, domain
+    story_steps_2 = await (
+        rasa.shared.core.training_data.loading.load_data_from_resource(
+            stories_path, domain
+        )
     )
     story_graph_2 = StoryGraph(story_steps_2)
 
