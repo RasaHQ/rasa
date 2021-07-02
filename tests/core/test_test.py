@@ -368,6 +368,7 @@ async def test_multiple_warnings_sorted_on_severity(
                   amazing
                 intent: mood_great
               - action: utter_happy
+
           - story: path 2
             steps:
               - user: |
