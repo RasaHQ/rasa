@@ -118,16 +118,17 @@ UnexpecTEDIntentPolicyMetadata = TypedDict(
     "UnexpecTEDIntentPolicyMetadata",
     {
         QUERY_INTENT_KEY: Text,
-        RANKING_KEY: {
-            List[
+        RANKING_KEY: List[
+            TypedDict(
+                "ranking_candidate_metadata",
                 {
                     NAME: Text,
                     SCORE_KEY: float,
-                    THRESHOLD_KEY: float,
-                    SEVERITY_KEY: float,
-                }
-            ]
-        },
+                    THRESHOLD_KEY: Optional[float],
+                    SEVERITY_KEY: Optional[float],
+                },
+            )
+        ],
     },
 )
 
@@ -428,7 +429,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array, query_intent: Text
-    ) -> Dict[Text, Any]:
+    ) -> UnexpecTEDIntentPolicyMetadata:
         """Collects metadata to be attached to the predicted action.
 
         Metadata schema looks like this:
