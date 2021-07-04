@@ -615,7 +615,8 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             return False
         if intent in self.config[IGNORE_INTENTS_LIST]:
             logger.debug(
-                f"Query intent `{intent}` found in `{IGNORE_INTENTS_LIST}`. "
+                f"Query intent `{intent}` found in "
+                f"`{IGNORE_INTENTS_LIST}={self.config[IGNORE_INTENTS_LIST]}`. "
                 f"Check for `{ACTION_UNLIKELY_INTENT_NAME}` prediction will be skipped."
             )
             return False
@@ -650,13 +651,14 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         }
         sorted_intent_scores = sorted(
             [
-                (intent_label, score)
-                for intent_label, score in predicted_intent_scores.items()
+                (domain.intents[label_index], score)
+                for label_index, score in predicted_intent_scores.items()
             ],
             key=lambda x: x[1],
         )
         query_intent_id = domain.intents.index(query_intent)
         query_intent_similarity = similarities[0][query_intent_id]
+        highest_likely_intent_id = domain.intents.index(sorted_intent_scores[-1][0])
 
         logger.debug(
             f"Score for intent `{query_intent}` is "
@@ -672,10 +674,10 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         # the query intent is not the top likely intent
         if (
             query_intent_similarity < self.label_thresholds[query_intent_id]
-            and query_intent_id != sorted_intent_scores[-1][0]
+            and query_intent_id != highest_likely_intent_id
         ):
             logger.debug(
-                f"Intent `{query_intent}-{query_intent_id}` " f"unlikely to occur here."
+                f"Intent `{query_intent}-{query_intent_id}` unlikely to occur here."
             )
             return True
 
@@ -894,13 +896,18 @@ class IntentTED(TED):
         # Find padding indices. They should have a value equal to `LABEL_PAD_ID`
         padding_indices = tf.where(tf.equal(indices, LABEL_PAD_ID))
 
-        # Create a tensor of ones which will serve as updates to original `indices`
-        updates_to_indices = tf.ones((tf.shape(padding_indices)[0]), dtype=tf.int32)
+        # Create a tensor of values with sign opposite to `LABEL_PAD_ID` which
+        # will serve as updates to original `indices`
+        updates_to_indices = (
+            tf.ones((tf.shape(padding_indices)[0]), dtype=tf.int32) * -1 * LABEL_PAD_ID
+        )
 
-        # Add the tensor of 1s to indices with padding.
-        # So, effectively `LABEL_PAD_ID=-1` becomes 0. This is fine because
-        # we don't change the original label indices but only
-        # make them 'compatible' for the `tf.gather` op below.
+        # Add the updates tensor to indices with padding.
+        # So, effectively all indices with `LABEL_PAD_ID=-1`
+        # become 0 because updates contain 1s.
+        # This is fine because we don't change the original non-padding label
+        # indices but only make the padding indices 'compatible'
+        # for the `tf.gather` op below.
         indices_to_gather = tf.cast(
             tf.tensor_scatter_nd_add(indices, padding_indices, updates_to_indices),
             tf.int32,
