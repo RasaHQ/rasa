@@ -35,13 +35,13 @@ def test_dot_product_loss_inner_sim():
 def test_multi_label_dot_product_loss_call_shapes():
     num_neg = 1
     layer = MultiLabelDotProductLoss(num_neg)
-    batch_inputs_embed = tf.constant([[[0, 1, 2]], [[-2, 0, 2]],], dtype=tf.float32)
+    batch_inputs_embed = tf.constant([[[0, 1, 2]], [[-2, 0, 2]]], dtype=tf.float32)
     batch_labels_embed = tf.constant(
-        [[[0, 0, 1], [1, 0, 0]], [[0, 1, 0], [1, 0, 0]],], dtype=tf.float32
+        [[[0, 0, 1], [1, 0, 0]], [[0, 1, 0], [1, 0, 0]]], dtype=tf.float32
     )
-    batch_labels_ids = tf.constant([[[2], [1]], [[1], [0]],], dtype=tf.float32)
-    all_labels_embed = tf.constant([[1, 0, 0], [0, 1, 0], [0, 0, 1],], dtype=tf.float32)
-    all_labels_ids = tf.constant([[0], [1], [2],], dtype=tf.float32)
+    batch_labels_ids = tf.constant([[[2], [0]], [[1], [0]]], dtype=tf.float32)
+    all_labels_embed = tf.constant([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=tf.float32)
+    all_labels_ids = tf.constant([[0], [1], [2]], dtype=tf.float32)
     mask = None
 
     loss, accuracy = layer(
@@ -153,7 +153,7 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
         np.random.uniform(-100, 100, size=[7, num_features])
     ).tolist()
     # Label used for padding
-    lp = [-1, -1, -1, -1]
+    lp = [-1] * num_features
 
     # Each example in the batch has one input
     batch_inputs_embed = tf.constant([[i0], [i1], [i2]], dtype=tf.float32)
