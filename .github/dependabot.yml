@@ -31,3 +31,17 @@ updates:
       - RasaHQ/enable-squad
     labels:
       - type:dependencies
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: '12:00'
+    pull-request-branch-name:
+      separator: "-"
+    open-pull-requests-limit: 10
+    reviewers:
+      - RasaHQ/infrastructure-squad
+    labels:
+      - type:dependencies
