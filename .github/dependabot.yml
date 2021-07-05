@@ -42,6 +42,6 @@ updates:
       separator: "-"
     open-pull-requests-limit: 10
     reviewers:
-      - RasaHQ/infrastructure
+      - RasaHQ/infrastructure-squad
     labels:
       - type:dependencies
