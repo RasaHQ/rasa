@@ -126,7 +126,7 @@ RankingCandidateMetadata = TypedDict(
 
 UnexpecTEDIntentPolicyMetadata = TypedDict(
     "UnexpecTEDIntentPolicyMetadata",
-    {QUERY_INTENT_KEY: Text, RANKING_KEY: List[RankingCandidateMetadata]},
+    {QUERY_INTENT_KEY: Text, RANKING_KEY: List["RankingCandidateMetadata"]},
 )
 
 
@@ -426,7 +426,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array, query_intent: Text
-    ) -> UnexpecTEDIntentPolicyMetadata:
+    ) -> "UnexpecTEDIntentPolicyMetadata":
         """Collects metadata to be attached to the predicted action.
 
         Metadata schema looks like this:
@@ -445,7 +445,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             "name": <name of intent>,
             "score": <predicted similarity score>,
             "threshold": <threshold used for intent>,
-            "severity": <absolute difference between score and threshold>
+            "severity": <numerical difference between threshold and score>
         }
 
         Args:
@@ -460,7 +460,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         def _compile_metadata_for_label(
             label_name: Text, similarity_score: float, threshold: Optional[float],
-        ) -> RankingCandidateMetadata:
+        ) -> "RankingCandidateMetadata":
             severity = threshold - similarity_score if threshold else None
             return {
                 NAME: label_name,
@@ -469,7 +469,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
                 SEVERITY_KEY: severity,
             }
 
-        metadata: UnexpecTEDIntentPolicyMetadata = {
+        metadata: "UnexpecTEDIntentPolicyMetadata" = {
             QUERY_INTENT_KEY: _compile_metadata_for_label(
                 query_intent,
                 similarities[0][domain.intents.index(query_intent)],
