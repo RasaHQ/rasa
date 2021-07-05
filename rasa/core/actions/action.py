@@ -58,6 +58,7 @@ if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
+    from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
 
@@ -851,9 +852,17 @@ class ActionDefaultAskAffirmation(Action):
         domain: "Domain",
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        intent_to_affirm = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        latest_message = tracker.latest_message
+        if latest_message is None:
+            raise TypeError(
+                "Cannot find last user message for detecting fallback " "affirmation."
+            )
 
-        intent_ranking = tracker.latest_message.parse_data.get(INTENT_RANKING_KEY, [])
+        intent_to_affirm = latest_message.intent.get(INTENT_NAME_KEY)
+
+        intent_ranking: List["IntentPrediction"] = latest_message.parse_data.get(
+            INTENT_RANKING_KEY
+        ) or []
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
