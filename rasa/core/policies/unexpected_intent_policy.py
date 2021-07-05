@@ -4,10 +4,8 @@ import tensorflow as tf
 from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
 
-try:
-    from typing import TypedDict
-except ImportError:
-    from mypy_extensions import TypedDict
+if TYPE_CHECKING:
+    from typing_extensions import TypedDict
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -114,22 +112,19 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+RankingCandidateMetadata = TypedDict(
+    "RankingCandidateMetadata",
+    {
+        NAME: Text,
+        SCORE_KEY: float,
+        THRESHOLD_KEY: Optional[float],
+        SEVERITY_KEY: Optional[float],
+    },
+)
+
 UnexpecTEDIntentPolicyMetadata = TypedDict(
     "UnexpecTEDIntentPolicyMetadata",
-    {
-        QUERY_INTENT_KEY: Text,
-        RANKING_KEY: List[
-            TypedDict(
-                "ranking_candidate_metadata",
-                {
-                    NAME: Text,
-                    SCORE_KEY: float,
-                    THRESHOLD_KEY: Optional[float],
-                    SEVERITY_KEY: Optional[float],
-                },
-            )
-        ],
-    },
+    {QUERY_INTENT_KEY: Text, RANKING_KEY: List[RankingCandidateMetadata]},
 )
 
 
@@ -463,7 +458,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         def _compile_metadata_for_label(
             label_name: Text, similarity_score: float, threshold: Optional[float],
-        ) -> Dict[Text, Optional[Union[Text, float]]]:
+        ) -> RankingCandidateMetadata:
             severity = threshold - similarity_score if threshold else None
             return {
                 NAME: label_name,
