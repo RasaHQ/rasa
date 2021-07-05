@@ -907,7 +907,7 @@ def is_prev_action_listen_in_state(state: State) -> bool:
 
 
 def is_prev_action_unlikely_intent_in_state(state: State) -> bool:
-    """Check if action_unlikely_intent is the previous executed action.
+    """Checks if action_unlikely_intent is the previous executed action.
 
     Args:
         state: The state for which the check should be performed

@@ -101,6 +101,7 @@ from rasa.utils.tensorflow.model_data import (
 
 import rasa.utils.io as io_utils
 from rasa.core.exceptions import RasaCoreException
+from rasa.shared.utils import common
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -108,11 +109,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-SAVE_MODEL_FILE_NAME = "intent_ted_policy"
 
-
-class IntentTEDPolicy(TEDPolicy):
-    """`IntentTEDPolicy` has the same model architecture as `TEDPolicy`.
+class UnexpecTEDIntentPolicy(TEDPolicy):
+    """`UnexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.
 
     The difference is at a task level.
     Instead of predicting the next probable action, this policy
@@ -227,7 +226,7 @@ class IntentTEDPolicy(TEDPolicy):
         # For each intent, the tolerance is the percentage of
         # negative training instances (trackers for which
         # the corresponding intent is not the correct label) that
-        # would be ignored by `IntentTEDPolicy`. This is converted
+        # would be ignored by `UnexpecTEDIntentPolicy`. This is converted
         # into a similarity threshold by identifying the similarity
         # score for the (1 - tolerance) percentile of negative
         # examples. Any tracker with a similarity score below this
@@ -277,6 +276,8 @@ class IntentTEDPolicy(TEDPolicy):
         self.config[SIMILARITY_TYPE] = INNER
         self.config[LOSS_TYPE] = CROSS_ENTROPY
 
+        common.mark_as_experimental_feature("UnexpecTED Intent Policy")
+
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
         return IntentMaxHistoryTrackerFeaturizer(
@@ -298,7 +299,7 @@ class IntentTEDPolicy(TEDPolicy):
 
     @classmethod
     def _metadata_filename(cls) -> Optional[Text]:
-        return SAVE_MODEL_FILE_NAME
+        return "unexpected_intent_policy"
 
     def _assemble_label_data(
         self, attribute_data: Data, domain: Domain
@@ -551,7 +552,8 @@ class IntentTEDPolicy(TEDPolicy):
                  from getting stuck in a prediction loop.
                 For example, if the last `ActionExecuted` event
                 contained `action_unlikely_intent` predicted by
-                `IntentTEDPolicy` and if `IntentTEDPolicy` runs inference
+                `UnexpecTEDIntentPolicy` and
+                if `UnexpecTEDIntentPolicy` runs inference
                 on the same tracker, it will predict `action_unlikely_intent`
                 again which would make the dialogue manager get stuck in a
                 prediction loop.
@@ -567,7 +569,7 @@ class IntentTEDPolicy(TEDPolicy):
             elif isinstance(event, UserUttered):
                 return False
         # No event of type `ActionExecuted` and `UserUttered` means
-        # that there is nothing for `IntentTEDPolicy` to predict on.
+        # that there is nothing for `UnexpecTEDIntentPolicy` to predict on.
         return True
 
     def _should_check_for_intent(self, intent: Text, domain: Domain) -> bool:
@@ -584,14 +586,15 @@ class IntentTEDPolicy(TEDPolicy):
             # This means the intent was never present in a story
             logger.debug(
                 f"Query intent index {domain.intents.index(intent)} not "
-                f"found in label thresholds - {self.label_thresholds}."
-                f"Check for `action_unlikely_intent` prediction will be skipped."
+                f"found in label thresholds - {self.label_thresholds}. "
+                f"Check for `{ACTION_UNLIKELY_INTENT_NAME}` prediction will be skipped."
             )
             return False
         if intent in self.config[IGNORE_INTENTS_LIST]:
             logger.debug(
-                f"Query intent {intent} found in {IGNORE_INTENTS_LIST}. "
-                f"Check for `action_unlikely_intent` prediction will be skipped."
+                f"Query intent `{intent}` found in "
+                f"`{IGNORE_INTENTS_LIST}={self.config[IGNORE_INTENTS_LIST]}`. "
+                f"Check for `{ACTION_UNLIKELY_INTENT_NAME}` prediction will be skipped."
             )
             return False
 
@@ -602,7 +605,7 @@ class IntentTEDPolicy(TEDPolicy):
     ) -> bool:
         """Checks if the query intent is probable according to model's predictions.
 
-        If the similarity prediction for the intent of
+        If the similarity prediction for the intent
         is lower than the threshold calculated for that
         intent during training, the corresponding user
         intent is unlikely.
@@ -615,7 +618,7 @@ class IntentTEDPolicy(TEDPolicy):
         Returns:
             Whether query intent is likely or not.
         """
-        logger.debug(f"Querying for intent {query_intent}")
+        logger.debug(f"Querying for intent `{query_intent}`.")
 
         if not self._should_check_for_intent(query_intent, domain):
             return False
@@ -625,32 +628,33 @@ class IntentTEDPolicy(TEDPolicy):
         }
         sorted_intent_scores = sorted(
             [
-                (intent_label, score)
-                for intent_label, score in predicted_intent_scores.items()
+                (domain.intents[label_index], score)
+                for label_index, score in predicted_intent_scores.items()
             ],
             key=lambda x: x[1],
         )
         query_intent_id = domain.intents.index(query_intent)
         query_intent_similarity = similarities[0][query_intent_id]
+        highest_likely_intent_id = domain.intents.index(sorted_intent_scores[-1][0])
 
         logger.debug(
             f"Score for intent `{query_intent}` is "
-            f"{query_intent_similarity}, while "
-            f"threshold is {self.label_thresholds[query_intent_id]}"
+            f"`{query_intent_similarity}`, while "
+            f"threshold is `{self.label_thresholds[query_intent_id]}`."
         )
         logger.debug(
-            f"Top 5 intents(in ascending order) that "
-            f"are likely here are: {sorted_intent_scores[-5:]}"
+            f"Top 5 intents (in ascending order) that "
+            f"are likely here are: `{sorted_intent_scores[-5:]}`."
         )
 
         # If score for query intent is below threshold and
         # the query intent is not the top likely intent
         if (
             query_intent_similarity < self.label_thresholds[query_intent_id]
-            and query_intent_id != sorted_intent_scores[-1][0]
+            and query_intent_id != highest_likely_intent_id
         ):
             logger.debug(
-                f"Intent {query_intent}-{query_intent_id} unlikely to occur here."
+                f"Intent `{query_intent}-{query_intent_id}` unlikely to occur here."
             )
             return True
 
@@ -698,6 +702,9 @@ class IntentTEDPolicy(TEDPolicy):
 
         # Get only unique scores so that duplicate
         # trackers created because of permutations are pruned out.
+        # CAUTION: There is an extremely low chance that two different
+        # trackers predicted the same score for a label. We overlook
+        # that possibility here.
         unique_label_id_scores = {
             label_id: {
                 POSITIVE_SCORES_KEY: list(set(scores[POSITIVE_SCORES_KEY])),
@@ -754,7 +761,7 @@ class IntentTEDPolicy(TEDPolicy):
     def _pick_thresholds(
         label_quantiles: Dict[int, List[float]], tolerance: float
     ) -> Dict[int, float]:
-        """Compute a threshold for each label id.
+        """Computes a threshold for each label id.
 
         Uses tolerance which is the percentage of negative
         trackers for which predicted score should be equal
@@ -813,7 +820,7 @@ class IntentTEDPolicy(TEDPolicy):
         featurizer: TrackerFeaturizer,
         model_utilities: Dict[Text, Any],
         should_finetune: bool,
-    ) -> "IntentTEDPolicy":
+    ) -> "UnexpecTEDIntentPolicy":
         return cls(
             featurizer=featurizer,
             priority=model_utilities["priority"],
@@ -832,12 +839,6 @@ class IntentTED(TED):
     However, it has been re-purposed to predict multiple
     labels (intents) instead of a single label (action).
     """
-
-    def _prepare_label_classification_layers(self, predictor_attribute: Text) -> None:
-        """Prepares layers & loss for the final label prediction step."""
-        self._prepare_embed_layers(predictor_attribute)
-        self._prepare_embed_layers(LABEL)
-        self._prepare_dot_product_loss(LABEL, self.config[SCALE_LOSS])
 
     def _prepare_dot_product_loss(
         self, name: Text, scale_loss: bool, prefix: Text = "loss",
@@ -869,16 +870,21 @@ class IntentTED(TED):
 
         indices = tf.cast(label_ids[:, :, 0], tf.int32)
 
-        # Find padding indices. They should have a value -1
-        padding_indices = tf.where(tf.equal(indices, -1))
+        # Find padding indices. They should have a value equal to `LABEL_PAD_ID`
+        padding_indices = tf.where(tf.equal(indices, LABEL_PAD_ID))
 
-        # Create a tensor of ones which will serve as updates to original `indices`
-        updates_to_indices = tf.ones((tf.shape(padding_indices)[0]), dtype=tf.int32)
+        # Create a tensor of values with sign opposite to `LABEL_PAD_ID` which
+        # will serve as updates to original `indices`
+        updates_to_indices = (
+            tf.ones((tf.shape(padding_indices)[0]), dtype=tf.int32) * -1 * LABEL_PAD_ID
+        )
 
-        # Add the tensor of 1s to indices with padding.
-        # So, effectively -1s become 0. This is fine because
-        # we don't change the original label indices but only
-        # make them 'compatible' for the `tf.gather` op below.
+        # Add the updates tensor to indices with padding.
+        # So, effectively all indices with `LABEL_PAD_ID=-1`
+        # become 0 because updates contain 1s.
+        # This is fine because we don't change the original non-padding label
+        # indices but only make the padding indices 'compatible'
+        # for the `tf.gather` op below.
         indices_to_gather = tf.cast(
             tf.tensor_scatter_nd_add(indices, padding_indices, updates_to_indices),
             tf.int32,

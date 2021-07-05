@@ -784,7 +784,7 @@ class ActionRevertFallbackEvents(Action):
 class ActionUnlikelyIntent(Action):
     """An action that indicates that the intent predicted by NLU is unexpected.
 
-    This action can be predicted by `IntentTEDPolicy`.
+    This action can be predicted by `UnexpecTEDIntentPolicy`.
     """
 
     def name(self) -> Text:

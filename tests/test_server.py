@@ -19,7 +19,7 @@ from _pytest import pathlib
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 from freezegun import freeze_time
-from mock import MagicMock
+from unittest.mock import MagicMock
 from ruamel.yaml import StringIO
 from sanic import Sanic
 from sanic.testing import SanicASGITestClient

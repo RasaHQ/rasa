@@ -38,6 +38,38 @@ If you had a custom tracker featurizer which relied on this method from any of t
 `encode_all_actions` method of `SingleStateFeaturizer` class is deprecated and will be removed in Rasa Open Source 3.0 .
 It is recommended to use the method `encode_all_labels` instead.
 
+
+### Incremental Training
+
+Users don't need to specify an additional buffer size for sparse featurizers anymore during incremental training.
+
+Space for new sparse features are created dynamically inside the downstream machine learning
+models - `DIETClassifier`, `ResponseSelector`. In other words, no extra buffer is created in
+advance for additional vocabulary items and space will be dynamically allocated for them inside the model.
+
+This means there's no need to specify `additional_vocabulary_size` for
+[`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer) or
+`number_additional_patterns` for [`RegexFeaturizer`](./components.mdx#regexfeaturizer).
+These parameters are now deprecated.
+
+**Before**
+```yaml
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "RegexFeaturizer"
+    number_additional_patterns: 100
+  - name: "CountVectorsFeaturizer"
+    additional_vocabulary_size: {text: 100, response: 20}
+```
+
+**Now**
+```yaml
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "RegexFeaturizer"
+  - name: "CountVectorsFeaturizer"
+```
+
 ## Rasa 2.5 to 2.6
 
 ### Forms
