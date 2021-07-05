@@ -64,9 +64,8 @@ class EventTypeError(RasaCoreException, ValueError):
 
 class Checkpoint:
     def __init__(
-        self, name: Optional[Text], conditions: Optional[Dict[Text, Any]] = None
+        self, name: Text, conditions: Optional[Dict[Text, Any]] = None
     ) -> None:
-
         self.name = name
         self.conditions = conditions if conditions else {}
 
