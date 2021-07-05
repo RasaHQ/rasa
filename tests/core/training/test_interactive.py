@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Text, Tuple, Callable
 from tests.conftest import AsyncMock
 
 import pytest
+from io import StringIO
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 import unittest.mock
@@ -805,8 +806,6 @@ async def test_correct_question_for_action_name_was_asked(
 
     mocked_send_action = AsyncMock()
     monkeypatch.setattr(interactive, "send_action", mocked_send_action)
-
-    from io import StringIO
 
     mocked_confirm = Mock(return_value=None)
     monkeypatch.setattr(interactive.questionary, "confirm", mocked_confirm)
