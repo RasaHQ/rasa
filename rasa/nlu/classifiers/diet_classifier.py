@@ -341,7 +341,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self._check_config_parameters()
 
         # transform numbers to labels
-        self.index_label_id_mapping = index_label_id_mapping
+        self.index_label_id_mapping = index_label_id_mapping or {}
 
         self._entity_tag_specs = entity_tag_specs
 

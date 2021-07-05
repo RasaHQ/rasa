@@ -240,7 +240,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self._attributes = self._attributes_for(self.analyzer)
 
         # declare class instance for CountVectorizer
-        self.vectorizers = vectorizers
+        self.vectorizers = vectorizers or {}
 
         self.finetune_mode = finetune_mode
 
