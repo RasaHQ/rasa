@@ -18,11 +18,9 @@ from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
 )
 from rasa.shared.core.domain import Domain
 from rasa.nlu.constants import (
-    ENTITY_ATTRIBUTE_TEXT,
     RESPONSE_SELECTOR_DEFAULT_INTENT,
     RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
     TOKENS_NAMES,
-    ENTITY_ATTRIBUTE_CONFIDENCE,
 )
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -38,8 +36,7 @@ from rasa.shared.nlu.constants import (
     RESPONSE_SELECTOR,
     FULL_RETRIEVAL_INTENT_NAME_KEY,
     TEXT,
-    ENTITY_ATTRIBUTE_GROUP,
-    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_TEXT,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import (
@@ -56,24 +53,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
     from rasa.core.processor import MessageProcessor
     from rasa.shared.core.generator import TrainingDataGenerator
-
-    from typing_extensions import TypedDict
-
-    EntityPrediction = TypedDict(
-        "EntityPrediction",
-        {
-            ENTITY_ATTRIBUTE_TEXT: Text,
-            ENTITY_ATTRIBUTE_START: Optional[float],
-            ENTITY_ATTRIBUTE_END: Optional[float],
-            ENTITY_ATTRIBUTE_VALUE: Text,
-            ENTITY_ATTRIBUTE_CONFIDENCE: float,
-            ENTITY_ATTRIBUTE_TYPE: Text,
-            ENTITY_ATTRIBUTE_GROUP: Optional[Text],
-            ENTITY_ATTRIBUTE_ROLE: Optional[Text],
-            "additional_info": Any,
-        },
-        total=False,
-    )
+    from rasa.shared.core.events import EntityPrediction
 
 CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
 REPORT_STORIES_FILE = "story_report.json"
