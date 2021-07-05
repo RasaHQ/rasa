@@ -311,6 +311,20 @@ jobs:
         COVERALLS_PARALLEL: true
       run: poetry run coveralls
 
+  complete_coverage:
+    name: Complete coverage
+    runs-on: ubuntu-20.04
+    needs: [ test, changes ]
+    if: needs.changes.outputs.backend == 'true'
+
+    steps:
+      - name: Tell coveralls we're finished reporting
+        uses: coverallsapp/github-action@master
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+
   integration_test:
     name: Run Integration Tests
     runs-on: ubuntu-latest
