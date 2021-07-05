@@ -4,6 +4,11 @@ import tensorflow as tf
 from pathlib import Path
 from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
 
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
+
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_UNLIKELY_INTENT_NAME
@@ -104,7 +109,6 @@ from rasa.core.exceptions import RasaCoreException
 from rasa.shared.utils import common
 
 if TYPE_CHECKING:
-    from typing_extensions import TypedDict
     from rasa.shared.nlu.training_data.features import Features
 
 
