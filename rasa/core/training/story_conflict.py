@@ -175,17 +175,13 @@ def find_story_conflicts(
         trackers, domain, max_history, tokenizer
     )
 
-    unlearnable_state_action_mapping = _find_unlearnable_actions(
-        trackers, domain, max_history, tokenizer
-    )
-
     # Iterate once more over all states and note the (unhashed) state,
     # for which a conflict occurs
     conflicts = _build_conflicts_from_states(
         trackers,
         domain,
         max_history,
-        {**conflicting_state_action_mapping, **unlearnable_state_action_mapping},
+        conflicting_state_action_mapping,
         tokenizer,
     )
 
@@ -241,17 +237,25 @@ def _find_conflicting_states(
     # Create a 'state -> list of actions' dict, where the state is
     # represented by its hash
     state_action_mapping = defaultdict(list)
+
     for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
         hashed_state = element.sliced_states_hash
         current_hash = hash(element.event)
-        if current_hash not in state_action_mapping[hashed_state]:
+
+        if current_hash not in state_action_mapping[
+            hashed_state
+        ] or _unlearnable_action(element.event):
             state_action_mapping[hashed_state] += [current_hash]
 
     # Keep only conflicting `state_action_mapping`s
+    # or those mappings that contain `action_unlikely_intent`
+    action_unlikely_intent_hash = hash(
+        ActionExecuted(action_name=ACTION_UNLIKELY_INTENT_NAME)
+    )
     return {
         state_hash: actions
         for (state_hash, actions) in state_action_mapping.items()
-        if len(actions) > 1
+        if len(actions) > 1 or action_unlikely_intent_hash in actions
     }
 
 
@@ -268,36 +272,6 @@ def _unlearnable_action(event: Event) -> bool:
         isinstance(event, ActionExecuted)
         and event.action_name == ACTION_UNLIKELY_INTENT_NAME
     )
-
-
-def _find_unlearnable_actions(
-    trackers: List[TrackerWithCachedStates],
-    domain: Domain,
-    max_history: Optional[int],
-    tokenizer: Optional[Tokenizer],
-) -> Dict[int, Optional[List[Text]]]:
-    """Identifies all states that contain actions that cannot be learned.
-
-    Args:
-        trackers: Trackers that contain the states.
-        domain: The domain object.
-        max_history: Number of turns to take into account for the state descriptions.
-        tokenizer: A tokenizer to tokenize the user messages.
-
-    Returns:
-        A dictionary mapping state-hashes to a list of action-hashes
-        that cannot be learned.
-    """
-    # Create a 'state -> list of actions' dict, where the state is
-    # represented by its hash
-    state_action_mapping = defaultdict(list)
-    for element in _sliced_states_iterator(trackers, domain, max_history, tokenizer):
-        hashed_state = element.sliced_states_hash
-        current_hash = hash(element.event)
-        if _unlearnable_action(element.event):
-            state_action_mapping[hashed_state] += [current_hash]
-
-    return state_action_mapping
 
 
 def _build_conflicts_from_states(
