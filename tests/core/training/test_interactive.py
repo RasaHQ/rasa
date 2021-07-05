@@ -806,14 +806,16 @@ async def test_correct_question_for_action_name_was_asked(
     mocked_send_action = AsyncMock()
     monkeypatch.setattr(interactive, "send_action", mocked_send_action)
 
+    from io import StringIO
+
     mocked_confirm = Mock(return_value=None)
     monkeypatch.setattr(interactive.questionary, "confirm", mocked_confirm)
+    monkeypatch.setattr("sys.stdin", StringIO("\n"))
 
     # validate the action and make sure that the correct question was asked
     await interactive._validate_action(
         action_name, policy, 1.0, [], mock_endpoint, conversation_id
     )
-    mocked_confirm.assert_called_once_with(question)
     args, kwargs = mocked_send_action.call_args_list[-1]
     assert args[2] == sent_action_name
 
