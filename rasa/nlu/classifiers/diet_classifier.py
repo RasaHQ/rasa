@@ -647,7 +647,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return label_data
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[FeatureArray]:
-        all_label_features = self._label_data.get(LABEL, SENTENCE)[0]
+        feature_arrays: List[FeatureArray] = self._label_data.get(LABEL, SENTENCE)
+        all_label_features = feature_arrays[0]
         return [
             FeatureArray(
                 np.array([all_label_features[label_id] for label_id in label_ids]),
