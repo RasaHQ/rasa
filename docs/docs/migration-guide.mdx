@@ -43,6 +43,16 @@ pipeline:
   - name: "CountVectorsFeaturizer"
 ```
 
+### Machine Learning Components
+
+Rasa Open Source `2.3.0` introduced `linear_norm` as a possible value for `model_confidence`
+parameter of machine learning components such as `DIETClassifier`, `ResponseSelector` and `TEDPolicy`.
+Based on user feedback, we have identified multiple problems with this option and hence
+using `model_confidence=linear_norm` is now deprecated and
+will be removed in Rasa Open Source 3.0.0. If you were using `model_confidence=linear_norm` for any of the components,
+it is recommended to revert it back to `model_confidence=softmax` and re-train the assistant. Post re-training,
+it is recommended to tune the fallback thresholds as well.
+
 
 ## Rasa 2.5 to 2.6
 

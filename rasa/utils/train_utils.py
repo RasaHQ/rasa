@@ -582,16 +582,14 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
             f"change the order of predicted labels. "
             f"Since this is not ideal, using `{MODEL_CONFIDENCE}={COSINE}` has been "
             f"removed in versions post `2.3.3`. "
-            f"Please use either `{SOFTMAX}` or `{LINEAR_NORM}` as possible values."
+            f"Please use `{MODEL_CONFIDENCE}={SOFTMAX}` instead."
         )
     if component_config[MODEL_CONFIDENCE] == INNER:
         raise InvalidConfigException(
             f"{MODEL_CONFIDENCE}={INNER} is deprecated as it produces an unbounded "
             f"range of confidences which can break the logic of assistants in various "
             f"other places. "
-            f"Please use `{MODEL_CONFIDENCE}={LINEAR_NORM}` which will produce a "
-            f"linearly normalized version of dot product similarities with each value "
-            f"in the range `[0,1]`."
+            f"Please use `{MODEL_CONFIDENCE}={SOFTMAX}` instead. "
         )
     if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, LINEAR_NORM, AUTO]:
         raise InvalidConfigException(
@@ -599,12 +597,6 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
             f"setting. Possible values: `{SOFTMAX}`, `{LINEAR_NORM}`."
         )
     if component_config[MODEL_CONFIDENCE] == SOFTMAX:
-        rasa.shared.utils.io.raise_warning(
-            f"{MODEL_CONFIDENCE} is set to `softmax`. It is recommended "
-            f"to try using `{MODEL_CONFIDENCE}={LINEAR_NORM}` to make it easier to "
-            f"tune fallback thresholds.",
-            category=UserWarning,
-        )
         if component_config[LOSS_TYPE] not in [SOFTMAX, CROSS_ENTROPY]:
             raise InvalidConfigException(
                 f"{LOSS_TYPE}={component_config[LOSS_TYPE]} and "
@@ -619,6 +611,15 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
                 f"combination. You can use {MODEL_CONFIDENCE}={SOFTMAX} "
                 f"only with {SIMILARITY_TYPE}={INNER}."
             )
+    if component_config[MODEL_CONFIDENCE] == LINEAR_NORM:
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"{MODEL_CONFIDENCE} is set to `{LINEAR_NORM}`. This option was "
+            f"introduced in Rasa Open Source `2.3.0` but based on "
+            f"user feedback we have identified multiple problems with this "
+            f"option. Hence, `{MODEL_CONFIDENCE}={LINEAR_NORM}` is now deprecated "
+            f"and will be removed in Rasa Open Source 3.0.0. "
+            f"Please use `{MODEL_CONFIDENCE}={SOFTMAX}` instead."
+        )
 
 
 def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
