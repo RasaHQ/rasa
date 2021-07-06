@@ -594,7 +594,7 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
     if component_config[MODEL_CONFIDENCE] not in [SOFTMAX, LINEAR_NORM, AUTO]:
         raise InvalidConfigException(
             f"{MODEL_CONFIDENCE}={component_config[MODEL_CONFIDENCE]} is not a valid "
-            f"setting. Possible values: `{SOFTMAX}`, `{LINEAR_NORM}`."
+            f"setting. Possible values: `{SOFTMAX}`, `{LINEAR_NORM}`(deprecated)."
         )
     if component_config[MODEL_CONFIDENCE] == SOFTMAX:
         if component_config[LOSS_TYPE] not in [SOFTMAX, CROSS_ENTROPY]:
@@ -613,11 +613,11 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
             )
     if component_config[MODEL_CONFIDENCE] == LINEAR_NORM:
         rasa.shared.utils.io.raise_deprecation_warning(
-            f"{MODEL_CONFIDENCE} is set to `{LINEAR_NORM}`. This option was "
-            f"introduced in Rasa Open Source `2.3.0` but based on "
-            f"user feedback we have identified multiple problems with this "
-            f"option. Hence, `{MODEL_CONFIDENCE}={LINEAR_NORM}` is now deprecated "
-            f"and will be removed in Rasa Open Source 3.0.0. "
+            f"{MODEL_CONFIDENCE} is set to `{LINEAR_NORM}`. We "
+            f"introduced this option in Rasa Open Source 2.3.0, "
+            f"but have identified multiple problems with it based "
+            f"on user feedback. Therefore, `{MODEL_CONFIDENCE}={LINEAR_NORM}` "
+            f"is now deprecated and will be removed in Rasa Open Source `3.0.0`."
             f"Please use `{MODEL_CONFIDENCE}={SOFTMAX}` instead."
         )
 
