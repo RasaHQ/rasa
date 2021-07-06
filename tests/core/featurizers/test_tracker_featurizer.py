@@ -1752,8 +1752,6 @@ def test_trackers_keep_action_unlikely_intent_intent_max_history_featurizer(
     assert actual_labels is not None
     assert actual_labels.shape == expected_labels.shape
 
-    print(actual_labels)
-
     for actual, expected in zip(actual_labels, expected_labels):
         assert np.all(actual == expected)
 

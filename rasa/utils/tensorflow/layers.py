@@ -841,9 +841,6 @@ class DotProductLoss(tf.keras.layers.Layer):
         if len(loss.shape) == 2:
             # average over the sequence
             if mask is not None:
-                # tf.print(
-                #     "denominator for averaging the loss", tf.reduce_sum(mask, axis=-1)
-                # )
                 loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
             else:
                 loss = tf.reduce_mean(loss, axis=-1)
@@ -1293,7 +1290,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             batch_labels_embed: Embeddings of the batch labels (e.g. featurized intents
                 for IntentTED);
                 shape `(batch_size, max_num_labels_per_input, num_features)`
-            batch_label_ids: Batch label indices (e.g. indices of the intents). We
+            batch_labels_ids: Batch label indices (e.g. indices of the intents). We
                 assume that indices are integers that run from `0` to
                 `(number of labels) - 1`.
                 shape `(batch_size, max_num_labels_per_input, 1)`

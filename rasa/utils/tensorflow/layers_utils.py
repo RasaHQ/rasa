@@ -80,6 +80,7 @@ def reduce_mean_equal(
         x: Any numeric tensor.
         y: Another tensor with same shape and type as x.
         mask: Tensor with a mask to distinguish actual indices from padding indices.
+            Shape should be the same as `x` and `y`.
 
     Returns:
         The mean of "x == y"
