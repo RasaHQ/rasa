@@ -287,7 +287,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
     @staticmethod
     def _back_to_the_future(
-        tracker: DialogueStateTracker, again: bool = False
+        tracker: DialogueStateTracker,
+        again: bool = False,
+        max_history: Optional[int] = None,
     ) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
         the new featurization for the future"""
@@ -295,8 +297,11 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         idx_of_first_action = None
         idx_of_second_action = None
 
+        applied_events = tracker.applied_events()
+        start_index = max(0, len(applied_events) - max_history) if max_history else 0
+
         # we need to find second executed action
-        for e_i, event in enumerate(tracker.applied_events()):
+        for e_i, event in enumerate(applied_events[start_index:]):
             # find second ActionExecuted
             if isinstance(event, ActionExecuted):
                 if idx_of_first_action is None:
@@ -311,7 +316,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             return
 
         # make second ActionExecuted the first one
-        events = tracker.applied_events()[idx_to_use:]
+        events = applied_events[idx_to_use:]
         if not events:
             return
 
@@ -339,7 +344,10 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         """
         logger.debug("Launch DeLorean...")
 
-        mcfly_tracker = self._back_to_the_future(tracker)
+        mcfly_tracker = self._back_to_the_future(
+            tracker,
+            max_history=self.max_history
+        )
         while mcfly_tracker is not None:
             states = self._prediction_states(mcfly_tracker, domain,)
 
@@ -352,7 +360,11 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 old_states = states
 
             # go back again
-            mcfly_tracker = self._back_to_the_future(mcfly_tracker, again=True)
+            mcfly_tracker = self._back_to_the_future(
+                mcfly_tracker,
+                max_history=None,
+                again=True,
+            )
 
         # No match found
         logger.debug(f"Current tracker state {old_states}")
