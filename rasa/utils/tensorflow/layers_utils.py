@@ -87,5 +87,7 @@ def reduce_mean_equal(
     if mask is None:
         return tf.reduce_mean(tf.cast(tf.math.equal(x, y), tf.float32))
     else:
-        accuracy = tf.cast(tf.math.equal(x, y), tf.float32)
-        return tf.reduce_sum(accuracy, axis=-1) / tf.reduce_sum(mask, axis=-1)
+        equal_indices = tf.cast(tf.math.equal(x, y), tf.float32)
+        return tf.reduce_mean(
+            tf.reduce_sum(equal_indices, axis=-1) / tf.reduce_sum(mask, axis=-1)
+        )
