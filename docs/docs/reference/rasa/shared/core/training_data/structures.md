@@ -17,6 +17,25 @@ type.
 class Checkpoint()
 ```
 
+Represents places where trackers split.
+
+This currently happens if
+- users place manual checkpoints in their stories
+- have `or` statements for intents in their stories.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(name: Text, conditions: Optional[Dict[Text, Any]] = None) -> None
+```
+
+Creates `Checkpoint`.
+
+**Arguments**:
+
+- `name` - Name of the checkpoint.
+- `conditions` - Slot conditions for this checkpoint.
+
 #### filter\_trackers
 
 ```python

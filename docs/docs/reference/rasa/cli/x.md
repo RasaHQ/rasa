@@ -18,7 +18,7 @@ Add all rasa x parsers.
 #### start\_rasa\_for\_local\_rasa\_x
 
 ```python
-start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text) -> None
+start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text) -> Process
 ```
 
 Starts the Rasa X API with Rasa as a background process.
