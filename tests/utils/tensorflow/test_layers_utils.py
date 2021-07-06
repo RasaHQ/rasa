@@ -21,7 +21,7 @@ import rasa.utils.tensorflow.layers_utils as layers_utils
         ),
     ],
 )
-def test_random_indices(batch_size, n, n_max):
+def test_random_indices(batch_size: int, n: int, n_max: int):
     indices = layers_utils.random_indices(batch_size, n, n_max)
     assert np.all(tf.shape(indices).numpy() == [batch_size, n])
     assert np.max(indices.numpy()) < n_max

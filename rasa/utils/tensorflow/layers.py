@@ -1495,7 +1495,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         # Compute the sigmoid cross-entropy loss. When minimized, the embeddings
         # for the two classes (positive and negative) are pushed away from each
         # other in the embedding space, while it is allowed that any input embedding
-        # (featurized tracker) corresponds to more than one label (intent).
+        # corresponds to more than one label.
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label_ids, logits=logits)
 
         loss = self.apply_mask_and_scaling(loss, mask)

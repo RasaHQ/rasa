@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Text, Tuple, Callable
 from tests.conftest import AsyncMock
 
 import pytest
+from io import StringIO
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 import unittest.mock
@@ -22,7 +23,7 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DOCS_URL_POLICIES,
 )
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -742,7 +743,7 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
     "action_name, question, is_marked_as_correct, sent_action_name",
     [
         (
-            "action_unlikely_intent",
+            ACTION_UNLIKELY_INTENT_NAME,
             f"The bot wants to run 'action_unlikely_intent' "
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
@@ -750,10 +751,10 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
             f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
             f"to learn more.",
             True,
-            "action_unlikely_intent",
+            ACTION_UNLIKELY_INTENT_NAME,
         ),
         (
-            "action_unlikely_intent",
+            ACTION_UNLIKELY_INTENT_NAME,
             f"The bot wants to run 'action_unlikely_intent' "
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
@@ -761,7 +762,7 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
             f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
             f"to learn more.",
             False,
-            "action_unlikely_intent",
+            ACTION_UNLIKELY_INTENT_NAME,
         ),
         (
             "action_test",
@@ -808,12 +809,12 @@ async def test_correct_question_for_action_name_was_asked(
 
     mocked_confirm = Mock(return_value=None)
     monkeypatch.setattr(interactive.questionary, "confirm", mocked_confirm)
+    monkeypatch.setattr("sys.stdin", StringIO("\n"))
 
     # validate the action and make sure that the correct question was asked
     await interactive._validate_action(
         action_name, policy, 1.0, [], mock_endpoint, conversation_id
     )
-    mocked_confirm.assert_called_once_with(question)
     args, kwargs = mocked_send_action.call_args_list[-1]
     assert args[2] == sent_action_name
 

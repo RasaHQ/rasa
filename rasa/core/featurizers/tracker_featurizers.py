@@ -13,15 +13,19 @@ from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import Event, ActionExecuted, UserUttered
 import rasa.shared.core.trackers
 from rasa.shared.core.trackers import DialogueStateTracker
-
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.shared.core.constants import USER, ACTION_UNLIKELY_INTENT_NAME
+from rasa.shared.core.constants import (
+    USER,
+    ACTION_UNLIKELY_INTENT_NAME,
+    PREVIOUS_ACTION,
+)
 from rasa.shared.nlu.constants import TEXT, INTENT, ENTITIES
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
 from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
+from rasa.shared.nlu.constants import ACTION_NAME
 
 FEATURIZER_FILE = "featurizer.json"
 
@@ -529,9 +533,7 @@ class TrackerFeaturizer:
         return [
             state
             for state in states
-            if not rasa.shared.core.trackers.is_prev_action_unlikely_intent_in_state(
-                state
-            )
+            if not _is_prev_action_unlikely_intent_in_state(state)
         ]
 
     @staticmethod
@@ -1210,3 +1212,8 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         ]
 
         return trackers_as_states
+
+
+def _is_prev_action_unlikely_intent_in_state(state: State) -> bool:
+    prev_action_name = state.get(PREVIOUS_ACTION, {}).get(ACTION_NAME)
+    return prev_action_name == ACTION_UNLIKELY_INTENT_NAME

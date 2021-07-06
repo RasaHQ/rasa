@@ -61,6 +61,7 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.io import DEFAULT_ENCODING
+from rasa.utils.tensorflow.constants import QUERY_INTENT_KEY, SEVERITY_KEY
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -320,16 +321,28 @@ class WronglyPredictedAction(ActionExecuted):
         return f"predicted: {self.action_name_prediction}"
 
     def as_story_string(self) -> Text:
+        """Returns the story equivalent representation."""
         return f"{self.action_name}   <!-- {self.inline_comment()} -->"
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return (
+            f"WronglyPredictedAction(action_target: {self.action_name}, "
+            f"action_prediction: {self.action_name_prediction}, "
+            f"policy: {self.policy}, confidence: {self.confidence}, "
+            f"metadata: {self.metadata})"
+        )
 
 
 class EndToEndUserUtterance(UserUttered):
     """End-to-end user utterance.
 
     Mostly used to print the full end-to-end user message in the
-    `failed_test_stories.yml` output file."""
+    `failed_test_stories.yml` output file.
+    """
 
     def as_story_string(self, e2e: bool = True) -> Text:
+        """Returns the story equivalent representation."""
         return super().as_story_string(e2e=True)
 
 
@@ -657,6 +670,7 @@ def _collect_action_executed_predictions(
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
+                metadata=prediction.action_metadata,
             )
         )
         if fail_on_prediction_errors and has_prediction_target_mismatch:
@@ -798,6 +812,44 @@ def _in_training_data_fraction(action_list: List[Dict[Text, Any]]) -> float:
     return len(in_training_data) / len(action_list) if action_list else 0
 
 
+def _sort_trackers_with_severity_of_warning(
+    trackers_to_sort: List[DialogueStateTracker],
+) -> List[DialogueStateTracker]:
+    """Sort the given trackers according to 'severity' of `action_unlikely_intent`.
+
+    Severity is calculated by `IntentTEDPolicy` and is attached as
+    metadata to `ActionExecuted` event.
+
+    Args:
+        trackers_to_sort: Trackers to be sorted
+
+    Returns:
+        Sorted trackers in descending order of severity.
+    """
+    tracker_severity_scores = []
+    for tracker in trackers_to_sort:
+        max_severity = 0
+        for event in tracker.applied_events():
+            if (
+                isinstance(event, WronglyPredictedAction)
+                and event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME
+            ):
+                max_severity = max(
+                    max_severity,
+                    event.metadata.get(QUERY_INTENT_KEY, {}).get(SEVERITY_KEY, 0),
+                )
+        tracker_severity_scores.append(max_severity)
+
+    sorted_trackers_with_severity = sorted(
+        zip(tracker_severity_scores, trackers_to_sort),
+        # tuple unpacking is not supported in
+        # python 3.x that's why it might look a bit weird
+        key=lambda severity_tracker_tuple: -severity_tracker_tuple[0],
+    )
+
+    return [tracker for (_, tracker) in sorted_trackers_with_severity]
+
+
 async def _collect_story_predictions(
     completed_trackers: List["DialogueStateTracker"],
     agent: "Agent",
@@ -871,7 +923,9 @@ async def _collect_story_predictions(
             evaluation_store=story_eval_store,
             failed_stories=failed_stories,
             successful_stories=successful_stories,
-            stories_with_warnings=stories_with_warnings,
+            stories_with_warnings=_sort_trackers_with_severity_of_warning(
+                stories_with_warnings
+            ),
             action_list=action_list,
             in_training_data_fraction=in_training_data_fraction,
         ),
