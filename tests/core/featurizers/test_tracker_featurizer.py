@@ -2319,12 +2319,18 @@ def test_multilabels_with_intent_max_history_tracker_featurizer(
         expected_labels = np.array(
             [
                 [greet_index, -1],
-                [mood_unhappy_index, mood_great_index],
+                [mood_great_index, mood_unhappy_index],
                 [greet_index, -1],
-                [mood_unhappy_index, mood_great_index],
+                [mood_great_index, mood_unhappy_index],
             ]
         )
 
     assert actual_labels is not None
     assert actual_labels.shape == expected_labels.shape
-    assert np.all(actual_labels == expected_labels)
+
+    # Order of label indices may be different,
+    # hence need to sort the indices and then check.
+    for actual_label_indices, expected_label_indices in zip(
+        actual_labels, expected_labels
+    ):
+        assert sorted(actual_label_indices) == sorted(expected_label_indices)
