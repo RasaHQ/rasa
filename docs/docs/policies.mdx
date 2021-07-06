@@ -483,10 +483,42 @@ To determine if `action_unlikely_intent` should be triggered, `UnexpecTEDIntentP
  for the user's intent in the current dialogue context and checks if this score is below a
  certain threshold score.
 
-This threshold score is learned at training time but can be adjusted at inference time
-via the `tolerance` parameter.  The higher the `tolerance`, the lower the intent's
-score (the more unlikely the intent) needs to be before `UnexpecTEDIntentPolicy` triggers
-the `action_unlikely_intent` action.
+ This threshold score is computed by collecting the ML model's output on many "negative examples".
+ These negative examples are combinations of dialogue contexts and user
+ intents that are _incorrect_. `UnexpecTEDIntentPolicy` generates these negative examples from your
+ training data by picking a random story part and pairing it with a random intent that doesn't
+ occur at this point. For example, if you had just one training story:
+
+ ```rasa-yaml title="stories.yml"
+ version: 2.0
+ stories:
+ - story: happy path 1
+   steps:
+   - intent: greet
+   - action: utter_greet
+   - intent: mood_great
+   - action: utter_goodbye
+ ```
+
+ and an intent `affirm`, then a valid negative example will be:
+
+ ```rasa-yaml {7} title="negative_stories.yml"
+ version: 2.0
+ stories:
+ - story: negative example with affirm unexpected
+   steps:
+   - intent: greet
+   - action: utter_greet
+   - intent: affirm
+ ```
+
+ Here, `affirm` intent is unexpected as it doesn't occur in this particular conversation context across all training stories.
+ For each intent, `UnexpecTEDIntentPolicy` uses these negative examples to figure out the range of scores the model
+ predicts. The threshold score is picked from this range of scores in such a way that the predicted score for a
+ certain percentage of negative examples is higher than the threshold score and hence `action_unlikely_intent`
+ is not triggered for them. This percentage of negative examples can be controlled by the `tolerance` parameter.
+ The higher the `tolerance`, the lower the intent's score (the more unlikely the intent) needs to be
+ before `UnexpecTEDIntentPolicy` triggers the `action_unlikely_intent` action.
 
 **Configuration:**
 
@@ -536,15 +568,20 @@ If you want to fine-tune model's performance, start by modifying the following p
 
 * `tolerance`:
     The `tolerance` parameter is a number that ranges from `0.0` to `1.0` (inclusive).
-    It helps to adjust the threshold score used during prediction of `action_unlikely_intent`
-    at inference time. Here, `0.0` means that the score threshold is the one
-    that `UnexpecTEDIntentPolicy` had determined at training time.
+    It helps to adjust the threshold score used during
+    [prediction of `action_unlikely_intent`](./policies.mdx#prediction-of-action_unlikely_intent)
+    at inference time.
+
+    Here, `0.0` means that the threshold score will be adjusted in such a way that `0%` of negative
+    examples encountered during training are predicted with a score lower than the threshold score.
+    Hence, conversation contexts from all negative examples will trigger an `action_unlikely_intent` action.
+
+    A tolerance of `0.1` means that the threshold score will be adjusted in a way such that 10% of negative
+    examples encountered during training are predicted with a score lower than the threshold score.
+
     A tolerance of `1.0` means that the threshold score is so low that `UnexpecTEDIntentPolicy` would not
-    trigger `action_unlikely_intent` for any of the "negative examples" that it has encountered
-    during training. These negative examples are combinations of dialogue contexts and user
-    intents that are _incorrect_. `UnexpecTEDIntentPolicy` generates these negative examples from your
-    training data by picking a random story part and pairing it with a random intent that doesn't
-     occur at this point.
+    trigger `action_unlikely_intent` for any of the negative examples that it has encountered
+    during training.
 
 The above configuration parameters are the ones you should try tweaking according to your use case and training data.
 However, additional parameters exist that you could adapt.
