@@ -3,6 +3,8 @@ from typing import Any, Dict
 import numpy as np
 import pytest
 from typing import Text
+from pytest import LogCaptureFixture
+import logging
 
 import rasa.utils.train_utils as train_utils
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
@@ -155,6 +157,14 @@ def test_update_confidence_type(
 ):
     component_config = train_utils.update_confidence_type(component_config)
     assert component_config[MODEL_CONFIDENCE] == model_confidence
+
+
+def test_warn_deprecated_model_confidences():
+
+    component_config = {MODEL_CONFIDENCE: LINEAR_NORM}
+
+    with pytest.warns(FutureWarning):
+        train_utils._check_confidence_setting(component_config)
 
 
 @pytest.mark.parametrize(
