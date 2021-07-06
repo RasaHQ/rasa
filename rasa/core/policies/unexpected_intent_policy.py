@@ -105,7 +105,22 @@ from rasa.shared.utils import common
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
+    from typing_extensions import TypedDict
 
+    RankingCandidateMetadata = TypedDict(
+        "RankingCandidateMetadata",
+        {
+            NAME: Text,
+            SCORE_KEY: float,
+            THRESHOLD_KEY: Optional[float],
+            SEVERITY_KEY: Optional[float],
+        },
+    )
+
+    UnexpecTEDIntentPolicyMetadata = TypedDict(
+        "UnexpecTEDIntentPolicyMetadata",
+        {QUERY_INTENT_KEY: Text, RANKING_KEY: List["RankingCandidateMetadata"]},
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -406,7 +421,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     def _collect_action_metadata(
         self, domain: Domain, similarities: np.array, query_intent: Text
-    ) -> Dict[Text, Any]:
+    ) -> "UnexpecTEDIntentPolicyMetadata":
         """Collects metadata to be attached to the predicted action.
 
         Metadata schema looks like this:
@@ -425,7 +440,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             "name": <name of intent>,
             "score": <predicted similarity score>,
             "threshold": <threshold used for intent>,
-            "severity": <absolute difference between score and threshold>
+            "severity": <numerical difference between threshold and score>
         }
 
         Args:
@@ -440,7 +455,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
         def _compile_metadata_for_label(
             label_name: Text, similarity_score: float, threshold: Optional[float],
-        ) -> Dict[Text, Optional[Union[Text, float]]]:
+        ) -> "RankingCandidateMetadata":
             severity = threshold - similarity_score if threshold else None
             return {
                 NAME: label_name,
@@ -449,7 +464,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
                 SEVERITY_KEY: severity,
             }
 
-        metadata = {
+        metadata: "UnexpecTEDIntentPolicyMetadata" = {
             QUERY_INTENT_KEY: _compile_metadata_for_label(
                 query_intent,
                 similarities[0][domain.intents.index(query_intent)],
