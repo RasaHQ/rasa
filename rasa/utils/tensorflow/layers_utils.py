@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow import Tensor
-from typing import Union
+from typing import Union, Optional
 
 
 def random_indices(
@@ -71,14 +71,21 @@ def get_candidate_values(
     return candidate_values  # (batch_size, num_candidates, tf.shape(x)[-1])
 
 
-def reduce_mean_equal(x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
+def reduce_mean_equal(
+    x: tf.Tensor, y: tf.Tensor, mask: Optional[tf.Tensor] = None
+) -> tf.Tensor:
     """Computes the mean number of matches between x and y.
 
     Args:
-        x: Any numeric tensor
-        y: Another tensor with same shape and type as x
+        x: Any numeric tensor.
+        y: Another tensor with same shape and type as x.
+        mask: Tensor with a mask to distinguish actual indices from padding indices.
 
     Returns:
         The mean of "x == y"
     """
-    return tf.reduce_mean(tf.cast(tf.math.equal(x, y), tf.float32))
+    if mask is None:
+        return tf.reduce_mean(tf.cast(tf.math.equal(x, y), tf.float32))
+    else:
+        accuracy = tf.cast(tf.math.equal(x, y), tf.float32)
+        return tf.reduce_sum(accuracy, axis=-1) / tf.reduce_sum(mask, axis=-1)

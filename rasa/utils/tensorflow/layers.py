@@ -1336,8 +1336,9 @@ class MultiLabelDotProductLoss(DotProductLoss):
             [pos_label_pad_mask, tf.ones_like(tf.squeeze(sim_candidate_il, 1))], axis=-1
         )
 
-        # accuracy = self._accuracy(sim_pos, sim_candidate_il, pos_neg_labels)
-        accuracy = 0
+        accuracy = self._accuracy(
+            sim_pos, sim_candidate_il, pos_neg_labels, pos_label_pad_mask
+        )
         loss = self._loss_sigmoid(
             sim_pos, sim_candidate_il, pos_neg_labels, mask=all_label_pad_mask
         )
@@ -1559,7 +1560,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
         sim_pos: tf.Tensor,  # (batch_size, 1, max_num_positives)
         sim_candidates: tf.Tensor,  # (batch_size, 1, num_candidates)
         pos_neg_indicators: tf.Tensor,  # (batch_size, num_candidates)
-        label_padding_mask: tf.Tensor,  #
+        batch_label_padding_mask: tf.Tensor,  # (batch_size, max_num_positives)
     ) -> tf.Tensor:  # ()
         """Calculates the accuracy."""
         all_preds = tf.concat(
@@ -1568,11 +1569,20 @@ class MultiLabelDotProductLoss(DotProductLoss):
         all_preds_sigmoid = tf.nn.sigmoid(all_preds)
         all_pred_labels = tf.squeeze(tf.math.round(all_preds_sigmoid), 1)
 
-        # Create an indicator for the positive labels by concatenating the 1 for the one
-        # guaranteed positive example and the `pos_neg_indicators`
+        # Create an indicator for the positive labels by concatenating the 1 for all
+        # guaranteed positive labels and the `pos_neg_indicators`
         all_positives = tf.concat(
-            [tf.squeeze(tf.ones_like(sim_pos), axis=-1), pos_neg_indicators],
+            [tf.squeeze(tf.ones_like(sim_pos), axis=1), pos_neg_indicators],
             axis=-1,
             name="acc_concat_gt",
         )
-        return layers_utils.reduce_mean_equal(all_pred_labels, all_positives)
+
+        # All indices corresponding to `pos_neg_indicators` are
+        # guaranteed to valid, hence concatenate 1s for them
+        # to the `batch_label_padding_mask`.
+        label_mask = tf.concat(
+            [batch_label_padding_mask, tf.ones_like(pos_neg_indicators)], axis=-1
+        )
+        return layers_utils.reduce_mean_equal(
+            all_pred_labels, all_positives, mask=label_mask
+        )
