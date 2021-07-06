@@ -891,7 +891,7 @@ async def test(
             num_failed = len(story_evaluation.failed_stories)
             num_correct = len(story_evaluation.successful_stories)
             num_convs = num_failed + num_correct
-            if num_convs:
+            if num_convs and isinstance(report, Dict):
                 conv_accuracy = num_correct / num_convs
                 report["conversation_accuracy"] = {
                     "accuracy": conv_accuracy,
