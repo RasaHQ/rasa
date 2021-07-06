@@ -72,7 +72,7 @@ jobs:
       - name: Notify Slack when closing of outdated merge-PRs failed 💬
         if: failure()
         env:
-          SLACK_WEBHOOK: ${{ secrets.K8S_SLACK_INFRASTRUCTURE_SQUAD_MONITORS_WEBHOOK_URL }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_INFRASTRUCTURE_SQUAD_MONITORS_WEBHOOK_URL }}
         uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
         with:
           args: "🚨 There was a problem with closing outdated release-merge-PRs of the ${{ env.RELEASE_BRANCH }} release branch. Check out the Github action: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} \
