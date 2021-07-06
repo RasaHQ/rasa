@@ -158,6 +158,14 @@ def test_update_confidence_type(
     assert component_config[MODEL_CONFIDENCE] == model_confidence
 
 
+def test_warn_deprecated_model_confidences():
+
+    component_config = {MODEL_CONFIDENCE: LINEAR_NORM}
+
+    with pytest.warns(FutureWarning):
+        train_utils._check_confidence_setting(component_config)
+
+
 @pytest.mark.parametrize(
     "component_config, raises_exception",
     [

@@ -12,7 +12,7 @@ from typing import Text, Optional, Any, List, Dict, Tuple, Type, Union, Callable
 import rasa.core
 import rasa.core.training.training
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, InvalidConfigException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -636,7 +636,13 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             if form_confidence > best_confidence:
                 best_policy_name = form_policy_name
 
-        best_prediction = predictions[best_policy_name]
+        best_prediction = predictions.get(best_policy_name)
+
+        if not best_prediction:
+            raise InvalidConfigException(
+                f"No prediction for policy '{best_policy_name}' found. Please check "
+                f"your model configuration."
+            )
 
         policy_events += best_prediction.optional_events
 
