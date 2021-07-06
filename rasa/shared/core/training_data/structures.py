@@ -63,9 +63,22 @@ class EventTypeError(RasaCoreException, ValueError):
 
 
 class Checkpoint:
+    """Represents places where trackers split.
+
+    This currently happens if
+    - users place manual checkpoints in their stories
+    - have `or` statements for intents in their stories.
+    """
+
     def __init__(
         self, name: Text, conditions: Optional[Dict[Text, Any]] = None
     ) -> None:
+        """Creates `Checkpoint`.
+
+        Args:
+            name: Name of the checkpoint.
+            conditions: Slot conditions for this checkpoint.
+        """
         self.name = name
         self.conditions = conditions if conditions else {}
 
