@@ -61,7 +61,7 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
     monkeypatch: MonkeyPatch,
 ):
     num_candidates = 2
-    num_features = 4
+    num_features = 1
     batch_size = 3
     layer = MultiLabelDotProductLoss(
         num_candidates, scale_loss=False, similarity_type=INNER
@@ -111,8 +111,11 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
     assert np.all(
         pos_inputs_embed.numpy() == tf.expand_dims(batch_inputs_embed, axis=-2).numpy()
     )
-    # The first example labels of each batch are in `pos_labels_embed`
-    assert np.all(pos_labels_embed.numpy() == np.array([[[l0]], [[l2]], [[l3]]]))
+    print(pos_labels_embed.shape, np.array([[[l0, l1]], [[l2, l3]], [[l3, l0]]]).shape)
+    # All positive labels of each batch are in `pos_labels_embed`
+    assert np.all(
+        pos_labels_embed.numpy() == np.array([[[l0, l1]], [[l2, l3]], [[l3, l0]]])
+    )
     # The candidate label embeddings are picked according to the `mock_indices` above.
     # E.g. a 2 coming from `mock_indices` means that `all_labels_embed[2]` is picked,
     # i.e. `l2`.
@@ -196,7 +199,10 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
         pos_inputs_embed.numpy() == tf.expand_dims(batch_inputs_embed, axis=-2).numpy()
     )
     # The first example labels of each batch are in `pos_labels_embed`
-    assert np.all(pos_labels_embed.numpy() == np.array([[[l0]], [[l2]], [[l3]]]))
+    assert np.all(
+        pos_labels_embed.numpy()
+        == np.array([[[l0, l1, l3]], [[l2, lp, lp]], [[l3, l0, lp]]])
+    )
     # The candidate label embeddings are picked according to the `mock_indices` above.
     # E.g. a 2 coming from `mock_indices` means that `all_labels_embed[2]` is picked,
     # i.e. `l2`.
