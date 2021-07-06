@@ -3,8 +3,6 @@ from typing import Any, Dict
 import numpy as np
 import pytest
 from typing import Text
-from pytest import LogCaptureFixture
-import logging
 
 import rasa.utils.train_utils as train_utils
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
