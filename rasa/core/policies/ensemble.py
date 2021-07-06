@@ -641,7 +641,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         if not best_prediction:
             raise InvalidConfigException(
                 f"No prediction for policy '{best_policy_name}' found. Please check "
-                f"your model configuration"
+                f"your model configuration."
             )
 
         policy_events += best_prediction.optional_events

@@ -855,7 +855,7 @@ class ActionDefaultAskAffirmation(Action):
         latest_message = tracker.latest_message
         if latest_message is None:
             raise TypeError(
-                "Cannot find last user message for detecting fallback " "affirmation."
+                "Cannot find last user message for detecting fallback affirmation."
             )
 
         intent_to_affirm = latest_message.intent.get(INTENT_NAME_KEY)
