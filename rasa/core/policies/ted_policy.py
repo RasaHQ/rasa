@@ -775,7 +775,7 @@ class TEDPolicy(Policy):
             tracker, domain, interpreter
         )
         model_data = self._create_model_data(tracker_state_features)
-        outputs = self.model.run_inference(model_data)
+        outputs: Dict[Text, np.ndarray] = self.model.run_inference(model_data)
 
         # take the last prediction in the sequence
         similarities = outputs["similarities"][:, -1, :]
