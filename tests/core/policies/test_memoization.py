@@ -22,8 +22,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> MemoizationPolicy:
-        return AugmentedMemoizationPolicy(featurizer=featurizer, priority=priority)
-        # return MemoizationPolicy(featurizer=featurizer, priority=priority)
+        return MemoizationPolicy(featurizer=featurizer, priority=priority)
 
     def test_prediction(self):
         policy = self.create_policy(
@@ -83,6 +82,11 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
 
 class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
+
+    def create_policy(
+        self, featurizer: Optional[TrackerFeaturizer], priority: int
+    ) -> MemoizationPolicy:
+        return AugmentedMemoizationPolicy(featurizer=featurizer, priority=priority)
 
     def test_augmented_prediction(self):
         policy = self.create_policy(
