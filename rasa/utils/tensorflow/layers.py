@@ -841,9 +841,9 @@ class DotProductLoss(tf.keras.layers.Layer):
         if len(loss.shape) == 2:
             # average over the sequence
             if mask is not None:
-                tf.print(
-                    "denominator for averaging the loss", tf.reduce_sum(mask, axis=-1)
-                )
+                # tf.print(
+                #     "denominator for averaging the loss", tf.reduce_sum(mask, axis=-1)
+                # )
                 loss = tf.reduce_sum(loss, axis=-1) / tf.reduce_sum(mask, axis=-1)
             else:
                 loss = tf.reduce_mean(loss, axis=-1)
@@ -1322,17 +1322,10 @@ class MultiLabelDotProductLoss(DotProductLoss):
             all_labels_ids,
         )
 
-        pos_label_pad_indices = tf.cast(
-            tf.squeeze(tf.equal(batch_labels_ids, LABEL_PAD_ID), -1), dtype=tf.float32
-        )
+        pos_label_pad_mask = self._construct_mask_for_label_padding(batch_labels_ids)
 
-        # Flip 1 and 0 to 0 and 1 respectively
-        pos_label_pad_mask = 1 - pos_label_pad_indices
-
-        tf.print("batch label ids", tf.shape(batch_labels_ids), batch_labels_ids)
-        tf.print(
-            "label pad indices", tf.shape(pos_label_pad_indices), pos_label_pad_indices
-        )
+        # tf.print("batch label ids", tf.shape(batch_labels_ids), batch_labels_ids)
+        # tf.print("pos label pad mask", tf.shape(pos_label_pad_mask), pos_label_pad_mask)
 
         # Calculate similarities
         sim_pos, sim_candidate_il = self._train_sim(
@@ -1351,6 +1344,25 @@ class MultiLabelDotProductLoss(DotProductLoss):
 
         return loss, accuracy
 
+    @staticmethod
+    def _construct_mask_for_label_padding(batch_labels_ids: tf.Tensor) -> tf.Tensor:
+        """
+
+        Args:
+            batch_labels_ids:
+
+        Returns:
+
+        """
+        pos_label_pad_indices = tf.cast(
+            tf.squeeze(tf.equal(batch_labels_ids, LABEL_PAD_ID), -1), dtype=tf.float32
+        )
+
+        # Flip 1 and 0 to 0 and 1 respectively
+        pos_label_pad_mask = 1 - pos_label_pad_indices
+
+        return pos_label_pad_mask
+
     def _train_sim(
         self,
         pos_inputs_embed: tf.Tensor,
@@ -1365,8 +1377,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
             pos_inputs_embed, candidate_labels_embed, mask
         )  # (batch_size, 1, num_candidates)
 
-        tf.print("sim_pos", tf.shape(sim_pos))
-        tf.print("sim_candidate_il", tf.shape(sim_candidate_il))
+        # tf.print("sim_pos", tf.shape(sim_pos))
+        # tf.print("sim_candidate_il", tf.shape(sim_candidate_il))
 
         return sim_pos, sim_candidate_il
 
@@ -1409,7 +1421,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             batch_inputs_embed, axis=-2, name="expand_pos_input"
         )
 
-        tf.print("batch_labels_embed before expanding", tf.shape(batch_labels_embed))
+        # tf.print("batch_labels_embed before expanding", tf.shape(batch_labels_embed))
 
         # We want to guarantee that we return at least one positive example. All labels
         # in `batch_labels_embed` are positive examples, but their number can be
@@ -1423,7 +1435,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             name="expand_pos_labels",
         )
 
-        tf.print("batch_labels_embed after expanding", tf.shape(pos_labels_embed))
+        # tf.print("batch_labels_embed after expanding", tf.shape(pos_labels_embed))
 
         # Pick random examples from the batch
         candidate_ids = layers_utils.random_indices(
@@ -1524,8 +1536,8 @@ class MultiLabelDotProductLoss(DotProductLoss):
             [pos_label_ids, pos_neg_labels], axis=-1, name="gt_concat"
         )
 
-        tf.print("logits", tf.shape(logits))
-        tf.print("label_ids", tf.shape(label_ids))
+        # tf.print("logits", tf.shape(logits))
+        # tf.print("label_ids", tf.shape(label_ids))
 
         # Compute the sigmoid cross-entropy loss. When minimized, the embeddings
         # for the two classes (positive and negative) are pushed away from each
@@ -1533,20 +1545,21 @@ class MultiLabelDotProductLoss(DotProductLoss):
         # corresponds to more than one label.
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label_ids, logits=logits)
 
-        tf.print("loss shape before mask and scaling", tf.shape(loss))
+        # tf.print("loss shape before mask and scaling", tf.shape(loss))
 
         loss = self.apply_mask_and_scaling(loss, mask)
 
-        tf.print("loss shape after mask and scaling", tf.shape(loss))
+        # tf.print("loss shape after mask and scaling", tf.shape(loss))
 
         # Average the loss over the batch
         return tf.reduce_mean(loss)
 
     @staticmethod
     def _accuracy(
-        sim_pos: tf.Tensor,  # (batch_size, 1, 1)
+        sim_pos: tf.Tensor,  # (batch_size, 1, max_num_positives)
         sim_candidates: tf.Tensor,  # (batch_size, 1, num_candidates)
         pos_neg_indicators: tf.Tensor,  # (batch_size, num_candidates)
+        label_padding_mask: tf.Tensor,  #
     ) -> tf.Tensor:  # ()
         """Calculates the accuracy."""
         all_preds = tf.concat(

@@ -746,18 +746,13 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return states[-slice_length:]
 
     @staticmethod
-    def _hash_example(
-        tracker: DialogueStateTracker,
-        states: List[State],
-        labels: Optional[List[Text]] = None,
-    ) -> int:
+    def _hash_example(states: List[State], labels: Optional[List[Text]] = None) -> int:
         """Hashes states (and optionally label).
 
         Produces a hash of the tracker state sequence (and optionally the labels).
         If labels is None, labels is not hashed.
 
         Args:
-            tracker: The tracker that produced `states`.
             states: The tracker state sequence to hash.
             labels: Label strings associated with this state sequence.
 
@@ -765,7 +760,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             The hash of the states and (optionally) the label.
         """
         frozen_states = tuple(
-            s if s is None else tracker.freeze_current_state(s) for s in states
+            s if s is None else DialogueStateTracker.freeze_current_state(s)
+            for s in states
         )
         if labels is not None:
             frozen_labels = tuple(labels)
@@ -819,7 +815,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             ):
 
                 if self.remove_duplicates:
-                    hashed = self._hash_example(tracker, states, label)
+                    hashed = self._hash_example(states, label)
                     if hashed in hashed_examples:
                         continue
                     hashed_examples.add(hashed)
@@ -1039,7 +1035,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         # Mapping of example state hash to list of positive labels associated with
         # the state. Note that each individual 'label' instance is a list of ints.
         state_hash_to_label_list_instances: defaultdict[
-            int, List[List[int]]
+            int, List[List[Text]]
         ] = defaultdict(list)
 
         logger.debug(
@@ -1062,13 +1058,13 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             ):
 
                 if self.remove_duplicates:
-                    hashed = self._hash_example(tracker, states, label)
+                    hashed = self._hash_example(states, label)
                     if hashed in hashed_examples:
                         continue
                     hashed_examples.add(hashed)
 
                 # Store all positive labels associated with a training state.
-                state_hash = self._hash_example(tracker, states)
+                state_hash = self._hash_example(states)
                 state_hash_to_label_list_instances[state_hash].append(label)
 
                 example_states.append(states)
@@ -1079,24 +1075,33 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
         self._remove_user_text_if_intent(example_states)
 
-        # Collect all positive intent labels for a given state hash and add
-        # the set back to the singleton labels.
-        for positive_label_list in state_hash_to_label_list_instances.values():
-            # Get the set of positive labels associated with each state hash.
-            positive_label_set = set([labels[0] for labels in positive_label_list])
+        pruned_example_states = []
+        pruned_example_labels = []
+        pruned_example_entities = []
 
-            for labels in positive_label_list:
-                # Extend the singletone `labels` with the `positive_label_set`.
-                # Note that we need to filter out the redundant label `labels[0]`
-                # from `positive_label_set` so as not to add it twice.
-                filtered_label_set = filter(
-                    lambda label: label != labels[0], positive_label_set
-                )
-                labels.extend(filtered_label_set)
+        # All data points with duplicate input states should be pruned
+        # out if `self.remove_duplicates=True` and there should be only
+        # one data point where all positive labels are available for
+        # the corresponding input state.
 
-        logger.debug(f"Created {len(example_states)} {self.LABEL_NAME} examples.")
+        seen_states = set()
+        for example_state, example_entity in zip(example_states, example_entities):
+            state_hash = self._hash_example(example_state)
+            if self.remove_duplicates and state_hash in seen_states:
+                continue
+            pruned_example_states.append(example_state)
+            pruned_example_labels.append(
+                [labels[0] for labels in state_hash_to_label_list_instances[state_hash]]
+            )
+            pruned_example_entities.append(example_entity)
 
-        return example_states, example_labels, example_entities
+            seen_states.add(state_hash)
+
+        logger.debug(
+            f"Created {len(pruned_example_states)} {self.LABEL_NAME} examples."
+        )
+
+        return pruned_example_states, pruned_example_labels, pruned_example_entities
 
     def _extract_examples(
         self,
