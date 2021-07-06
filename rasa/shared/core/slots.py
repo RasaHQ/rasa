@@ -159,7 +159,7 @@ class FloatSlot(Slot):
     def __init__(
         self,
         name: Text,
-        mappings: List[Dict[Text, Any]],
+        slot_mappings: List[Dict[Text, Any]],
         initial_value: Optional[float] = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
@@ -169,7 +169,7 @@ class FloatSlot(Slot):
     ) -> None:
         super().__init__(
             name,
-            mappings,
+            slot_mappings,
             initial_value,
             value_reset_delay,
             auto_fill,
@@ -293,7 +293,7 @@ class UnfeaturizedSlot(Slot):
     def __init__(
         self,
         name: Text,
-        mappings: List[Dict[Text, Any]],
+        slot_mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
@@ -329,7 +329,7 @@ class UnfeaturizedSlot(Slot):
 
         super().__init__(
             name,
-            mappings,
+            slot_mappings,
             initial_value,
             value_reset_delay,
             auto_fill,
@@ -349,7 +349,7 @@ class CategoricalSlot(Slot):
     def __init__(
         self,
         name: Text,
-        mappings: List[Dict[Text, Any]],
+        slot_mappings: List[Dict[Text, Any]],
         values: Optional[List[Any]] = None,
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
@@ -358,7 +358,7 @@ class CategoricalSlot(Slot):
     ) -> None:
         super().__init__(
             name,
-            mappings,
+            slot_mappings,
             initial_value,
             value_reset_delay,
             auto_fill,
@@ -431,7 +431,7 @@ class AnySlot(Slot):
     def __init__(
         self,
         name: Text,
-        mappings: List[Dict[Text, Any]],
+        slot_mappings: List[Dict[Text, Any]],
         initial_value: Any = None,
         value_reset_delay: Optional[int] = None,
         auto_fill: bool = True,
@@ -448,7 +448,7 @@ class AnySlot(Slot):
 
         super().__init__(
             name,
-            mappings,
+            slot_mappings,
             initial_value,
             value_reset_delay,
             auto_fill,

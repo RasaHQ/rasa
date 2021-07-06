@@ -1,0 +1,46 @@
+version: "2.0"
+
+rules:
+
+- rule: Say goodbye anytime the user says goodbye
+  steps:
+  - intent: goodbye
+  - action: utter_goodbye
+
+- rule: Say 'I am a bot' anytime the user challenges
+  steps:
+  - intent: bot_challenge
+  - action: utter_iamabot
+
+- rule: activate subscription form
+  steps:
+    - intent: subscribe
+    - action: subscription
+    - active_loop: subscription
+
+- rule: submit subscription
+  condition:
+    - active_loop: subscription
+  steps:
+    - action: subscription
+    - active_loop: null
+    - slot_was_set:
+        - requested_slot: null
+    - action: utter_subscribed
+
+- rule: activate booking form
+  steps:
+    - intent: trigger_booking
+    - action: booking_form
+    - active_loop: booking_form
+
+- rule: submit booking
+  condition:
+    - active_loop: booking_form
+  steps:
+    - action: booking_form
+    - active_loop: null
+    - slot_was_set:
+        - requested_slot: null
+    - action: utter_booked
+

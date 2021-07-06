@@ -1,0 +1,147 @@
+version: "2.0"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - bot_challenge
+  - inform
+  - subscribe
+  - trigger_booking
+  - contact_detail
+  - destination
+
+entities:
+  - city
+  - email
+  - activity
+
+slots:
+  location:
+    type: text
+    influence_conversation: false
+    slot_mappings:
+      - type: from_entity
+        entity: city
+        intent: destination
+        not_intent: inform
+        condition:
+          active_loop: booking_form
+          requested_slot: location
+  email_address:
+    type: text
+    influence_conversation: false
+    slot_mappings:
+      - type: from_text
+        intent: contact_detail
+        not_intent: inform
+  activity_type:
+    type: categorical
+    values:
+      - museums
+      - theatre
+      - outdoors
+      - dining
+    influence_conversation: false
+    slot_mappings:
+      - type: from_entity
+        entity: activity
+        intent: inform
+  has_booked:
+    type: bool
+    influence_conversation: false
+    slot_mappings:
+      - type: custom
+        action: action_extract_booking_status
+  has_subscribed:
+    type: bool
+    influence_conversation: false
+    slot_mappings:
+      - type: custom
+        action: action_extract_subscription_status
+
+responses:
+  utter_greet:
+  - text: "Hey! Which travel activity are you most interested in?"
+    buttons:
+      - title: "Museums and Art Galleries"
+        payload: '/inform{{"activity":"museums"}}'
+      - title: "Theatres"
+        payload: '/inform{{"activity":"theatre"}}'
+      - title: "Outdoors, Sports and Green Spaces"
+        payload: '/inform{{"activity":"outdoors"}}'
+      - title: "Restaurants and Bars"
+        payload: '/inform{{"activity":"dining"}}'
+
+  utter_recommendation:
+  - text: "I recommend London and Paris for a rich cultural experience of visiting museums and art galleries."
+    condition:
+      - type: slot
+        name: activity_type
+        value: museums
+
+  - text: "I recommend London, New York and Milan for best theatre shows."
+    condition:
+      - type: slot
+        name: activity_type
+        value: theatre
+
+  - text: "I recommend Vancouver, Queenstown and Aspen for great outdoor experiences."
+    condition:
+      - type: slot
+        name: activity_type
+        value: outdoors
+
+  - text: "I recommend San Sebastian, Copenhagen and Lima for dining out."
+    condition:
+      - type: slot
+        name: activity_type
+        value: dining
+
+  - text: "Please select one of the listed choices."
+
+  utter_goodbye:
+  - text: "Goodbye!"
+
+  utter_positive_feedback:
+  - text: "Glad to be of assistance."
+
+  utter_iamabot:
+  - text: "I am a bot, powered by Rasa."
+
+  utter_ask_subscription_email_address:
+  - text: "What is your email address?"
+
+  utter_ask_subscription_activity_type:
+  - text: "What activity are you most interested in?"
+
+  utter_ask_booking_form_email_address:
+  - text: "What is your email address?"
+
+  utter_ask_booking_form_location:
+  - text: "Which city would you like to travel to?"
+
+  utter_subscribed:
+    - text: "You are now subscribed to the travel newsletter."
+
+  utter_booked:
+    - text: "Your booking has been completed successfully."
+
+forms:
+  subscription:
+    required_slots:
+      - email_address
+      - activity_type
+
+  booking_form:
+    required_slots:
+      - location
+      - email_address
+
+actions:
+  - action_extract_booking_status
+  - action_extract_subscription_status
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

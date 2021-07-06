@@ -1,0 +1,14 @@
+version: "2.0"
+
+stories:
+
+- story: recommendation
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: inform
+  - action: utter_recommendation
+  - intent: affirm
+  - action: utter_positive_feedback
+
+

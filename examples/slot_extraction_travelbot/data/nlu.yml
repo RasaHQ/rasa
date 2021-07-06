@@ -1,0 +1,119 @@
+version: "2.0"
+
+nlu:
+- intent: greet
+  examples: |
+    - hey
+    - hello
+    - hi
+    - hello there
+    - good morning
+    - good evening
+    - morning
+    - hey there
+    - let's go
+    - goodmorning
+    - goodevening
+    - good afternoon
+
+- intent: goodbye
+  examples: |
+    - cu
+    - good by
+    - cee you later
+    - good night
+    - bye
+    - goodbye
+    - have a nice day
+    - see you around
+    - bye bye
+    - see you later
+
+- intent: affirm
+  examples: |
+    - yes
+    - y
+    - indeed
+    - of course
+    - that sounds good
+    - correct
+    - great
+    - perfect
+
+- intent: bot_challenge
+  examples: |
+    - are you a bot?
+    - are you a human?
+    - am I talking to a bot?
+    - am I talking to a human?
+
+- intent: inform
+  examples: |
+    - walking and hiking
+    - dining and drinking
+    - museum and gallery hopping
+    - theatre shows
+    - outdoor adventures
+
+- intent: subscribe
+  examples: |
+    - I'd like to subscribe for more travel recommendations.
+    - Please sign me up for more recommendations.
+    - Please sign me up to your travel newsletter.
+    - Please sign me up to your newsletter.
+    - I'd like to sign up for more travel recommendations.
+    - I'd like to sign up for more recommendations.
+    - Sign me up.
+    - How do I sign up to receive more travel destinations.
+
+- intent: trigger_booking
+  examples: |
+    - How do I book?
+    - I'd like to make a holiday booking.
+    - I'd like to make a travel booking.
+    - I'd like to book travel.
+    - I'd like to book a trip.
+
+- intent: contact_detail
+  examples: |
+    - test@gmail.com
+    - p.smith@gmail.com
+    - trevor@example.com
+    - olivia.demo@test.com
+
+- intent: destination
+  examples: |
+    - [Copenhagen](city)
+    - [Vancouver](city)
+    - [Miami](city)
+    - [London](city)
+    - [Paris](city)
+    - [Berlin](city)
+    - [Bucharest](city)
+    - [Prague](city)
+    - [Vienna](city)
+    - [Aspen](city)
+    - [Milan](city)
+    - [Queenstown](city)
+    - [New York](city)
+    - [Lima](city)
+
+
+- lookup: city
+  examples: |
+    - Copenhagen
+    - Madrid
+    - Vancouver
+    - Miami
+    - London
+    - Paris
+    - Lima
+    - San Sebastian
+    - Berlin
+    - Bucharest
+    - Prague
+    - Vienna
+    - Aspen
+    - Queenstown
+    - New York
+    - Milan

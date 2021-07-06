@@ -942,7 +942,7 @@ class Domain:
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT, mappings=[])
+            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT, slot_mappings=[])
         )
 
     def index_for_action(self, action_name: Text) -> int:
