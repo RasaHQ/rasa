@@ -1359,7 +1359,7 @@ class MultiLabelDotProductLoss(DotProductLoss):
             Constructed mask.
         """
         pos_label_pad_indices = tf.cast(
-            tf.squeeze(tf.equal(batch_labels_ids, LABEL_PAD_ID), -1), dtype=tf.float32
+            tf.equal(tf.squeeze(batch_labels_ids, -1), LABEL_PAD_ID), dtype=tf.float32
         )
 
         # Flip 1 and 0 to 0 and 1 respectively
