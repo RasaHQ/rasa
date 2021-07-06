@@ -1073,8 +1073,6 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
                 pbar.set_postfix({f"# {self.LABEL_NAME}": f"{len(example_labels):d}"})
 
-        self._remove_user_text_if_intent(example_states)
-
         pruned_example_states = []
         pruned_example_labels = []
         pruned_example_entities = []
