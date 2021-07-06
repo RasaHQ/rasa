@@ -16,8 +16,8 @@ from rasa.shared.nlu.constants import (
     ACTION_NAME,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.core.featurizers.intent_max_history_tracker_featurizer import (
+from rasa.core.featurizers.tracker_featurizers import (
+    TrackerFeaturizer,
     IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import (
