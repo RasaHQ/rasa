@@ -20,21 +20,9 @@ slots:
   location:
     type: text
     influence_conversation: false
-    slot_mappings:
-      - type: from_entity
-        entity: city
-        intent: destination
-        not_intent: inform
-        condition:
-          active_loop: booking_form
-          requested_slot: location
   email_address:
     type: text
     influence_conversation: false
-    slot_mappings:
-      - type: from_text
-        intent: contact_detail
-        not_intent: inform
   activity_type:
     type: categorical
     values:
@@ -43,22 +31,12 @@ slots:
       - outdoors
       - dining
     influence_conversation: false
-    slot_mappings:
-      - type: from_entity
-        entity: activity
-        intent: inform
   has_booked:
     type: bool
     influence_conversation: false
-    slot_mappings:
-      - type: custom
-        action: action_extract_booking_status
   has_subscribed:
     type: bool
     influence_conversation: false
-    slot_mappings:
-      - type: custom
-        action: action_extract_subscription_status
 
 responses:
   utter_greet:
@@ -130,13 +108,26 @@ responses:
 forms:
   subscription:
     required_slots:
-      - email_address
-      - activity_type
+      email_address:
+        - type: from_text
+          intent: contact_detail
+          not_intent: inform
+      activity_type:
+        - type: from_entity
+          entity: activity
+          intent: inform
 
   booking_form:
     required_slots:
-      - location
-      - email_address
+      location:
+        - type: from_entity
+          entity: city
+          intent: destination
+          not_intent: inform
+      email_address:
+        - type: from_text
+          intent: contact_detail
+          not_intent: inform
 
 actions:
   - action_extract_booking_status
