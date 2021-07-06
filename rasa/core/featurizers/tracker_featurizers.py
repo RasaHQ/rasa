@@ -1083,7 +1083,6 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         # out if `self.remove_duplicates=True` and there should be only
         # one data point where all positive labels are available for
         # the corresponding input state.
-
         seen_states = set()
         for example_state, example_entity in zip(example_states, example_entities):
             state_hash = self._hash_example(example_state)
@@ -1091,11 +1090,20 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 continue
             pruned_example_states.append(example_state)
             pruned_example_labels.append(
-                [labels[0] for labels in state_hash_to_label_list_instances[state_hash]]
+                list(
+                    set(
+                        [
+                            labels[0]
+                            for labels in state_hash_to_label_list_instances[state_hash]
+                        ]
+                    )
+                )
             )
             pruned_example_entities.append(example_entity)
 
             seen_states.add(state_hash)
+
+        self._remove_user_text_if_intent(pruned_example_states)
 
         logger.debug(
             f"Created {len(pruned_example_states)} {self.LABEL_NAME} examples."
