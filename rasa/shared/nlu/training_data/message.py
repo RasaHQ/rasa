@@ -216,10 +216,14 @@ class Message:
             attribute, featurizers
         )
 
-        sequence_features = self._combine_features(sequence_features, featurizers)
-        sentence_features = self._combine_features(sentence_features, featurizers)
+        combined_sequence_features = self._combine_features(
+            sequence_features, featurizers
+        )
+        combined_sentence_features = self._combine_features(
+            sentence_features, featurizers
+        )
 
-        return sequence_features, sentence_features
+        return combined_sequence_features, combined_sentence_features
 
     def get_sparse_feature_sizes(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
@@ -270,10 +274,14 @@ class Message:
             attribute, featurizers
         )
 
-        sequence_features = self._combine_features(sequence_features, featurizers)
-        sentence_features = self._combine_features(sentence_features, featurizers)
+        combined_sequence_features = self._combine_features(
+            sequence_features, featurizers
+        )
+        combined_sentence_features = self._combine_features(
+            sentence_features, featurizers
+        )
 
-        return sequence_features, sentence_features
+        return combined_sequence_features, combined_sentence_features
 
     def get_all_features(
         self, attribute: Text, featurizers: Optional[List[Text]] = None
