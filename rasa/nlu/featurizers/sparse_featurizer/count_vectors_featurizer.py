@@ -169,7 +169,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Checks if trained vocabulary exists in attribute's count vectorizer."""
         try:
             return hasattr(self.vectorizers[attribute], "vocabulary_")
-        except (AttributeError, TypeError):
+        except (AttributeError, KeyError):
             return False
 
     def _get_attribute_vocabulary(self, attribute: Text) -> Optional[Dict[Text, int]]:
