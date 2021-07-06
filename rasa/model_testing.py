@@ -11,6 +11,7 @@ from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.exceptions import ModelNotFound
 import rasa.shared.nlu.training_data.loading
+import rasa.shared.importers.autoconfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
@@ -313,7 +314,10 @@ def perform_nlu_cross_validation(
 
     additional_arguments = additional_arguments or {}
     folds = int(additional_arguments.get("folds", 3))
-    nlu_config = rasa.nlu.config.load(config)
+
+    nlu_config = rasa.shared.importers.autoconfig.get_configuration(
+        config, rasa.shared.importers.autoconfig.TrainingType.NLU
+    )
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = rasa.shared.utils.common.minimal_kwargs(
         additional_arguments, cross_validate
