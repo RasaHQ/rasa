@@ -290,7 +290,7 @@ def plot_nlu_results(output_directory: Text, number_of_examples: List[int]) -> N
 
 
 def perform_nlu_cross_validation(
-    config: Text,
+    config: Dict[Text, Any],
     data: TrainingData,
     output: Text,
     additional_arguments: Optional[Dict[Text, Any]],
@@ -315,15 +315,13 @@ def perform_nlu_cross_validation(
     additional_arguments = additional_arguments or {}
     folds = int(additional_arguments.get("folds", 3))
 
-    nlu_config = rasa.shared.importers.autoconfig.get_configuration(
-        config, rasa.shared.importers.autoconfig.TrainingType.NLU
-    )
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = rasa.shared.utils.common.minimal_kwargs(
         additional_arguments, cross_validate
     )
+
     results, entity_results, response_selection_results = cross_validate(
-        data, folds, nlu_config, output, **kwargs
+        data, folds, config, output, **kwargs
     )
     logger.info(f"CV evaluation (n={folds})")
 

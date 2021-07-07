@@ -388,33 +388,3 @@ rules:
     test_trackers = generator.generate_story_trackers()
     assert len(test_trackers) == 1
     assert test_trackers[0].sender_id == test_name
-
-
-async def test_nlu_crossvalidation_uses_autoconfig(tmp_path):
-    """Tests that `perform_nlu_cross_validaton` doesn't raise InvalidConfigException."""
-    from rasa.model_testing import perform_nlu_cross_validation
-    from multiprocessing import Process
-
-    config = """language: en
-pipeline:
-policies:
-    """
-    config_file = tmp_path / "empty_config.yml"
-    config_file.write_text(config)
-    training_data_file = "data/test_moodbot/data/nlu.yml"
-    domain_file = "data/test_moodbot/domain.yml"
-
-    test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[training_data_file], domain_path=domain_file,
-    )
-    nlu_data = await test_data_importer.get_nlu_data()
-
-    # start cross validation in an outside process to monitor if it fails
-    cross_validation_process = Process(
-        target=perform_nlu_cross_validation,
-        args=(str(config_file), nlu_data, str(tmp_path), {}),
-    )
-    cross_validation_process.start()
-    cross_validation_process.join(3)
-    assert cross_validation_process.is_alive()
-    cross_validation_process.terminate()
