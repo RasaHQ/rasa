@@ -66,7 +66,6 @@ class MemoizationPolicy(Policy):
         max_history: Optional[int] = None,
         lookup: Optional[Dict] = None,
     ) -> None:
-
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
@@ -370,8 +369,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
 
 def num_past_events_from_max_history(
-    tracker: DialogueStateTracker,
-    max_history: Optional[int],
+    tracker: DialogueStateTracker, max_history: Optional[int],
 ) -> Optional[int]:
     """Computes the number of events in the tracker that correspond to max_history.
 
@@ -392,5 +390,5 @@ def num_past_events_from_max_history(
         if isinstance(event, ActionExecuted):
             num_actions += 1
         if num_actions > max_history:
-            break
-    return num_events
+            return num_events
+    return None

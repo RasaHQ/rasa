@@ -633,7 +633,7 @@ async def test_handle_message_with_session_start(
     tracker = default_processor.tracker_store.get_or_create_tracker(sender_id)
 
     # make sure the sequence of events is as expected
-    assert list(tracker.events) == [
+    expected = [
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
         ActionExecuted(ACTION_LISTEN_NAME),
@@ -643,8 +643,9 @@ async def test_handle_message_with_session_start(
             [{"entity": entity, "start": 6, "end": 22, "value": "Core"}],
         ),
         SlotSet(entity, slot_1[entity]),
+        # DefinePrevUserUtteredFeaturization(False),
         ActionExecuted("utter_greet"),
-        BotUttered("hey there Core!"),
+        BotUttered("hey there Core!"),  # , metadata={"utter_action": "utter_greet"}),
         ActionExecuted(ACTION_LISTEN_NAME),
         ActionExecuted(ACTION_SESSION_START_NAME),
         SessionStarted(),
@@ -664,8 +665,16 @@ async def test_handle_message_with_session_start(
             ],
         ),
         SlotSet(entity, slot_2[entity]),
+        # DefinePrevUserUtteredFeaturization(False),
+        ActionExecuted("utter_greet"),
+        BotUttered(
+            "hey there post-session start hello!",
+            # metadata={"utter_action": "utter_greet"},
+        ),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
+
+    assert list(tracker.events) == expected
 
 
 # noinspection PyProtectedMember
