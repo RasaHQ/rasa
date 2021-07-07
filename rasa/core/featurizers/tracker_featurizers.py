@@ -1009,16 +1009,17 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             Trackers as states, labels, and entity data.
         """
         example_states = []
-        example_labels = []
         example_entities = []
 
         # Store of example hashes for removing duplicate training examples.
         hashed_examples = set()
         # Mapping of example state hash to list of positive labels associated with
         # the state. Note that each individual 'label' instance is a list of strings.
-        state_hash_to_label_list_instances: defaultdict[
-            int, List[List[Text]]
-        ] = defaultdict(list)
+        state_hash_to_label_list_instances: defaultdict[int, List[Text]] = defaultdict(
+            list
+        )
+
+        seen_states = set()
 
         logger.debug(
             f"Creating states and {self.LABEL_NAME} label examples from "
@@ -1047,52 +1048,27 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
                 # Store all positive labels associated with a training state.
                 state_hash = self._hash_example(states)
-                state_hash_to_label_list_instances[state_hash].append(label)
+                state_hash_to_label_list_instances[state_hash].append(label[0])
 
-                example_states.append(states)
-                example_labels.append(label)
-                example_entities.append(entities)
+                # Only add unique example states unless `remove_duplicates` is `False`.
+                if not self.remove_duplicates or state_hash not in seen_states:
+                    example_states.append(states)
+                    example_entities.append(entities)
+                    seen_states.add(state_hash)
 
-                pbar.set_postfix({f"# {self.LABEL_NAME}": f"{len(example_labels):d}"})
+                pbar.set_postfix({f"# {self.LABEL_NAME}": f"{len(example_states):d}"})
 
-        pruned_example_states = []
-        pruned_example_labels = []
-        pruned_example_entities = []
+        # Collect positive labels for each state example.
+        example_labels = [
+            list(set(state_hash_to_label_list_instances[self._hash_example(state)]))
+            for state in example_states
+        ]
 
-        # All data points with duplicate input states should be pruned
-        # out if `self.remove_duplicates=True` and there should be only
-        # one data point where all positive labels are available for
-        # the corresponding input state.
-        seen_states = set()
-        for example_state, example_entity in zip(example_states, example_entities):
-            state_hash = self._hash_example(example_state)
-            if self.remove_duplicates and state_hash in seen_states:
-                continue
-            pruned_example_states.append(example_state)
-            pruned_example_labels.append(
-                list(
-                    set(
-                        [
-                            # Each individual label is inside a
-                            # list of size 1, so we take
-                            # the value at first index.
-                            labels[0]
-                            for labels in state_hash_to_label_list_instances[state_hash]
-                        ]
-                    )
-                )
-            )
-            pruned_example_entities.append(example_entity)
+        self._remove_user_text_if_intent(example_states)
 
-            seen_states.add(state_hash)
+        logger.debug(f"Created {len(example_states)} {self.LABEL_NAME} examples.")
 
-        self._remove_user_text_if_intent(pruned_example_states)
-
-        logger.debug(
-            f"Created {len(pruned_example_states)} {self.LABEL_NAME} examples."
-        )
-
-        return pruned_example_states, pruned_example_labels, pruned_example_entities
+        return example_states, example_labels, example_entities
 
     def _extract_examples(
         self,
@@ -1104,7 +1080,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         """Creates an iterator over training examples from a tracker.
 
         Args:
-            trackers: The tracker from which to extract training examples.
+            tracker: The tracker from which to extract training examples.
             domain: The domain of the training data.
             omit_unset_slots: If `True` do not include the initial values of slots.
             ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`
