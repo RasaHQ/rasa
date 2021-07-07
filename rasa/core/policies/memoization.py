@@ -319,10 +319,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         """
         logger.debug("Launch DeLorean...")
 
-        mcfly_tracker = self._back_to_the_future(
-            tracker,
-            max_history=self.max_history
-        )
+        mcfly_tracker = self._back_to_the_future(tracker, max_history=self.max_history)
         while mcfly_tracker is not None:
             tracker_as_states = self.featurizer.prediction_states(
                 [mcfly_tracker], domain
@@ -339,9 +336,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
             # go back again
             mcfly_tracker = self._back_to_the_future(
-                mcfly_tracker,
-                max_history=None,
-                again=True,
+                mcfly_tracker, max_history=None, again=True,
             )
 
         # No match found

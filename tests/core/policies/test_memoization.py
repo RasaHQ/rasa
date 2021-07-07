@@ -1,4 +1,3 @@
-
 import pytest
 from tests.core.test_policies import PolicyTestCollection
 from typing import Optional
@@ -16,9 +15,7 @@ from rasa.core.interpreter import RegexInterpreter
 from pathlib import Path
 
 
-
 class TestMemoizationPolicy(PolicyTestCollection):
-
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> MemoizationPolicy:
@@ -26,8 +23,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
     def test_prediction(self):
         policy = self.create_policy(
-            featurizer=MaxHistoryTrackerFeaturizer(max_history=3),
-            priority=1
+            featurizer=MaxHistoryTrackerFeaturizer(max_history=3), priority=1
         )
 
         GREET_INTENT_NAME = "greet"
@@ -65,26 +61,19 @@ class TestMemoizationPolicy(PolicyTestCollection):
             ActionExecuted(UTTER_BYE_ACTION),
         ]
         training_story = TrackerWithCachedStates.from_events(
-            "training story",
-            evts=events,
-            domain=domain,
-            slots=domain.slots,
+            "training story", evts=events, domain=domain, slots=domain.slots,
         )
         test_story = TrackerWithCachedStates.from_events(
-            "training story",
-            events[:-1],
-            domain=domain,
-            slots=domain.slots,
+            "training story", events[:-1], domain=domain, slots=domain.slots,
         )
         policy.train([training_story], domain)
-        prediction = policy.predict_action_probabilities(
-            test_story, domain
+        prediction = policy.predict_action_probabilities(test_story, domain)
+        assert (
+            domain.action_names[prediction.index(max(prediction))] == UTTER_BYE_ACTION
         )
-        assert domain.action_names[prediction.index(max(prediction))] == UTTER_BYE_ACTION
 
 
 class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
-
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> MemoizationPolicy:
@@ -92,8 +81,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
 
     def test_augmented_prediction(self):
         policy = self.create_policy(
-            featurizer=MaxHistoryTrackerFeaturizer(max_history=3),
-            priority=1
+            featurizer=MaxHistoryTrackerFeaturizer(max_history=3), priority=1
         )
 
         GREET_INTENT_NAME = "greet"
@@ -146,7 +134,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             slots=domain.slots,
         )
         policy.train([training_story], domain)
-        prediction = policy.predict_action_probabilities(
-            test_story, domain
+        prediction = policy.predict_action_probabilities(test_story, domain)
+        assert (
+            domain.action_names[prediction.index(max(prediction))] == UTTER_BYE_ACTION
         )
-        assert domain.action_names[prediction.index(max(prediction))] == UTTER_BYE_ACTION
