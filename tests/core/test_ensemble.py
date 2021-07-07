@@ -737,7 +737,10 @@ def test_is_not_in_training_data(
 
 
 def test_rule_action_wins_over_action_unlikely_intent(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    unexpected_intent_policy_agent: Agent,
+    moodbot_domain: Domain,
 ):
     # The original training data consists of a rule for `goodbye` intent.
     # We monkey-patch UnexpecTEDIntentPolicy to always predict action_unlikely_intent
@@ -749,7 +752,6 @@ def test_rule_action_wins_over_action_unlikely_intent(
         _action_unlikely_intent_for("goodbye"),
     )
 
-    domain = Domain.load("data/test_moodbot/domain.yml")
     tracker = DialogueStateTracker.from_events(
         "rule triggering tracker",
         evts=[
@@ -759,14 +761,17 @@ def test_rule_action_wins_over_action_unlikely_intent(
     )
     policy_ensemble = unexpected_intent_policy_agent.policy_ensemble
     prediction = policy_ensemble.probabilities_using_best_policy(
-        tracker, domain, NaturalLanguageInterpreter()
+        tracker, moodbot_domain, NaturalLanguageInterpreter()
     )
 
-    test_utils.assert_predicted_action(prediction, domain, "utter_goodbye")
+    test_utils.assert_predicted_action(prediction, moodbot_domain, "utter_goodbye")
 
 
 def test_ensemble_prevents_multiple_action_unlikely_intents(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    unexpected_intent_policy_agent: Agent,
+    moodbot_domain: Domain,
 ):
     monkeypatch.setattr(
         UnexpecTEDIntentPolicy,
@@ -774,7 +779,6 @@ def test_ensemble_prevents_multiple_action_unlikely_intents(
         _action_unlikely_intent_for("greet"),
     )
 
-    domain = Domain.load("data/test_moodbot/domain.yml")
     tracker = DialogueStateTracker.from_events(
         "rule triggering tracker",
         evts=[
@@ -786,13 +790,13 @@ def test_ensemble_prevents_multiple_action_unlikely_intents(
 
     policy_ensemble = unexpected_intent_policy_agent.policy_ensemble
     prediction = policy_ensemble.probabilities_using_best_policy(
-        tracker, domain, NaturalLanguageInterpreter()
+        tracker, moodbot_domain, NaturalLanguageInterpreter()
     )
 
     # prediction cannot be action_unlikely_intent for sure because
     # the last event is not of type UserUttered and that's the
     # first condition for `UnexpecTEDIntentPolicy` to make a prediction
     assert (
-        domain.action_names_or_texts[np.argmax(prediction.probabilities)]
+        moodbot_domain.action_names_or_texts[np.argmax(prediction.probabilities)]
         != ACTION_UNLIKELY_INTENT_NAME
     )
