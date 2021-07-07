@@ -2,10 +2,6 @@
 @startuml Fingerprint Run and Graph Pruning
 
 
-'TODO:
-'don't add to cache class, create object or dynamic subclass
-' create -> init
-' storage?
 
 participant GraphTrainer order 3
 
@@ -58,23 +54,23 @@ GraphRunner -> GraphRunner: execute(instantiated_graph, targets)
 group execute (for graph_node in sorted(graph_nodes))
     GraphRunner -> GraphNode: run(inputs_from_previous_node)
 
-    'TODO: edge nodes are still GraphComponent
     group if GraphFingerprintComponent
-        GraphNode -> GraphFingerprintComponent: run(inputs)
-        'TODO: cache using component_name not node_name
+        note over GraphFingerprintComponent: We collect the fingerprint status of each component in a single dictionary we pass between the nodes.
+        GraphNode -> GraphFingerprintComponent: run(fingerprint_statuses)
+        GraphFingerprintComponent -> GraphFingerprintComponent: get_parent_inputs(fingerprint_statuses)
         note over Cache: This returns the fingerprint if there is a match, indicating that the execution will be the same as a previous run.
+        note over GraphFingerprintComponent: Note: A fingerprint of a fingerprint is itself, so this works if the parent is a GraphFingerprintComponent or a normal GraphComponent.
         GraphFingerprintComponent -> Cache: get_fingerprint(node_name, config, inputs_from_previous_node)
+        GraphFingerprintComponent <-- Cache: fingerprinted_result
         group if fingerprint match
-            GraphFingerprintComponent <-- Cache: fingerprinted_result
-            note over Cache: Marking the node as a "hit" means that we can potentially cache or prune this node.
-            GraphFingerprintComponent -> Cache: mark_node_hit(node_name)
+            note over GraphFingerprintComponent: We add the cached fingerprint to the statuses so it can be used by the next node.
+            GraphFingerprintComponent -> GraphFingerprintComponent: mark_hit_and_add_fingerprint(fingerprint_statuses)
         end
         group else
-            GraphFingerprintComponent <-- Cache: None
-            note over Cache: Marking the node as a "miss" means that we will need to rerun this node.
-            GraphFingerprintComponent -> Cache: mark_node_miss(node_name)
+            note over GraphFingerprintComponent: We don't add the fingerprint in this case as all descendants should also miss.
+            GraphFingerprintComponent -> GraphFingerprintComponent: mark_miss(fingerprint_statuses)
         end
-        GraphNode <-- GraphFingerprintComponent: output
+        GraphNode <-- GraphFingerprintComponent: fingerprint_statuses
     end
     group elif GraphComponent
         GraphNode -> GraphFingerprintComponent: run(inputs)

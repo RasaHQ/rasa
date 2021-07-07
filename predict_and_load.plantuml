@@ -11,7 +11,6 @@ control GraphRunner <<Infrastructure>> order 6
 participant GraphNode order 7
 entity GraphComponent order 8
 database ModelStorage <<Infrastructure>> order 9
-database GraphComponentStorage <<Infrastructure>> order 10
 database ActionServer <<Infrastructure>> order 11
 database TrackerStore <<Infrastructure>> order 12
 
@@ -32,18 +31,22 @@ GraphRunner -> GraphRunner: instantiate_graph()
 
 group instantiate_graph (for every graph node in schema)
 
-    GraphRunner -> ModelStorage: create_graph_component_storage(node_name)
-    ModelStorage -> GraphComponentStorage: ~__init__
-    ModelStorage <-- GraphComponentStorage: graph_component_storage
-    GraphRunner <-- ModelStorage: graph_component_storage
-
-    GraphRunner -> GraphNode: ~__init__(nodename, config, graph_component_storage)
-
-    GraphNode -> GraphComponent: ~__init__(config, graph_component_storage)
-        group if trained component
-            GraphComponent -> GraphComponentStorage: get_resource
-            GraphComponent <-- GraphComponentStorage: model_data
-        end
+    GraphRunner -> GraphNode: ~__init__(nodename, config, model_storage)
+    group if trained component
+'        Where does this resource come from?!?!?!
+        GraphNode -> GraphComponent: load(config, resource, model_storage)
+        GraphComponent -> ModelStorage: with_read_from(resource)
+        ModelStorage -> ModelStorage: create_tmp_dir
+        ModelStorage -> ModelStorage: copy_from_resource(resource, tmp_dir)
+        GraphComponent <-- ModelStorage: tmp_dir
+        GraphComponent -> GraphComponent: load_data(tmp_dir)
+        GraphComponent -> ModelStorage: exit_context_manager()
+        ModelStorage -> ModelStorage: remove_tmp_dir
+        GraphComponent <-- ModelStorage
+    end
+    group else
+        GraphNode -> GraphComponent: create(config, resource, model_storage)
+    end
     GraphNode <-- GraphComponent: graph_component
 
     GraphRunner <-- GraphNode: graph_node
@@ -94,7 +97,9 @@ group loop until action_listen
     GraphProcessor -> GraphProcessor: add_to_tracker
 end
 Agent <-- GraphProcessor: tracker
-Rasa <-- Agent: bot_mesage
+Agent -> Agent: add_model_id_to_tracker_events(tracker)
+Agent -> TrackerStore: save_tracker(tracker)
+Rasa <-- Agent: bot_message
 
 
 @enduml
