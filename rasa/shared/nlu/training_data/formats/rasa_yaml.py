@@ -555,7 +555,7 @@ class RasaYAMLWriter(TrainingDataWriter):
         return [render(ex) for ex in examples]
 
     @staticmethod
-    def _render_training_examples_as_text(examples: List[Dict]) -> List[Text]:
+    def _render_training_examples_as_text(examples: List[Dict]) -> LiteralScalarString:
         def render(example: Dict) -> Text:
             return TrainingDataWriter.generate_list_item(example[KEY_INTENT_TEXT])
 
