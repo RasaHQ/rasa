@@ -111,6 +111,7 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils import io as shared_io_utils
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -663,9 +664,12 @@ class TEDPolicy(Policy):
             **kwargs: Any other argument.
         """
         if not training_trackers:
-            logger.error(
-                f"Can not train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the policy."
+            shared_io_utils.raise_warning(
+                f"Skipping training of `{self.__class__.__name__}` "
+                f"as no data was provided. You can exclude this "
+                f"policy in the configuration "
+                f"file to avoid this warning.",
+                category=UserWarning,
             )
             return
 
@@ -674,9 +678,12 @@ class TEDPolicy(Policy):
         )
 
         if model_data.is_empty():
-            logger.error(
-                f"Can not train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the policy."
+            shared_io_utils.raise_warning(
+                f"Skipping training of `{self.__class__.__name__}` "
+                f"as no data was provided. You can exclude this "
+                f"policy in the configuration "
+                f"file to avoid this warning.",
+                category=UserWarning,
             )
             return
 
@@ -775,7 +782,7 @@ class TEDPolicy(Policy):
             tracker, domain, interpreter
         )
         model_data = self._create_model_data(tracker_state_features)
-        outputs = self.model.run_inference(model_data)
+        outputs: Dict[Text, np.ndarray] = self.model.run_inference(model_data)
 
         # take the last prediction in the sequence
         similarities = outputs["similarities"][:, -1, :]

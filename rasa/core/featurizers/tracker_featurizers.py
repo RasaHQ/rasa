@@ -11,10 +11,8 @@ import numpy as np
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import Event, ActionExecuted, UserUttered
-from rasa.shared.core.trackers import (
-    DialogueStateTracker,
-    is_prev_action_listen_in_state,
-)
+import rasa.shared.core.trackers
+from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.constants import (
     USER,
@@ -114,13 +112,13 @@ class TrackerFeaturizer:
     def _convert_labels_to_ids(
         trackers_as_actions: List[List[Text]], domain: Domain
     ) -> np.ndarray:
-        """Converts tracker action label strings to label ids.
+        """Converts actions to label ids for each tracker.
 
         Args:
             trackers_as_actions: A list of tracker labels.
 
         Returns:
-            Trackers as label ids.
+            Label IDs for each tracker
         """
         # store labels in numpy arrays so that it corresponds to np arrays of input
         # features
@@ -167,7 +165,7 @@ class TrackerFeaturizer:
             event: The event from which to extract entities.
 
         Returns:
-            Intent text and entities if no intent is present.
+            Event text and entities if no intent is present.
         """
         # train stories support both text and intent,
         # but if intent is present, the text is ignored
@@ -180,6 +178,10 @@ class TrackerFeaturizer:
     @staticmethod
     def _remove_user_text_if_intent(trackers_as_states: List[List[State]]) -> None:
         """Deletes user text from state dictionaries if intent is present.
+
+        Only featurizing either the intent or user text is currently supported. When
+        both are present in a state, the user text is removed so that only the intent
+        is featurized.
 
         `trackers_as_states` is modified in place.
 
@@ -400,7 +402,7 @@ class TrackerFeaturizer:
         for states in trackers_as_states:
             last_state = states[-1]
             # only update the state of the real user utterance
-            if not is_prev_action_listen_in_state(last_state):
+            if not rasa.shared.core.trackers.is_prev_action_listen_in_state(last_state):
                 continue
 
             if use_text_for_last_user_input:
@@ -528,15 +530,6 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _remove_action_unlikely_intent_from_states(states: List[State]) -> List[State]:
-        """Removes `action_unlikely_intent` from tracker state history.
-
-        Args:
-            states: A list of states produced by a `DialogueStateTracker`
-                instance.
-
-        Returns:
-            Filtered states with `action_unlikely_intent` removed.
-        """
         return [
             state
             for state in states
@@ -545,15 +538,6 @@ class TrackerFeaturizer:
 
     @staticmethod
     def _remove_action_unlikely_intent_from_events(events: List[Event]) -> List[Event]:
-        """Removes `action_unlikely_intent` from an event list.
-
-        Args:
-            events: A list of events produced by a `DialogueStateTracker`
-                instance.
-
-        Returns:
-            Filtered events with `action_unlikely_intent` removed.
-        """
         return [
             event
             for event in events
@@ -754,7 +738,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         """Hashes states (and optionally label).
 
         Produces a hash of the tracker state sequence (and optionally the labels).
-        If labels is None, labels is not hashed.
+        If `labels` is `None`, labels don't get hashed.
 
         Args:
             tracker: The tracker that produced `states`.
@@ -987,8 +971,6 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     def _pad_label_ids(label_ids: List[List[int]]) -> List[List[int]]:
         """Pads label ids so that all are of the same length.
 
-        The pad value LABEL_PAD_ID is set in `rasa.utils.tensorflow.constants`.
-
         Args:
             label_ids: Label ids of varying lengths
 
@@ -1148,7 +1130,11 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
     def _cleanup_last_user_state_with_action_listen(
         trackers_as_states: List[List[State]],
     ) -> List[List[State]]:
-        """Deletes the last user state where previous action is `action_listen`.
+        """Removes the last tracker state if the previous action is `action_listen`.
+
+        States with the previous action equal to `action_listen` correspond to states
+        with a new user intent. This information is what `UnexpecTEDIntentPolicy` is
+        trying to predict so it needs to be removed before obtaining a prediction.
 
         Args:
             trackers_as_states: Trackers converted to states
@@ -1160,7 +1146,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             if not states:
                 continue
             last_state = states[-1]
-            if is_prev_action_listen_in_state(last_state):
+            if rasa.shared.core.trackers.is_prev_action_listen_in_state(last_state):
                 del states[-1]
 
         return trackers_as_states

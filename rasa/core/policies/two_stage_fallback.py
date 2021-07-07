@@ -22,7 +22,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
-from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY, INTENT
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
@@ -124,7 +124,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     ) -> PolicyPrediction:
         """Predicts the next action if NLU confidence is low."""
         nlu_data = tracker.latest_message.parse_data
-        last_intent_name = nlu_data["intent"].get(INTENT_NAME_KEY, None)
+        last_intent_name = nlu_data[INTENT].get(INTENT_NAME_KEY, None)
         should_nlu_fallback = self.should_nlu_fallback(
             nlu_data, tracker.latest_action.get(ACTION_NAME)
         )

@@ -11,8 +11,8 @@ from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.core.featurizers.tracker_featurizers import (
-    IntentMaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
+    IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
@@ -136,12 +136,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         training_trackers = await tests.core.test_policies.train_trackers(
             default_domain, str(stories), augmentation_factor=20
         )
-        policy.train(training_trackers, default_domain, RegexInterpreter())
 
-        assert (
-            "Can not train 'UnexpecTEDIntentPolicy'. No data was provided. "
-            "Skipping training of the policy." in caplog.text
-        )
+        with pytest.warns(UserWarning):
+            policy.train(training_trackers, default_domain, RegexInterpreter())
 
     async def test_prepared_data_for_threshold_prediction(
         self,

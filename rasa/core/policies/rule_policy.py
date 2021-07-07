@@ -145,7 +145,7 @@ class RulePolicy(MemoizationPolicy):
         self._restrict_rules = restrict_rules
         self._check_for_contradictions = check_for_contradictions
 
-        self._rules_sources = None
+        self._rules_sources = defaultdict(list)
 
         # max history is set to `None` in order to capture any lengths of rule stories
         super().__init__(
