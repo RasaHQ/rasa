@@ -1406,7 +1406,12 @@ def test_form_with_no_required_slots_keyword():
             {
                 "forms": {
                     "some_form": {
-                        "some_slot": [{"type": "from_text", "intent": "some_intent",}],
+                        "some_slot": [
+                            {
+                                "type": "from_text",
+                                "intent": "some_intent",
+                            }
+                        ],
                     }
                 }
             }
@@ -1447,3 +1452,9 @@ def test_domain_with_empty_required_slots():
                 required_slots:
             """
         )
+
+
+def test_domain_invalid_yml_in_folder():
+    """ """
+    with pytest.warns(UserWarning, match="The file .* your file\."):
+        Domain.from_directory("data/test_domains/test_domain_from_directory1/")
