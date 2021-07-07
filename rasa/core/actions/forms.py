@@ -48,7 +48,8 @@ class FormAction(LoopAction):
         self.action_endpoint = action_endpoint
         # creating it requires domain, which we don't have in init
         # we'll create it on the first call
-        self._unique_entity_mappings = None
+        self._unique_entity_mappings: Set[Text] = set()
+        self._have_unique_entity_mappings_been_initialized = False
 
     def name(self) -> Text:
         return self._form_name
@@ -160,9 +161,10 @@ class FormAction(LoopAction):
     def _entity_mapping_is_unique(
         self, slot_mapping: Dict[Text, Any], domain: Domain
     ) -> bool:
-        if self._unique_entity_mappings is None:
+        if not self._have_unique_entity_mappings_been_initialized:
             # create unique entity mappings on the first call
             self._unique_entity_mappings = self._create_unique_entity_mappings(domain)
+            self._have_unique_entity_mappings_been_initialized = True
 
         mapping_as_string = json.dumps(slot_mapping, sort_keys=True)
         return mapping_as_string in self._unique_entity_mappings
@@ -562,7 +564,7 @@ class FormAction(LoopAction):
         events_so_far: List[Event],
     ) -> List[Event]:
         """Request the next slot and response if needed, else return `None`."""
-        request_slot_events = []
+        request_slot_events: List[Event] = []
 
         if await self.is_done(output_channel, nlg, tracker, domain, events_so_far):
             # The custom action for slot validation decided to stop the form early

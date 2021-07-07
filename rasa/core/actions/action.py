@@ -686,7 +686,7 @@ class RemoteAction(Action):
 
             events_json = response.get("events", [])
             responses = response.get("responses", [])
-            bot_messages = await self._utter_responses(
+            bot_messages: List[Event] = await self._utter_responses(
                 responses, output_channel, nlg, tracker
             )
 

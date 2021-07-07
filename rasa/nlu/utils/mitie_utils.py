@@ -65,7 +65,7 @@ class MitieNLP(Component):
 
         mitie_file = component_meta.get("model", None)
         if mitie_file is not None:
-            return cls.name + "-" + str(os.path.abspath(mitie_file))
+            return str(cls.name) + "-" + str(os.path.abspath(mitie_file))
         else:
             return None
 

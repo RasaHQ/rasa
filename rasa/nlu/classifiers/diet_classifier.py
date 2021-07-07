@@ -1011,27 +1011,27 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.model is None:
             return {"file": None}
 
-        model_dir = Path(model_dir)
-        tf_model_file = model_dir / f"{file_name}.tf_model"
+        model_dir_path = Path(model_dir)
+        tf_model_file = model_dir_path / f"{file_name}.tf_model"
 
         rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
         if self.component_config[CHECKPOINT_MODEL]:
-            shutil.move(self.tmp_checkpoint_dir, model_dir / "checkpoints")
+            shutil.move(self.tmp_checkpoint_dir, model_dir_path / "checkpoints")
         self.model.save(str(tf_model_file))
 
         io_utils.pickle_dump(
-            model_dir / f"{file_name}.data_example.pkl", self._data_example
+            model_dir_path / f"{file_name}.data_example.pkl", self._data_example
         )
         io_utils.pickle_dump(
-            model_dir / f"{file_name}.sparse_feature_sizes.pkl",
+            model_dir_path / f"{file_name}.sparse_feature_sizes.pkl",
             self._sparse_feature_sizes,
         )
         io_utils.pickle_dump(
-            model_dir / f"{file_name}.label_data.pkl", dict(self._label_data.data)
+            model_dir_path / f"{file_name}.label_data.pkl", dict(self._label_data.data)
         )
         io_utils.json_pickle(
-            model_dir / f"{file_name}.index_label_id_mapping.json",
+            model_dir_path / f"{file_name}.index_label_id_mapping.json",
             self.index_label_id_mapping,
         )
 
@@ -1041,7 +1041,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             else []
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(
-            model_dir / f"{file_name}.entity_tag_specs.json", entity_tag_specs
+            model_dir_path / f"{file_name}.entity_tag_specs.json", entity_tag_specs
         )
 
         return {"file": file_name}
@@ -1110,19 +1110,23 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     ]:
         file_name = meta.get("file")
 
-        model_dir = Path(model_dir)
+        model_dir_path = Path(model_dir)
 
-        data_example = io_utils.pickle_load(model_dir / f"{file_name}.data_example.pkl")
-        label_data = io_utils.pickle_load(model_dir / f"{file_name}.label_data.pkl")
+        data_example = io_utils.pickle_load(
+            model_dir_path / f"{file_name}.data_example.pkl"
+        )
+        label_data = io_utils.pickle_load(
+            model_dir_path / f"{file_name}.label_data.pkl"
+        )
         label_data = RasaModelData(data=label_data)
         sparse_feature_sizes = io_utils.pickle_load(
-            model_dir / f"{file_name}.sparse_feature_sizes.pkl"
+            model_dir_path / f"{file_name}.sparse_feature_sizes.pkl"
         )
         index_label_id_mapping = io_utils.json_unpickle(
-            model_dir / f"{file_name}.index_label_id_mapping.json"
+            model_dir_path / f"{file_name}.index_label_id_mapping.json"
         )
         entity_tag_specs = rasa.shared.utils.io.read_json_file(
-            model_dir / f"{file_name}.entity_tag_specs.json"
+            model_dir_path / f"{file_name}.entity_tag_specs.json"
         )
         entity_tag_specs = [
             EntityTagSpec(
@@ -1162,7 +1166,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_dir: Text,
         finetune_mode: bool = False,
     ) -> "RasaModel":
-        file_name = meta.get("file")
+        file_name = meta["file"]
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
         label_key = LABEL_KEY if meta[INTENT_CLASSIFICATION] else None

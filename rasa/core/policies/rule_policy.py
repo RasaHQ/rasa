@@ -907,18 +907,17 @@ class RulePolicy(MemoizationPolicy):
         ):
             return None, None
 
-        default_action_name = DEFAULT_ACTION_MAPPINGS.get(
-            tracker.latest_message.intent.get(INTENT_NAME_KEY)
-        )
-
-        if default_action_name:
-            logger.debug(f"Predicted default action '{default_action_name}'.")
-            return (
-                default_action_name,
-                # create prediction source that corresponds to one of
-                # default prediction sources in `_default_sources()`
-                DEFAULT_RULES + tracker.latest_message.intent.get(INTENT_NAME_KEY),
-            )
+        intent_name = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        if intent_name:
+            default_action_name = DEFAULT_ACTION_MAPPINGS.get(intent_name)
+            if default_action_name:
+                logger.debug(f"Predicted default action '{default_action_name}'.")
+                return (
+                    default_action_name,
+                    # create prediction source that corresponds to one of
+                    # default prediction sources in `_default_sources()`
+                    DEFAULT_RULES + intent_name,
+                )
 
         return None, None
 
@@ -928,34 +927,33 @@ class RulePolicy(MemoizationPolicy):
     ) -> Tuple[Optional[Text], Optional[Text]]:
 
         active_loop_name = tracker.active_loop_name
-        active_loop_rejected = tracker.active_loop.get(LOOP_REJECTED)
-        should_predict_loop = (
-            active_loop_name
-            and not active_loop_rejected
-            and tracker.latest_action.get(ACTION_NAME) != active_loop_name
-        )
-        should_predict_listen = (
-            active_loop_name
-            and not active_loop_rejected
-            and tracker.latest_action_name == active_loop_name
-        )
-
-        if should_predict_loop:
-            logger.debug(f"Predicted loop '{active_loop_name}'.")
-            return active_loop_name, LOOP_RULES + active_loop_name
-
-        # predict `action_listen` if loop action was run successfully
-        if should_predict_listen:
-            logger.debug(
-                f"Predicted '{ACTION_LISTEN_NAME}' after loop '{active_loop_name}'."
+        if active_loop_name:
+            active_loop_rejected = tracker.active_loop.get(LOOP_REJECTED)
+            should_predict_loop = (
+                not active_loop_rejected
+                and tracker.latest_action.get(ACTION_NAME) != active_loop_name
             )
-            return (
-                ACTION_LISTEN_NAME,
-                (
-                    f"{LOOP_RULES}{active_loop_name}"
-                    f"{LOOP_RULES_SEPARATOR}{ACTION_LISTEN_NAME}"
-                ),
+            should_predict_listen = (
+                not active_loop_rejected
+                and tracker.latest_action_name == active_loop_name
             )
+
+            if should_predict_loop:
+                logger.debug(f"Predicted loop '{active_loop_name}'.")
+                return active_loop_name, LOOP_RULES + active_loop_name
+
+            # predict `action_listen` if loop action was run successfully
+            if should_predict_listen:
+                logger.debug(
+                    f"Predicted '{ACTION_LISTEN_NAME}' after loop '{active_loop_name}'."
+                )
+                return (
+                    ACTION_LISTEN_NAME,
+                    (
+                        f"{LOOP_RULES}{active_loop_name}"
+                        f"{LOOP_RULES_SEPARATOR}{ACTION_LISTEN_NAME}"
+                    ),
+                )
 
         return None, None
 

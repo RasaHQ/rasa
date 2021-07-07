@@ -104,7 +104,8 @@ class TwoStageFallbackAction(LoopAction):
             return await self._give_up(output_channel, nlg, tracker, domain)
 
         # revert fallback events
-        return [UserUtteranceReverted()] + _message_clarification(tracker)
+        reverted_event: List[Event] = [UserUtteranceReverted()]
+        return reverted_event + _message_clarification(tracker)
 
     async def _give_up(
         self,

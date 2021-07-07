@@ -60,14 +60,14 @@ def print_bot_output(
             return question
 
     if "text" in message:
-        rasa.shared.utils.cli.print_color(message.get("text"), color=color)
+        rasa.shared.utils.cli.print_color(message["text"], color=color)
 
     if "image" in message:
-        rasa.shared.utils.cli.print_color("Image: " + message.get("image"), color=color)
+        rasa.shared.utils.cli.print_color("Image: " + message["image"], color=color)
 
     if "attachment" in message:
         rasa.shared.utils.cli.print_color(
-            "Attachment: " + message.get("attachment"), color=color
+            "Attachment: " + message["attachment"], color=color
         )
 
     if "elements" in message:

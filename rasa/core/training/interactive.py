@@ -264,13 +264,13 @@ def format_bot_output(message: BotUttered) -> Text:
     if not data:
         return output
 
-    if data.get("image"):
-        output += "\nImage: " + data.get("image")
+    if "image" in data:
+        output += "\nImage: " + data["image"]
 
-    if data.get("attachment"):
-        output += "\nAttachment: " + data.get("attachment")
+    if "attachment" in data:
+        output += "\nAttachment: " + data["attachment"]
 
-    if data.get("buttons"):
+    if "buttons" in data:
         output += "\nButtons:"
         choices = rasa.cli.utils.button_choices_from_message_data(
             data, allow_free_text_input=True
@@ -278,15 +278,15 @@ def format_bot_output(message: BotUttered) -> Text:
         for choice in choices:
             output += "\n" + choice
 
-    if data.get("elements"):
+    if "elements" in data:
         output += "\nElements:"
-        for idx, element in enumerate(data.get("elements")):
+        for idx, element in enumerate(data["elements"]):
             element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
 
-    if data.get("quick_replies"):
+    if "quick_replies" in data:
         output += "\nQuick replies:"
-        for idx, element in enumerate(data.get("quick_replies")):
+        for idx, element in enumerate(data["quick_replies"]):
             element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
     return output
@@ -658,10 +658,7 @@ async def _request_action_from_user(
     await _print_history(conversation_id, endpoint)
 
     choices = [
-        {
-            "name": f'{a.get("score"):03.2f} {a.get("action"):40}',
-            "value": a.get("action"),
-        }
+        {"name": f'{a["score"]:03.2f} {a["action"]:40}', "value": a["action"],}
         for a in predictions
     ]
 

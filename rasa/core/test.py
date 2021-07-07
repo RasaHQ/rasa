@@ -186,8 +186,8 @@ class EvaluationStore:
             )
         )
 
-        aligned_entity_targets = []
-        aligned_entity_predictions = []
+        aligned_entity_targets: List[Optional[Text]] = []
+        aligned_entity_predictions: List[Optional[Text]] = []
 
         for text in texts:
             # sort the entities of this sentence to compare them directly
@@ -617,7 +617,7 @@ def _collect_action_executed_predictions(
             error_msg = (
                 f"Model predicted a wrong action. Failed Story: " f"\n\n{story_dump}"
             )
-            if FormPolicy.__name__ in prediction.policy_name:
+            if prediction.policy_name and FormPolicy.__name__ in prediction.policy_name:
                 error_msg += (
                     "FormAction is not run during "
                     "evaluation therefore it is impossible to know "
