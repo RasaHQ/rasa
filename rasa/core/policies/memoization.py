@@ -321,17 +321,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         logger.debug("Launch DeLorean...")
 
         # Count how many events we need to look at, based on `max_history`
-        if not self.max_history:
-            max_num_events = None
-        else:
-            max_num_events = 0
-            num_actions = 0
-            for event in reversed(tracker.applied_events()):
-                max_num_events += 1
-                if isinstance(event, ActionExecuted):
-                    num_actions += 1
-                if num_actions > self.max_history:
-                    break
+        max_num_events = num_past_events_from_max_history(tracker, self.max_history)
 
         mcfly_tracker = self._back_to_the_future(tracker, max_num_events=max_num_events)
         while mcfly_tracker is not None:
@@ -377,3 +367,30 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             return self._recall_using_delorean(states, tracker, domain)
         else:
             return predicted_action_index
+
+
+def num_past_events_from_max_history(
+    tracker: DialogueStateTracker,
+    max_history: Optional[int],
+) -> Optional[int]:
+    """Computes the number of events in the tracker that correspond to max_history.
+
+    Args:
+        tracker: Some tracker holding the events
+        max_history: The number of actions to count
+
+    Returns:
+        The number of actions, as counted from the end of the event list, that should
+        be taken into accout according to the `max_history` setting.
+    """
+    if not max_history:
+        return None
+    num_events = 0
+    num_actions = 0
+    for event in reversed(tracker.applied_events()):
+        num_events += 1
+        if isinstance(event, ActionExecuted):
+            num_actions += 1
+        if num_actions > max_history:
+            break
+    return num_events
