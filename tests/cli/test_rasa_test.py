@@ -33,7 +33,7 @@ def test_test_core_warnings(run_in_simple_project_with_model: Callable[..., RunR
             "pipeline": [],
             "policies": [
                 {"name": "MemoizationPolicy", "max_history": 3},
-                {"name": "IntentTEDPolicy", "max_history": 5, "epochs": 100},
+                {"name": "UnexpecTEDIntentPolicy", "max_history": 5, "epochs": 100},
                 {
                     "name": "TEDPolicy",
                     "max_history": 5,
