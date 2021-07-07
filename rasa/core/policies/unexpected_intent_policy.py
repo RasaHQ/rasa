@@ -536,12 +536,13 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         output = self.model.run_inference(model_data)
 
         # take the last prediction in the sequence
-        similarities = output["similarities"][:, -1, :]
+        all_similarities: np.ndarray = output["similarities"]
+        sequence_similarities = all_similarities[:, -1, :]
 
         # Check for unlikely intent
         query_intent = tracker.get_last_event_for(UserUttered).intent_name
         is_unlikely_intent = self._check_unlikely_intent(
-            domain, similarities, query_intent
+            domain, sequence_similarities, query_intent
         )
 
         confidences = list(np.zeros(domain.num_actions))
@@ -552,7 +553,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         return self._prediction(
             confidences,
             action_metadata=self._collect_action_metadata(
-                domain, similarities, query_intent
+                domain, sequence_similarities, query_intent
             ),
         )
 
@@ -677,8 +678,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
 
     @staticmethod
     def _collect_label_id_grouped_scores(
-        output_scores: Dict[Text, Union[np.ndarray, Dict[Text, Any]]],
-        label_ids: np.ndarray,
+        output_scores: Dict[Text, np.ndarray], label_ids: np.ndarray,
     ) -> Dict[int, Dict[Text, List[float]]]:
         """Collects similarities predicted for each label id.
 
@@ -909,9 +909,7 @@ class IntentTED(TED):
 
         return labels_embed
 
-    def run_bulk_inference(
-        self, model_data: RasaModelData
-    ) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]:
+    def run_bulk_inference(self, model_data: RasaModelData) -> Dict[Text, np.ndarray]:
         """Computes model's predictions for input data.
 
         Args:

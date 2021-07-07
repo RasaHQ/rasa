@@ -111,7 +111,7 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.utils import io as io_utils
+from rasa.shared.utils import io as shared_io_utils
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -664,7 +664,7 @@ class TEDPolicy(Policy):
             **kwargs: Any other argument.
         """
         if not training_trackers:
-            io_utils.raise_warning(
+            shared_io_utils.raise_warning(
                 f"Skipping training of `{self.__class__.__name__}` "
                 f"as no data was provided. You can exclude this "
                 f"policy in the configuration "
@@ -678,7 +678,7 @@ class TEDPolicy(Policy):
         )
 
         if model_data.is_empty():
-            io_utils.raise_warning(
+            shared_io_utils.raise_warning(
                 f"Skipping training of `{self.__class__.__name__}` "
                 f"as no data was provided. You can exclude this "
                 f"policy in the configuration "
