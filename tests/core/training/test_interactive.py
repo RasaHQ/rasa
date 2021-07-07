@@ -6,11 +6,11 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Dict, List, Text, Tuple, Callable
 
-import mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from mock import Mock
+import unittest.mock
+from unittest.mock import Mock
 
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -739,7 +739,7 @@ def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
     m = Mock(side_effect=PermissionError())
     with pytest.raises(PermissionError):
         interactive._retry_on_error(m, "export_path", 1, a=2)
-    c = mock.call("export_path", 1, a=2)
+    c = unittest.mock.call("export_path", 1, a=2)
     m.assert_has_calls([c, c, c])
 
 

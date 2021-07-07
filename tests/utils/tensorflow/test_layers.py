@@ -1,7 +1,18 @@
 import pytest
 import numpy as np
 import tensorflow as tf
-from rasa.utils.tensorflow.layers import RandomlyConnectedDense
+from rasa.utils.tensorflow.layers import RandomlyConnectedDense, DenseForSparse
+from typing import Text, Union
+from rasa.shared.nlu.constants import (
+    TEXT,
+    INTENT,
+    ACTION_NAME,
+    ACTION_TEXT,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+)
+from rasa.utils.tensorflow.constants import LABEL
+from rasa.core.constants import DIALOGUE
 
 
 @pytest.mark.parametrize(
@@ -49,3 +60,58 @@ def test_randomly_connected_dense_all_inputs_connected():
         x = np.roll(x, 1)
         y = layer(np.expand_dims(x, 0))
         assert tf.reduce_sum(y).numpy() != 0.0
+
+
+@pytest.mark.parametrize(
+    "layer_name, expected_feature_type",
+    [
+        (f"sparse_to_dense.{TEXT}_{FEATURE_TYPE_SENTENCE}", FEATURE_TYPE_SENTENCE),
+        (
+            f"sparse_to_dense.{LABEL}_{ACTION_TEXT}_{FEATURE_TYPE_SENTENCE}",
+            FEATURE_TYPE_SENTENCE,
+        ),
+        (
+            f"sparse_to_dense.{LABEL}_{ACTION_NAME}_{FEATURE_TYPE_SEQUENCE}",
+            FEATURE_TYPE_SEQUENCE,
+        ),
+        (f"some_name.{DIALOGUE}_{FEATURE_TYPE_SEQUENCE}", FEATURE_TYPE_SEQUENCE),
+        (f"some_name.{TEXT}_sentenc", None),
+        (f"sparse_to_dense.{TEXT}_squence", None),
+        ("some_name", None),
+    ],
+)
+def test_dense_for_sparse_get_feature_type(
+    layer_name: Text, expected_feature_type: Union[Text, None]
+):
+    layer = DenseForSparse(name=layer_name, units=10,)
+    assert layer.get_feature_type() == expected_feature_type
+
+
+@pytest.mark.parametrize(
+    "layer_name, expected_attribute",
+    [
+        (f"sparse_to_dense.{TEXT}_{FEATURE_TYPE_SEQUENCE}", TEXT),
+        (f"sparse_to_dense.{INTENT}_{FEATURE_TYPE_SENTENCE}", INTENT),
+        (f"other_name.{LABEL}_{FEATURE_TYPE_SENTENCE}", LABEL),
+        (f"other_name.{DIALOGUE}_{FEATURE_TYPE_SENTENCE}", DIALOGUE),
+        (f"sparse_to_dense.{ACTION_NAME}_{FEATURE_TYPE_SEQUENCE}", ACTION_NAME),
+        (f"other_name.{ACTION_TEXT}_{FEATURE_TYPE_SENTENCE}", ACTION_TEXT),
+        (
+            f"other_name.{LABEL}_{ACTION_NAME}_{FEATURE_TYPE_SENTENCE}",
+            f"{LABEL}_{ACTION_NAME}",
+        ),
+        (
+            f"sparse_to_dense.{LABEL}_{ACTION_TEXT}_{FEATURE_TYPE_SEQUENCE}",
+            f"{LABEL}_{ACTION_TEXT}",
+        ),
+        ("some_name", None),
+        ("sparse_to_dense", None),
+        (f"sparse_to_dense.{TEXT}", None),
+        (f"sparse_to_dense.labl_{FEATURE_TYPE_SEQUENCE}", None),
+    ],
+)
+def test_dense_for_sparse_get_attribute(
+    layer_name: Text, expected_attribute: Union[Text, None]
+):
+    layer = DenseForSparse(name=layer_name, units=10,)
+    assert layer.get_attribute() == expected_attribute
