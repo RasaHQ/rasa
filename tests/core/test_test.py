@@ -22,6 +22,7 @@ from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import RegexInterpreter
+from rasa.core.policies.rule_policy import RulePolicy
 
 
 def _probabilities_with_action_unlikely_intent_for(
@@ -104,7 +105,7 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
 
 
 async def test_action_unlikely_intent_1(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -129,8 +130,13 @@ async def test_action_unlikely_intent_1(
         """
     )
 
+    # We train on the above story so that RulePolicy can memorize
+    # it and we don't have to worry about other actions being
+    # predicted correctly.
+    agent = await _train_rule_based_agent(moodbot_domain, file_name)
+
     result = await rasa.core.test.test(
-        str(file_name), unexpected_intent_policy_agent, out_directory=str(tmp_path),
+        str(file_name), agent, out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 1
@@ -138,7 +144,7 @@ async def test_action_unlikely_intent_1(
 
 
 async def test_action_unlikely_intent_2(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -164,8 +170,13 @@ async def test_action_unlikely_intent_2(
         """
     )
 
+    # We train on the above story so that RulePolicy can memorize
+    # it and we don't have to worry about other actions being
+    # predicted correctly.
+    agent = await _train_rule_based_agent(moodbot_domain, file_name)
+
     result = await rasa.core.test.test(
-        str(file_name), unexpected_intent_policy_agent, out_directory=str(tmp_path),
+        str(file_name), agent, out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 1
@@ -173,7 +184,7 @@ async def test_action_unlikely_intent_2(
 
 
 async def test_action_unlikely_intent_complete(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -208,46 +219,32 @@ async def test_action_unlikely_intent_complete(
           - story: unlikely path (with action_unlikely_intent)
             steps:
               - user: |
-                  very terrible
-                intent: mood_unhappy
-              - action: action_unlikely_intent
-              - action: utter_cheer_up
-              - action: utter_did_that_help
-              - intent: affirm
-              - action: utter_happy
-          - story: happy path 2
-            steps:
-              - user: |
-                  hey!
-                intent: greet
-              - action: utter_greet
-              - user: |
-                  good
+                  very good!
                 intent: mood_great
+              - action: action_unlikely_intent
               - action: utter_happy
         """
     )
 
+    # We train on the above story so that RulePolicy can memorize
+    # it and we don't have to worry about other actions being
+    # predicted correctly.
+    agent = await _train_rule_based_agent(moodbot_domain, file_name)
+
     result = await rasa.core.test.test(
-        str(file_name), unexpected_intent_policy_agent, out_directory=str(tmp_path),
+        str(file_name), agent, out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
-    assert result["report"]["conversation_accuracy"]["correct"] == 4
+    assert result["report"]["conversation_accuracy"]["correct"] == 3
     assert result["report"]["conversation_accuracy"]["with_warnings"] == 1
-    assert result["report"]["conversation_accuracy"]["total"] == 4
+    assert result["report"]["conversation_accuracy"]["total"] == 3
 
 
 async def test_action_unlikely_intent_wrong_story(
-    monkeypatch: MonkeyPatch, tmp_path: Path, unexpected_intent_policy_agent: Agent
+    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
 ):
-    monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
-        _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
-    )
-
-    file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
-    file_name.write_text(
+    test_file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
+    test_file_name.write_text(
         """
         version: "2.0"
         stories:
@@ -265,13 +262,50 @@ async def test_action_unlikely_intent_wrong_story(
         """
     )
 
+    train_file_name = tmp_path / "train_without_action_unlikely_intent.yml"
+    train_file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+          - story: happy path
+            steps:
+              - user: |
+                  hello there!
+                intent: greet
+              - action: utter_greet
+              - user: |
+                  amazing
+                intent: mood_great
+              - action: utter_happy
+        """
+    )
+
+    # We train on the above story so that RulePolicy can memorize
+    # it and we don't have to worry about other actions being
+    # predicted correctly.
+    agent = await _train_rule_based_agent(moodbot_domain, train_file_name)
+
     result = await rasa.core.test.test(
-        str(file_name), unexpected_intent_policy_agent, out_directory=str(tmp_path),
+        str(test_file_name), agent, out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 0
     assert result["report"]["conversation_accuracy"]["with_warnings"] == 0
     assert result["report"]["conversation_accuracy"]["total"] == 1
+
+
+async def _train_rule_based_agent(
+    moodbot_domain: Domain, train_file_name: Path
+) -> Agent:
+    deterministic_policy = RulePolicy(restrict_rules=False)
+    agent = Agent(moodbot_domain, SimplePolicyEnsemble([deterministic_policy]))
+    training_data = await agent.load_data(str(train_file_name))
+    # Make the trackers compatible with rules
+    # so that they are picked up by the policy.
+    for tracker in training_data:
+        tracker.is_rule_tracker = True
+    agent.train(training_data)
+    return agent
 
 
 @pytest.mark.parametrize(
