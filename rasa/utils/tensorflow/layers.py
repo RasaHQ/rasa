@@ -1328,6 +1328,15 @@ class MultiLabelDotProductLoss(DotProductLoss):
             batch_labels_ids, tf.shape(pos_neg_labels)[-1]
         )
 
+        # Repurpose the `mask` argument of `_accuracy` and `_loss_sigmoid`
+        # to pass the `label_padding_mask`. We can do this right now because
+        # we don't use `MultiLabelDotProductLoss` for sequence tagging tasks
+        # yet. Hence, the `mask` argument passed to this function will always
+        # be empty. Whenever, we come across a use case where `mask` is
+        # non-empty we'll have to refactor the `_accuracy` and `_loss_sigmoid`
+        # functions to take into consideration both, sequence level masks as
+        # well as label padding masks.
+
         accuracy = self._accuracy(
             sim_pos, sim_candidate_il, pos_neg_labels, label_padding_mask
         )

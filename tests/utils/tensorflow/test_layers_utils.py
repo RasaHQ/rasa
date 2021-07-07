@@ -1,7 +1,7 @@
 import pytest
 import tensorflow as tf
 import numpy as np
-from typing import List, Optional
+from typing import List, Optional, Union
 import rasa.utils.tensorflow.layers_utils as layers_utils
 
 
@@ -62,6 +62,9 @@ def test_get_candidate_values():
     ],
 )
 def test_reduce_mean_equal(
-    x: List[int], y: List[int], mask: Optional[List[int]], expected_output: float
+    x: Union[List[List[int]], List[int]],
+    y: List[int],
+    mask: Optional[List[int]],
+    expected_output: float,
 ):
     assert expected_output == layers_utils.reduce_mean_equal(x, y, mask)

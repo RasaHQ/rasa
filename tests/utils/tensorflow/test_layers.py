@@ -314,7 +314,7 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
     assert np.all(
         pos_inputs_embed.numpy() == tf.expand_dims(batch_inputs_embed, axis=-2).numpy()
     )
-    # The first example labels of each batch are in `pos_labels_embed`
+    # All example labels of each batch are in `pos_labels_embed`
     assert np.all(
         pos_labels_embed.numpy()
         == np.array([[[l0, l1, l3]], [[l2, lp, lp]], [[l3, l0, lp]]])
