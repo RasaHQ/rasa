@@ -10,7 +10,7 @@ from typing import Optional, Any, Dict, List, Text
 import rasa.utils.io
 
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted
+from rasa.core.events import ActionExecuted, Event
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
@@ -262,8 +262,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     @staticmethod
     def _back_to_the_future(
         tracker: DialogueStateTracker,
+        max_num_events: Optional[int] = None,
         again: bool = False,
-        max_history: Optional[int] = None,
     ) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
         the new featurization for the future"""
@@ -271,14 +271,13 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         idx_of_first_action = None
         idx_of_second_action = None
 
-        applied_events = tracker.applied_events()
-        # We don't need to look at events that occured before `max_history`
-        start_index = (
-            max(0, len(applied_events) - max_history - 1) if max_history else 0
-        )
+        if max_num_events:
+            applied_events = tracker.applied_events()[-max_num_events:]
+        else:
+            applied_events = tracker.applied_events()
 
         # we need to find second executed action
-        for e_i, event in enumerate(applied_events[start_index:]):
+        for e_i, event in enumerate(applied_events):
             # find second ActionExecuted
             if isinstance(event, ActionExecuted):
                 if idx_of_first_action is None:
@@ -321,7 +320,20 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         """
         logger.debug("Launch DeLorean...")
 
-        mcfly_tracker = self._back_to_the_future(tracker, max_history=self.max_history)
+        # Count how many events we need to look at, based on `max_history`
+        if not self.max_history:
+            max_num_events = None
+        else:
+            max_num_events = 0
+            num_actions = 0
+            for event in reversed(tracker.applied_events()):
+                max_num_events += 1
+                if isinstance(event, ActionExecuted):
+                    num_actions += 1
+                if num_actions > self.max_history:
+                    break
+
+        mcfly_tracker = self._back_to_the_future(tracker, max_num_events=max_num_events)
         while mcfly_tracker is not None:
             tracker_as_states = self.featurizer.prediction_states(
                 [mcfly_tracker], domain
@@ -337,9 +349,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 old_states = states
 
             # go back again
-            mcfly_tracker = self._back_to_the_future(
-                mcfly_tracker, max_history=None, again=True,
-            )
+            mcfly_tracker = self._back_to_the_future(mcfly_tracker, again=True,)
 
         # No match found
         logger.debug(f"Current tracker state {old_states}")
