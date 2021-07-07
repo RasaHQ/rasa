@@ -273,7 +273,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         applied_events = tracker.applied_events()
         # We don't need to look at events that occured before `max_history`
-        start_index = max(0, len(applied_events) - max_history) if max_history else 0
+        start_index = (
+            max(0, len(applied_events) - max_history - 1) if max_history else 0
+        )
 
         # we need to find second executed action
         for e_i, event in enumerate(applied_events[start_index:]):
