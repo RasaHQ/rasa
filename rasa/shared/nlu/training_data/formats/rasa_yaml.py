@@ -436,7 +436,10 @@ class RasaYAMLWriter(TrainingDataWriter):
             inverted_synonyms[synonym].append(example)
 
         return cls.process_training_examples_by_key(
-            inverted_synonyms, KEY_SYNONYM, KEY_SYNONYM_EXAMPLES
+            inverted_synonyms,
+            KEY_SYNONYM,
+            KEY_SYNONYM_EXAMPLES,
+            example_extraction_predicate=lambda x: str(x),
         )
 
     @classmethod
@@ -448,12 +451,15 @@ class RasaYAMLWriter(TrainingDataWriter):
             inverted_regexes[regex["name"]].append(regex["pattern"])
 
         return cls.process_training_examples_by_key(
-            inverted_regexes, KEY_REGEX, KEY_REGEX_EXAMPLES
+            inverted_regexes,
+            KEY_REGEX,
+            KEY_REGEX_EXAMPLES,
+            example_extraction_predicate=lambda x: str(x),
         )
 
     @classmethod
     def process_lookup_tables(cls, training_data: "TrainingData") -> List[OrderedDict]:
-        prepared_lookup_tables = OrderedDict()
+        prepared_lookup_tables: Dict[Text, List[Text]] = OrderedDict()
         for lookup_table in training_data.lookup_tables:
             # this is a lookup table filename
             if isinstance(lookup_table["elements"], str):
@@ -461,15 +467,18 @@ class RasaYAMLWriter(TrainingDataWriter):
             prepared_lookup_tables[lookup_table["name"]] = lookup_table["elements"]
 
         return cls.process_training_examples_by_key(
-            prepared_lookup_tables, KEY_LOOKUP, KEY_LOOKUP_EXAMPLES
+            prepared_lookup_tables,
+            KEY_LOOKUP,
+            KEY_LOOKUP_EXAMPLES,
+            example_extraction_predicate=lambda x: str(x),
         )
 
     @staticmethod
     def process_training_examples_by_key(
-        training_examples: Dict,
+        training_examples: Dict[Text, List[Union[Dict, Text]]],
         key_name: Text,
         key_examples: Text,
-        example_extraction_predicate: Callable[[Dict[Text, Any]], Text] = lambda x: x,
+        example_extraction_predicate: Callable[[Dict[Text, Any]], Text],
     ) -> List[OrderedDict]:
         intents = []
 
@@ -505,8 +514,8 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @staticmethod
     def _convert_training_examples(
-        training_examples: List[Dict],
-        example_extraction_predicate: Callable[[Dict[Text, Any]], Text] = lambda x: x,
+        training_examples: List[Union[Dict, List[Text]]],
+        example_extraction_predicate: Callable[[Dict[Text, Any]], Text],
     ) -> Tuple[List[Dict], Optional[Dict]]:
         """Returns converted training examples and potential intent metadata."""
         converted_examples = []
