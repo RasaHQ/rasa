@@ -21,9 +21,10 @@ class TestMemoizationPolicy(PolicyTestCollection):
     ) -> MemoizationPolicy:
         return MemoizationPolicy(featurizer=featurizer, priority=priority)
 
-    def test_prediction(self):
+    @pytest.mark.parametrize("max_history", [2, 3, 4, None])
+    def test_prediction(self, max_history):
         policy = self.create_policy(
-            featurizer=MaxHistoryTrackerFeaturizer(max_history=3), priority=1
+            featurizer=MaxHistoryTrackerFeaturizer(max_history=max_history), priority=1
         )
 
         GREET_INTENT_NAME = "greet"
@@ -79,9 +80,10 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
     ) -> MemoizationPolicy:
         return AugmentedMemoizationPolicy(featurizer=featurizer, priority=priority)
 
-    def test_augmented_prediction(self):
+    @pytest.mark.parametrize("max_history", [2, 3, 4, None])
+    def test_augmented_prediction(self, max_history):
         policy = self.create_policy(
-            featurizer=MaxHistoryTrackerFeaturizer(max_history=3), priority=1
+            featurizer=MaxHistoryTrackerFeaturizer(max_history=max_history), priority=1
         )
 
         GREET_INTENT_NAME = "greet"
