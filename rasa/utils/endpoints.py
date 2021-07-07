@@ -81,6 +81,7 @@ class EndpointConfig:
         token_name: Text = "token",
         **kwargs: Any,
     ) -> None:
+        """Create an EndpointConfig instance."""
         self.url = url
         self.params = params or {}
         self.headers = headers or {}

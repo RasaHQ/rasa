@@ -52,6 +52,7 @@ class FormAction(LoopAction):
         self._have_unique_entity_mappings_been_initialized = False
 
     def name(self) -> Text:
+        """Return the form name."""
         return self._form_name
 
     def required_slots(self, domain: Domain) -> List[Text]:

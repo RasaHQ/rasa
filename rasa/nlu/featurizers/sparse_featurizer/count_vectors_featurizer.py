@@ -173,11 +173,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             return False
 
     def _get_attribute_vocabulary(self, attribute: Text) -> Dict[Text, int]:
-        """Get trained vocabulary from attribute's count vectorizer"""
+        """Get trained vocabulary from attribute's count vectorizer."""
         return self.vectorizers[attribute].vocabulary_
 
     def _get_attribute_vocabulary_tokens(self, attribute: Text) -> List[Text]:
-        """Get all keys of vocabulary of an attribute"""
+        """Get all keys of vocabulary of an attribute."""
         return self.vectorizers[attribute].vocabulary_.keys()
 
     def _check_analyzer(self) -> None:
@@ -696,7 +696,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             )
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
-        """Get vocabulary for all attributes"""
+        """Get vocabulary for all attributes."""
         return {
             attribute: self.vectorizers[attribute].vocabulary_
             for attribute in self._attributes
