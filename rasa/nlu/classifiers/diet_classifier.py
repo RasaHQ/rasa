@@ -103,6 +103,7 @@ from rasa.utils.tensorflow.constants import (
 
 logger = logging.getLogger(__name__)
 
+# we really need a comment here, right?
 SPARSE = "sparse"
 DENSE = "dense"
 LABEL_KEY = LABEL
