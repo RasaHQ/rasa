@@ -361,14 +361,16 @@ class RasaModel(TmpKerasModel):
     def _empty_lists_to_none_in_dict(input_dict: Dict[Text, Any]) -> Dict[Text, Any]:
         """Recursively replaces empty list or np array with None in a dictionary."""
 
-        def _recurse(x: Union[Dict[Text, Any], List[Any], np.ndarray]) -> Optional[Any]:
+        def _recurse(
+            x: Union[Dict[Text, Any], List[Any], np.ndarray]
+        ) -> Optional[Union[Dict[Text, Any], List[np.ndarray]]]:
             if isinstance(x, dict):
                 return {k: _recurse(v) for k, v in x.items()}
             elif (isinstance(x, list) or isinstance(x, np.ndarray)) and np.size(x) == 0:
                 return None
             return x
 
-        return _recurse(input_dict)
+        return {k: _recurse(v) for k, v in input_dict.items()}
 
     def _get_metric_results(self, prefix: Optional[Text] = "") -> Dict[Text, float]:
         return {
@@ -857,7 +859,8 @@ class TransformerRasaModel(RasaModel):
         for key, data in attribute_data.items():
             if data:
                 return tf.shape(data[0])[0]
-        return None
+
+        return 0
 
     def _calculate_entity_loss(
         self,
