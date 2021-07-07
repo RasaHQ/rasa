@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-from typing import Any, List, Optional, Text, Dict, Type, Union, TYPE_CHECKING
+from typing import Any, List, Optional, Text, Dict, Type, TYPE_CHECKING
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
