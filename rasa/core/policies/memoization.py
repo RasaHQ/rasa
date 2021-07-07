@@ -304,7 +304,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
     def _recall_using_delorean(
         self, old_states: List, tracker: DialogueStateTracker, domain: Domain,
-    ) -> Optional[Text]:
+    ) -> Optional[int]:
         """Applies to the future idea to change the past and get the new future.
 
         Recursively go to the past to correctly forget slots,
@@ -349,7 +349,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
                 old_states = states
 
             # go back again
-            mcfly_tracker = self._back_to_the_future(mcfly_tracker, again=True,)
+            mcfly_tracker = self._back_to_the_future(mcfly_tracker, again=True)
 
         # No match found
         logger.debug(f"Current tracker state {old_states}")
@@ -357,7 +357,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
     def recall(
         self, states: List, tracker: DialogueStateTracker, domain: Domain,
-    ) -> Optional[Text]:
+    ) -> Optional[int]:
         """Finds the action based on the given states.
 
         Uses back to the future idea to change the past and check whether the new future
@@ -369,11 +369,11 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             domain: The Domain.
 
         Returns:
-            The name of the action.
+            The index of the action.
         """
-        predicted_action_name = self._recall_states(states)
-        if predicted_action_name is None:
+        predicted_action_index = self._recall_states(states)
+        if predicted_action_index is None:
             # let's try a different method to recall that tracker
             return self._recall_using_delorean(states, tracker, domain)
         else:
-            return predicted_action_name
+            return predicted_action_index
