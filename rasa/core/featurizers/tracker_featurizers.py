@@ -1015,7 +1015,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         # Store of example hashes for removing duplicate training examples.
         hashed_examples = set()
         # Mapping of example state hash to list of positive labels associated with
-        # the state. Note that each individual 'label' instance is a list of ints.
+        # the state. Note that each individual 'label' instance is a list of strings.
         state_hash_to_label_list_instances: defaultdict[
             int, List[List[Text]]
         ] = defaultdict(list)
@@ -1073,6 +1073,9 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
                 list(
                     set(
                         [
+                            # Each individual label is inside a
+                            # list of size 1, so we take
+                            # the value at first index.
                             labels[0]
                             for labels in state_hash_to_label_list_instances[state_hash]
                         ]
