@@ -5,7 +5,7 @@ import jsonpickle
 import logging
 
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator
+from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
 import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -1015,9 +1015,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         hashed_examples = set()
         # Mapping of example state hash to list of positive labels associated with
         # the state. Note that each individual 'label' instance is a list of strings.
-        state_hash_to_label_list_instances: defaultdict[int, List[Text]] = defaultdict(
-            list
-        )
+        state_hash_to_label_set: defaultdict[int, Set[Text]] = defaultdict(set)
 
         seen_states = set()
 
@@ -1048,7 +1046,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
                 # Store all positive labels associated with a training state.
                 state_hash = self._hash_example(states)
-                state_hash_to_label_list_instances[state_hash].append(label[0])
+                state_hash_to_label_set[state_hash].add(label[0])
 
                 # Only add unique example states unless `remove_duplicates` is `False`.
                 if not self.remove_duplicates or state_hash not in seen_states:
@@ -1060,7 +1058,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
         # Collect positive labels for each state example.
         example_labels = [
-            list(set(state_hash_to_label_list_instances[self._hash_example(state)]))
+            list(state_hash_to_label_set[self._hash_example(state)])
             for state in example_states
         ]
 
