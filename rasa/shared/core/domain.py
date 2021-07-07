@@ -1877,7 +1877,8 @@ class Domain:
         except (RasaException, YamlSyntaxException):
             rasa.shared.utils.io.raise_warning(
                 message=f"The file {filename} could not be loaded as domain file. "
-                + f"You can use https://yamlchecker.com/ to validate the YAML syntax of your file.",
+                + "You can use https://yamlchecker.com/ to validate "
+                + " the YAML syntax of your file.",
                 category=UserWarning,
             )
             return False
