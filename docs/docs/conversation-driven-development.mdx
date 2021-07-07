@@ -72,7 +72,7 @@ Your test users had at least some instruction about what the bot was intended to
     Reviewing this subset of conversations can help you understand if real users have taken a
     conversation path which is not present in the training data and hence "surprising"
     for machine learning policies like `TEDPolicy`. Adding these conversation paths (with potential
-    corrections if `TEDPolicy` subsequently failed) as training stories will help in more robust action prediction
+    corrections if `TEDPolicy` subsequently failed) as training stories will result in more robust action prediction
     by policies such as `TEDPolicy`. Users are encouraged to [adjust the `tolerance` parameter of
     `UnexpecTEDIntentPolicy`](./policies.mdx#tuning-the-tolerance-parameter) to control how
     "surprising" a conversation should be to be included in the warnings file.
