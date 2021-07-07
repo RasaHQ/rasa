@@ -451,7 +451,9 @@ class RasaModel(TmpKerasModel):
         if isinstance(batch[0], Tuple):
             batch = batch[0]
 
-        batch_data = defaultdict(lambda: defaultdict(list))
+        batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
 
         idx = 0
         for key, values in data_signature.items():
