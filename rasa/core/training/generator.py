@@ -4,7 +4,7 @@ import copy
 import logging
 import random
 from tqdm import tqdm
-from typing import Optional, List, Text, Set, Dict, Tuple
+from typing import Optional, List, Text, Set, Dict, Tuple, Any
 
 from rasa.constants import DOCS_URL_STORIES
 from rasa.core import utils
@@ -25,6 +25,8 @@ from rasa.core.training.structures import (
     GENERATED_CHECKPOINT_PREFIX,
 )
 from rasa.utils.common import is_logging_disabled, raise_warning
+from rasa.core.domain import Domain  # pytype: disable=pyi-error
+from rasa.core.slots import Slot
 
 logger = logging.getLogger(__name__)
 
@@ -44,26 +46,28 @@ class TrackerWithCachedStates(DialogueStateTracker):
     """A tracker wrapper that caches the state creation of the tracker."""
 
     def __init__(
-        self,
-        sender_id,
-        slots,
-        max_event_history=None,
-        domain=None,
-        is_augmented=False,
-        **kwargs,
+        self, sender_id, slots, max_event_history=None, domain=None, is_augmented=False
     ):
-        super().__init__(
-            sender_id=sender_id,
-            slots=slots,
-            max_event_history=max_event_history,
-            domain=domain,
-            is_augmented=is_augmented,
-            **kwargs,
-        )
+        super().__init__(sender_id, slots, max_event_history)
         self._states = None
         self.domain = domain
         # T/F property to filter augmented stories
         self.is_augmented = is_augmented
+
+    @classmethod
+    def from_events(
+        cls,
+        sender_id: Text,
+        evts: List[Event],
+        slots: Optional[List[Slot]] = None,
+        max_event_history: Optional[int] = None,
+        domain: Optional[Domain] = None,
+        **kwargs: Any,
+    ):
+        tracker = cls(sender_id, slots, max_event_history, domain=domain)
+        for e in evts:
+            tracker.update(e)
+        return tracker
 
     def past_states(self, domain: Domain) -> deque:
         """Return the states of the tracker based on the logged events."""
