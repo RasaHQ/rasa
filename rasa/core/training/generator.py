@@ -44,9 +44,22 @@ class TrackerWithCachedStates(DialogueStateTracker):
     """A tracker wrapper that caches the state creation of the tracker."""
 
     def __init__(
-        self, sender_id, slots, max_event_history=None, domain=None, is_augmented=False
+        self,
+        sender_id,
+        slots,
+        max_event_history=None,
+        domain=None,
+        is_augmented=False,
+        **kwargs,
     ):
-        super().__init__(sender_id, slots, max_event_history)
+        super().__init__(
+            sender_id=sender_id,
+            slots=slots,
+            max_event_history=max_event_history,
+            domain=domain,
+            is_augmented=is_augmented,
+            **kwargs,
+        )
         self._states = None
         self.domain = domain
         # T/F property to filter augmented stories

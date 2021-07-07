@@ -105,8 +105,15 @@ class DialogueStateTracker:
         slots: Optional[List[Slot]] = None,
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
+        **kwargs: Any,
     ):
-        tracker = cls(sender_id, slots, max_event_history, sender_source)
+        tracker = cls(
+            sender_id=sender_id,
+            slots=slots,
+            max_event_history=max_event_history,
+            sender_source=sender_source,
+            **kwargs,
+        )
         for e in evts:
             tracker.update(e)
         return tracker
@@ -117,6 +124,7 @@ class DialogueStateTracker:
         slots: Optional[Iterable[Slot]],
         max_event_history: Optional[int] = None,
         sender_source: Optional[Text] = None,
+        **kwargs,
     ) -> None:
         """Initialize the tracker.
 
