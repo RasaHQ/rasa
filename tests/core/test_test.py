@@ -104,6 +104,24 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
     assert "report" in result.keys()
 
 
+async def _train_rule_based_agent(
+    moodbot_domain: Domain, train_file_name: Path
+) -> Agent:
+
+    deterministic_policy = RulePolicy(restrict_rules=False)
+    agent = Agent(moodbot_domain, SimplePolicyEnsemble([deterministic_policy]))
+    training_data = await agent.load_data(str(train_file_name))
+
+    # Make the trackers compatible with rules
+    # so that they are picked up by the policy.
+    for tracker in training_data:
+        tracker.is_rule_tracker = True
+
+    agent.train(training_data)
+
+    return agent
+
+
 async def test_action_unlikely_intent_1(
     monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
 ):
@@ -294,20 +312,6 @@ async def test_action_unlikely_intent_wrong_story(
     assert result["report"]["conversation_accuracy"]["total"] == 1
 
 
-async def _train_rule_based_agent(
-    moodbot_domain: Domain, train_file_name: Path
-) -> Agent:
-    deterministic_policy = RulePolicy(restrict_rules=False)
-    agent = Agent(moodbot_domain, SimplePolicyEnsemble([deterministic_policy]))
-    training_data = await agent.load_data(str(train_file_name))
-    # Make the trackers compatible with rules
-    # so that they are picked up by the policy.
-    for tracker in training_data:
-        tracker.is_rule_tracker = True
-    agent.train(training_data)
-    return agent
-
-
 @pytest.mark.parametrize(
     "metadata_for_intents, story_order",
     [
@@ -374,7 +378,7 @@ async def _train_rule_based_agent(
 async def test_multiple_warnings_sorted_on_severity(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
-    unexpected_intent_policy_agent: Agent,
+    moodbot_domain: Domain,
     metadata_for_intents: Dict,
     story_order: List[Text],
 ):
@@ -386,10 +390,17 @@ async def test_multiple_warnings_sorted_on_severity(
         ),
     )
 
+    test_story_path = (
+        "data/test_yaml_stories/test_multiple_action_unlikely_intent_warnings.yml"
+    )
+
+    # We train on the stories as it is so that RulePolicy can memorize
+    # it and we don't have to worry about other actions being
+    # predicted correctly.
+    agent = await _train_rule_based_agent(moodbot_domain, Path(test_story_path))
+
     await rasa.core.test.test(
-        "data/test_yaml_stories/test_multiple_action_unlikely_intent_warnings.yml",
-        unexpected_intent_policy_agent,
-        out_directory=str(tmp_path),
+        test_story_path, agent, out_directory=str(tmp_path),
     )
 
     warnings_file = tmp_path / STORIES_WITH_WARNINGS_FILE
