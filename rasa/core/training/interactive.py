@@ -545,6 +545,8 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
     for idx, event in enumerate(applied_events):
         if isinstance(event, ActionExecuted):
+            if event.action_name == ACTION_UNLIKELY_INTENT_NAME and event.confidence == 0:
+                continue
             bot_column.append(colored(str(event), "autocyan"))
             if event.confidence is not None:
                 bot_column[-1] += colored(f" {event.confidence:03.2f}", "autowhite")
@@ -967,7 +969,7 @@ async def _predict_till_next_listen(
         predictions = result.get("scores")
         probabilities = [prediction["score"] for prediction in predictions]
         pred_out = int(np.argmax(probabilities))
-        action_name = predictions.get(pred_out, {}).get("action")
+        action_name = predictions[pred_out].get("action")
         policy = result.get("policy")
         confidence = result.get("confidence")
 
@@ -1137,26 +1139,22 @@ async def _validate_action(
     Returns `True` if the prediction is correct, `False` otherwise."""
 
     if action_name == ACTION_UNLIKELY_INTENT_NAME:
-        print(
+        question = questionary.confirm(
             f"The bot wants to run '{action_name}' "
             f"to indicate that the last user message was unexpected "
             f"at this point in the conversation. "
             f"Check out UnexpecTEDIntentPolicy "
             f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
-            f"to learn more."
+            f"to learn more. Is that correct?"
         )
-        input()
-        is_correct = True
     else:
         question = questionary.confirm(
             f"The bot wants to run '{action_name}', correct?"
         )
-        is_correct = (
-            await _ask_questions(question, conversation_id, endpoint)
-            or action_name == ACTION_UNLIKELY_INTENT_NAME
-        )
 
-    if not is_correct:
+    is_correct = await _ask_questions(question, conversation_id, endpoint)
+
+    if not is_correct and action_name != ACTION_UNLIKELY_INTENT_NAME:
         action_name, is_new_action = await _request_action_from_user(
             predictions, conversation_id, endpoint
         )
