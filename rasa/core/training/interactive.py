@@ -77,6 +77,7 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
+from rasa.shared.exceptions import RasaCoreException
 
 # noinspection PyProtectedMember
 from rasa.shared.nlu.training_data import loading
@@ -970,6 +971,11 @@ async def _predict_till_next_listen(
     while not listen:
         result = await request_prediction(endpoint, conversation_id)
         predictions = result.get("scores") or []
+        if not predictions:
+            raise RasaCoreException(
+                "Cannot continue as no action was predicted by the dialogue manager."
+            )
+
         probabilities = [prediction["score"] for prediction in predictions]
         pred_out = int(np.argmax(probabilities))
         action_name = predictions[pred_out].get("action")
