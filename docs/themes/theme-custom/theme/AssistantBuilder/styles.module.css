@@ -1,0 +1,90 @@
+.container {
+  border: 1px solid var(--global-border-color);
+  border-radius: 10px;
+  margin-top: 40px !important;
+  word-break: normal;
+}
+
+.containerTabs {
+  display: flex;
+  flex-direction: row;
+  padding: 0 16px;
+  font-size: 80%;
+}
+
+.tab {
+  padding: 16px 24px;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  outline: none;
+  margin-top: 0 !important;
+}
+
+.tab::before {
+  content: '' !important;
+}
+
+.tabActive {
+  border-bottom: 3px solid var(--ifm-color-primary);
+  cursor: default;
+  font-weight: 500;
+}
+
+.containerSections {
+  hyphens: none;
+  overflow: hidden;
+  height: 680px;
+}
+
+.containerSections p {
+  margin-bottom: 27px;
+}
+
+.section {
+  display: none;
+  flex-direction: row;
+}
+
+.sectionActive {
+  display: flex;
+}
+
+.text {
+  flex: 1;
+  font-size: 85%;
+  height: 680px;
+  display: flex;
+  flex-direction: column;
+}
+
+.textTop {
+  flex: 1;
+  overflow-y: scroll;
+  padding: 24px;
+  border-top: 1px solid var(--global-border-color);
+}
+
+.textButtons {
+  padding: 32px 24px;
+}
+
+.code {
+  flex: 1;
+  display: flex;
+  font-size: 17px;
+  line-height: 27px;
+  overflow: scroll;
+  height: 680px;
+}
+
+.code > div {
+  flex: 1;
+  margin-bottom: 0 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: scroll;
+}
+
+.code > div > div {
+  overflow: scroll !important;
+}

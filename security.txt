@@ -1,0 +1,4 @@
+Contact: mailto:security@rasa.com
+Preferred-Languages: en
+Canonical: https://github.com/RasaHQ/rasa/blob/main/security.txt
+Hiring: https://rasa.com/jobs

@@ -1,0 +1,33 @@
+allowempty: True
+mapping:
+  version:
+    type: "str"
+    required: False
+    allowempty: False
+  language:
+    type: "str"
+    required: False
+  pipeline:
+    type: "seq"
+    required: False
+    sequence:
+    - type: "map"
+      # Only validate required items but do not validate each potential config param
+      # for the the components
+      allowempty: True
+      mapping:
+        name:
+          type: str
+          required: True
+  policies:
+    type: "seq"
+    required: False
+    sequence:
+    - type: "map"
+      # Only validate required items but do not validate each potential config param
+      # for the the policies
+      allowempty: True
+      mapping:
+        name:
+          type: str
+          required: True

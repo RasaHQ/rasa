@@ -1,0 +1,76 @@
+version: "2.0"
+nlu:
+  - intent: bot_challenge
+    examples: |
+      - are you a bot?
+      - are you a human?
+      - am I talking to a bot?
+      - am I talking to a human?
+
+  - intent: greet
+    examples: |
+      - hey
+      - hello
+      - hi
+      - good morning
+      - good evening
+      - hey there
+
+  - intent: goodbye
+    examples: |
+      - bye
+      - goodbye
+      - see you around
+      - see you later
+
+  - intent: query_knowledge_base
+    examples: |
+      - what [restaurants]{"entity": "object_type", "value": "restaurant"} can you recommend?
+      - list some [restaurants]{"entity": "object_type", "value": "restaurant"}
+      - can you name some [restaurants]{"entity": "object_type", "value": "restaurant"} please?
+      - can you show me some [restaurant]{"entity": "object_type", "value": "restaurant"} options
+      - list [German]{"entity": "cuisine"} [restaurants]{"entity": "object_type", "value": "restaurant"}
+      - do you have any [mexican]{"entity": "cuisine"} [restaurants]{"entity": "object_type", "value": "restaurant"}?
+      - do you know the [price range]{"entity": "attribute", "value": "price-range"} of [that one]{"entity": "mention"}?
+      - what [cuisine]{"entity": "attribute"} is [it]{"entity": "mention"}?
+      - do you know what [cuisine]{"entity": "attribute"} the [last one]{"entity": "mention", "value": "LAST"} has?
+      - does [Donath]{"entity": "restaurant"} have [outside seating]{"entity": "attribute", "value": "outside-seating"}?
+      - what is the [price range]{"entity": "attribute", "value": "price-range"} of [Berlin Burrito Company]{"entity": "restaurant"}?
+      - what is with [I due forni]{"entity": "restaurant"}?
+      - Do you also have any [Vietnamese]{"entity": "cuisine"} [restaurants]{"entity": "object_type", "value": "restaurant"}?
+      - What about any [Mexican]{"entity": "cuisine", "value": "mexican"} [restaurants]{"entity": "object_type", "value": "restaurant"}?
+      - Do you also know some [Italian]{"entity": "cuisine"} [restaurants]{"entity": "object_type", "value": "restaurant"}?
+      - can you tell me the [price range]{"entity": "attribute", "value": "price-range"} of [that restaurant]{"entity": "mention"}?
+      - what [cuisine]{"entity": "attribute"} do [they]{"entity": "mention"} have?
+      - what [hotels]{"entity": "object_type", "value": "hotel"} can you recommend?
+      - please list some [hotels]{"entity": "object_type", "value": "hotel"} in [Frankfurt am Main]{"entity": "city"} for me
+      - what [hotels]{"entity": "object_type", "value": "hotel"} do you know in [Berlin]{"entity": "city"}?
+      - name some [hotels]{"entity": "object_type", "value": "hotel"} in [Berlin]{"entity": "city"}
+      - show me some [hotels]{"entity": "object_type", "value": "hotel"}
+      - what are [hotels]{"entity": "object_type", "value": "hotel"} in [Berlin]{"entity": "city"}
+      - does the [last]{"entity": "mention", "value": "LAST"} one offer [breakfast]{"entity": "attribute", "value": "breakfast-included"}?
+      - does the [second one]{"entity": "mention", "value": "2"} [include breakfast]{"entity": "attribute", "value": "breakfast-included"}?
+      - what is the [price range]{"entity": "attribute", "value": "price-range"} of the [second]{"entity": "mention", "value": "2"} hotel?
+      - does the [first]{"entity": "mention", "value": "1"} one have [wifi]{"entity": "attribute", "value": "free-wifi"}?
+      - does the [third]{"entity": "mention", "value": "3"} one have a [swimming pool]{"entity": "attribute", "value": "swimming-pool"}?
+      - what is the [star rating]{"entity": "attribute", "value": "star-rating"} of [Berlin Wall Hostel]{"entity": "hotel"}?
+      - Does the [Hilton]{"entity": "hotel"} have a [swimming pool]{"entity": "attribute", "value": "swimming-pool"}?
+
+  - lookup: restaurant
+    examples: |
+      - Donath
+      - Berlin Burrito Company
+      - I due forni
+      - Lụa Restaurant
+      - Pfefferberg
+      - Marubi Ramen
+      - Gong Gan
+
+  - lookup: hotel
+    examples: |
+      - Hilton
+      - B&B
+      - Berlin Wall Hostel
+      - City Hotel
+      - Jugendherberge
+      - Berlin Hotel

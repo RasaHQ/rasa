@@ -1,0 +1,3 @@
+* -text
+# Reclassifies `Dockerfile*` files as Dockerfile:
+Dockerfile.* linguist-language=Dockerfile

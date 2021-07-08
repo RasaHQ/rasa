@@ -1,0 +1,186 @@
+{
+  "latest_message": {
+    "entities": [],
+    "intent": {
+      "confidence": 0.60,
+      "name": "mood_great"
+    },
+    "message_id": null,
+    "metadata": {},
+    "text": "/mood_great",
+    "intent_ranking": [
+      {
+        "confidence": 0.60,
+        "name": "mood_great"
+      },
+      {
+        "confidence": 0.20,
+        "name": "greet"
+      },
+      {
+        "confidence": 0.20,
+        "name": "goodbye"
+      }
+    ]
+  },
+  "sender_id": "mysender",
+  "latest_action": {"action_name": "action_listen"},
+  "latest_action_name": "action_listen",
+  "active_loop": {},
+  "paused": false,
+  "latest_event_time": 1517821726.211042,
+  "followup_action": null,
+  "slots": {"name": null},
+  "latest_input_channel": null,
+  "events": [
+    {
+      "timestamp": 1517821726.211031,
+      "event": "action",
+      "name": "action_listen",
+      "policy": null,
+      "confidence": null,
+      "hide_rule_turn": false
+    },
+    {
+      "timestamp": 1517821726.200036,
+      "metadata": {},
+      "parse_data": {
+        "entities": [],
+        "intent": {
+          "confidence": 0.54,
+          "name": "greet"
+        },
+        "message_id": null,
+        "metadata": {},
+        "text": "/greet",
+        "intent_ranking": [
+          {
+            "confidence": 0.54,
+            "name": "greet"
+          },
+          {
+            "confidence": 0.31,
+            "name": "goodbye"
+          },
+          {
+            "confidence": 0.15,
+            "name": "default"
+          }
+        ]
+      },
+      "event": "user",
+      "text": "/greet",
+      "input_channel": null, "message_id": null, "metadata": {}
+    },
+    {
+      "timestamp": 1517821726.200373,
+      "event": "action",
+      "name": "utter_greet",
+      "policy": null,
+      "confidence": null,
+      "hide_rule_turn": false
+    },
+    {
+      "timestamp": 1517821726.211038,
+      "event": "action",
+      "name": "action_listen",
+      "policy": null,
+      "confidence": null,
+      "hide_rule_turn": false
+    },
+    {
+      "timestamp": 1517821726.209836,
+      "metadata": {},
+      "parse_data": {
+        "entities": [],
+        "intent": {
+          "confidence": 0.60,
+          "name": "mood_great"
+        },
+        "message_id": null,
+        "metadata": {},
+        "text": "/mood_great",
+        "intent_ranking": [
+          {
+            "confidence": 0.60,
+            "name": "mood_great"
+          },
+          {
+            "confidence": 0.20,
+            "name": "greet"
+          },
+          {
+            "confidence": 0.20,
+            "name": "goodbye"
+          }
+        ]
+      },
+      "event": "user",
+      "text": "/mood_great",
+      "input_channel": null, "message_id": null, "metadata": {}
+    },
+    {
+      "timestamp": 1517821726.209908,
+      "event": "action",
+      "name": "utter_happy",
+      "policy": "policy_1_TEDPolicy",
+      "confidence": 0.8,
+      "hide_rule_turn": false
+    },
+    {
+      "timestamp": 1517821726.211042,
+      "event": "action",
+      "name": "action_listen",
+      "policy": "policy_2_MemoizationPolicy",
+      "confidence": 1.0,
+      "hide_rule_turn": false
+    },
+    {
+      "timestamp": 1517821730.209836,
+      "metadata": {},
+      "parse_data": {
+        "entities": [],
+        "intent": {
+          "confidence": 0.60,
+          "name": "mood_great"
+        },
+        "message_id": null,
+        "metadata": {},
+        "text": "my mood is so great!",
+        "intent_ranking": [
+          {
+            "confidence": 0.60,
+            "name": "mood_great"
+          },
+          {
+            "confidence": 0.20,
+            "name": "greet"
+          },
+          {
+            "confidence": 0.20,
+            "name": "goodbye"
+          }
+        ]
+      },
+      "event": "user",
+      "text": "/mood_great",
+      "input_channel": null, "message_id": null, "metadata": {}
+    },
+    {
+      "timestamp": 1517821740.209908,
+      "event": "action",
+      "name": "utter_happy",
+      "policy": "policy_1_TEDPolicy",
+      "confidence": 0.8,
+      "hide_rule_turn": false
+    },
+    {
+      "timestamp": 1517821750.211042,
+      "event": "action",
+      "name": "action_listen",
+      "policy": "policy_2_MemoizationPolicy",
+      "confidence": 1.0,
+      "hide_rule_turn": false
+    }
+  ]
+}

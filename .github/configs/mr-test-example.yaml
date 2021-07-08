@@ -1,0 +1,43 @@
+## Example configuration
+#################### syntax #################
+## include:
+##   - dataset: ["<dataset_name>"]
+##     config: ["<configuration_name>"]
+#
+## Example:
+## include:
+##  - dataset: ["Carbon Bot"]
+##    config: ["Sparse + DIET(bow) + ResponseSelector(bow)"]
+#
+## Shortcut:
+## You can use the "all" shortcut to include all available configurations or datasets
+#
+## Example: Use the "Sparse + EmbeddingIntent + ResponseSelector(bow)" configuration
+## for all available datasets
+## include:
+##  - dataset: ["all"]
+##    config: ["Sparse + DIET(bow) + ResponseSelector(bow)"]
+#
+## Example: Use all available configurations for the "Carbon Bot" and "Sara" datasets
+## and for the "Hermit" dataset use the "Sparse + DIET + ResponseSelector(T2T)" and
+## "BERT + DIET + ResponseSelector(T2T)" configurations:
+## include:
+##  - dataset: ["Carbon Bot", "Sara"]
+##    config: ["all"]
+##  - dataset: ["Hermit"]
+##    config: ["Sparse + DIET(seq) + ResponseSelector(t2t)", "BERT + DIET(seq) + ResponseSelector(t2t)"]
+#
+## Example: Define a branch name to check-out for a dataset repository. Default branch is 'main'
+## dataset_branch: "test-branch"
+## include:
+##  - dataset: ["Carbon Bot", "Sara"]
+##    config: ["all"]
+##
+## Shortcuts:
+## You can use the "all" shortcut to include all available configurations or datasets.
+## You can use the "all-nlu" shortcut to include all available NLU configurations or datasets.
+## You can use the "all-core" shortcut to include all available core configurations or datasets.
+
+include:
+  - dataset: ["Carbon Bot"]
+    config: ["Sparse + DIET(bow) + ResponseSelector(bow)"]

@@ -1,0 +1,15 @@
+intents:
+  - greet
+  - goodbye
+
+responses:
+  utter_greet:
+    - text: "Hey! How are you?"
+      buttons:
+        - title: "great"
+          payload: "/mood_great"
+        - title: "super sad"
+          payload: "/mood_unhappy"
+
+  utter_goodbye:
+    - text: "Bye"

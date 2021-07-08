@@ -1,0 +1,153 @@
+---
+id: setting-up-ci-cd
+sidebar_label: Setting up CI/CD
+title: Setting up CI/CD
+description: Set up a CI/CD pipeline to ensure that iterative improvements to your assistant are tested and deployed with minimum manual effort
+abstract: Even though developing a contextual assistant is different from developing traditional
+  software, you should still follow software development best practices.
+  Setting up a Continuous Integration (CI) and Continuous Deployment (CD)
+  pipeline ensures that incremental updates to your bot are improving it, not harming it.
+---
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+## Overview
+
+Continous Integration (CI) is the practice of merging in code changes
+frequently and automatically testing changes as they are committed. Continuous
+Deployment (CD) means automatically deploying integrated changes to a staging
+or production environment. Together, they allow you to make more frequent improvements
+to your assistant and efficiently test and deploy those changes.
+
+This guide will cover what should go in a CI/CD pipeline, specific to a
+Rasa project. How you implement that pipeline is up to you.
+There are many CI/CD tools out there, such as [GitHub Actions](https://github.com/features/actions),
+[GitLab CI/CD](https://docs.gitlab.com/ee/ci/), [Jenkins](https://www.jenkins.io/doc/), and
+[CircleCI](https://circleci.com/docs/2.0/). We recommend choosing a tool that integrates with
+whatever Git repository you use.
+
+## Continuous Integration (CI)
+
+The best way to improve an assistant is with frequent [incremental updates](https://rasa.com/docs/rasa-x/user-guide/fix-problems).
+No matter how small a change is, you want to be sure that it doesn't introduce
+new problems or negatively impact the performance of your assistant.
+
+It is usually best to run CI checks on merge / pull requests or on commit. Most tests are
+quick enough to run on every change. However, you can choose to run more
+resource-intensive tests only when certain files have been changed or when some
+other indicator is present. For example, if your code is hosted on Github,
+you can make a test run only if the pull request has a certain label (e.g. “NLU testing required”).
+
+### CI Pipeline Overview
+
+Your CI pipeline should include model training and testing as steps to streamline the deployment process.
+The first step after saving new training data is to kick off the pipeline. This can be initiated manually
+or when you create or update a pull request.
+
+Next, you need to run various sets of test to see the impact of your changes. This includes running
+tests for data validation, NLU cross validation, and story testing. For
+more information about testing, see [Testing Your Assistant](./testing-your-assistant.mdx).
+
+The last step is to review the results of your test and push the changes if the tests are successful.
+Once the new model is trained and tested, it can be deployed automatically using a Continuous
+Deployment pipeline.
+
+### GitHub Actions CI Pipeline
+
+You can use the [Rasa Train-Test Github Action](https://github.com/RasaHQ/rasa-train-test-gha)
+in your CI pipeline to automatically perform data validation, training, and testing.
+
+An example CI pipeline using the Github Action is shown below:
+
+```yaml
+jobs:
+  training-testing:
+    name: Training and Testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Rasa Train and Test GitHub Action
+        uses: RasaHQ/rasa-train-test-gha@main
+        with:
+          requirements_file: requirements.txt
+          data_validate: true
+          rasa_train: true
+          cross_validation: true
+          rasa_test: true
+          test_type: all
+          publish_summary: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload model
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@master
+        with:
+          name: model
+          path: models
+```
+
+In this pipeline, the Rasa Train-Test Github Action is performing data validation, model training, and story testing
+in the first step and the model file is uploaded as an artifact in the second step.
+
+The complete list of configurable parameters for the Rasa Train-Test Github Action is available in the repository's
+[README](https://github.com/RasaHQ/rasa-train-test-gha#input-arguments).
+
+When `publish_summary` is set to `true`, this action will automatically publish the model's test results to the associated
+Pull Request as a comment:
+
+<img alt="image" src={useBaseUrl("/img/train-test-github-action.png")} />
+
+The pull request can be approved or denied based on the evaluation results and, in many cases, you will want to automate the model's deployment if all CI checks pass. You can continue to the next section to learn more about Continuous Deployment.
+
+
+## Continuous Deployment (CD)
+
+To get improvements out to your users frequently, you will want to automate as
+much of the deployment process as possible.
+
+CD steps usually run on push or merge to a certain branch, once CI checks have
+succeeded.
+
+### Deploying Your Rasa Model
+
+If you ran [test stories](./testing-your-assistant.mdx) in your CI pipeline,
+you'll already have a trained model. You can set up your CD pipeline to upload the trained model to your
+Rasa server if the CI results are satisfactory. For example, to upload a model to Rasa X:
+
+```bash
+curl -k -F "model=@models/my_model.tar.gz" "https://example.rasa.com/api/projects/default/models?api_token={your_api_token}"
+```
+
+If you are using Rasa X, you can also [tag the uploaded model](https://rasa.com/docs/rasa-x/pages/http-api/#tag/Models/paths/~1projects~1{project_id}~1models~1{model}~1tags~1{tag}/put)
+as production (or whichever deployment you want to tag if using multiple [deployment environments](https://rasa.com/docs/rasa-x/enterprise/deployment-environments/#)):
+
+```bash
+curl -X PUT "https://example.rasa.com/api/projects/default/models/my_model/tags/production"
+```
+
+:::caution updates to action code
+If your update includes changes to both your model and your action
+code, and these changes depend on each other in any way, you should **not**
+automatically tag the model as `production`. You will first need to build and
+deploy your updated action server, so that the new model won't e.g. call
+actions that don't exist in the pre-update action server.
+:::
+
+
+### Deploying Your Action Server
+
+You can automate
+[building and uploading a new image for your action server](./how-to-deploy.mdx#building-an-action-server-image)
+to an image repository for each
+update to your action code. As noted above, be careful with
+automatically deploying a new image tag to production if the action server
+would be incompatible with the current production model.
+
+## Example CI/CD pipelines
+
+As examples, see the CI/CD pipelines for
+[Sara](https://github.com/RasaHQ/rasa-demo/blob/main/.github/workflows/continuous_integration.yml),
+the Rasa assistant that you can talk to in the Rasa Docs, and
+[Carbon Bot](https://github.com/RasaHQ/carbon-bot/blob/master/.github/workflows/model_ci.yml).
+Both use [Github Actions](https://github.com/features/actions) as a CI/CD tool.
+
+These examples are just two of many possibilities. If you have a CI/CD setup you like, please
+share it with the Rasa community on the [forum](https://forum.rasa.com).

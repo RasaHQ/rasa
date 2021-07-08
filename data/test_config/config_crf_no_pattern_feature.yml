@@ -1,0 +1,7 @@
+language: en
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "RegexFeaturizer"
+  - name: "CRFEntityExtractor"
+    features: [['low', 'title', 'upper'],['bias', 'low', 'digit'],['low', 'title', 'upper']]
+  - name: "EntitySynonymMapper"

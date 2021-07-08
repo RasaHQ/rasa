@@ -1,0 +1,78 @@
+---
+id: facebook-wit-ai-to-rasa
+sidebar_label: "Rasa as open source alternative to Facebook\u2019s Wit.ai - Migration\
+  \ Guide"
+title: "Rasa as open source alternative to Facebook\u2019s Wit.ai - Migration Guide"
+description: Open source alternative to Facebook's Wit.ai for conversational bots and NLP
+---
+
+To get started with migrating your application from Wit.ai to Rasa:
+
+## Step 1: Export your Training Data from Wit.ai
+
+Navigate to your app's setting page by clicking the **Settings** item
+in the **Management** section of the left navigation bar.
+Scroll down to **Export your data** and hit the button **Download .zip with your data**.
+
+This will download a file with a `.zip` extension. Unzip this file to create a folder.
+The files you want from your download are located in the **utterances** directory.
+
+## Step 2: Create a Rasa Project
+
+To create a Rasa project, run:
+
+```bash
+rasa init
+```
+
+This will create a directory called `data`.
+Remove the files in this directory, and move the content of the `utterances` directory
+to `data`.
+
+```bash
+rm -rf data/
+mv /path/to/utterances data/
+```
+
+## Step 3: Train your NLU model
+
+To train a model using your Wit data, run:
+
+```bash
+rasa train nlu
+```
+
+## Step 4: Test your NLU model
+
+Let's see how your NLU model will interpret some test messages.
+To start a testing session, run:
+
+```bash
+rasa shell nlu
+```
+
+This will prompt your for input.
+Type a test message and press 'Enter'.
+The output of your NLU model will be printed to the screen.
+You can keep entering messages and test as many as you like.
+Press 'control + C' to quit.
+
+## Step 5: Start a Server with your NLU Model
+
+To start a server with your NLU model, run:
+
+```bash
+rasa run nlu
+```
+
+This will start a server listening on port 5005.
+
+To send a request to the server, run:
+
+```bash
+curl 'localhost:5005/model/parse?emulation_mode=wit' -d '{"text": "hello"}'
+The `emulation_mode` parameter tells Rasa that you want your json
+response to have the same format as you would get from wit.ai.
+You can also leave it out to get the result in the usual Rasa format.
+
+Join the [Rasa Community Forum](https://forum.rasa.com/) and let us know how your migration went!

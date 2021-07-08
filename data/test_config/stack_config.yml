@@ -1,0 +1,12 @@
+# Configuration for Rasa NLU.
+# https://rasa.com/docs/rasa/components
+language: en
+pipeline:
+  - name: KeywordIntentClassifier
+  - name: RegexEntityExtractor
+
+# Configuration for Rasa Core.
+# https://rasa.com/docs/rasa/policies
+policies:
+  - name: MemoizationPolicy
+  - name: RulePolicy

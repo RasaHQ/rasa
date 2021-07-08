@@ -1,0 +1,195 @@
+[build-system]
+requires = [ "poetry-core>=1.0.0",]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = [ "py36", "py37", "py38",]
+exclude = "((.eggs | .git | .pytest_cache | build | dist))"
+
+[tool.poetry]
+name = "rasa"
+version = "2.7.0"
+description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
+authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
+maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
+homepage = "https://rasa.com"
+repository = "https://github.com/rasahq/rasa"
+documentation = "https://rasa.com/docs"
+classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "License :: OSI Approved :: Apache Software License", "Programming Language :: Python", "Programming Language :: Python :: 3.6", "Programming Language :: Python :: 3.7", "Programming Language :: Python :: 3.8", "Topic :: Software Development :: Libraries",]
+keywords = [ "nlp", "machine-learning", "machine-learning-library", "bot", "bots", "botkit", "rasa conversational-agents", "conversational-ai", "chatbot", "chatbot-framework", "bot-framework",]
+include = [ "LICENSE.txt", "README.md", "rasa/shared/core/training_data/visualization.html", "rasa/cli/default_config.yml", "rasa/shared/importers/*", "rasa/utils/schemas/*", "rasa/keys",]
+readme = "README.md"
+license = "Apache-2.0"
+
+[tool.towncrier]
+package = "rasa"
+package_dir = "rasa"
+filename = "CHANGELOG.mdx"
+directory = "./changelog"
+underlines = "   "
+title_format = "## [{version}] - {project_date}"
+template = "./changelog/_template.md.jinja2"
+start_string = "<!-- TOWNCRIER -->\n"
+issue_format = "[#{issue}](https://github.com/rasahq/rasa/issues/{issue})"
+[[tool.towncrier.type]]
+directory = "removal"
+name = "Deprecations and Removals"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "feature"
+name = "Features"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "improvement"
+name = "Improvements"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Bugfixes"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "doc"
+name = "Improved Documentation"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "misc"
+name = "Miscellaneous internal changes"
+showcontent = false
+
+[tool.poetry.dependencies]
+python = ">=3.6,<3.9"
+boto3 = "^1.12"
+requests = "^2.23"
+matplotlib = ">=3.1,<3.4"
+attrs = ">=19.3,<20.4"
+jsonpickle = ">=1.3,<2.1"
+redis = "^3.4"
+numpy = ">=1.19.2,<1.20.0"
+scipy = "^1.4.1"
+absl-py = ">=0.9,<0.13"
+apscheduler = ">=3.6,<3.8"
+tqdm = ">=4.31,<4.60"
+networkx = ">=2.4,<2.6"
+fbmessenger = "~6.0.0"
+pykwalify = ">=1.7,<1.9"
+coloredlogs = ">=10,<16"
+"ruamel.yaml" = "^0.16.5"
+scikit-learn = ">=0.22,<0.25"
+slackclient = "^2.0.0"
+twilio = ">=6.26,<6.51"
+webexteamssdk = ">=1.1.1,<1.7.0"
+mattermostwrapper = "~2.2"
+rocketchat_API = ">=0.6.31,<1.16.0"
+colorhash = "~1.0.2"
+jsonschema = "~3.2"
+packaging = ">=20.0,<21.0"
+pytz = ">=2019.1,<2022.0"
+rasa-sdk = "^2.7.0"
+colorclass = "~2.2"
+terminaltables = "~3.1.0"
+sanic = ">=19.12.2,<21.0.0"
+sanic-cors = "^0.10.0b1"
+sanic-jwt = ">=1.3.2,<2.0"
+cloudpickle = ">=1.2,<1.7"
+aiohttp = ">=3.6,<3.8,!=3.7.4.post0"
+questionary = ">=1.5.1,<1.10.0"
+prompt-toolkit = "^2.0"
+python-socketio = ">=4.4,<6"
+python-engineio = ">=4,<6,!=5.0.0"
+pydot = "~1.4"
+async_generator = "~1.10"
+SQLAlchemy = "~1.3.3"
+sklearn-crfsuite = "~0.3"
+psycopg2-binary = "~2.8.2"
+python-dateutil = "~2.8"
+tensorflow = "~2.5"
+tensorflow_hub = "~0.10"
+tensorflow-addons = "~0.13"
+tensorflow-estimator = "~2.5.0"
+tensorflow-probability = "~0.11"
+setuptools = ">=41.0.0"
+kafka-python = ">=1.4,<3.0"
+ujson = ">=1.35,<5.0"
+oauth2client = "4.1.3"
+regex = ">=2020.6,<2020.10"
+joblib = ">=0.15.1,<1.1.0"
+sentry-sdk = ">=0.17.0,<1.2.0"
+aio-pika = "^6.7.1"
+pyTelegramBotAPI = "^3.7.3"
+
+[tool.poetry.dev-dependencies]
+pytest-cov = "^2.10.0"
+pytest-sanic = "^1.6.1"
+pytest-asyncio = "^0.14.0"
+pytest-xdist = "^2.2.1"
+pytest = "^6.2.2"
+freezegun = "^1.0.0"
+responses = "^0.12.1"
+aioresponses = "^0.7.2"
+moto = "~=1.3.16"
+fakeredis = "^1.5.2"
+mongomock = "^3.18.0"
+black = "^19.10b0"
+flake8 = "^3.8.3"
+flake8-docstrings = "^1.5.0"
+google-cloud-storage = "^1.29.0"
+azure-storage-blob = "<12.9.0"
+coveralls = "^3.0.1"
+towncrier = "^21.3.0"
+toml = "^0.10.0"
+pep440-version-utils = "^0.3.0"
+pydoc-markdown = "^3.10.3"
+pytest-timeout = "^1.4.2"
+mypy = "^0.812"
+bandit = "^1.6.3"
+typing-extensions = "^3.7.4"
+memory-profiler = "^0.58.0"
+psutil = "^5.8.0"
+
+[tool.poetry.extras]
+spacy = [ "spacy",]
+jieba = [ "jieba",]
+transformers = [ "transformers",]
+full = [ "spacy", "transformers", "jieba",]
+gh-release-notes = [ "github3.py",]
+
+[tool.poetry.scripts]
+rasa = "rasa.__main__:main"
+
+[tool.poetry.dependencies.PyJWT]
+version = "^2.0.0"
+extras = [ "crypto",]
+
+[tool.poetry.dependencies.colorama]
+version = "^0.4.4"
+markers = "sys_platform == 'win32'"
+
+[tool.poetry.dependencies.spacy]
+version = "^3.0"
+optional = true
+
+[tool.poetry.dependencies.tensorflow-text]
+version = ">=2.5,<2.6"
+markers = "sys_platform!='win32'"
+
+[tool.poetry.dependencies."github3.py"]
+version = "~1.3.0"
+optional = true
+
+[tool.poetry.dependencies.transformers]
+version = ">=2.4,<2.12"
+optional = true
+
+[tool.poetry.dependencies.jieba]
+version = ">=0.39, <0.43"
+optional = true
+
+[tool.poetry.dependencies.pymongo]
+version = ">=3.8,<3.11"
+extras = [ "tls", "srv",]

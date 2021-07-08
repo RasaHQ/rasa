@@ -1,0 +1,29 @@
+language: en
+
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+    token_pattern: (?u)\b\w+\b
+  - name: DucklingEntityExtractor
+    url: http://localhost:8000
+    dimensions:
+    - number
+  - name: DIETClassifier
+    epochs: 100
+  - name: EntitySynonymMapper
+  - name: FallbackClassifier
+    # If the highest ranked intent has a confidence lower than the threshold than
+    # the NLU pipeline predicts an intent `nlu_fallback` which you can then use in
+    # stories / rules to implement an appropriate fallback.
+    threshold: 0.5
+
+policies:
+  - name: RulePolicy
+    # Confidence of the prediction if no rule matched and de-facto threshold for a
+    # core fallback.
+    core_fallback_threshold: 0.3
+    # Name of the action which should be predicted if no rule matched.
+    core_fallback_action_name: "action_default_fallback"
+    # If `True` `core_fallback_action_name` is predicted in case no rule matched.
+    enable_fallback_prediction: True

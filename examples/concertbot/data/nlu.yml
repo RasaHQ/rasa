@@ -1,0 +1,58 @@
+version: "2.0"
+nlu:
+  - intent: greet
+    examples: |
+      - hi
+      - hello
+      - how are you
+      - good morning
+      - good evening
+      - hey
+
+  - intent: goodbye
+    examples: |
+      - bye
+      - goodbye
+      - ciao
+
+  - intent: thankyou
+    examples: |
+      - thanks
+      - thank you
+      - thanks friend
+
+  - intent: search_concerts
+    examples: |
+      - Find me some good concerts
+      - Show me concerts
+      - search concerts
+
+  - intent: search_venues
+    examples: |
+      - Find me some good venues
+      - Show me venues
+      - search venues
+
+  - intent: compare_reviews
+    examples: |
+      - compare reviews
+      - show me a comparison of the reviews
+
+  - intent: how_to_get_started
+    examples: |
+      - how do I get started
+      - what can I do
+      - start
+
+  - intent: affirm
+    examples: |
+      - yes
+      - yeah
+      - yep
+
+  - intent: deny
+    examples: |
+      - nope
+      - no
+      - absolutely not
+  

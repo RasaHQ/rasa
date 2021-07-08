@@ -1,0 +1,51 @@
+version: "2.0"
+nlu:
+  - intent: greet
+    examples: |
+      - hey
+      - hello
+      - hi
+      - good morning
+      - good evening
+      - hey there
+
+  - intent: bye
+    examples: |
+      - bye
+      - good bye
+      - ciao
+      - see you
+      - see ya
+
+  - intent: ask_remind_call
+    examples: |
+      - remind me to call John
+      - remind me to call Lis
+      - remind me to call Albert
+      - remind me to call Susan
+      - later I have to call Alan
+      - later I have to call Jessie
+      - later I have to call Alex
+      - Please, remind me to call Vova
+      - please remind me to call Tanja
+      - I must not forget to call Santa
+      - I must not forget to call Daksh
+      - I must not forget to call Juste
+
+  - intent: ask_id
+    examples: |
+      - what's the conversation id?
+      - id
+      - What is the ID of this conversation?
+      - How do I send a POST request to this conversation?
+
+  - intent: ask_forget_reminders
+    examples: |
+      - forget about it
+      - don't remind me!
+      - Forget about the reminder
+      - do not remind me
+      - cancel the reminder
+      - cancel all reminders please
+      - Forget reminding me
+      - Forget reminding me!

@@ -1,0 +1,13 @@
+language: en
+
+pipeline:
+  - name: "KeywordIntentClassifier"
+
+policies:
+  - name: MemoizationPolicy
+
+importers:
+  - name: MultiProjectImporter
+
+imports:
+  - data/MoodBot

@@ -1,0 +1,5 @@
+policies:
+  - name: MemoizationPolicy
+    max_history: 5
+  - name: tests.core.conftest.ExamplePolicy
+    example_arg: 10

@@ -1,0 +1,89 @@
+{
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "text": "i want pizza",
+        "intent": "out_of_scope"
+      },
+      {
+        "text": "i want to go from berlin to tokyo tomorrow",
+        "intent": "flight_booking",
+        "entities": [
+          {
+            "start": 18,
+            "role": "from",
+            "end": 24,
+            "value": "berlin",
+            "entity": "location"
+          },
+          {
+            "start": 28,
+            "role": "to",
+            "end": 33,
+            "value": "tokyo",
+            "entity": "location"
+          },
+          {
+            "start": 34,
+            "end": 42,
+            "value": "2016-05-29T00:00:00.000-07:00",
+            "entity": "datetime"
+          }
+        ]
+      },
+      {
+        "text": "i'm looking for a flight from london to amsterdam next monday",
+        "intent": "flight_booking",
+        "entities": [
+          {
+            "start": 30, 
+            "role": "from", 
+            "end": 36, 
+            "value": "london", 
+            "entity": "location"
+          }, 
+          {
+            "start": 40, 
+            "role": "to", 
+            "end": 49, 
+            "value": "amsterdam", 
+            "entity": "location"
+          }, 
+          {
+            "start": 50, 
+            "end": 61, 
+            "value": "2016-05-30T00:00:00.000-07:00", 
+            "entity": "datetime",
+            "role": "datetime"
+          }
+        ]
+      }, 
+      {
+        "text": "i want to fly to berlin",
+        "intent": "flight_booking",
+        "entities": [
+          {
+            "start": 17, 
+            "role": "from", 
+            "end": 23, 
+            "value": "berlin", 
+            "entity": "location"
+          }
+        ]
+      }, 
+      {
+        "text": "i want to fly from london",
+        "intent": "flight_booking",
+        "entities": [
+          {
+            "start": 19, 
+            "role": "from", 
+            "end": 25, 
+            "value": "london", 
+            "entity": "location"
+          }
+        ]
+      }
+    ]
+  }
+}

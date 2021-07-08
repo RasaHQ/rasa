@@ -1,0 +1,6 @@
+timeout: "20m"
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'docker-build'
+  args: ['build', '--file', './docker/Dockerfile_full', '-t', '$_IMAGE_REPO:$TAG_NAME', '.']
+images: [ '$_IMAGE_REPO:$TAG_NAME' ]

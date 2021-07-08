@@ -1,0 +1,23 @@
+version: "2.0"
+rules:
+  - rule: fallback
+    steps:
+      - intent: nlu_fallback
+      - action: utter_default
+  - rule: greet
+    steps:
+      - intent: greet
+      - action: utter_greet
+  - rule: thankyou
+    steps:
+      - intent: thankyou
+      - action: utter_youarewelcome
+  - rule: goodbye
+    steps:
+      - intent: goodbye
+      - action: utter_goodbye
+  - rule: challenge
+    steps:
+      - intent: bot_challenge
+      - action: utter_iamabot
+

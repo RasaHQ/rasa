@@ -1,0 +1,308 @@
+{
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "text": "yes", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "yep", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "yeah", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "indeed", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "that's right", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "ok", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "great", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "right, thank you", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "correct", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "great choice", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "sounds really good", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "bye", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "goodbye", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "good bye", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "stop", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "end", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "farewell", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "Bye bye", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "have a good one", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "hey", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "howdy", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "hey there", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "hello", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "hi", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "good morning", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "good evening", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "dear sir", 
+        "intent": "greet"
+      },
+      {
+        "text": "What's your name?",
+        "intent": "chitchat/ask_name"
+      },
+      {
+        "text": "What can I call you?",
+        "intent": "chitchat/ask_name"
+      },
+      {
+        "text": "How's the weather?",
+        "intent": "chitchat/ask_weather"
+      },
+      {
+        "text": "Is it too hot outside?",
+        "intent": "chitchat/ask_weather"
+      },
+      {
+        "text": "i'm looking for a place to eat", 
+        "intent": "restaurant_search"
+      }, 
+      {
+        "text": "I want to grab lunch", 
+        "intent": "restaurant_search"
+      }, 
+      {
+        "text": "I am searching for a dinner spot", 
+        "intent": "restaurant_search"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 31, 
+            "end": 36, 
+            "value": "north", 
+            "entity": "location"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "i'm looking for a place in the north of town"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 8, 
+            "end": 15, 
+            "value": "chinese", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "show me chinese restaurants"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 8, 
+            "end": 14, 
+            "value": "chinese", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "show me chines restaurants"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 10, 
+            "end": 17, 
+            "value": "mexican", 
+            "entity": "cuisine"
+          }, 
+          {
+            "start": 31, 
+            "end": 37, 
+            "value": "centre", 
+            "entity": "location"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "show me a mexican place in the centre"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 20, 
+            "end": 26, 
+            "value": "indian", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "i am looking for an indian spot called olaolaolaolaolaola"
+      }, 
+      {
+        "text": "search for restaurants", 
+        "intent": "restaurant_search"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 16, 
+            "end": 20, 
+            "value": "west", 
+            "entity": "location"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "anywhere in the west"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 14, 
+            "end": 19, 
+            "value": "18328", 
+            "entity": "location"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "anywhere near 18328"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 17, 
+            "end": 29, 
+            "value": "asian fusion", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "I am looking for asian fusion food"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 29, 
+            "end": 34, 
+            "value": "29432", 
+            "entity": "location"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "I am looking a restaurant in 29432"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 17, 
+            "end": 38, 
+            "value": "mexican indian fusion", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "I am looking for mexican indian fusion"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 0, 
+            "end": 7, 
+            "value": "central", 
+            "entity": "location"
+          }, 
+          {
+            "start": 8, 
+            "end": 14, 
+            "value": "indian", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "central indian restaurant"
+      }
+    ], 
+    "entity_synonyms": [
+      {
+        "synonyms": [
+          "Chines", 
+          "chines", 
+          "Chinese"
+        ], 
+        "value": "chinese"
+      }, 
+      {
+        "synonyms": [
+          "veggie", 
+          "vegg"
+        ], 
+        "value": "vegetarian"
+      }
+    ], 
+    "regex_features": []
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "text": "yes\n",
+        "intent": "affirm"
+      },
+      {
+        "entities": [
+          {
+            "start": 31, 
+            "end": 38,
+            "value": "n\north\n",
+            "entity": "location"
+          }
+        ], 
+        "intent": "restaurant_search\t",
+        "text": "i'm looking for a place in the n\north\n of town"
+      }
+    ], 
+    "entity_synonyms": [
+      {
+        "synonyms": [
+          "C\thi\rne\bs",
+          "chines", 
+          "Chinese"
+        ], 
+        "value": "chinese"
+      }
+    ], 
+    "regex_features": []
+  }
+}

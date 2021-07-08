@@ -1,0 +1,15 @@
+stories:
+- story: My hybrid End-to-End story
+  steps:
+  # Regular story with labels
+  - intent: simple
+  - action: utter_greet
+  # Actual messages are given instead of labels
+  - user: "I am looking for a [Kenyan](cuisine) restaurant"
+  - bot: "good for you"
+  # Regular labeled events
+  - intent: goodbye
+  - action: utter_goodbye
+  # Actual messages are given instead of labels
+  - user: One more thing
+  - bot: What?

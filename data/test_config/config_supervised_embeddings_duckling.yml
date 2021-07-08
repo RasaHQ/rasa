@@ -1,0 +1,8 @@
+language: "en"
+
+pipeline:
+- name: "CountVectorsFeaturizer"
+- name: "DIETClassifier"
+  epochs: 2
+- name: "DucklingEntityExtractor"
+  url: "http://duckling:8000"

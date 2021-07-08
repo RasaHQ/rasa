@@ -1,0 +1,8 @@
+rasa:
+  image: rasa/rasa:latest-spacy-en
+  ports:
+    - "5000:5000"
+  volumes:
+   - "/rasa-app-data/projects:/app/projects"
+   - "/rasa-app-data/logs:/app/logs"
+   - "./rasa-app-data/data:/app/data"
