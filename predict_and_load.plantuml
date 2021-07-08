@@ -33,7 +33,7 @@ group instantiate_graph (for every graph node in schema)
 
     GraphRunner -> GraphNode: ~__init__(nodename, config, model_storage)
     group if trained component
-'        Where does this resource come from?!?!?!
+        note over GraphNode: The resource  will have been specified in the graph schema to point to the corresponding train node in the train schema.
         GraphNode -> GraphComponent: load(config, resource, model_storage)
         GraphComponent -> ModelStorage: with_read_from(resource)
         ModelStorage -> ModelStorage: create_tmp_dir
