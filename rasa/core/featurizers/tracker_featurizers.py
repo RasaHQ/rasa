@@ -1011,13 +1011,12 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         example_states = []
         example_entities = []
 
-        # Store of example hashes for removing duplicate training examples.
+        # Store of example hashes (of both states and labels) for removing
+        # duplicate training examples.
         hashed_examples = set()
-        # Mapping of example state hash to list of positive labels associated with
-        # the state. Note that each individual 'label' instance is a list of strings.
+        # Mapping of example state hash to set of
+        # positive labels associated with the state.
         state_hash_to_label_set: defaultdict[int, Set[Text]] = defaultdict(set)
-
-        seen_states = set()
 
         logger.debug(
             f"Creating states and {self.LABEL_NAME} label examples from "
@@ -1046,13 +1045,16 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
 
                 # Store all positive labels associated with a training state.
                 state_hash = self._hash_example(states)
-                state_hash_to_label_set[state_hash].add(label[0])
 
                 # Only add unique example states unless `remove_duplicates` is `False`.
-                if not self.remove_duplicates or state_hash not in seen_states:
+                if (
+                    not self.remove_duplicates
+                    or state_hash not in state_hash_to_label_set
+                ):
                     example_states.append(states)
                     example_entities.append(entities)
-                    seen_states.add(state_hash)
+
+                state_hash_to_label_set[state_hash].add(label[0])
 
                 pbar.set_postfix({f"# {self.LABEL_NAME}": f"{len(example_states):d}"})
 
