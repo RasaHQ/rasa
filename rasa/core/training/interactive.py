@@ -77,6 +77,7 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
+from rasa.shared.exceptions import InvalidConfigException
 
 # noinspection PyProtectedMember
 from rasa.shared.nlu.training_data import loading
@@ -545,7 +546,10 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
     for idx, event in enumerate(applied_events):
         if isinstance(event, ActionExecuted):
-            if event.action_name == ACTION_UNLIKELY_INTENT_NAME and event.confidence == 0:
+            if (
+                event.action_name == ACTION_UNLIKELY_INTENT_NAME
+                and event.confidence == 0
+            ):
                 continue
             bot_column.append(colored(str(event), "autocyan"))
             if event.confidence is not None:
@@ -966,10 +970,18 @@ async def _predict_till_next_listen(
     listen = False
     while not listen:
         result = await request_prediction(endpoint, conversation_id)
-        predictions = result.get("scores")
+        predictions = result.get("scores") or []
+        if not predictions:
+            raise InvalidConfigException(
+                "Cannot continue as no action was predicted by the dialogue manager. "
+                "This can happen if you trained the assistant with no policy included "
+                "in the configuration. If so, please re-train the assistant with at "
+                f"least one policy ({DOCS_URL_POLICIES}) included in the configuration."
+            )
+
         probabilities = [prediction["score"] for prediction in predictions]
         pred_out = int(np.argmax(probabilities))
-        action_name = predictions.get(pred_out, {}).get("action")
+        action_name = predictions[pred_out].get("action")
         policy = result.get("policy")
         confidence = result.get("confidence")
 
