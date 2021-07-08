@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Text, Tuple, Callable
 from tests.conftest import AsyncMock
 
 import pytest
-from io import StringIO
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
 import unittest.mock
