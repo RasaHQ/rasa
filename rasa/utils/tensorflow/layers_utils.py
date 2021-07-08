@@ -103,7 +103,7 @@ def reduce_mean_equal(
         The mean of "x == y"
     """
     if mask is None:
-        mask = tf.ones_like(x)
+        mask = tf.ones_like(x, dtype=tf.float32)
 
     equal_indices = tf.cast(tf.math.equal(x, y), tf.float32) * mask
     return tf.reduce_mean(
