@@ -1,5 +1,6 @@
 import argparse
 import os
+import platform
 import sys
 from typing import List, Text
 
@@ -217,6 +218,9 @@ def run(args: argparse.Namespace) -> None:
         # Can't use `if not path` either, as `None` will be handled differently (abort)
         if path == "":
             path = "."
+
+        if "windows" not in platform.system().lower():
+            path = os.path.realpath(os.path.expanduser(os.path.expandvars(path)))
 
     if args.no_prompt and not os.path.isdir(path):
         print_error_and_exit(f"Project init path '{path}' not found.")
