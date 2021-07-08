@@ -261,7 +261,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     @staticmethod
     def _back_to_the_future(
         tracker: DialogueStateTracker,
-        max_num_events: Optional[int] = None,
+        max_applied_events: Optional[int] = None,
         again: bool = False,
     ) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
@@ -270,8 +270,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         idx_of_first_action = None
         idx_of_second_action = None
 
-        if max_num_events:
-            applied_events = tracker.applied_events()[-max_num_events:]
+        if max_applied_events:
+            applied_events = tracker.applied_events()[-max_applied_events:]
         else:
             applied_events = tracker.applied_events()
 
@@ -320,9 +320,13 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         logger.debug("Launch DeLorean...")
 
         # Count how many events we need to look at, based on `max_history`
-        max_num_events = num_past_events_from_max_history(tracker, self.max_history)
+        max_applied_events = get_max_applied_events_for_max_history(
+            tracker, self.max_history
+        )
 
-        mcfly_tracker = self._back_to_the_future(tracker, max_num_events=max_num_events)
+        mcfly_tracker = self._back_to_the_future(
+            tracker, max_applied_events=max_applied_events
+        )
         while mcfly_tracker is not None:
             tracker_as_states = self.featurizer.prediction_states(
                 [mcfly_tracker], domain
@@ -368,7 +372,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             return predicted_action_index
 
 
-def num_past_events_from_max_history(
+def get_max_applied_events_for_max_history(
     tracker: DialogueStateTracker, max_history: Optional[int],
 ) -> Optional[int]:
     """Computes the number of events in the tracker that correspond to max_history.
@@ -379,7 +383,8 @@ def num_past_events_from_max_history(
 
     Returns:
         The number of actions, as counted from the end of the event list, that should
-        be taken into accout according to the `max_history` setting.
+        be taken into accout according to the `max_history` setting. If all events
+        should be taken into account, the return value is `None`.
     """
     if not max_history:
         return None

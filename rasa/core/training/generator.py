@@ -25,7 +25,7 @@ from rasa.core.training.structures import (
     GENERATED_CHECKPOINT_PREFIX,
 )
 from rasa.utils.common import is_logging_disabled, raise_warning
-from rasa.core.domain import Domain  # pytype: disable=pyi-error
+from rasa.core.domain import Domain
 from rasa.core.slots import Slot
 
 logger = logging.getLogger(__name__)

@@ -57,6 +57,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             SlotSet("slot_3", True),
             ActionExecuted(UTTER_GREET_ACTION),
             ActionExecuted(UTTER_GREET_ACTION),
+            UserUttered(intent={"name": GREET_INTENT_NAME}),
             ActionExecuted(UTTER_GREET_ACTION),
             SlotSet("slot_4", True),
             ActionExecuted(UTTER_BYE_ACTION),
@@ -104,15 +105,15 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
                     type: bool
                 slot_3:
                     type: bool
-                slot_4:
-                    type: bool
             """
         )
         training_story = TrackerWithCachedStates.from_events(
             "training story",
             [
                 ActionExecuted(UTTER_GREET_ACTION),
-                SlotSet("slot_4", True),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_GREET_ACTION),
+                SlotSet("slot_3", True),
                 ActionExecuted(UTTER_BYE_ACTION),
             ],
             domain=domain,
@@ -126,10 +127,13 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
                 SlotSet("slot_1", False),
                 ActionExecuted(UTTER_GREET_ACTION),
                 ActionExecuted(UTTER_GREET_ACTION),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_GREET_ACTION),
+                SlotSet("slot_2", True),
+                ActionExecuted(UTTER_GREET_ACTION),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
                 ActionExecuted(UTTER_GREET_ACTION),
                 SlotSet("slot_3", True),
-                ActionExecuted(UTTER_GREET_ACTION),
-                SlotSet("slot_4", True),
                 # ActionExecuted(UTTER_BYE_ACTION),
             ],
             domain=domain,
