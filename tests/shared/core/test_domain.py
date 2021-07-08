@@ -1406,12 +1406,7 @@ def test_form_with_no_required_slots_keyword():
             {
                 "forms": {
                     "some_form": {
-                        "some_slot": [
-                            {
-                                "type": "from_text",
-                                "intent": "some_intent",
-                            }
-                        ],
+                        "some_slot": [{"type": "from_text", "intent": "some_intent",}],
                     }
                 }
             }
