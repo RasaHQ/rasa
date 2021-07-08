@@ -584,6 +584,39 @@ def _get_e2e_entity_evaluation_result(
                 )
 
 
+def _run_action_prediction(
+    processor: "MessageProcessor",
+    partial_tracker: DialogueStateTracker,
+    expected_action: Text,
+) -> Tuple[Text, PolicyPrediction]:
+    action, prediction = processor.predict_next_action(partial_tracker)
+    predicted_action = action.name()
+
+    policy_entity_result = _get_e2e_entity_evaluation_result(
+        processor, partial_tracker, prediction
+    )
+
+    if (
+            prediction.policy_name
+            and predicted_action != expected_action
+            and _form_might_have_been_rejected(
+        processor.domain, partial_tracker, predicted_action
+    )
+    ):
+        # Wrong action was predicted,
+        # but it might be Ok if form action is rejected.
+        emulate_loop_rejection(partial_tracker)
+        # try again
+        action, prediction = processor.predict_next_action(partial_tracker)
+
+        # Even if the prediction is also wrong, we don't have to undo the emulation
+        # of the action rejection as we know that the user explicitly specified
+        # that something else than the form was supposed to run.
+        predicted_action = action.name()
+
+    return predicted_action, prediction
+
+
 def _collect_action_executed_predictions(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
@@ -605,43 +638,43 @@ def _collect_action_executed_predictions(
         prediction = PolicyPrediction([], policy_name=None)
         predicted_action = "circuit breaker tripped"
     else:
-        action, prediction = processor.predict_next_action(partial_tracker)
-        predicted_action = action.name()
-
-        policy_entity_result = _get_e2e_entity_evaluation_result(
-            processor, partial_tracker, prediction
-        )
-
-        if (
-            prediction.policy_name
-            and predicted_action != expected_action
-            and _form_might_have_been_rejected(
-                processor.domain, partial_tracker, predicted_action
-            )
-        ):
-            # Wrong action was predicted,
-            # but it might be Ok if form action is rejected.
-            emulate_loop_rejection(partial_tracker)
-            # try again
-            action, prediction = processor.predict_next_action(partial_tracker)
-
-            # Even if the prediction is also wrong, we don't have to undo the emulation
-            # of the action rejection as we know that the user explicitly specified
-            # that something else than the form was supposed to run.
-            predicted_action = action.name()
+        predicted_action, prediction = _run_action_prediction(processor, partial_tracker, expected_action)
 
     predicted_warning = action_executed_eval_store.predicted_warning(predicted_action)
-    if not predicted_warning:
+    if predicted_warning:
+        if predicted_action != expected_action:
+            partial_tracker.update(
+                WronglyPredictedAction(
+                    expected_action_name,
+                    expected_action_text,
+                    predicted_action,
+                    prediction.policy_name,
+                    prediction.max_confidence,
+                    event.timestamp,
+                    metadata=prediction.action_metadata,
+                )
+            )
+            predicted_action, prediction = _run_action_prediction(processor, partial_tracker, expected_action)
+        else:
+            partial_tracker.update(
+                ActionExecuted(
+                    predicted_action,
+                    prediction.policy_name,
+                    prediction.max_confidence,
+                    event.timestamp,
+                )
+            )
+    else:
         action_executed_eval_store.add_to_store(
             action_predictions=[predicted_action], action_targets=[expected_action]
         )
 
     has_prediction_target_mismatch = (
-        action_executed_eval_store.has_prediction_target_mismatch()
+        action_executed_eval_store.has_prediction_target_mismatch() or (
+            predicted_warning and predicted_action != expected_action
+        )
     )
-    if has_prediction_target_mismatch or (
-        predicted_warning and predicted_action != expected_action
-    ):
+    if has_prediction_target_mismatch:
         partial_tracker.update(
             WronglyPredictedAction(
                 expected_action_name,
@@ -653,7 +686,7 @@ def _collect_action_executed_predictions(
                 metadata=prediction.action_metadata,
             )
         )
-        if fail_on_prediction_errors and has_prediction_target_mismatch:
+        if fail_on_prediction_errors and predicted_action != ACTION_UNLIKELY_INTENT_NAME and expected_action != ACTION_UNLIKELY_INTENT_NAME:
             story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
             error_msg = (
                 f"Model predicted a wrong action. Failed Story: " f"\n\n{story_dump}"
