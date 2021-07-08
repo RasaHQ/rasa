@@ -172,7 +172,7 @@ class SingleStateFeaturizer:
             name_attribute = get_name_attribute(sub_state)
 
             if substate_type == PREVIOUS_ACTION:
-                substate_features = self.featurize_substate_via_interpreter(
+                substate_features = self._featurize_substate_via_interpreter(
                     sub_state,
                     interpreter,
                     exclude={ENTITIES},
