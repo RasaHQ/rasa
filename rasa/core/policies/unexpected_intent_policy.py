@@ -277,6 +277,11 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
             **kwargs,
         )
 
+        import os
+        TOL = float(os.getenv("ITED_TOL", 0.0))
+        print("TOLERANCE SET BY ENV TO:", TOL)
+        self.config[TOLERANCE] = TOL
+
         self.label_quantiles = label_quantiles or {}
         self.label_thresholds = (
             self._pick_thresholds(self.label_quantiles, self.config[TOLERANCE])
