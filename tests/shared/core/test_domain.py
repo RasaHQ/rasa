@@ -1447,3 +1447,11 @@ def test_domain_with_empty_required_slots():
                 required_slots:
             """
         )
+
+
+def test_domain_invalid_yml_in_folder():
+    """
+    Check if invalid YAML files in a domain folder lead to the proper UserWarning
+    """
+    with pytest.warns(UserWarning, match="The file .* your file\\."):
+        Domain.from_directory("data/test_domains/test_domain_from_directory1/")
