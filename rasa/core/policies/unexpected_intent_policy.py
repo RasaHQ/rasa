@@ -715,19 +715,7 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
                         output_scores["similarities"][index, 0, candidate_label_id]
                     )
 
-        # Get only unique scores so that duplicate
-        # trackers created because of permutations are pruned out.
-        # CAUTION: There is an extremely low chance that two different
-        # trackers predicted the same score for a label. We overlook
-        # that possibility here.
-        unique_label_id_scores = {
-            label_id: {
-                POSITIVE_SCORES_KEY: list(set(scores[POSITIVE_SCORES_KEY])),
-                NEGATIVE_SCORES_KEY: list(set(scores[NEGATIVE_SCORES_KEY])),
-            }
-            for label_id, scores in label_id_scores.items()
-        }
-        return unique_label_id_scores
+        return label_id_scores
 
     @staticmethod
     def _compute_label_quantiles(

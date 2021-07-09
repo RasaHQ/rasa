@@ -1,4 +1,4 @@
-from typing import Text, List, Tuple, Union
+from typing import Text, List, Tuple, Union, Optional
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 import numpy as np
@@ -10,7 +10,13 @@ from rasa.utils.tensorflow.layers import (
     RandomlyConnectedDense,
     DenseForSparse,
 )
-from rasa.utils.tensorflow.constants import INNER, SOFTMAX, LINEAR_NORM, LABEL
+from rasa.utils.tensorflow.constants import (
+    INNER,
+    SOFTMAX,
+    LINEAR_NORM,
+    LABEL,
+    LABEL_PAD_ID,
+)
 import rasa.utils.tensorflow.layers_utils as layers_utils
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -55,6 +61,117 @@ def test_multi_label_dot_product_loss_call_shapes():
 
     assert len(tf.shape(loss)) == 0
     assert len(tf.shape(accuracy)) == 0
+
+
+@pytest.mark.parametrize(
+    "label_ids, num_candidates, expected_pos_label_mask",
+    [
+        ([[2, LABEL_PAD_ID], [3, 4]], 20, [[1, 0], [1, 1]]),
+        ([[2, 1], [3, 4]], 5, [[1, 1], [1, 1]]),
+    ],
+)
+def test_multi_label_dot_product_loss__construct_label_padding_mask(
+    label_ids: List[List[int]],
+    num_candidates: int,
+    expected_pos_label_mask: List[List[int]],
+):
+    actual_label_mask = MultiLabelDotProductLoss._construct_mask_for_label_padding(
+        np.expand_dims(label_ids, -1), num_candidates
+    ).numpy()
+
+    pos_label_columns = np.array(label_ids).shape[1]
+
+    # First check if the mask corresponding to guaranteed positive label ids is correct.
+    assert np.all(
+        actual_label_mask[:, :pos_label_columns]
+        == np.array(expected_pos_label_mask).astype(np.float32)
+    )
+
+    # Next check if the mask corresponding to sampled candidates is correct.
+    assert np.all(
+        actual_label_mask[:, pos_label_columns:]
+        == np.ones((len(label_ids), num_candidates), dtype=np.float32)
+    )
+
+
+@pytest.mark.parametrize(
+    "sim_pos, sim_candidates_il, pos_neg_labels, mask, expected_loss",
+    [
+        (
+            np.array([[2.0, -0.1, -5], [4.2, 5.1, -4.5]]),
+            np.array([[-1.1, -3], [2.1, -3.5]]),
+            np.array([[1.0, 0.0], [1.0, 0.0]]),
+            None,
+            1.1991243,
+        ),
+        (
+            np.array([[2.0, -0.1, -5], [4.2, 5.1, -4.5]]),
+            np.array([[-1.1, -3], [2.1, -3.5]]),
+            np.array([[1.0, 0.0], [1.0, 0.0]]),
+            np.array(
+                [[1.0, 0.0, 1.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0, 1.0]], dtype=np.float32
+            ),
+            1.5972487,
+        ),
+    ],
+)
+def test_multi_label_dot_product_loss__compute_loss_with_and_without_mask(
+    sim_pos: np.ndarray,
+    sim_candidates_il: np.ndarray,
+    pos_neg_labels: np.ndarray,
+    mask: Optional[np.ndarray],
+    expected_loss: float,
+):
+    layer = MultiLabelDotProductLoss(num_candidates=3)
+
+    loss = layer._loss_sigmoid(
+        np.expand_dims(sim_pos, 1).astype(np.float32),
+        np.expand_dims(sim_candidates_il, 1).astype(np.float32),
+        pos_neg_labels.astype(np.float32),
+        mask,
+    ).numpy()
+
+    assert np.isclose([loss], [expected_loss])
+
+
+@pytest.mark.parametrize(
+    "sim_pos, sim_candidates_il, pos_neg_labels, mask, expected_accuracy",
+    [
+        (
+            np.array([[2.0, -0.1, -5], [4.2, 5.1, -4.5]]),
+            np.array([[-1.1, -3], [2.1, -3.5]]),
+            np.array([[1.0, 0.0], [1.0, 0.0]]),
+            None,
+            0.6,
+        ),
+        (
+            np.array([[2.0, -0.1, -5], [4.2, 5.1, -4.5]]),
+            np.array([[-1.1, -3], [2.1, -3.5]]),
+            np.array([[1.0, 0.0], [1.0, 0.0]]),
+            np.array(
+                [[1.0, 0.0, 1.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0, 1.0]], dtype=np.float32
+            ),
+            0.5833334,
+        ),
+    ],
+)
+def test_multi_label_dot_product_loss__compute_accuracy_with_and_without_mask(
+    sim_pos: np.ndarray,
+    sim_candidates_il: np.ndarray,
+    pos_neg_labels: np.ndarray,
+    mask: Optional[np.ndarray],
+    expected_accuracy: float,
+):
+    layer = MultiLabelDotProductLoss(num_candidates=3)
+
+    accuracy = layer._accuracy(
+        np.expand_dims(sim_pos, 1).astype(np.float32),
+        np.expand_dims(sim_candidates_il, 1).astype(np.float32),
+        pos_neg_labels.astype(np.float32),
+        mask,
+    ).numpy()
+
+    assert np.isclose([accuracy], [expected_accuracy])
 
 
 def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of_labels(
@@ -111,8 +228,10 @@ def test_multi_label_dot_product_loss__sample_candidates_with_constant_number_of
     assert np.all(
         pos_inputs_embed.numpy() == tf.expand_dims(batch_inputs_embed, axis=-2).numpy()
     )
-    # The first example labels of each batch are in `pos_labels_embed`
-    assert np.all(pos_labels_embed.numpy() == np.array([[[l0]], [[l2]], [[l3]]]))
+    # All positive labels of each batch are in `pos_labels_embed`
+    assert np.all(
+        pos_labels_embed.numpy() == np.array([[[l0, l1]], [[l2, l3]], [[l3, l0]]])
+    )
     # The candidate label embeddings are picked according to the `mock_indices` above.
     # E.g. a 2 coming from `mock_indices` means that `all_labels_embed[2]` is picked,
     # i.e. `l2`.
@@ -195,8 +314,11 @@ def test_multi_label_dot_product_loss__sample_candidates_with_variable_number_of
     assert np.all(
         pos_inputs_embed.numpy() == tf.expand_dims(batch_inputs_embed, axis=-2).numpy()
     )
-    # The first example labels of each batch are in `pos_labels_embed`
-    assert np.all(pos_labels_embed.numpy() == np.array([[[l0]], [[l2]], [[l3]]]))
+    # All example labels of each batch are in `pos_labels_embed`
+    assert np.all(
+        pos_labels_embed.numpy()
+        == np.array([[[l0, l1, l3]], [[l2, lp, lp]], [[l3, l0, lp]]])
+    )
     # The candidate label embeddings are picked according to the `mock_indices` above.
     # E.g. a 2 coming from `mock_indices` means that `all_labels_embed[2]` is picked,
     # i.e. `l2`.

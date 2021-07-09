@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow import Tensor
-from typing import Union
+from typing import Union, Optional
 
 
 def random_indices(
@@ -71,14 +71,43 @@ def get_candidate_values(
     return candidate_values  # (batch_size, num_candidates, tf.shape(x)[-1])
 
 
-def reduce_mean_equal(x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
+def reduce_mean_equal(
+    x: tf.Tensor, y: tf.Tensor, mask: Optional[tf.Tensor] = None
+) -> tf.Tensor:
     """Computes the mean number of matches between x and y.
 
+    If `x` and `y` have `n` dimensions, then the mean equal
+    number of indices is calculated for the last dimension by
+    only taking the valid indices into consideration
+    (from the mask) and then it is averaged over all
+    other `n-1` dimensions.
+
+    For e.g., if:
+
+    x = [[1,2,3,4]
+        [5,6,7,8]]
+    y = [[1,2,3,4]
+        [5,6,0,0]]
+    mask = [[1,1,1,1],
+            [1,1,1,0]]
+
+    then the output will be calculated as `((4/4) + 2/3) / 2`
+
     Args:
-        x: Any numeric tensor
-        y: Another tensor with same shape and type as x
+        x: Any numeric tensor.
+        y: Another tensor with same shape and type as x.
+        mask: Tensor with a mask to distinguish actual indices from padding indices.
+            Shape should be the same as `x` and `y`.
 
     Returns:
         The mean of "x == y"
     """
-    return tf.reduce_mean(tf.cast(tf.math.equal(x, y), tf.float32))
+    if mask is None:
+        mask = tf.ones_like(x, dtype=tf.float32)
+
+    equal_indices = tf.cast(tf.math.equal(x, y), tf.float32) * mask
+    return tf.reduce_mean(
+        tf.math.divide_no_nan(
+            tf.reduce_sum(equal_indices, axis=-1), tf.reduce_sum(mask, axis=-1)
+        )
+    )
