@@ -23,6 +23,8 @@ from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.policies.rule_policy import RulePolicy
+from rasa.shared.core.domain import State
+from rasa.core.policies.policy import SupportedData
 
 
 def _probabilities_with_action_unlikely_intent_for(
@@ -68,6 +70,25 @@ def _probabilities_with_action_unlikely_intent_for(
         return _original(self, tracker, domain, interpreter, **kwargs)
 
     return probabilities_using_best_policy
+
+
+def _custom_prediction_states(ignore_action_unlikely_intent: bool = False):
+    def _prediction_states(
+        self: RulePolicy,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        use_text_for_last_user_input: bool = False,
+    ) -> List[State]:
+        return self.featurizer.prediction_states(
+            [tracker],
+            domain,
+            use_text_for_last_user_input=use_text_for_last_user_input,
+            ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
+            rule_only_data=self._rule_only_data,
+            ignore_action_unlikely_intent=ignore_action_unlikely_intent,
+        )[0]
+
+    return _prediction_states
 
 
 async def test_testing_warns_if_action_unknown(
@@ -131,6 +152,10 @@ async def test_action_unlikely_intent_1(
         _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
     )
 
+    monkeypatch.setattr(
+        RulePolicy, "_prediction_states", _custom_prediction_states(True)
+    )
+
     file_name = tmp_path / "test_action_unlikely_intent_1.yml"
     file_name.write_text(
         """
@@ -160,14 +185,23 @@ async def test_action_unlikely_intent_1(
     assert result["report"]["conversation_accuracy"]["correct"] == 1
     assert result["report"]["conversation_accuracy"]["with_warnings"] == 1
 
+    # Ensure that the story with warning is correctly formatted
+    with open(str(tmp_path / "stories_with_warnings.yml"), "r") as f:
+        content = f.read()
+        assert "# predicted: action_unlikely_intent" in content
 
-async def test_action_unlikely_intent_2(
+
+async def test_action_unlikely_intent_correctly_predicted(
     monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
         "probabilities_using_best_policy",
         _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
+    )
+
+    monkeypatch.setattr(
+        RulePolicy, "_prediction_states", _custom_prediction_states(False)
     )
 
     file_name = tmp_path / "test_action_unlikely_intent_2.yml"
@@ -201,17 +235,21 @@ async def test_action_unlikely_intent_2(
     assert result["report"]["conversation_accuracy"]["with_warnings"] == 0
 
 
-async def test_action_unlikely_intent_complete(
+async def test_wrong_action_after_action_unlikely_intent(
     monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
         "probabilities_using_best_policy",
-        _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
+        _probabilities_with_action_unlikely_intent_for(["greet", "mood_great"]),
     )
 
-    file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
-    file_name.write_text(
+    monkeypatch.setattr(
+        RulePolicy, "_prediction_states", _custom_prediction_states(True)
+    )
+
+    test_file_name = tmp_path / "test.yml"
+    test_file_name.write_text(
         """
         version: "2.0"
         stories:
@@ -225,42 +263,51 @@ async def test_action_unlikely_intent_complete(
                   amazing
                 intent: mood_great
               - action: utter_happy
-          - story: unlikely path
+        """
+    )
+
+    train_file_name = tmp_path / "train.yml"
+    train_file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+          - story: happy path
             steps:
               - user: |
-                  very terrible
-                intent: mood_unhappy
-              - action: utter_cheer_up
-              - action: utter_did_that_help
-              - intent: affirm
+                  hello there!
+                intent: greet
               - action: utter_happy
-          - story: unlikely path (with action_unlikely_intent)
-            steps:
               - user: |
-                  very good!
+                  amazing
                 intent: mood_great
-              - action: action_unlikely_intent
-              - action: utter_happy
+              - action: utter_goodbye
         """
     )
 
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = await _train_rule_based_agent(moodbot_domain, file_name)
+    agent = await _train_rule_based_agent(moodbot_domain, train_file_name)
 
     result = await rasa.core.test.test(
-        str(file_name), agent, out_directory=str(tmp_path),
+        str(test_file_name), agent, out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
-    assert result["report"]["conversation_accuracy"]["correct"] == 3
-    assert result["report"]["conversation_accuracy"]["with_warnings"] == 1
-    assert result["report"]["conversation_accuracy"]["total"] == 3
+    assert result["report"]["conversation_accuracy"]["correct"] == 0
+    assert result["report"]["conversation_accuracy"]["with_warnings"] == 0
+    assert result["report"]["conversation_accuracy"]["total"] == 1
+
+    # Ensure that the failed story is correctly formatted
+    with open(str(tmp_path / "failed_test_stories.yml"), "r") as f:
+        content = f.read()
+        assert "# predicted: utter_happy after action_unlikely_intent" in content
+        assert (
+            "# predicted: action_default_fallback after action_unlikely_intent"
+            in content
+        )
 
 
-async def test_action_unlikely_intent_wrong_story(
-    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
-):
+async def test_action_unlikely_intent_not_found(tmp_path: Path, moodbot_domain: Domain):
     test_file_name = tmp_path / "test_action_unlikely_intent_complete.yml"
     test_file_name.write_text(
         """
@@ -310,6 +357,11 @@ async def test_action_unlikely_intent_wrong_story(
     assert result["report"]["conversation_accuracy"]["correct"] == 0
     assert result["report"]["conversation_accuracy"]["with_warnings"] == 0
     assert result["report"]["conversation_accuracy"]["total"] == 1
+
+    # Ensure that the failed story is correctly formatted
+    with open(str(tmp_path / "failed_test_stories.yml"), "r") as f:
+        content = f.read()
+        assert "# predicted: utter_greet" in content
 
 
 @pytest.mark.parametrize(

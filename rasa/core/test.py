@@ -599,15 +599,6 @@ def _collect_action_executed_predictions(
         action_executed_eval_store.add_to_store(
             action_predictions=[predicted_action], action_targets=[expected_action]
         )
-    elif predicted_action_unlikely_intent:
-        partial_tracker.update(
-            ActionExecuted(
-                predicted_action,
-                prediction.policy_name,
-                prediction.max_confidence,
-                event.timestamp,
-            )
-        )
     else:
         action_executed_eval_store.add_to_store(
             action_predictions=[predicted_action], action_targets=[expected_action]
