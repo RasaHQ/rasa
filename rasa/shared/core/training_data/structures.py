@@ -31,6 +31,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     Event,
     SessionStarted,
+    WronglyPredictedAction,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaCoreException
@@ -235,6 +236,9 @@ class StoryStep:
         return (
             type(event) == ActionExecuted
             and event.action_name == ACTION_UNLIKELY_INTENT_NAME
+        ) or (
+            type(event) == WronglyPredictedAction
+            and event.action_name == event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME
         )
 
     @staticmethod

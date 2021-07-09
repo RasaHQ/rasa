@@ -1488,6 +1488,7 @@ class ActionExecuted(Event):
         metadata: Optional[Dict] = None,
         action_text: Optional[Text] = None,
         hide_rule_turn: bool = False,
+        predicted_action_unlikely_intent: bool = False,
     ) -> None:
         """Creates event for a successful event execution.
 
@@ -1509,6 +1510,7 @@ class ActionExecuted(Event):
         self.unpredictable = False
         self.action_text = action_text
         self.hide_rule_turn = hide_rule_turn
+        self.predicted_action_unlikely_intent = predicted_action_unlikely_intent
 
         super().__init__(timestamp, metadata)
 
@@ -1529,6 +1531,12 @@ class ActionExecuted(Event):
     def __str__(self) -> Text:
         """Returns event as human readable string."""
         return self.action_name or self.action_text
+
+    def inline_comment(self) -> Optional[Text]:
+        """A comment attached to this event. Used during dumping."""
+        if self.predicted_action_unlikely_intent:
+            return f"predicted: action_unlikely_intent"
+        return None
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
@@ -1935,3 +1943,57 @@ class SessionStarted(AlwaysEqualEventMixin):
         """Applies event to current conversation state."""
         # noinspection PyProtectedMember
         tracker._reset()
+
+
+class WronglyPredictedAction(ActionExecuted):
+    """The model predicted the wrong action.
+
+    Mostly used to mark wrong predictions and be able to
+    dump them as stories."""
+
+    type_name = "wrong_action"
+
+    def __init__(
+            self,
+            action_name_target: Text,
+            action_text_target: Text,
+            action_name_prediction: Text,
+            policy: Optional[Text] = None,
+            confidence: Optional[float] = None,
+            timestamp: Optional[float] = None,
+            metadata: Optional[Dict] = None,
+            predicted_action_unlikely_intent: bool = False,
+    ) -> None:
+        """Creates event for a successful event execution.
+
+        See the docstring of the parent class `ActionExecuted` for more information.
+        """
+        self.action_name_prediction = action_name_prediction
+        self.predicted_action_unlikely_intent = predicted_action_unlikely_intent
+        super().__init__(
+            action_name_target,
+            policy,
+            confidence,
+            timestamp,
+            metadata,
+            action_text=action_text_target,
+        )
+
+    def inline_comment(self) -> Text:
+        """A comment attached to this event. Used during dumping."""
+        if self.predicted_action_unlikely_intent:
+            return f"predicted: {self.action_name_prediction} after action_unlikely_intent"
+        return f"predicted: {self.action_name_prediction}"
+
+    def as_story_string(self) -> Text:
+        """Returns the story equivalent representation."""
+        return f"{self.action_name}   <!-- {self.inline_comment()} -->"
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return (
+            f"WronglyPredictedAction(action_target: {self.action_name}, "
+            f"action_prediction: {self.action_name_prediction}, "
+            f"policy: {self.policy}, confidence: {self.confidence}, "
+            f"metadata: {self.metadata})"
+        )

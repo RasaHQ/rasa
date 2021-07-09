@@ -53,6 +53,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     EntitiesAdded,
     UserUttered,
+    WronglyPredictedAction,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
@@ -141,21 +142,6 @@ class EvaluationStore:
             or self.entity_predictions != self.entity_targets
             or self.action_predictions != self.action_targets
         )
-
-    @staticmethod
-    def predicted_warning(predicted_action: Text) -> bool:
-        """Indicates if the predicted action needs to raise a warning.
-
-        Currently the only action that leads to a warning is
-        an `action_unlikely_intent`.
-
-        Args:
-            predicted_action: A predicted action.
-
-        Returns:
-            `True` if the prediction needs to raise a warning, `False` otherwise.
-        """
-        return predicted_action == ACTION_UNLIKELY_INTENT_NAME
 
     @staticmethod
     def _compare_entities(
@@ -262,56 +248,6 @@ class EvaluationStore:
             + aligned_entity_predictions
         )
         return targets, predictions
-
-
-class WronglyPredictedAction(ActionExecuted):
-    """The model predicted the wrong action.
-
-    Mostly used to mark wrong predictions and be able to
-    dump them as stories."""
-
-    type_name = "wrong_action"
-
-    def __init__(
-        self,
-        action_name_target: Text,
-        action_text_target: Text,
-        action_name_prediction: Text,
-        policy: Optional[Text] = None,
-        confidence: Optional[float] = None,
-        timestamp: Optional[float] = None,
-        metadata: Optional[Dict] = None,
-    ) -> None:
-        """Creates event for a successful event execution.
-
-        See the docstring of the parent class `ActionExecuted` for more information.
-        """
-        self.action_name_prediction = action_name_prediction
-        super().__init__(
-            action_name_target,
-            policy,
-            confidence,
-            timestamp,
-            metadata,
-            action_text=action_text_target,
-        )
-
-    def inline_comment(self) -> Text:
-        """A comment attached to this event. Used during dumping."""
-        return f"predicted: {self.action_name_prediction}"
-
-    def as_story_string(self) -> Text:
-        """Returns the story equivalent representation."""
-        return f"{self.action_name}   <!-- {self.inline_comment()} -->"
-
-    def __repr__(self) -> Text:
-        """Returns event as string for debugging."""
-        return (
-            f"WronglyPredictedAction(action_target: {self.action_name}, "
-            f"action_prediction: {self.action_name_prediction}, "
-            f"policy: {self.policy}, confidence: {self.confidence}, "
-            f"metadata: {self.metadata})"
-        )
 
 
 class EndToEndUserUtterance(UserUttered):
@@ -633,6 +569,7 @@ def _collect_action_executed_predictions(
     expected_action = expected_action_name or expected_action_text
 
     policy_entity_result = None
+    previously_predicted_action_unlikely_intent = False
 
     if circuit_breaker_tripped:
         prediction = PolicyPrediction([], policy_name=None)
@@ -642,8 +579,8 @@ def _collect_action_executed_predictions(
             processor, partial_tracker, expected_action
         )
 
-    predicted_warning = action_executed_eval_store.predicted_warning(predicted_action)
-    if predicted_warning and predicted_action != expected_action:
+    predicted_action_unlikely_intent = predicted_action == ACTION_UNLIKELY_INTENT_NAME
+    if predicted_action_unlikely_intent and predicted_action != expected_action:
         partial_tracker.update(
             WronglyPredictedAction(
                 predicted_action,
@@ -655,13 +592,14 @@ def _collect_action_executed_predictions(
                 metadata=prediction.action_metadata,
             )
         )
+        previously_predicted_action_unlikely_intent = True
         predicted_action, prediction, policy_entity_result = _run_action_prediction(
             processor, partial_tracker, expected_action
         )
         action_executed_eval_store.add_to_store(
             action_predictions=[predicted_action], action_targets=[expected_action]
         )
-    elif predicted_warning:
+    elif predicted_action_unlikely_intent:
         partial_tracker.update(
             ActionExecuted(
                 predicted_action,
@@ -676,7 +614,7 @@ def _collect_action_executed_predictions(
         )
 
     if action_executed_eval_store.has_prediction_target_mismatch() or (
-        predicted_warning and predicted_action != expected_action
+            predicted_action_unlikely_intent and predicted_action != expected_action
     ):
         partial_tracker.update(
             WronglyPredictedAction(
@@ -687,6 +625,7 @@ def _collect_action_executed_predictions(
                 prediction.max_confidence,
                 event.timestamp,
                 metadata=prediction.action_metadata,
+                predicted_action_unlikely_intent=previously_predicted_action_unlikely_intent,
             )
         )
         if (
@@ -714,6 +653,7 @@ def _collect_action_executed_predictions(
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
+                predicted_action_unlikely_intent=previously_predicted_action_unlikely_intent,
             )
         )
 
@@ -918,7 +858,7 @@ async def _collect_story_predictions(
 
             if any(
                 isinstance(event, WronglyPredictedAction)
-                and story_eval_store.predicted_warning(event.action_name_prediction)
+                and event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME
                 for event in predicted_tracker.events
             ):
                 stories_with_warnings.append(predicted_tracker)
