@@ -143,7 +143,7 @@ async def _train_rule_based_agent(
     return agent
 
 
-async def test_action_unlikely_intent_1(
+async def test_action_unlikely_intent_warning(
     monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
 ):
     monkeypatch.setattr(
@@ -362,6 +362,75 @@ async def test_action_unlikely_intent_not_found(tmp_path: Path, moodbot_domain: 
     with open(str(tmp_path / "failed_test_stories.yml"), "r") as f:
         content = f.read()
         assert "# predicted: utter_greet" in content
+
+
+async def test_action_unlikely_intent_warning_and_story_error(
+    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
+):
+    monkeypatch.setattr(
+        SimplePolicyEnsemble,
+        "probabilities_using_best_policy",
+        _probabilities_with_action_unlikely_intent_for(["greet"]),
+    )
+
+    monkeypatch.setattr(
+        RulePolicy, "_prediction_states", _custom_prediction_states(True)
+    )
+
+    test_file_name = tmp_path / "test.yml"
+    test_file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+          - story: happy path
+            steps:
+              - user: |
+                  hello there!
+                intent: greet
+              - action: utter_greet
+              - user: |
+                  amazing
+                intent: mood_great
+              - action: utter_happy
+        """
+    )
+
+    train_file_name = tmp_path / "train.yml"
+    train_file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+          - story: happy path
+            steps:
+              - user: |
+                  hello there!
+                intent: greet
+              - action: utter_greet
+              - user: |
+                  amazing
+                intent: mood_great
+              - action: utter_goodbye
+        """
+    )
+
+    # We train on the above story so that RulePolicy can memorize
+    # it and we don't have to worry about other actions being
+    # predicted correctly.
+    agent = await _train_rule_based_agent(moodbot_domain, train_file_name)
+
+    result = await rasa.core.test.test(
+        str(test_file_name), agent, out_directory=str(tmp_path),
+    )
+    assert "report" in result.keys()
+    assert result["report"]["conversation_accuracy"]["correct"] == 0
+    assert result["report"]["conversation_accuracy"]["with_warnings"] == 0
+    assert result["report"]["conversation_accuracy"]["total"] == 1
+
+    # Ensure that the failed story is correctly formatted
+    with open(str(tmp_path / "failed_test_stories.yml"), "r") as f:
+        content = f.read()
+        assert "# predicted: action_unlikely_intent" in content
+        assert "# predicted: utter_goodbye" in content
 
 
 @pytest.mark.parametrize(
