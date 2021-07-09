@@ -20,7 +20,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.state_featurizer import StateFeaturizer
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
@@ -307,9 +307,7 @@ class TEDPolicy(Policy):
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(
-            SingleStateFeaturizer(), max_history=max_history
-        )
+        return MaxHistoryTrackerFeaturizer(StateFeaturizer(), max_history=max_history)
 
     def __init__(
         self,

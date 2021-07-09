@@ -24,7 +24,7 @@ import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain, State
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.state_featurizer import StateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
@@ -102,7 +102,7 @@ class Policy:
 
     @staticmethod
     def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
+        return MaxHistoryTrackerFeaturizer(StateFeaturizer())
 
     @classmethod
     def _create_featurizer(

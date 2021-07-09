@@ -62,6 +62,7 @@ from rasa.shared.core.events import (
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
+from rasa.shared.core import state as state_utils
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
@@ -293,10 +294,10 @@ class DialogueStateTracker:
 
     def past_states(
         self,
-        domain: Domain,
         omit_unset_slots: bool = False,
         ignore_rule_only_turns: bool = False,
-        rule_only_data: Optional[Dict[Text, Any]] = None,
+        ignored_active_loop_names: Optional[List[Text]] = None,
+        ignored_slots: Optional[List[Text]] = None,
     ) -> List[State]:
         """Generates the past states of this tracker based on the history.
 
@@ -305,18 +306,54 @@ class DialogueStateTracker:
             omit_unset_slots: If `True` do not include the initial values of slots.
             ignore_rule_only_turns: If True ignore dialogue turns that are present
                 only in rules.
-            rule_only_data: Slots and loops,
-                which only occur in rules but not in stories.
+            ignored_slots: slots to be ignored iff `ignore_rule_only_turns` is True
+            ignored_active_loop_names: active loops with names included in this
+              list will be ignored iff `ignore_rule_only_turns` is True
 
         Returns:
             A list of states
         """
-        return domain.states_for_tracker_history(
-            self,
-            omit_unset_slots=omit_unset_slots,
-            ignore_rule_only_turns=ignore_rule_only_turns,
-            rule_only_data=rule_only_data,
-        )
+        states = []
+        last_ml_action_sub_state = None
+        turn_was_hidden = False
+        for tr, hide_rule_turn in self.generate_all_prior_trackers():
+            if ignore_rule_only_turns:
+                # remember previous ml action based on the last non hidden turn
+                # we need this to override previous action in the ml state
+                if not turn_was_hidden:
+                    last_ml_action_sub_state = self.latest_action
+
+                # followup action or happy path loop prediction
+                # don't change the fact whether dialogue turn should be hidden
+                if (
+                    not tr.followup_action
+                    and not tr.latest_action_name == tr.active_loop_name
+                ):
+                    turn_was_hidden = hide_rule_turn
+
+                if turn_was_hidden:
+                    continue
+
+            state = self.get_active_state(tr, omit_unset_slots=omit_unset_slots)
+
+            if ignore_rule_only_turns:
+                # clean state from only rule features
+                # TODO: generic state.forget substates... (?)
+                state_utils.forget_loops(ignored_active_loop_names)
+                state_utils.forget_slots(ignored_slots)
+                # make sure user input is the same as for previous state
+                # for non action_listen turns
+                if states:
+                    self._substitute_rule_only_user_input(state, states[-1])
+                # substitute previous rule action with last_ml_action_sub_state
+                if last_ml_action_sub_state:
+                    state[
+                        rasa.shared.core.constants.PREVIOUS_ACTION
+                    ] = last_ml_action_sub_state
+
+            states.append(self._clean_state(state))
+
+        return states
 
     def change_loop_to(self, loop_name: Optional[Text]) -> None:
         """Set the currently active loop.

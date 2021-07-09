@@ -3,7 +3,7 @@ from typing import Text
 import numpy as np
 import pytest
 
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.state_featurizer import StateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
@@ -19,7 +19,7 @@ def test_fail_to_load_non_existent_featurizer():
 
 
 def test_persist_and_load_tracker_featurizer(tmp_path: Text, moodbot_domain: Domain):
-    state_featurizer = SingleStateFeaturizer()
+    state_featurizer = StateFeaturizer()
     state_featurizer.prepare_for_training(moodbot_domain, RegexInterpreter())
     tracker_featurizer = MaxHistoryTrackerFeaturizer(state_featurizer)
 
@@ -59,7 +59,7 @@ def test_featurize_trackers_raises_on_missing_state_featurizer(domain: Domain):
 def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
     moodbot_domain: Domain,
 ):
-    state_featurizer = SingleStateFeaturizer()
+    state_featurizer = StateFeaturizer()
     tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
 
     tracker = tracker_from_dialogue_file(
@@ -78,7 +78,7 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
 
 
 def test_featurize_trackers_with_max_history_tracker_featurizer(moodbot_domain: Domain):
-    state_featurizer = SingleStateFeaturizer()
+    state_featurizer = StateFeaturizer()
     tracker_featurizer = MaxHistoryTrackerFeaturizer(state_featurizer)
 
     tracker = tracker_from_dialogue_file(

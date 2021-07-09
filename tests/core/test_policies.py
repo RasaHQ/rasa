@@ -37,7 +37,7 @@ from rasa.shared.core.events import (
     Event,
     UserUttered,
 )
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.state_featurizer import StateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
@@ -87,7 +87,7 @@ class PolicyTestCollection:
     @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:
         featurizer = MaxHistoryTrackerFeaturizer(
-            SingleStateFeaturizer(), max_history=self.max_history
+            StateFeaturizer(), max_history=self.max_history
         )
         return featurizer
 
@@ -121,14 +121,12 @@ class PolicyTestCollection:
     def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
-        assert isinstance(
-            trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
-        )
+        assert isinstance(trained_policy.featurizer.state_featurizer, StateFeaturizer)
         trained_policy.persist(str(tmp_path))
         loaded = trained_policy.__class__.load(str(tmp_path))
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
-        assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
+        assert isinstance(loaded.featurizer.state_featurizer, StateFeaturizer)
 
     @pytest.mark.parametrize("should_finetune", [False, True])
     async def test_persist_and_load(

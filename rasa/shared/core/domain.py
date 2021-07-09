@@ -1228,9 +1228,7 @@ class Domain:
             rasa.shared.core.constants.SLOTS: self._get_slots_sub_state(
                 tracker, omit_unset_slots=omit_unset_slots
             ),
-            rasa.shared.core.constants.PREVIOUS_ACTION: self._get_prev_action_sub_state(
-                tracker
-            ),
+            rasa.shared.core.constants.PREVIOUS_ACTION: tracker.latest_action,
             rasa.shared.core.constants.ACTIVE_LOOP: self._get_active_loop_sub_state(
                 tracker
             ),
@@ -1276,66 +1274,6 @@ class Domain:
                 state[rasa.shared.core.constants.USER] = last_ml_state[
                     rasa.shared.core.constants.USER
                 ]
-
-    def states_for_tracker_history(
-        self,
-        tracker: "DialogueStateTracker",
-        omit_unset_slots: bool = False,
-        ignore_rule_only_turns: bool = False,
-        rule_only_data: Optional[Dict[Text, Any]] = None,
-    ) -> List[State]:
-        """List of states for each state of the trackers history.
-
-        Args:
-            tracker: Dialogue state tracker containing the dialogue so far.
-            omit_unset_slots: If `True` do not include the initial values of slots.
-            ignore_rule_only_turns: If True ignore dialogue turns that are present
-                only in rules.
-            rule_only_data: Slots and loops,
-                which only occur in rules but not in stories.
-
-        Return:
-            A list of states.
-        """
-        states = []
-        last_ml_action_sub_state = None
-        turn_was_hidden = False
-        for tr, hide_rule_turn in tracker.generate_all_prior_trackers():
-            if ignore_rule_only_turns:
-                # remember previous ml action based on the last non hidden turn
-                # we need this to override previous action in the ml state
-                if not turn_was_hidden:
-                    last_ml_action_sub_state = self._get_prev_action_sub_state(tr)
-
-                # followup action or happy path loop prediction
-                # don't change the fact whether dialogue turn should be hidden
-                if (
-                    not tr.followup_action
-                    and not tr.latest_action_name == tr.active_loop_name
-                ):
-                    turn_was_hidden = hide_rule_turn
-
-                if turn_was_hidden:
-                    continue
-
-            state = self.get_active_state(tr, omit_unset_slots=omit_unset_slots)
-
-            if ignore_rule_only_turns:
-                # clean state from only rule features
-                self._remove_rule_only_features(state, rule_only_data)
-                # make sure user input is the same as for previous state
-                # for non action_listen turns
-                if states:
-                    self._substitute_rule_only_user_input(state, states[-1])
-                # substitute previous rule action with last_ml_action_sub_state
-                if last_ml_action_sub_state:
-                    state[
-                        rasa.shared.core.constants.PREVIOUS_ACTION
-                    ] = last_ml_action_sub_state
-
-            states.append(self._clean_state(state))
-
-        return states
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
         """Creates slot events for entities if auto-filling is enabled.

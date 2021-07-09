@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.state_featurizer import StateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
@@ -540,13 +540,11 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
 
     def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
-        assert isinstance(
-            trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
-        )
+        assert isinstance(trained_policy.featurizer.state_featurizer, StateFeaturizer)
         trained_policy.persist(str(tmp_path))
         loaded = trained_policy.__class__.load(str(tmp_path))
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
-        assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
+        assert isinstance(loaded.featurizer.state_featurizer, StateFeaturizer)
 
 
 class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
@@ -561,14 +559,12 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
     def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
-        assert isinstance(
-            trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
-        )
+        assert isinstance(trained_policy.featurizer.state_featurizer, StateFeaturizer)
         trained_policy.persist(str(tmp_path))
         loaded = trained_policy.__class__.load(str(tmp_path))
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
-        assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
+        assert isinstance(loaded.featurizer.state_featurizer, StateFeaturizer)
 
 
 class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):

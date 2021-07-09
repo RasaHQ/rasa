@@ -17,13 +17,14 @@ import rasa.utils.io as io_utils
 import rasa.utils.tensorflow.model_data_utils as model_data_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.shared.core.domain import Domain
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.state_featurizer import StateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, PolicyPrediction
+from rasa.core.policies import utils as policy_utils
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import ACTION_TEXT, TEXT
@@ -51,7 +52,7 @@ class SklearnPolicy(Policy):
     ) -> MaxHistoryTrackerFeaturizer:
         # Sklearn policy always uses MaxHistoryTrackerFeaturizer
         return MaxHistoryTrackerFeaturizer(
-            state_featurizer=SingleStateFeaturizer(), max_history=5
+            state_featurizer=StateFeaturizer(), max_history=5
         )
 
     def __init__(
@@ -136,7 +137,9 @@ class SklearnPolicy(Policy):
     def model_architecture(self, **kwargs: Any) -> Any:
         """Sets model parameters for training."""
         # filter out kwargs that cannot be passed to model
-        train_params = self._get_valid_params(self.model.__init__, **kwargs)
+        train_params = policy_utils.filter_matching_kwargs_and_warn(
+            self.model.__init__, **kwargs
+        )
         return self.model.set_params(**train_params)
 
     @staticmethod
