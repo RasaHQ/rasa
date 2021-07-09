@@ -1536,7 +1536,7 @@ class ActionExecuted(Event):
     def inline_comment(self) -> Optional[Text]:
         """A comment attached to this event. Used during dumping."""
         if self.predicted_action_unlikely_intent:
-            return f"predicted: action_unlikely_intent"
+            return f"predicted: {ACTION_UNLIKELY_INTENT_NAME}"
         return None
 
     def __hash__(self) -> int:
@@ -1982,9 +1982,10 @@ class WronglyPredictedAction(ActionExecuted):
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
+        comment = f"predicted: {self.action_name_prediction}"
         if self.predicted_action_unlikely_intent:
-            return f"predicted: {self.action_name_prediction} after {ACTION_UNLIKELY_INTENT_NAME}"
-        return f"predicted: {self.action_name_prediction}"
+            return f"{comment} after {ACTION_UNLIKELY_INTENT_NAME}"
+        return comment
 
     def as_story_string(self) -> Text:
         """Returns the story equivalent representation."""

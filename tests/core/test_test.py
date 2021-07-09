@@ -218,7 +218,7 @@ async def test_action_unlikely_intent_warning(
     # Ensure that the story with warning is correctly formatted
     with open(str(tmp_path / "stories_with_warnings.yml"), "r") as f:
         content = f.read()
-        assert "# predicted: action_unlikely_intent" in content
+        assert f"# predicted: {ACTION_UNLIKELY_INTENT_NAME}" in content
 
 
 async def test_action_unlikely_intent_correctly_predicted(
@@ -326,9 +326,11 @@ async def test_wrong_action_after_action_unlikely_intent(
     # Ensure that the failed story is correctly formatted
     with open(str(tmp_path / "failed_test_stories.yml"), "r") as f:
         content = f.read()
-        assert "# predicted: utter_happy after action_unlikely_intent" in content
         assert (
-            "# predicted: action_default_fallback after action_unlikely_intent"
+            f"# predicted: utter_happy after {ACTION_UNLIKELY_INTENT_NAME}" in content
+        )
+        assert (
+            f"# predicted: action_default_fallback after {ACTION_UNLIKELY_INTENT_NAME}"
             in content
         )
 
@@ -460,7 +462,7 @@ async def test_action_unlikely_intent_warning_and_story_error(
     # Ensure that the failed story is correctly formatted
     with open(str(tmp_path / "failed_test_stories.yml"), "r") as f:
         content = f.read()
-        assert "# predicted: action_unlikely_intent" in content
+        assert f"# predicted: {ACTION_UNLIKELY_INTENT_NAME}" in content
         assert "# predicted: utter_goodbye" in content
 
 
