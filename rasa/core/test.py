@@ -658,6 +658,9 @@ def _collect_action_executed_predictions(
         predicted_action, prediction, policy_entity_result = _run_action_prediction(
             processor, partial_tracker, expected_action
         )
+        action_executed_eval_store.add_to_store(
+            action_predictions=[predicted_action], action_targets=[expected_action]
+        )
     elif predicted_warning:
         partial_tracker.update(
             ActionExecuted(
