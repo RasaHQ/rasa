@@ -654,7 +654,7 @@ def _collect_action_executed_predictions(
                 predicted_action,
                 prediction.policy_name,
                 prediction.max_confidence,
-                event.timestamp
+                event.timestamp,
             )
         )
 

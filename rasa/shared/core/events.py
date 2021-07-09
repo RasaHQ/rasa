@@ -1999,12 +1999,12 @@ class WarningPredictedAction(ActionExecuted):
     type_name = "warning_predicted"
 
     def __init__(
-            self,
-            action_name_prediction: Text,
-            action_name: Optional[Text] = None,
-            policy: Optional[Text] = None,
-            confidence: Optional[float] = None,
-            timestamp: Optional[float] = None
+        self,
+        action_name_prediction: Text,
+        action_name: Optional[Text] = None,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
+        timestamp: Optional[float] = None,
     ):
         self.action_name_prediction = action_name_prediction
         super().__init__(action_name, policy, confidence, timestamp)
