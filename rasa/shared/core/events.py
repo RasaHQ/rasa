@@ -36,6 +36,7 @@ from rasa.shared.core.constants import (
     ENTITY_LABEL_SEPARATOR,
     ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.nlu.constants import (
@@ -1982,9 +1983,7 @@ class WronglyPredictedAction(ActionExecuted):
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
         if self.predicted_action_unlikely_intent:
-            return (
-                f"predicted: {self.action_name_prediction} after action_unlikely_intent"
-            )
+            return f"predicted: {self.action_name_prediction} after {ACTION_UNLIKELY_INTENT_NAME}"
         return f"predicted: {self.action_name_prediction}"
 
     def as_story_string(self) -> Text:
