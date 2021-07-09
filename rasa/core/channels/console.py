@@ -8,7 +8,7 @@ import aiohttp
 import questionary
 from aiohttp import ClientTimeout
 from prompt_toolkit.styles import Style
-from typing import Any
+from typing import Any, Generator
 from typing import Text, Optional, Dict, List
 
 import rasa.shared.utils.cli
@@ -121,9 +121,9 @@ async def send_message_receive_block(
             return await resp.json()
 
 
-async def send_message_receive_stream(
+async def _send_message_receive_stream(
     server_url: Text, auth_token: Text, sender_id: Text, message: Text
-) -> None:
+) -> Generator[Dict[Text, Any], None, None]:
     payload = {"sender": sender_id, "message": message}
 
     url = f"{server_url}/webhooks/rest/webhook?stream=true&token={auth_token}"
@@ -175,7 +175,7 @@ async def record_messages(
             break
 
         if use_response_stream:
-            bot_responses = send_message_receive_stream(
+            bot_responses = _send_message_receive_stream(
                 server_url, auth_token, sender_id, text
             )
             previous_response = None
