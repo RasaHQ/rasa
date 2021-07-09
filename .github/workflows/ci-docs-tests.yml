@@ -51,7 +51,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v5
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 

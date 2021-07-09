@@ -293,7 +293,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v4
+        uses: Gr1N/setup-poetry@v5
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -513,7 +513,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v4
+        uses: Gr1N/setup-poetry@v5
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}

@@ -116,7 +116,7 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v5
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -230,7 +230,7 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v5
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -396,7 +396,7 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v5
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -729,7 +729,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v5
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
