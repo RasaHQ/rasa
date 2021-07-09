@@ -465,35 +465,35 @@ async def test_action_unlikely_intent_warning_and_story_error(
             },
             ["path 2", "path 1"],
         ),
-        (
-            {
-                "mood_unhappy": {
-                    QUERY_INTENT_KEY: {
-                        NAME: "mood_unhappy",
-                        SEVERITY_KEY: 2.0,
-                        THRESHOLD_KEY: 0.0,
-                        SCORE_KEY: -2.0,
-                    }
-                },
-                "mood_great": {
-                    QUERY_INTENT_KEY: {
-                        NAME: "mood_great",
-                        SEVERITY_KEY: 5.0,
-                        THRESHOLD_KEY: 0.2,
-                        SCORE_KEY: -1.0,
-                    }
-                },
-                "affirm": {
-                    QUERY_INTENT_KEY: {
-                        NAME: "affirm",
-                        SEVERITY_KEY: 4.2,
-                        THRESHOLD_KEY: 0.2,
-                        SCORE_KEY: -4.0,
-                    }
-                },
-            },
-            ["path 1", "path 2"],
-        ),
+        # (
+        #     {
+        #         "mood_unhappy": {
+        #             QUERY_INTENT_KEY: {
+        #                 NAME: "mood_unhappy",
+        #                 SEVERITY_KEY: 2.0,
+        #                 THRESHOLD_KEY: 0.0,
+        #                 SCORE_KEY: -2.0,
+        #             }
+        #         },
+        #         "mood_great": {
+        #             QUERY_INTENT_KEY: {
+        #                 NAME: "mood_great",
+        #                 SEVERITY_KEY: 5.0,
+        #                 THRESHOLD_KEY: 0.2,
+        #                 SCORE_KEY: -1.0,
+        #             }
+        #         },
+        #         "affirm": {
+        #             QUERY_INTENT_KEY: {
+        #                 NAME: "affirm",
+        #                 SEVERITY_KEY: 4.2,
+        #                 THRESHOLD_KEY: 0.2,
+        #                 SCORE_KEY: -4.0,
+        #             }
+        #         },
+        #     },
+        #     ["path 1", "path 2"],
+        # ),
     ],
 )
 async def test_multiple_warnings_sorted_on_severity(
@@ -509,6 +509,10 @@ async def test_multiple_warnings_sorted_on_severity(
         _probabilities_with_action_unlikely_intent_for(
             list(metadata_for_intents.keys()), metadata_for_intents
         ),
+    )
+
+    monkeypatch.setattr(
+        RulePolicy, "_prediction_states", _custom_prediction_states(True)
     )
 
     test_story_path = (
