@@ -1,6 +1,7 @@
 import pytest
 import tensorflow as tf
 import numpy as np
+from typing import List, Optional, Union
 import rasa.utils.tensorflow.layers_utils as layers_utils
 
 
@@ -52,8 +53,19 @@ def test_get_candidate_values():
 
 
 @pytest.mark.parametrize(
-    "x, y, expected_output",
-    [([1, 2, 3], [2, 1, 3], 1 / 3), ([[1, 2], [1, 2]], [[0, 0], [1, 2]], 0.5)],
+    "x, y, mask, expected_output",
+    [
+        ([1, 2, 3], [2, 1, 3], None, 1 / 3),
+        ([1, 2, 3], [2, 1, 3], [1.0, 1.0, 0.0], 0.0),
+        ([[1, 2], [1, 2]], [[0, 0], [1, 2]], None, 0.5),
+        ([[1, 2], [1, 2]], [[0, 0], [1, 2]], [[1.0, 1.0], [1.0, 0.0]], 0.5),
+        ([[1, 2], [1, 2]], [[0, 0], [1, 3]], [[1.0, 1.0], [1.0, 1.0]], 0.25),
+    ],
 )
-def test_reduce_mean_equal(x, y, expected_output):
-    assert expected_output == layers_utils.reduce_mean_equal(x, y)
+def test_reduce_mean_equal(
+    x: Union[List[List[int]], List[int]],
+    y: List[int],
+    mask: Optional[List[int]],
+    expected_output: float,
+):
+    assert expected_output == layers_utils.reduce_mean_equal(x, y, mask)

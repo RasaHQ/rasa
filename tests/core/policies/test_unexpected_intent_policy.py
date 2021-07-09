@@ -161,15 +161,10 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         assert set(data_for_prediction.data.keys()).issubset(PREDICTION_FEATURES)
 
     def test_similarities_collection_for_label_ids(self):
-        label_ids = np.array([[0, 1], [1, -1], [1, 0], [2, -1]])
+        label_ids = np.array([[0, 1], [1, -1], [2, -1]])
         outputs = {
             "similarities": np.array(
-                [
-                    [[1.2, 0.3, 0.2]],
-                    [[0.5, 0.2, 1.6]],
-                    [[1.2, 0.3, 0.8]],
-                    [[0.01, 0.1, 1.7]],
-                ]
+                [[[1.2, 0.3, 0.2]], [[0.5, 0.2, 1.6]], [[0.01, 0.1, 1.7]],]
             )
         }
         label_id_similarities = UnexpecTEDIntentPolicy._collect_label_id_grouped_scores(
@@ -190,7 +185,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         }
         assert label_id_similarities[2] == {
             POSITIVE_SCORES_KEY: [1.7],
-            NEGATIVE_SCORES_KEY: [0.2, 1.6, 0.8],
+            NEGATIVE_SCORES_KEY: [0.2, 1.6],
         }
 
     def test_label_quantiles_computation(self):

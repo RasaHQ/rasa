@@ -5,7 +5,7 @@ import jsonpickle
 import logging
 
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator
+from typing import Tuple, List, Optional, Dict, Text, Union, Any, Iterator, Set
 import numpy as np
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -730,18 +730,13 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return states[-slice_length:]
 
     @staticmethod
-    def _hash_example(
-        tracker: DialogueStateTracker,
-        states: List[State],
-        labels: Optional[List[Text]] = None,
-    ) -> int:
+    def _hash_example(states: List[State], labels: Optional[List[Text]] = None) -> int:
         """Hashes states (and optionally label).
 
         Produces a hash of the tracker state sequence (and optionally the labels).
         If `labels` is `None`, labels don't get hashed.
 
         Args:
-            tracker: The tracker that produced `states`.
             states: The tracker state sequence to hash.
             labels: Label strings associated with this state sequence.
 
@@ -749,7 +744,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             The hash of the states and (optionally) the label.
         """
         frozen_states = tuple(
-            s if s is None else tracker.freeze_current_state(s) for s in states
+            s if s is None else DialogueStateTracker.freeze_current_state(s)
+            for s in states
         )
         if labels is not None:
             frozen_labels = tuple(labels)
@@ -803,7 +799,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             ):
 
                 if self.remove_duplicates:
-                    hashed = self._hash_example(tracker, states, label)
+                    hashed = self._hash_example(states, label)
                     if hashed in hashed_examples:
                         continue
                     hashed_examples.add(hashed)
@@ -1013,16 +1009,14 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             Trackers as states, labels, and entity data.
         """
         example_states = []
-        example_labels = []
         example_entities = []
 
-        # Store of example hashes for removing duplicate training examples.
+        # Store of example hashes (of both states and labels) for removing
+        # duplicate training examples.
         hashed_examples = set()
-        # Mapping of example state hash to list of positive labels associated with
-        # the state. Note that each individual 'label' instance is a list of ints.
-        state_hash_to_label_list_instances: defaultdict[
-            int, List[List[int]]
-        ] = defaultdict(list)
+        # Mapping of example state hash to set of
+        # positive labels associated with the state.
+        state_hash_to_label_set: defaultdict[int, Set[Text]] = defaultdict(set)
 
         logger.debug(
             f"Creating states and {self.LABEL_NAME} label examples from "
@@ -1044,37 +1038,33 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
             ):
 
                 if self.remove_duplicates:
-                    hashed = self._hash_example(tracker, states, label)
+                    hashed = self._hash_example(states, label)
                     if hashed in hashed_examples:
                         continue
                     hashed_examples.add(hashed)
 
                 # Store all positive labels associated with a training state.
-                state_hash = self._hash_example(tracker, states)
-                state_hash_to_label_list_instances[state_hash].append(label)
+                state_hash = self._hash_example(states)
 
-                example_states.append(states)
-                example_labels.append(label)
-                example_entities.append(entities)
+                # Only add unique example states unless `remove_duplicates` is `False`.
+                if (
+                    not self.remove_duplicates
+                    or state_hash not in state_hash_to_label_set
+                ):
+                    example_states.append(states)
+                    example_entities.append(entities)
 
-                pbar.set_postfix({f"# {self.LABEL_NAME}": f"{len(example_labels):d}"})
+                state_hash_to_label_set[state_hash].add(label[0])
+
+                pbar.set_postfix({f"# {self.LABEL_NAME}": f"{len(example_states):d}"})
+
+        # Collect positive labels for each state example.
+        example_labels = [
+            list(state_hash_to_label_set[self._hash_example(state)])
+            for state in example_states
+        ]
 
         self._remove_user_text_if_intent(example_states)
-
-        # Collect all positive intent labels for a given state hash and add
-        # the set back to the singleton labels.
-        for positive_label_list in state_hash_to_label_list_instances.values():
-            # Get the set of positive labels associated with each state hash.
-            positive_label_set = set([labels[0] for labels in positive_label_list])
-
-            for labels in positive_label_list:
-                # Extend the singletone `labels` with the `positive_label_set`.
-                # Note that we need to filter out the redundant label `labels[0]`
-                # from `positive_label_set` so as not to add it twice.
-                filtered_label_set = filter(
-                    lambda label: label != labels[0], positive_label_set
-                )
-                labels.extend(filtered_label_set)
 
         logger.debug(f"Created {len(example_states)} {self.LABEL_NAME} examples.")
 
@@ -1090,7 +1080,7 @@ class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer):
         """Creates an iterator over training examples from a tracker.
 
         Args:
-            trackers: The tracker from which to extract training examples.
+            tracker: The tracker from which to extract training examples.
             domain: The domain of the training data.
             omit_unset_slots: If `True` do not include the initial values of slots.
             ignore_action_unlikely_intent: Whether to remove `action_unlikely_intent`

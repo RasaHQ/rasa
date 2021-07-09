@@ -1751,6 +1751,7 @@ def test_trackers_keep_action_unlikely_intent_intent_max_history_featurizer(
     expected_labels = np.array([[5, 7]]).T
     assert actual_labels is not None
     assert actual_labels.shape == expected_labels.shape
+
     for actual, expected in zip(actual_labels, expected_labels):
         assert np.all(actual == expected)
 
@@ -2270,7 +2271,7 @@ def test_prediction_states_keeps_action_intent_unlikely_intent_max_history_featu
 
 
 @pytest.mark.parametrize(
-    "remove_duplicates,max_history",
+    "remove_duplicates, max_history",
     [[True, None], [True, 2], [False, None], [False, 2],],
 )
 def test_multilabels_with_intent_max_history_tracker_featurizer(
@@ -2312,11 +2313,7 @@ def test_multilabels_with_intent_max_history_tracker_featurizer(
 
     if remove_duplicates:
         expected_labels = np.array(
-            [
-                [greet_index, -1],
-                [mood_great_index, mood_unhappy_index],
-                [mood_unhappy_index, mood_great_index],
-            ]
+            [[greet_index, -1], [mood_great_index, mood_unhappy_index],]
         )
     else:
         expected_labels = np.array(
@@ -2324,10 +2321,16 @@ def test_multilabels_with_intent_max_history_tracker_featurizer(
                 [greet_index, -1],
                 [mood_great_index, mood_unhappy_index],
                 [greet_index, -1],
-                [mood_unhappy_index, mood_great_index],
+                [mood_great_index, mood_unhappy_index],
             ]
         )
 
     assert actual_labels is not None
     assert actual_labels.shape == expected_labels.shape
-    assert np.all(actual_labels == expected_labels)
+
+    # Order of label indices may be different,
+    # hence need to sort the indices and then check.
+    for actual_label_indices, expected_label_indices in zip(
+        actual_labels, expected_labels
+    ):
+        assert sorted(actual_label_indices) == sorted(expected_label_indices)
