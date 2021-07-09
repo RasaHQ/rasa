@@ -52,9 +52,7 @@ from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
 from rasa.shared.core.events import (
     ActionExecuted,
     EntitiesAdded,
-    UserUttered,
-    WronglyPredictedAction,
-    WarningPredictedAction,
+    UserUttered
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
@@ -87,6 +85,83 @@ PredictionList = List[Optional[Text]]
 
 class WrongPredictionException(RasaException, ValueError):
     """Raised if a wrong prediction is encountered."""
+
+
+class WarningPredictedAction(ActionExecuted):
+    """The model predicted the correct action with warning."""
+
+    type_name = "warning_predicted"
+
+    def __init__(
+            self,
+            action_name_prediction: Text,
+            action_name: Optional[Text] = None,
+            policy: Optional[Text] = None,
+            confidence: Optional[float] = None,
+            timestamp: Optional[float] = None,
+            metadata: Optional[Dict] = None,
+    ):
+        self.action_name_prediction = action_name_prediction
+        super().__init__(action_name, policy, confidence, timestamp, metadata)
+
+    def inline_comment(self) -> Text:
+        """A comment attached to this event. Used during dumping."""
+        return f"predicted: {self.action_name_prediction}"
+
+
+class WronglyPredictedAction(ActionExecuted):
+    """The model predicted the wrong action.
+
+    Mostly used to mark wrong predictions and be able to
+    dump them as stories."""
+
+    type_name = "wrong_action"
+
+    def __init__(
+            self,
+            action_name_target: Text,
+            action_text_target: Text,
+            action_name_prediction: Text,
+            policy: Optional[Text] = None,
+            confidence: Optional[float] = None,
+            timestamp: Optional[float] = None,
+            metadata: Optional[Dict] = None,
+            predicted_action_unlikely_intent: bool = False,
+    ) -> None:
+        """Creates event for a successful event execution.
+
+        See the docstring of the parent class `ActionExecuted` for more information.
+        """
+        self.action_name_prediction = action_name_prediction
+        self.predicted_action_unlikely_intent = predicted_action_unlikely_intent
+        super().__init__(
+            action_name_target,
+            policy,
+            confidence,
+            timestamp,
+            metadata,
+            action_text=action_text_target,
+        )
+
+    def inline_comment(self) -> Text:
+        """A comment attached to this event. Used during dumping."""
+        comment = f"predicted: {self.action_name_prediction}"
+        if self.predicted_action_unlikely_intent:
+            return f"{comment} after {ACTION_UNLIKELY_INTENT_NAME}"
+        return comment
+
+    def as_story_string(self) -> Text:
+        """Returns the story equivalent representation."""
+        return f"{self.action_name}   <!-- {self.inline_comment()} -->"
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return (
+            f"WronglyPredictedAction(action_target: {self.action_name}, "
+            f"action_prediction: {self.action_name_prediction}, "
+            f"policy: {self.policy}, confidence: {self.confidence}, "
+            f"metadata: {self.metadata})"
+        )
 
 
 class EvaluationStore:
@@ -570,7 +645,7 @@ def _collect_action_executed_predictions(
     expected_action = expected_action_name or expected_action_text
 
     policy_entity_result = None
-    previously_predicted_action_unlikely_intent = False
+    prev_action_unlikely_intent = False
 
     if circuit_breaker_tripped:
         prediction = PolicyPrediction([], policy_name=None)
@@ -593,7 +668,7 @@ def _collect_action_executed_predictions(
                 metadata=prediction.action_metadata,
             )
         )
-        previously_predicted_action_unlikely_intent = True
+        prev_action_unlikely_intent = True
         predicted_action, prediction, policy_entity_result = _run_action_prediction(
             processor, partial_tracker, expected_action
         )
@@ -617,7 +692,7 @@ def _collect_action_executed_predictions(
                 prediction.max_confidence,
                 event.timestamp,
                 metadata=prediction.action_metadata,
-                predicted_action_unlikely_intent=previously_predicted_action_unlikely_intent,
+                predicted_action_unlikely_intent=prev_action_unlikely_intent,
             )
         )
         if (
@@ -638,7 +713,7 @@ def _collect_action_executed_predictions(
                     "training stories and retrain."
                 )
             raise WrongPredictionException(error_msg)
-    elif previously_predicted_action_unlikely_intent:
+    elif prev_action_unlikely_intent:
         partial_tracker.update(
             WarningPredictedAction(
                 ACTION_UNLIKELY_INTENT_NAME,
@@ -646,6 +721,7 @@ def _collect_action_executed_predictions(
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
+                prediction.action_metadata
             )
         )
     else:
@@ -655,6 +731,7 @@ def _collect_action_executed_predictions(
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
+                metadata=prediction.action_metadata
             )
         )
 
