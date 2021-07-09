@@ -1954,22 +1954,21 @@ class WronglyPredictedAction(ActionExecuted):
     type_name = "wrong_action"
 
     def __init__(
-            self,
-            action_name_target: Text,
-            action_text_target: Text,
-            action_name_prediction: Text,
-            policy: Optional[Text] = None,
-            confidence: Optional[float] = None,
-            timestamp: Optional[float] = None,
-            metadata: Optional[Dict] = None,
-            predicted_action_unlikely_intent: bool = False,
+        self,
+        action_name_target: Text,
+        action_text_target: Text,
+        action_name_prediction: Text,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict] = None,
+        predicted_action_unlikely_intent: bool = False,
     ) -> None:
         """Creates event for a successful event execution.
 
         See the docstring of the parent class `ActionExecuted` for more information.
         """
         self.action_name_prediction = action_name_prediction
-        self.predicted_action_unlikely_intent = predicted_action_unlikely_intent
         super().__init__(
             action_name_target,
             policy,
@@ -1977,12 +1976,15 @@ class WronglyPredictedAction(ActionExecuted):
             timestamp,
             metadata,
             action_text=action_text_target,
+            predicted_action_unlikely_intent=predicted_action_unlikely_intent,
         )
 
     def inline_comment(self) -> Text:
         """A comment attached to this event. Used during dumping."""
         if self.predicted_action_unlikely_intent:
-            return f"predicted: {self.action_name_prediction} after action_unlikely_intent"
+            return (
+                f"predicted: {self.action_name_prediction} after action_unlikely_intent"
+            )
         return f"predicted: {self.action_name_prediction}"
 
     def as_story_string(self) -> Text:

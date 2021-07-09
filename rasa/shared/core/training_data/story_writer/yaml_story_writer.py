@@ -208,9 +208,7 @@ class YAMLStoryWriter(StoryWriter):
         if hasattr(user_utterance, "inline_comment"):
             comment = user_utterance.inline_comment()
             if comment:
-                result.yaml_add_eol_comment(
-                    comment, KEY_USER_INTENT
-                )
+                result.yaml_add_eol_comment(comment, KEY_USER_INTENT)
 
         if user_utterance.text and (
             # We only print the utterance text if it was an end-to-end prediction
@@ -284,9 +282,7 @@ class YAMLStoryWriter(StoryWriter):
             if KEY_ACTION in result and comment:
                 result.yaml_add_eol_comment(comment, KEY_ACTION)
             elif KEY_BOT_END_TO_END_MESSAGE in result and comment:
-                result.yaml_add_eol_comment(
-                    comment, KEY_BOT_END_TO_END_MESSAGE
-                )
+                result.yaml_add_eol_comment(comment, KEY_BOT_END_TO_END_MESSAGE)
 
         return result
 

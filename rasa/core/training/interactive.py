@@ -545,7 +545,10 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
     for idx, event in enumerate(applied_events):
         if isinstance(event, ActionExecuted):
-            if event.action_name == ACTION_UNLIKELY_INTENT_NAME and event.confidence == 0:
+            if (
+                event.action_name == ACTION_UNLIKELY_INTENT_NAME
+                and event.confidence == 0
+            ):
                 continue
             bot_column.append(colored(str(event), "autocyan"))
             if event.confidence is not None:

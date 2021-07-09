@@ -614,7 +614,7 @@ def _collect_action_executed_predictions(
         )
 
     if action_executed_eval_store.has_prediction_target_mismatch() or (
-            predicted_action_unlikely_intent and predicted_action != expected_action
+        predicted_action_unlikely_intent and predicted_action != expected_action
     ):
         partial_tracker.update(
             WronglyPredictedAction(

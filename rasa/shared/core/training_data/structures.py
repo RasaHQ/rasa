@@ -238,7 +238,9 @@ class StoryStep:
             and event.action_name == ACTION_UNLIKELY_INTENT_NAME
         ) or (
             type(event) == WronglyPredictedAction
-            and event.action_name == event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME
+            and event.action_name
+            == event.action_name_prediction
+            == ACTION_UNLIKELY_INTENT_NAME
         )
 
     @staticmethod
