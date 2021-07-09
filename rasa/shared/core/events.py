@@ -1489,7 +1489,6 @@ class ActionExecuted(Event):
         metadata: Optional[Dict] = None,
         action_text: Optional[Text] = None,
         hide_rule_turn: bool = False,
-        predicted_action_unlikely_intent: bool = False,
     ) -> None:
         """Creates event for a successful event execution.
 
@@ -1511,7 +1510,6 @@ class ActionExecuted(Event):
         self.unpredictable = False
         self.action_text = action_text
         self.hide_rule_turn = hide_rule_turn
-        self.predicted_action_unlikely_intent = predicted_action_unlikely_intent
 
         super().__init__(timestamp, metadata)
 
@@ -1532,12 +1530,6 @@ class ActionExecuted(Event):
     def __str__(self) -> Text:
         """Returns event as human readable string."""
         return self.action_name or self.action_text
-
-    def inline_comment(self) -> Optional[Text]:
-        """A comment attached to this event. Used during dumping."""
-        if self.predicted_action_unlikely_intent:
-            return f"predicted: {ACTION_UNLIKELY_INTENT_NAME}"
-        return None
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
@@ -1970,6 +1962,7 @@ class WronglyPredictedAction(ActionExecuted):
         See the docstring of the parent class `ActionExecuted` for more information.
         """
         self.action_name_prediction = action_name_prediction
+        self.predicted_action_unlikely_intent = predicted_action_unlikely_intent
         super().__init__(
             action_name_target,
             policy,
@@ -1977,7 +1970,6 @@ class WronglyPredictedAction(ActionExecuted):
             timestamp,
             metadata,
             action_text=action_text_target,
-            predicted_action_unlikely_intent=predicted_action_unlikely_intent,
         )
 
     def inline_comment(self) -> Text:
@@ -1999,3 +1991,24 @@ class WronglyPredictedAction(ActionExecuted):
             f"policy: {self.policy}, confidence: {self.confidence}, "
             f"metadata: {self.metadata})"
         )
+
+
+class WarningPredictedAction(ActionExecuted):
+    """The model predicted the correct action with warning."""
+
+    type_name = "warning_predicted"
+
+    def __init__(
+            self,
+            action_name_prediction: Text,
+            action_name: Optional[Text] = None,
+            policy: Optional[Text] = None,
+            confidence: Optional[float] = None,
+            timestamp: Optional[float] = None
+    ):
+        self.action_name_prediction = action_name_prediction
+        super().__init__(action_name, policy, confidence, timestamp)
+
+    def inline_comment(self) -> Text:
+        """A comment attached to this event. Used during dumping."""
+        return f"predicted: {self.action_name_prediction}"

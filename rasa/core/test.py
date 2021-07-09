@@ -54,6 +54,7 @@ from rasa.shared.core.events import (
     EntitiesAdded,
     UserUttered,
     WronglyPredictedAction,
+    WarningPredictedAction,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
@@ -637,14 +638,23 @@ def _collect_action_executed_predictions(
                     "training stories and retrain."
                 )
             raise WrongPredictionException(error_msg)
+    elif previously_predicted_action_unlikely_intent:
+        partial_tracker.update(
+            WarningPredictedAction(
+                ACTION_UNLIKELY_INTENT_NAME,
+                predicted_action,
+                prediction.policy_name,
+                prediction.max_confidence,
+                event.timestamp,
+            )
+        )
     else:
         partial_tracker.update(
             ActionExecuted(
                 predicted_action,
                 prediction.policy_name,
                 prediction.max_confidence,
-                event.timestamp,
-                predicted_action_unlikely_intent=previously_predicted_action_unlikely_intent,
+                event.timestamp
             )
         )
 
