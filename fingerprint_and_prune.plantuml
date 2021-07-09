@@ -2,26 +2,26 @@
 @startuml Fingerprint Run and Graph Pruning
 
 
-
 participant GraphTrainer order 3
 
 control GraphRunner <<Infrastructure>> order 5
 participant GraphNode order 7
 entity GraphFingerprintComponent order 8
-entity GraphComponent order 9
-database Cache <<Infrastructure>> order 10
+entity FingerprintCalculator order 9
+entity GraphComponent order 10
+database Cache <<Infrastructure>> order 11
 
 == Preparing the Graph ==
 
 GraphTrainer -> Cache: create()
 GraphTrainer <-- Cache: cache
-note over GraphFingerprintComponent: Adding the cache to the class means that all instantiated GraphFingerprintComponent can mark their statuses when run.
+note over GraphFingerprintComponent: Adding the cache to the class means that all instantiated GraphFingerprintComponent can determine their statuses when run.
 GraphTrainer -> GraphFingerprintComponent: create_subclass_with_cache(cache)
 GraphTrainer <-- GraphFingerprintComponent: graph_fingerprint_component_class
 
 GraphTrainer -> GraphTrainer: replace_non_input_node_components_with_fingerprint_node_component(train_schema, cache, graph_fingerprint_component_class)
 
-GraphTrainer -> GraphRunner: graph_runner_class.create(train_schema)
+GraphTrainer -> GraphRunner: graph_runner_class.create(train_schema, execution_context)
 
 GraphRunner -> GraphRunner: instantiate_graph()
 
@@ -55,16 +55,26 @@ group execute (for graph_node in sorted(graph_nodes))
     GraphRunner -> GraphNode: run(inputs_from_previous_node)
 
     group if GraphFingerprintComponent
-        note over GraphFingerprintComponent: We collect the fingerprint status of each component in a single dictionary we pass between the nodes.
-        GraphNode -> GraphFingerprintComponent: run(fingerprint_statuses)
-        GraphFingerprintComponent -> GraphFingerprintComponent: get_parent_inputs(fingerprint_statuses)
+        group if input is FingerPrintStatuses
+            note over GraphFingerprintComponent: We collect the fingerprint status of each component in a single dictionary we pass between the nodes.
+            GraphNode -> GraphFingerprintComponent: run(fingerprint_statuses)
+            GraphFingerprintComponent -> GraphFingerprintComponent: get_parent_input_fingerprints(fingerprint_statuses)
+            GraphFingerprintComponent -> FingerprintCalculator: calculate_fingerprint(node_name, config, parent_inputs)
+            GraphFingerprintComponent <-- FingerprintCalculator: fingerprint_key
+
+        end
+        group else
+            note over GraphFingerprintComponent: Note: A fingerprint of a fingerprint is itself, so this works if the parent is a GraphFingerprintComponent or a normal GraphComponent.
+            GraphNode -> GraphFingerprintComponent: run(inputs_from_previous_node))
+            GraphFingerprintComponent -> FingerprintCalculator: calculate_fingerprint(node_name, config, inputs_from_previous_node)
+            GraphFingerprintComponent <-- FingerprintCalculator: fingerprint_key
+        end
         note over Cache: This returns the fingerprint if there is a match, indicating that the execution will be the same as a previous run.
-        note over GraphFingerprintComponent: Note: A fingerprint of a fingerprint is itself, so this works if the parent is a GraphFingerprintComponent or a normal GraphComponent.
-        GraphFingerprintComponent -> Cache: get_fingerprint(node_name, config, inputs_from_previous_node)
+        GraphFingerprintComponent -> Cache: get_cached_output_fingerprint(fingerprint_key)
         GraphFingerprintComponent <-- Cache: fingerprinted_result
         group if fingerprint match
             note over GraphFingerprintComponent: We add the cached fingerprint to the statuses so it can be used by the next node.
-            GraphFingerprintComponent -> GraphFingerprintComponent: mark_hit_and_add_fingerprint(fingerprint_statuses)
+            GraphFingerprintComponent -> GraphFingerprintComponent: mark_hit_and_add_fingerprint(fingerprint_statuses, fingerprinted_result)
         end
         group else
             note over GraphFingerprintComponent: We don't add the fingerprint in this case as all descendants should also miss.

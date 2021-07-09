@@ -16,16 +16,16 @@ database TrackerStore <<Infrastructure>> order 12
 
 
 == Creating the ModelStorage ==
-Rasa -> ModelStorage: create(model_directory)
+Rasa -> ModelStorage: create_from(model_directory)
 Rasa <-- ModelStorage: model_storage
 
 == Loading the Graph ==
 Rasa -> GraphLoader: ~__init__(model_storage, graph_runner_class)
 
 GraphLoader -> ModelStorage: unpack_model
-GraphLoader <-- ModelStorage: graph_schema, domain
+GraphLoader <-- ModelStorage: predict_graph_schema, train_graph_schema, domain, model_metadata
 
-GraphLoader -> GraphRunner: graph_runner_class.create(graph_schema, model_storage)
+GraphLoader -> GraphRunner: graph_runner_class.create(graph_schema, model_storage, execution_context)
 
 GraphRunner -> GraphRunner: instantiate_graph()
 
@@ -34,7 +34,7 @@ group instantiate_graph (for every graph node in schema)
     GraphRunner -> GraphNode: ~__init__(nodename, config, model_storage)
     group if trained component
         note over GraphNode: The resource  will have been specified in the graph schema to point to the corresponding train node in the train schema.
-        GraphNode -> GraphComponent: load(config, resource, model_storage)
+        GraphNode -> GraphComponent: load(config, execution_context, model_storage, resource)
         GraphComponent -> ModelStorage: with_read_from(resource)
         ModelStorage -> ModelStorage: create_tmp_dir
         ModelStorage -> ModelStorage: copy_from_resource(resource, tmp_dir)
@@ -45,7 +45,7 @@ group instantiate_graph (for every graph node in schema)
         GraphComponent <-- ModelStorage
     end
     group else
-        GraphNode -> GraphComponent: create(config, resource, model_storage)
+        GraphNode -> GraphComponent: create(config, execution_context, resource, model_storage)
     end
     GraphNode <-- GraphComponent: graph_component
 
@@ -53,7 +53,7 @@ group instantiate_graph (for every graph node in schema)
 end
 
 GraphLoader <-- GraphRunner: graph_runner
-Rasa <-- GraphLoader: graph_runner, graph_schema, domain
+Rasa <-- GraphLoader: graph_runner, graph_schema, domain, model_metadata
 
 
 == Creating the Processor ==
@@ -69,7 +69,7 @@ Rasa <-- Agent
 == Prediction ==
 
 Channel -> Agent: handle_message(message)
-Agent -> TrackerStore: get_tracker(message)
+Agent -> TrackerStore: retrieve(sender_id)
 Agent <-- TrackerStore: tracker
 Agent -> GraphProcessor: predict_until_next_turn(tracker, message)
 group loop until action_listen
