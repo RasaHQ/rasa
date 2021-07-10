@@ -72,6 +72,9 @@ CI_ENVIRONMENT_TELL = [
     "JENKINS_URL",
     "TEAMCITY_VERSION",
     "TRAVIS",
+    "CODEBUILD_BUILD_ARN",
+    "CODEBUILD_BUILD_ID",
+    "CODEBUILD_BATCH_BUILD_IDENTIFIER",
 ]
 
 # If updating or creating a new event, remember to update
