@@ -1,16 +1,7 @@
 from abc import abstractmethod, ABC
-import enum
-from pathlib import Path
 from dataclasses import dataclass
-import dataclasses
-from rasa.core import featurizers
-
-import jsonpickle
 import logging
-
-from tqdm import tqdm
 from typing import Generator, Tuple, List, Optional, Dict, Text, Any
-import numpy as np
 
 from rasa.shared.core.domain import State
 from rasa.shared.core import state as state_utils
@@ -85,6 +76,8 @@ class Extractor:
 
         for state, event in zip(all_past_states, all_past_events):
 
+            # TODO: these if's should be preprocessors? - compare with new
+            # Tracker Featurizer first...
             if not isinstance(event, ActionExecuted) or event.unpredictable:
                 continue
 
@@ -144,6 +137,8 @@ class Extractor:
 class UnRoller:
     """
     TODO: there is probably a better name for this.... :)
+    FIXME: state and entities/actions tuples always belong to the same step
+     --> need to cutoff the last state...
     """
 
     def __init__(
@@ -191,7 +186,7 @@ class UnRoller:
     @staticmethod
     def unroll(items: List[T], max_history: Optional[int] = None) -> Generator[List[T]]:
         """
-        FIXME: test :)
+        FIXME:
         """
         window = max_history if max_history is not None else len(items)
         for rolling_end in range(1, len(items)):
