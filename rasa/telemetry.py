@@ -574,8 +574,8 @@ def filter_errors(
         hint: some hinting information sent alongside of the event
 
     Returns:
-        the event without any sensitive / PII data or `None` if the event should
-        be discarded.
+        the event without any sensitive / PII data or `None` if the event constitutes
+        an `ImportError` which should be discarded.
     """
     if "exc_info" in hint:
         exc_type, exc_value, tb = hint["exc_info"]
@@ -587,6 +587,16 @@ def filter_errors(
 def before_send(
     event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
 ) -> Optional[Dict[Text, Any]]:
+    """
+
+    Args:
+        event: event to be logged to sentry
+        _unused_hint: some hinting information sent alongside of the event
+
+    Returns:
+        the event without any sensitive / PII data or `None` if the event should
+        be discarded.
+    """
     event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
     event = filter_errors(event, _unused_hint)
     return event
@@ -602,8 +612,8 @@ def strip_sensitive_data_from_sentry_event(
         _unused_hint: some hinting information sent alongside of the event
 
     Returns:
-        the event without any sensitive / PII data or `None` if the event constitutes
-        an `ImportError` which should be discarded.
+        the event without any sensitive / PII data or `None` if the event should
+        be discarded.
     """
     # removes any paths from stack traces (avoids e.g. sending
     # a users home directory name if package is installed there)
