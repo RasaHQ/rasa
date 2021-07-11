@@ -20,11 +20,11 @@ from rasa.nlu.classifiers.diet_classifier import (
     DIET,
     LABEL_KEY,
     LABEL_SUB_KEY,
-    SEQUENCE_LENGTH,
     SENTENCE,
     SEQUENCE,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
+from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.constants import (
     LABEL,
     HIDDEN_LAYERS_SIZES,
@@ -51,7 +51,7 @@ from rasa.utils.tensorflow.constants import (
     UNIDIRECTIONAL_ENCODER,
     DROP_RATE,
     DROP_RATE_ATTENTION,
-    WEIGHT_SPARSITY,
+    CONNECTION_DENSITY,
     NEGATIVE_MARGIN_SCALE,
     REGULARIZATION_CONSTANT,
     SCALE_LOSS,
@@ -196,8 +196,8 @@ class ResponseSelector(DIETClassifier):
         # ## Regularization parameters
         # The scale of regularization
         REGULARIZATION_CONSTANT: 0.002,
-        # Sparsity of the weights in dense layers
-        WEIGHT_SPARSITY: 0.0,
+        # Fraction of trainable weights in internal layers.
+        CONNECTION_DENSITY: 1.0,
         # The scale of how important is to minimize the maximum similarity
         # between embeddings of different labels.
         NEGATIVE_MARGIN_SCALE: 0.8,
@@ -246,6 +246,9 @@ class ResponseSelector(DIETClassifier):
         MODEL_CONFIDENCE: SOFTMAX,
     }
 
+    # The `transformer_size` to use as a default when the transformer is enabled.
+    default_transformer_size_when_enabled = 256
+
     def __init__(
         self,
         component_config: Optional[Dict[Text, Any]] = None,
@@ -255,6 +258,7 @@ class ResponseSelector(DIETClassifier):
         all_retrieval_intents: Optional[List[Text]] = None,
         responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None,
         finetune_mode: bool = False,
+        sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None,
     ) -> None:
         """Declare instance variables with default values.
 
@@ -267,6 +271,7 @@ class ResponseSelector(DIETClassifier):
             responses: All responses defined in the data.
             finetune_mode: If `True` loads the model with pre-trained weights,
                 otherwise initializes it with random weights.
+            sparse_feature_sizes: Sizes of the sparse features the model was trained on.
         """
         component_config = component_config or {}
 
@@ -287,6 +292,7 @@ class ResponseSelector(DIETClassifier):
             entity_tag_specs,
             model,
             finetune_mode=finetune_mode,
+            sparse_feature_sizes=sparse_feature_sizes,
         )
 
     @property
@@ -308,9 +314,88 @@ class ResponseSelector(DIETClassifier):
         self.retrieval_intent = config[RETRIEVAL_INTENT]
         self.use_text_as_label = config[USE_TEXT_AS_LABEL]
 
+    def _warn_about_transformer_and_hidden_layers_enabled(
+        self, selector_name: Text
+    ) -> None:
+        """Warns user if they enabled the transformer but didn't disable hidden layers.
+
+        ResponseSelector defaults specify considerable hidden layer sizes, but
+        this is for cases where no transformer is used. If a transformer exists,
+        then, from our experience, the best results are achieved with no hidden layers
+        used between the feature-combining layers and the transformer.
+        """
+        hidden_layers_is_at_default_value = (
+            self.component_config[HIDDEN_LAYERS_SIZES]
+            == self.defaults[HIDDEN_LAYERS_SIZES]
+        )
+        config_for_disabling_hidden_layers = {
+            k: [] for k, _ in self.defaults[HIDDEN_LAYERS_SIZES].items()
+        }
+        # warn if the hidden layers aren't disabled
+        if (
+            self.component_config[HIDDEN_LAYERS_SIZES]
+            != config_for_disabling_hidden_layers
+        ):
+            # make the warning text more contextual by explaining what the user did
+            # to the hidden layers' config (i.e. what it is they should change)
+            if hidden_layers_is_at_default_value:
+                what_user_did = "left the hidden layer sizes at their default value:"
+            else:
+                what_user_did = "set the hidden layer sizes to be non-empty by setting"
+
+            rasa.shared.utils.io.raise_warning(
+                f"You have enabled a transformer inside {selector_name} by"
+                f" setting a positive value for `{NUM_TRANSFORMER_LAYERS}`, but you "
+                f"{what_user_did} `{HIDDEN_LAYERS_SIZES}="
+                f"{self.component_config[HIDDEN_LAYERS_SIZES]}`. We recommend to "
+                f"disable the hidden layers when using a transformer, by specifying "
+                f"`{HIDDEN_LAYERS_SIZES}={config_for_disabling_hidden_layers}`.",
+                category=UserWarning,
+            )
+
+    def _warn_and_correct_transformer_size(self, selector_name: Text) -> None:
+        """Corrects transformer size so that training doesn't break; informs the user.
+
+        If a transformer is used, the default `transformer_size` breaks things.
+        We need to set a reasonable default value so that the model works fine.
+        """
+        if (
+            self.component_config[TRANSFORMER_SIZE] is None
+            or self.component_config[TRANSFORMER_SIZE] < 1
+        ):
+            rasa.shared.utils.io.raise_warning(
+                f"`{TRANSFORMER_SIZE}` is set to "
+                f"`{self.component_config[TRANSFORMER_SIZE]}` for "
+                f"{selector_name}, but a positive size is required when using "
+                f"`{NUM_TRANSFORMER_LAYERS} > 0`. {selector_name} will proceed, using "
+                f"`{TRANSFORMER_SIZE}={self.default_transformer_size_when_enabled}`. "
+                f"Alternatively, specify a different value in the component's config.",
+                category=UserWarning,
+            )
+            self.component_config[
+                TRANSFORMER_SIZE
+            ] = self.default_transformer_size_when_enabled
+
+    def _check_config_params_when_transformer_enabled(self) -> None:
+        """Checks & corrects config parameters when the transformer is enabled.
+
+        This is needed because the defaults for individual config parameters are
+        interdependent and some defaults should change when the transformer is enabled.
+        """
+        if self.component_config[NUM_TRANSFORMER_LAYERS] > 0:
+            selector_name = "ResponseSelector" + (
+                f"({self.retrieval_intent})" if self.retrieval_intent else ""
+            )
+            self._warn_about_transformer_and_hidden_layers_enabled(selector_name)
+            self._warn_and_correct_transformer_size(selector_name)
+
     def _check_config_parameters(self) -> None:
+        """Checks that component configuration makes sense; corrects it where needed."""
         super()._check_config_parameters()
         self._load_selector_params(self.component_config)
+        # Once general DIET-related parameters have been checked, check also the ones
+        # specific to ResponseSelector.
+        self._check_config_params_when_transformer_enabled()
 
     def _set_message_property(
         self, message: Message, prediction_dict: Dict[Text, Any], selector_key: Text
@@ -539,7 +624,7 @@ class ResponseSelector(DIETClassifier):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Text = None,
+        model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["ResponseSelector"] = None,
         **kwargs: Any,
@@ -655,32 +740,57 @@ class DIET2DIET(DIET):
         self.text_name = TEXT
         self.label_name = TEXT if self.config[SHARE_HIDDEN_LAYERS] else LABEL
 
-        self._prepare_sequence_layers(self.text_name)
-        self._prepare_sequence_layers(self.label_name)
+        # For user text and response text, prepare layers that combine different feature
+        # types, embed everything using a transformer and optionally also do masked
+        # language modeling. Omit input dropout for label features.
+        label_config = self.config.copy()
+        label_config.update({SPARSE_INPUT_DROPOUT: False, DENSE_INPUT_DROPOUT: False})
+        for attribute, config in [
+            (self.text_name, self.config),
+            (self.label_name, label_config),
+        ]:
+            self._tf_layers[
+                f"sequence_layer.{attribute}"
+            ] = rasa_layers.RasaSequenceLayer(
+                attribute, self.data_signature[attribute], config
+            )
+
         if self.config[MASKED_LM]:
-            self._prepare_mask_lm_layers(self.text_name)
-        self._prepare_label_classification_layers()
+            self._prepare_mask_lm_loss(self.text_name)
+
+        self._prepare_label_classification_layers(predictor_attribute=self.text_name)
 
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        sequence_mask_label = super()._get_mask_for(
-            self.tf_label_data, LABEL, SEQUENCE_LENGTH
+        sequence_feature_lengths = self._get_sequence_feature_lengths(
+            self.tf_label_data, LABEL
         )
-        batch_dim = tf.shape(self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0])[0]
-        sequence_lengths_label = self._get_sequence_lengths(
-            self.tf_label_data, LABEL, SEQUENCE_LENGTH, batch_dim
-        )
-        mask_label = self._compute_mask(sequence_lengths_label)
 
-        label_transformed, _, _, _, _ = self._create_sequence(
-            self.tf_label_data[LABEL][SEQUENCE],
-            self.tf_label_data[LABEL][SENTENCE],
-            sequence_mask_label,
-            mask_label,
-            self.label_name,
+        # Combine all feature types into one and embed using a transformer.
+        label_transformed, _, _, _, _, _ = self._tf_layers[
+            f"sequence_layer.{self.label_name}"
+        ](
+            (
+                self.tf_label_data[LABEL][SEQUENCE],
+                self.tf_label_data[LABEL][SENTENCE],
+                sequence_feature_lengths,
+            ),
+            training=self._training,
         )
-        sentence_label = self._last_token(label_transformed, sequence_lengths_label)
+
+        # Last token is taken from the last position with real features, determined
+        # - by the number of real tokens, i.e. by the sequence length of sequence-level
+        #   features, and
+        # - by the presence or absence of sentence-level features (reflected in the
+        #   effective sequence length of these features being 1 or 0.
+        # We need to combine the two lengths to correctly get the last position.
+        sentence_feature_lengths = self._get_sentence_feature_lengths(
+            self.tf_label_data, LABEL,
+        )
+        sentence_label = self._last_token(
+            label_transformed, sequence_feature_lengths + sentence_feature_lengths
+        )
 
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](sentence_label)
 
@@ -699,45 +809,39 @@ class DIET2DIET(DIET):
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        batch_dim = self._get_batch_dim(tf_batch_data[TEXT])
-        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
-        sequence_lengths_text = self._get_sequence_lengths(
-            tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim
+        # Process all features for text.
+        sequence_feature_lengths_text = self._get_sequence_feature_lengths(
+            tf_batch_data, TEXT
         )
-        mask_text = self._compute_mask(sequence_lengths_text)
-
         (
             text_transformed,
             text_in,
-            text_seq_ids,
-            lm_mask_bool_text,
             _,
-        ) = self._create_sequence(
-            tf_batch_data[TEXT][SEQUENCE],
-            tf_batch_data[TEXT][SENTENCE],
-            sequence_mask_text,
-            mask_text,
-            self.text_name,
-            sparse_dropout=self.config[SPARSE_INPUT_DROPOUT],
-            dense_dropout=self.config[DENSE_INPUT_DROPOUT],
-            masked_lm_loss=self.config[MASKED_LM],
-            sequence_ids=True,
+            text_seq_ids,
+            mlm_mask_booleanean_text,
+            _,
+        ) = self._tf_layers[f"sequence_layer.{self.text_name}"](
+            (
+                tf_batch_data[TEXT][SEQUENCE],
+                tf_batch_data[TEXT][SENTENCE],
+                sequence_feature_lengths_text,
+            ),
+            training=self._training,
         )
 
-        sequence_mask_label = super()._get_mask_for(
-            tf_batch_data, LABEL, SEQUENCE_LENGTH
+        # Process all features for labels.
+        sequence_feature_lengths_label = self._get_sequence_feature_lengths(
+            tf_batch_data, LABEL
         )
-        sequence_lengths_label = self._get_sequence_lengths(
-            tf_batch_data, LABEL, SEQUENCE_LENGTH, batch_dim
-        )
-        mask_label = self._compute_mask(sequence_lengths_label)
-
-        label_transformed, _, _, _, _ = self._create_sequence(
-            tf_batch_data[LABEL][SEQUENCE],
-            tf_batch_data[LABEL][SENTENCE],
-            sequence_mask_label,
-            mask_label,
-            self.label_name,
+        label_transformed, _, _, _, _, _ = self._tf_layers[
+            f"sequence_layer.{self.label_name}"
+        ](
+            (
+                tf_batch_data[LABEL][SEQUENCE],
+                tf_batch_data[LABEL][SENTENCE],
+                sequence_feature_lengths_label,
+            ),
+            training=self._training,
         )
 
         losses = []
@@ -747,7 +851,7 @@ class DIET2DIET(DIET):
                 text_transformed,
                 text_in,
                 text_seq_ids,
-                lm_mask_bool_text,
+                mlm_mask_booleanean_text,
                 self.text_name,
             )
 
@@ -755,10 +859,24 @@ class DIET2DIET(DIET):
             self.mask_acc.update_state(acc)
             losses.append(loss)
 
-        # get sentence feature vector for label classification
-        sentence_vector_text = self._last_token(text_transformed, sequence_lengths_text)
+        # Get sentence feature vector for label classification. The vector is extracted
+        # from the last position with real features. To determine this position, we
+        # combine the sequence lengths of sequence- and sentence-level features.
+        sentence_feature_lengths_text = self._get_sentence_feature_lengths(
+            tf_batch_data, TEXT
+        )
+        sentence_vector_text = self._last_token(
+            text_transformed,
+            sequence_feature_lengths_text + sentence_feature_lengths_text,
+        )
+
+        # Extract sentence vector for the label attribute in the same way.
+        sentence_feature_lengths_label = self._get_sentence_feature_lengths(
+            tf_batch_data, LABEL
+        )
         sentence_vector_label = self._last_token(
-            label_transformed, sequence_lengths_label
+            label_transformed,
+            sequence_feature_lengths_label + sentence_feature_lengths_label,
         )
         label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
@@ -786,18 +904,18 @@ class DIET2DIET(DIET):
             batch_in, self.predict_data_signature
         )
 
-        sequence_mask_text = super()._get_mask_for(tf_batch_data, TEXT, SEQUENCE_LENGTH)
-        sequence_lengths_text = self._get_sequence_lengths(
-            tf_batch_data, TEXT, SEQUENCE_LENGTH, batch_dim=1
+        sequence_feature_lengths = self._get_sequence_feature_lengths(
+            tf_batch_data, TEXT
         )
-        mask_text = self._compute_mask(sequence_lengths_text)
-
-        text_transformed, _, _, _, attention_weights = self._create_sequence(
-            tf_batch_data[TEXT][SEQUENCE],
-            tf_batch_data[TEXT][SENTENCE],
-            sequence_mask_text,
-            mask_text,
-            self.text_name,
+        text_transformed, _, _, _, _, attention_weights = self._tf_layers[
+            f"sequence_layer.{self.text_name}"
+        ](
+            (
+                tf_batch_data[TEXT][SEQUENCE],
+                tf_batch_data[TEXT][SENTENCE],
+                sequence_feature_lengths,
+            ),
+            training=self._training,
         )
 
         predictions = {
@@ -811,7 +929,7 @@ class DIET2DIET(DIET):
             _, self.all_labels_embed = self._create_all_labels()
 
         # get sentence feature vector for intent classification
-        sentence_vector = self._last_token(text_transformed, sequence_lengths_text)
+        sentence_vector = self._last_token(text_transformed, sequence_feature_lengths)
         sentence_vector_embed = self._tf_layers[f"embed.{TEXT}"](sentence_vector)
 
         _, scores = self._tf_layers[

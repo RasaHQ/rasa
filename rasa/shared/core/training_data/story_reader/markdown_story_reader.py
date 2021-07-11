@@ -3,17 +3,23 @@ import logging
 import os
 import re
 from pathlib import Path
+import sys
+
+# check Python version for type imports in line with PEP 563 and 585
+if sys.version_info >= (3, 7):
+    from re import Match
+else:
+    from typing import Match
 from typing import Dict, Text, List, Any, Union, Tuple, Optional
 
 import rasa.shared.data
 from rasa.shared.core.domain import Domain
-from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
+from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
     DOCS_URL_DOMAINS,
     LEGACY_DOCS_BASE_URL,
-    DEFAULT_E2E_TESTS_PATH,
     DOCS_URL_STORIES,
     DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
 )
@@ -54,7 +60,9 @@ class MarkdownStoryReader(StoryReader):
                 docs=DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION,
             )
 
-    def read_from_file(self, filename: Union[Text, Path]) -> List[StoryStep]:
+    def read_from_file(
+        self, filename: Union[Text, Path], skip_validation: bool = False
+    ) -> List[StoryStep]:
         """Given a md file reads the contained stories."""
         try:
             with open(
@@ -161,7 +169,7 @@ class MarkdownStoryReader(StoryReader):
             )
 
     def _replace_template_variables(self, line: Text) -> Text:
-        def process_match(matchobject):
+        def process_match(matchobject: "Match") -> Any:
             varname = matchobject.group(1)
             if varname in self.template_variables:
                 return self.template_variables[varname]
@@ -356,7 +364,7 @@ class MarkdownStoryReader(StoryReader):
 
         dirname = os.path.dirname(file_path)
         return (
-            DEFAULT_E2E_TESTS_PATH in dirname
+            "tests" in dirname
             and rasa.shared.data.is_story_file(file_path)
             and not rasa.shared.data.is_nlu_file(file_path)
         )

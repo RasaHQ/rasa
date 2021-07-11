@@ -3,7 +3,7 @@ from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import numpy as np
-from typing import Any, Dict, Optional, Text, List, Type, Union
+from typing import Any, Dict, Optional, Text, List, Type, Union, Callable
 
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -51,7 +51,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         ]
     }
 
-    function_dict = {
+    function_dict: Dict[Text, Callable[[Token], Union[bool, Text, None]]] = {
         "low": lambda token: token.text.islower(),
         "title": lambda token: token.text.istitle(),
         "prefix5": lambda token: token.text[:5],
@@ -63,7 +63,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         "pos": lambda token: token.data.get(POS_TAG_KEY)
         if POS_TAG_KEY in token.data
         else None,
-        "pos2": lambda token: token.data.get(POS_TAG_KEY)[:2]
+        "pos2": lambda token: token.data.get(POS_TAG_KEY, [])[:2]
         if "pos" in token.data
         else None,
         "upper": lambda token: token.text.isupper(),
@@ -279,12 +279,12 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     def load(
         cls,
         meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
+        model_dir: Text,
         model_metadata: Optional[Metadata] = None,
         cached_component: Optional["LexicalSyntacticFeaturizer"] = None,
         **kwargs: Any,
     ) -> "LexicalSyntacticFeaturizer":
-
+        """Loads trained component (see parent class for full docstring)."""
         file_name = meta.get("file")
 
         feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"

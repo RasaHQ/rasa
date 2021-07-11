@@ -1,4 +1,5 @@
-from typing import Dict, Text, List, Optional, Any
+import textwrap
+from typing import Dict, Text, List, Optional, Any, Union
 from unittest.mock import Mock
 
 import pytest
@@ -12,6 +13,7 @@ from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.lock_store import InMemoryLockStore
 from rasa.core.actions import action
 from rasa.core.actions.action import ActionExecutionRejection
+from rasa.shared.constants import REQUIRED_SLOTS_KEY, IGNORED_INTENTS
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, REQUESTED_SLOT
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel
@@ -40,9 +42,10 @@ async def test_activate():
     domain = f"""
 forms:
   {form_name}:
-    {slot_name}:
-    - type: from_entity
-      entity: number
+    {REQUIRED_SLOTS_KEY}:
+        {slot_name}:
+        - type: from_entity
+          entity: number
 responses:
     utter_ask_num_people:
     - text: "How many people?"
@@ -73,11 +76,12 @@ async def test_activate_with_prefilled_slot():
     domain = f"""
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_entity
-          entity: {slot_name}
-        {next_slot_to_request}:
-        - type: from_text
+        {REQUIRED_SLOTS_KEY}:
+            {slot_name}:
+            - type: from_entity
+              entity: {slot_name}
+            {next_slot_to_request}:
+            - type: from_text
     slots:
       {slot_name}:
         type: unfeaturized
@@ -96,7 +100,7 @@ async def test_activate_with_prefilled_slot():
     ]
 
 
-async def test_switch_forms_with_same_slot(default_agent: Agent):
+async def test_switch_forms_with_same_slot(empty_agent: Agent):
     """Tests switching of forms, where the first slot is the same in both forms.
 
     Tests the fix for issue 7710"""
@@ -123,13 +127,15 @@ nlu:
     - I don't want my shoes anymore
 forms:
   {form_1}:
-    {slot_a}:
-    - type: from_entity
-      entity: number
+    {REQUIRED_SLOTS_KEY}:
+        {slot_a}:
+        - type: from_entity
+          entity: number
   {form_2}:
-    {slot_a}:
-    - type: from_entity
-      entity: number
+    {REQUIRED_SLOTS_KEY}:
+        {slot_a}:
+        - type: from_entity
+          entity: number
 responses:
     utter_ask_{form_1}_{slot_a}:
     - text: {utter_ask_form_1}
@@ -141,8 +147,8 @@ responses:
 
     # Driving it like rasa/core/processor
     processor = MessageProcessor(
-        default_agent.interpreter,
-        default_agent.policy_ensemble,
+        empty_agent.interpreter,
+        empty_agent.policy_ensemble,
         domain,
         InMemoryTrackerStore(domain),
         InMemoryLockStore(),
@@ -249,9 +255,10 @@ async def test_activate_and_immediate_deactivate():
     domain = f"""
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_entity
-          entity: {slot_name}
+        {REQUIRED_SLOTS_KEY}:
+            {slot_name}:
+            - type: from_entity
+              entity: {slot_name}
     slots:
       {slot_name}:
         type: unfeaturized
@@ -286,8 +293,9 @@ async def test_set_slot_and_deactivate():
     domain = f"""
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_text
+        {REQUIRED_SLOTS_KEY}:
+            {slot_name}:
+            - type: from_text
     slots:
       {slot_name}:
         type: text
@@ -326,9 +334,10 @@ async def test_action_rejection():
     domain = f"""
     forms:
       {form_name}:
-        {slot_to_fill}:
-        - type: from_entity
-          entity: some_entity
+        {REQUIRED_SLOTS_KEY}:
+            {slot_to_fill}:
+            - type: from_entity
+              entity: some_entity
     slots:
       {slot_to_fill}:
         type: unfeaturized
@@ -464,11 +473,12 @@ async def test_validate_slots(
         type: any
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_text
-        num_tables:
-        - type: from_entity
-          entity: num_tables
+        {REQUIRED_SLOTS_KEY}:
+            {slot_name}:
+            - type: from_text
+            num_tables:
+            - type: from_entity
+              entity: num_tables
     actions:
     - validate_{form_name}
     """
@@ -503,14 +513,15 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
             type: any
         forms:
           {form_name}:
-            {slot_name_1}:
-            - type: from_intent
-              intent: some_intent
-              value: some_value
-            {slot_name_2}:
-            - type: from_intent
-              intent: some_intent
-              value: some_value
+            {REQUIRED_SLOTS_KEY}:
+                {slot_name_1}:
+                - type: from_intent
+                  intent: some_intent
+                  value: some_value
+                {slot_name_2}:
+                - type: from_intent
+                  intent: some_intent
+                  value: some_value
         actions:
         - validate_{form_name}
         """
@@ -580,9 +591,10 @@ async def test_no_slots_extracted_with_custom_slot_mappings(custom_events: List[
         type: any
     forms:
       {form_name}:
-        num_tables:
-        - type: from_entity
-          entity: num_tables
+        {REQUIRED_SLOTS_KEY}:
+            num_tables:
+            - type: from_entity
+              entity: num_tables
     actions:
     - validate_{form_name}
     """
@@ -621,8 +633,9 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
         type: unfeaturized
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_text
+        {REQUIRED_SLOTS_KEY}:
+            {slot_name}:
+            - type: from_text
     actions:
     - validate_{form_name}
     """
@@ -668,8 +681,9 @@ def test_name_of_utterance(utterance_name: Text):
     domain = f"""
     forms:
       {form_name}:
-        {slot_name}:
-        - type: from_text
+        {REQUIRED_SLOTS_KEY}:
+            {slot_name}:
+            - type: from_text
     responses:
         {utterance_name}:
         - text: "How many people?"
@@ -685,7 +699,9 @@ def test_temporary_tracker():
     extra_slot = "some_slot"
     sender_id = "test"
     domain = Domain.from_yaml(
-        f"""        slots:
+        f"""
+        version: "2.0"
+        slots:
           {extra_slot}:
             type: unfeaturized
         """
@@ -710,7 +726,26 @@ def test_temporary_tracker():
 
 def test_extract_requested_slot_default():
     """Test default extraction of a slot value from entity with the same name."""
-    form = FormAction("some form", None)
+    form_name = "some_form"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_dict(
+        {
+            "forms": {
+                form_name: {
+                    REQUIRED_SLOTS_KEY: {
+                        "some_slot": [
+                            {
+                                "type": "from_entity",
+                                "entity": "some_slot",
+                                "value": "some_value",
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    )
 
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -724,7 +759,7 @@ def test_extract_requested_slot_default():
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, Domain.empty())
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     assert slot_values == {"some_slot": "some_value"}
 
 
@@ -751,7 +786,9 @@ def test_extract_requested_slot_when_mapping_applies(
     entity_name = "some_slot"
     form = FormAction(form_name, None)
 
-    domain = Domain.from_dict({"forms": {form_name: {entity_name: [slot_mapping]}}})
+    domain = Domain.from_dict(
+        {"forms": {form_name: {REQUIRED_SLOTS_KEY: {entity_name: [slot_mapping]}}}}
+    )
 
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -767,9 +804,69 @@ def test_extract_requested_slot_when_mapping_applies(
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     # check that the value was extracted for correct intent
     assert slot_values == {"some_slot": expected_value}
+
+
+@pytest.mark.parametrize(
+    "entities, expected_slot_values",
+    [
+        # Two entities were extracted for `ListSlot`
+        (
+            [
+                {"entity": "topping", "value": "mushrooms"},
+                {"entity": "topping", "value": "kebab"},
+            ],
+            ["mushrooms", "kebab"],
+        ),
+        # Only one entity was extracted for `ListSlot`
+        ([{"entity": "topping", "value": "kebab"},], ["kebab"],),
+    ],
+)
+def test_extract_requested_slot_with_list_slot(
+    entities: List[Dict[Text, Any]], expected_slot_values: List[Text]
+):
+    form_name = "some_form"
+    slot_name = "toppings"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+    version: "2.0"
+
+    slots:
+      {slot_name}:
+        type: list
+        influence_conversation: false
+
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+          {slot_name}:
+          - type: from_entity
+            entity: topping
+    """
+        )
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActiveLoop(form_name),
+            SlotSet(REQUESTED_SLOT, slot_name),
+            UserUttered(
+                "bla", intent={"name": "greet", "confidence": 1.0}, entities=entities,
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        slots=domain.slots,
+    )
+
+    slot_values = form.extract_requested_slot(tracker, domain, slot_name)
+
+    assert slot_values[slot_name] == expected_slot_values
 
 
 @pytest.mark.parametrize(
@@ -777,6 +874,7 @@ def test_extract_requested_slot_when_mapping_applies(
     [
         {"type": "from_entity", "entity": "some_slot", "intent": "some_intent"},
         {"type": "from_intent", "intent": "some_intent", "value": "some_value"},
+        {"type": "from_intent", "intent": "greeted", "value": "some_value"},
         {"type": "from_text", "intent": "other"},
         {"type": "from_text", "not_intent": "greet"},
         {"type": "from_trigger_intent", "intent": "greet", "value": "value"},
@@ -787,7 +885,9 @@ def test_extract_requested_slot_mapping_does_not_apply(slot_mapping: Dict):
     entity_name = "some_slot"
     form = FormAction(form_name, None)
 
-    domain = Domain.from_dict({"forms": {form_name: {entity_name: [slot_mapping]}}})
+    domain = Domain.from_dict(
+        {"forms": {form_name: {REQUIRED_SLOTS_KEY: {entity_name: [slot_mapping]}}}}
+    )
 
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -802,7 +902,7 @@ def test_extract_requested_slot_mapping_does_not_apply(slot_mapping: Dict):
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     # check that the value was not extracted for incorrect intent
     assert slot_values == {}
 
@@ -833,14 +933,16 @@ async def test_trigger_slot_mapping_applies(
         {
             "forms": {
                 form_name: {
-                    entity_name: [
-                        {
-                            "type": "from_entity",
-                            "entity": entity_name,
-                            "intent": "some_intent",
-                        }
-                    ],
-                    slot_filled_by_trigger_mapping: [trigger_slot_mapping],
+                    REQUIRED_SLOTS_KEY: {
+                        entity_name: [
+                            {
+                                "type": "from_entity",
+                                "entity": entity_name,
+                                "intent": "some_intent",
+                            }
+                        ],
+                        slot_filled_by_trigger_mapping: [trigger_slot_mapping],
+                    }
                 }
             }
         }
@@ -880,14 +982,16 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
         {
             "forms": {
                 form_name: {
-                    entity_name: [
-                        {
-                            "type": "from_entity",
-                            "entity": entity_name,
-                            "intent": "some_intent",
-                        }
-                    ],
-                    slot_filled_by_trigger_mapping: [trigger_slot_mapping],
+                    REQUIRED_SLOTS_KEY: {
+                        entity_name: [
+                            {
+                                "type": "from_entity",
+                                "entity": entity_name,
+                                "intent": "some_intent",
+                            }
+                        ],
+                        slot_filled_by_trigger_mapping: [trigger_slot_mapping],
+                    }
                 }
             }
         }
@@ -911,7 +1015,8 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
 
 
 @pytest.mark.parametrize(
-    "mapping_not_intent, mapping_intent, mapping_role, mapping_group, entities, intent, expected_slot_values",
+    "mapping_not_intent, mapping_intent, mapping_role, "
+    "mapping_group, entities, intent, expected_slot_values",
     [
         (
             "some_intent",
@@ -1042,7 +1147,9 @@ def test_extract_requested_slot_from_entity(
         intent=mapping_intent,
         not_intent=mapping_not_intent,
     )
-    domain = Domain.from_dict({"forms": {form_name: {"some_slot": [mapping]}}})
+    domain = Domain.from_dict(
+        {"forms": {form_name: {REQUIRED_SLOTS_KEY: {"some_slot": [mapping]}}}}
+    )
 
     tracker = DialogueStateTracker.from_events(
         "default",
@@ -1055,12 +1162,13 @@ def test_extract_requested_slot_from_entity(
         ],
     )
 
-    slot_values = form.extract_requested_slot(tracker, domain)
+    slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     assert slot_values == expected_slot_values
 
 
 @pytest.mark.parametrize(
-    "some_other_slot_mapping, some_slot_mapping, entities, intent, expected_slot_values",
+    "some_other_slot_mapping, some_slot_mapping, entities, "
+    "intent, expected_slot_values",
     [
         (
             [
@@ -1228,8 +1336,10 @@ def test_extract_other_slots_with_entity(
         {
             "forms": {
                 form_name: {
-                    "some_other_slot": some_other_slot_mapping,
-                    "some_slot": some_slot_mapping,
+                    REQUIRED_SLOTS_KEY: {
+                        "some_other_slot": some_other_slot_mapping,
+                        "some_slot": some_slot_mapping,
+                    }
                 }
             }
         }
@@ -1252,7 +1362,65 @@ def test_extract_other_slots_with_entity(
 
 
 @pytest.mark.parametrize(
-    "domain, expected_action",
+    "entities, expected_slot_values",
+    [
+        # Two entities were extracted for `ListSlot`
+        (
+            [
+                {"entity": "topping", "value": "mushrooms"},
+                {"entity": "topping", "value": "kebab"},
+            ],
+            ["mushrooms", "kebab"],
+        ),
+        # Only one entity was extracted for `ListSlot`
+        ([{"entity": "topping", "value": "kebab"},], ["kebab"],),
+    ],
+)
+def test_extract_other_list_slot_from_entity(
+    entities: List[Dict[Text, Any]], expected_slot_values: List[Text]
+):
+    form_name = "some_form"
+    slot_name = "toppings"
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+    version: "2.0"
+
+    slots:
+      {slot_name}:
+        type: list
+        influence_conversation: false
+
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+          {slot_name}:
+          - type: from_entity
+            entity: topping
+    """
+        )
+    )
+
+    form = FormAction(form_name, None)
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some slot"),
+            UserUttered(
+                "bla", intent={"name": "greet", "confidence": 1.0}, entities=entities
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        slots=domain.slots,
+    )
+
+    slots = form.extract_other_slots(tracker, domain)
+    assert slots[slot_name] == expected_slot_values
+
+
+@pytest.mark.parametrize(
+    "domain_dict, expected_action",
     [
         (
             {
@@ -1285,7 +1453,7 @@ def test_extract_other_slots_with_entity(
     ],
 )
 async def test_ask_for_slot(
-    domain: Dict,
+    domain_dict: Dict,
     expected_action: Text,
     monkeypatch: MonkeyPatch,
     default_nlg: TemplatedNaturalLanguageGenerator,
@@ -1299,7 +1467,7 @@ async def test_ask_for_slot(
     )
 
     form = FormAction("my_form", endpoint_config)
-    domain = Domain.from_dict(domain)
+    domain = Domain.from_dict(domain_dict)
     await form._ask_for_slot(
         domain,
         default_nlg,
@@ -1331,3 +1499,250 @@ async def test_ask_for_slot_if_not_utter_ask(
 
     assert not events
     action_from_name.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "ignored_intents, slot_not_intent",
+    [
+        # for entity_type -> from_entity
+        (
+            # `ignored_intents` as a string and slot's not_intent as an empty list.
+            "greet",
+            [],
+        ),
+        (
+            # `ignored_intents` as an empty list and slot's not_intent has a value.
+            [],
+            ["greet"],
+        ),
+        (
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `ignored_intents`.
+            ["chitchat", "greet"],
+            ["inform"],
+        ),
+        (
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `ignored_intents`.
+            ["chitchat", "greet"],
+            ["chitchat"],
+        ),
+    ],
+)
+def test_ignored_intents_with_slot_type_from_entity(
+    ignored_intents: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]],
+):
+    form_name = "some_form"
+    entity_name = "some_slot"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_dict(
+        {
+            "forms": {
+                form_name: {
+                    IGNORED_INTENTS: ignored_intents,
+                    REQUIRED_SLOTS_KEY: {
+                        entity_name: [
+                            {
+                                "type": "from_entity",
+                                "entity": entity_name,
+                                "not_intent": slot_not_intent,
+                            }
+                        ],
+                    },
+                }
+            }
+        }
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some_slot"),
+            UserUttered(
+                "hello",
+                intent={"name": "greet", "confidence": 1.0},
+                entities=[{"entity": entity_name, "value": "some_value"}],
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    slot_values = form.extract_other_slots(tracker, domain)
+    assert slot_values == {}
+
+
+@pytest.mark.parametrize(
+    "ignored_intents, slot_not_intent",
+    [
+        # same examples for entity_type -> from_text
+        (
+            # `ignored_intents` as a string and slot's not_intent as an empty list.
+            "greet",
+            [],
+        ),
+        (
+            # `ignored_intents` as an empty list and slot's not_intent has a value.
+            [],
+            ["greet"],
+        ),
+        (
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `ignored_intents`.
+            ["chitchat", "greet"],
+            ["inform"],
+        ),
+        (
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `ignored_intents`.
+            ["chitchat", "greet"],
+            ["chitchat"],
+        ),
+    ],
+)
+def test_ignored_intents_with_slot_type_from_text(
+    ignored_intents: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]],
+):
+    form_name = "some_form"
+    entity_name = "some_slot"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_dict(
+        {
+            "forms": {
+                form_name: {
+                    IGNORED_INTENTS: ignored_intents,
+                    REQUIRED_SLOTS_KEY: {
+                        entity_name: [
+                            {
+                                "type": "from_text",
+                                "intent": "some_intent",
+                                "not_intent": slot_not_intent,
+                            }
+                        ],
+                    },
+                }
+            }
+        }
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some_slot"),
+            UserUttered(
+                "hello",
+                intent={"name": "greet", "confidence": 1.0},
+                entities=[{"entity": entity_name, "value": "some_value"}],
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    slot_values = form.extract_other_slots(tracker, domain)
+    assert slot_values == {}
+
+
+@pytest.mark.parametrize(
+    "ignored_intents, slot_not_intent, entity_type",
+    [
+        # same examples for entity_type -> from_intent
+        (
+            # `ignored_intents` as a string and slot's not_intent as an empty list.
+            "greet",
+            [],
+            "from_intent",
+        ),
+        (
+            # `ignored_intents` as an empty list and slot's not_intent has a value.
+            [],
+            ["greet"],
+            "from_intent",
+        ),
+        (
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `ignored_intents`.
+            ["chitchat", "greet"],
+            ["inform"],
+            "from_intent",
+        ),
+        (
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `ignored_intents`.
+            ["chitchat", "greet"],
+            ["chitchat"],
+            "from_intent",
+        ),
+        # same examples for entity_type -> from_trigger_intent
+        (
+            # `ignored_intents` as a string and slot's not_intent as an empty list.
+            "greet",
+            [],
+            "from_trigger_intent",
+        ),
+        (
+            # `ignored_intents` as an empty list and slot's not_intent has a value.
+            [],
+            ["greet"],
+            "from_trigger_intent",
+        ),
+        (
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value different than the ones in `ignored_intents`.
+            ["chitchat", "greet"],
+            ["inform"],
+            "from_trigger_intent",
+        ),
+        (
+            # `ignored_intents` as a list of 2 values and slot's not_intent has one
+            # value that is included also in `ignored_intents`.
+            ["chitchat", "greet"],
+            ["chitchat"],
+            "from_trigger_intent",
+        ),
+    ],
+)
+def test_ignored_intents_with_other_type_of_slots(
+    ignored_intents: Union[Text, List[Text]],
+    slot_not_intent: Union[Text, List[Text]],
+    entity_type: Text,
+):
+    form_name = "some_form"
+    entity_name = "some_slot"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_dict(
+        {
+            "forms": {
+                form_name: {
+                    IGNORED_INTENTS: ignored_intents,
+                    REQUIRED_SLOTS_KEY: {
+                        entity_name: [
+                            {
+                                "type": entity_type,
+                                "value": "affirm",
+                                "intent": "true",
+                                "not_intent": slot_not_intent,
+                            }
+                        ],
+                    },
+                }
+            }
+        }
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some_slot"),
+            UserUttered(
+                "hello",
+                intent={"name": "greet", "confidence": 1.0},
+                entities=[{"entity": entity_name, "value": "some_value"}],
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+    )
+
+    slot_values = form.extract_other_slots(tracker, domain)
+    assert slot_values == {}

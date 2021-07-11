@@ -16,7 +16,6 @@ from typing import (
     ItemsView,
 )
 from collections import defaultdict, OrderedDict
-from rasa.utils.tensorflow.constants import BALANCED, SEQUENCE
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +62,9 @@ class FeatureArray(np.ndarray):
 
         return feature_array
 
-    def __init__(self, input_array: Any, number_of_dimensions: int, **kwargs):
+    def __init__(
+        self, input_array: Any, number_of_dimensions: int, **kwargs: Any
+    ) -> None:
         """Initialize. FeatureArray.
 
         Needed in order to avoid 'Invalid keyword argument number_of_dimensions
@@ -96,7 +97,9 @@ class FeatureArray(np.ndarray):
         self.__dict__.update(default_attributes)
 
     # pytype: disable=attribute-error
-    def __array_ufunc__(self, ufunc: Any, method: Text, *inputs, **kwargs) -> Any:
+    def __array_ufunc__(
+        self, ufunc: Any, method: Text, *inputs: Any, **kwargs: Any
+    ) -> Any:
         """Overwrite this method as we are subclassing numpy array.
 
         Args:
@@ -141,7 +144,7 @@ class FeatureArray(np.ndarray):
         )
         return pickled_state[0], pickled_state[1], new_state
 
-    def __setstate__(self, state, **kwargs) -> None:
+    def __setstate__(self, state: Any, **kwargs: Any) -> None:
         """Sets the state.
 
         Args:
@@ -261,6 +264,7 @@ class RasaModelData:
         self.label_sub_key = label_sub_key
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
+        self.sparse_feature_sizes = None
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
@@ -315,7 +319,7 @@ class RasaModelData:
 
         return []
 
-    def sort(self):
+    def sort(self) -> None:
         """Sorts data according to its keys."""
         for key, attribute_data in self.data.items():
             self.data[key] = OrderedDict(sorted(attribute_data.items()))
@@ -528,6 +532,30 @@ class RasaModelData:
                 )
             self.data[key][sub_key].extend([lengths])
             break
+
+    def add_sparse_feature_sizes(
+        self, sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]
+    ) -> None:
+        """Adds a dictionary of feature sizes for different attributes.
+
+        Args:
+            sparse_feature_sizes: a dictionary of attribute that has sparse
+                           features to a dictionary of a feature type
+                           to a list of different sparse feature sizes.
+        """
+        self.sparse_feature_sizes = sparse_feature_sizes
+
+    def get_sparse_feature_sizes(self) -> Dict[Text, Dict[Text, List[int]]]:
+        """Get feature sizes of the model.
+
+        sparse_feature_sizes is a dictionary of attribute that has sparse features to
+        a dictionary of a feature type to a list of different sparse feature sizes.
+
+        Returns:
+            A dictionary of key and sub-key to a list of feature signatures
+            (same structure as the data attribute).
+        """
+        return self.sparse_feature_sizes
 
     def split(
         self, number_of_test_examples: int, random_seed: int

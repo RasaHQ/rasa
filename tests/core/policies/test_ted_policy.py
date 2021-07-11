@@ -19,10 +19,11 @@ from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
 )
+from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from rasa.train import train_core
+from rasa.model_training import train_core
 from rasa.utils import train_utils
 from rasa.utils.tensorflow.constants import (
     EVAL_NUM_EXAMPLES,
@@ -35,12 +36,12 @@ from rasa.utils.tensorflow.constants import (
     VALUE_RELATIVE_ATTENTION,
     MODEL_CONFIDENCE,
     COSINE,
-    INNER,
     AUTO,
     LINEAR_NORM,
+    EVAL_NUM_EPOCHS,
 )
 from tests.core.test_policies import PolicyTestCollection
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import DEFAULT_SENDER_ID, DEFAULT_CORE_SUBDIRECTORY_NAME
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
@@ -50,6 +51,21 @@ intents:
 actions:
 - {UTTER_GREET_ACTION}
 """
+
+
+def get_checkpoint_dir_path(train_path: Path, ted_pos: Optional[int] = 0) -> Path:
+    """
+    Produce the path of the checkpoint directory for TED.
+
+    This is very tightly coupled to the persist methods of PolicyEnsemble, Agent, and
+    TEDPolicy.
+    Args:
+        train_path: the path passed to model_training.train_core for training output.
+        ted_pos: the position of TED in the policies listed in the config.
+    """
+    policy_dir_name = Path("policy_{}_{}".format(ted_pos, TEDPolicy.__name__))
+    policy_path = train_path / DEFAULT_CORE_SUBDIRECTORY_NAME / policy_dir_name
+    return policy_path / "checkpoints"
 
 
 def test_diagnostics():
@@ -76,25 +92,104 @@ def test_diagnostics():
 
 
 class TestTEDPolicy(PolicyTestCollection):
+    def create_policy(
+        self, featurizer: Optional[TrackerFeaturizer], priority: int
+    ) -> TEDPolicy:
+        return TEDPolicy(featurizer=featurizer, priority=priority)
+
     def test_train_model_checkpointing(self, tmp_path: Path):
-        model_name = "core-checkpointed-model"
-        best_model_file = tmp_path / (model_name + ".tar.gz")
-        assert not best_model_file.exists()
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
 
         train_core(
             domain="data/test_domains/default.yml",
-            stories="data/test_yaml_stories/stories_defaultdomain.yaml",
+            stories="data/test_yaml_stories/stories_defaultdomain.yml",
+            train_path=str(tmp_path),
             output=str(tmp_path),
-            fixed_model_name=model_name,
             config="data/test_config/config_ted_policy_model_checkpointing.yml",
         )
+        assert checkpoint_dir.is_dir()
 
-        assert best_model_file.exists()
+    def test_doesnt_checkpoint_with_no_checkpointing(self, tmp_path: Path):
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
 
-    def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
-    ) -> Policy:
-        return TEDPolicy(featurizer=featurizer, priority=priority)
+        train_core(
+            domain="data/test_domains/default.yml",
+            stories="data/test_yaml_stories/stories_defaultdomain.yml",
+            train_path=str(tmp_path),
+            output=str(tmp_path),
+            config="data/test_config/config_ted_policy_no_model_checkpointing.yml",
+        )
+        assert not checkpoint_dir.is_dir()
+
+    def test_doesnt_checkpoint_with_zero_eval_num_examples(self, tmp_path: Path):
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
+        config_file = "config_ted_policy_model_checkpointing_zero_eval_num_examples.yml"
+        with pytest.warns(UserWarning) as warning:
+            train_core(
+                domain="data/test_domains/default.yml",
+                stories="data/test_yaml_stories/stories_defaultdomain.yml",
+                train_path=str(tmp_path),
+                output=str(tmp_path),
+                config=f"data/test_config/{config_file}",
+            )
+        warn_text = (
+            f"You have opted to save the best model, but the value of "
+            f"'{EVAL_NUM_EXAMPLES}' is not greater than 0. No checkpoint model will be "
+            f"saved."
+        )
+        assert not checkpoint_dir.is_dir()
+        assert len([w for w in warning if warn_text in str(w.message)]) == 1
+
+    def test_train_fails_with_checkpoint_zero_eval_num_epochs(self, tmp_path: Path):
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
+        config_file = "config_ted_policy_model_checkpointing_zero_every_num_epochs.yml"
+        with pytest.raises(InvalidConfigException):
+            with pytest.warns(UserWarning) as warning:
+                train_core(
+                    domain="data/test_domains/default.yml",
+                    stories="data/test_yaml_stories/stories_defaultdomain.yml",
+                    train_path=str(tmp_path),
+                    output=str(tmp_path),
+                    config=f"data/test_config/{config_file}",
+                )
+        warn_text = (
+            f"You have opted to save the best model, but the value of "
+            f"'{EVAL_NUM_EPOCHS}' is not -1 or greater than 0. Training will fail."
+        )
+        assert len([w for w in warning if warn_text in str(w.message)]) == 1
+        assert not checkpoint_dir.is_dir()
+
+    async def test_raise_rasa_exception_no_user_features(
+        self,
+        featurizer: Optional[TrackerFeaturizer],
+        priority: int,
+        default_domain: Domain,
+        tmp_path: Path,
+    ):
+        stories = tmp_path / "stories.yml"
+        stories.write_text(
+            """
+            version: "2.0"
+            stories:
+            - story: test path
+              steps:
+              - action: utter_greet
+            """
+        )
+        policy = self.create_policy(featurizer=featurizer, priority=priority)
+        import tests.core.test_policies
+
+        training_trackers = await tests.core.test_policies.train_trackers(
+            default_domain, str(stories), augmentation_factor=20
+        )
+        with pytest.raises(RasaException) as e:
+            policy.train(training_trackers, default_domain, RegexInterpreter())
+
+        assert "No user features specified. Cannot train 'TED' model." == str(e.value)
 
     def test_similarity_type(self, trained_policy: TEDPolicy):
         assert trained_policy.config[SIMILARITY_TYPE] == "inner"
@@ -131,17 +226,17 @@ class TestTEDPolicy(PolicyTestCollection):
 
         mock.normalize.assert_called_once()
 
-    async def test_gen_batch(self, trained_policy: TEDPolicy, default_domain: Domain):
+    async def test_gen_batch(
+        self, trained_policy: TEDPolicy, default_domain: Domain, stories_path: Path
+    ):
         training_trackers = await tests.core.test_policies.train_trackers(
-            default_domain, augmentation_factor=0
+            default_domain, stories_path, augmentation_factor=0
         )
         interpreter = RegexInterpreter()
-        training_data, label_ids, entity_tags = trained_policy.featurize_for_training(
+        training_data, label_ids, entity_tags = trained_policy._featurize_for_training(
             training_trackers, default_domain, interpreter
         )
-        label_data, all_labels = trained_policy._create_label_data(
-            default_domain, interpreter
-        )
+        _, all_labels = trained_policy._create_label_data(default_domain, interpreter)
         model_data = trained_policy._create_model_data(
             training_data, label_ids, entity_tags, all_labels
         )
@@ -154,22 +249,22 @@ class TestTEDPolicy(PolicyTestCollection):
         (
             (
                 batch_action_name_mask,
-                batch_action_name_sentence_indices,
-                batch_action_name_sentence_data,
+                _,
+                _,
                 batch_action_name_sentence_shape,
                 batch_dialogue_length,
                 batch_entities_mask,
-                batch_entities_sentence_indices,
-                batch_entities_sentence_data,
+                _,
+                _,
                 batch_entities_sentence_shape,
                 batch_intent_mask,
-                batch_intent_sentence_indices,
-                batch_intent_sentence_data,
+                _,
+                _,
                 batch_intent_sentence_shape,
                 batch_label_ids,
                 batch_slots_mask,
-                batch_slots_sentence_indices,
-                batch_slots_sentence_data,
+                _,
+                _,
                 batch_slots_sentence_shape,
             ),
             _,
@@ -220,22 +315,22 @@ class TestTEDPolicy(PolicyTestCollection):
         (
             (
                 batch_action_name_mask,
-                batch_action_name_sentence_indices,
-                batch_action_name_sentence_data,
+                _,
+                _,
                 batch_action_name_sentence_shape,
                 batch_dialogue_length,
                 batch_entities_mask,
-                batch_entities_sentence_indices,
-                batch_entities_sentence_data,
+                _,
+                _,
                 batch_entities_sentence_shape,
                 batch_intent_mask,
-                batch_intent_sentence_indices,
-                batch_intent_sentence_data,
+                _,
+                _,
                 batch_intent_sentence_shape,
                 batch_label_ids,
                 batch_slots_mask,
-                batch_slots_sentence_indices,
-                batch_slots_sentence_data,
+                _,
+                _,
                 batch_slots_sentence_shape,
             ),
             _,

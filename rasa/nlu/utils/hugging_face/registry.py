@@ -4,7 +4,7 @@ import logging
 # because otherwise it logs tensorflow/pytorch versions
 logging.getLogger("transformers.file_utils").setLevel(logging.WARNING)
 
-from transformers import (
+from transformers import (  # noqa: F401, E402
     TFBertModel,
     TFOpenAIGPTModel,
     TFGPT2Model,
@@ -20,7 +20,7 @@ from transformers import (
     DistilBertTokenizer,
     RobertaTokenizer,
 )
-from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (
+from rasa.nlu.utils.hugging_face.transformers_pre_post_processors import (  # noqa: F401, E402, E501
     bert_tokens_pre_processor,
     gpt_tokens_pre_processor,
     xlnet_tokens_pre_processor,

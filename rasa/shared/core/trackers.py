@@ -50,7 +50,6 @@ from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     Event,
-    SlotSet,
     Restarted,
     ActionReverted,
     UserUtteranceReverted,
@@ -59,13 +58,29 @@ from rasa.shared.core.events import (
     SessionStarted,
     ActionExecutionRejected,
     EntitiesAdded,
+    DefinePrevUserUtteredFeaturization,
 )
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.slots import Slot
 
 if TYPE_CHECKING:
+    from typing_extensions import TypedDict
+
+    from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
+
+    # precise type definition for `DialogueStateTracker.active_loop`
+    TrackerActiveLoop = TypedDict(
+        "TrackerActiveLoop",
+        {
+            LOOP_NAME: Optional[Text],
+            LOOP_INTERRUPTED: bool,
+            LOOP_REJECTED: bool,
+            TRIGGER_MESSAGE: Dict,
+        },
+        total=False,
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -99,11 +114,11 @@ class AnySlotDict(dict):
     This only uses the generic slot type! This means certain functionality wont work,
     e.g. properly featurizing the slot."""
 
-    def __missing__(self, key) -> Slot:
+    def __missing__(self, key: Text) -> Slot:
         value = self[key] = Slot(key)
         return value
 
-    def __contains__(self, key) -> bool:
+    def __contains__(self, key: Text) -> bool:
         return True
 
 
@@ -201,10 +216,10 @@ class DialogueStateTracker:
         self.followup_action = ACTION_LISTEN_NAME
         self.latest_action = None
         # Stores the most recent message sent by the user
-        self.latest_message = None
+        self.latest_message: Optional[UserUttered] = None
         self.latest_bot_utterance = None
         self._reset()
-        self.active_loop: Dict[Text, Union[Text, bool, Dict, None]] = {}
+        self.active_loop: "TrackerActiveLoop" = {}
 
     ###
     # Public tracker interface
@@ -246,11 +261,14 @@ class DialogueStateTracker:
 
         return None
 
-    def _latest_message_data(self) -> Dict[Text, Any]:
+    def _latest_message_data(self) -> Optional["NLUPredictionData"]:
+        if not self.latest_message:
+            return None
+
         parse_data_with_nlu_state = self.latest_message.parse_data.copy()
         # Combine entities predicted by NLU with entities predicted by policies so that
         # users can access them together via `latest_message` (e.g. in custom actions)
-        parse_data_with_nlu_state["entities"] = self.latest_message.entities
+        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities
 
         return parse_data_with_nlu_state
 
@@ -273,16 +291,32 @@ class DialogueStateTracker:
             }.items()
         )
 
-    def past_states(self, domain: Domain) -> List[State]:
-        """Generate the past states of this tracker based on the history.
+    def past_states(
+        self,
+        domain: Domain,
+        omit_unset_slots: bool = False,
+        ignore_rule_only_turns: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+    ) -> List[State]:
+        """Generates the past states of this tracker based on the history.
 
         Args:
-            domain: a :class:`rasa.shared.core.domain.Domain`
+            domain: The Domain.
+            omit_unset_slots: If `True` do not include the initial values of slots.
+            ignore_rule_only_turns: If True ignore dialogue turns that are present
+                only in rules.
+            rule_only_data: Slots and loops,
+                which only occur in rules but not in stories.
 
         Returns:
-            a list of states
+            A list of states
         """
-        return domain.states_for_tracker_history(self)
+        return domain.states_for_tracker_history(
+            self,
+            omit_unset_slots=omit_unset_slots,
+            ignore_rule_only_turns=ignore_rule_only_turns,
+            rule_only_data=rule_only_data,
+        )
 
     def change_loop_to(self, loop_name: Optional[Text]) -> None:
         """Set the currently active loop.
@@ -429,21 +463,24 @@ class DialogueStateTracker:
 
     def generate_all_prior_trackers(
         self,
-    ) -> Generator["DialogueStateTracker", None, None]:
+    ) -> Generator[Tuple["DialogueStateTracker", bool], None, None]:
         """Returns a generator of the previous trackers of this tracker.
 
-        The resulting array is representing the trackers before each action."""
-
+        Returns:
+            The tuple with the tracker before each action,
+            and the boolean flag representing whether this action should be hidden
+            in the dialogue history created for ML-based policies.
+        """
         tracker = self.init_copy()
 
         for event in self.applied_events():
 
             if isinstance(event, ActionExecuted):
-                yield tracker
+                yield tracker, event.hide_rule_turn
 
             tracker.update(event)
 
-        yield tracker
+        yield tracker, False
 
     def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events.
@@ -556,7 +593,9 @@ class DialogueStateTracker:
             if isinstance(e, ActionExecuted) and e.action_name == loop_action_name:
                 break
 
-            if isinstance(e, (ActionExecuted, UserUttered)):
+            if isinstance(
+                e, (ActionExecuted, UserUttered, DefinePrevUserUtteredFeaturization),
+            ):
                 del done_events[-1 - offset]
             else:
                 # Remember events which aren't unfeaturized to get the index right
@@ -729,7 +768,7 @@ class DialogueStateTracker:
 
         to_exclude = action_names_to_exclude or []
 
-        def filter_function(e: Event):
+        def filter_function(e: Event) -> bool:
             has_instance = isinstance(e, event_type)
             excluded = isinstance(e, ActionExecuted) and e.action_name in to_exclude
             return has_instance and not excluded
@@ -782,10 +821,10 @@ class DialogueStateTracker:
             slot.reset()
 
     def _set_slot(self, key: Text, value: Any) -> None:
-        """Set the value of a slot if that slot exists."""
-
+        """Sets the value of a slot if that slot exists."""
         if key in self.slots:
-            self.slots[key].value = value
+            slot = self.slots[key]
+            slot.value = value
         else:
             logger.error(
                 f"Tried to set non existent slot '{key}'. Make sure you "
@@ -798,13 +837,13 @@ class DialogueStateTracker:
             raise ValueError("events, if given, must be a list of events")
         return deque(evts, self._max_event_history)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if isinstance(self, type(other)):
             return other.events == self.events and self.sender_id == other.sender_id
         else:
             return False
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not self.__eq__(other)
 
     def trigger_followup_action(self, action: Text) -> None:
@@ -816,23 +855,6 @@ class DialogueStateTracker:
         """Clears follow up action when it was executed."""
 
         self.followup_action = None
-
-    def _merge_slots(
-        self, entities: Optional[List[Dict[Text, Any]]] = None
-    ) -> List[SlotSet]:
-        """Take a list of entities and create tracker slot set events.
-
-        If an entity type matches a slots name, the entities value is set
-        as the slots value by creating a ``SlotSet`` event.
-        """
-
-        entities = entities if entities else self.latest_message.entities
-        new_slots = [
-            SlotSet(e["entity"], e["value"])
-            for e in entities
-            if e["entity"] in self.slots.keys()
-        ]
-        return new_slots
 
     @property
     def active_loop_name(self) -> Optional[Text]:

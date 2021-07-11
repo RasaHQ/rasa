@@ -106,11 +106,8 @@ word vectors in your pipeline.
 
 * **Configuration**
 
-  You need to specify the language model to use.
-  By default the language configured in the pipeline will be used as the language model name.
-  If the spaCy model to be used has a name that is different from the language tag (`"en"`, `"de"`, etc.),
-  the model name can be specified using the configuration variable `model`.
-  The name will be passed to `spacy.load(name)`.
+  You need to specify the language model to use. The name will be passed to `spacy.load(name)`.
+  You can find more information on the available models on the [spaCy documentation](https://spacy.io/usage/models).
 
   ```yaml-rasa
   pipeline:
@@ -130,12 +127,12 @@ word vectors in your pipeline.
   [installing SpaCy](./installation.mdx#dependencies-for-spacy).
 
   In addition to SpaCy's pretrained language models, you can also use this component to
-  load fastText vectors, which are available for [hundreds of languages](https://github.com/facebookresearch/fastText/blob/master/docs/crawl-vectors.md).
-  If you want to incorporate a custom model you've found into spaCy, check out their page on
-  [adding languages](https://spacy.io/usage/adding-languages/). As described in the documentation, you need to
-  register your language model and link it to the language identifier, which will allow Rasa to load and use your new language
-  by passing in your language identifier as the `language` option.
+  attach spaCy models that you've trained yourself.
 
+:::caution Fallback
+Rasa Open Source will try to fallback to a common model on your behalf if you don't pass a `model` setting. This is a
+temporary feature we've introduced as part of the spaCy 3.0 migration but the fallback will be removed in Rasa Open Source 3.0.0.
+:::
 
 ### HFTransformersNLP
 
@@ -259,6 +256,26 @@ now implements its behavior.
 
     Creates a token for every whitespace separated character sequence.
 
+    Any character not in: `a-zA-Z0-9_#@&` will be substituted with whitespace before
+    splitting on whitespace if the character fulfills any of the following conditions:
+    - the character follows a whitespace: `" !word"` &#8594; `"word"`
+    - the character precedes a whitespace: `"word! "` &#8594; `"word"`
+    - the character is at the beginning of the string: `"!word"` &#8594; `"word"`
+    - the character is at the end of the string: `"word!"` &#8594; `"word"`
+
+    Note that:
+    - `"wo!rd"` &#8594; `"wo!rd"`
+
+    In addition, any character not in: `a-zA-Z0-9_#@&.~:\/?[]()!$*+,;=-` will be
+    substituted with whitespace before splitting on whitespace if the character is not
+    between numbers:
+    - `"twenty{one"` &#8594; `"twenty"`, `"one"`         ("{"` is not between numbers)
+    - `"20{1"` &#8594; `"20{1"`                          ("{"` *is* between numbers)
+
+    Note that:
+    - `"name@example.com"` &#8594; `"name@example.com"`
+    - `"10,000.1"` &#8594; `"10,000.1"`
+    - `"1 - 2"` &#8594; `"1"`,`"2"`
 
 
   * **Configuration**
@@ -465,11 +482,6 @@ now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be
       "model_url": None
     ```
 
-  :::note
-  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
-  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
-
-  :::
 
 
   ### LanguageModelTokenizer
@@ -690,8 +702,15 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```yaml-rasa
   pipeline:
   - name: "ConveRTFeaturizer"
+  # Remote URL/Local directory of model files(Required)
+  "model_url": None
   ```
 
+  :::caution
+  Since the public URL of the ConveRT model was taken offline recently, it is now mandatory
+  to set the parameter `model_url` to a community/self-hosted URL or path to a local directory containing model files.
+
+  :::
 
 ### LanguageModelFeaturizer
 
@@ -836,29 +855,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     "use_word_boundaries": True
   ```
 
-  **Configuring for incremental training**
-
-  To ensure that `sparse_features` are of fixed size during
-  [incremental training](./command-line-interface.mdx#incremental-training), the
-  component should be configured to account for additional patterns that may be
-  added to the training data in future. To do so, configure the `number_additional_patterns`
-  parameter while training the base model from scratch:
-
-  ```yaml-rasa {3}
-  pipeline:
-  - name: RegexFeaturizer
-    number_additional_patterns: 10
-  ```
-
-  If not configured by the user, the component will use twice the number of
-  patterns currently present in the training data (including lookup tables and regex patterns)
-  as the default value for `number_additional_patterns`.
-  This number is kept at a minimum of 10 in order to avoid running out of additional
-  slots for new patterns too frequently during incremental training.
-  Once the component runs out of additional pattern slots, the new patterns are dropped
-  and not considered during featurization. At this point, it is advisable
-  to retrain a new model from scratch.
-
 
 ### CountVectorsFeaturizer
 
@@ -983,35 +979,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     "use_shared_vocab": False
   ```
 
-  **Configuring for incremental training**
-
-  To ensure that `sparse_features` are of fixed size during
-  [incremental training](./command-line-interface.mdx#incremental-training), the
-  component should be configured to account for additional vocabulary tokens
-  that may be added as part of new training examples in the future.
-  To do so, configure the `additional_vocabulary_size` parameter while training the base model from scratch:
-
-  ```yaml-rasa {3-6}
-  pipeline:
-  - name: CountVectorsFeaturizer
-    additional_vocabulary_size:
-      text: 1000
-      response: 1000
-      action_text: 1000
-  ```
-
-  As in the above example, you can define additional vocabulary size for each of
-  `text` (user messages), `response` (bot responses used by `ResponseSelector`) and
-  `action_text` (bot responses not used by `ResponseSelector`). If you are building a shared
-  vocabulary (`use_shared_vocab=True`), you only need to define a value for the `text` attribute.
-  If any of the attribute is not configured by the user, the component takes half of the current
-  vocabulary size as the default value for the attribute's `additional_vocabulary_size`.
-  This number is kept at a minimum of 1000 in order to avoid running out of additional vocabulary
-  slots too frequently during incremental training. Once the component runs out of additional vocabulary slots,
-  the new vocabulary tokens are dropped and not considered during featurization. At this point,
-  it is advisable to retrain a new model from scratch.
-
-
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -1063,10 +1030,6 @@ However, additional parameters exist that can be adapted.
 | alias                     | CountVectorFeaturizer   | Alias name of featurizer.                                    |
 +---------------------------+-------------------------+--------------------------------------------------------------+
 | use_lemma                 | True                    | Use the lemma of words for featurization.                    |
-+---------------------------+-------------------------+--------------------------------------------------------------+
-| additional_vocabulary_size| text: 1000              | Size of additional vocabulary to account for incremental     |
-|                           | response: 1000          | training while training a model from scratch                 |
-|                           | action_text: 1000       |                                                              |
 +---------------------------+-------------------------+--------------------------------------------------------------+
 ```
 
@@ -1479,13 +1442,6 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     This helps in keeping similarities between input and negative labels to smaller values.
     This should help in better generalization of the model to real world test sets.
 
-  * `model_confidence`:
-    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
-    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
-    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
-
-    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
-
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
@@ -1545,7 +1501,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | or 'inner'.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
-|                                 |                  | or 'margin'.                                                 |
+|                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
+|                                 |                  | "model_confidence=cosine",                                   |
+|                                 |                  | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | ranking_length                  | 10               | Number of top intents to normalize scores for. Applicable    |
 |                                 |                  | only with loss type 'cross_entropy' and 'softmax'            |
@@ -1663,7 +1621,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 * **Short**
 
   Classifies a message with the intent `nlu_fallback` if the NLU intent classification
-  scores are ambiguous. The confidence is set to `1 - top intent confidence`.
+  scores are ambiguous. The confidence is set to be the same as the `fallback threshold`.
 
 * **Outputs**
 
@@ -1743,7 +1701,28 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 Entity extractors extract entities, such as person names or locations, from the user message.
 
+:::note
+  If you use multiple entity extractors, we advise that each extractor targets an exclusive
+  set of entity types. For example, use [Duckling](components.mdx#ducklingentityextractor) to extract dates and times, and
+  [DIETClassifier](components.mdx#dietclassifier-1) to extract person names. Otherwise, if multiple extractors
+  target the same entity types, it is very likely that entities will be extracted multiple times.
 
+  For example, if you use two or more general purpose extractors like [MitieEntityExtractor](components.mdx#mitieentityextractor),
+  [DIETClassifier](components.mdx#dietclassifier-1), or [CRFEntityExtractor](components.mdx#crfentityextractor),
+  the entity types in your training data will be found and
+  extracted by all of them. If the [slots](domain.mdx#slots) you are filling with your entity types are of type `text`,
+  then the last extractor in your pipeline will win. If the slot is of type `list`, then all results
+  will be added to the list, including duplicates.
+
+  Another, less obvious case of duplicate/overlapping extraction can happen even if extractors focus on different
+  entity types. Imagine a food delivery bot and a user message like `I would like to order the Monday special`.
+  Hypothetically, if your time extractor's performance isn't very good, it might extract `Monday` here as a time for the order,
+  and your other extractor might extract `Monday special` as the meal.
+  If you struggle with overlapping entities of this sort, it might make sense to add additional training data
+  to improve your extractor. If that does not suffice, you can add a
+  [custom component](components.mdx#custom-components) that resolves conflicts in entity
+  extraction according to your own logic.
+:::
 ### MitieEntityExtractor
 
 
@@ -2014,7 +1993,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   :::
 
 
-### DucklingHTTPExtractor
+### DucklingEntityExtractor
 
 
 * **Short**
@@ -2046,7 +2025,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
           "start": 48,
           "value": "2017-04-10T00:00:00.000+02:00",
           "confidence": 1.0,
-          "extractor": "DucklingHTTPExtractor"
+          "extractor": "DucklingEntityExtractor"
       }]
   }
   ```
@@ -2086,7 +2065,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   ```yaml-rasa
   pipeline:
-  - name: "DucklingHTTPExtractor"
+  - name: "DucklingEntityExtractor"
     # url of the running duckling server
     url: "http://localhost:8000"
     # dimensions to extract
@@ -2143,6 +2122,28 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
 
   This component only uses those regex features that have a name equal to one of the entities defined in the
   training data. Make sure to annotate at least one example per entity.
+
+  :::note
+  When you use this extractor in combination with [MitieEntityExtractor](components.mdx#mitieentityextractor),
+  [CRFEntityExtractor](components.mdx#crfentityextractor), or [DIETClassifier](components.mdx#dietclassifier-1) it can
+  lead to multiple extraction of entities. Especially if many training sentences have entity annotations for
+  the entity types for which you also have defined regexes. See the big info box at the start of the
+  [entity extractor section](components.mdx#entity-extractors) for more info on multiple extraction.
+
+  In the case where you seem to need both this RegexEntityExtractor and another of the aforementioned
+  statistical extractors, we advise you to consider one of the following two options.
+
+  Option 1 is advisable when you have exclusive entity types for each type of extractor. To make the
+  sure the extractors don't interfere with one another annotate only one example sentence for each
+  regex/lookup entity type, but not more.
+
+  Option 2 is useful when you want to use regexes matches as additional signal for your statistical extractor,
+  but you don't have separate entity types. In this case you will want to 1) add the
+  [RegexFeaturizer](components.mdx#regexfeaturizer) before the extractors in your pipeline 2)
+  annotate all your entity examples in the training data and 3) remove the RegexEntityExtractor from your pipeline.
+  This way, your statistical extractors will receive additional signal about the presence of regex matches
+  and will be able to statistically determine when to rely on these matches and when not to.
+  :::
 
 
 * **Configuration**
@@ -2425,7 +2426,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   | similarity_type                 | "auto"           | Type of similarity measure to use, either 'auto' or 'cosine' |
   |                                 |                  | or 'inner'.                                                  |
   +---------------------------------+------------------+--------------------------------------------------------------+
-  | loss_type                       | "softmax"        | The type of the loss function, either 'softmax' or 'margin'. |
+  | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
+  |                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
+  |                                 |                  | "model_confidence=cosine",                                   |
+  |                                 |                  | which is deprecated (see changelog for 2.3.4).               |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
   |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
@@ -2592,7 +2596,7 @@ Selectors predict a bot response from a set of candidate responses.
     If the `retrieval_intent` parameter of a particular response selector was left to its default value,
     the corresponding response selector will be identified as `default` in the returned output.
 
-    ```json {4}
+    ```json {3}
     {
         "response_selector": {
           "default": {
@@ -2703,13 +2707,6 @@ Selectors predict a bot response from a set of candidate responses.
     This helps in keeping similarities between input and negative labels to smaller values.
     This should help in better generalization of the model to real world test sets.
 
-  * `model_confidence`:
-    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
-    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
-    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
-
-    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
-
   The component can also be configured to train a response selector for a particular retrieval intent.
   The parameter `retrieval_intent` sets the name of the retrieval intent for which this response selector model is trained.
   Default is `None`, i.e. the model is trained for all retrieval intents.
@@ -2737,14 +2734,19 @@ However, additional parameters exist that can be adapted.
 +=================================+===================+==============================================================+
 | hidden_layers_sizes             | text: [256, 128]  | Hidden layer sizes for layers before the embedding layers    |
 |                                 | label: [256, 128] | for user messages and labels. The number of hidden layers is |
-|                                 |                   | equal to the length of the corresponding.                    |
+|                                 |                   | equal to the length of the corresponding list. We recommend  |
+|                                 |                   | disabling the hidden layers (by providing empty lists) when  |
+|                                 |                   | the transformer is enabled.                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | share_hidden_layers             | False             | Whether to share the hidden layer weights between user       |
 |                                 |                   | messages and labels.                                         |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| transformer_size                | None              | Number of units in transformer.                              |
+| transformer_size                | None              | Number of units in the transformer. When a positive value is |
+|                                 |                   | provided for `number_of_transformer_layers`, the default size|
+|                                 |                   | becomes `256`.                                               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
-| number_of_transformer_layers    | 0                 | Number of transformer layers.                                |
+| number_of_transformer_layers    | 0                 | Number of transformer layers; positive values enable the     |
+|                                 |                   | transformer.                                                 |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | number_of_attention_heads       | 4                 | Number of attention heads in transformer.                    |
 +---------------------------------+-------------------+--------------------------------------------------------------+
@@ -2784,7 +2786,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | or 'inner'.                                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"   | The type of the loss function, either 'cross_entropy'        |
-|                                 |                   | or 'margin'.                                                 |
+|                                 |                   | or 'margin'. Type 'margin' is only compatible with           |
+|                                 |                   | "model_confidence=cosine",                                   |
+|                                 |                   | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | ranking_length                  | 10                | Number of top responses to normalize scores for. Applicable  |
 |                                 |                   | only with loss type 'cross_entropy' and 'softmax'            |
@@ -2827,6 +2831,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | evaluate_on_number_of_examples  | 0                 | How many examples to use for hold out validation set.        |
 |                                 |                   | Large values may hurt performance, e.g. model accuracy.      |
+|                                 |                   | Set to 0 for no validation.                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | use_masked_language_model       | False             | If 'True' random tokens of the input message will be masked  |
 |                                 |                   | and the model should predict those tokens.                   |
@@ -2845,7 +2850,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | tensorboard_log_level           | "epoch"           | Define when training metrics for tensorboard should be       |
 |                                 |                   | logged. Either after every epoch ("epoch") or for every      |
-|                                 |                   | training step ("batch").                                 |
+|                                 |                   | training step ("batch").                                     |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | featurizers                     | []                | List of featurizer names (alias names). Only features        |
 |                                 |                   | coming from the listed names are used. If list is empty      |

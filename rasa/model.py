@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 # Type alias for the fingerprint
-Fingerprint = Dict[Text, Union[Text, List[Text], int, float]]
+Fingerprint = Dict[Text, Union[Optional[Text], List[Text], int, float]]
 
 FINGERPRINT_FILE_PATH = "fingerprint.json"
 
@@ -128,16 +128,19 @@ class FingerprintComparisonResult:
         return self.force_training or self.nlu
 
 
-def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
-    """Get a model and unpack it. Raises a `ModelNotFound` exception if
-    no model could be found at the provided path.
+def get_local_model(model_path: Text = DEFAULT_MODELS_PATH) -> Text:
+    """Returns verified path to local model archive.
 
     Args:
         model_path: Path to the zipped model. If it's a directory, the latest
                     trained model is returned.
 
     Returns:
-        Path to the unpacked model.
+        Path to the zipped model. If it's a directory, the latest
+                    trained model is returned.
+
+    Raises:
+        ModelNotFound Exception: When no model could be found at the provided path.
 
     """
     if not model_path:
@@ -154,10 +157,30 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
     elif not model_path.endswith(".tar.gz"):
         raise ModelNotFound(f"Path '{model_path}' does not point to a Rasa model file.")
 
+    return model_path
+
+
+def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> TempDirectoryPath:
+    """Gets a model and unpacks it.
+
+    Args:
+        model_path: Path to the zipped model. If it's a directory, the latest
+                    trained model is returned.
+
+    Returns:
+        Path to the unpacked model.
+
+    Raises:
+        ModelNotFound Exception: When no model could be found at the provided path.
+
+    """
+    model_path = get_local_model(model_path)
+
     try:
         model_relative_path = os.path.relpath(model_path)
     except ValueError:
         model_relative_path = model_path
+
     logger.info(f"Loading model {model_relative_path}...")
 
     return unpack_model(model_path)
@@ -208,7 +231,7 @@ def unpack_model(
         with tarfile.open(model_file, mode="r:gz") as tar:
             tar.extractall(working_directory)
             logger.debug(f"Extracted model to '{working_directory}'.")
-    except Exception as e:
+    except (tarfile.TarError, ValueError) as e:
         logger.error(f"Failed to extract model at {model_file}. Error: {e}")
         raise
 
@@ -332,8 +355,8 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
         FINGERPRINT_CONFIG_NLU_KEY: _get_fingerprint_of_config(
             config, include_keys=CONFIG_KEYS_NLU
         ),
-        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY: _get_fingerprint_of_config_without_epochs(
-            config
+        FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY: (
+            _get_fingerprint_of_config_without_epochs(config)
         ),
         FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY: domain.fingerprint(),
         FINGERPRINT_NLG_KEY: rasa.shared.utils.io.deep_container_fingerprint(responses),
@@ -398,7 +421,7 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
         return {}
 
 
-def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
+def persist_fingerprint(output_path: Text, fingerprint: Fingerprint) -> None:
     """Persist a model fingerprint.
 
     Args:
@@ -443,7 +466,7 @@ def move_model(source: Text, target: Text) -> bool:
 
 def should_retrain(
     new_fingerprint: Fingerprint,
-    old_model: Text,
+    old_model: Optional[Text],
     train_path: Text,
     has_e2e_examples: bool = False,
     force_training: bool = False,
@@ -467,41 +490,48 @@ def should_retrain(
     if old_model is None or not os.path.exists(old_model):
         return fingerprint_comparison
 
-    with unpack_model(old_model) as unpacked:
-        last_fingerprint = fingerprint_from_path(unpacked)
-        old_core, old_nlu = get_model_subdirectories(unpacked)
+    try:
+        with unpack_model(old_model) as unpacked:
+            last_fingerprint = fingerprint_from_path(unpacked)
+            old_core, old_nlu = get_model_subdirectories(unpacked)
 
-        fingerprint_comparison = FingerprintComparisonResult(
-            core=did_section_fingerprint_change(
-                last_fingerprint, new_fingerprint, SECTION_CORE
-            ),
-            nlu=did_section_fingerprint_change(
-                last_fingerprint, new_fingerprint, SECTION_NLU
-            ),
-            nlg=did_section_fingerprint_change(
-                last_fingerprint, new_fingerprint, SECTION_NLG
-            ),
-            force_training=force_training,
+            fingerprint_comparison = FingerprintComparisonResult(
+                core=did_section_fingerprint_change(
+                    last_fingerprint, new_fingerprint, SECTION_CORE
+                ),
+                nlu=did_section_fingerprint_change(
+                    last_fingerprint, new_fingerprint, SECTION_NLU
+                ),
+                nlg=did_section_fingerprint_change(
+                    last_fingerprint, new_fingerprint, SECTION_NLG
+                ),
+                force_training=force_training,
+            )
+
+            # We should retrain core if nlu data changes and there are e2e stories.
+            if has_e2e_examples and fingerprint_comparison.should_retrain_nlu():
+                fingerprint_comparison.core = True
+
+            core_merge_failed = False
+            if not fingerprint_comparison.should_retrain_core():
+                target_path = os.path.join(train_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
+                core_merge_failed = not move_model(old_core, target_path)
+                fingerprint_comparison.core = core_merge_failed
+
+            if not fingerprint_comparison.should_retrain_nlg() and core_merge_failed:
+                # If moving the Core model failed, we should also retrain NLG
+                fingerprint_comparison.nlg = True
+
+            if not fingerprint_comparison.should_retrain_nlu():
+                target_path = os.path.join(train_path, "nlu")
+                fingerprint_comparison.nlu = not move_model(old_nlu, target_path)
+
+            return fingerprint_comparison
+    except Exception as e:
+        logger.error(
+            f"Failed to get the fingerprint. Error: {e}.\n"
+            f"Proceeding with running default retrain..."
         )
-
-        # We should retrain core if nlu data changes and there are e2e stories.
-        if has_e2e_examples and fingerprint_comparison.should_retrain_nlu():
-            fingerprint_comparison.core = True
-
-        core_merge_failed = False
-        if not fingerprint_comparison.should_retrain_core():
-            target_path = os.path.join(train_path, DEFAULT_CORE_SUBDIRECTORY_NAME)
-            core_merge_failed = not move_model(old_core, target_path)
-            fingerprint_comparison.core = core_merge_failed
-
-        if not fingerprint_comparison.should_retrain_nlg() and core_merge_failed:
-            # If moving the Core model failed, we should also retrain NLG
-            fingerprint_comparison.nlg = True
-
-        if not fingerprint_comparison.should_retrain_nlu():
-            target_path = os.path.join(train_path, "nlu")
-            fingerprint_comparison.nlu = not move_model(old_nlu, target_path)
-
         return fingerprint_comparison
 
 

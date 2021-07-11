@@ -255,7 +255,7 @@ class TrainingData:
     @lazy_property
     def number_of_examples_per_intent(self) -> Dict[Text, int]:
         """Calculates the number of examples per intent."""
-        intents = [ex.get(INTENT) for ex in self.training_examples]
+        intents = [ex.get(INTENT) for ex in self.nlu_examples]
         return dict(Counter(intents))
 
     @lazy_property
@@ -405,7 +405,8 @@ class TrainingData:
             rasa.shared.utils.io.write_text_file(self.nlu_as_yaml(), filename)
         else:
             raise ValueError(
-                "Unsupported file format detected. Supported file formats are 'json', 'yml' "
+                "Unsupported file format detected. "
+                "Supported file formats are 'json', 'yml' "
                 "and 'md'."
             )
 
@@ -464,8 +465,12 @@ class TrainingData:
         return sorted(entity_examples, key=lambda e: e["entity"])
 
     def sorted_intent_examples(self) -> List[Message]:
-        """Sorts the intent examples by the name of the intent and then response"""
-
+        """Sorts the intent examples by the name of the intent and then response."""
+        rasa.shared.utils.io.raise_warning(
+            "`sorted_intent_examples` is deprecated and will be removed in Rasa "
+            "3.0.0.",
+            category=DeprecationWarning,
+        )
         return sorted(
             self.intent_examples,
             key=lambda e: (e.get(INTENT), e.get(INTENT_RESPONSE_KEY)),
@@ -739,7 +744,7 @@ class TrainingData:
         ]
         return not any([len(lst) > 0 for lst in lists_to_check])
 
-    def has_e2e_examples(self):
+    def has_e2e_examples(self) -> bool:
         """Checks if there are any training examples from e2e stories."""
         return any(message.is_e2e_message() for message in self.training_examples)
 

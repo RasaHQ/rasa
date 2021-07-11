@@ -1,6 +1,7 @@
 import copy
 import json
 from pathlib import Path
+import random
 from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
@@ -10,6 +11,7 @@ import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
+    IGNORED_INTENTS,
 )
 from rasa.core import training, utils
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -34,39 +36,36 @@ from rasa.shared.core.domain import (
     Domain,
     KEY_FORMS,
     KEY_E2E_ACTIONS,
+    KEY_INTENTS,
+    KEY_ENTITIES,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecuted, SlotSet, UserUttered
-from tests.core.conftest import DEFAULT_DOMAIN_PATH_WITH_SLOTS, DEFAULT_STORIES_FILE
 
 
-def test_slots_states_before_user_utterance(default_domain: Domain):
+def test_slots_states_before_user_utterance(domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer()
     tracker = DialogueStateTracker.from_events(
         "bla",
         evts=[
-            SlotSet(default_domain.slots[0].name, "some_value"),
+            SlotSet(domain.slots[0].name, "some_value"),
             ActionExecuted("utter_default"),
         ],
-        slots=default_domain.slots,
+        slots=domain.slots,
     )
-    trackers_as_states, _ = featurizer.training_states_and_actions(
-        [tracker], default_domain
-    )
+    trackers_as_states, _ = featurizer.training_states_and_actions([tracker], domain)
     expected_states = [[{"slots": {"name": (1.0,)}}]]
     assert trackers_as_states == expected_states
 
 
-async def test_create_train_data_no_history(default_domain: Domain):
+async def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = await training.load_data(
-        DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
+        stories_path, domain, augmentation_factor=0
     )
 
     assert len(training_trackers) == 4
-    (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, default_domain
-    )
+    (decoded, _) = featurizer.training_states_and_actions(training_trackers, domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -89,15 +88,13 @@ async def test_create_train_data_no_history(default_domain: Domain):
     ]
 
 
-async def test_create_train_data_with_history(default_domain: Domain):
+async def test_create_train_data_with_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
     training_trackers = await training.load_data(
-        DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
+        stories_path, domain, augmentation_factor=0
     )
     assert len(training_trackers) == 4
-    (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, default_domain
-    )
+    (decoded, _) = featurizer.training_states_and_actions(training_trackers, domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -176,32 +173,29 @@ async def test_create_train_data_unfeaturized_entities():
     ]
 
 
-def test_domain_from_template():
-    domain_file = DEFAULT_DOMAIN_PATH_WITH_SLOTS
-    domain = Domain.load(domain_file)
-
+def test_domain_from_template(domain: Domain):
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
     assert len(domain.action_names_or_texts) == 16
 
 
-def test_avoid_action_repetition(default_domain: Domain):
+def test_avoid_action_repetition(domain: Domain):
     domain = Domain.from_yaml(
         """
-actions:
-- utter_greet
-
-responses:
-    utter_greet:
-    - text: "hi"
-    """
+        version: "2.0"
+        actions:
+        - utter_greet
+        responses:
+            utter_greet:
+            - text: "hi"
+        """
     )
 
     assert len(domain.action_names_or_texts) == len(DEFAULT_ACTION_NAMES) + 1
 
 
 def test_responses():
-    domain_file = "examples/moodbot/domain.yml"
+    domain_file = "data/test_moodbot/domain.yml"
     domain = Domain.load(domain_file)
     expected_response = {
         "text": "Hey! How are you?",
@@ -448,23 +442,26 @@ session_config:
 
 def test_merge_with_empty_domain():
     domain = Domain.from_yaml(
-        """config:
-  store_entities_as_slots: false
-session_config:
-    session_expiration_time: 20
-    carry_over_slots: true
-entities:
-- cuisine
-intents:
-- greet
-slots:
-  cuisine:
-    type: text
-responses:
-  utter_goodbye:
-  - text: bye!
-  utter_greet:
-  - text: hey you!"""
+        """
+        version: "2.0"
+        config:
+          store_entities_as_slots: false
+        session_config:
+            session_expiration_time: 20
+            carry_over_slots: true
+        entities:
+        - cuisine
+        intents:
+        - greet
+        slots:
+          cuisine:
+            type: text
+        responses:
+          utter_goodbye:
+          - text: bye!
+          utter_greet:
+          - text: hey you!
+        """
     )
 
     merged = Domain.empty().merge(domain)
@@ -475,23 +472,26 @@ responses:
 @pytest.mark.parametrize("other", [Domain.empty(), None])
 def test_merge_with_empty_other_domain(other: Optional[Domain]):
     domain = Domain.from_yaml(
-        """config:
-  store_entities_as_slots: false
-session_config:
-    session_expiration_time: 20
-    carry_over_slots: true
-entities:
-- cuisine
-intents:
-- greet
-slots:
-  cuisine:
-    type: text
-responses:
-  utter_goodbye:
-  - text: bye!
-  utter_greet:
-  - text: hey you!"""
+        """
+        version: "2.0"
+        config:
+          store_entities_as_slots: false
+        session_config:
+            session_expiration_time: 20
+            carry_over_slots: true
+        entities:
+        - cuisine
+        intents:
+        - greet
+        slots:
+          cuisine:
+            type: text
+        responses:
+          utter_goodbye:
+          - text: bye!
+          utter_greet:
+          - text: hey you!
+        """
     )
 
     merged = domain.merge(other, override=True)
@@ -682,9 +682,7 @@ def test_load_domain_from_directory_tree(tmp_path: Path):
     assert set(actual.user_actions) == set(expected)
 
 
-def test_domain_warnings():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
-
+def test_domain_warnings(domain: Domain):
     warning_types = [
         "action_warnings",
         "intent_warnings",
@@ -925,9 +923,10 @@ def test_not_add_knowledge_base_slots():
 def test_add_knowledge_base_slots():
     test_domain = Domain.from_yaml(
         f"""
-actions:
-- {DEFAULT_KNOWLEDGE_BASE_ACTION}
-    """
+        version: "2.0"
+        actions:
+        - {DEFAULT_KNOWLEDGE_BASE_ACTION}
+        """
     )
 
     slot_names = [s.name for s in test_domain.slots]
@@ -1027,16 +1026,15 @@ def test_domain_from_dict_does_not_change_input():
 
 
 @pytest.mark.parametrize(
-    "domain", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
+    "domain_dict", [{}, {"intents": DEFAULT_INTENTS}, {"intents": [DEFAULT_INTENTS[0]]}]
 )
-def test_add_default_intents(domain: Dict):
-    domain = Domain.from_dict(domain)
+def test_add_default_intents(domain_dict: Dict):
+    domain = Domain.from_dict(domain_dict)
 
     assert all(intent_name in domain.intents for intent_name in DEFAULT_INTENTS)
 
 
-def test_domain_deepcopy():
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+def test_domain_deepcopy(domain: Domain):
     new_domain = copy.deepcopy(domain)
 
     assert isinstance(new_domain, Domain)
@@ -1077,8 +1075,7 @@ def test_domain_deepcopy():
     "response_key, validation",
     [("utter_chitchat/faq", True), ("utter_chitchat", False)],
 )
-def test_is_retrieval_intent_response(response_key, validation):
-    domain = Domain.load(DEFAULT_DOMAIN_PATH_WITH_SLOTS)
+def test_is_retrieval_intent_response(response_key, validation, domain: Domain):
     assert domain.is_retrieval_intent_response((response_key, [{}])) == validation
 
 
@@ -1114,6 +1111,48 @@ def test_get_featurized_entities():
     featurized_entities = domain._get_featurized_entities(user_uttered)
 
     assert featurized_entities == {"GPE", f"GPE{ENTITY_LABEL_SEPARATOR}destination"}
+
+
+def test_featurized_entities_ordered_consistently():
+    """Check that entities get ordered -- needed for consistent state representations.
+
+    Previously, no ordering was applied to entities, but they were ordered implicitly
+    due to how python sets work -- a set of all entity names was internally created,
+    which was ordered by the hashes of the entity names. Now, entities are sorted alpha-
+    betically. Since even sorting based on randomised hashing can produce alphabetical
+    ordering once in a while, we here check with a large number of entities, pushing to
+    ~0 the probability of correctly sorting the elements just by accident, without
+    actually doing proper sorting.
+    """
+    # Create a sorted list of entity names from 'a' to 'z', and two randomly shuffled
+    # copies.
+    entity_names_sorted = [chr(i) for i in range(ord("a"), ord("z") + 1)]
+    entity_names_shuffled1 = entity_names_sorted.copy()
+    random.shuffle(entity_names_shuffled1)
+    entity_names_shuffled2 = entity_names_sorted.copy()
+    random.shuffle(entity_names_shuffled2)
+
+    domain = Domain.from_dict(
+        {KEY_INTENTS: ["inform"], KEY_ENTITIES: entity_names_shuffled1}
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "story123",
+        [
+            UserUttered(
+                text="hey there",
+                intent={"name": "inform", "confidence": 1.0},
+                entities=[
+                    {"entity": e, "value": e.upper()} for e in entity_names_shuffled2
+                ],
+            )
+        ],
+    )
+    state = domain.get_active_state(tracker)
+
+    # Whatever order the entities were listed in, they should get sorted alphabetically
+    # so the states' representations are consistent and entity-order-agnostic.
+    assert state["user"]["entities"] == tuple(entity_names_sorted)
 
 
 @pytest.mark.parametrize(
@@ -1320,3 +1359,99 @@ def test_is_valid_domain_doesnt_raise_with_invalid_yaml(tmpdir: Path):
         potential_domain_path,
     )
     assert not Domain.is_domain_file(potential_domain_path)
+
+
+def test_domain_with_empty_intent_mapping():
+    # domain.yml with intent (intent_name) that has a `:` character
+    # and nothing after it.
+    test_yaml = """intents:
+    - intent_name:"""
+
+    with pytest.raises(InvalidDomain):
+        Domain.from_yaml(test_yaml).as_dict()
+
+
+def test_domain_with_empty_entity_mapping():
+    # domain.yml with entity (entity_name) that has a `:` character
+    # and nothing after it.
+    test_yaml = """entities:
+    - entity_name:"""
+
+    with pytest.raises(InvalidDomain):
+        Domain.from_yaml(test_yaml).as_dict()
+
+
+def test_ignored_intents_slot_mappings_invalid_domain():
+    domain_as_dict = {
+        KEY_FORMS: {
+            "my_form": {
+                IGNORED_INTENTS: "some_not_intent",
+                "slot_x": [
+                    {
+                        "type": "from_entity",
+                        "entity": "name",
+                        "not_intent": "other_not_intent",
+                    }
+                ],
+            }
+        },
+    }
+    with pytest.raises(InvalidDomain):
+        Domain.from_dict(domain_as_dict)
+
+
+def test_form_with_no_required_slots_keyword():
+    with pytest.warns(FutureWarning):
+        domain = Domain.from_dict(
+            {
+                "forms": {
+                    "some_form": {
+                        "some_slot": [{"type": "from_text", "intent": "some_intent",}],
+                    }
+                }
+            }
+        )
+
+    assert (
+        domain.forms["some_form"]["required_slots"]["some_slot"][0]["type"]
+        == "from_text"
+    )
+
+
+def test_domain_count_conditional_response_variations():
+    domain = Domain.from_file(
+        path="data/test_domains/conditional_response_variations.yml"
+    )
+    count_conditional_responses = domain.count_conditional_response_variations()
+    assert count_conditional_responses == 5
+
+
+def test_domain_with_no_form_slots():
+    domain = Domain.from_yaml(
+        """
+        version: "2.0"
+        forms:
+          contract_form:
+        """
+    )
+    assert domain.slot_mapping_for_form("contract_form") == {}
+
+
+def test_domain_with_empty_required_slots():
+    with pytest.raises(InvalidDomain):
+        Domain.from_yaml(
+            """
+            version: "2.0"
+            forms:
+              contract_form:
+                required_slots:
+            """
+        )
+
+
+def test_domain_invalid_yml_in_folder():
+    """
+    Check if invalid YAML files in a domain folder lead to the proper UserWarning
+    """
+    with pytest.warns(UserWarning, match="The file .* your file\\."):
+        Domain.from_directory("data/test_domains/test_domain_from_directory1/")

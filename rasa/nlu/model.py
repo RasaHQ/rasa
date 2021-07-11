@@ -10,6 +10,7 @@ from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import components, utils
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component, ComponentBuilder
@@ -40,8 +41,9 @@ class InvalidModelError(RasaException):
     """
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
-        super(InvalidModelError, self).__init__()
+        super(InvalidModelError, self).__init__(message)
 
     def __str__(self) -> Text:
         return self.message
@@ -55,8 +57,9 @@ class UnsupportedModelError(RasaException):
     """
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
-        super(UnsupportedModelError, self).__init__()
+        super(UnsupportedModelError, self).__init__(message)
 
     def __str__(self) -> Text:
         return self.message
@@ -66,7 +69,7 @@ class Metadata:
     """Captures all information about a model to load and prepare it."""
 
     @staticmethod
-    def load(model_dir: Text):
+    def load(model_dir: Text) -> "Metadata":
         """Loads the metadata from a models directory.
 
         Args:
@@ -77,33 +80,36 @@ class Metadata:
         try:
             metadata_file = os.path.join(model_dir, "metadata.json")
             data = rasa.shared.utils.io.read_json_file(metadata_file)
-            return Metadata(data, model_dir)
+            return Metadata(data)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
             raise InvalidModelError(
                 f"Failed to load model metadata from '{abspath}'. {e}"
             )
 
-    def __init__(self, metadata: Dict[Text, Any], model_dir: Optional[Text]):
-
+    def __init__(self, metadata: Dict[Text, Any]) -> None:
+        """Set `metadata` attribute."""
         self.metadata = metadata
-        self.model_dir = model_dir
 
     def get(self, property_name: Text, default: Any = None) -> Any:
+        """Proxy function to get property on `metadata` attribute."""
         return self.metadata.get(property_name, default)
 
     @property
-    def component_classes(self):
+    def component_classes(self) -> List[Optional[Text]]:
+        """Returns a list of component class names."""
         if self.get("pipeline"):
             return [c.get("class") for c in self.get("pipeline", [])]
         else:
             return []
 
     @property
-    def number_of_components(self):
+    def number_of_components(self) -> int:
+        """Returns count of components."""
         return len(self.get("pipeline", []))
 
     def for_component(self, index: int, defaults: Any = None) -> Dict[Text, Any]:
+        """Returns the configuration of the component based on index."""
         return component_config_from_pipeline(index, self.get("pipeline", []), defaults)
 
     @property
@@ -112,7 +118,7 @@ class Metadata:
 
         return self.get("language")
 
-    def persist(self, model_dir: Text):
+    def persist(self, model_dir: Text) -> None:
         """Persists the metadata of a model to a given directory."""
 
         metadata = self.metadata.copy()
@@ -200,16 +206,20 @@ class Trainer:
                 self.pipeline, self.training_data
             )
 
+        # Warn if there is an obvious case of competing entity extractors
+        components.warn_of_competing_extractors(self.pipeline)
+        components.warn_of_competition_with_regex_extractor(
+            self.pipeline, self.training_data
+        )
+
         # data gets modified internally during the training - hence the copy
         working_data: TrainingData = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
             logger.info(f"Starting to train component {component.name}")
             component.prepare_partial_processing(self.pipeline[:i], context)
-            updates = component.train(working_data, self.config, **context)
+            component.train(working_data, self.config, **context)
             logger.info("Finished training component.")
-            if updates:
-                context.update(updates)
 
         return Interpreter(self.pipeline, context)
 
@@ -254,7 +264,7 @@ class Trainer:
 
             metadata["pipeline"].append(component_meta)
 
-        Metadata(metadata, dir_name).persist(dir_name)
+        Metadata(metadata).persist(dir_name)
 
         if persistor is not None:
             persistor.persist(dir_name, model_name)
@@ -290,7 +300,8 @@ class Interpreter:
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedModelError(
                 f"The model version is trained using Rasa Open Source {model_version} "
-                f"and is not compatible with your current installation ({rasa.__version__}). "
+                f"and is not compatible with your current installation "
+                f"({rasa.__version__}). "
                 f"This means that you either need to retrain your model "
                 f"or revert back to the Rasa version that trained the model "
                 f"to ensure that the versions match up again."
@@ -328,6 +339,7 @@ class Interpreter:
 
         Interpreter.ensure_model_compatibility(model_metadata)
         return Interpreter.create(
+            model_dir,
             model_metadata,
             component_builder,
             skip_validation,
@@ -346,6 +358,7 @@ class Interpreter:
         new_config: Optional[Dict] = None,
         finetuning_epoch_fraction: float = 1.0,
     ) -> Metadata:
+        new_config = new_config or {}
         for old_component_config, new_component_config in zip(
             model_metadata.metadata["pipeline"], new_config["pipeline"]
         ):
@@ -363,6 +376,7 @@ class Interpreter:
 
     @staticmethod
     def create(
+        model_dir: Text,
         model_metadata: Metadata,
         component_builder: Optional[ComponentBuilder] = None,
         skip_validation: bool = False,
@@ -371,6 +385,7 @@ class Interpreter:
         """Create model and components defined by the provided metadata.
 
         Args:
+            model_dir: The directory containing the model.
             model_metadata: The metadata describing each component.
             component_builder: The
                 :class:`rasa.nlu.components.ComponentBuilder` to use.
@@ -382,7 +397,7 @@ class Interpreter:
         Returns:
             An interpreter that uses the created model.
         """
-        context = {"should_finetune": should_finetune}
+        context: Dict[Text, Any] = {"should_finetune": should_finetune}
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result
@@ -399,7 +414,7 @@ class Interpreter:
         for i in range(model_metadata.number_of_components):
             component_meta = model_metadata.for_component(i)
             component = component_builder.load_component(
-                component_meta, model_metadata.model_dir, model_metadata, **context
+                component_meta, model_dir, model_metadata, **context
             )
             try:
                 updates = component.provide_context()
@@ -424,6 +439,7 @@ class Interpreter:
         self.pipeline = pipeline
         self.context = context if context is not None else {}
         self.model_metadata = model_metadata
+        self.has_already_warned_of_overlapping_entities = False
 
     def parse(
         self,
@@ -444,13 +460,17 @@ class Interpreter:
             output["text"] = ""
             return output
 
+        timestamp = int(time.timestamp()) if time else None
         data = self.default_output_attributes()
         data[TEXT] = text
 
-        message = Message(data=data, time=time)
+        message = Message(data=data, time=timestamp)
 
         for component in self.pipeline:
             component.process(message, **self.context)
+
+        if not self.has_already_warned_of_overlapping_entities:
+            self.warn_of_overlapping_entities(message)
 
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=only_output_properties))
@@ -470,3 +490,30 @@ class Interpreter:
             if not isinstance(component, (EntityExtractor, IntentClassifier)):
                 component.process(message, **self.context)
         return message
+
+    def warn_of_overlapping_entities(self, message: Message) -> None:
+        """Issues a warning when there are overlapping entity annotations.
+
+        This warning is only issued once per Interpreter life time.
+
+        Args:
+            message: user message with all processing metadata such as entities
+        """
+        overlapping_entity_pairs = message.find_overlapping_entities()
+        if len(overlapping_entity_pairs) > 0:
+            message_text = message.get("text")
+            first_pair = overlapping_entity_pairs[0]
+            entity_1 = first_pair[0]
+            entity_2 = first_pair[1]
+            rasa.shared.utils.io.raise_warning(
+                f"Parsing of message: '{message_text}' lead to overlapping "
+                f"entities: {entity_1['value']} of type "
+                f"{entity_1['entity']} extracted by "
+                f"{entity_1['extractor']} overlaps with "
+                f"{entity_2['value']} of type {entity_2['entity']} extracted by "
+                f"{entity_2['extractor']}. This can lead to unintended filling of "
+                f"slots. Please refer to the documentation section on entity "
+                f"extractors and entities getting extracted multiple times:"
+                f"{DOCS_URL_COMPONENTS}#entity-extractors"
+            )
+            self.has_already_warned_of_overlapping_entities = True

@@ -8,7 +8,7 @@ import aiohttp
 import questionary
 from aiohttp import ClientTimeout
 from prompt_toolkit.styles import Style
-from typing import Any
+from typing import Any, Generator
 from typing import Text, Optional, Dict, List
 
 import rasa.shared.utils.cli
@@ -29,7 +29,7 @@ DEFAULT_STREAM_READING_TIMEOUT_IN_SECONDS = 10
 def print_buttons(
     message: Dict[Text, Any],
     is_latest_message: bool = False,
-    color=rasa.shared.utils.io.bcolors.OKBLUE,
+    color: Text = rasa.shared.utils.io.bcolors.OKBLUE,
 ) -> Optional[questionary.Question]:
     if is_latest_message:
         choices = cli_utils.button_choices_from_message_data(
@@ -52,7 +52,7 @@ def print_buttons(
 def print_bot_output(
     message: Dict[Text, Any],
     is_latest_message: bool = False,
-    color=rasa.shared.utils.io.bcolors.OKBLUE,
+    color: Text = rasa.shared.utils.io.bcolors.OKBLUE,
 ) -> Optional[questionary.Question]:
     if "buttons" in message:
         question = print_buttons(message, is_latest_message, color)
@@ -111,7 +111,7 @@ def get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text
 
 
 async def send_message_receive_block(
-    server_url, auth_token, sender_id, message
+    server_url: Text, auth_token: Text, sender_id: Text, message: Text
 ) -> List[Dict[Text, Any]]:
     payload = {"sender": sender_id, "message": message}
 
@@ -121,9 +121,9 @@ async def send_message_receive_block(
             return await resp.json()
 
 
-async def send_message_receive_stream(
+async def _send_message_receive_stream(
     server_url: Text, auth_token: Text, sender_id: Text, message: Text
-):
+) -> Generator[Dict[Text, Any], None, None]:
     payload = {"sender": sender_id, "message": message}
 
     url = f"{server_url}/webhooks/rest/webhook?stream=true&token={auth_token}"
@@ -150,11 +150,11 @@ def _get_stream_reading_timeout() -> ClientTimeout:
 
 
 async def record_messages(
-    sender_id,
-    server_url=DEFAULT_SERVER_URL,
-    auth_token="",
-    max_message_limit=None,
-    use_response_stream=True,
+    sender_id: Text,
+    server_url: Text = DEFAULT_SERVER_URL,
+    auth_token: Text = "",
+    max_message_limit: Optional[int] = None,
+    use_response_stream: bool = True,
 ) -> int:
     """Read messages from the command line and print bot responses."""
 
@@ -175,7 +175,7 @@ async def record_messages(
             break
 
         if use_response_stream:
-            bot_responses = send_message_receive_stream(
+            bot_responses = _send_message_receive_stream(
                 server_url, auth_token, sender_id, text
             )
             previous_response = None

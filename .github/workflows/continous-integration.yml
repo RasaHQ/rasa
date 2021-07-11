@@ -28,92 +28,69 @@ env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   BOTO_CONFIG: /dev/null
+
   IS_TAG_BUILD: ${{ startsWith(github.event.ref, 'refs/tags') }}
   DOCKERHUB_USERNAME: tmbo
   DEFAULT_PYTHON_VERSION: '3.7'
 
+  # for wait_for_xx jobs
+  WAIT_TIMEOUT_SECS: 3000
+  WAIT_INTERVAL_SECS: 60
+
+
 jobs:
   changes:
     name: Check for file changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      docker: ${{ steps.filter.outputs.docker }}
-      docs: ${{ steps.filter.outputs.docs }}
+      # Both of the outputs below are strings but only one exists at any given time
+      backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
+      docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
+      docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
       - uses: actions/checkout@v2
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
-        id: filter
+        # Run the normal filters if the all-tests-required label is not set
+        id: changed-files
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
+      - name: Set all filters to true if all tests are required
+        # Set all filters to true if the all-tests-required label is set
+        # Bypasses all the change filters in change_filters.yml and forces all outputs to true
+        id: run-all
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
+        run: |
+          echo "::set-output name=backend::true"
+          echo "::set-output name=docker::true"
+          echo "::set-output name=docs::true"
 
-  documentation:
-    name: Test Documentation
+
+  wait_for_docs_tests:
+    # Looks for doc test workflows and waits for it to complete successfully
+    # Runs on tag pushes and pushes to main exclusively, as it is a dependency of release jobs
+    name: Wait for docs tests
     runs-on: ubuntu-latest
-    needs: [changes]
+    needs: [ changes ]
 
     steps:
-    - name: Checkout git repository 🕝
-      if: needs.changes.outputs.docs == 'true'
-      uses: actions/checkout@v2
+      - name: Wait for doc tests
+        uses: fountainhead/action-wait-for-check@4699210ccc66e2a13260803fadbb77085421b891
+        id: wait-for-doc-tests
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Test Documentation
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          timeoutSeconds: ${{ env.WAIT_TIMEOUT_SECS }}
+          intervalSeconds: ${{ env.WAIT_INTERVAL_SECS }}
 
-    - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
-      if: needs.changes.outputs.docs == 'true'
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Fail the step if the doc tests run could not be found
+        if: ${{ steps.wait-for-doc-tests.outputs.conclusion == 'timed_out' }}
+        run: |
+          echo "Could not find the doc tests run."
+          exit 1
 
-    - name: Set up Node 12.x 🦙
-      if: needs.changes.outputs.docs == 'true'
-      uses: actions/setup-node@v1
-      with:
-        node-version: '12.x'
-
-    - name: Read Poetry Version 🔢
-      if: needs.changes.outputs.docs == 'true'
-      run: |
-        echo "POETRY_VERSION=$(scripts/poetry-version.sh)" >> $GITHUB_ENV
-      shell: bash
-
-    - name: Install poetry 🦄
-      if: needs.changes.outputs.docs == 'true'
-      uses: Gr1N/setup-poetry@v4
-      with:
-        poetry-version: ${{ env.POETRY_VERSION }}
-
-    - name: Load Poetry Cached Libraries ⬇
-      if: needs.changes.outputs.docs == 'true'
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-${{ env.DEFAULT_PYTHON_VERSION }}
-
-    - name: Load Yarn Cached Packages ⬇
-      if: needs.changes.outputs.docs == 'true'
-      uses: actions/cache@v2
-      with:
-        path: docs/node_modules
-        key: ${{ runner.os }}-yarn-12.x-${{ hashFiles('docs/yarn.lock') }}
-        restore-keys: ${{ runner.os }}-yarn-12.x
-
-    - name: Install Dependencies 📦
-      if: needs.changes.outputs.docs == 'true'
-      run: |
-        sudo apt-get -y install libpq-dev
-        make install-full install-docs
-
-    - name: Run Swagger 🕵️‍♀️
-      if: needs.changes.outputs.docs == 'true'
-      run: |
-        npm install -g swagger-cli
-        swagger-cli validate docs/static/spec/action-server.yml
-        swagger-cli validate docs/static/spec/rasa.yml
-
-    - name: Test Docs 🕸
-      if: needs.changes.outputs.docs == 'true'
-      run: make test-docs
 
   quality:
     name: Code Quality
@@ -127,7 +104,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -167,6 +144,11 @@ jobs:
         # can calculate the proper diff between the branches
         git fetch --unshallow origin "${{ github.ref }}"
 
+    - name: Add github workflow problem matchers
+      if: needs.changes.outputs.backend == 'true'
+      run: |
+        echo "::add-matcher::.github/matchers/flake8-error-matcher.json"
+
     - name: Lint Code 🎎
       if: needs.changes.outputs.backend == 'true'
       run: |
@@ -186,11 +168,36 @@ jobs:
       # trying to run the `rasa` command once before the docs build.
       run: poetry run rasa --help
 
+
+  changelog:
+    name: Check for changelog
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v2
+
+      - name: Assert release includes all changelog entries
+        # check changelog folder only when we create pull request preparing release
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'prepare-release')
+        working-directory: changelog
+        run: |
+          # List all unexpected files in changelog/
+          UNEXPECTED_FILES=$(ls -A --ignore={"README.md",".gitignore","_template.md.jinja2"})
+
+          # Exit with error if found any unexpected files
+          [[ "$UNEXPECTED_FILES" ]] && \
+          echo "Found the following unexpected files in changelogs/" && \
+          echo "$UNEXPECTED_FILES" && \
+          exit 1 || \
+          echo "Release includes all changelog entries."
+
   test:
     name: Run Tests
     runs-on: ${{ matrix.os }}
     needs: [changes]
     strategy:
+      fail-fast: false
       matrix:
         test:
         - test-cli
@@ -200,6 +207,7 @@ jobs:
         - test-nlu-predictors
         - test-full-model-training
         - test-other-unit-tests
+        - test-performance
         os: [ ubuntu-latest, windows-latest ]
         python-version: [ 3.6, 3.7, 3.8 ]
 
@@ -210,7 +218,7 @@ jobs:
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -232,7 +240,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
     - name: Clear Poetry cache
       if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
@@ -253,7 +261,6 @@ jobs:
       # the project itself, which also makes it easier for us to determine the correct directory
       # that needs to be cached.
       run: poetry config virtualenvs.in-project true
-
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
@@ -277,7 +284,15 @@ jobs:
           New-Item -Path $spacy_data_dir -Type Directory
         }
         make install-full
-        make prepare-tests-windows
+        make prepare-tests-windows-gha
+
+    - name: Add github workflow problem matchers
+      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os == 'ubuntu-latest'
+      # only annotate based on test runs on ubuntu: otherwise
+      # all errors will be duplicated for each python / os combination
+      # therefore, we only enable for the one where most tests are run
+      # (tests will still run in other envs, they will just not create annotations)
+      run: pip install pytest-github-actions-annotate-failures
 
     - name: Test Code 🔍
       if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
@@ -289,11 +304,26 @@ jobs:
 
     - name: Send Coverage Report 📊
       if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
+      continue-on-error: true
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
         COVERALLS_PARALLEL: true
       run: poetry run coveralls
+
+  complete_coverage:
+    name: Complete coverage
+    runs-on: ubuntu-20.04
+    needs: [ test, changes ]
+    if: needs.changes.outputs.backend == 'true'
+
+    steps:
+      - name: Tell coveralls we're finished reporting
+        uses: coverallsapp/github-action@master
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
 
   integration_test:
     name: Run Integration Tests
@@ -354,7 +384,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -376,7 +406,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
     - name: Clear Poetry cache
       if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
@@ -682,14 +712,14 @@ jobs:
 
     # deploy will only be run when there is a tag available
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags') && github.repository == 'RasaHQ/rasa'
-    needs: [quality, test, documentation, docker]  # only run after all other stages succeeded
+    needs: [quality, test, wait_for_docs_tests, docker]  # only run after all other stages succeeded
 
     steps:
     - name: Checkout git repository 🕝
       uses: actions/checkout@v2
 
     - name: Set up Python 3.6 🐍
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: 3.6
 

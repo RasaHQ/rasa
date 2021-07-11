@@ -2,7 +2,7 @@ import argparse
 import asyncio
 import importlib.util
 import logging
-from multiprocessing import get_context
+from multiprocessing import get_context, Process
 import os
 import signal
 import sys
@@ -72,7 +72,7 @@ def _rasa_service(
     endpoints: AvailableEndpoints,
     rasa_x_url: Optional[Text] = None,
     credentials_path: Optional[Text] = None,
-):
+) -> None:
     """Starts the Rasa application."""
     from rasa.core.run import serve_application
 
@@ -123,7 +123,7 @@ def _prepare_credentials_for_rasa_x(
 
 def _overwrite_endpoints_for_local_x(
     endpoints: AvailableEndpoints, rasa_x_token: Text, rasa_x_url: Text
-):
+) -> None:
     endpoints.model = _get_model_endpoint(endpoints.model, rasa_x_token, rasa_x_url)
     endpoints.event_broker = _get_event_broker_endpoint(endpoints.event_broker)
 
@@ -196,9 +196,10 @@ def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
     )
 
 
-def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
+def start_rasa_for_local_rasa_x(
+    args: argparse.Namespace, rasa_x_token: Text
+) -> Process:
     """Starts the Rasa X API with Rasa as a background process."""
-
     credentials_path, endpoints_path = _get_credentials_and_endpoints_paths(args)
     endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
 
@@ -217,9 +218,10 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text):
 
     ctx = get_context("spawn")
     p = ctx.Process(
-        target=_rasa_service, args=(args, endpoints, rasa_x_url, credentials_path)
+        target=_rasa_service,
+        args=(args, endpoints, rasa_x_url, credentials_path),
+        daemon=True,
     )
-    p.daemon = True
     p.start()
     return p
 
@@ -233,7 +235,7 @@ def is_rasa_x_installed() -> bool:
     return importlib.util.find_spec("rasax") is not None
 
 
-def generate_rasa_x_token(length: int = 16):
+def generate_rasa_x_token(length: int = 16) -> Text:
     """Generate a hexadecimal secret token used to access the Rasa X API.
 
     A new token is generated on every `rasa x` command.
@@ -244,7 +246,7 @@ def generate_rasa_x_token(length: int = 16):
     return token_hex(length)
 
 
-def _configure_logging(args: argparse.Namespace):
+def _configure_logging(args: argparse.Namespace) -> None:
     from rasa.core.utils import configure_file_logging
     from rasa.utils.common import set_log_level
 
@@ -291,7 +293,7 @@ def is_rasa_project_setup(args: argparse.Namespace, project_path: Text) -> bool:
     return True
 
 
-def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
+def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text) -> None:
     if not is_rasa_x_installed():
         rasa.shared.utils.cli.print_error_and_exit(
             "Rasa X is not installed. The `rasa x` "
@@ -328,7 +330,7 @@ def _validate_rasa_x_start(args: argparse.Namespace, project_path: Text):
         )
 
 
-def _validate_domain(domain_path: Text):
+def _validate_domain(domain_path: Text) -> None:
     from rasa.shared.core.domain import Domain, InvalidDomain
 
     try:
@@ -339,7 +341,7 @@ def _validate_domain(domain_path: Text):
         )
 
 
-def rasa_x(args: argparse.Namespace):
+def rasa_x(args: argparse.Namespace) -> None:
     from rasa.cli.utils import signal_handler
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -398,7 +400,7 @@ async def _pull_runtime_config_from_server(
     )
 
 
-def run_in_production(args: argparse.Namespace):
+def run_in_production(args: argparse.Namespace) -> None:
     from rasa.shared.utils.cli import print_success
 
     print_success("Starting Rasa X in production mode... 🚀")

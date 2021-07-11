@@ -303,7 +303,7 @@ class EntityExtractor(Component):
     @staticmethod
     def _update_confidence_values(
         entities: List[Dict[Text, Any]], confidences: Dict[Text, List[float]], idx: int
-    ):
+    ) -> None:
         # use the lower confidence value
         entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_TYPE] = min(
             entities[-1][ENTITY_ATTRIBUTE_CONFIDENCE_TYPE],
@@ -327,7 +327,7 @@ class EntityExtractor(Component):
         last_token_end: int,
         split_entities_config: Dict[Text, bool],
         current_entity_tag: Text,
-    ):
+    ) -> bool:
         # current token has the same entity tag as the token before and
         # the two tokens are only separated by at most one symbol (e.g. space,
         # dash, etc.)
@@ -469,9 +469,10 @@ class EntityExtractor(Component):
                         for t in example.get(TOKENS_NAMES[TEXT])
                     ]
                     rasa.shared.utils.io.raise_warning(
-                        f"Misaligned entity annotation in message '{example.get(TEXT)}' "
-                        f"with intent '{example.get(INTENT)}'. Make sure the start and "
-                        f"end values of entities ({entities_repr}) in the training "
+                        f"Misaligned entity annotation in message "
+                        f"'{example.get(TEXT)}' with intent '{example.get(INTENT)}'. "
+                        f"Make sure the start and end values of entities "
+                        f"({entities_repr}) in the training "
                         f"data match the token boundaries ({tokens_repr}). "
                         "Common causes: \n  1) entities include trailing whitespaces "
                         "or punctuation"

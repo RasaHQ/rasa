@@ -7,7 +7,6 @@ import tempfile
 import traceback
 from collections import defaultdict
 from functools import reduce, wraps
-from http import HTTPStatus
 from inspect import isawaitable
 from pathlib import Path
 from http import HTTPStatus
@@ -25,6 +24,7 @@ from typing import (
 )
 
 import aiohttp
+import jsonschema
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
@@ -51,6 +51,8 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
+    DEFAULT_CONVERSATION_TEST_PATH,
+    TEST_STORIES_FILE_PREFIX,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
 from rasa.core.agent import Agent
@@ -68,12 +70,18 @@ from rasa.core.tracker_store import TrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
-from rasa.nlu.test import run_evaluation, CVEvaluationResult
+import rasa.nlu.test
+from rasa.nlu.test import CVEvaluationResult
+from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
-    from ssl import SSLContext
+    from ssl import SSLContext  # noqa: F401
     from rasa.core.processor import MessageProcessor
+    from mypy_extensions import VarArg, KwArg
+
+    SanicView = Callable[[Request, VarArg(), KwArg()], response.BaseHTTPResponse]
+
 
 logger = logging.getLogger(__name__)
 
@@ -124,16 +132,18 @@ def _docs(sub_url: Text) -> Text:
     return DOCS_BASE_URL + sub_url
 
 
-def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
+def ensure_loaded_agent(
+    app: Sanic, require_core_is_ready: bool = False
+) -> Callable[[Callable], Callable[..., Any]]:
     """Wraps a request handler ensuring there is a loaded and usable agent.
 
     Require the agent to have a loaded Core model if `require_core_is_ready` is
     `True`.
     """
 
-    def decorator(f):
+    def decorator(f: Callable) -> Callable:
         @wraps(f)
-        def decorated(*args, **kwargs):
+        def decorated(*args: Any, **kwargs: Any) -> Any:
             # noinspection PyUnresolvedReferences
             if not app.agent or not (
                 app.agent.is_core_ready()
@@ -155,10 +165,10 @@ def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
     return decorator
 
 
-def ensure_conversation_exists() -> Callable[..., HTTPResponse]:
+def ensure_conversation_exists() -> "SanicView":
     """Wraps a request handler ensuring the conversation exists."""
 
-    def decorator(f: Callable[..., HTTPResponse]) -> HTTPResponse:
+    def decorator(f: "SanicView") -> HTTPResponse:
         @wraps(f)
         def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
@@ -174,10 +184,12 @@ def ensure_conversation_exists() -> Callable[..., HTTPResponse]:
     return decorator
 
 
-def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]:
+def requires_auth(
+    app: Sanic, token: Optional[Text] = None
+) -> Callable[["SanicView"], "SanicView"]:
     """Wraps a request handler with token authentication."""
 
-    def decorator(f: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
+    def decorator(f: "SanicView") -> "SanicView":
         def conversation_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
             argnames = rasa.shared.utils.common.arguments_of(f)
 
@@ -192,7 +204,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                 return None
 
         async def sufficient_scope(
-            request, *args: Any, **kwargs: Any
+            request: Request, *args: Any, **kwargs: Any
         ) -> Optional[bool]:
             # This is a coroutine since `sanic-jwt==1.6`
             jwt_data = await rasa.utils.common.call_potential_coroutine(
@@ -213,7 +225,9 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                 return False
 
         @wraps(f)
-        async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
+        async def decorated(
+            request: Request, *args: Any, **kwargs: Any
+        ) -> response.BaseHTTPResponse:
 
             provided = request.args.get("token", None)
 
@@ -365,6 +379,25 @@ def validate_request_body(request: Request, error_message: Text) -> None:
         raise ErrorResponse(HTTPStatus.BAD_REQUEST, "BadRequest", error_message)
 
 
+def validate_events_in_request_body(request: Request) -> None:
+    """Validates events format in request body."""
+    if not isinstance(request.json, list):
+        events = [request.json]
+    else:
+        events = request.json
+
+    try:
+        jsonschema.validate(events, EVENTS_SCHEMA)
+    except jsonschema.ValidationError as error:
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            f"Failed to validate the events format. "
+            f"For more information about the format visit the docs. Error: {error}",
+            help_url=_docs("/pages/http-api"),
+        ) from error
+
+
 async def authenticate(_: Request) -> NoReturn:
     """Callback for authentication failed."""
     raise exceptions.AuthenticationFailed(
@@ -501,11 +534,11 @@ def configure_cors(
     )
 
 
-def add_root_route(app: Sanic):
+def add_root_route(app: Sanic) -> None:
     """Add '/' route to return hello."""
 
     @app.get("/")
-    async def hello(request: Request):
+    async def hello(request: Request) -> HTTPResponse:
         """Check if the server is running and responds with the version."""
         return response.text("Hello from Rasa: " + rasa.__version__)
 
@@ -636,9 +669,8 @@ def create_app(
     jwt_secret: Optional[Text] = None,
     jwt_method: Text = "HS256",
     endpoints: Optional[AvailableEndpoints] = None,
-):
+) -> Sanic:
     """Class representing a Rasa HTTP server."""
-
     app = Sanic(__name__)
     app.config.RESPONSE_TIMEOUT = response_timeout
     configure_cors(app, cors_origins)
@@ -663,13 +695,15 @@ def create_app(
     app.active_training_processes = multiprocessing.Value("I", 0)
 
     @app.exception(ErrorResponse)
-    async def handle_error_response(request: Request, exception: ErrorResponse):
+    async def handle_error_response(
+        request: Request, exception: ErrorResponse
+    ) -> HTTPResponse:
         return response.json(exception.error_info, status=exception.status)
 
     add_root_route(app)
 
     @app.get("/version")
-    async def version(request: Request):
+    async def version(request: Request) -> HTTPResponse:
         """Respond with the version number of the installed Rasa."""
 
         return response.json(
@@ -682,7 +716,7 @@ def create_app(
     @app.get("/status")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def status(request: Request):
+    async def status(request: Request) -> HTTPResponse:
         """Respond with the model name and the fingerprint of that model."""
 
         return response.json(
@@ -697,9 +731,8 @@ def create_app(
     @app.get("/conversations/<conversation_id:path>/tracker")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def retrieve_tracker(request: Request, conversation_id: Text):
+    async def retrieve_tracker(request: Request, conversation_id: Text) -> HTTPResponse:
         """Get a dump of a conversation's tracker including its events."""
-
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         until_time = rasa.utils.endpoints.float_arg(request, "until")
 
@@ -724,13 +757,9 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def append_events(request: Request, conversation_id: Text):
-        """Append a list of events to the state of a conversation"""
-        validate_request_body(
-            request,
-            "You must provide events in the request body in order to append them"
-            "to the state of a conversation.",
-        )
+    async def append_events(request: Request, conversation_id: Text) -> HTTPResponse:
+        """Append a list of events to the state of a conversation."""
+        validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
@@ -789,13 +818,9 @@ def create_app(
     @app.put("/conversations/<conversation_id:path>/tracker/events")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def replace_events(request: Request, conversation_id: Text):
+    async def replace_events(request: Request, conversation_id: Text) -> HTTPResponse:
         """Use a list of events to set a conversations tracker to a state."""
-        validate_request_body(
-            request,
-            "You must provide events in the request body to set the sate of the "
-            "conversation tracker.",
-        )
+        validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
@@ -821,7 +846,7 @@ def create_app(
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     @ensure_conversation_exists()
-    async def retrieve_story(request: Request, conversation_id: Text):
+    async def retrieve_story(request: Request, conversation_id: Text) -> HTTPResponse:
         """Get an end-to-end story corresponding to this conversation."""
         until_time = rasa.utils.endpoints.float_arg(request, "until")
         fetch_all_sessions = rasa.utils.endpoints.bool_arg(
@@ -848,7 +873,7 @@ def create_app(
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     @ensure_conversation_exists()
-    async def execute_action(request: Request, conversation_id: Text):
+    async def execute_action(request: Request, conversation_id: Text) -> HTTPResponse:
         request_params = request.json
 
         action_to_execute = request_params.get("name", None)
@@ -867,8 +892,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
-                    conversation_id
+                tracker = await (
+                    app.agent.create_processor().fetch_tracker_and_update_session(
+                        conversation_id
+                    )
                 )
 
                 output_channel = _get_output_channel(request, tracker)
@@ -890,7 +917,7 @@ def create_app(
 
         state = tracker.current_state(verbosity)
 
-        response_body = {"tracker": state}
+        response_body: Dict[Text, Any] = {"tracker": state}
 
         if isinstance(output_channel, CollectingOutputChannel):
             response_body["messages"] = output_channel.messages
@@ -918,8 +945,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
-                    conversation_id
+                tracker = await (
+                    app.agent.create_processor().fetch_tracker_and_update_session(
+                        conversation_id
+                    )
                 )
                 output_channel = _get_output_channel(request, tracker)
                 if intent_to_trigger not in app.agent.domain.intents:
@@ -946,7 +975,7 @@ def create_app(
 
         state = tracker.current_state(verbosity)
 
-        response_body = {"tracker": state}
+        response_body: Dict[Text, Any] = {"tracker": state}
 
         if isinstance(output_channel, CollectingOutputChannel):
             response_body["messages"] = output_channel.messages
@@ -976,7 +1005,7 @@ def create_app(
     @app.post("/conversations/<conversation_id:path>/messages")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
-    async def add_message(request: Request, conversation_id: Text):
+    async def add_message(request: Request, conversation_id: Text) -> HTTPResponse:
         validate_request_body(
             request,
             "No message defined in request body. Add a message to the request body in "
@@ -1037,7 +1066,7 @@ def create_app(
             with app.active_training_processes.get_lock():
                 app.active_training_processes.value += 1
 
-            from rasa.train import train_async
+            from rasa.model_training import train_async
 
             # pass `None` to run in default executor
             training_result = await train_async(**training_payload)
@@ -1190,7 +1219,12 @@ def create_app(
         model_directory = eval_agent.model_directory
         _, nlu_model = model.get_model_subdirectories(model_directory)
 
-        return await run_evaluation(
+        if nlu_model is None:
+            raise ErrorResponse(
+                HTTPStatus.CONFLICT, "Conflict", "Missing NLU model directory.",
+            )
+
+        return await rasa.nlu.test.run_evaluation(
             data_path, nlu_model, disable_plotting=True, report_as_dict=True
         )
 
@@ -1202,7 +1236,7 @@ def create_app(
         config = await importer.get_config()
         nlu_data = await importer.get_nlu_data()
 
-        evaluations = rasa.nlu.cross_validate(
+        evaluations = rasa.nlu.test.cross_validate(
             data=nlu_data,
             n_folds=folds,
             nlu_config=config,
@@ -1241,11 +1275,7 @@ def create_app(
     @ensure_loaded_agent(app, require_core_is_ready=True)
     async def tracker_predict(request: Request) -> HTTPResponse:
         """Given a list of events, predicts the next action."""
-        validate_request_body(
-            request,
-            "No events defined in request_body. Add events to request body in order to "
-            "predict the next action.",
-        )
+        validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         request_params = request.json
@@ -1425,17 +1455,23 @@ def _test_data_file_from_payload(
 ) -> Text:
     if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
         return str(
-            _training_payload_from_yaml(request, temporary_directory)["training_files"]
+            _training_payload_from_yaml(
+                request,
+                temporary_directory,
+                # test stories have to prefixed with `test_`
+                file_name=f"{TEST_STORIES_FILE_PREFIX}data.yml",
+            )["training_files"]
         )
     else:
-        return rasa.utils.io.create_temporary_file(
-            request.body, mode="w+b", suffix=suffix
-        )
+        # MD test stories have to be in the `tests` directory
+        test_dir = temporary_directory / DEFAULT_CONVERSATION_TEST_PATH
+        test_dir.mkdir()
+        test_file = test_dir / f"tests{suffix}"
+        test_file.write_bytes(request.body)
+        return str(test_file)
 
 
-def _training_payload_from_json(
-    request: Request, temp_dir: Path
-) -> Dict[Text, Union[Text, bool]]:
+def _training_payload_from_json(request: Request, temp_dir: Path) -> Dict[Text, Any]:
     logger.debug(
         "Extracting JSON payload with Markdown training data from request body."
     )
@@ -1469,7 +1505,7 @@ def _training_payload_from_json(
     model_output_directory = str(temp_dir)
     if request_payload.get(
         "save_to_default_model_directory",
-        request.args.get("save_to_default_model_directory", True),
+        rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True),
     ):
         model_output_directory = DEFAULT_MODELS_PATH
 
@@ -1479,12 +1515,14 @@ def _training_payload_from_json(
         training_files=str(temp_dir),
         output=model_output_directory,
         force_training=request_payload.get(
-            "force", request.args.get("force_training", False)
+            "force", rasa.utils.endpoints.bool_arg(request, "force_training", False)
         ),
+        core_additional_arguments=_extract_core_additional_arguments(request),
+        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
     )
 
 
-def _validate_json_training_payload(rjs: Dict):
+def _validate_json_training_payload(rjs: Dict) -> None:
     if "config" not in rjs:
         raise ErrorResponse(
             HTTPStatus.BAD_REQUEST,
@@ -1521,18 +1559,18 @@ def _validate_json_training_payload(rjs: Dict):
 
 
 def _training_payload_from_yaml(
-    request: Request, temp_dir: Path
-) -> Dict[Text, Union[Text, bool]]:
+    request: Request, temp_dir: Path, file_name: Text = "data.yml"
+) -> Dict[Text, Any]:
     logger.debug("Extracting YAML training data from request body.")
 
     decoded = request.body.decode(rasa.shared.utils.io.DEFAULT_ENCODING)
     _validate_yaml_training_payload(decoded)
 
-    training_data = temp_dir / "data.yml"
+    training_data = temp_dir / file_name
     rasa.shared.utils.io.write_text_file(decoded, training_data)
 
     model_output_directory = str(temp_dir)
-    if request.args.get("save_to_default_model_directory", True):
+    if rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True):
         model_output_directory = DEFAULT_MODELS_PATH
 
     return dict(
@@ -1540,7 +1578,9 @@ def _training_payload_from_yaml(
         config=str(training_data),
         training_files=str(temp_dir),
         output=model_output_directory,
-        force_training=request.args.get("force_training", False),
+        force_training=rasa.utils.endpoints.bool_arg(request, "force_training", False),
+        core_additional_arguments=_extract_core_additional_arguments(request),
+        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
     )
 
 
@@ -1554,3 +1594,17 @@ def _validate_yaml_training_payload(yaml_text: Text) -> None:
             f"The request body does not contain valid YAML. Error: {e}",
             help_url=DOCS_URL_TRAINING_DATA,
         )
+
+
+def _extract_core_additional_arguments(request: Request) -> Dict[Text, Any]:
+    return {
+        "augmentation_factor": rasa.utils.endpoints.int_arg(
+            request, "augmentation", 50
+        ),
+    }
+
+
+def _extract_nlu_additional_arguments(request: Request) -> Dict[Text, Any]:
+    return {
+        "num_threads": rasa.utils.endpoints.int_arg(request, "num_threads", 1),
+    }

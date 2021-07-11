@@ -10,7 +10,164 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.7 to 2.8
+
+### Incremental Training
+
+Users don't need to specify an additional buffer size for sparse featurizers anymore during incremental training.
+
+Space for new sparse features are created dynamically inside the downstream machine learning
+models - `DIETClassifier`, `ResponseSelector`. In other words, no extra buffer is created in
+advance for additional vocabulary items and space will be dynamically allocated for them inside the model.
+
+This means there's no need to specify `additional_vocabulary_size` for
+[`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer) or
+`number_additional_patterns` for [`RegexFeaturizer`](./components.mdx#regexfeaturizer).
+These parameters are now deprecated.
+
+**Before**
+```yaml
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "RegexFeaturizer"
+    number_additional_patterns: 100
+  - name: "CountVectorsFeaturizer"
+    additional_vocabulary_size: {text: 100, response: 20}
+```
+
+**Now**
+```yaml
+pipeline:
+  - name: "WhitespaceTokenizer"
+  - name: "RegexFeaturizer"
+  - name: "CountVectorsFeaturizer"
+```
+
+### Machine Learning Components
+
+The option `model_confidence=linear_norm` is deprecated and will be removed in Rasa Open Source `3.0.0`.
+
+Rasa Open Source `2.3.0` introduced `linear_norm` as a possible value for `model_confidence`
+parameter in machine learning components such as `DIETClassifier`, `ResponseSelector` and `TEDPolicy`.
+Based on user feedback, we have identified multiple problems with this option.
+Therefore, `model_confidence=linear_norm` is now deprecated and
+will be removed in Rasa Open Source `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
+we recommend to revert it back to `model_confidence=softmax` and re-train the assistant. After re-training,
+we also recommend to [re-tune the thresholds for fallback components](./fallback-handoff.mdx#fallbacks).
+
+## Rasa 2.5 to 2.6
+
+### Forms
+
+#### New `ignored_intents` parameter in Forms
+
+There is a new parameter under Forms called `ignored_intents`. This parameter
+can be used to prevent any required slots in a form from being filled with the specified
+intent or intents. Please see the [Forms documentation](forms.mdx) for examples and more
+information on how to use it in your `domain.yml` file.
+
+Before, if a user did not want to fill any slots of a form with a specified intent
+they would have to define it under the `not_intent` parameter for every slot mapping
+as shown in the following example :
+
+```yaml-rasa title="domain.yml"
+forms:
+  restaurant_form:
+      cuisine:
+      - type: from_entity
+        entity: cuisine
+        not_intent: chitchat
+      num_people:
+      - type: from_entity
+        entity: number
+        intent: [inform, request_restaurant]
+        not_intent: chitchat
+      feedback:
+      - type: from_entity
+        entity: feedback
+        not_intent: chitchat
+```
+
+By introducing the `ignored_intents` parameter, we now only need to define it
+in one place and it will affect all the slots of the form :
+
+```yaml-rasa title="domain.yml"
+forms:
+  restaurant_form:
+    ignored_intents: chitchat
+    required_slots:
+      cuisine:
+      - type: from_entity
+        entity: cuisine
+      num_people:
+      - type: from_entity
+        entity: number
+        intent: [inform, request_restaurant]
+      feedback:
+      - type: from_entity
+        entity: feedback
+      - type: from_text
+```
+
+
+## Rasa 2.4 to 2.5
+
+### Machine Learning Components
+
+#### `DIET`, `TED`, and `ResponseSelector`
+
+The former `weight_sparsity` parameter of the `DIETClassifier`, `TEDPolicy`, and the `ResponseSelector`, 
+is now deprecated and superseded by the new `connection_density` parameter.
+The old `weight_sparsity` is roughly equivalent to `1 - connection_density`, except at very low densities 
+(high sparsities). 
+
+To avoid deprecation issues, you should set `connection_density` to
+`1 - your former weight_sparsity setting` throughout the config file. (If you left 
+`weight_sparsity` at its default setting, you don't need to do anything.)
+
+#### SpaCy 3.0
+
+Rasa now supports spaCy 3.0. This means that we can support more features for more
+languages but this also introduced a breaking change. SpaCy 3.0 deprecated the
+`spacy link <language model>` command. So from now on you need to use the
+[the full model name](https://spacy.io/models) in the `config.yml` file.
+
+**Before**
+
+Before you could run `spacy link en en_core_web_md` and then we would be able
+to pick up the correct model from the `language` parameter.
+
+```yaml
+language: en
+
+pipeline:
+   - name: SpacyNLP
+```
+
+**Now**
+
+This behavior will be deprecated and instead you'll want to be explicit in `config.yml`.
+
+```yaml
+language: en
+
+pipeline:
+   - name: SpacyNLP
+     model: en_core_web_md
+```
+
+**Fallback**
+
+To make the transition easier, Rasa will try to fall back to a medium spaCy model whenever
+a compatible language is configured for the entire pipeline in `config.yml`, even if you don't
+specify a `model`. This fallback behavior is temporary and will be deprecated in Rasa Open Source 3.0.0.
+
+We've updated our docs to reflect these changes. All examples now show a direct link to the
+correct spaCy model. We've also added a warning to the [SpaCyNLP](components.mdx#spacynlp)
+docs that explains the fallback behavior.
+
 ## Rasa 2.3 to Rasa 2.4
+
 ### Deprecating `template` for `response`
 NLG Server
 - Changed request format to send `response` as well as `template` as a field. The `template` field will be removed in Rasa Open Source 3.0.0.
@@ -911,12 +1068,15 @@ model before trying to use it with this improved version.
     entity_recognition: False
     use_masked_language_model: False
     BILOU_flag: False
+    scale_loss: True
+    use_sparse_input_dropout: False
+    use_dense_input_dropout: False
     # ... any other parameters
   ```
 
   See [DIETClassifier](./components.mdx#dietclassifier) for more information about the new component.
-  Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, the
-  behavior is unchanged from previous versions.
+  Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, and results in
+  the same behaviour within the same Rasa version. 
 
 * `CRFEntityExtractor` is now deprecated and will be replaced by `DIETClassifier` in the future. If you want to
   get the same model behavior as the current `CRFEntityExtractor`, you can use the following configuration:
@@ -1083,7 +1243,7 @@ model before trying to use it with this improved version.
 * The `--num_threads` parameter was removed from the `run` command. The
   server will always run single-threaded, but will now run asynchronously. If you want to
   make use of multiple processes, feel free to check out the [Sanic server
-  documentation](https://sanic.readthedocs.io/en/stable/sanic/deploying.html#running-via-gunicorn).
+  documentation](https://sanicframework.org/en/guide/deployment/running.html#gunicorn).
 
 * To avoid conflicts in script parameter names, connectors in the `run` command now need to be specified with
   `--connector`, as `-c` is no longer supported. The maximum history in the `rasa visualize` command needs to be

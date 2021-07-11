@@ -24,6 +24,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
 )
+from rasa.shared.nlu.constants import INTENT, PREDICTED_CONFIDENCE_KEY
 from rasa.utils.endpoints import EndpointConfig
 
 
@@ -124,7 +125,7 @@ def _last_intent_name(tracker: DialogueStateTracker) -> Optional[Text]:
     if not last_message:
         return None
 
-    return last_message.intent.get("name")
+    return last_message.intent_name
 
 
 def _two_fallbacks_in_a_row(tracker: DialogueStateTracker) -> bool:
@@ -171,7 +172,14 @@ def _second_affirmation_failed(tracker: DialogueStateTracker) -> bool:
 
 
 def _message_clarification(tracker: DialogueStateTracker) -> List[Event]:
-    clarification = copy.deepcopy(tracker.latest_message)
-    clarification.parse_data["intent"]["confidence"] = 1.0
+    latest_message = tracker.latest_message
+    if not latest_message:
+        raise TypeError(
+            "Cannot issue message clarification because "
+            "latest message is not on tracker."
+        )
+
+    clarification = copy.deepcopy(latest_message)
+    clarification.parse_data[INTENT][PREDICTED_CONFIDENCE_KEY] = 1.0
     clarification.timestamp = time.time()
     return [ActionExecuted(ACTION_LISTEN_NAME), clarification]

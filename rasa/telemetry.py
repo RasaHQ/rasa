@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-import functools
 from functools import wraps
 import hashlib
 import json
@@ -73,6 +72,9 @@ CI_ENVIRONMENT_TELL = [
     "JENKINS_URL",
     "TEAMCITY_VERSION",
     "TRAVIS",
+    "CODEBUILD_BUILD_ARN",
+    "CODEBUILD_BUILD_ID",
+    "CODEBUILD_BATCH_BUILD_IDENTIFIER",
 ]
 
 # If updating or creating a new event, remember to update
@@ -220,15 +222,15 @@ def ensure_telemetry_enabled(f: Callable[..., Any]) -> Callable[..., Any]:
     if asyncio.iscoroutinefunction(f):
 
         @wraps(f)
-        async def decorated(*args, **kwargs):
+        async def decorated_coroutine(*args: Any, **kwargs: Any) -> Any:
             if is_telemetry_enabled():
                 return await f(*args, **kwargs)
             return None
 
-        return decorated
+        return decorated_coroutine
 
     @wraps(f)
-    def decorated(*args, **kwargs):
+    def decorated(*args: Any, **kwargs: Any) -> Any:
         if is_telemetry_enabled():
             return f(*args, **kwargs)
         return None
@@ -470,11 +472,12 @@ def _default_context_fields() -> Dict[Text, Any]:
     Return:
         A new context containing information about the runtime environment.
     """
-    import tensorflow as tf
 
     global TELEMETRY_CONTEXT
 
     if not TELEMETRY_CONTEXT:
+        # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+        # if you change / add context
         TELEMETRY_CONTEXT = {
             "os": {"name": platform.system(), "version": platform.release()},
             "ci": in_continuous_integration(),
@@ -482,7 +485,6 @@ def _default_context_fields() -> Dict[Text, Any]:
             "directory": _hash_directory_path(os.getcwd()),
             "python": sys.version.split(" ")[0],
             "rasa_open_source": rasa.__version__,
-            "gpu": len(tf.config.list_physical_devices("GPU")),
             "cpu": multiprocessing.cpu_count(),
             "docker": _is_docker(),
         }
@@ -649,6 +651,7 @@ def initialize_error_reporting() -> None:
             asyncio.CancelledError,  # an async operation has been cancelled by the user
             # expected Rasa errors
             RasaException,
+            OSError,
         ],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
@@ -699,9 +702,12 @@ async def track_model_training(
     stories = await training_data.get_stories()
     nlu_data = await training_data.get_nlu_data()
     domain = await training_data.get_domain()
+    count_conditional_responses = domain.count_conditional_response_variations()
 
     training_id = uuid.uuid4().hex
 
+    # Make sure to update the example in docs/docs/telemetry/telemetry.mdx
+    # if you change / add any properties
     _track(
         TRAINING_STARTED_EVENT,
         {
@@ -716,6 +722,7 @@ async def track_model_training(
             # Old nomenclature from when 'responses' were still called
             # 'templates' in the domain
             "num_templates": len(domain.responses),
+            "num_conditional_response_variations": count_conditional_responses,
             "num_slots": len(domain.slots),
             "num_forms": len(domain.forms),
             "num_intents": len(domain.intents),

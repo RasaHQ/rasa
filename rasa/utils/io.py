@@ -6,10 +6,11 @@ import tarfile
 import tempfile
 import warnings
 import zipfile
+import re
 from asyncio import AbstractEventLoop
 from io import BytesIO as IOReader
 from pathlib import Path
-from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING
+from typing import Text, Any, Union, List, Type, Callable, TYPE_CHECKING, Pattern
 
 import rasa.shared.constants
 import rasa.shared.utils.io
@@ -171,17 +172,6 @@ def create_validator(
     return FunctionValidator
 
 
-def zip_folder(folder: Text) -> Text:
-    """Create an archive from a folder."""
-    import shutil
-
-    zipped_path = tempfile.NamedTemporaryFile(delete=False)
-    zipped_path.close()
-
-    # WARN: not thread-safe!
-    return shutil.make_archive(zipped_path.name, "zip", folder)
-
-
 def json_unpickle(file_name: Union[Text, Path]) -> Any:
     """Unpickle an object from file using json.
 
@@ -212,3 +202,20 @@ def json_pickle(file_name: Union[Text, Path], obj: Any) -> None:
     jsonpickle_numpy.register_handlers()
 
     rasa.shared.utils.io.write_text_file(jsonpickle.dumps(obj), file_name)
+
+
+def get_emoji_regex() -> Pattern:
+    """Returns regex to identify emojis."""
+    return re.compile(
+        "["
+        "\U0001F600-\U0001F64F"  # emoticons
+        "\U0001F300-\U0001F5FF"  # symbols & pictographs
+        "\U0001F680-\U0001F6FF"  # transport & map symbols
+        "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+        "\U00002702-\U000027B0"
+        "\U000024C2-\U0001F251"
+        "\u200d"  # zero width joiner
+        "\u200c"  # zero width non-joiner
+        "]+",
+        flags=re.UNICODE,
+    )

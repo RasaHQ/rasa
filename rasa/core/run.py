@@ -4,7 +4,7 @@ import uuid
 import os
 import shutil
 from functools import partial
-from typing import Any, List, Optional, Text, Union
+from typing import Any, List, Optional, Text, Union, Dict
 
 import rasa.core.utils
 from rasa.shared.exceptions import RasaException
@@ -53,7 +53,7 @@ def create_http_input_channels(
         return [_create_single_channel(c, k) for c, k in all_credentials.items()]
 
 
-def _create_single_channel(channel, credentials) -> Any:
+def _create_single_channel(channel: Text, credentials: Dict[Text, Any]) -> Any:
     from rasa.core.channels import BUILTIN_CHANNELS
 
     if channel in BUILTIN_CHANNELS:
@@ -75,7 +75,7 @@ def _create_single_channel(channel, credentials) -> Any:
             )
 
 
-def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None):
+def _create_app_without_api(cors: Optional[Union[Text, List[Text]]] = None) -> Sanic:
     app = Sanic(__name__, configure_logging=False)
     server.add_root_route(app)
     server.configure_cors(app, cors)
@@ -95,7 +95,7 @@ def configure_app(
     endpoints: Optional[AvailableEndpoints] = None,
     log_file: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
-):
+) -> Sanic:
     """Run the agent."""
 
     rasa.core.utils.configure_file_logging(logger, log_file)
@@ -120,8 +120,7 @@ def configure_app(
     if logger.isEnabledFor(logging.DEBUG):
         rasa.core.utils.list_routes(app)
 
-    # configure async loop logging
-    async def configure_async_logging():
+    async def configure_async_logging() -> None:
         if logger.isEnabledFor(logging.DEBUG):
             rasa.utils.io.enable_async_loop_debugging(asyncio.get_event_loop())
 
@@ -129,7 +128,7 @@ def configure_app(
 
     if "cmdline" in {c.name() for c in input_channels}:
 
-        async def run_cmdline_io(running_app: Sanic):
+        async def run_cmdline_io(running_app: Sanic) -> None:
             """Small wrapper to shut down the server once cmd io is done."""
             await asyncio.sleep(1)  # allow server to start
 
@@ -165,7 +164,7 @@ def serve_application(
     ssl_ca_file: Optional[Text] = None,
     ssl_password: Optional[Text] = None,
     conversation_id: Optional[Text] = uuid.uuid4().hex,
-):
+) -> None:
     """Run the API entrypoint."""
 
     if not channel and not credentials:
@@ -193,7 +192,8 @@ def serve_application(
     protocol = "https" if ssl_context else "http"
 
     logger.info(
-        f"Starting Rasa server on {constants.DEFAULT_SERVER_FORMAT.format(protocol, port)}"
+        f"Starting Rasa server on "
+        f"{constants.DEFAULT_SERVER_FORMAT.format(protocol, port)}"
     )
 
     app.register_listener(
@@ -234,12 +234,12 @@ async def load_agent_on_start(
     remote_storage: Optional[Text],
     app: Sanic,
     loop: AbstractEventLoop,
-):
+) -> Agent:
     """Load an agent.
 
     Used to be scheduled on server start
-    (hence the `app` and `loop` arguments)."""
-
+    (hence the `app` and `loop` arguments).
+    """
     # noinspection PyBroadException
     try:
         with model.get_model(model_path) as unpacked_model:

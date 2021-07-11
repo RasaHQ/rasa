@@ -1,7 +1,7 @@
 import copy
 import json
 import logging
-from typing import List, Text, Optional, Dict, Any, Set, TYPE_CHECKING
+from typing import List, Text, Optional, Dict, Any, TYPE_CHECKING
 
 import aiohttp
 
@@ -49,6 +49,7 @@ from rasa.shared.core.events import (
     Restarted,
     SessionStarted,
 )
+from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 from rasa.shared.core.domain import Domain
 
@@ -57,6 +58,7 @@ if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
+    from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
 
@@ -246,7 +248,10 @@ class Action:
             Event which should be logged onto the tracker.
         """
         return ActionExecuted(
-            self.name(), prediction.policy_name, prediction.max_confidence
+            self.name(),
+            prediction.policy_name,
+            prediction.max_confidence,
+            hide_rule_turn=prediction.hide_rule_turn,
         )
 
 
@@ -332,6 +337,7 @@ class ActionEndToEndResponse(Action):
             policy=prediction.policy_name,
             confidence=prediction.max_confidence,
             action_text=self.action_text,
+            hide_rule_turn=prediction.hide_rule_turn,
         )
 
 
@@ -348,11 +354,6 @@ class ActionRetrieveResponse(ActionBotResponse):
     def intent_name_from_action(action_name: Text) -> Text:
         """Resolve the name of the intent from the action name."""
         return action_name.split(UTTER_PREFIX)[1]
-
-    @staticmethod
-    def action_name_from_intent(intent_name: Text) -> Text:
-        """Resolve the action name from the name of the intent."""
-        return f"{UTTER_PREFIX}{intent_name}"
 
     async def run(
         self,
@@ -585,19 +586,14 @@ class RemoteAction(Action):
 
         Used for validation of the response returned from the
         Action endpoint."""
-        return {
+        schema = {
             "type": "object",
             "properties": {
-                "events": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {"event": {"type": "string"}},
-                    },
-                },
+                "events": EVENTS_SCHEMA,
                 "responses": {"type": "array", "items": {"type": "object"}},
             },
         }
+        return schema
 
     def _validate_action_result(self, result: Dict[Text, Any]) -> bool:
         from jsonschema import validate
@@ -626,6 +622,17 @@ class RemoteAction(Action):
         bot_messages = []
         for response in responses:
             generated_response = response.pop("response", None)
+            generated_template = response.pop("template", None)
+            if generated_template and not generated_response:
+                generated_response = generated_template
+                rasa.shared.utils.io.raise_deprecation_warning(
+                    "The terminology 'template' is deprecated and replaced by "
+                    "'response', use the `response` parameter instead of "
+                    "`template` in `dispatcher.utter_message`. You can do that "
+                    "by upgrading to Rasa SDK 2.4.1 or adapting your custom SDK.",
+                    docs=f"{rasa.shared.constants.DOCS_BASE_URL_ACTION_SERVER}"
+                    f"/sdk-dispatcher",
+                )
             if generated_response:
                 draft = await nlg.generate(
                     generated_response, tracker, output_channel.name(), **response
@@ -778,16 +785,19 @@ def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
 def _revert_affirmation_events(tracker: "DialogueStateTracker") -> List[Event]:
     revert_events = _revert_single_affirmation_events()
 
-    last_user_event = tracker.get_last_event_for(UserUttered)
-    last_user_event = copy.deepcopy(last_user_event)
-    last_user_event.parse_data["intent"]["confidence"] = 1.0
-
     # User affirms the rephrased intent
     rephrased_intent = tracker.last_executed_action_has(
         name=ACTION_DEFAULT_ASK_REPHRASE_NAME, skip=1
     )
     if rephrased_intent:
         revert_events += _revert_rephrasing_events()
+
+    last_user_event = tracker.get_last_event_for(UserUttered)
+    if not last_user_event:
+        raise TypeError("Cannot find last event to revert to.")
+
+    last_user_event = copy.deepcopy(last_user_event)
+    last_user_event.parse_data["intent"]["confidence"] = 1.0
 
     return revert_events + [last_user_event]
 
@@ -802,8 +812,11 @@ def _revert_single_affirmation_events() -> List[Event]:
     ]
 
 
-def _revert_successful_rephrasing(tracker) -> List[Event]:
+def _revert_successful_rephrasing(tracker: "DialogueStateTracker") -> List[Event]:
     last_user_event = tracker.get_last_event_for(UserUttered)
+    if not last_user_event:
+        raise TypeError("Cannot find last event to revert to.")
+
     last_user_event = copy.deepcopy(last_user_event)
     return _revert_rephrasing_events() + [last_user_event]
 
@@ -839,9 +852,17 @@ class ActionDefaultAskAffirmation(Action):
         domain: "Domain",
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        intent_to_affirm = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        latest_message = tracker.latest_message
+        if latest_message is None:
+            raise TypeError(
+                "Cannot find last user message for detecting fallback affirmation."
+            )
 
-        intent_ranking = tracker.latest_message.parse_data.get(INTENT_RANKING_KEY, [])
+        intent_to_affirm = latest_message.intent.get(INTENT_NAME_KEY)
+
+        intent_ranking: List["IntentPrediction"] = latest_message.parse_data.get(
+            INTENT_RANKING_KEY
+        ) or []
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1
