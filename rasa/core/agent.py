@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import tempfile
+import json
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
 import uuid
@@ -51,6 +52,7 @@ import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
+from rasa.otel import Tracer
 
 logger = logging.getLogger(__name__)
 
@@ -532,8 +534,18 @@ class Agent:
 
         processor = self.create_processor(message_preprocessor)
 
-        async with self.lock_store.lock(message.sender_id):
-            return await processor.handle_message(message)
+        with Tracer.start_span("lock_store.lock", attributes={"sender_id": message.sender_id}):
+            async with self.lock_store.lock(message.sender_id):
+                input_channel_name = message.input_channel if isinstance(message.input_channel, str)\
+                    else message.input_channel.__class__.name()
+                output_channel_name = message.output_channel if isinstance(message.output_channel, str)\
+                    else message.output_channel.__class__.name()
+                with Tracer.start_span("processor.handle_message",
+                                       attributes={"sender_id": message.sender_id,
+                                                   "input_channel": input_channel_name,
+                                                   "output_channel": output_channel_name
+                                                   }):
+                    return await processor.handle_message(message)
 
     # noinspection PyUnusedLocal
     async def predict_next(

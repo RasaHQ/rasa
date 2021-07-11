@@ -45,6 +45,9 @@ from rasa.shared.exceptions import ConnectionException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
+from opentelemetry import trace
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
 
 if TYPE_CHECKING:
     import boto3.resources.factory.dynamodb.Table
@@ -853,6 +856,13 @@ class SQLTrackerStore(TrackerStore):
         )
 
         self.engine = sa.create_engine(engine_url, **create_engine_kwargs(engine_url))
+        # GEMMA: this shows an error "Overriding of current TracerProvider is not allowed"
+        # trace.set_tracer_provider(TracerProvider())
+        # On Mac, causes a jaeger [bug](https://github.com/open-telemetry/opentelemetry-python/issues/1061)
+        # SQLAlchemyInstrumentor().instrument(
+        #     engine=self.engine,
+        #     service="tracker_store",
+        # )
 
         logger.debug(
             f"Attempting to connect to database via '{repr(self.engine.url)}'."

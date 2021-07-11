@@ -28,6 +28,15 @@ COPY --from=builder /opt/venv /opt/venv
 # make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# FIXME: install this dependencies using poetry
+RUN pip install --no-cache-dir opentelemetry-sdk && \
+  pip install --no-cache-dir opentelemetry-instrumentation && \
+  pip install --no-cache-dir opentelemetry-instrumentation-aiohttp-client && \
+  pip install --no-cache-dir opentelemetry-instrumentation-sqlalchemy && \
+  pip install --no-cache-dir opentelemetry-instrumentation-logging && \
+  pip install --no-cache-dir opentelemetry-exporter-jaeger && \
+  pip install --no-cache-dir jaeger-client
+
 # update permissions & change user to not run as root
 WORKDIR /app
 RUN chgrp -R 0 /app && chmod -R g=u /app

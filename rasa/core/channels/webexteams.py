@@ -103,6 +103,7 @@ class WebexTeamsInput(InputChannel):
             return response.json({"status": "ok"})
 
         @webexteams_webhook.route("/webhook", methods=["POST"])
+        @SlackInput.create_root_span()
         async def webhook(request: Request) -> HTTPResponse:
             """Respond to inbound webhook HTTP POST from Webex Teams."""
 

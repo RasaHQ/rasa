@@ -489,6 +489,7 @@ class SlackInput(InputChannel):
             return response.json({"status": "ok"})
 
         @slack_webhook.route("/webhook", methods=["GET", "POST"])
+        @SlackInput.create_root_span()
         async def webhook(request: Request) -> HTTPResponse:
             content_type = request.headers.get("content-type")
 

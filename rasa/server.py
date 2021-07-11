@@ -5,6 +5,7 @@ import multiprocessing
 import os
 import tempfile
 import traceback
+import json
 from collections import defaultdict
 from functools import reduce, wraps
 from http import HTTPStatus
@@ -70,6 +71,7 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 from rasa.nlu.test import run_evaluation, CVEvaluationResult
 from rasa.utils.endpoints import EndpointConfig
+from rasa.otel import Tracer
 
 if TYPE_CHECKING:
     from ssl import SSLContext
@@ -122,6 +124,23 @@ class ErrorResponse(Exception):
 def _docs(sub_url: Text) -> Text:
     """Create a url to a subpart of the docs."""
     return DOCS_BASE_URL + sub_url
+
+
+def create_root_span():
+    """Wraps a request handler ensuring that a root span is created
+    """
+
+    def decorator(f):
+        @wraps(f)
+        async def decorated(request, *args, **kwargs):
+            with Tracer.start_span(f"{request.method} {request.path}"):
+                resp = await f(request, *args, **kwargs)
+
+            return resp
+
+        return decorated
+
+    return decorator
 
 
 def ensure_loaded_agent(app: Sanic, require_core_is_ready=False):
@@ -505,6 +524,7 @@ def add_root_route(app: Sanic):
     """Add '/' route to return hello."""
 
     @app.get("/")
+    @create_root_span()
     async def hello(request: Request):
         """Check if the server is running and responds with the version."""
         return response.text("Hello from Rasa: " + rasa.__version__)
@@ -669,6 +689,7 @@ def create_app(
     add_root_route(app)
 
     @app.get("/version")
+    @create_root_span()
     async def version(request: Request):
         """Respond with the version number of the installed Rasa."""
 
@@ -680,6 +701,7 @@ def create_app(
         )
 
     @app.get("/status")
+    @create_root_span()
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def status(request: Request):
@@ -695,6 +717,7 @@ def create_app(
         )
 
     @app.get("/conversations/<conversation_id:path>/tracker")
+    @create_root_span()
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def retrieve_tracker(request: Request, conversation_id: Text):
@@ -898,6 +921,7 @@ def create_app(
         return response.json(response_body)
 
     @app.post("/conversations/<conversation_id:path>/trigger_intent")
+    @create_root_span()
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def trigger_intent(request: Request, conversation_id: Text) -> HTTPResponse:
@@ -906,52 +930,55 @@ def create_app(
         intent_to_trigger = request_params.get("name")
         entities = request_params.get("entities", [])
 
-        if not intent_to_trigger:
-            raise ErrorResponse(
-                HTTPStatus.BAD_REQUEST,
-                "BadRequest",
-                "Name of the intent not provided in request body.",
-                {"parameter": "name", "in": "body"},
-            )
-
-        verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
-
-        try:
-            async with app.agent.lock_store.lock(conversation_id):
-                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
-                    conversation_id
+        with Tracer.start_span(f"server.trigger_intent / {intent_to_trigger}",
+                               attributes={"intent": intent_to_trigger, "sender_id": conversation_id,
+                                           "entities": json.dumps(entities)}):
+            if not intent_to_trigger:
+                raise ErrorResponse(
+                    HTTPStatus.BAD_REQUEST,
+                    "BadRequest",
+                    "Name of the intent not provided in request body.",
+                    {"parameter": "name", "in": "body"},
                 )
-                output_channel = _get_output_channel(request, tracker)
-                if intent_to_trigger not in app.agent.domain.intents:
-                    raise ErrorResponse(
-                        HTTPStatus.NOT_FOUND,
-                        "NotFound",
-                        f"The intent {trigger_intent} does not exist in the domain.",
+
+            verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
+
+            try:
+                async with app.agent.lock_store.lock(conversation_id):
+                    tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
+                        conversation_id
                     )
-                await app.agent.trigger_intent(
-                    intent_name=intent_to_trigger,
-                    entities=entities,
-                    output_channel=output_channel,
-                    tracker=tracker,
+                    output_channel = _get_output_channel(request, tracker)
+                    if intent_to_trigger not in app.agent.domain.intents:
+                        raise ErrorResponse(
+                            HTTPStatus.NOT_FOUND,
+                            "NotFound",
+                            f"The intent {trigger_intent} does not exist in the domain.",
+                        )
+                    await app.agent.trigger_intent(
+                        intent_name=intent_to_trigger,
+                        entities=entities,
+                        output_channel=output_channel,
+                        tracker=tracker,
+                    )
+            except ErrorResponse:
+                raise
+            except Exception as e:
+                logger.debug(traceback.format_exc())
+                raise ErrorResponse(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    "ConversationError",
+                    f"An unexpected error occurred. Error: {e}",
                 )
-        except ErrorResponse:
-            raise
-        except Exception as e:
-            logger.debug(traceback.format_exc())
-            raise ErrorResponse(
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-                "ConversationError",
-                f"An unexpected error occurred. Error: {e}",
-            )
 
-        state = tracker.current_state(verbosity)
+            state = tracker.current_state(verbosity)
 
-        response_body = {"tracker": state}
+            response_body = {"tracker": state}
 
-        if isinstance(output_channel, CollectingOutputChannel):
-            response_body["messages"] = output_channel.messages
+            if isinstance(output_channel, CollectingOutputChannel):
+                response_body["messages"] = output_channel.messages
 
-        return response.json(response_body)
+            return response.json(response_body)
 
     @app.post("/conversations/<conversation_id:path>/predict")
     @requires_auth(app, auth_token)

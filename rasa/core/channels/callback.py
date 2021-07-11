@@ -68,6 +68,7 @@ class CallbackInput(RestInput):
             return response.json({"status": "ok"})
 
         @callback_webhook.route("/webhook", methods=["POST"])
+        @SlackInput.create_root_span()
         async def webhook(request: Request) -> HTTPResponse:
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)

@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 from typing import List, Text, Optional, Dict, Any, Set, TYPE_CHECKING
+from rasa.otel import Tracer
 
 import aiohttp
 
@@ -681,9 +682,17 @@ class RemoteAction(Action):
             logger.debug(
                 "Calling action endpoint to run action '{}'.".format(self.name())
             )
-            response = await self.action_endpoint.request(
-                json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT
-            )
+
+            with Tracer.start_span("action_endpoint.request / " + json_body["next_action"],
+                                   attributes={"sender_id": json_body["sender_id"],
+                                               "tracker": json.dumps(json_body["tracker"])}) as span:
+                headers = Tracer.inject()
+                span.set_attribute(key="headers", value=json.dumps(headers))
+
+                response = await self.action_endpoint.request(
+                    json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT, headers=headers
+                )
+                span.set_attribute(key="response", value=json.dumps(response))
 
             self._validate_action_result(response)
 
@@ -694,6 +703,7 @@ class RemoteAction(Action):
             )
 
             evts = events.deserialise_events(events_json)
+
             return bot_messages + evts
 
         except ClientResponseError as e:

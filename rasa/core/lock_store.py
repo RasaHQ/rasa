@@ -77,12 +77,16 @@ class LockStore:
         """
         logger.debug(f"Issuing ticket for conversation '{conversation_id}'.")
         try:
+            # bla()
             lock = self.get_or_create_lock(conversation_id)
             ticket = lock.issue_ticket(lock_lifetime)
             self.save_lock(lock)
 
             return ticket
         except Exception as e:
+            import traceback
+            traceback.print_exception(type(e), e, e.__traceback__)
+
             raise LockError(f"Error while acquiring lock. Error:\n{e}")
 
     @asynccontextmanager

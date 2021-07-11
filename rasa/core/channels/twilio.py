@@ -122,6 +122,7 @@ class TwilioInput(InputChannel):
             return response.json({"status": "ok"})
 
         @twilio_webhook.route("/webhook", methods=["POST"])
+        @SlackInput.create_root_span()
         async def message(request: Request) -> HTTPResponse:
             sender = request.form.get("From", None)
             text = request.form.get("Body", None)

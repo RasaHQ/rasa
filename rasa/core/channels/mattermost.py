@@ -229,6 +229,7 @@ class MattermostInput(InputChannel):
             return response.json({"status": "ok"})
 
         @mattermost_webhook.route("/webhook", methods=["POST"])
+        @SlackInput.create_root_span()
         async def webhook(request: Request) -> HTTPResponse:
             output = request.json
 

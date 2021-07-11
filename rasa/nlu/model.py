@@ -450,7 +450,8 @@ class Interpreter:
         message = Message(data=data, time=time)
 
         for component in self.pipeline:
-            component.process(message, **self.context)
+            with Tracer.start_span(f"nlu.parse.{component.name}.process"):
+                component.process(message, **self.context)
 
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=only_output_properties))
@@ -468,5 +469,6 @@ class Interpreter:
 
         for component in self.pipeline:
             if not isinstance(component, (EntityExtractor, IntentClassifier)):
-                component.process(message, **self.context)
+                with Tracer.start_span(f"nlu.featurize_message.{component.name}.process"):
+                    component.process(message, **self.context)
         return message

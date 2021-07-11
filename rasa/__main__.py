@@ -3,6 +3,7 @@ import logging
 import os
 import platform
 import sys
+import json
 
 from rasa_sdk import __version__ as rasa_sdk_version
 
@@ -28,6 +29,7 @@ from rasa.cli.utils import parse_last_positional_argument_as_model_path
 from rasa.shared.exceptions import RasaException
 from rasa.shared.utils.cli import print_error
 from rasa.utils.common import set_log_and_warnings_filters, set_log_level
+from rasa.otel import Tracer
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +111,7 @@ def main() -> None:
 
     try:
         if hasattr(cmdline_arguments, "func"):
+            Tracer.init(json.loads(os.getenv('TELEMETRY_CONFIG', "{}")))
             rasa.utils.io.configure_colored_logging(log_level)
             set_log_and_warnings_filters()
             rasa.telemetry.initialize_telemetry()

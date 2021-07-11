@@ -271,6 +271,7 @@ class HangoutsInput(InputChannel):
             return response.json({"status": "ok"})
 
         @custom_webhook.route("/webhook", methods=["POST"])
+        @SlackInput.create_root_span()
         async def receive(request: Request) -> HTTPResponse:
 
             if self.project_id:

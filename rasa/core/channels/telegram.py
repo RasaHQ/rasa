@@ -201,6 +201,7 @@ class TelegramInput(InputChannel):
                 return response.text("Invalid webhook")
 
         @telegram_webhook.route("/webhook", methods=["GET", "POST"])
+        @SlackInput.create_root_span()
         async def message(request: Request) -> Any:
             if request.method == "POST":
 

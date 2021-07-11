@@ -150,6 +150,7 @@ class RocketChatInput(InputChannel):
             return response.json({"status": "ok"})
 
         @rocketchat_webhook.route("/webhook", methods=["GET", "POST"])
+        @SlackInput.create_root_span()
         async def webhook(request: Request) -> HTTPResponse:
             output = request.json
             metadata = self.get_metadata(request)

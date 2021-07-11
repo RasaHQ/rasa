@@ -214,6 +214,7 @@ class BotFrameworkInput(InputChannel):
             return response.json({"status": "ok"})
 
         @botframework_webhook.route("/webhook", methods=["POST"])
+        @SlackInput.create_root_span()
         async def webhook(request: Request) -> HTTPResponse:
             postdata = request.json
             metadata = self.get_metadata(request)

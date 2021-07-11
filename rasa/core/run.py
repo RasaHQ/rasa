@@ -26,6 +26,7 @@ from rasa.core.utils import AvailableEndpoints
 import rasa.shared.utils.io
 from sanic import Sanic
 from asyncio import AbstractEventLoop
+from rasa.otel import Tracer
 
 logger = logging.getLogger()  # get the root logger
 

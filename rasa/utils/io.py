@@ -32,7 +32,7 @@ def configure_colored_logging(loglevel: Text) -> None:
     coloredlogs.install(
         level=loglevel,
         use_chroot=False,
-        fmt="%(asctime)s %(levelname)-8s %(name)s  - %(message)s",
+        fmt="%(asctime)s.%(msecs)03d %(levelname)-8s %(otelTraceID)s %(otelSpanID)s %(name)s - %(message)s",
         level_styles=level_styles,
         field_styles=field_styles,
     )

@@ -14,10 +14,12 @@ from typing import (
     Awaitable,
     NoReturn,
 )
+from functools import reduce, wraps
 
 from rasa.cli import utils as cli_utils
 from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
 from rasa.shared.exceptions import RasaException
+from rasa.otel import Tracer
 
 try:
     from urlparse import urljoin
@@ -82,13 +84,17 @@ def register(
     input_channels: List["InputChannel"], app: Sanic, route: Optional[Text]
 ) -> None:
     async def handler(*args, **kwargs):
-        await app.agent.handle_message(*args, **kwargs)
+        with Tracer.start_span(f"channel.{args[0].input_channel}.handle_message",
+                                  attributes={"channel": args[0].input_channel, "sender_id": args[0].sender_id,
+                                              "message_id": args[0].message_id}):
+            await app.agent.handle_message(*args, **kwargs)
 
     for channel in input_channels:
         if route:
             p = urljoin(route, channel.url_prefix())
         else:
             p = None
+
         app.blueprint(channel.blueprint(handler), url_prefix=p)
 
     app.input_channels = input_channels
@@ -155,6 +161,22 @@ class InputChannel:
             Metadata which was extracted from the request.
         """
         pass
+
+    def create_root_span():
+        """Wraps a request handler ensuring that a root span is created
+        """
+
+        def decorator(f):
+            @wraps(f)
+            async def decorated(request, *args, **kwargs):
+                with Tracer.start_span(f"{request.method} {request.path}"):
+                    resp = await f(request, *args, **kwargs)
+
+                return resp
+
+            return decorated
+
+        return decorator
 
 
 class OutputChannel:

@@ -372,6 +372,7 @@ class FacebookInput(InputChannel):
                 return response.text("failure, invalid token")
 
         @fb_webhook.route("/webhook", methods=["POST"])
+        @SlackInput.create_root_span()
         async def webhook(request: Request) -> HTTPResponse:
             signature = request.headers.get("X-Hub-Signature") or ""
             if not self.validate_hub_signature(self.fb_secret, request.body, signature):

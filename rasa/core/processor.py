@@ -1,9 +1,11 @@
 import logging
 import os
 import time
+import json
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple, Union
 
+from rasa.otel import Tracer
 import rasa.shared.utils.io
 import rasa.core.actions.action
 from rasa.core import jobs
@@ -88,25 +90,31 @@ class MessageProcessor:
         """Handle a single message with this processor."""
 
         # preprocess message if necessary
-        tracker = await self.log_message(message, should_save_tracker=False)
+        with Tracer.start_span("processor.log_message"):
+            tracker = await self.log_message(message, should_save_tracker=False)
 
         if not self.policy_ensemble or not self.domain:
             # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
-            rasa.shared.utils.io.raise_warning(
-                "No policy ensemble or domain set. Skipping action prediction "
-                "and execution.",
-                docs=DOCS_URL_POLICIES,
-            )
-            return None
+            with Tracer.start_span("processor._save_tracker"):
+                self._save_tracker(tracker)
+                rasa.shared.utils.io.raise_warning(
+                    "No policy ensemble or domain set. Skipping action prediction "
+                    "and execution.",
+                    docs=DOCS_URL_POLICIES,
+                )
+                return None
 
-        await self._predict_and_execute_next_action(message.output_channel, tracker)
+        with Tracer.start_span("processor._predict_and_execute_next_action",
+                                  attributes={"intent_name": tracker.latest_message.intent_name}):
+            await self._predict_and_execute_next_action(message.output_channel, tracker)
 
         # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        with Tracer.start_span("processor._save_tracker"):
+            self._save_tracker(tracker)
 
         if isinstance(message.output_channel, CollectingOutputChannel):
-            return message.output_channel.messages
+            with Tracer.start_span("processor.output_channel.messages"):
+                return message.output_channel.messages
 
         return None
 
@@ -550,7 +558,8 @@ class MessageProcessor:
         """
         # preprocess message if necessary
         if self.message_preprocessor is not None:
-            text = self.message_preprocessor(message.text)
+            with Tracer.start_span("processor.message_preprocessor"):
+                text = self.message_preprocessor(message.text)
         else:
             text = message.text
 
@@ -558,13 +567,15 @@ class MessageProcessor:
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
         if text.startswith(INTENT_MESSAGE_PREFIX):
-            parse_data = await RegexInterpreter().parse(
-                text, message.message_id, tracker
-            )
+            with Tracer.start_span("processor.RegexInterpreter.parse"):
+                parse_data = await RegexInterpreter().parse(
+                    text, message.message_id, tracker
+                )
         else:
-            parse_data = await self.interpreter.parse(
-                text, message.message_id, tracker, metadata=message.metadata
-            )
+            with Tracer.start_span("processor.interpreter.parse"):
+                parse_data = await self.interpreter.parse(
+                    text, message.message_id, tracker, metadata=message.metadata
+                )
 
         logger.debug(
             "Received user message '{}' with intent '{}' "
@@ -573,7 +584,8 @@ class MessageProcessor:
             )
         )
 
-        self._check_for_unseen_features(parse_data)
+        with Tracer.start_span("processor._check_for_unseen_features"):
+            self._check_for_unseen_features(parse_data)
 
         return parse_data
 
@@ -584,22 +596,29 @@ class MessageProcessor:
         if message.parse_data:
             parse_data = message.parse_data
         else:
-            parse_data = await self.parse_message(message, tracker)
+            with Tracer.start_span("processor.parse_message"):
+                parse_data = await self.parse_message(message, tracker)
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log
-        tracker.update(
-            UserUttered(
-                message.text,
-                parse_data["intent"],
-                parse_data["entities"],
-                parse_data,
-                input_channel=message.input_channel,
-                message_id=message.message_id,
-                metadata=message.metadata,
-            ),
-            self.domain,
-        )
+        with Tracer.start_span("tracker.update / UserUttered", attributes={"text": message.text,
+                                                                           "intent": parse_data["intent"],
+                                                                           "entities": json.dumps(parse_data["entities"]),
+                                                                           "parse_data": json.dumps(parse_data),
+                                                                           "message_id": message.message_id,
+                                                                           "metadata": json.dumps(message.metadata)}):
+            tracker.update(
+                UserUttered(
+                    message.text,
+                    parse_data["intent"],
+                    parse_data["entities"],
+                    parse_data,
+                    input_channel=message.input_channel,
+                    message_id=message.message_id,
+                    metadata=message.metadata,
+                ),
+                self.domain,
+            )
 
         if parse_data["entities"]:
             self._log_slots(tracker)
@@ -647,7 +666,8 @@ class MessageProcessor:
             and num_predicted_actions < self.max_number_of_predictions
         ):
             # this actually just calls the policy's method by the same name
-            action, prediction = self.predict_next_action(tracker)
+            with Tracer.start_span(f"processor.predict_next_action / {num_predicted_actions}", attributes={"num_predicted_actions": num_predicted_actions}):
+                action, prediction = self.predict_next_action(tracker)
 
             should_predict_another_action = await self._run_action(
                 action, tracker, output_channel, self.nlg, prediction
@@ -689,9 +709,12 @@ class MessageProcessor:
         """Send bot messages, schedule and cancel reminders that are logged
         in the events array."""
 
-        await self._send_bot_messages(events, tracker, output_channel)
-        await self._schedule_reminders(events, tracker, output_channel)
-        await self._cancel_reminders(events, tracker)
+        with Tracer.start_span(f"processor._send_bot_messages"):
+            await self._send_bot_messages(events, tracker, output_channel)
+        with Tracer.start_span(f"processor._schedule_reminders"):
+            await self._schedule_reminders(events, tracker, output_channel)
+        with Tracer.start_span(f"processor._cancel_reminders"):
+            await self._cancel_reminders(events, tracker)
 
     @staticmethod
     async def _send_bot_messages(
@@ -705,7 +728,9 @@ class MessageProcessor:
             if not isinstance(e, BotUttered):
                 continue
 
-            await output_channel.send_response(tracker.sender_id, e.message())
+            with Tracer.start_span(f"channel.{output_channel.__class__.name()}.send_response",
+                                   attributes={"message": json.dumps(e.message())}):
+                await output_channel.send_response(tracker.sender_id, e.message())
 
     async def _schedule_reminders(
         self,
@@ -762,16 +787,19 @@ class MessageProcessor:
             # case of a rejection.
             temporary_tracker = tracker.copy()
             temporary_tracker.update_with_events(prediction.events, self.domain)
-            events = await action.run(
-                output_channel, nlg, temporary_tracker, self.domain
-            )
-        except rasa.core.actions.action.ActionExecutionRejection:
-            events = [
-                ActionExecutionRejected(
-                    action.name(), prediction.policy_name, prediction.max_confidence
+            with Tracer.start_span(f"action.{action.__class__.__name__}.run_action",
+                                   attributes={"action": action.__class__.__name__}):
+                events = await action.run(
+                    output_channel, nlg, temporary_tracker, self.domain
                 )
-            ]
-            tracker.update(events[0])
+        except rasa.core.actions.action.ActionExecutionRejection:
+            with Tracer.start_span(f"action.{action.__class__.__name__}.ActionExecutionRejected"):
+                events = [
+                    ActionExecutionRejected(
+                        action.name(), prediction.policy_name, prediction.max_confidence
+                    )
+                ]
+                tracker.update(events[0])
             return self.should_predict_another_action(action.name())
         except Exception:
             logger.exception(
@@ -788,7 +816,8 @@ class MessageProcessor:
         ):
             self._log_slots(tracker)
 
-        await self.execute_side_effects(events, tracker, output_channel)
+        with Tracer.start_span(f"action.{action.__class__.__name__}.execute_side_effects"):
+            await self.execute_side_effects(events, tracker, output_channel)
 
         return self.should_predict_another_action(action.name())
 
