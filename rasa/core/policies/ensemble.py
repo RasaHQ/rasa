@@ -741,18 +741,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 tracker, domain, RegexInterpreter()
             )
 
-        if isinstance(prediction, list):
-            rasa.shared.utils.io.raise_deprecation_warning(
-                f"The function `predict_action_probabilities` of "
-                f"the `{Policy.__name__}` interface was changed to return "
-                f"a `{PolicyPrediction.__name__}` object. Please make sure to "
-                f"adapt your custom `{Policy.__name__}` implementation. Support for "
-                f"returning a list of floats will be removed in Rasa Open Source 3.0.0"
-            )
-            prediction = PolicyPrediction(
-                prediction, policy.__class__.__name__, policy_priority=policy.priority
-            )
-
         return prediction
 
     def _fallback_after_listen(
