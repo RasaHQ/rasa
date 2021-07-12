@@ -4,7 +4,7 @@ usage: rasa test [-h] [-v] [-vv] [--quiet] [-m MODEL] [-s STORIES]
                  [--evaluate-model-directory] [-u NLU]
                  [-c CONFIG [CONFIG ...]] [--cross-validation] [-f FOLDS]
                  [-r RUNS] [-p PERCENTAGES [PERCENTAGES ...]] [--no-plot]
-                 [--successes] [--no-errors] [--out OUT]
+                 [--successes] [--no-errors] [--no-warnings] [--out OUT]
                  {core,nlu} ...
 
 positional arguments:
@@ -22,6 +22,8 @@ optional arguments:
   --successes           If set successful predictions will be written to a
                         file. (default: False)
   --no-errors           If set incorrect predictions will NOT be written to a
+                        file. (default: False)
+  --no-warnings         If set prediction warnings will NOT be written to a
                         file. (default: False)
   --out OUT             Output path for any files created during the
                         evaluation. (default: results)

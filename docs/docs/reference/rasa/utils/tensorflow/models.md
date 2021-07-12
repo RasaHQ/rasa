@@ -132,7 +132,7 @@ Predicts the output for the given batch.
 #### run\_inference
 
 ```python
- | run_inference(model_data: RasaModelData, batch_size: Union[int, List[int]] = 1) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
+ | run_inference(model_data: RasaModelData, batch_size: Union[int, List[int]] = 1, output_keys_expected: Optional[List[Text]] = None) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
 ```
 
 Implements bulk inferencing through the model.
@@ -141,6 +141,9 @@ Implements bulk inferencing through the model.
 
 - `model_data` - Input data to be fed to the model.
 - `batch_size` - Size of batches that the generator should create.
+- `output_keys_expected` - Keys which are expected in the output.
+  The output should be filtered to have only these keys before
+  merging it with the output across all batches.
   
 
 **Returns**:
@@ -250,6 +253,19 @@ New and old sparse feature sizes could look like this:
 - `new_sparse_feature_sizes` - sizes of current sparse features.
 - `old_sparse_feature_sizes` - sizes of sparse features the model was
   previously trained on.
+
+#### dot\_product\_loss\_layer
+
+```python
+ | @property
+ | dot_product_loss_layer() -> tf.keras.layers.Layer
+```
+
+Returns the dot-product loss layer to use.
+
+**Returns**:
+
+  The loss layer that is used by `_prepare_dot_product_loss`.
 
 #### batch\_loss
 

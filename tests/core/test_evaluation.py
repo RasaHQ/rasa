@@ -12,11 +12,14 @@ from rasa.core.test import (
     _create_data_generator,
     _collect_story_predictions,
     test as evaluate_stories,
-    FAILED_STORIES_FILE,
+    _clean_entity_results,
+)
+from rasa.core.constants import (
     CONFUSION_MATRIX_STORIES_FILE,
     REPORT_STORIES_FILE,
+    FAILED_STORIES_FILE,
     SUCCESSFUL_STORIES_FILE,
-    _clean_entity_results,
+    STORIES_WITH_WARNINGS_FILE,
 )
 from rasa.core.policies.memoization import MemoizationPolicy
 
@@ -31,6 +34,7 @@ async def test_evaluation_file_creation(
 ):
     failed_stories_path = str(tmpdir / FAILED_STORIES_FILE)
     success_stories_path = str(tmpdir / SUCCESSFUL_STORIES_FILE)
+    stories_with_warnings_path = str(tmpdir / STORIES_WITH_WARNINGS_FILE)
     report_path = str(tmpdir / REPORT_STORIES_FILE)
     confusion_matrix_path = str(tmpdir / CONFUSION_MATRIX_STORIES_FILE)
 
@@ -42,10 +46,12 @@ async def test_evaluation_file_creation(
         e2e=False,
         errors=True,
         successes=True,
+        warnings=True,
     )
 
     assert os.path.isfile(failed_stories_path)
     assert os.path.isfile(success_stories_path)
+    assert os.path.isfile(stories_with_warnings_path)
     assert os.path.isfile(report_path)
     assert os.path.isfile(confusion_matrix_path)
 
@@ -402,6 +408,7 @@ stories:
                     "accuracy": 2.0 / 3.0,
                     "total": 3,
                     "correct": 2,
+                    "with_warnings": 0,
                 },
             },
         ],

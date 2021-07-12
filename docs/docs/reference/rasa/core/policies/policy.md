@@ -170,7 +170,7 @@ Stores information about the prediction of a `Policy`.
 #### \_\_init\_\_
 
 ```python
- | __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False, is_no_user_prediction: bool = False, diagnostic_data: Optional[Dict[Text, Any]] = None, hide_rule_turn: bool = False) -> None
+ | __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False, is_no_user_prediction: bool = False, diagnostic_data: Optional[Dict[Text, Any]] = None, hide_rule_turn: bool = False, action_metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates a `PolicyPrediction`.
@@ -198,12 +198,14 @@ Creates a `PolicyPrediction`.
   fine-tuning purposes.
 - `hide_rule_turn` - `True` if the prediction was made by the rules which
   do not appear in the stories
+- `action_metadata` - Specifies additional metadata that can be passed
+  by policies.
 
 #### for\_action\_name
 
 ```python
  | @staticmethod
- | for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0) -> "PolicyPrediction"
+ | for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0, action_metadata: Optional[Dict[Text, Any]] = None) -> "PolicyPrediction"
 ```
 
 Create a prediction for a given action.
@@ -214,6 +216,7 @@ Create a prediction for a given action.
 - `action_name` - The action which should be predicted.
 - `policy_name` - The policy which did the prediction.
 - `confidence` - The prediction confidence.
+- `action_metadata` - Additional metadata to be attached with the prediction.
   
 
 **Returns**:

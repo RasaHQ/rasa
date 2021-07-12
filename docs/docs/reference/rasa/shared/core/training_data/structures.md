@@ -56,6 +56,24 @@ NOTE: Checkpoints are not only limited to those manually written
 in the story file, but are also implicitly created at points where
 multiple intents are separated in one line by chaining them with &quot;OR&quot;s.
 
+#### is\_action\_unlikely\_intent
+
+```python
+ | @staticmethod
+ | is_action_unlikely_intent(event: Event) -> bool
+```
+
+Checks if the executed action is a `action_unlikely_intent`.
+
+#### is\_action\_session\_start
+
+```python
+ | @staticmethod
+ | is_action_session_start(event: Event) -> bool
+```
+
+Checks if the executed action is a `action_session_start`.
+
 #### explicit\_events
 
 ```python

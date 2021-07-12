@@ -5,6 +5,7 @@ import uuid
 from collections import deque
 from pathlib import Path
 from typing import Any, Dict, List, Text, Tuple, Callable
+from tests.conftest import AsyncMock
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
@@ -16,8 +17,12 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.actions import action
 from rasa.core.training import interactive
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DEFAULT_SENDER_ID,
+    DOCS_URL_POLICIES,
+)
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -731,6 +736,86 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
     m = Mock(return_value=None)
     interactive._retry_on_error(m, "export_path", 1, a=2)
     m.assert_called_once_with("export_path", 1, a=2)
+
+
+@pytest.mark.parametrize(
+    "action_name, question, is_marked_as_correct, sent_action_name",
+    [
+        (
+            ACTION_UNLIKELY_INTENT_NAME,
+            f"The bot wants to run 'action_unlikely_intent' "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
+            f"Check out UnexpecTEDIntentPolicy "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
+            f"to learn more. Is that correct?",
+            True,
+            ACTION_UNLIKELY_INTENT_NAME,
+        ),
+        (
+            ACTION_UNLIKELY_INTENT_NAME,
+            f"The bot wants to run 'action_unlikely_intent' "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
+            f"Check out UnexpecTEDIntentPolicy "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
+            f"to learn more. Is that correct?",
+            False,
+            ACTION_UNLIKELY_INTENT_NAME,
+        ),
+        (
+            "action_test",
+            "The bot wants to run 'action_test', correct?",
+            True,
+            "action_test",
+        ),
+        (
+            "action_test",
+            "The bot wants to run 'action_test', correct?",
+            False,
+            "action_another_one",
+        ),
+    ],
+)
+async def test_correct_question_for_action_name_was_asked(
+    monkeypatch: MonkeyPatch,
+    mock_endpoint: EndpointConfig,
+    action_name: Text,
+    question: Text,
+    is_marked_as_correct: bool,
+    sent_action_name: Text,
+):
+    conversation_id = "conversation_id"
+    policy = "policy"
+    tracker = DialogueStateTracker.from_events("some_sender", [])
+
+    monkeypatch.setattr(
+        interactive,
+        "retrieve_tracker",
+        AsyncMock(return_value=tracker.current_state()),
+    )
+    monkeypatch.setattr(
+        interactive, "_ask_questions", AsyncMock(return_value=is_marked_as_correct)
+    )
+    monkeypatch.setattr(
+        interactive,
+        "_request_action_from_user",
+        AsyncMock(return_value=("action_another_one", False,)),
+    )
+
+    mocked_send_action = AsyncMock()
+    monkeypatch.setattr(interactive, "send_action", mocked_send_action)
+
+    mocked_confirm = Mock(return_value=None)
+    monkeypatch.setattr(interactive.questionary, "confirm", mocked_confirm)
+
+    # validate the action and make sure that the correct question was asked
+    await interactive._validate_action(
+        action_name, policy, 1.0, [], mock_endpoint, conversation_id
+    )
+    mocked_confirm.assert_called_once_with(question)
+    args, kwargs = mocked_send_action.call_args_list[-1]
+    assert args[2] == sent_action_name
 
 
 def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):

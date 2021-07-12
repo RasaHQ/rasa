@@ -1153,7 +1153,7 @@ Returns unique hash for event.
  | __eq__(other: Any) -> bool
 ```
 
-Checks if object is equal to another.
+Compares object with other object.
 
 #### as\_story\_string
 
