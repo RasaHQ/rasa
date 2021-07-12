@@ -972,7 +972,7 @@ class TEDPolicy(Policy):
         should_finetune: bool = False,
         epoch_override: int = defaults[EPOCHS],
         **kwargs: Any,
-    ) -> Optional["TEDPolicy"]:
+    ) -> "TEDPolicy":
         """Loads a policy from the storage.
 
         Args:
@@ -986,7 +986,7 @@ class TEDPolicy(Policy):
             Loaded policy
 
         Raises:
-            PolicyModelNotFound if the model is not found in the supplied `path`.
+            `PolicyModelNotFound` if the model is not found in the supplied `path`.
         """
         model_path = Path(path)
 
