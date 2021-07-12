@@ -781,7 +781,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Prepare data for training and create a RasaModelData object.
 
         Args:
-          messages: the list of messages to be turned into a RasaModelData
+          messages: The messages to be turned into a RasaModelData
           training: whether we're in training mode and should add label data
           label_id_dict: a mappig from labels (Text) to label ids (ints) that is
             only required for label data creation (i.e. if `training` is set to `True`)
