@@ -991,10 +991,11 @@ class TEDPolicy(Policy):
         model_path = Path(path)
 
         if not model_path.exists():
-            raise PolicyModelNotFound(
+            logger.error(
                 f"Failed to load {cls.__class__.__name__} model. Path "
                 f"'{model_path.absolute()}' doesn't exist."
             )
+            return cls()
 
         featurizer = TrackerFeaturizer.load(path)
 
