@@ -24,7 +24,7 @@ from rasa.core.actions.action import (
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.shared.constants import UTTER_PREFIX
+from rasa.shared.constants import UTTER_PREFIX, REQUIRED_SLOTS_KEY
 from rasa.shared.core.domain import (
     ActionNotFoundException,
     SessionConfig,
@@ -1046,15 +1046,15 @@ async def test_action_default_ask_rephrase(
 @pytest.mark.parametrize(
     "slot_mapping",
     [
-        """
-    my_slot:
-    - type:from_text
-    """,
-        "",
+        """my_slot:
+          - type: from_text
+        """,
+        "{}",
     ],
 )
 def test_get_form_action(slot_mapping: Text):
     form_action_name = "my_business_logic"
+
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
@@ -1062,31 +1062,14 @@ def test_get_form_action(slot_mapping: Text):
     - my_action
     forms:
       {form_action_name}:
-        {slot_mapping}
+        {REQUIRED_SLOTS_KEY}:
+          {slot_mapping}
     """
         )
     )
 
     actual = action.action_for_name_or_text(form_action_name, domain, None)
     assert isinstance(actual, FormAction)
-
-
-def test_get_form_action_with_rasa_open_source_1_forms():
-    form_action_name = "my_business_logic"
-    with pytest.warns(FutureWarning):
-        domain = Domain.from_yaml(
-            textwrap.dedent(
-                f"""
-        actions:
-        - my_action
-        forms:
-        - {form_action_name}
-        """
-            )
-        )
-
-    actual = action.action_for_name_or_text(form_action_name, domain, None)
-    assert isinstance(actual, RemoteAction)
 
 
 def test_overridden_form_action():
@@ -1098,7 +1081,7 @@ def test_overridden_form_action():
     - my_action
     - {form_action_name}
     forms:
-        {form_action_name}:
+        {form_action_name}: {{}}
     """
         )
     )

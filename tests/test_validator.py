@@ -349,10 +349,11 @@ async def test_verify_form_slots_invalid_domain(tmp_path: Path):
         version: "2.0"
         forms:
           name_form:
-             first_name:
-             - type: from_text
-             last_name:
-             - type: from_text
+            required_slots:
+              first_name:
+              - type: from_text
+              last_name:
+              - type: from_text
         slots:
              first_name:
                 type: text
@@ -463,10 +464,11 @@ async def test_valid_form_slots_in_domain(tmp_path: Path):
         version: "2.0"
         forms:
           name_form:
-             first_name:
-             - type: from_text
-             last_name:
-             - type: from_text
+            required_slots:
+              first_name:
+              - type: from_text
+              last_name:
+              - type: from_text
         slots:
              first_name:
                 type: text
