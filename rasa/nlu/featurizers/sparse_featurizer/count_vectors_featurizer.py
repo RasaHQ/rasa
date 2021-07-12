@@ -165,19 +165,12 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 f"`additional_vocabulary_size` in future runs."
             )
 
-    def _check_attribute_vocabulary(self, attribute: Text) -> bool:
-        """Checks if trained vocabulary exists in attribute's count vectorizer."""
-        try:
-            return hasattr(self.vectorizers[attribute], "vocabulary_")
-        except (AttributeError, KeyError):
-            return False
-
     def _get_attribute_vocabulary(self, attribute: Text) -> Optional[Dict[Text, int]]:
         """Get trained vocabulary from attribute's count vectorizer"""
 
         try:
             return self.vectorizers[attribute].vocabulary_
-        except (AttributeError, TypeError):
+        except (AttributeError, TypeError, KeyError):
             return None
 
     def _check_analyzer(self) -> None:
@@ -596,7 +589,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     ]:
         """Return features of a particular attribute for complete data"""
 
-        if self._check_attribute_vocabulary(attribute):
+        if self._get_attribute_vocabulary(attribute) is not None:
             # count vectorizer was trained
             return self._create_features(attribute, all_tokens)
         else:
