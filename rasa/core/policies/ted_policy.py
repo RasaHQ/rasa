@@ -112,6 +112,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils import io as shared_io_utils
+from rasa.core.exceptions import PolicyModelNotFound
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -983,15 +984,17 @@ class TEDPolicy(Policy):
 
         Returns:
             Loaded policy
+
+        Raises:
+            PolicyModelNotFound if the model is not found in the supplied `path`.
         """
         model_path = Path(path)
 
         if not model_path.exists():
-            logger.error(
+            raise PolicyModelNotFound(
                 f"Failed to load {cls.__class__.__name__} model. Path "
                 f"'{model_path.absolute()}' doesn't exist."
             )
-            return
 
         featurizer = TrackerFeaturizer.load(path)
 
