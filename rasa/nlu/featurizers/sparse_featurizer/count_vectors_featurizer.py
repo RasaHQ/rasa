@@ -172,13 +172,13 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         except (AttributeError, KeyError):
             return False
 
-    def _get_attribute_vocabulary(self, attribute: Text) -> Dict[Text, int]:
-        """Get trained vocabulary from attribute's count vectorizer."""
-        return self.vectorizers[attribute].vocabulary_
+    def _get_attribute_vocabulary(self, attribute: Text) -> Optional[Dict[Text, int]]:
+        """Get trained vocabulary from attribute's count vectorizer"""
 
-    def _get_attribute_vocabulary_tokens(self, attribute: Text) -> List[Text]:
-        """Get all keys of vocabulary of an attribute."""
-        return self.vectorizers[attribute].vocabulary_.keys()
+        try:
+            return self.vectorizers[attribute].vocabulary_
+        except (AttributeError, TypeError):
+            return None
 
     def _check_analyzer(self) -> None:
         if self.analyzer != "word":
@@ -269,15 +269,12 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         """Replace OOV words with OOV token"""
 
         if self.OOV_token and self.analyzer == "word":
-            vocabulary_exists = self._check_attribute_vocabulary(attribute)
-            if vocabulary_exists and self.OOV_token in self._get_attribute_vocabulary(
-                attribute
-            ):
+            attribute_vocab = self._get_attribute_vocabulary(attribute)
+            if attribute_vocab is not None and self.OOV_token in attribute_vocab:
                 # CountVectorizer is trained, process for prediction
+                attribute_vocabulary_tokens = list(attribute_vocab.keys())
                 tokens = [
-                    t
-                    if t in self._get_attribute_vocabulary_tokens(attribute)
-                    else self.OOV_token
+                    t if t in attribute_vocabulary_tokens else self.OOV_token
                     for t in tokens
                 ]
             elif self.OOV_words:
@@ -593,6 +590,19 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         return sequence_features, sentence_features
 
+    def _get_featurized_attribute(
+        self, attribute: Text, all_tokens: List[List[Text]]
+    ) -> Tuple[
+        List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
+    ]:
+        """Return features of a particular attribute for complete data"""
+
+        if self._check_attribute_vocabulary(attribute):
+            # count vectorizer was trained
+            return self._create_features(attribute, all_tokens)
+        else:
+            return [], []
+
     def _set_attribute_features(
         self,
         attribute: Text,
@@ -658,7 +668,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         # transform for all attributes
         for attribute in self._attributes:
-            sequence_features, sentence_features = self._create_features(
+            sequence_features, sentence_features = self._get_featurized_attribute(
                 attribute, processed_attribute_tokens[attribute]
             )
 
@@ -696,11 +706,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             )
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
-        """Gets vocabulary for all attributes."""
-        return {
-            attribute: self.vectorizers[attribute].vocabulary_
-            for attribute in self._attributes
-        }
+        """Get vocabulary for all attributes"""
+
+        attribute_vocabularies = {}
+        for attribute in self._attributes:
+            attribute_vocabularies[attribute] = self._get_attribute_vocabulary(
+                attribute
+            )
+        return attribute_vocabularies
 
     @staticmethod
     def _is_any_model_trained(
