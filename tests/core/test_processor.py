@@ -903,64 +903,6 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
     )
 
 
-async def test_action_unlikely_intent_metadata(default_processor: MessageProcessor):
-    tracker = DialogueStateTracker.from_events(
-        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME),],
-    )
-    domain = Domain.empty()
-    metadata = {"key1": 1, "key2": "2"}
-
-    await default_processor._run_action(
-        ActionUnlikelyIntent(),
-        tracker,
-        CollectingOutputChannel(),
-        TemplatedNaturalLanguageGenerator(domain.responses),
-        PolicyPrediction([], "some policy", action_metadata=metadata),
-    )
-
-    applied_events = tracker.applied_events()
-    assert applied_events == [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME, metadata=metadata),
-    ]
-    assert applied_events[1].metadata == metadata
-
-
-@pytest.mark.parametrize(
-    "predict_function",
-    [
-        lambda tracker, domain, _: PolicyPrediction([1, 0, 2, 3], "some-policy"),
-        lambda tracker, domain, _=True: PolicyPrediction([1, 0], "some-policy"),
-    ],
-)
-def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
-    predict_function: Callable,
-):
-    policy = TEDPolicy()
-
-    policy.predict_action_probabilities = predict_function
-
-    ensemble = SimplePolicyEnsemble(policies=[policy])
-    interpreter = Mock()
-    domain = Domain.empty()
-
-    processor = MessageProcessor(
-        interpreter,
-        ensemble,
-        domain,
-        InMemoryTrackerStore(domain),
-        InMemoryLockStore(),
-        Mock(),
-    )
-
-    with pytest.warns(DeprecationWarning):
-        processor._get_next_action_probabilities(
-            DialogueStateTracker.from_events(
-                "lala", [ActionExecuted(ACTION_LISTEN_NAME)]
-            )
-        )
-
-
 async def test_restart_triggers_session_start(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
