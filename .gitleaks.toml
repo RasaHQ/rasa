@@ -122,6 +122,3 @@ title = "gitleaks config"
     # that users need to configure a private key and include "..." in it
     # so that gitleaks allows it
     '''-----BEGIN ((EC|PGP|DSA|RSA|OPENSSH) )?PRIVATE KEY( BLOCK)?-----.+\.\.\..+''']
-[whitelist]
- 	description = "Fake credential file"
- 	file = 'rasa/data/test_moodbot/credentials.yml'
