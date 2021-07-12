@@ -551,6 +551,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             attribute: the only attribute which will be considered
             type: if not None, the other type will be ignored
             level: if not None, the other level will be ignored
+            featurizers: the featurizers to be considered
         Returns:
             Sentence level features and sequence level features. Each feature contains
             FeatureArrays with sparse features first.
@@ -1327,6 +1328,14 @@ class DIET(TransformerRasaModel):
         entity_tag_specs: Optional[List[EntityTagSpec]],
         config: Dict[Text, Any],
     ) -> None:
+        """Instantiate DIET.
+
+        Args:
+          data_signature: the model's signature
+          label_data: label data
+          entity_tag_specs: specification of entity specs
+          config: configuration
+        """
         # create entity tag spec before calling super otherwise building the model
         # will fail
         super().__init__("DIET", config, data_signature, label_data)
