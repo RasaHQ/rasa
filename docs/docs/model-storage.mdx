@@ -89,7 +89,7 @@ curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server
 The response of your server to this `GET` request should be one of these:
 - a status code of `200`, a zipped Rasa Model and set the `ETag` header in
   the response to the hash of the model.
-- a status code of `304` and an empty response if the `If-None-Match`
+- a status code of `204` and an empty response if the `If-None-Match`
   header of the request matches the model you want your server to return.
 
 Rasa Open Source uses the `If-None-Match` and `ETag` headers for caching. Setting
