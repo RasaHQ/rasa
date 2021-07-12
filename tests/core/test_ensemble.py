@@ -7,7 +7,6 @@ import logging
 import copy
 import numpy as np
 
-from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 

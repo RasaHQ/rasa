@@ -8,7 +8,7 @@ import json
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
-from typing import Optional, Text, List, Callable, Type, Any, Tuple
+from typing import Optional, Text, List, Callable, Type, Any
 from unittest.mock import patch, Mock
 
 from rasa.core.policies.rule_policy import RulePolicy
@@ -18,7 +18,6 @@ from rasa.core.actions.action import (
     ActionExecutionRejection,
     ActionUnlikelyIntent,
 )
-import rasa.core.policies.policy
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 import tests.utilities
