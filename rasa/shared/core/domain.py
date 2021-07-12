@@ -758,21 +758,6 @@ class Domain:
         return self.user_actions + self.form_names
 
     @rasa.shared.utils.common.lazy_property
-    def action_names(self) -> List[Text]:
-        """Returns action names or texts."""
-        # Raise `DeprecationWarning` instead of `FutureWarning` as we only want to
-        # notify developers about the deprecation (e.g. developers who are using the
-        # Python API or writing custom policies). End users can't change anything
-        # about this warning except making their developers change any custom code
-        # which calls this.
-        rasa.shared.utils.io.raise_warning(
-            f"{Domain.__name__}.{Domain.action_names.__name__} "
-            f"is deprecated and will be removed version 3.0.0.",
-            category=DeprecationWarning,
-        )
-        return self.action_names_or_texts
-
-    @rasa.shared.utils.common.lazy_property
     def num_actions(self) -> int:
         """Returns the number of available actions."""
         # noinspection PyTypeChecker
@@ -782,17 +767,6 @@ class Domain:
     def num_states(self) -> int:
         """Number of used input states for the action prediction."""
         return len(self.input_states)
-
-    @rasa.shared.utils.common.lazy_property
-    def retrieval_intent_templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Return only the responses which are defined for retrieval intents."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by "
-            "'response', call `retrieval_intent_responses` instead of "
-            "`retrieval_intent_templates`.",
-            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
-        )
-        return self.retrieval_intent_responses
 
     @rasa.shared.utils.common.lazy_property
     def retrieval_intent_responses(self) -> Dict[Text, List[Dict[Text, Any]]]:
@@ -805,35 +779,6 @@ class Domain:
                 self.responses.items(),
             )
         )
-
-    @rasa.shared.utils.common.lazy_property
-    def templates(self) -> Dict[Text, List[Dict[Text, Any]]]:
-        """Temporary property before templates become completely deprecated."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated and replaced by 'response'. "
-            "Instead of using the `templates` property, "
-            "please use the `responses` property instead.",
-            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
-        )
-        return self.responses
-
-    @staticmethod
-    def is_retrieval_intent_template(
-        response: Tuple[Text, List[Dict[Text, Any]]]
-    ) -> bool:
-        """Check if the response is for a retrieval intent.
-
-        These templates have a `/` symbol in their name. Use that to filter them from
-        the rest.
-        """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated "
-            "and replaced by 'response', "
-            "call `is_retrieval_intent_response` "
-            "instead of `is_retrieval_intent_template`.",
-            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
-        )
-        return rasa.shared.nlu.constants.RESPONSE_IDENTIFIER_DELIMITER in response[0]
 
     @staticmethod
     def is_retrieval_intent_response(
@@ -862,16 +807,6 @@ class Domain:
         for slot in [s for s in self.slots if isinstance(s, CategoricalSlot)]:
             slot.add_default_value()
 
-    def add_categorical_slot_default_value(self) -> None:
-        """See `_add_categorical_slot_default_value` for docstring."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.add_categorical_slot_default_value.__name__}' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. This method is now "
-            f"automatically called when the Domain is created which makes a manual "
-            f"call superfluous."
-        )
-        self._add_categorical_slot_default_value()
-
     def _add_requested_slot(self) -> None:
         """Add a slot called `requested_slot` to the list of slots.
 
@@ -887,16 +822,6 @@ class Domain:
                     influence_conversation=False,
                 )
             )
-
-    def add_requested_slot(self) -> None:
-        """See `_add_categorical_slot_default_value` for docstring."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.add_requested_slot.__name__}' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. This method is now "
-            f"automatically called when the Domain is created which makes a manual "
-            f"call superfluous."
-        )
-        self._add_requested_slot()
 
     def _add_knowledge_base_slots(self) -> None:
         """Add slots for the knowledge base action to slots.
@@ -925,16 +850,6 @@ class Domain:
             for slot in knowledge_base_slots:
                 if slot not in slot_names:
                     self.slots.append(TextSlot(slot, influence_conversation=False))
-
-    def add_knowledge_base_slots(self) -> None:
-        """See `_add_categorical_slot_default_value` for docstring."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.add_knowledge_base_slots.__name__}' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. This method is now "
-            f"automatically called when the Domain is created which makes a manual "
-            f"call superfluous."
-        )
-        self._add_knowledge_base_slots()
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
@@ -966,32 +881,6 @@ class Domain:
             f"action for this domain. "
             f"Available actions are: \n{action_names}"
         )
-
-    def random_template_for(self, utter_action: Text) -> Optional[Dict[Text, Any]]:
-        """Returns a random response for an action name.
-
-        Args:
-            utter_action: The name of the utter action.
-
-        Returns:
-            A response for an utter action.
-        """
-        import numpy as np
-
-        # Raise `DeprecationWarning` instead of `FutureWarning` as we only want to
-        # notify developers about the deprecation (e.g. developers who are using the
-        # Python API or writing custom policies). End users can't change anything
-        # about this warning except making their developers change any custom code
-        # which calls this.
-        rasa.shared.utils.io.raise_warning(
-            f"'{Domain.__name__}.{Domain.random_template_for.__class__}' "
-            f"is deprecated and will be removed version 3.0.0.",
-            category=DeprecationWarning,
-        )
-        if utter_action in self.responses:
-            return np.random.choice(self.responses[utter_action])
-        else:
-            return None
 
     # noinspection PyTypeChecker
     @rasa.shared.utils.common.lazy_property
@@ -1823,17 +1712,6 @@ class Domain:
                     incorrect_mappings,
                 )
             )
-
-    def check_missing_templates(self) -> None:
-        """Warn user of utterance names which have no specified response."""
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "The terminology 'template' is deprecated "
-            "and replaced by 'response'. "
-            "Please use `check_missing_responses` "
-            "instead of `check_missing_templates`.",
-            docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
-        )
-        self.check_missing_responses()
 
     def check_missing_responses(self) -> None:
         """Warn user of utterance names which have no specified response."""

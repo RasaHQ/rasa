@@ -194,19 +194,6 @@ def test_avoid_action_repetition(domain: Domain):
     assert len(domain.action_names_or_texts) == len(DEFAULT_ACTION_NAMES) + 1
 
 
-def test_responses():
-    domain_file = "data/test_moodbot/domain.yml"
-    domain = Domain.load(domain_file)
-    expected_response = {
-        "text": "Hey! How are you?",
-        "buttons": [
-            {"title": "great", "payload": "/mood_great"},
-            {"title": "super sad", "payload": "/mood_unhappy"},
-        ],
-    }
-    assert domain.random_template_for("utter_greet") == expected_response
-
-
 def test_custom_slot_type(tmpdir: Path):
     domain_path = str(tmpdir / "domain.yml")
     rasa.shared.utils.io.write_text_file(
