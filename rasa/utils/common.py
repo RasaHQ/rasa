@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import warnings
+from contextlib import AbstractContextManager
 from types import TracebackType
 from typing import (
     Any,
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class TempDirectoryPath(str):
+class TempDirectoryPath(str, AbstractContextManager):
     """Represents a path to an temporary directory. When used as a context
     manager, it erases the contents of the directory on exit.
 
@@ -40,11 +41,9 @@ class TempDirectoryPath(str):
         _exc: Optional[Type[BaseException]],
         _value: Optional[Exception],
         _tb: Optional[TracebackType],
-    ) -> bool:
+    ) -> None:
         if os.path.exists(self):
             shutil.rmtree(self)
-
-        return True
 
 
 def read_global_config(path: Text) -> Dict[Text, Any]:

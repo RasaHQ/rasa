@@ -4,6 +4,7 @@ import hashlib
 import logging
 import os
 import shutil
+from contextlib import AbstractContextManager
 from subprocess import CalledProcessError, DEVNULL, check_output  # skipcq:BAN-B404
 import tempfile
 import typing
@@ -209,7 +210,7 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 
 def unpack_model(
     model_file: Text, working_directory: Optional[Union[Path, Text]] = None
-) -> TempDirectoryPath:
+) -> AbstractContextManager[TempDirectoryPath]:
     """Unpack a zipped Rasa model.
 
     Args:
