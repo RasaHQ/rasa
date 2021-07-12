@@ -51,11 +51,49 @@ from rasa.shared.nlu.constants import (
     INTENT_NAME_KEY,
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
+    PREDICTED_CONFIDENCE_KEY,
+    INTENT_RANKING_KEY,
+    ENTITY_ATTRIBUTE_TEXT,
+    ENTITY_ATTRIBUTE_START,
+    ENTITY_ATTRIBUTE_CONFIDENCE,
+    ENTITY_ATTRIBUTE_END,
 )
 
 if TYPE_CHECKING:
+    from typing_extensions import TypedDict
+
     from rasa.shared.core.trackers import DialogueStateTracker
 
+    EntityPrediction = TypedDict(
+        "EntityPrediction",
+        {
+            ENTITY_ATTRIBUTE_TEXT: Text,
+            ENTITY_ATTRIBUTE_START: Optional[float],
+            ENTITY_ATTRIBUTE_END: Optional[float],
+            ENTITY_ATTRIBUTE_VALUE: Text,
+            ENTITY_ATTRIBUTE_CONFIDENCE: float,
+            ENTITY_ATTRIBUTE_TYPE: Text,
+            ENTITY_ATTRIBUTE_GROUP: Optional[Text],
+            ENTITY_ATTRIBUTE_ROLE: Optional[Text],
+            "additional_info": Any,
+        },
+        total=False,
+    )
+
+    IntentPrediction = TypedDict(
+        "IntentPrediction", {INTENT_NAME_KEY: Text, PREDICTED_CONFIDENCE_KEY: float,},
+    )
+    NLUPredictionData = TypedDict(
+        "NLUPredictionData",
+        {
+            INTENT: IntentPrediction,
+            INTENT_RANKING_KEY: List[IntentPrediction],
+            ENTITIES: List[EntityPrediction],
+            "message_id": Optional[Text],
+            "metadata": Dict,
+        },
+        total=False,
+    )
 logger = logging.getLogger(__name__)
 
 
@@ -371,7 +409,7 @@ class UserUttered(Event):
         text: Optional[Text] = None,
         intent: Optional[Dict] = None,
         entities: Optional[List[Dict]] = None,
-        parse_data: Optional[Dict[Text, Any]] = None,
+        parse_data: Optional["NLUPredictionData"] = None,
         timestamp: Optional[float] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,
@@ -412,7 +450,7 @@ class UserUttered(Event):
             # happens during training
             self.use_text_for_featurization = False
 
-        self.parse_data = {
+        self.parse_data: "NLUPredictionData" = {
             INTENT: self.intent,
             # Copy entities so that changes to `self.entities` don't affect
             # `self.parse_data` and hence don't get persisted
@@ -428,7 +466,7 @@ class UserUttered(Event):
     @staticmethod
     def _from_parse_data(
         text: Text,
-        parse_data: Dict[Text, Any],
+        parse_data: "NLUPredictionData",
         timestamp: Optional[float] = None,
         input_channel: Optional[Text] = None,
         message_id: Optional[Text] = None,

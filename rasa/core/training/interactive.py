@@ -965,7 +965,7 @@ async def _predict_till_next_listen(
         predictions = result.get("scores")
         probabilities = [prediction["score"] for prediction in predictions]
         pred_out = int(np.argmax(probabilities))
-        action_name = predictions[pred_out].get("action")
+        action_name = predictions.get(pred_out, {}).get("action")
         policy = result.get("policy")
         confidence = result.get("confidence")
 

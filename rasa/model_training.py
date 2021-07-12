@@ -218,11 +218,10 @@ async def _train_async_internal(
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
 
-    fingerprint_comparison = model.should_retrain(
-        new_fingerprint, old_model, train_path, force_training=force_training
-    )
-
     if dry_run:
+        fingerprint_comparison = model.should_retrain(
+            new_fingerprint, old_model, train_path, force_training=force_training
+        )
         code, texts = dry_run_result(fingerprint_comparison)
         for text in texts:
             print_warning(text) if code > 0 else print_success(text)

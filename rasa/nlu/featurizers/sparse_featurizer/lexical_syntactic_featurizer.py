@@ -63,7 +63,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         "pos": lambda token: token.data.get(POS_TAG_KEY)
         if POS_TAG_KEY in token.data
         else None,
-        "pos2": lambda token: token.data.get(POS_TAG_KEY)[:2]
+        "pos2": lambda token: token.data.get(POS_TAG_KEY, [])[:2]
         if "pos" in token.data
         else None,
         "upper": lambda token: token.text.isupper(),

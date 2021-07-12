@@ -1,12 +1,10 @@
 import rasa.shared.nlu.constants
-
+from rasa.shared.nlu.constants import ENTITY_ATTRIBUTE_CONFIDENCE
 
 BILOU_ENTITIES = "bilou_entities"
 BILOU_ENTITIES_ROLE = "bilou_entities_role"
 BILOU_ENTITIES_GROUP = "bilou_entities_group"
 
-ENTITY_ATTRIBUTE_TEXT = "text"
-ENTITY_ATTRIBUTE_CONFIDENCE = "confidence"
 ENTITY_ATTRIBUTE_CONFIDENCE_TYPE = (
     f"{ENTITY_ATTRIBUTE_CONFIDENCE}_{rasa.shared.nlu.constants.ENTITY_ATTRIBUTE_TYPE}"
 )

@@ -66,6 +66,7 @@ from rasa.shared.core.slots import Slot
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
 
+    from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
 
@@ -260,11 +261,14 @@ class DialogueStateTracker:
 
         return None
 
-    def _latest_message_data(self) -> Dict[Text, Any]:
+    def _latest_message_data(self) -> Optional["NLUPredictionData"]:
+        if not self.latest_message:
+            return None
+
         parse_data_with_nlu_state = self.latest_message.parse_data.copy()
         # Combine entities predicted by NLU with entities predicted by policies so that
         # users can access them together via `latest_message` (e.g. in custom actions)
-        parse_data_with_nlu_state["entities"] = self.latest_message.entities
+        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities
 
         return parse_data_with_nlu_state
 

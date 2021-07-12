@@ -43,6 +43,17 @@ pipeline:
   - name: "CountVectorsFeaturizer"
 ```
 
+### Machine Learning Components
+
+The option `model_confidence=linear_norm` is deprecated and will be removed in Rasa Open Source `3.0.0`.
+
+Rasa Open Source `2.3.0` introduced `linear_norm` as a possible value for `model_confidence`
+parameter in machine learning components such as `DIETClassifier`, `ResponseSelector` and `TEDPolicy`.
+Based on user feedback, we have identified multiple problems with this option.
+Therefore, `model_confidence=linear_norm` is now deprecated and
+will be removed in Rasa Open Source `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
+we recommend to revert it back to `model_confidence=softmax` and re-train the assistant. After re-training,
+we also recommend to [re-tune the thresholds for fallback components](./fallback-handoff.mdx#fallbacks).
 
 ## Rasa 2.5 to 2.6
 
@@ -1057,12 +1068,15 @@ model before trying to use it with this improved version.
     entity_recognition: False
     use_masked_language_model: False
     BILOU_flag: False
+    scale_loss: True
+    use_sparse_input_dropout: False
+    use_dense_input_dropout: False
     # ... any other parameters
   ```
 
   See [DIETClassifier](./components.mdx#dietclassifier) for more information about the new component.
-  Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, the
-  behavior is unchanged from previous versions.
+  Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, and results in
+  the same behaviour within the same Rasa version. 
 
 * `CRFEntityExtractor` is now deprecated and will be replaced by `DIETClassifier` in the future. If you want to
   get the same model behavior as the current `CRFEntityExtractor`, you can use the following configuration:
