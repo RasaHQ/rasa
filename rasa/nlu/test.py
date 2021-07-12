@@ -49,7 +49,6 @@ from rasa.shared.nlu.constants import (
     NO_ENTITY_TAG,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
-    ENTITY_ATTRIBUTE_TEXT,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder

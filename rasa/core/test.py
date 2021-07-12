@@ -53,8 +53,6 @@ if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
     from rasa.core.processor import MessageProcessor
     from rasa.shared.core.generator import TrainingDataGenerator
-    from _typeshed import SupportsLessThan
-
     from rasa.shared.core.events import EntityPrediction
 
 CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"

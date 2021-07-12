@@ -81,9 +81,7 @@ if TYPE_CHECKING:
     from rasa.core.processor import MessageProcessor
     from mypy_extensions import Arg, VarArg, KwArg
 
-    SanicView = Callable[
-        [Arg(Any, "request"), VarArg(), KwArg()], response.BaseHTTPResponse
-    ]
+    SanicView = Callable[[Arg(Any), VarArg(), KwArg()], response.BaseHTTPResponse]
 
 
 logger = logging.getLogger(__name__)
