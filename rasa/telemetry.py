@@ -11,7 +11,7 @@ import platform
 import sys
 import textwrap
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text
+from typing import Any, Callable, Dict, List, Optional, Text, Union
 import uuid
 
 import async_generator
@@ -887,7 +887,7 @@ def track_server_start(
 
     def project_fingerprint_from_model(
         _model_directory: Optional[Text],
-    ) -> Optional[Text]:
+    ) -> Optional[Union[Text, List[Text], int, float]]:
         """Get project fingerprint from an app's loaded model."""
         if _model_directory:
             try:

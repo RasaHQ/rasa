@@ -482,7 +482,7 @@ async def train_core_async(
             "No stories given. Please provide stories in order to "
             "train a Rasa Core model using the '--stories' argument."
         )
-        return
+        return None
 
     return await _train_core_with_validated_data(
         file_importer,
@@ -677,7 +677,7 @@ async def train_nlu_async(
             "No NLU data given. Please provide NLU data in order to train "
             "a Rasa NLU model using the '--nlu' argument."
         )
-        return
+        return None
 
     # training NLU only hence the training files still have to be selected
     file_importer = TrainingDataImporter.load_nlu_importer_from_config(
@@ -691,7 +691,7 @@ async def train_nlu_async(
             f"Please verify the data format. "
             f"The NLU model training will be skipped now."
         )
-        return
+        return None
 
     return await _train_nlu_with_validated_data(
         file_importer,
@@ -812,11 +812,11 @@ async def _nlu_model_for_finetuning(
             )
 
         config = await file_importer.get_config()
-        model_to_finetune = Interpreter.load(
+        loaded_model_to_finetune = Interpreter.load(
             old_nlu,
             new_config=config,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
-        if not model_to_finetune:
+        if not loaded_model_to_finetune:
             return None
-    return model_to_finetune
+    return loaded_model_to_finetune

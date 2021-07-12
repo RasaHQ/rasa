@@ -63,7 +63,7 @@ class HangoutsOutput(OutputChannel):
                 logger.error(
                     "Buttons must be a list of dicts with 'title' and 'payload' as keys"
                 )
-                return
+                return None
 
             hangouts_buttons.append(
                 {

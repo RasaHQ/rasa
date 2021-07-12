@@ -61,7 +61,31 @@ if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
     from rasa.core.processor import MessageProcessor
     from rasa.shared.core.generator import TrainingDataGenerator
-    from rasa.shared.core.events import EntityPrediction
+    from _typeshed import SupportsLessThan
+
+    from typing_extensions import TypedDict
+
+    EntityPrediction = TypedDict(
+        "EntityPrediction",
+        {
+            ENTITY_ATTRIBUTE_TEXT: Text,
+            ENTITY_ATTRIBUTE_START: Optional[float],
+            ENTITY_ATTRIBUTE_END: Optional[float],
+            ENTITY_ATTRIBUTE_VALUE: Text,
+            ENTITY_ATTRIBUTE_CONFIDENCE: float,
+            ENTITY_ATTRIBUTE_TYPE: Text,
+            ENTITY_ATTRIBUTE_GROUP: Optional[Text],
+            ENTITY_ATTRIBUTE_ROLE: Optional[Text],
+            "additional_info": Any,
+        },
+        total=False,
+    )
+
+CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
+REPORT_STORIES_FILE = "story_report.json"
+FAILED_STORIES_FILE = "failed_test_stories.yml"
+SUCCESSFUL_STORIES_FILE = "successful_test_stories.yml"
+
 
 logger = logging.getLogger(__name__)
 
@@ -280,14 +304,14 @@ class EvaluationStore:
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text, self.entity_targets
                 ),
-                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],
             )
             entity_predictions = sorted(
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text,
                     self.entity_predictions,
                 ),
-                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],
             )
 
             i_pred, i_target = 0, 0
@@ -447,7 +471,7 @@ def _clean_entity_results(
     cleaned_entities = []
 
     for r in tuple(entity_results):
-        cleaned_entity = {ENTITY_ATTRIBUTE_TEXT: text}
+        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}
         for k in (
             ENTITY_ATTRIBUTE_START,
             ENTITY_ATTRIBUTE_END,

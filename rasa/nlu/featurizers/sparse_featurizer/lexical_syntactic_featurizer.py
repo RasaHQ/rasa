@@ -3,7 +3,7 @@ from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import numpy as np
-from typing import Any, Dict, Optional, Text, List, Type, Union, Callable
+from typing import Any, Dict, Optional, Set, Text, List, Type, Union, Callable
 
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -147,7 +147,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     @staticmethod
     def _build_feature_vocabulary(
         features: List[List[Dict[Text, Any]]]
-    ) -> Dict[Text, List[Text]]:
+    ) -> OrderedDict[Text, Set[Any]]:
         feature_vocabulary = defaultdict(set)
 
         for sentence_features in features:
@@ -156,9 +156,9 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
                     feature_vocabulary[feature_name].add(feature_value)
 
         # sort items to ensure same order every time (for tests)
-        feature_vocabulary = OrderedDict(sorted(feature_vocabulary.items()))
+        ordered_feature_vocabulary = OrderedDict(sorted(feature_vocabulary.items()))
 
-        return feature_vocabulary
+        return ordered_feature_vocabulary
 
     def _create_sparse_features(self, message: Message) -> None:
         """Convert incoming messages into sparse features using the configured
@@ -273,7 +273,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
                 f"Invalid value '{value}' for feature '{feature}'."
                 f" Feature is ignored."
             )
-        return value
+        else:
+            return value
 
     @classmethod
     def load(

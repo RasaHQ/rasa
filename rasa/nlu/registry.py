@@ -7,7 +7,7 @@ import this in module scope."""
 import logging
 import traceback
 import typing
-from typing import Any, Dict, Optional, Text, Type
+from typing import Any, Dict, Optional, Text, Type, List
 
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 
 # Classes of all known components. If a new component should be added,
 # its class name should be listed here.
-component_classes = [
+component_classes: List[Type[Component]] = [
     # utils
     SpacyNLP,
     MitieNLP,

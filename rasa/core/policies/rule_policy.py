@@ -193,7 +193,7 @@ class RulePolicy(MemoizationPolicy):
             new_states.insert(0, state)
 
         if not new_states:
-            return
+            return None
 
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
@@ -421,7 +421,7 @@ class RulePolicy(MemoizationPolicy):
         for states in trackers_as_states:
             for state in states:
                 slots.update(set(state.get(SLOTS, {}).keys()))
-                active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+                active_loop: Optional[Text] = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
                 if active_loop:
                     loops.add(active_loop)
         return slots, loops
@@ -592,7 +592,7 @@ class RulePolicy(MemoizationPolicy):
         trackers: List[TrackerWithCachedStates],
         domain: Domain,
         collect_sources: bool,
-    ) -> Tuple[List[Text], Set[Text]]:
+    ) -> Tuple[List[Text], Set[Optional[Text]]]:
         if collect_sources:
             self._rules_sources = defaultdict(list)
 
@@ -665,7 +665,7 @@ class RulePolicy(MemoizationPolicy):
 
     def _find_contradicting_and_used_in_stories_rules(
         self, trackers: List[TrackerWithCachedStates], domain: Domain
-    ) -> Tuple[List[Text], Set[Text]]:
+    ) -> Tuple[List[Text], Set[Optional[Text]]]:
         return self._run_prediction_on_trackers(trackers, domain, collect_sources=False)
 
     def _analyze_rules(
@@ -1080,7 +1080,7 @@ class RulePolicy(MemoizationPolicy):
 
     def _predict(
         self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Tuple[PolicyPrediction, Text]:
+    ) -> Tuple[PolicyPrediction, Optional[Text]]:
         (
             rules_action_name_from_text,
             prediction_source_from_text,

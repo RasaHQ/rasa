@@ -9,6 +9,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Mapping,
     NamedTuple,
     NoReturn,
     Optional,
@@ -81,7 +82,8 @@ PREV_PREFIX = "prev_"
 # State is a dictionary with keys (USER, PREVIOUS_ACTION, SLOTS, ACTIVE_LOOP)
 # representing the origin of a SubState;
 # the values are SubStates, that contain the information needed for featurization
-SubState = Dict[Text, Union[Text, Tuple[Union[float, Text]]]]
+SubStateValue = Union[Text, Tuple[Union[float, Text]]]
+SubState = Dict[Text, SubStateValue]
 State = Dict[Text, SubState]
 
 logger = logging.getLogger(__name__)
@@ -1106,7 +1108,7 @@ class Domain:
 
     def _get_user_sub_state(
         self, tracker: "DialogueStateTracker"
-    ) -> Dict[Text, Union[Text, Tuple[Text]]]:
+    ) -> Dict[Text, Union[None, Text, List[Optional[Text]], Tuple[str, ...]]]:
         """Turns latest UserUttered event into a substate.
 
         The substate will contain intent, text, and entities (if any are present).
@@ -1122,7 +1124,9 @@ class Domain:
         if not latest_message or latest_message.is_empty():
             return {}
 
-        sub_state = latest_message.as_sub_state()
+        sub_state: Dict[
+            Text, Union[None, Text, List[Optional[Text]], Tuple[str, ...]]
+        ] = latest_message.as_sub_state()
 
         # Filter entities based on intent config. We need to convert the set into a
         # tuple because sub_state will be later transformed into a frozenset (so it can
@@ -1157,7 +1161,7 @@ class Domain:
         Returns:
             a mapping of slot names to their featurization
         """
-        slots = {}
+        slots: Dict[Text, Union[Text, Tuple[float]]] = {}
         for slot_name, slot in tracker.slots.items():
             # If the slot doesn't influence conversations, slot.as_feature() will return
             # a result that evaluates to False, meaning that the slot shouldn't be
@@ -1179,7 +1183,7 @@ class Domain:
     @staticmethod
     def _get_prev_action_sub_state(
         tracker: "DialogueStateTracker",
-    ) -> Dict[Text, Text]:
+    ) -> Optional[Dict[Text, Text]]:
         """Turn the previous taken action into a state name.
         Args:
             tracker: dialog state tracker containing the dialog so far
@@ -1461,7 +1465,9 @@ class Domain:
 
         return final_responses
 
-    def _transform_intents_for_file(self) -> List[Union[Text, Dict[Text, Any]]]:
+    def _transform_intents_for_file(
+        self,
+    ) -> List[Dict[Text, Dict[Text, Union[bool, List[Text]]]]]:
         """Transform intent properties for displaying or writing into a domain file.
 
         Internally, there is a property `used_entities` that lists all entities to be
@@ -1507,7 +1513,7 @@ class Domain:
         Returns:
             The entity properties as they are used in domain files.
         """
-        entities_for_file = []
+        entities_for_file: List[Union[Text, Dict[Text, Any]]] = []
 
         for entity in self.entities:
             if entity in self.roles and entity in self.groups:

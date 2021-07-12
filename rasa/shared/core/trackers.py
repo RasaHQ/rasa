@@ -878,7 +878,9 @@ class DialogueStateTracker:
         )
 
 
-def get_active_loop_name(state: State) -> Optional[Text]:
+def get_active_loop_name(
+    state: State,
+) -> Optional[Union[Text, Tuple[Union[float, Text]]]]:
     """Get the name of current active loop.
 
     Args:
@@ -891,7 +893,7 @@ def get_active_loop_name(state: State) -> Optional[Text]:
         not state.get(ACTIVE_LOOP)
         or state[ACTIVE_LOOP].get(LOOP_NAME) == SHOULD_NOT_BE_SET
     ):
-        return
+        return None
 
     return state[ACTIVE_LOOP].get(LOOP_NAME)
 

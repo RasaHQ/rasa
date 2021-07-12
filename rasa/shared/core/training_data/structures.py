@@ -254,7 +254,7 @@ class StoryStep:
 
     def explicit_events(
         self, domain: Domain, should_append_final_listen: bool = True
-    ) -> List[Union[Event, List[Event]]]:
+    ) -> List[Event]:
         """Returns events contained in the story step including implicit events.
 
         Not all events are always listed in the story dsl. This
@@ -263,7 +263,7 @@ class StoryStep:
         returns them with the rest of the steps events.
         """
 
-        events = []
+        events: List[Event] = []
 
         for e in self.events:
             if isinstance(e, UserUttered):
@@ -472,7 +472,7 @@ class StoryGraph:
     @staticmethod
     def overlapping_checkpoint_names(
         cps: List[Checkpoint], other_cps: List[Checkpoint]
-    ) -> Set[Text]:
+    ) -> Set[Optional[Text]]:
         """Find overlapping checkpoints names"""
 
         return {cp.name for cp in cps} & {cp.name for cp in other_cps}
@@ -638,7 +638,7 @@ class StoryGraph:
     @staticmethod
     def _find_unused_checkpoints(
         story_steps: ValuesView[StoryStep], story_end_checkpoints: Dict[Text, Text]
-    ) -> Set[Text]:
+    ) -> Set[Optional[Text]]:
         """Finds all unused checkpoints."""
 
         collected_start = {STORY_END, STORY_START}

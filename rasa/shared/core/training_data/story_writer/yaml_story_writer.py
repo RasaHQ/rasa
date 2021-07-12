@@ -287,14 +287,14 @@ class YAMLStoryWriter(StoryWriter):
         return result
 
     @staticmethod
-    def process_slot(event: SlotSet) -> Dict[Text, List[Dict]]:
+    def process_slot(event: SlotSet) -> OrderedDict[Text, List[Dict]]:
         """Converts a single `SlotSet` event into an ordered dict.
 
         Args:
             event: Original `SlotSet` event.
 
         Returns:
-            Dict with an `SlotSet` event.
+            OrderedDict with an `SlotSet` event.
         """
         return OrderedDict([(KEY_SLOT_NAME, [{event.key: event.value}])])
 

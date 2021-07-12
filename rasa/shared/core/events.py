@@ -1,3 +1,4 @@
+from __future__ import annotations
 import abc
 import json
 import logging
@@ -12,6 +13,7 @@ from datetime import datetime
 from typing import (
     List,
     Dict,
+    Mapping,
     Text,
     Any,
     Type,
@@ -544,7 +546,7 @@ class UserUttered(Event):
         )
         return _dict
 
-    def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+    def as_sub_state(self,) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
         """Turns a UserUttered event into features.
 
         The substate contains information about entities, intent and text of the
@@ -571,7 +573,7 @@ class UserUttered(Event):
             if ENTITY_ATTRIBUTE_GROUP in entity
         )
 
-        out = {}
+        out: Dict[Text, Union[None, Text, List[Optional[Text]]]] = {}
         # During training we expect either intent_name or text to be set.
         # During prediction both will be set.
         if self.text and (
@@ -959,7 +961,7 @@ class SlotSet(Event):
         return f"{self.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[SlotSet]]:
 
         slots = []
         for slot_key, slot_val in parameters.items():
@@ -1526,7 +1528,7 @@ class ActionExecuted(Event):
             self.action_name, self.policy, self.confidence
         )
 
-    def __str__(self) -> Text:
+    def __str__(self) -> Optional[Text]:
         """Returns event as human readable string."""
         return self.action_name or self.action_text
 
@@ -1541,7 +1543,7 @@ class ActionExecuted(Event):
 
         return self.__members__() == other.__members__()
 
-    def as_story_string(self) -> Text:
+    def as_story_string(self) -> Optional[Text]:
         """Returns event in Markdown format."""
         if self.action_text:
             raise UnsupportedFeatureException(

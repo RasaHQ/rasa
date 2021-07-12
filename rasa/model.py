@@ -621,7 +621,7 @@ async def update_model_with_new_domain(
 
 def get_model_for_finetuning(
     previous_model_file: Optional[Union[Path, Text]]
-) -> Optional[Text]:
+) -> Optional[Union[Path, Text]]:
     """Gets validated path for model to finetune.
 
     Args:

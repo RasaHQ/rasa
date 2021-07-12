@@ -822,9 +822,6 @@ class Component(metaclass=ComponentMetaclass):
             return language not in not_supported_language_list
 
 
-C = typing.TypeVar("C", bound=Component)
-
-
 class ComponentBuilder:
     """Creates trainers and interpreters based on configurations.
 
@@ -875,7 +872,7 @@ class ComponentBuilder:
         model_dir: Text,
         model_metadata: "Metadata",
         **context: Any,
-    ) -> Component:
+    ) -> Optional[Component]:
         """Loads a component.
 
         Tries to retrieve a component from the cache, else calls
@@ -915,7 +912,7 @@ class ComponentBuilder:
 
     def create_component(
         self, component_config: Dict[Text, Any], cfg: RasaNLUModelConfig
-    ) -> Component:
+    ) -> Optional[Component]:
         """Creates a component.
 
         Tries to retrieve a component from the cache,
@@ -946,7 +943,9 @@ class ComponentBuilder:
                 f"Error: {e}"
             )
 
-    def create_component_from_class(self, component_class: Type[C], **cfg: Any) -> C:
+    def create_component_from_class(
+        self, component_class: Type[Component], **cfg: Any
+    ) -> Optional[Component]:
         """Create a component based on a class and a configuration.
 
         Mainly used to make use of caching when instantiating component classes."""
