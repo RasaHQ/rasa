@@ -209,7 +209,10 @@ async def test_action_unlikely_intent_warning(
     )
 
     result = await rasa.core.test.test(
-        str(file_name), agent, out_directory=str(tmp_path),
+        str(file_name),
+        agent,
+        out_directory=str(tmp_path),
+        fail_on_prediction_errors=True,
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 1
@@ -266,49 +269,6 @@ async def test_action_unlikely_intent_correctly_predicted(
     assert result["report"]["conversation_accuracy"]["with_warnings"] == 0
 
 
-async def test_action_unlikely_intent_fail_on_prediction_errors(
-    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
-):
-    monkeypatch.setattr(
-        SimplePolicyEnsemble,
-        "probabilities_using_best_policy",
-        _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
-    )
-
-    file_name = tmp_path / "test_action_unlikely_intent_2.yml"
-    file_name.write_text(
-        """
-        version: "2.0"
-        stories:
-          - story: unlikely path (with action_unlikely_intent)
-            steps:
-              - user: |
-                  very terrible
-                intent: mood_unhappy
-              - action: utter_cheer_up
-              - action: action_unlikely_intent
-              - action: utter_did_that_help
-              - intent: affirm
-              - action: utter_happy
-        """
-    )
-
-    # We train on the above story so that RulePolicy can memorize
-    # it and we don't have to worry about other actions being
-    # predicted correctly.
-    agent = await _train_rule_based_agent(
-        moodbot_domain, file_name, monkeypatch, ignore_action_unlikely_intent=False
-    )
-
-    with pytest.raises(rasa.core.test.WrongPredictionException):
-        result = await rasa.core.test.test(
-            str(file_name),
-            agent,
-            out_directory=str(tmp_path),
-            fail_on_prediction_errors=True,
-        )
-
-
 async def test_wrong_action_after_action_unlikely_intent(
     monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
 ):
@@ -362,7 +322,10 @@ async def test_wrong_action_after_action_unlikely_intent(
     )
 
     result = await rasa.core.test.test(
-        str(test_file_name), agent, out_directory=str(tmp_path),
+        str(test_file_name),
+        agent,
+        out_directory=str(tmp_path),
+        fail_on_prediction_errors=False,
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 0
@@ -432,7 +395,7 @@ async def test_action_unlikely_intent_not_found(
     )
 
     result = await rasa.core.test.test(
-        str(test_file_name), agent, out_directory=str(tmp_path),
+        str(test_file_name), agent, out_directory=str(tmp_path)
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 0
@@ -510,6 +473,49 @@ async def test_action_unlikely_intent_warning_and_story_error(
         content = f.read()
         assert f"# predicted: {ACTION_UNLIKELY_INTENT_NAME}" in content
         assert "# predicted: utter_goodbye" in content
+
+
+async def test_fail_on_prediction_errors(
+    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
+):
+    monkeypatch.setattr(
+        SimplePolicyEnsemble,
+        "probabilities_using_best_policy",
+        _probabilities_with_action_unlikely_intent_for(["mood_unhappy"]),
+    )
+
+    file_name = tmp_path / "test_action_unlikely_intent_2.yml"
+    file_name.write_text(
+        """
+        version: "2.0"
+        stories:
+          - story: unlikely path (with action_unlikely_intent)
+            steps:
+              - user: |
+                  very terrible
+                intent: mood_unhappy
+              - action: utter_cheer_up
+              - action: action_unlikely_intent
+              - action: utter_did_that_help
+              - intent: affirm
+              - action: utter_happy
+        """
+    )
+
+    # We train on the above story so that RulePolicy can memorize
+    # it and we don't have to worry about other actions being
+    # predicted correctly.
+    agent = await _train_rule_based_agent(
+        moodbot_domain, file_name, monkeypatch, ignore_action_unlikely_intent=False
+    )
+
+    with pytest.raises(rasa.core.test.WrongPredictionException):
+        await rasa.core.test.test(
+            str(file_name),
+            agent,
+            out_directory=str(tmp_path),
+            fail_on_prediction_errors=True,
+        )
 
 
 @pytest.mark.parametrize(
@@ -605,7 +611,10 @@ async def test_multiple_warnings_sorted_on_severity(
     )
 
     await rasa.core.test.test(
-        test_story_path, agent, out_directory=str(tmp_path),
+        test_story_path,
+        agent,
+        out_directory=str(tmp_path),
+        fail_on_prediction_errors=True,
     )
 
     warnings_file = tmp_path / STORIES_WITH_WARNINGS_FILE

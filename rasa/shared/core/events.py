@@ -36,7 +36,6 @@ from rasa.shared.core.constants import (
     ENTITY_LABEL_SEPARATOR,
     ACTION_SESSION_START_NAME,
     ACTION_LISTEN_NAME,
-    ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.nlu.constants import (

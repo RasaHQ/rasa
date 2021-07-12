@@ -674,13 +674,10 @@ def _collect_action_executed_predictions(
         predicted_action, prediction, policy_entity_result = _run_action_prediction(
             processor, partial_tracker, expected_action
         )
-        action_executed_eval_store.add_to_store(
-            action_predictions=[predicted_action], action_targets=[expected_action]
-        )
-    else:
-        action_executed_eval_store.add_to_store(
-            action_predictions=[predicted_action], action_targets=[expected_action]
-        )
+
+    action_executed_eval_store.add_to_store(
+        action_predictions=[predicted_action], action_targets=[expected_action]
+    )
 
     if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
@@ -976,7 +973,7 @@ def _filter_step_events(step: StoryStep) -> StoryStep:
     events = []
     for event in step.events:
         if (
-            type(event) == WronglyPredictedAction
+            isinstance(event, WronglyPredictedAction)
             and event.action_name
             == event.action_name_prediction
             == ACTION_UNLIKELY_INTENT_NAME
