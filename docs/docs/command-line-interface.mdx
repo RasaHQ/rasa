@@ -143,6 +143,20 @@ rasa interactive
 
 This will first train a model and then start an interactive shell session.
 You can then correct your assistants predictions as you talk to it.
+If [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy) is
+included in the pipeline, [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
+can be triggered at any conversation turn. Subsequently, the following message will be displayed:
+
+```
+ The bot wants to run 'action_unlikely_intent' to indicate that the last user message was unexpected
+ at this point in the conversation. Check out UnexpecTEDIntentPolicy docs to learn more.
+```
+
+ As the message states, this is an indication that you have explored a conversation path
+ which is unexpected according to the current set of training stories and hence adding this
+ path to training stories is recommended. Like other bot actions, you can choose to confirm
+ or deny running this action.
+
 
 If you provide a trained model using the `--model` argument, training is skipped
 and that model will be loaded instead.

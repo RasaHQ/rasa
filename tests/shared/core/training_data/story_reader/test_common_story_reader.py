@@ -116,7 +116,7 @@ async def test_generate_training_data_with_cycles(stories_file: Text, domain: Do
     # if new default actions are added the keys of the actions will be changed
 
     all_label_ids = [id for ids in label_ids for id in ids]
-    assert Counter(all_label_ids) == {0: 6, 12: num_tens, 14: 1, 1: 2, 13: 3}
+    assert Counter(all_label_ids) == {0: 6, 14: 3, 13: num_tens, 1: 2, 15: 1}
 
 
 @pytest.mark.parametrize(
@@ -210,7 +210,7 @@ async def test_load_multi_file_training_data(stories_resources: List, domain: Do
     )
     trackers = sorted(trackers, key=lambda t: t.sender_id)
 
-    (tr_as_sts, tr_as_acts) = featurizer.training_states_and_actions(trackers, domain)
+    (tr_as_sts, tr_as_acts) = featurizer.training_states_and_labels(trackers, domain)
     hashed = []
     for sts, acts in zip(tr_as_sts, tr_as_acts):
         hashed.append(json.dumps(sts + acts, sort_keys=True))
@@ -226,7 +226,7 @@ async def test_load_multi_file_training_data(stories_resources: List, domain: Do
     )
     trackers_mul = sorted(trackers_mul, key=lambda t: t.sender_id)
 
-    (tr_as_sts_mul, tr_as_acts_mul) = featurizer.training_states_and_actions(
+    (tr_as_sts_mul, tr_as_acts_mul) = featurizer.training_states_and_labels(
         trackers_mul, domain
     )
     hashed_mul = []
