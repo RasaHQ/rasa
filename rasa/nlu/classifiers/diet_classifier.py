@@ -627,7 +627,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 # insertion order inside _extract_label_features
                 # (TODO: (when) are these used?)
                 list_of_matrices = collected_features.get((type, level), None)
-                if list_of_matrices is not None:
+                if list_of_matrices:
                     collection.append(
                         FeatureArray(np.array(list_of_matrices), number_of_dimensions=3)
                     )
