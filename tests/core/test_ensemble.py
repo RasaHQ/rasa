@@ -688,35 +688,6 @@ def test_intent_prediction_does_not_apply_define_featurization_events(domain: Do
     assert prediction.events == [DefinePrevUserUtteredFeaturization(False)]
 
 
-def test_with_float_returning_policy(domain: Domain):
-    expected_index = 3
-
-    class OldPolicy(Policy):
-        def predict_action_probabilities(
-            self,
-            tracker: DialogueStateTracker,
-            domain: Domain,
-            interpreter: NaturalLanguageInterpreter,
-            **kwargs: Any,
-        ) -> List[float]:
-            prediction = [0.0] * domain.num_actions
-            prediction[expected_index] = 3
-            return prediction
-
-    ensemble = SimplePolicyEnsemble(
-        [ConstantPolicy(priority=1, predict_index=1), OldPolicy(priority=1)]
-    )
-    tracker = DialogueStateTracker.from_events("test", evts=[])
-
-    with pytest.warns(FutureWarning):
-        prediction = ensemble.probabilities_using_best_policy(
-            tracker, domain, RegexInterpreter()
-        )
-
-    assert prediction.policy_name == f"policy_1_{OldPolicy.__name__}"
-    assert prediction.max_confidence_index == expected_index
-
-
 @pytest.mark.parametrize(
     "policy_name, confidence, not_in_training_data",
     [

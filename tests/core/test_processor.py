@@ -1049,39 +1049,6 @@ async def test_handle_message_if_action_manually_rejects(
     assert all(event in logged_events for event in rejection_events)
 
 
-def test_predict_next_action_with_deprecated_ensemble(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch
-):
-    expected_confidence = 2.0
-    expected_action = "utter_greet"
-    expected_probabilities = rasa.core.policies.policy.confidence_scores_for(
-        expected_action, expected_confidence, default_processor.domain
-    )
-    expected_policy_name = "deprecated ensemble"
-
-    class DeprecatedEnsemble(PolicyEnsemble):
-        def probabilities_using_best_policy(
-            self,
-            tracker: DialogueStateTracker,
-            domain: Domain,
-            interpreter: NaturalLanguageInterpreter,
-            **kwargs: Any,
-        ) -> Tuple[List[float], Optional[Text]]:
-            return expected_probabilities, expected_policy_name
-
-    monkeypatch.setattr(default_processor, "policy_ensemble", DeprecatedEnsemble([]))
-
-    tracker = DialogueStateTracker.from_events(
-        "some sender", [ActionExecuted(ACTION_LISTEN_NAME)]
-    )
-
-    with pytest.warns(FutureWarning):
-        action, prediction = default_processor.predict_next_action(tracker)
-
-    assert action.name() == expected_action
-    assert prediction == PolicyPrediction(expected_probabilities, expected_policy_name)
-
-
 async def test_policy_events_are_applied_to_tracker(
     default_processor: MessageProcessor, monkeypatch: MonkeyPatch
 ):
