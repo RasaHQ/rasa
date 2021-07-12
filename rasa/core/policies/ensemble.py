@@ -692,8 +692,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             rejected_action_name = last_action_event.action_name
 
         predictions = {
-            f"policy_{i}_{type(p).__name__}": self._get_prediction(
-                p, tracker, domain, interpreter
+            f"policy_{i}_{type(p).__name__}": p.predict_action_probabilities(
+                tracker, domain, interpreter
             )
             for i, p in enumerate(self.policies)
         }
@@ -709,39 +709,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 ] = 0.0
 
         return self._pick_best_policy(predictions)
-
-    @staticmethod
-    def _get_prediction(
-        policy: Policy,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-    ) -> PolicyPrediction:
-        number_of_arguments_in_rasa_1_0 = 2
-        arguments = rasa.shared.utils.common.arguments_of(
-            policy.predict_action_probabilities
-        )
-
-        if (
-            len(arguments) > number_of_arguments_in_rasa_1_0
-            and "interpreter" in arguments
-        ):
-            prediction = policy.predict_action_probabilities(
-                tracker, domain, interpreter
-            )
-        else:
-            rasa.shared.utils.io.raise_warning(
-                "The function `predict_action_probabilities` of "
-                "the `Policy` interface was changed to support "
-                "additional parameters. Please make sure to "
-                "adapt your custom `Policy` implementation.",
-                category=DeprecationWarning,
-            )
-            prediction = policy.predict_action_probabilities(
-                tracker, domain, RegexInterpreter()
-            )
-
-        return prediction
 
     def _fallback_after_listen(
         self, domain: Domain, prediction: PolicyPrediction
