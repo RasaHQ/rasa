@@ -503,7 +503,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         then combines features of the same feature type (i.e. sparse or dense features)
         separately for each feature level (i.e. sequence and sentence).
 
-        Note that if `_ignore_sequence_features_for_tf_label_data(label_attribute`)
+        Note that if `_ignore_sequence_features_for_tf_label_data(label_attribute)`
         indicates that sequence features should be ignored for this label_attribute,
         then sequence-type features will not be extracted and hence the resulting
         dictionary will not contain any `(*,SEQUENCE)` keys.
