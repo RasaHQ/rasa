@@ -358,6 +358,7 @@ class Interpreter:
         new_config: Optional[Dict] = None,
         finetuning_epoch_fraction: float = 1.0,
     ) -> Metadata:
+        new_config = new_config or {}
         for old_component_config, new_component_config in zip(
             model_metadata.metadata["pipeline"], new_config["pipeline"]
         ):
