@@ -69,9 +69,7 @@ class SpacyNLP(Component):
             cls.defaults, component_config
         )
 
-        spacy_model_name = cls._check_model_fallback(
-            component_config.get("model"), config.language, warn=True
-        )
+        spacy_model_name = component_config.get("model")
 
         logger.info(f"Trying to load spacy model with name '{spacy_model_name}'")
 
@@ -85,9 +83,7 @@ class SpacyNLP(Component):
         cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
     ) -> Optional[Text]:
 
-        spacy_model_name = cls._check_model_fallback(
-            component_meta.get("model"), model_metadata.language, warn=False
-        )
+        spacy_model_name = component_meta.get("model")
 
         return cls.name + "-" + spacy_model_name
 
