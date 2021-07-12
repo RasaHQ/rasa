@@ -475,7 +475,6 @@ class ResponseSelector(DIETClassifier):
             It is always guaranteed to have a match, otherwise that case should have
             been caught earlier and a warning should have been raised.
         """
-
         for key, responses in self.responses.items():
 
             # First check if the predicted label was the key itself
@@ -631,7 +630,6 @@ class ResponseSelector(DIETClassifier):
         **kwargs: Any,
     ) -> "ResponseSelector":
         """Loads the trained model from the provided directory."""
-
         model = super().load(
             meta, model_dir, model_metadata, cached_component, **kwargs
         )
@@ -643,18 +641,16 @@ class ResponseSelector(DIETClassifier):
 
         return model
 
-    def _ignore_sequence_features_for_tf_label_data(self) -> bool:
-        """Decides if  we skip sequence-level features during `label_data` creation."""
-        return (
-            self.component_config[NUM_TRANSFORMER_LAYERS] == 0
-            and self.label_attribute == RESPONSE
-        )
+    def uses_sequential_data(self) -> bool:
+        """Returns whether the model processes sequential data.
 
-    def _ignore_sequence_features_for_model_data(self) -> bool:
-        """Decides if  we skip sequence-level features during `model_data` creation."""
+        Note that in case INTENT_RESPONSE_KEY is our target, we deal with sequential
+        output because of intents like `chitchat/ask_name` which are interpreted as
+        sequences of length 2.
+        """
         return (
-            self._ignore_sequence_features_for_tf_label_data()
-            and self.use_text_as_label
+            self.component_config[NUM_TRANSFORMER_LAYERS] > 0
+            or self.label_attribute == INTENT_RESPONSE_KEY
         )
 
 
@@ -790,8 +786,8 @@ class DIET2DIET(DIET):
 
         # Edge Case: In some cases, the label_data preparation will have
         # skipped sequence-level features because they are not needed for
-        # the architecture (cf. `_ignore_sequence_features_for_label_data`).
-        _ = self.tf_label_data[LABEL].setdefault(SEQUENCE, [])
+        # the architecture.
+        self.tf_label_data[LABEL].setdefault(SEQUENCE, [])
 
         # Note that the following function does not mind if no SEQUENCE_LENGTH
         # subkey is present. The SEQUENCE key is enough to indicate that LABEL
@@ -844,9 +840,9 @@ class DIET2DIET(DIET):
 
         # Edge Case: In some cases, the model_data preparation will have
         # skipped sequence-level features because they are not needed for
-        # the architecture (cf. `_ignore_sequence_features_for_model_data`).
-        _ = tf_batch_data[TEXT].setdefault(SEQUENCE, [])
-        _ = tf_batch_data[LABEL].setdefault(SEQUENCE, [])
+        # the architecture.
+        tf_batch_data[TEXT].setdefault(SEQUENCE, [])
+        tf_batch_data[LABEL].setdefault(SEQUENCE, [])
         # Note that the following _get_sequence_feature_lengths calls do
         # not mind if no SEQUENCE_LENGTH subkey is present.
         # The SEQUENCE key is enough to indicate that the
@@ -949,8 +945,8 @@ class DIET2DIET(DIET):
 
         # Edge Case: In some cases, the model_data preparation will have
         # skipped sequence-level features because they are not needed for
-        # the architecture (cf. `_ignore_sequence_features_for_model_data`).
-        _ = tf_batch_data[TEXT].setdefault(SEQUENCE, [])
+        # the architecture.
+        tf_batch_data[TEXT].setdefault(SEQUENCE, [])
         # Note that the following _get_sequence_feature_lengths call does
         # not mind if no SEQUENCE_LENGTH subkey is present.
         # The SEQUENCE key is enough to indicate that the

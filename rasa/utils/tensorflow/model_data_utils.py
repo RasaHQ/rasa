@@ -7,7 +7,7 @@ from typing import List, Optional, Text, Dict, Tuple, Union, Any, Set
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
-from rasa.utils.tensorflow.constants import MASK, IDS
+from rasa.utils.tensorflow.constants import MASK, IDS, SENTENCE, SEQUENCE
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -30,7 +30,7 @@ def featurize_training_examples(
     entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
     featurizers: Optional[List[Text]] = None,
     bilou_tagging: bool = False,
-    types: Optional[Set[Text]] = None,
+    type: Optional[Text] = None,
 ) -> Tuple[List[Dict[Text, List["Features"]]], Dict[Text, Dict[Text, List[int]]]]:
     """Converts training data into a list of attribute to features.
 
@@ -42,7 +42,7 @@ def featurize_training_examples(
     Args:
         training_examples: the list of training examples
         attributes: the attributes to consider
-        types: feature types to consider; if set to None all types
+        type: feature types to consider; if set to None all types
           (i.e. sequence and sentence) will be considered
         entity_tag_specs: the entity specs
         featurizers: the featurizers to consider
@@ -52,6 +52,7 @@ def featurize_training_examples(
         A list of attribute to features.
         A dictionary of attribute to feature sizes.
     """
+    assert type is None or type in [SEQUENCE, SENTENCE]
     output = []
 
     for example in training_examples:
@@ -69,9 +70,9 @@ def featurize_training_examples(
                 attribute_to_features[attribute] = example.get_all_features(
                     attribute, featurizers
                 )
-            if types:  # filter results by type
+            if type:  # filter results by type
                 attribute_to_features[attribute] = [
-                    f for f in attribute_to_features[attribute] if f.type in types
+                    f for f in attribute_to_features[attribute] if f.type == type
                 ]
         output.append(attribute_to_features)
     sparse_feature_sizes = {}
@@ -80,7 +81,7 @@ def featurize_training_examples(
             featurized_example=output[0],
             training_example=training_examples[0],
             featurizers=featurizers,
-            types=types,
+            type=type,
         )
     return output, sparse_feature_sizes
 
@@ -89,7 +90,7 @@ def _collect_sparse_feature_sizes(
     featurized_example: Dict[Text, List["Features"]],
     training_example: Message,
     featurizers: Optional[List[Text]] = None,
-    types: Optional[Set[Text]] = None,
+    type: Optional[Text] = None,
 ) -> Dict[Text, Dict[Text, List[int]]]:
     """Collects sparse feature sizes for all attributes that have sparse features.
 
@@ -100,11 +101,13 @@ def _collect_sparse_feature_sizes(
         featurized_example: a featurized example
         training_example: a training example
         featurizers: the featurizers to consider
-        types: the feature types to consider
+        type: the feature type to consider; if set to None, all types will be
+          considered
 
     Returns:
         A dictionary of attribute to feature sizes.
     """
+    assert type is None or type in [SEQUENCE, SENTENCE]
     sparse_feature_sizes = {}
     sparse_attributes = []
     for attribute, features in featurized_example.items():
@@ -114,11 +117,11 @@ def _collect_sparse_feature_sizes(
         sparse_feature_sizes[attribute] = training_example.get_sparse_feature_sizes(
             attribute=attribute, featurizers=featurizers
         )
-        if types:  # filter results by type
+        if type:  # filter results by type
             sparse_feature_sizes[attribute] = {
                 key: val
                 for key, val in sparse_feature_sizes[attribute].items()
-                if key in types
+                if key == type
             }
     return sparse_feature_sizes
 
