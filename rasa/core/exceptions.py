@@ -1,7 +1,6 @@
 from typing import Optional, Text
 
 from rasa.shared.exceptions import RasaCoreException
-from rasa.exceptions import ModelNotFound
 
 
 class UnsupportedDialogueModelError(RasaCoreException):
