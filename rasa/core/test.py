@@ -61,25 +61,7 @@ if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
     from rasa.core.processor import MessageProcessor
     from rasa.shared.core.generator import TrainingDataGenerator
-    from _typeshed import SupportsLessThan
-
-    from typing_extensions import TypedDict
-
-    EntityPrediction = TypedDict(
-        "EntityPrediction",
-        {
-            ENTITY_ATTRIBUTE_TEXT: Text,
-            ENTITY_ATTRIBUTE_START: Optional[float],
-            ENTITY_ATTRIBUTE_END: Optional[float],
-            ENTITY_ATTRIBUTE_VALUE: Text,
-            ENTITY_ATTRIBUTE_CONFIDENCE: float,
-            ENTITY_ATTRIBUTE_TYPE: Text,
-            ENTITY_ATTRIBUTE_GROUP: Optional[Text],
-            ENTITY_ATTRIBUTE_ROLE: Optional[Text],
-            "additional_info": Any,
-        },
-        total=False,
-    )
+    from rasa.shared.core.events import EntityPrediction
 
 CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
 REPORT_STORIES_FILE = "story_report.json"
