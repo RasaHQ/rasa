@@ -46,6 +46,16 @@ class SpacyNLP(Component):
         """Try loading the model, catching the OSError if missing."""
         import spacy
 
+        if not spacy_model_name:
+            raise InvalidModelError(
+                f"Missing model configuration for `SpacyNLP` in `config.yml`.\n"
+                f"You must pass a model to the `SpacyNLP` component explicitly.\n"
+                f"For example:\n"
+                f"- name: SpacyNLP\n"
+                f"  model: en_core_web_md\n"
+                f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
+            )
+
         try:
             return spacy.load(spacy_model_name, disable=["parser"])
         except OSError:
@@ -81,16 +91,6 @@ class SpacyNLP(Component):
     def cache_key(
         cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
     ) -> Optional[Text]:
-
-        if not component_meta.get("model"):
-            raise InvalidModelError(
-                f"Missing model configuration for `SpacyNLP` in `config.yml`.\n"
-                f"You must pass a model to the `SpacyNLP` component explicitly.\n"
-                f"For example:\n"
-                f"- name: SpacyNLP\n"
-                f"  model: en_core_web_md\n"
-                f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
-            )
 
         spacy_model_name = component_meta.get("model")
 
