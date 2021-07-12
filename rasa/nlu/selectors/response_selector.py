@@ -659,7 +659,7 @@ class ResponseSelector(DIETClassifier):
 
 
 class DIET2BOW(DIET):
-    """Diet 2 BOW transformer implementation."""
+    """Diet-to-Bag-of-Words transformer implementation."""
 
     def _create_metrics(self) -> None:
         # self.metrics preserve order
