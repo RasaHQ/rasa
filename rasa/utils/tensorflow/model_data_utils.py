@@ -42,7 +42,7 @@ def featurize_training_examples(
     Args:
         training_examples: the list of training examples
         attributes: the attributes to consider
-        type: feature types to consider; if set to None all types
+        type: feature type to consider; if set to None all types
           (i.e. sequence and sentence) will be considered
         entity_tag_specs: the entity specs
         featurizers: the featurizers to consider

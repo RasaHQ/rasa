@@ -177,7 +177,7 @@ def test_extract_features():
 
 
 @pytest.mark.parametrize(
-    "text, intent, entities, attributes, real_sparse_feature_sizes, types",
+    "text, intent, entities, attributes, real_sparse_feature_sizes, type",
     [
         (
             "Hello!",
