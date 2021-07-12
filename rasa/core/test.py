@@ -26,6 +26,9 @@ from rasa.core.channels import UserMessage
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
+from rasa.shared.core.training_data.structures import (
+    StoryStep,
+)
 from rasa.shared.core.domain import Domain
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
@@ -680,9 +683,7 @@ def _collect_action_executed_predictions(
             action_predictions=[predicted_action], action_targets=[expected_action]
         )
 
-    if action_executed_eval_store.has_prediction_target_mismatch() or (
-        predicted_action_unlikely_intent and predicted_action != expected_action
-    ):
+    if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
                 expected_action_name,
@@ -698,7 +699,7 @@ def _collect_action_executed_predictions(
         if (
             fail_on_prediction_errors
             and predicted_action != ACTION_UNLIKELY_INTENT_NAME
-            and expected_action != ACTION_UNLIKELY_INTENT_NAME
+            and predicted_action != expected_action
         ):
             story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
             error_msg = (
@@ -972,6 +973,20 @@ async def _collect_story_predictions(
     )
 
 
+def _filter_step_events(step: StoryStep) -> StoryStep:
+    events = []
+    for event in step.events:
+        if (
+                type(event) == WronglyPredictedAction
+                and event.action_name == event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME
+        ):
+            continue
+        events.append(event)
+    updated_step = step.create_copy(use_new_id=False)
+    updated_step.events = events
+    return updated_step
+
+
 def _log_stories(
     trackers: List[DialogueStateTracker], file_path: Text, message_if_no_trackers: Text
 ) -> None:
@@ -981,7 +996,7 @@ def _log_stories(
             f.write(f"# {message_if_no_trackers}")
         else:
             stories = [tracker.as_story(include_source=True) for tracker in trackers]
-            steps = [step for story in stories for step in story.story_steps]
+            steps = [_filter_step_events(step) for story in stories for step in story.story_steps]
             f.write(YAMLStoryWriter().dumps(steps))
 
 
