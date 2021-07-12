@@ -80,7 +80,7 @@ async def test_agent_train(trained_rasa_model: Text):
     assert loaded.domain.action_names_or_texts == domain.action_names_or_texts
     assert loaded.domain.intents == domain.intents
     assert loaded.domain.entities == domain.entities
-    assert loaded.domain.templates == domain.templates
+    assert loaded.domain.responses == domain.responses
     assert [s.name for s in loaded.domain.slots] == [s.name for s in domain.slots]
 
     # test policies
