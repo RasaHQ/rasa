@@ -89,7 +89,7 @@ class SpacyNLP(Component):
             component_meta.get("model"), model_metadata.language, warn=False
         )
 
-        return str(cls.name) + "-" + spacy_model_name
+        return f"{cls.name}-{spacy_model_name}"
 
     @staticmethod
     def _check_model_fallback(
