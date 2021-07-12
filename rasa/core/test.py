@@ -602,6 +602,7 @@ def _get_e2e_entity_evaluation_result(
                 return EntityEvaluationResult(
                     entity_targets, entities_predicted_by_policies, tokens, text
                 )
+    return None
 
 
 def _run_action_prediction(

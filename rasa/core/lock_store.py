@@ -259,6 +259,8 @@ class RedisLockStore(LockStore):
         if serialised_lock:
             return TicketLock.from_dict(json.loads(serialised_lock))
 
+        return None
+
     def delete_lock(self, conversation_id: Text) -> None:
         deletion_successful = self.red.delete(self.key_prefix + conversation_id)
         self._log_deletion(conversation_id, deletion_successful)

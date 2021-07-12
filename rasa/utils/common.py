@@ -44,6 +44,8 @@ class TempDirectoryPath(str):
         if os.path.exists(self):
             shutil.rmtree(self)
 
+        return True
+
 
 def read_global_config(path: Text) -> Dict[Text, Any]:
     """Read global Rasa configuration.

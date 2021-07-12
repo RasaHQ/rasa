@@ -476,6 +476,8 @@ class TEDPolicy(Policy):
         )
         self.config[ENTITY_RECOGNITION] = False
 
+        return None
+
     def _create_model_data(
         self,
         tracker_state_features: List[List[Dict[Text, List["Features"]]]],

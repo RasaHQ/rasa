@@ -204,10 +204,12 @@ class SocketIOInput(InputChannel):
 
                 if jwt_payload:
                     logger.debug(f"User {sid} connected to socketIO endpoint.")
+                    return True
                 else:
                     return False
             else:
                 logger.debug(f"User {sid} connected to socketIO endpoint.")
+                return True
 
         @sio.on("disconnect", namespace=self.namespace)
         async def disconnect(sid: Text) -> None:
