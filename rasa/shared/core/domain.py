@@ -702,7 +702,6 @@ class Domain:
         for form_name, form_data in forms.items():
             if form_data is not None and REQUIRED_SLOTS_KEY not in form_data:
                 forms[form_name] = {REQUIRED_SLOTS_KEY: form_data}
-        # dict with slot mappings
         return list(forms.keys()), forms, []
 
     def __hash__(self) -> int:

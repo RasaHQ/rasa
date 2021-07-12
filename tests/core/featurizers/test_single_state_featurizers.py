@@ -144,7 +144,7 @@ def test_single_state_featurizer_prepare_for_training():
         entities=["name"],
         slots=[Slot("name")],
         responses={},
-        forms=[],
+        forms={},
         action_names=["utter_greet", "action_check_weather"],
     )
 
@@ -515,7 +515,7 @@ def test_single_state_featurizer_uses_regex_interpreter(
     from rasa.core.agent import Agent
 
     domain = Domain(
-        intents=[], entities=[], slots=[], responses={}, forms=[], action_names=[],
+        intents=[], entities=[], slots=[], responses={}, forms={}, action_names=[],
     )
     f = SingleStateFeaturizer()
     # simulate that core was trained separately by passing
