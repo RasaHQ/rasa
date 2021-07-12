@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
     Text,
     Tuple,
     Union,
@@ -83,6 +84,9 @@ from rasa.shared.nlu.training_data.message import Message
 # still works.
 import rasa.utils.io as io_utils
 
+if TYPE_CHECKING:
+    from rasa.shared.core.generator import TrackerWithCachedStates
+
 logger = logging.getLogger(__name__)
 
 PATHS = {
@@ -141,7 +145,7 @@ async def send_message(
     conversation_id: Text,
     message: Text,
     parse_data: Optional[Dict[Text, Any]] = None,
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Send a user message to a conversation."""
 
     payload = {
@@ -159,7 +163,7 @@ async def send_message(
 
 async def request_prediction(
     endpoint: EndpointConfig, conversation_id: Text
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Request the next action prediction from core."""
 
     return await endpoint.request(
@@ -167,7 +171,7 @@ async def request_prediction(
     )
 
 
-async def retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]:
+async def retrieve_domain(endpoint: EndpointConfig) -> Optional[Any]:
     """Retrieve the domain from core."""
 
     return await endpoint.request(
@@ -175,7 +179,7 @@ async def retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]:
     )
 
 
-async def retrieve_status(endpoint: EndpointConfig) -> Dict[Text, Any]:
+async def retrieve_status(endpoint: EndpointConfig) -> Optional[Any]:
     """Retrieve the status from core."""
 
     return await endpoint.request(method="get", subpath="/status")
@@ -185,7 +189,7 @@ async def retrieve_tracker(
     endpoint: EndpointConfig,
     conversation_id: Text,
     verbosity: EventVerbosity = EventVerbosity.ALL,
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Retrieve a tracker from core."""
 
     path = f"/conversations/{conversation_id}/tracker?include_events={verbosity.name}"
@@ -201,7 +205,7 @@ async def send_action(
     policy: Optional[Text] = None,
     confidence: Optional[float] = None,
     is_new_action: bool = False,
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Log an action to a conversation."""
 
     payload = ActionExecuted(action_name, policy, confidence).as_dict()
@@ -245,7 +249,7 @@ async def send_event(
     endpoint: EndpointConfig,
     conversation_id: Text,
     evt: Union[List[Dict[Text, Any]], Dict[Text, Any]],
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Log an event to a conversation."""
 
     subpath = f"/conversations/{conversation_id}/tracker/events"
@@ -1552,7 +1556,7 @@ async def _get_tracker_events_to_plot(
 
 async def _get_training_trackers(
     file_importer: TrainingDataImporter, domain: Dict[str, Any]
-) -> List[DialogueStateTracker]:
+) -> List[TrackerWithCachedStates]:
     from rasa.core import training
 
     return await training.load_data(

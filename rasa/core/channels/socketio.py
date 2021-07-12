@@ -170,7 +170,7 @@ class SocketIOInput(InputChannel):
                 "Please use a different channel for external events in these "
                 "scenarios."
             )
-            return
+            return None
         return SocketIOOutput(self.sio, self.bot_message_evt)
 
     def blueprint(

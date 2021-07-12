@@ -67,7 +67,7 @@ if TYPE_CHECKING:
     EntityPrediction = TypedDict(
         "EntityPrediction",
         {
-            ENTITY_ATTRIBUTE_TEXT: Text,
+            "text": Text,
             "entities": List[Dict[Text, Any]],
             "predicted_entities": List[Dict[Text, Any]],
         },
@@ -759,13 +759,12 @@ def collect_incorrect_entity_predictions(
     for entity_result in entity_results:
         for i in range(offset, offset + len(entity_result.tokens)):
             if merged_targets[i] != merged_predictions[i]:
-                errors.append(
-                    {
-                        "text": entity_result.message,
-                        "entities": entity_result.entity_targets,
-                        "predicted_entities": entity_result.entity_predictions,
-                    }
-                )
+                prediction: EntityPrediction = {
+                    "text": entity_result.message,
+                    "entities": entity_result.entity_targets,
+                    "predicted_entities": entity_result.entity_predictions,
+                }
+                errors.append(prediction)
                 break
         offset += len(entity_result.tokens)
     return errors
@@ -821,13 +820,12 @@ def collect_successful_entity_predictions(
                 merged_targets[i] == merged_predictions[i]
                 and merged_targets[i] != NO_ENTITY
             ):
-                successes.append(
-                    {
-                        "text": entity_result.message,
-                        "entities": entity_result.entity_targets,
-                        "predicted_entities": entity_result.entity_predictions,
-                    }
-                )
+                prediction: EntityPrediction = {
+                    "text": entity_result.message,
+                    "entities": entity_result.entity_targets,
+                    "predicted_entities": entity_result.entity_predictions,
+                }
+                successes.append(prediction)
                 break
         offset += len(entity_result.tokens)
     return successes
@@ -1381,12 +1379,14 @@ def is_response_selector_present(interpreter: Interpreter) -> bool:
     return response_selectors != []
 
 
-def get_available_response_selector_types(interpreter: Interpreter) -> List[Text]:
+def get_available_response_selector_types(
+    interpreter: Interpreter,
+) -> List[Optional[Text]]:
     """Gets all available response selector types."""
 
     from rasa.nlu.selectors.response_selector import ResponseSelector
 
-    response_selector_types = [
+    response_selector_types: List[Optional[Text]] = [
         c.retrieval_intent
         for c in interpreter.pipeline
         if isinstance(c, ResponseSelector)

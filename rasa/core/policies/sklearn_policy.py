@@ -338,7 +338,7 @@ class SklearnPolicy(Policy):
     @classmethod
     def load(
         cls, path: Union[Text, Path], should_finetune: bool = False, **kwargs: Any
-    ) -> Policy:
+    ) -> Optional[Policy]:
         """See the docstring for `Policy.load`."""
         filename = Path(path) / "sklearn_model.pkl"
         zero_features_filename = Path(path) / "zero_state_features.pkl"
@@ -347,7 +347,7 @@ class SklearnPolicy(Policy):
                 f"Failed to load dialogue model. Path {filename.absolute()} "
                 f"doesn't exist."
             )
-            return
+            return None
 
         featurizer = TrackerFeaturizer.load(path)
         assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), (
