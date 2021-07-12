@@ -368,22 +368,6 @@ class PolicyEnsemble:
                 if epochs:
                     context["epoch_override"] = epochs
 
-            if "kwargs" not in rasa.shared.utils.common.arguments_of(policy_cls.load):
-                if context:
-                    raise UnsupportedDialogueModelError(
-                        f"`{policy_cls.__name__}.{policy_cls.load.__name__}` does not "
-                        f"accept `**kwargs`. Attempting to pass {context} to the "
-                        f"policy. `**kwargs` should be added to all policies by "
-                        f"Rasa Open Source 3.0.0."
-                    )
-                else:
-                    rasa.shared.utils.io.raise_deprecation_warning(
-                        f"`{policy_cls.__name__}.{policy_cls.load.__name__}` does not "
-                        f"accept `**kwargs`. `**kwargs` are required for contextual "
-                        f"information e.g. the flag `should_finetune`.",
-                        warn_until_version="3.0.0",
-                    )
-
             policy = policy_cls.load(policy_path, **context)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             if policy is not None:

@@ -1,7 +1,6 @@
 from pathlib import Path
-from typing import List, Any, Text, Optional, Union
-from _pytest.monkeypatch import MonkeyPatch
-from _pytest.capture import CaptureFixture
+from typing import List, Any, Text, Optional
+
 import pytest
 from _pytest.logging import LogCaptureFixture
 import logging
@@ -98,37 +97,6 @@ def test_policy_loading_simple(tmp_path: Path):
 
     loaded_policy_ensemble = PolicyEnsemble.load(str(tmp_path))
     assert original_policy_ensemble.policies == loaded_policy_ensemble.policies
-
-
-class PolicyWithoutLoadKwargs(Policy):
-    @classmethod
-    def load(cls, path: Union[Text, Path]) -> Policy:
-        return PolicyWithoutLoadKwargs()
-
-    def persist(self, _) -> None:
-        pass
-
-
-def test_policy_loading_no_kwargs_with_context(tmp_path: Path):
-    original_policy_ensemble = PolicyEnsemble([PolicyWithoutLoadKwargs()])
-    original_policy_ensemble.train([], None, RegexInterpreter())
-    original_policy_ensemble.persist(str(tmp_path))
-
-    with pytest.raises(UnsupportedDialogueModelError) as execinfo:
-        PolicyEnsemble.load(str(tmp_path), new_config={"policies": [{}]})
-    assert "`PolicyWithoutLoadKwargs.load` does not accept `**kwargs`" in str(
-        execinfo.value
-    )
-
-
-def test_policy_loading_no_kwargs_with_no_context(
-    tmp_path: Path, capsys: CaptureFixture
-):
-    original_policy_ensemble = PolicyEnsemble([PolicyWithoutLoadKwargs()])
-    original_policy_ensemble.train([], None, RegexInterpreter())
-    original_policy_ensemble.persist(str(tmp_path))
-    with pytest.warns(FutureWarning):
-        PolicyEnsemble.load(str(tmp_path))
 
 
 class ConstantPolicy(Policy):
