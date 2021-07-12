@@ -86,7 +86,7 @@ class FormPolicy(MemoizationPolicy):
         trackers_as_states: List[List[State]],
         trackers_as_actions: List[List[Text]],
     ) -> Dict[Text, SubStateValue]:
-        """Add states to lookup dict"""
+        """Add states to lookup dict."""
         lookup = {}
         for states in trackers_as_states:
             active_form = self._get_active_form_name(states[-1])

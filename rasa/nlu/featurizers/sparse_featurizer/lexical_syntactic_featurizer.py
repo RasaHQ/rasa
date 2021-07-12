@@ -172,8 +172,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         return ordered_feature_vocabulary
 
     def _create_sparse_features(self, message: Message) -> None:
-        """Convert incoming messages into sparse features using the configured
-        features."""
+        """Convert incoming messages into sparse features."""
         import scipy.sparse
 
         tokens = message.get(TOKENS_NAMES[TEXT])

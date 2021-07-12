@@ -1382,7 +1382,6 @@ def get_available_response_selector_types(
     interpreter: Interpreter,
 ) -> List[Optional[Text]]:
     """Gets all available response selector types."""
-
     from rasa.nlu.selectors.response_selector import ResponseSelector
 
     response_selector_types: List[Optional[Text]] = [

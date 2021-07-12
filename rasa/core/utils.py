@@ -89,9 +89,7 @@ def dump_obj_as_yaml_to_file(
 
 
 def list_routes(app: Sanic) -> Dict[Text, Text]:
-    """List all the routes of a sanic application.
-
-    Mainly used for debugging."""
+    """List all the routes of a sanic application. Mainly used for debugging."""
     from urllib.parse import unquote
 
     output = {}

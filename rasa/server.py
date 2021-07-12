@@ -443,8 +443,9 @@ def create_ssl_context(
 
 def _create_emulator(mode: Optional[Text]) -> Emulator:
     """Create emulator for specified mode.
-    If no emulator is specified, we will use the Rasa NLU format."""
 
+    If no emulator is specified, we will use the Rasa NLU format.
+    """
     if mode is None:
         return NoEmulator()
     elif mode.lower() == "wit":
