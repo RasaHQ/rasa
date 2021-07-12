@@ -11,7 +11,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
     Text,
     Tuple,
     Union,
@@ -91,8 +90,7 @@ from rasa.shared.nlu.training_data.message import Message
 # still works.
 import rasa.utils.io as io_utils
 
-if TYPE_CHECKING:
-    from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)
 

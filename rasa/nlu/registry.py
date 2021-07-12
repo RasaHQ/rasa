@@ -9,6 +9,7 @@ import traceback
 import typing
 from typing import Any, Dict, Optional, Text, Type, List
 
+from rasa.nlu.components import Component
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
@@ -47,7 +48,6 @@ import rasa.utils.io
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.components import Component
     from rasa.nlu.config import RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)

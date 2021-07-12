@@ -3,7 +3,18 @@ from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import numpy as np
-from typing import Any, Dict, Optional, Set, Text, List, Type, Union, Callable
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Set,
+    Text,
+    List,
+    Type,
+    Union,
+    Callable,
+    OrderedDict as OrderedDictType,
+)
 
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -147,7 +158,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     @staticmethod
     def _build_feature_vocabulary(
         features: List[List[Dict[Text, Any]]]
-    ) -> OrderedDict[Text, Set[Any]]:
+    ) -> OrderedDictType[Text, Set[Any]]:
         feature_vocabulary = defaultdict(set)
 
         for sentence_features in features:
