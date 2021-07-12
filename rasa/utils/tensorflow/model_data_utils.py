@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import scipy.sparse
 from collections import defaultdict, OrderedDict
-from typing import List, Optional, Text, Dict, Tuple, Union, Any, Set
+from typing import List, Optional, Text, Dict, Tuple, Union, Any
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
