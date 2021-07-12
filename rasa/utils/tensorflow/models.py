@@ -130,9 +130,7 @@ class RasaModel(TmpKerasModel):
             batch_in: The batch.
 
         Returns:
-            a (possibly nested) dictionary mapping the names
-            or (keys and sub-keys) of predicted items
-            to the corresponding tensors
+            The predicted tensors, identified by their name(s).
         """
         raise NotImplementedError
 
