@@ -511,6 +511,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         Args:
            message: any message
            label_attribute: attribute for which features should be collected
+
         Returns:
            a dictionary mapping keys that take the form
           `([SPARSE|DENSE],[SEQUENCE|SENTENCE])' to a sparse or dense matrix
