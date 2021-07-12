@@ -112,10 +112,12 @@ title = "gitleaks config"
     files = ['''^\.?gitleaks.toml$''',
     '''(.*?)(jpg|gif|doc|pdf|bin)$''',
     '''(go.mod|go.sum)$''',
-    '''docusaurus.config.js$''',
-    '''rasa/data/test_moodbot/credentials.yml$''']
+    '''docusaurus.config.js$''']
     regexes = [
     # this regex is useful for documentation content: we can still show
     # that users need to configure a private key and include "..." in it
     # so that gitleaks allows it
     '''-----BEGIN ((EC|PGP|DSA|RSA|OPENSSH) )?PRIVATE KEY( BLOCK)?-----.+\.\.\..+''']
+[whitelist]
+	description = "Fake credential file"
+	file = 'rasa/data/test_moodbot/credentials.yml'
