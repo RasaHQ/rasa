@@ -759,8 +759,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         Args:
           label_ids: an int array respresenting label IDs
+
         Returns:
-          a list of `FeatureArray`s that contain SENTENCE-level features
+          The `SENTENCE`-level features.
         """
         all_label_features = self._label_data.get(LABEL, SENTENCE)[0]
         return [
