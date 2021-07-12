@@ -392,7 +392,7 @@ This severity is calculated by [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpec
 The higher the severity, the more unlikely is the intent and hence reviewing that particular
 conversation path becomes more critical.
 
-It should be noted that `action_unlikely_intent` is predicted by
+Note, that `action_unlikely_intent` is predicted by
 `UnexpecTEDIntentPolicy` which employs a machine learning based model
 under the hood and hence can result in false warnings as well. You can choose to ignore such warnings
 if the conversation paths in these stories are already present in the training stories.
