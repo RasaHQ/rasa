@@ -68,7 +68,6 @@ class SpacyNLP(Component):
         component_config = rasa.utils.train_utils.override_defaults(
             cls.defaults, component_config
         )
-        
         spacy_model_name = component_config.get("model")
 
         logger.info(f"Trying to load spacy model with name '{spacy_model_name}'")
@@ -85,7 +84,8 @@ class SpacyNLP(Component):
 
         if not component_meta.get("model"):
             raise InvalidModelError(
-                f"You must pass a valid spaCy model to the `SpacyNLP` component in your `config.yml` file.\n"
+                f"Missing model configuration for `SpacyNLP` in `config.yml`.\n"
+                f"You must pass a model to the `SpacyNLP` component explicitly.\n"
                 f"For example:\n"
                 f"- name: SpacyNLP\n"
                 f"  model: en_core_web_md\n"
