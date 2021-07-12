@@ -166,8 +166,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             )
 
     def _get_attribute_vocabulary(self, attribute: Text) -> Optional[Dict[Text, int]]:
-        """Get trained vocabulary from attribute's count vectorizer"""
-
+        """Gets trained vocabulary from attribute's count vectorizer."""
         try:
             return self.vectorizers[attribute].vocabulary_
         except (AttributeError, TypeError, KeyError):
@@ -587,8 +586,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     ) -> Tuple[
         List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
     ]:
-        """Return features of a particular attribute for complete data"""
-
+        """Returns features of a particular attribute for complete data."""
         if self._get_attribute_vocabulary(attribute) is not None:
             # count vectorizer was trained
             return self._create_features(attribute, all_tokens)

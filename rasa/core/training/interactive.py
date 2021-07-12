@@ -264,13 +264,13 @@ def format_bot_output(message: BotUttered) -> Text:
     if not data:
         return output
 
-    if "image" in data:
+    if "image" in data and data["image"] is not None:
         output += "\nImage: " + data["image"]
 
-    if "attachment" in data:
+    if "attachment" in data and data["attachment"] is not None:
         output += "\nAttachment: " + data["attachment"]
 
-    if "buttons" in data:
+    if "buttons" in data and data["buttons"] is not None:
         output += "\nButtons:"
         choices = rasa.cli.utils.button_choices_from_message_data(
             data, allow_free_text_input=True
@@ -278,13 +278,13 @@ def format_bot_output(message: BotUttered) -> Text:
         for choice in choices:
             output += "\n" + choice
 
-    if "elements" in data:
+    if "elements" in data and data["elements"] is not None:
         output += "\nElements:"
         for idx, element in enumerate(data["elements"]):
             element_str = rasa.cli.utils.element_to_string(element, idx)
             output += "\n" + element_str
 
-    if "quick_replies" in data:
+    if "quick_replies" in data and data["quick_replies"] is not None:
         output += "\nQuick replies:"
         for idx, element in enumerate(data["quick_replies"]):
             element_str = rasa.cli.utils.element_to_string(element, idx)
