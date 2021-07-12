@@ -256,7 +256,10 @@ async def test_action_unlikely_intent_correctly_predicted(
     )
 
     result = await rasa.core.test.test(
-        str(file_name), agent, out_directory=str(tmp_path), fail_on_prediction_errors = True
+        str(file_name),
+        agent,
+        out_directory=str(tmp_path),
+        fail_on_prediction_errors=True,
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 1
@@ -264,7 +267,7 @@ async def test_action_unlikely_intent_correctly_predicted(
 
 
 async def test_action_unlikely_intent_fail_on_prediction_errors(
-        monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
+    monkeypatch: MonkeyPatch, tmp_path: Path, moodbot_domain: Domain
 ):
     monkeypatch.setattr(
         SimplePolicyEnsemble,
@@ -299,9 +302,11 @@ async def test_action_unlikely_intent_fail_on_prediction_errors(
 
     with pytest.raises(rasa.core.test.WrongPredictionException):
         result = await rasa.core.test.test(
-            str(file_name), agent, out_directory=str(tmp_path), fail_on_prediction_errors=True
+            str(file_name),
+            agent,
+            out_directory=str(tmp_path),
+            fail_on_prediction_errors=True,
         )
-
 
 
 async def test_wrong_action_after_action_unlikely_intent(

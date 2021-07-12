@@ -26,9 +26,7 @@ from rasa.core.channels import UserMessage
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
-from rasa.shared.core.training_data.structures import (
-    StoryStep,
-)
+from rasa.shared.core.training_data.structures import StoryStep
 from rasa.shared.core.domain import Domain
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
@@ -52,11 +50,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TEXT,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
-from rasa.shared.core.events import (
-    ActionExecuted,
-    EntitiesAdded,
-    UserUttered
-)
+from rasa.shared.core.events import ActionExecuted, EntitiesAdded, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -96,13 +90,13 @@ class WarningPredictedAction(ActionExecuted):
     type_name = "warning_predicted"
 
     def __init__(
-            self,
-            action_name_prediction: Text,
-            action_name: Optional[Text] = None,
-            policy: Optional[Text] = None,
-            confidence: Optional[float] = None,
-            timestamp: Optional[float] = None,
-            metadata: Optional[Dict] = None,
+        self,
+        action_name_prediction: Text,
+        action_name: Optional[Text] = None,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict] = None,
     ):
         self.action_name_prediction = action_name_prediction
         super().__init__(action_name, policy, confidence, timestamp, metadata)
@@ -121,15 +115,15 @@ class WronglyPredictedAction(ActionExecuted):
     type_name = "wrong_action"
 
     def __init__(
-            self,
-            action_name_target: Text,
-            action_text_target: Text,
-            action_name_prediction: Text,
-            policy: Optional[Text] = None,
-            confidence: Optional[float] = None,
-            timestamp: Optional[float] = None,
-            metadata: Optional[Dict] = None,
-            predicted_action_unlikely_intent: bool = False,
+        self,
+        action_name_target: Text,
+        action_text_target: Text,
+        action_name_prediction: Text,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict] = None,
+        predicted_action_unlikely_intent: bool = False,
     ) -> None:
         """Creates event for a successful event execution.
 
@@ -722,7 +716,7 @@ def _collect_action_executed_predictions(
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
-                prediction.action_metadata
+                prediction.action_metadata,
             )
         )
     else:
@@ -732,7 +726,7 @@ def _collect_action_executed_predictions(
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
-                metadata=prediction.action_metadata
+                metadata=prediction.action_metadata,
             )
         )
 
@@ -977,8 +971,10 @@ def _filter_step_events(step: StoryStep) -> StoryStep:
     events = []
     for event in step.events:
         if (
-                type(event) == WronglyPredictedAction
-                and event.action_name == event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME
+            type(event) == WronglyPredictedAction
+            and event.action_name
+            == event.action_name_prediction
+            == ACTION_UNLIKELY_INTENT_NAME
         ):
             continue
         events.append(event)
@@ -996,7 +992,11 @@ def _log_stories(
             f.write(f"# {message_if_no_trackers}")
         else:
             stories = [tracker.as_story(include_source=True) for tracker in trackers]
-            steps = [_filter_step_events(step) for story in stories for step in story.story_steps]
+            steps = [
+                _filter_step_events(step)
+                for story in stories
+                for step in story.story_steps
+            ]
             f.write(YAMLStoryWriter().dumps(steps))
 
 
