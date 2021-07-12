@@ -643,8 +643,8 @@ class ResponseSelector(DIETClassifier):
 
         return model
 
-    def _ignore_sequence_features_for_tf_label_data(self,) -> bool:
-        """Whether we skip sequence-level features during `label_data` creation."""
+    def _ignore_sequence_features_for_tf_label_data(self) -> bool:
+        """Decides if  we skip sequence-level features during `label_data` creation."""
         return (
             self.component_config[NUM_TRANSFORMER_LAYERS] == 0
             and self.label_attribute == RESPONSE
