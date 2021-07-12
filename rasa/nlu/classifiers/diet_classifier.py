@@ -704,7 +704,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             raise ValueError(
                 "Expected at least one example for each label "
                 "in the given training_data but could not find "
-                f"an examples for {sorted(debug_labels_without_examples)}."
+                f"any example(s) for {sorted(debug_labels_without_examples)}."
             )
 
         # Sort the list of tuples based on label_idx
