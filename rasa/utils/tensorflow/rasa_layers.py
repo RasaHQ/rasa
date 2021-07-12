@@ -740,7 +740,7 @@ class RasaSequenceLayer(RasaCustomLayer):
             seq_length, seq_length)`, empty tensor if the transformer has 0 layers.
 
     Raises:
-        A `TFLayerConfigException` if no feature signatures is provided.
+        A `TFLayerConfigException` if no feature signatures are provided.
 
     Attributes:
         output_units: The last dimension size of the layer's first output (`outputs`).
