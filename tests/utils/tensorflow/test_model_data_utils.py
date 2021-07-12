@@ -1,4 +1,4 @@
-from typing import Any, Text, Optional, Dict, List, Set
+from typing import Any, Text, Optional, Dict, List
 
 import pytest
 import scipy.sparse
@@ -204,7 +204,7 @@ def test_extract_features():
             None,
             [TEXT, INTENT],
             {"text": {"sentence": [1]},},  # due to sentence type filter
-            {SENTENCE},
+            SENTENCE,
         ),
         (
             "Hello Max!",
@@ -223,7 +223,7 @@ def test_convert_training_examples(
     entities: Optional[List[Dict[Text, Any]]],
     attributes: List[Text],
     real_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
-    types: Optional[Set[Text]],
+    type: Optional[Text],
 ):
     message = Message(data={TEXT: text, INTENT: intent, ENTITIES: entities})
 
@@ -247,7 +247,7 @@ def test_convert_training_examples(
         )
     ]
     output, sparse_feature_sizes = model_data_utils.featurize_training_examples(
-        [message], attributes=attributes, entity_tag_specs=entity_tag_spec, types=types,
+        [message], attributes=attributes, entity_tag_specs=entity_tag_spec, type=type,
     )
 
     assert len(output) == 1
@@ -255,21 +255,21 @@ def test_convert_training_examples(
         assert attribute in output[0]
     for attribute in {INTENT, TEXT, ENTITIES} - set(attributes):
         assert attribute not in output[0]
-    if types is None:
+    if type is None:
         # we have sparse sentence, sparse sequence, dense sentence, and dense sequence
         # features in the list
         assert len(output[0][TEXT]) == 4
         if INTENT in attributes:
             # we will just have sparse sequence features
             assert len(output[0][INTENT]) == 1
-    elif types == {SENTENCE}:
+    elif type == SENTENCE:
         assert len(output[0][TEXT]) == 2
         if INTENT in attributes:
             # we will just have sparse sequence features - and filter them out
             assert len(output[0][INTENT]) == 0
     else:
         raise NotImplementedError(
-            f"Expected None or {SENTENCE} for types" f" but received {types}."
+            f"Expected None or {SENTENCE} for type but received {type}."
         )
     if ENTITIES in attributes:
         # we will just have space sentence features
