@@ -41,18 +41,30 @@ env:
 jobs:
   changes:
     name: Check for file changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      docker: ${{ steps.filter.outputs.docker }}
-      docs: ${{ steps.filter.outputs.docs }}
+      # Both of the outputs below are strings but only one exists at any given time
+      backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
+      docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
+      docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
       - uses: actions/checkout@v2
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
-        id: filter
+        # Run the normal filters if the all-tests-required label is not set
+        id: changed-files
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
+      - name: Set all filters to true if all tests are required
+        # Set all filters to true if the all-tests-required label is set
+        # Bypasses all the change filters in change_filters.yml and forces all outputs to true
+        id: run-all
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
+        run: |
+          echo "::set-output name=backend::true"
+          echo "::set-output name=docker::true"
+          echo "::set-output name=docs::true"
 
 
   wait_for_docs_tests:
@@ -92,7 +104,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -206,7 +218,7 @@ jobs:
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -228,7 +240,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
     - name: Clear Poetry cache
       if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
@@ -299,6 +311,20 @@ jobs:
         COVERALLS_PARALLEL: true
       run: poetry run coveralls
 
+  complete_coverage:
+    name: Complete coverage
+    runs-on: ubuntu-20.04
+    needs: [ test, changes ]
+    if: needs.changes.outputs.backend == 'true'
+
+    steps:
+      - name: Tell coveralls we're finished reporting
+        uses: coverallsapp/github-action@master
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+
   integration_test:
     name: Run Integration Tests
     runs-on: ubuntu-latest
@@ -358,7 +384,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -380,7 +406,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
     - name: Clear Poetry cache
       if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
@@ -693,7 +719,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up Python 3.6 🐍
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: 3.6
 
