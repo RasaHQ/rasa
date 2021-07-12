@@ -1068,12 +1068,15 @@ model before trying to use it with this improved version.
     entity_recognition: False
     use_masked_language_model: False
     BILOU_flag: False
+    scale_loss: True
+    use_sparse_input_dropout: False
+    use_dense_input_dropout: False
     # ... any other parameters
   ```
 
   See [DIETClassifier](./components.mdx#dietclassifier) for more information about the new component.
-  Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, the
-  behavior is unchanged from previous versions.
+  Specifying `EmbeddingIntentClassifier` in the configuration maps to the above component definition, and results in
+  the same behaviour within the same Rasa version. 
 
 * `CRFEntityExtractor` is now deprecated and will be replaced by `DIETClassifier` in the future. If you want to
   get the same model behavior as the current `CRFEntityExtractor`, you can use the following configuration:
