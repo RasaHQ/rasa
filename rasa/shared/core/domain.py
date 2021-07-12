@@ -26,7 +26,6 @@ from rasa.shared.constants import (
     DOMAIN_SCHEMA_FILE,
     DOCS_URL_DOMAINS,
     DOCS_URL_FORMS,
-    DOCS_URL_MIGRATION_GUIDE,
     LATEST_TRAINING_DATA_FORMAT_VERSION,
     DOCS_URL_RESPONSES,
     REQUIRED_SLOTS_KEY,
@@ -685,15 +684,12 @@ class Domain:
 
     @staticmethod
     def _initialize_forms(
-        forms: Union[Dict[Text, Any], List[Text]]
+        forms: Dict[Text, Any]
     ) -> Tuple[List[Text], Dict[Text, Any], List[Text]]:
         """Retrieves the initial values for the Domain's form fields.
 
         Args:
-            forms: Form names (if forms are a list) or a form dictionary. Forms
-                provided in dictionary format have the form names as keys, and either
-                empty dictionaries as values, or objects containing
-                `SlotMapping`s.
+            forms: Parsed content of the `forms` section in the domain.
 
         Returns:
             The form names, a mapping of form names and slot mappings, and custom
@@ -703,35 +699,11 @@ class Domain:
             for it. This can e.g. be used to run the deprecated Rasa Open Source 1
             `FormAction` which is implemented in the Rasa SDK.
         """
-        if isinstance(forms, dict):
-            for form_name, form_data in forms.items():
-                if form_data is not None and REQUIRED_SLOTS_KEY not in form_data:
-                    forms[form_name] = {REQUIRED_SLOTS_KEY: form_data}
-            # dict with slot mappings
-            return list(forms.keys()), forms, []
-
-        if isinstance(forms, list) and (not forms or isinstance(forms[0], str)):
-            # list of form names (Rasa Open Source 1 format)
-            rasa.shared.utils.io.raise_warning(
-                "The `forms` section in the domain used the old Rasa Open Source 1 "
-                "list format to define forms. Rasa Open Source will be configured to "
-                "use the deprecated `FormAction` within the Rasa SDK. If you want to "
-                "use the new Rasa Open Source 2 `FormAction` adapt your `forms` "
-                "section as described in the documentation. Support for the "
-                "deprecated `FormAction` in the Rasa SDK will be removed in Rasa Open "
-                "Source 3.0.",
-                docs=rasa.shared.constants.DOCS_URL_FORMS,
-                category=FutureWarning,
-            )
-            return forms, {form_name: {} for form_name in forms}, forms
-
-        rasa.shared.utils.io.raise_warning(
-            f"The `forms` section in the domain needs to contain a dictionary. "
-            f"Instead found an object of type '{type(forms)}'.",
-            docs=DOCS_URL_FORMS,
-        )
-
-        return [], {}, []
+        for form_name, form_data in forms.items():
+            if form_data is not None and REQUIRED_SLOTS_KEY not in form_data:
+                forms[form_name] = {REQUIRED_SLOTS_KEY: form_data}
+        # dict with slot mappings
+        return list(forms.keys()), forms, []
 
     def __hash__(self) -> int:
         """Returns a unique hash for the domain."""
@@ -1850,16 +1822,6 @@ class SlotMapping(Enum):
 
 
 def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
-    if isinstance(forms, list):
-        if not all(isinstance(form_name, str) for form_name in forms):
-            raise InvalidDomain(
-                f"If you use the deprecated list syntax for forms, "
-                f"all form names have to be strings. Please see "
-                f"{DOCS_URL_FORMS} for more information."
-            )
-
-        return
-
     if not isinstance(forms, dict):
         raise InvalidDomain("Forms have to be specified as dictionary.")
 
@@ -1883,17 +1845,7 @@ def _validate_slot_mappings(forms: Union[Dict, List]) -> None:
                 f"for more information."
             )
 
-        if REQUIRED_SLOTS_KEY in form_data:
-            slots = forms[form_name].get(REQUIRED_SLOTS_KEY)
-        else:
-            rasa.shared.utils.io.raise_deprecation_warning(
-                f"The definition of slot mappings in your form "
-                f"should always be preceded by the keyword `{REQUIRED_SLOTS_KEY}`. "
-                f"The lack of this keyword will be deprecated in "
-                f"Rasa Open Source 3.0.0. Please see {DOCS_URL_FORMS} "
-                f"for more information.",
-            )
-            slots = form_data
+        slots = forms[form_name].get(REQUIRED_SLOTS_KEY, {})
 
         if not isinstance(slots, Dict):
             raise InvalidDomain(

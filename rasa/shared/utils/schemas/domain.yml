@@ -44,8 +44,16 @@ mapping:
     type: "map"
     allowempty: True
   forms:
-    type: "any"
+    type: "map"
     required: False
+    mapping:
+      regex;([A-Za-z]+):
+        type: "map"
+        mapping:
+          required_slots:
+            type: "map"
+            required: False
+            allowempty: True
   config:
     type: "map"
     allowempty: True
