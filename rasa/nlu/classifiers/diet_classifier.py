@@ -600,10 +600,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         have a length of 2.
 
         Returns:
-            a tuple of two lists (first one for sentence level features, second for
-            sequence level features) that contain lists of FeatureArrays
-            (of length at most 2, one for sparse and one for dense features, with
-            sparse features first)
+            Sentence level features and sequence level features. Each feature contains
+            FeatureArrays with sparse features first.
         """
         # for each label_example, collect sparse and dense feature (matrices) in lists
         collected_features: Dict[
