@@ -98,6 +98,10 @@ class WarningPredictedAction(ActionExecuted):
         timestamp: Optional[float] = None,
         metadata: Optional[Dict] = None,
     ):
+        """Creates event `action_unlikely_intent` predicted as warning.
+
+        See the docstring of the parent class for more information.
+        """
         self.action_name_prediction = action_name_prediction
         super().__init__(action_name, policy, confidence, timestamp, metadata)
 
@@ -110,7 +114,8 @@ class WronglyPredictedAction(ActionExecuted):
     """The model predicted the wrong action.
 
     Mostly used to mark wrong predictions and be able to
-    dump them as stories."""
+    dump them as stories.
+    """
 
     type_name = "wrong_action"
 
