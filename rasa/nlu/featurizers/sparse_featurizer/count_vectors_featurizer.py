@@ -696,7 +696,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             )
 
     def _collect_vectorizer_vocabularies(self) -> Dict[Text, Optional[Dict[Text, int]]]:
-        """Get vocabulary for all attributes."""
+        """Gets vocabulary for all attributes."""
         return {
             attribute: self.vectorizers[attribute].vocabulary_
             for attribute in self._attributes
