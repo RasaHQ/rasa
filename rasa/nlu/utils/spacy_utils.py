@@ -1,6 +1,6 @@
 import typing
 import logging
-from typing import Any, Dict, List, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 import rasa.shared.utils.io
 import rasa.utils.train_utils
