@@ -112,7 +112,6 @@ from rasa.utils.tensorflow.constants import (
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils import io as shared_io_utils
-from rasa.core.exceptions import PolicyModelNotFound
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features

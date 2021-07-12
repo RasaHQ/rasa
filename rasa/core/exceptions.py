@@ -40,7 +40,3 @@ class ChannelConfigError(RasaCoreException):
 
 class InvalidTrackerFeaturizerUsageError(RasaCoreException):
     """Raised if a tracker featurizer is incorrectly used."""
-
-
-class PolicyModelNotFound(ModelNotFound):
-    """Raised when the model for a policy is not found."""
