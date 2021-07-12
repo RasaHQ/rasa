@@ -651,7 +651,7 @@ class ResponseSelector(DIETClassifier):
         )
 
     def _ignore_sequence_features_for_model_data(self) -> bool:
-        """Wether we skip sequence-level features during `model_data` creation."""
+        """Decides if  we skip sequence-level features during `model_data` creation."""
         return (
             self._ignore_sequence_features_for_tf_label_data()
             and self.use_text_as_label
