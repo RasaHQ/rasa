@@ -297,7 +297,7 @@ class RasaModelData:
             f"{self.__class__.__name__}(\n"
             f"  label_key={repr(self.label_key)},\n"
             f"  label_sub_key={repr(self.label_sub_key)},\n"
-            f"  data={{{to_str(self.data,indent=2)}}},\n"
+            f"  data={{{to_str(self.data, indent=2)}}},\n"
             f"  num_examples={self.num_examples},\n"
             f"  signature={self.get_signature()})\n"
         )
