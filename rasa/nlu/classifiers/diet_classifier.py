@@ -343,7 +343,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         # transform numbers to labels
-        self.index_label_id_mapping = index_label_id_mapping
+        self.index_label_id_mapping = index_label_id_mapping or {}
 
         self._entity_tag_specs = entity_tag_specs
 
@@ -729,7 +729,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         Returns:
           The `SENTENCE`-level features.
         """
-        all_label_features = self._label_data.get(LABEL, SENTENCE)[0]
+        feature_arrays: List[FeatureArray] = self._label_data.get(LABEL, SENTENCE)
+        all_label_features = feature_arrays[0]
         return [
             FeatureArray(
                 np.array([all_label_features[label_id] for label_id in label_ids]),
@@ -1907,7 +1908,7 @@ class DIET(TransformerRasaModel):
 
         _, scores = self._tf_layers[
             f"loss.{LABEL}"
-        ].similarity_confidence_from_embeddings(
+        ].get_similarities_and_confidences_from_embeddings(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
         )
