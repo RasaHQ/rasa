@@ -519,7 +519,7 @@ def test_incomplete_rules_due_to_loops():
         intents:
         - {GREET_INTENT_NAME}
         forms:
-          {some_form}:
+          {some_form}: {{}}
         """
     )
     policy = RulePolicy()
@@ -799,7 +799,7 @@ async def test_predict_form_action_if_in_form():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -844,7 +844,7 @@ async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {loop_name}:
+          {loop_name}: {{}}
         """
     )
     e2e_rule = TrackerWithCachedStates.from_events(
@@ -901,7 +901,7 @@ async def test_predict_form_action_if_multiple_turns():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1051,7 +1051,7 @@ async def test_predict_action_listen_after_form():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1098,7 +1098,7 @@ async def test_dont_predict_form_if_already_finished():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1149,7 +1149,7 @@ async def test_form_unhappy_path():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1194,7 +1194,7 @@ async def test_form_unhappy_path_from_general_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1252,7 +1252,7 @@ async def test_form_unhappy_path_from_in_form_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1328,7 +1328,7 @@ async def test_form_unhappy_path_from_story():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1403,7 +1403,7 @@ async def test_form_unhappy_path_no_validation_from_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1495,7 +1495,7 @@ async def test_form_unhappy_path_no_validation_from_story():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1565,7 +1565,7 @@ async def test_form_unhappy_path_without_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1610,7 +1610,7 @@ async def test_form_activation_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1650,7 +1650,7 @@ async def test_failing_form_activation_due_to_no_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1690,7 +1690,7 @@ def test_form_submit_rule():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1746,7 +1746,7 @@ def test_immediate_submit():
           {slot}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         entities:
         - {entity}
         """
@@ -2369,8 +2369,8 @@ def test_hide_rule_turn_with_loops():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
-          {another_form_name}:
+          {form_name}: {{}}
+          {another_form_name}: {{}}
         """
     )
 
@@ -2467,7 +2467,7 @@ def test_do_not_hide_rule_turn_with_loops_in_stories():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -2527,7 +2527,7 @@ def test_hide_rule_turn_with_loops_as_followup_action():
           {REQUESTED_SLOT}:
             type: unfeaturized
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 

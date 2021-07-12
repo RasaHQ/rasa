@@ -54,6 +54,8 @@ mapping:
             type: "map"
             required: False
             allowempty: True
+          ignored_intents:
+            type: any
   config:
     type: "map"
     allowempty: True
