@@ -266,8 +266,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _replace_with_oov_token(
         self, tokens: List[Text], attribute: Text
     ) -> List[Text]:
-        """Replace OOV words with OOV token"""
-
+        """Replace OOV words with OOV token."""
         if self.OOV_token and self.analyzer == "word":
             attribute_vocab = self._get_attribute_vocabulary(attribute)
             if attribute_vocab is not None and self.OOV_token in attribute_vocab:
