@@ -990,7 +990,7 @@ class TEDPolicy(Policy):
         model_path = Path(path)
 
         if not model_path.exists():
-            logger.error(
+            logger.warning(
                 f"Failed to load {cls.__class__.__name__} model. Path "
                 f"'{model_path.absolute()}' doesn't exist."
             )
