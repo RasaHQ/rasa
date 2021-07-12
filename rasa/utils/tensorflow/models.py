@@ -838,8 +838,8 @@ class TransformerRasaModel(RasaModel):
     ) -> tf.Tensor:
         """Creates sentence length information for the given key.
 
-        Returns a tensor filled with 1s if there are sentence-level features
-        stored in the given batch (i.e. there is a SEQUENCE subkey present).
+        Returns a tensor filled with 1s if sentence-level features are
+        stored in the given batch (i.e. a SENTENCE sub-key is present).
         Otherwise, a tensor of 0s is returned.
 
         This is needed because we treat sentence-level features as token-level features
