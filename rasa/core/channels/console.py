@@ -47,6 +47,7 @@ def print_buttons(
             rasa.shared.utils.cli.print_color(
                 cli_utils.button_to_string(button, idx), color=color
             )
+        return None
 
 
 def print_bot_output(
@@ -89,6 +90,8 @@ def print_bot_output(
         rasa.shared.utils.cli.print_color(
             json.dumps(message.get("custom"), indent=2), color=color
         )
+
+    return None
 
 
 def get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:

@@ -246,9 +246,10 @@ class HangoutsInput(InputChannel):
 
     @staticmethod
     def _extract_room(req: Request) -> Union[Text, None]:
-
         if req.json["space"]["type"] == "ROOM":
             return req.json["space"]["displayName"]
+
+        return None
 
     def _extract_input_channel(self) -> Text:
         return self.name()
