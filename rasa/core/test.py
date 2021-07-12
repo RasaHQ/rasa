@@ -26,6 +26,7 @@ from rasa.core.channels import UserMessage
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
+from rasa.shared.core.training_data.structures import StoryStep
 from rasa.shared.core.domain import Domain
 from rasa.nlu.constants import (
     RESPONSE_SELECTOR_DEFAULT_INTENT,
@@ -49,11 +50,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_TEXT,
 )
 from rasa.constants import RESULTS_FILE, PERCENTAGE_KEY
-from rasa.shared.core.events import (
-    ActionExecuted,
-    EntitiesAdded,
-    UserUttered,
-)
+from rasa.shared.core.events import ActionExecuted, EntitiesAdded, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWriter
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -85,6 +82,88 @@ PredictionList = List[Optional[Text]]
 
 class WrongPredictionException(RasaException, ValueError):
     """Raised if a wrong prediction is encountered."""
+
+
+class WarningPredictedAction(ActionExecuted):
+    """The model predicted the correct action with warning."""
+
+    type_name = "warning_predicted"
+
+    def __init__(
+        self,
+        action_name_prediction: Text,
+        action_name: Optional[Text] = None,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict] = None,
+    ):
+        """Creates event `action_unlikely_intent` predicted as warning.
+
+        See the docstring of the parent class for more information.
+        """
+        self.action_name_prediction = action_name_prediction
+        super().__init__(action_name, policy, confidence, timestamp, metadata)
+
+    def inline_comment(self) -> Text:
+        """A comment attached to this event. Used during dumping."""
+        return f"predicted: {self.action_name_prediction}"
+
+
+class WronglyPredictedAction(ActionExecuted):
+    """The model predicted the wrong action.
+
+    Mostly used to mark wrong predictions and be able to
+    dump them as stories.
+    """
+
+    type_name = "wrong_action"
+
+    def __init__(
+        self,
+        action_name_target: Text,
+        action_text_target: Text,
+        action_name_prediction: Text,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
+        timestamp: Optional[float] = None,
+        metadata: Optional[Dict] = None,
+        predicted_action_unlikely_intent: bool = False,
+    ) -> None:
+        """Creates event for a successful event execution.
+
+        See the docstring of the parent class `ActionExecuted` for more information.
+        """
+        self.action_name_prediction = action_name_prediction
+        self.predicted_action_unlikely_intent = predicted_action_unlikely_intent
+        super().__init__(
+            action_name_target,
+            policy,
+            confidence,
+            timestamp,
+            metadata,
+            action_text=action_text_target,
+        )
+
+    def inline_comment(self) -> Text:
+        """A comment attached to this event. Used during dumping."""
+        comment = f"predicted: {self.action_name_prediction}"
+        if self.predicted_action_unlikely_intent:
+            return f"{comment} after {ACTION_UNLIKELY_INTENT_NAME}"
+        return comment
+
+    def as_story_string(self) -> Text:
+        """Returns the story equivalent representation."""
+        return f"{self.action_name}   <!-- {self.inline_comment()} -->"
+
+    def __repr__(self) -> Text:
+        """Returns event as string for debugging."""
+        return (
+            f"WronglyPredictedAction(action_target: {self.action_name}, "
+            f"action_prediction: {self.action_name_prediction}, "
+            f"policy: {self.policy}, confidence: {self.confidence}, "
+            f"metadata: {self.metadata})"
+        )
 
 
 class EvaluationStore:
@@ -141,21 +220,6 @@ class EvaluationStore:
             or self.entity_predictions != self.entity_targets
             or self.action_predictions != self.action_targets
         )
-
-    @staticmethod
-    def predicted_warning(predicted_action: Text) -> bool:
-        """Indicates if the predicted action needs to raise a warning.
-
-        Currently the only action that leads to a warning is
-        an `action_unlikely_intent`.
-
-        Args:
-            predicted_action: A predicted action.
-
-        Returns:
-            `True` if the prediction needs to raise a warning, `False` otherwise.
-        """
-        return predicted_action == ACTION_UNLIKELY_INTENT_NAME
 
     @staticmethod
     def _compare_entities(
@@ -262,56 +326,6 @@ class EvaluationStore:
             + aligned_entity_predictions
         )
         return targets, predictions
-
-
-class WronglyPredictedAction(ActionExecuted):
-    """The model predicted the wrong action.
-
-    Mostly used to mark wrong predictions and be able to
-    dump them as stories."""
-
-    type_name = "wrong_action"
-
-    def __init__(
-        self,
-        action_name_target: Text,
-        action_text_target: Text,
-        action_name_prediction: Text,
-        policy: Optional[Text] = None,
-        confidence: Optional[float] = None,
-        timestamp: Optional[float] = None,
-        metadata: Optional[Dict] = None,
-    ) -> None:
-        """Creates event for a successful event execution.
-
-        See the docstring of the parent class `ActionExecuted` for more information.
-        """
-        self.action_name_prediction = action_name_prediction
-        super().__init__(
-            action_name_target,
-            policy,
-            confidence,
-            timestamp,
-            metadata,
-            action_text=action_text_target,
-        )
-
-    def inline_comment(self) -> Text:
-        """A comment attached to this event. Used during dumping."""
-        return f"predicted: {self.action_name_prediction}"
-
-    def as_story_string(self) -> Text:
-        """Returns the story equivalent representation."""
-        return f"{self.action_name}   <!-- {self.inline_comment()} -->"
-
-    def __repr__(self) -> Text:
-        """Returns event as string for debugging."""
-        return (
-            f"WronglyPredictedAction(action_target: {self.action_name}, "
-            f"action_prediction: {self.action_name_prediction}, "
-            f"policy: {self.policy}, confidence: {self.confidence}, "
-            f"metadata: {self.metadata})"
-        )
 
 
 class EndToEndUserUtterance(UserUttered):
@@ -584,6 +598,39 @@ def _get_e2e_entity_evaluation_result(
                 )
 
 
+def _run_action_prediction(
+    processor: "MessageProcessor",
+    partial_tracker: DialogueStateTracker,
+    expected_action: Text,
+) -> Tuple[Text, PolicyPrediction, EntityEvaluationResult]:
+    action, prediction = processor.predict_next_action(partial_tracker)
+    predicted_action = action.name()
+
+    policy_entity_result = _get_e2e_entity_evaluation_result(
+        processor, partial_tracker, prediction
+    )
+
+    if (
+        prediction.policy_name
+        and predicted_action != expected_action
+        and _form_might_have_been_rejected(
+            processor.domain, partial_tracker, predicted_action
+        )
+    ):
+        # Wrong action was predicted,
+        # but it might be Ok if form action is rejected.
+        emulate_loop_rejection(partial_tracker)
+        # try again
+        action, prediction = processor.predict_next_action(partial_tracker)
+
+        # Even if the prediction is also wrong, we don't have to undo the emulation
+        # of the action rejection as we know that the user explicitly specified
+        # that something else than the form was supposed to run.
+        predicted_action = action.name()
+
+    return predicted_action, prediction, policy_entity_result
+
+
 def _collect_action_executed_predictions(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
@@ -600,48 +647,39 @@ def _collect_action_executed_predictions(
     expected_action = expected_action_name or expected_action_text
 
     policy_entity_result = None
+    prev_action_unlikely_intent = False
 
     if circuit_breaker_tripped:
         prediction = PolicyPrediction([], policy_name=None)
         predicted_action = "circuit breaker tripped"
     else:
-        action, prediction = processor.predict_next_action(partial_tracker)
-        predicted_action = action.name()
-
-        policy_entity_result = _get_e2e_entity_evaluation_result(
-            processor, partial_tracker, prediction
+        predicted_action, prediction, policy_entity_result = _run_action_prediction(
+            processor, partial_tracker, expected_action
         )
 
-        if (
-            prediction.policy_name
-            and predicted_action != expected_action
-            and _form_might_have_been_rejected(
-                processor.domain, partial_tracker, predicted_action
+    predicted_action_unlikely_intent = predicted_action == ACTION_UNLIKELY_INTENT_NAME
+    if predicted_action_unlikely_intent and predicted_action != expected_action:
+        partial_tracker.update(
+            WronglyPredictedAction(
+                predicted_action,
+                expected_action_text,
+                predicted_action,
+                prediction.policy_name,
+                prediction.max_confidence,
+                event.timestamp,
+                metadata=prediction.action_metadata,
             )
-        ):
-            # Wrong action was predicted,
-            # but it might be Ok if form action is rejected.
-            emulate_loop_rejection(partial_tracker)
-            # try again
-            action, prediction = processor.predict_next_action(partial_tracker)
-
-            # Even if the prediction is also wrong, we don't have to undo the emulation
-            # of the action rejection as we know that the user explicitly specified
-            # that something else than the form was supposed to run.
-            predicted_action = action.name()
-
-    predicted_warning = action_executed_eval_store.predicted_warning(predicted_action)
-    if not predicted_warning:
-        action_executed_eval_store.add_to_store(
-            action_predictions=[predicted_action], action_targets=[expected_action]
+        )
+        prev_action_unlikely_intent = True
+        predicted_action, prediction, policy_entity_result = _run_action_prediction(
+            processor, partial_tracker, expected_action
         )
 
-    has_prediction_target_mismatch = (
-        action_executed_eval_store.has_prediction_target_mismatch()
+    action_executed_eval_store.add_to_store(
+        action_predictions=[predicted_action], action_targets=[expected_action]
     )
-    if has_prediction_target_mismatch or (
-        predicted_warning and predicted_action != expected_action
-    ):
+
+    if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
             WronglyPredictedAction(
                 expected_action_name,
@@ -651,9 +689,14 @@ def _collect_action_executed_predictions(
                 prediction.max_confidence,
                 event.timestamp,
                 metadata=prediction.action_metadata,
+                predicted_action_unlikely_intent=prev_action_unlikely_intent,
             )
         )
-        if fail_on_prediction_errors and has_prediction_target_mismatch:
+        if (
+            fail_on_prediction_errors
+            and predicted_action != ACTION_UNLIKELY_INTENT_NAME
+            and predicted_action != expected_action
+        ):
             story_dump = YAMLStoryWriter().dumps(partial_tracker.as_story().story_steps)
             error_msg = (
                 f"Model predicted a wrong action. Failed Story: " f"\n\n{story_dump}"
@@ -667,6 +710,17 @@ def _collect_action_executed_predictions(
                     "training stories and retrain."
                 )
             raise WrongPredictionException(error_msg)
+    elif prev_action_unlikely_intent:
+        partial_tracker.update(
+            WarningPredictedAction(
+                ACTION_UNLIKELY_INTENT_NAME,
+                predicted_action,
+                prediction.policy_name,
+                prediction.max_confidence,
+                event.timestamp,
+                prediction.action_metadata,
+            )
+        )
     else:
         partial_tracker.update(
             ActionExecuted(
@@ -674,6 +728,7 @@ def _collect_action_executed_predictions(
                 prediction.policy_name,
                 prediction.max_confidence,
                 event.timestamp,
+                metadata=prediction.action_metadata,
             )
         )
 
@@ -878,7 +933,7 @@ async def _collect_story_predictions(
 
             if any(
                 isinstance(event, WronglyPredictedAction)
-                and story_eval_store.predicted_warning(event.action_name_prediction)
+                and event.action_name_prediction == ACTION_UNLIKELY_INTENT_NAME
                 for event in predicted_tracker.events
             ):
                 stories_with_warnings.append(predicted_tracker)
@@ -914,6 +969,22 @@ async def _collect_story_predictions(
     )
 
 
+def _filter_step_events(step: StoryStep) -> StoryStep:
+    events = []
+    for event in step.events:
+        if (
+            isinstance(event, WronglyPredictedAction)
+            and event.action_name
+            == event.action_name_prediction
+            == ACTION_UNLIKELY_INTENT_NAME
+        ):
+            continue
+        events.append(event)
+    updated_step = step.create_copy(use_new_id=False)
+    updated_step.events = events
+    return updated_step
+
+
 def _log_stories(
     trackers: List[DialogueStateTracker], file_path: Text, message_if_no_trackers: Text
 ) -> None:
@@ -923,7 +994,11 @@ def _log_stories(
             f.write(f"# {message_if_no_trackers}")
         else:
             stories = [tracker.as_story(include_source=True) for tracker in trackers]
-            steps = [step for story in stories for step in story.story_steps]
+            steps = [
+                _filter_step_events(step)
+                for story in stories
+                for step in story.story_steps
+            ]
             f.write(YAMLStoryWriter().dumps(steps))
 
 
