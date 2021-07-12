@@ -73,7 +73,7 @@ class EndpointConfig:
 
     def __init__(
         self,
-        url: Text = "127.0.0.1",
+        url: Text = "",
         params: Optional[Dict[Text, Any]] = None,
         headers: Optional[Dict[Text, Any]] = None,
         basic_auth: Optional[Dict[Text, Text]] = None,
