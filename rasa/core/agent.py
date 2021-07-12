@@ -10,7 +10,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
     Text,
     Tuple,
     Union,
@@ -62,8 +61,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
 
-if TYPE_CHECKING:
-    from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import scipy.sparse
 from collections import defaultdict, OrderedDict
-from typing import List, Optional, Text, Dict, Tuple, Union, Any
+from typing import List, Optional, Text, Dict, Tuple, Union, Any, DefaultDict
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
@@ -141,7 +141,7 @@ def get_tag_ids(
 def _surface_attributes(
     features: List[List[Dict[Text, List["Features"]]]],
     featurizers: Optional[List[Text]] = None,
-) -> defaultdict[Text, List[List[List["Features"]]]]:
+) -> DefaultDict[Text, List[List[List["Features"]]]]:
     """Restructure the input.
 
     "features" can, for example, be a dictionary of attributes (INTENT,
