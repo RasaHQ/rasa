@@ -17,7 +17,6 @@ from typing import (
 )
 import numpy as np
 
-from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.shared.core.events import Event
 
 import rasa.shared.utils.common

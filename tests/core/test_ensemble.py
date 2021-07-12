@@ -6,7 +6,6 @@ from _pytest.logging import LogCaptureFixture
 import logging
 import copy
 
-from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 
