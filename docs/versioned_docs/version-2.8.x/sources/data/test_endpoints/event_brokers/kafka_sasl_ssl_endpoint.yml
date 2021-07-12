@@ -1,0 +1,12 @@
+event_broker:
+  type: kafka
+  security_protocol: SASL_SSL
+  topic: topic
+  url: localhost
+  sasl_username: username
+  sasl_password: password
+  sasl_mechanism: PLAIN
+  ssl_cafile: CARoot.pem
+  ssl_certfile: certificate.pem
+  ssl_keyfile: key.pem
+  ssl_check_hostname: True
