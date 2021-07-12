@@ -367,7 +367,6 @@ async def _request_free_text_action(
 async def _request_free_text_utterance(
     conversation_id: Text, endpoint: EndpointConfig, action: Text
 ) -> Text:
-
     question = questionary.text(
         message=(f"Please type the message for your new bot response '{action}':"),
         validate=io_utils.not_empty_validator("Please enter a response"),
@@ -643,16 +642,16 @@ async def _ask_if_quit(conversation_id: Text, endpoint: EndpointConfig) -> bool:
         # this is also the default answer if the user presses Ctrl-C
         await _write_data_to_file(conversation_id, endpoint)
         raise Abort()
-    elif answer == "continue":
-        # in this case we will just return, and the original
-        # question will get asked again
-        return True
     elif answer == "undo":
         raise UndoLastStep()
     elif answer == "fork":
         raise ForkTracker()
     elif answer == "restart":
         raise RestartConversation()
+    else:  # `continue` or no answer
+        # in this case we will just return, and the original
+        # question will get asked again
+        return True
 
 
 async def _request_action_from_user(
