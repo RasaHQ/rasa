@@ -38,7 +38,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
     ) -> None:
         super().__init__()
@@ -414,7 +414,7 @@ class TransformerEncoderLayer(tf.keras.layers.Layer):
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
     ) -> None:
         super().__init__()
@@ -521,7 +521,7 @@ class TransformerEncoder(tf.keras.layers.Layer):
         unidirectional: bool = False,
         use_key_relative_position: bool = False,
         use_value_relative_position: bool = False,
-        max_relative_position: Optional[int] = None,
+        max_relative_position: int = 5,
         heads_share_relative_embedding: bool = False,
         name: Optional[Text] = None,
     ) -> None:

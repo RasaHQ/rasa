@@ -148,7 +148,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         # If 'True' use value relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
         # Max position for relative embeddings
-        MAX_RELATIVE_POSITION: None,
+        MAX_RELATIVE_POSITION: 5,
         # Use a unidirectional or bidirectional encoder.
         UNIDIRECTIONAL_ENCODER: False,
         # ## Training parameters
