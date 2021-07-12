@@ -8,7 +8,7 @@ from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.shared.utils.io import list_files, write_yaml, write_text_file
 from typing import Callable
-from _pytest.pytester import RunResult, Testdir, Pytester
+from _pytest.pytester import RunResult, Testdir, Pytester, ExitCode
 
 
 def test_test_core(run_in_simple_project: Callable[..., RunResult]):
@@ -131,7 +131,9 @@ def test_test_nlu_cross_validation_with_autoconfig(
     # we don't wanna run the cross validation for real, just want to see that it does
     # not crash
     try:
-        testdir.run(*args, timeout=10.0)
+        run_result = testdir.run(*args, timeout=8.0)
+        # we'll only get here if the run fails due to an exception
+        assert run_result.ret != ExitCode.TESTS_FAILED
     except Pytester.TimeoutExpired:
         pass
 
