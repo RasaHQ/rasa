@@ -312,7 +312,7 @@ class RasaModelData:
             sub_key: The optional sub key.
 
         Returns:
-            either the requested data (which can be a dictionary mapping
+            Either the requested data (which can be a dictionary mapping
             sub-keys to a list of `FeatureArray`s or just a list of
             `FeatureArray`s in case there is no subkey), or
             an empty list in case the requested data cannot be found
