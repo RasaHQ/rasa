@@ -42,6 +42,8 @@ jobs:
 
     - name: Gitleaks - detecting hardcoded secrets
       uses: zricethezav/gitleaks-action@v1.6.0
+      with:
+        config-path: .gitleaks.toml
 
   bandit:
     name: Detect python security issues
