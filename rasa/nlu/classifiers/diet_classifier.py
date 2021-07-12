@@ -462,7 +462,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _check_labels_features_exist(
         self, labels_example: List[Message], attribute: Text
     ) -> bool:
-        """Checks whether there is at least one kind of feature per label.
+        """Checks whether each message has at least one feature for the given attribute.
 
         Only checks whether one of the configured relevant featurizers has attached
         some feature to each of the labels.
