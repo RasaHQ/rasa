@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from rasa.core.channels import OutputChannel
-from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.generator import TrackerWithCachedStates
 import rasa.shared.utils.io
@@ -1053,15 +1052,3 @@ def test_get_training_trackers_for_policy(
 def test_deprecation_warnings_for_old_rule_like_policies(policy: Type[Policy]):
     with pytest.warns(FutureWarning):
         policy(None)
-
-
-class PolicyWithoutInitKwargs(Policy):
-    def __init__(self, *args: Any) -> None:
-        pass
-
-    def persist(self, _) -> None:
-        pass
-
-    @classmethod
-    def _metadata_filename(cls) -> Text:
-        return "no_finetune_policy"
