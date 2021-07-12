@@ -262,7 +262,6 @@ class StoryStep:
         set slots. This functions makes these events explicit and
         returns them with the rest of the steps events.
         """
-
         events: List[Event] = []
 
         for e in self.events:
@@ -473,13 +472,11 @@ class StoryGraph:
     def overlapping_checkpoint_names(
         cps: List[Checkpoint], other_cps: List[Checkpoint]
     ) -> Set[Optional[Text]]:
-        """Find overlapping checkpoints names"""
-
+        """Find overlapping checkpoints names."""
         return {cp.name for cp in cps} & {cp.name for cp in other_cps}
 
     def with_cycles_removed(self) -> "StoryGraph":
         """Create a graph with the cyclic edges removed from this graph."""
-
         story_end_checkpoints = self.story_end_checkpoints.copy()
         cyclic_edge_ids = self.cyclic_edge_ids
         # we need to remove the start steps and replace them with steps ending
@@ -640,7 +637,6 @@ class StoryGraph:
         story_steps: ValuesView[StoryStep], story_end_checkpoints: Dict[Text, Text]
     ) -> Set[Optional[Text]]:
         """Finds all unused checkpoints."""
-
         collected_start = {STORY_END, STORY_START}
         collected_end = {STORY_END, STORY_START}
 

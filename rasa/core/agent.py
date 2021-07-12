@@ -713,7 +713,6 @@ class Agent:
         exclusion_percentage: Optional[int] = None,
     ) -> List[TrackerWithCachedStates]:
         """Load training data from a resource."""
-
         max_history = self._max_history()
 
         if unique_last_num_states is None:
@@ -780,7 +779,6 @@ class Agent:
         Only removes files if the directory seems to contain a previously
         persisted model. Otherwise does nothing to avoid deleting
         `/` by accident."""
-
         if not os.path.exists(model_path):
             return
 

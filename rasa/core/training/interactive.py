@@ -152,7 +152,6 @@ async def send_message(
     parse_data: Optional[Dict[Text, Any]] = None,
 ) -> Optional[Any]:
     """Send a user message to a conversation."""
-
     payload = {
         "sender": UserUttered.type_name,
         "text": message,
@@ -170,7 +169,6 @@ async def request_prediction(
     endpoint: EndpointConfig, conversation_id: Text
 ) -> Optional[Any]:
     """Request the next action prediction from core."""
-
     return await endpoint.request(
         method="post", subpath=f"/conversations/{conversation_id}/predict"
     )
@@ -178,7 +176,6 @@ async def request_prediction(
 
 async def retrieve_domain(endpoint: EndpointConfig) -> Optional[Any]:
     """Retrieve the domain from core."""
-
     return await endpoint.request(
         method="get", subpath="/domain", headers={"Accept": "application/json"}
     )
@@ -186,7 +183,6 @@ async def retrieve_domain(endpoint: EndpointConfig) -> Optional[Any]:
 
 async def retrieve_status(endpoint: EndpointConfig) -> Optional[Any]:
     """Retrieve the status from core."""
-
     return await endpoint.request(method="get", subpath="/status")
 
 
@@ -196,7 +192,6 @@ async def retrieve_tracker(
     verbosity: EventVerbosity = EventVerbosity.ALL,
 ) -> Optional[Any]:
     """Retrieve a tracker from core."""
-
     path = f"/conversations/{conversation_id}/tracker?include_events={verbosity.name}"
     return await endpoint.request(
         method="get", subpath=path, headers={"Accept": "application/json"}
@@ -212,7 +207,6 @@ async def send_action(
     is_new_action: bool = False,
 ) -> Optional[Any]:
     """Log an action to a conversation."""
-
     payload = ActionExecuted(action_name, policy, confidence).as_dict()
 
     subpath = f"/conversations/{conversation_id}/execute"
@@ -256,7 +250,6 @@ async def send_event(
     evt: Union[List[Dict[Text, Any]], Dict[Text, Any]],
 ) -> Optional[Any]:
     """Log an event to a conversation."""
-
     subpath = f"/conversations/{conversation_id}/tracker/events"
 
     return await endpoint.request(json=evt, method="post", subpath=subpath)
@@ -264,7 +257,6 @@ async def send_event(
 
 def format_bot_output(message: BotUttered) -> Text:
     """Format a bot response to be displayed in the history table."""
-
     # First, add text to output
     output = message.text or ""
 
@@ -303,7 +295,6 @@ def format_bot_output(message: BotUttered) -> Text:
 
 def latest_user_message(events: List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]:
     """Return most recent user message."""
-
     for i, e in enumerate(reversed(events)):
         if e.get("event") == UserUttered.type_name:
             return e

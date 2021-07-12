@@ -889,7 +889,6 @@ class ComponentBuilder:
         Returns:
             The loaded component.
         """
-
         from rasa.nlu import registry
 
         try:
@@ -925,7 +924,6 @@ class ComponentBuilder:
         Returns:
             The created component.
         """
-
         from rasa.nlu import registry
         from rasa.nlu.model import Metadata
 
@@ -948,8 +946,8 @@ class ComponentBuilder:
     ) -> Optional[Component]:
         """Create a component based on a class and a configuration.
 
-        Mainly used to make use of caching when instantiating component classes."""
-
+        Mainly used to make use of caching when instantiating component classes.
+        """
         component_config = {"name": component_class.name}
 
         return self.create_component(component_config, RasaNLUModelConfig(cfg))

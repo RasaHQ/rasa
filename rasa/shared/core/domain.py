@@ -1184,6 +1184,7 @@ class Domain:
         tracker: "DialogueStateTracker",
     ) -> Optional[Dict[Text, Text]]:
         """Turn the previous taken action into a state name.
+
         Args:
             tracker: dialog state tracker containing the dialog so far
         Returns:
