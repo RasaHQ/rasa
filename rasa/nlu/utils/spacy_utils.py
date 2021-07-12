@@ -91,57 +91,6 @@ class SpacyNLP(Component):
 
         return cls.name + "-" + spacy_model_name
 
-    @staticmethod
-    def _check_model_fallback(
-        spacy_model_name: Union[str, None], language_name: str, warn: bool = False
-    ) -> Text:
-        """This method checks if the `spacy_model_name` is missing.
-
-        If it is missing, we will attempt a fallback. This feature is a measure
-        to support spaCy 3.0 without breaking on users. In the future
-        spaCy will no longer support `spacy link`.
-        """
-        if not spacy_model_name:
-            fallback_mapping = {
-                "zh": "zh_core_web_md",
-                "da": "da_core_news_md",
-                "nl": "nl_core_news_md",
-                "en": "en_core_web_md",
-                "fr": "fr_core_news_md",
-                "de": "de_core_news_sm",
-                "el": "el_core_news_md",
-                "it": "it_core_news_md",
-                "ja": "ja_core_news_md",
-                "lt": "lt_core_news_md",
-                "mk": "mk_core_news_md",
-                "nb": "nb_core_news_md",
-                "pl": "pl_core_news_md",
-                "pt": "pt_core_news_md",
-                "ro": "ro_core_news_md",
-                "ru": "ru_core_news_md",
-                "es": "es_core_news_md",
-            }
-            if language_name not in fallback_mapping.keys():
-                raise InvalidModelError(
-                    f"There is no fallback model for language '{language_name}'. "
-                    f"Please add a `model` property to `SpacyNLP` manually "
-                    f"to prevent this. More informaton can be found on "
-                    f"{DOCS_URL_COMPONENTS}#spacynlp"
-                )
-
-            spacy_model_name = fallback_mapping[language_name]
-            if warn:
-                message = (
-                    f"SpaCy model is not properly configured! "
-                    f"Please add a `model` property to `SpacyNLP`. "
-                    f"Will use '{spacy_model_name}' as a fallback spaCy model. "
-                    f"This fallback will be deprecated in Rasa 3.0"
-                )
-                rasa.shared.utils.io.raise_deprecation_warning(
-                    message=message, docs=f"{DOCS_URL_COMPONENTS}#spacynlp"
-                )
-        return spacy_model_name
-
     def provide_context(self) -> Dict[Text, Any]:
         """Creates a context dictionary from spaCy nlp object."""
         return {"spacy_nlp": self.nlp}
@@ -304,11 +253,7 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        model_name = cls._check_model_fallback(
-            meta.get("model"), model_metadata.language, warn=True
-        )
-
-        nlp = cls.load_model(model_name)
+        nlp = cls.load_model(meta.get("model"))
         cls.ensure_proper_language_model(nlp)
         return cls(meta, nlp)
 
