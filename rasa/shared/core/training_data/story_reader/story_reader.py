@@ -2,9 +2,6 @@ import logging
 from pathlib import Path
 from typing import Optional, Dict, Text, List, Any, Union
 
-import rasa.shared.utils.common
-import rasa.shared.utils.io
-from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.shared.core.constants import (
     LEGACY_ACTION_DEACTIVATE_LOOP_NAME,
     ACTION_DEACTIVATE_LOOP_NAME,
