@@ -283,11 +283,9 @@ class SubStateFeaturizerUsingInterpreter(SubStateFeaturizer):
         self, sub_state: SubState, attributes: List[Text]
     ) -> Dict[Text, List[Features]]:
 
-        # (1) featurize the message/sub_state...
         message = Message(data=sub_state)
         parsed_message = self.interpreter.featurize_message(message)
 
-        # (2) gather all features from the featurized message
         attribute_to_features: Dict[Text, List[Features]] = dict()
         for attr in attributes:
             all_features = parsed_message.get_sparse_features(
@@ -297,29 +295,6 @@ class SubStateFeaturizerUsingInterpreter(SubStateFeaturizer):
                 if features is not None:
                     attribute_to_features[attr].append(features)
 
-        # # (3) for the attributes in `keep_only_sparse_seq_converted_to_sent`
-        # # create a sentence feature from the sparse sequence features
-        # # and forget all other features (iff such features exist, otherwise
-        # # keep the existing sentence feature)
-        # attribute_list = self.keep_only_sparse_seq_converted_to_sent or []
-        # for attribute in attribute_list:
-        #     if attribute_to_features.get(attribute):
-        #         converted_features = convert_sparse_sequence_to_sentence_features(
-        #             attribute_to_features[attribute]
-        #         )
-        #         if converted_features:
-        #             attribute_to_features[attribute] = converted_features
-
-        # # (4) for all attributes listed in `use_fallback_interpreter`, *for which
-        # # no features have been extracted via the interpreter until now*, use the
-        # # `featurize_attribute_via_fallback_interpreter` method to create features
-        # # from scratch
-        # attribute_list = self.use_fallback_interpreter or []
-        # for attribute in attribute_list:
-        #     if attribute not in attribute_to_features:
-        #         attribute_to_features[attribute] = self.fallback_featurizer.featurize(
-        #             sub_state, attribute, sparse=self.sparse,
-        #         )
         return attribute_to_features
 
 
