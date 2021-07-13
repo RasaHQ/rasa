@@ -1,14 +1,12 @@
 from pathlib import Path
-from typing import List, Any, Text, Optional, Union
+from typing import List, Any, Text, Optional
 from _pytest.monkeypatch import MonkeyPatch
-from _pytest.capture import CaptureFixture
 import pytest
 from _pytest.logging import LogCaptureFixture
 import logging
 import copy
 import numpy as np
 
-from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 
@@ -98,37 +96,6 @@ def test_policy_loading_simple(tmp_path: Path):
 
     loaded_policy_ensemble = PolicyEnsemble.load(str(tmp_path))
     assert original_policy_ensemble.policies == loaded_policy_ensemble.policies
-
-
-class PolicyWithoutLoadKwargs(Policy):
-    @classmethod
-    def load(cls, path: Union[Text, Path]) -> Policy:
-        return PolicyWithoutLoadKwargs()
-
-    def persist(self, _) -> None:
-        pass
-
-
-def test_policy_loading_no_kwargs_with_context(tmp_path: Path):
-    original_policy_ensemble = PolicyEnsemble([PolicyWithoutLoadKwargs()])
-    original_policy_ensemble.train([], None, RegexInterpreter())
-    original_policy_ensemble.persist(str(tmp_path))
-
-    with pytest.raises(UnsupportedDialogueModelError) as execinfo:
-        PolicyEnsemble.load(str(tmp_path), new_config={"policies": [{}]})
-    assert "`PolicyWithoutLoadKwargs.load` does not accept `**kwargs`" in str(
-        execinfo.value
-    )
-
-
-def test_policy_loading_no_kwargs_with_no_context(
-    tmp_path: Path, capsys: CaptureFixture
-):
-    original_policy_ensemble = PolicyEnsemble([PolicyWithoutLoadKwargs()])
-    original_policy_ensemble.train([], None, RegexInterpreter())
-    original_policy_ensemble.persist(str(tmp_path))
-    with pytest.warns(FutureWarning):
-        PolicyEnsemble.load(str(tmp_path))
 
 
 class ConstantPolicy(Policy):
@@ -686,35 +653,6 @@ def test_intent_prediction_does_not_apply_define_featurization_events(domain: Do
         tracker, domain, RegexInterpreter()
     )
     assert prediction.events == [DefinePrevUserUtteredFeaturization(False)]
-
-
-def test_with_float_returning_policy(domain: Domain):
-    expected_index = 3
-
-    class OldPolicy(Policy):
-        def predict_action_probabilities(
-            self,
-            tracker: DialogueStateTracker,
-            domain: Domain,
-            interpreter: NaturalLanguageInterpreter,
-            **kwargs: Any,
-        ) -> List[float]:
-            prediction = [0.0] * domain.num_actions
-            prediction[expected_index] = 3
-            return prediction
-
-    ensemble = SimplePolicyEnsemble(
-        [ConstantPolicy(priority=1, predict_index=1), OldPolicy(priority=1)]
-    )
-    tracker = DialogueStateTracker.from_events("test", evts=[])
-
-    with pytest.warns(FutureWarning):
-        prediction = ensemble.probabilities_using_best_policy(
-            tracker, domain, RegexInterpreter()
-        )
-
-    assert prediction.policy_name == f"policy_1_{OldPolicy.__name__}"
-    assert prediction.max_confidence_index == expected_index
 
 
 @pytest.mark.parametrize(
