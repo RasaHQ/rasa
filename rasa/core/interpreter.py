@@ -72,8 +72,9 @@ class RasaNLUHttpInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpre
         self, text: Text, message_id: Optional[Text] = None
     ) -> Optional[Dict[Text, Any]]:
         """Send a text message to a running rasa NLU http server.
-        Return `None` on failure."""
 
+        Return `None` on failure.
+        """
         if not self.endpoint_config or self.endpoint_config.url is None:
             logger.error(
                 f"Failed to parse text '{text}' using rasa NLU over http. "
