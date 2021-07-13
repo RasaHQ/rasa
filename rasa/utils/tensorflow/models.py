@@ -470,7 +470,7 @@ class RasaModel(TmpKerasModel):
         idx: int,
         number_of_dimensions: int,
     ) -> Tuple[tf.Tensor, int]:
-        if isinstance(batch[idx], tf.Tensor):
+        if tf.is_tensor(batch[idx]):
             # explicitly substitute last dimension in shape with known
             # static value
             if number_of_dimensions > 1 and (
