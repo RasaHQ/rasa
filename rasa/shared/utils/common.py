@@ -5,10 +5,6 @@ import inspect
 import logging
 from typing import Text, Dict, Optional, Any, List, Callable, Collection
 
-import rasa.shared.utils.io
-from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
-from rasa.shared.exceptions import RasaException
-
 logger = logging.getLogger(__name__)
 
 
