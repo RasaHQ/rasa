@@ -15,6 +15,7 @@ from typing import (
     Tuple,
     Union,
     Set,
+    cast,
 )
 
 from sanic import Sanic, response
@@ -193,9 +194,13 @@ async def retrieve_tracker(
 ) -> Dict[Text, Any]:
     """Retrieve a tracker from core."""
     path = f"/conversations/{conversation_id}/tracker?include_events={verbosity.name}"
-    return await endpoint.request(
+    result = await endpoint.request(
         method="get", subpath=path, headers={"Accept": "application/json"}
     )
+
+    # If the request wasn't successful the previous call had already raised. Hence,
+    # we can be sure we have the tracker in the right format.
+    return cast(Dict[Text, Any], result)
 
 
 async def send_action(
