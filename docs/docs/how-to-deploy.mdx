@@ -56,7 +56,7 @@ However, you can also customize the Helm charts if you have specific requirement
 ## Deploying a Rasa Open Source Assistant
 
 While the above deployment methods involve deploying an assistant with Rasa X, the following instructions describe how to deploy a Rasa Open Source server only
-by using [the rasa helm chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) in a scalable cluster environment using OpenShift or Kubernetes (K8S).
+by using the [Rasa Helm Chart](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) in a scalable cluster environment using OpenShift or Kubernetes (K8S).
 
 ### Cluster Requirements
 
@@ -70,7 +70,7 @@ recommend to get a managed cluster from a cloud provider like
 [Amazon EKS](https://aws.amazon.com/eks/).
 
 :::note
-The Rasa Helm chart is open-source and available in the
+The Rasa Helm chart is open source and available in the
 [helm-charts repository](https://github.com/rasahq/helm-charts).
 Please
 [create an issue](https://github.com/RasaHQ/helm-charts/issues/new) in this
@@ -81,7 +81,7 @@ repository if you discover bugs or have suggestions for improvements.
 
 ### Installation Requirements
 
-1. Please check that you installed the Kubernetes or OpenShift command line
+1. Check that you have installed the Kubernetes or OpenShift command line
    interface (CLI). You can check this using the following command:
 
    <Tabs values={[{"label": "Kubernetes", "value": "kubernetes"}, {"label": "OpenShift", "value": "openshift"}]} defaultValue="kubernetes">
@@ -144,7 +144,7 @@ repository if you discover bugs or have suggestions for improvements.
    cluster. To get the command to connect to the cluster please consult your cluster’s
    admin or the documentation of your cloud provider.
 
-3. Please make sure you have the [Helm CLI](https://helm.sh/docs/intro/install/)
+3. Make sure you have the [Helm CLI](https://helm.sh/docs/intro/install/)
    installed. To check this, run:
 
    ```bash
@@ -191,11 +191,11 @@ run the following command:
 Prepare an empty file called `rasa-values.yml` which will include all your custom
 configuration for the installation with Helm.
 
-All available values you can find in [the rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#values).
+All available values you can find in [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#values).
 
 :::note
 The default configuration of the Rasa chart deploys a Rasa Open Source Server, downloads a model, and serves the downloaded model.
-Visit [the rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#quick-start) to check out more examples of configuration.
+Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa#quick-start) to check out more examples of configuration.
 
 :::
 
@@ -218,7 +218,7 @@ The URL for the initial model download has to point to a tar.gz file and must no
 
 If you want to train an initial model you can do this by setting the `applicationSettings.trainInitialModel` to `true`.
 It creates a init container that trains a model based on data located in the `/app` directory. If the `/app` directory is empty it creates a new project.
-[Here](https://github.com/RasaHQ/helm-charts/blob/main/examples/rasa/train-model-helmfile.yaml) you can find an example that shows how to download data files from a git repository and train an initial model.
+You can find an example that shows how to download data files from a git repository and train an initial model in the Rasa helm charts [examples](https://github.com/RasaHQ/helm-charts/blob/main/examples/rasa/train-model-helmfile.yaml).
 
 #### 4. Deploy Rasa Open Source Assistant
 
@@ -320,7 +320,7 @@ Visit [the Rasa helm chart README](https://github.com/RasaHQ/helm-charts/tree/ma
 
 #### Next Steps
 
-Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) where you can find examples of configuration and learn how to e.g. integrate Rasa Open Source deployment with Rasa X.
+Visit [the Rasa helm chart repository](https://github.com/RasaHQ/helm-charts/tree/main/charts/rasa) where you can find examples of configuration and learn how to e.g. integrate your Rasa Open Source deployment with Rasa X.
 
 ## Alternative Deployment Methods
 
