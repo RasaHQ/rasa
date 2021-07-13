@@ -17,7 +17,6 @@ from typing import (
     List,
     Dict,
     NamedTuple,
-    ContextManager,
 )
 
 from packaging import version
@@ -219,7 +218,7 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 
 def unpack_model(
     model_file: Text, working_directory: Optional[Union[Path, Text]] = None
-) -> ContextManager[TempDirectoryPath]:
+) -> TempDirectoryPath:
     """Unpack a zipped Rasa model.
 
     Args:
