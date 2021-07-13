@@ -1,4 +1,3 @@
-from __future__ import annotations
 import abc
 import json
 import logging
@@ -960,7 +959,9 @@ class SlotSet(Event):
         return f"{self.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[SlotSet]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["SlotSet"]]:
 
         slots = []
         for slot_key, slot_val in parameters.items():
