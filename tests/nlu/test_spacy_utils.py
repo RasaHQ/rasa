@@ -24,3 +24,4 @@ def test_cache_key_raises_error():
     with pytest.raises(InvalidModelError) as err:
         SpacyNLP.cache_key(component_meta={}, model_metadata={})
     assert "Missing model configuration for `SpacyNLP` in `config.yml`" in str(err.value)
+

@@ -17,7 +17,6 @@ from typing import (
 )
 import numpy as np
 
-from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.shared.core.events import Event
 
 import rasa.shared.utils.common
@@ -189,7 +188,12 @@ class Policy:
               for all dialogue turns in all training trackers
         """
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
-            training_trackers, domain, interpreter, bilou_tagging
+            training_trackers,
+            domain,
+            interpreter,
+            bilou_tagging,
+            ignore_action_unlikely_intent=self.supported_data()
+            == SupportedData.ML_DATA,
         )
 
         max_training_samples = kwargs.get("max_training_samples")
@@ -227,6 +231,8 @@ class Policy:
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
             rule_only_data=self._rule_only_data,
+            ignore_action_unlikely_intent=self.supported_data()
+            == SupportedData.ML_DATA,
         )[0]
 
     def _featurize_for_prediction(
@@ -262,6 +268,8 @@ class Policy:
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
             rule_only_data=self._rule_only_data,
+            ignore_action_unlikely_intent=self.supported_data()
+            == SupportedData.ML_DATA,
         )
 
     def train(
@@ -309,6 +317,7 @@ class Policy:
         is_end_to_end_prediction: bool = False,
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
+        action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> "PolicyPrediction":
         return PolicyPrediction(
             probabilities,
@@ -319,6 +328,7 @@ class Policy:
             is_end_to_end_prediction,
             is_no_user_prediction,
             diagnostic_data,
+            action_metadata=action_metadata,
         )
 
     def _metadata(self) -> Optional[Dict[Text, Any]]:
@@ -379,23 +389,6 @@ class Policy:
                 data["featurizer"] = featurizer
 
             data.update(kwargs)
-
-            constructor_args = rasa.shared.utils.common.arguments_of(cls)
-            if "kwargs" not in constructor_args:
-                if set(data.keys()).issubset(set(constructor_args)):
-                    rasa.shared.utils.io.raise_deprecation_warning(
-                        f"`{cls.__name__}.__init__` does not accept `**kwargs` "
-                        f"This is required for contextual information e.g. the flag "
-                        f"`should_finetune`.",
-                        warn_until_version="3.0.0",
-                    )
-                else:
-                    raise UnsupportedDialogueModelError(
-                        f"`{cls.__name__}.__init__` does not accept `**kwargs`. "
-                        f"Attempting to pass {data} to the policy. "
-                        f"This argument should be added to all policies by "
-                        f"Rasa Open Source 3.0.0."
-                    )
 
             return cls(**data)
 
@@ -480,6 +473,7 @@ class PolicyPrediction:
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
         hide_rule_turn: bool = False,
+        action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Creates a `PolicyPrediction`.
 
@@ -505,6 +499,8 @@ class PolicyPrediction:
                 fine-tuning purposes.
             hide_rule_turn: `True` if the prediction was made by the rules which
                 do not appear in the stories
+            action_metadata: Specifies additional metadata that can be passed
+                by policies.
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
@@ -515,6 +511,7 @@ class PolicyPrediction:
         self.is_no_user_prediction = is_no_user_prediction
         self.diagnostic_data = diagnostic_data or {}
         self.hide_rule_turn = hide_rule_turn
+        self.action_metadata = action_metadata
 
     @staticmethod
     def for_action_name(
@@ -522,6 +519,7 @@ class PolicyPrediction:
         action_name: Text,
         policy_name: Optional[Text] = None,
         confidence: float = 1.0,
+        action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> "PolicyPrediction":
         """Create a prediction for a given action.
 
@@ -530,13 +528,16 @@ class PolicyPrediction:
             action_name: The action which should be predicted.
             policy_name: The policy which did the prediction.
             confidence: The prediction confidence.
+            action_metadata: Additional metadata to be attached with the prediction.
 
         Returns:
             The prediction.
         """
         probabilities = confidence_scores_for(action_name, confidence, domain)
 
-        return PolicyPrediction(probabilities, policy_name)
+        return PolicyPrediction(
+            probabilities, policy_name, action_metadata=action_metadata
+        )
 
     def __eq__(self, other: Any) -> bool:
         """Checks if the two objects are equal.
@@ -559,6 +560,7 @@ class PolicyPrediction:
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
             and self.is_no_user_prediction == other.is_no_user_prediction
             and self.hide_rule_turn == other.hide_rule_turn
+            and self.action_metadata == other.action_metadata
             # We do not compare `diagnostic_data`, because it has no effect on the
             # action prediction.
         )
