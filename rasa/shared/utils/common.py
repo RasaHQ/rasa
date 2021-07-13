@@ -47,7 +47,7 @@ def class_from_module_path(
     if not inspect.isclass(klass):
         raise TypeError(
             f"`class_from_module_path()` is expected to return a class, "
-            f"but {module_path} is {type(klass)}."
+            f"but for {module_path} we got a {type(klass)}."
         )
     return klass
 
