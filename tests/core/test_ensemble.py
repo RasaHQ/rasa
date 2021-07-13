@@ -14,8 +14,6 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.events import UserUttered, ActiveLoop, Event, SlotSet
-from rasa.core.policies.fallback import FallbackPolicy
-from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.policies.ensemble import (
     PolicyEnsemble,
@@ -26,14 +24,9 @@ from rasa.core.policies.rule_policy import RulePolicy
 import rasa.core.actions.action
 
 from tests.core import utilities
-from rasa.core.constants import FORM_POLICY_PRIORITY
 from rasa.shared.core.events import ActionExecuted, DefinePrevUserUtteredFeaturization
-from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.shared.core.constants import (
-    USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
     ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
 )
@@ -184,152 +177,6 @@ def test_policy_priority():
     assert prediction.probabilities == priority_2_result.probabilities
 
 
-def test_fallback_mapping_restart():
-    domain = Domain.load("data/test_domains/default.yml")
-    events = [
-        ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME, timestamp=1),
-        utilities.user_uttered(USER_INTENT_RESTART, 1, timestamp=2),
-    ]
-    tracker = DialogueStateTracker.from_events("test", events, [])
-
-    two_stage_fallback_policy = TwoStageFallbackPolicy(
-        priority=2, deny_suggestion_intent_name="deny"
-    )
-    mapping_policy = MappingPolicy(priority=1)
-
-    mapping_fallback_ensemble = SimplePolicyEnsemble(
-        [two_stage_fallback_policy, mapping_policy]
-    )
-
-    prediction = mapping_fallback_ensemble.probabilities_using_best_policy(
-        tracker, domain, RegexInterpreter()
-    )
-    index_of_mapping_policy = 1
-    next_action = rasa.core.actions.action.action_for_index(
-        prediction.max_confidence_index, domain, None
-    )
-
-    assert (
-        prediction.policy_name
-        == f"policy_{index_of_mapping_policy}_{MappingPolicy.__name__}"
-    )
-    assert next_action.name() == ACTION_RESTART_NAME
-
-
-@pytest.mark.parametrize(
-    "events",
-    [
-        [
-            ActiveLoop("test-form"),
-            ActionExecuted(ACTION_LISTEN_NAME),
-            utilities.user_uttered(USER_INTENT_RESTART, 1),
-        ],
-        [
-            ActionExecuted(ACTION_LISTEN_NAME),
-            utilities.user_uttered(USER_INTENT_RESTART, 1),
-        ],
-    ],
-)
-def test_mapping_wins_over_form(events: List[Event]):
-    domain = """
-    forms:
-      test-form: {}
-    """
-    domain = Domain.from_yaml(domain)
-    tracker = DialogueStateTracker.from_events("test", events, [])
-
-    ensemble = SimplePolicyEnsemble(
-        [
-            MappingPolicy(),
-            ConstantPolicy(priority=1, predict_index=0),
-            FormPolicy(),
-            FallbackPolicy(),
-        ]
-    )
-    prediction = ensemble.probabilities_using_best_policy(
-        tracker, domain, RegexInterpreter()
-    )
-
-    next_action = rasa.core.actions.action.action_for_index(
-        prediction.max_confidence_index, domain, None
-    )
-
-    index_of_mapping_policy = 0
-    assert (
-        prediction.policy_name
-        == f"policy_{index_of_mapping_policy}_{MappingPolicy.__name__}"
-    )
-    assert next_action.name() == ACTION_RESTART_NAME
-
-
-@pytest.mark.parametrize(
-    "ensemble",
-    [
-        SimplePolicyEnsemble(
-            [
-                FormPolicy(),
-                ConstantPolicy(FORM_POLICY_PRIORITY - 1, 0),
-                FallbackPolicy(),
-            ]
-        ),
-        SimplePolicyEnsemble([FormPolicy(), MappingPolicy()]),
-    ],
-)
-def test_form_wins_over_everything_else(ensemble: SimplePolicyEnsemble):
-    form_name = "test-form"
-    domain = f"""
-    forms:
-      {form_name}: {{}}
-    """
-    domain = Domain.from_yaml(domain)
-
-    events = [
-        ActiveLoop("test-form"),
-        ActionExecuted(ACTION_LISTEN_NAME),
-        utilities.user_uttered("test", 1),
-    ]
-    tracker = DialogueStateTracker.from_events("test", events, [])
-    prediction = ensemble.probabilities_using_best_policy(
-        tracker, domain, RegexInterpreter()
-    )
-
-    next_action = rasa.core.actions.action.action_for_index(
-        prediction.max_confidence_index, domain, None
-    )
-
-    index_of_form_policy = 0
-    assert (
-        prediction.policy_name == f"policy_{index_of_form_policy}_{FormPolicy.__name__}"
-    )
-    assert next_action.name() == form_name
-
-
-def test_fallback_wins_over_mapping():
-    domain = Domain.load("data/test_domains/default.yml")
-    events = [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        # Low confidence should trigger fallback
-        utilities.user_uttered(USER_INTENT_RESTART, 0.0001),
-    ]
-    tracker = DialogueStateTracker.from_events("test", events, [])
-
-    ensemble = SimplePolicyEnsemble([FallbackPolicy(), MappingPolicy()])
-
-    prediction = ensemble.probabilities_using_best_policy(
-        tracker, domain, RegexInterpreter()
-    )
-    index_of_fallback_policy = 0
-    next_action = rasa.core.actions.action.action_for_index(
-        prediction.max_confidence_index, domain, None
-    )
-
-    assert (
-        prediction.policy_name
-        == f"policy_{index_of_fallback_policy}_{FallbackPolicy.__name__}"
-    )
-    assert next_action.name() == ACTION_DEFAULT_FALLBACK_NAME
-
-
 class LoadReturnsNonePolicy(Policy):
     @classmethod
     def load(cls, *args, **kwargs) -> None:
@@ -471,7 +318,7 @@ def test_rule_based_data_warnings_no_rule_trackers():
 
 def test_rule_based_data_warnings_no_rule_policy():
     trackers = [DialogueStateTracker("some-id", slots=[], is_rule_tracker=True)]
-    policies = [FallbackPolicy()]
+    policies = [ConstantPolicy()]
     ensemble = SimplePolicyEnsemble(policies)
 
     with pytest.warns(UserWarning) as record:
@@ -480,24 +327,6 @@ def test_rule_based_data_warnings_no_rule_policy():
     assert (
         "Found rule-based training data but no policy supporting rule-based data."
     ) in record[0].message.args[0]
-
-
-@pytest.mark.parametrize(
-    "policies",
-    [
-        ["RulePolicy", "MappingPolicy"],
-        ["RulePolicy", "FallbackPolicy"],
-        ["RulePolicy", "TwoStageFallbackPolicy"],
-        ["RulePolicy", "FormPolicy"],
-        ["RulePolicy", "FallbackPolicy", "FormPolicy"],
-    ],
-)
-def test_mutual_exclusion_of_rule_policy_and_old_rule_like_policies(
-    policies: List[Text],
-):
-    policy_config = [{"name": policy_name} for policy_name in policies]
-    with pytest.warns(UserWarning):
-        PolicyEnsemble.from_dict({"policies": policy_config})
 
 
 def test_end_to_end_prediction_supersedes_others(domain: Domain):

@@ -12,7 +12,6 @@ from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.train import train
 from rasa.core.agent import Agent
-from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 
 from rasa.shared.core.training_data.visualization import visualize_stories
@@ -69,9 +68,7 @@ async def test_training_script_without_max_history_set(
     agent = Agent.load(tmpdir)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, "max_history"):
-            if type(policy) == FormPolicy:
-                assert policy.featurizer.max_history == 2
-            elif type(policy) == MemoizationPolicy:
+            if type(policy) == MemoizationPolicy:
                 assert policy.featurizer.max_history == OLD_DEFAULT_MAX_HISTORY
             else:
                 assert policy.featurizer.max_history is None
@@ -92,7 +89,7 @@ async def test_training_script_with_max_history_set(
     )
     agent = Agent.load(tmpdir)
 
-    expected_max_history = {FormPolicy: 2, RulePolicy: None}
+    expected_max_history = {RulePolicy: None}
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, "max_history"):
             expected_history = expected_max_history.get(type(policy), 5)
