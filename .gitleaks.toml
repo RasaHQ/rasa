@@ -50,7 +50,7 @@ title = "gitleaks config"
     tags = ["key", "Slack"]
     [rules.allowlist]
 	description = "ignore fake tokens"
-	regexes = ['''(test|xxx|XXX)''']
+	regexes = ['''(test|xxx|XXX|286425452756)''']
 [[rules]]
     description = "Asymmetric Private Key"
     regex = '''-----BEGIN ((EC|PGP|DSA|RSA|OPENSSH) )?PRIVATE KEY( BLOCK)?-----'''
