@@ -12,12 +12,12 @@ from typing import (
 
 import numpy as np
 import tensorflow as tf
-from keras.engine.training import _disallow_inside_tf_function
 
 from tensorflow.python.keras.callbacks import Callback, History
 from tensorflow.python.keras.engine import training
 from tensorflow.python.keras.engine import training_utils
 from tensorflow.python.keras.engine import data_adapter
+from tensorflow.python.keras.engine.training import _disallow_inside_tf_function
 from tensorflow.python.keras.utils import version_utils
 from tensorflow.python.eager import context
 from tensorflow.python.keras.engine.data_adapter import DataHandler
