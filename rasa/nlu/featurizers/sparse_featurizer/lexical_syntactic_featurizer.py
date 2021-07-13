@@ -7,13 +7,11 @@ from typing import (
     Any,
     Dict,
     Optional,
-    Set,
     Text,
     List,
     Type,
     Union,
     Callable,
-    OrderedDict as OrderedDictType,
 )
 
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
@@ -158,7 +156,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
     @staticmethod
     def _build_feature_vocabulary(
         features: List[List[Dict[Text, Any]]]
-    ) -> OrderedDictType[Text, Set[Any]]:
+    ) -> OrderedDict:
         feature_vocabulary = defaultdict(set)
 
         for sentence_features in features:

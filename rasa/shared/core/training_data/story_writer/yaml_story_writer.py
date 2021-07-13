@@ -7,7 +7,6 @@ from typing import (
     Text,
     Union,
     Optional,
-    OrderedDict as OrderedDictType,
 )
 
 from ruamel import yaml
@@ -295,7 +294,7 @@ class YAMLStoryWriter(StoryWriter):
         return result
 
     @staticmethod
-    def process_slot(event: SlotSet) -> OrderedDictType[Text, List[Dict]]:
+    def process_slot(event: SlotSet) -> OrderedDict:
         """Converts a single `SlotSet` event into an ordered dict.
 
         Args:
