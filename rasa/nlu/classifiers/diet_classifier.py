@@ -42,7 +42,6 @@ from rasa.shared.nlu.constants import (
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import (
     InvalidConfigException,
-    RasaException,
     CorruptMetaDataException,
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
