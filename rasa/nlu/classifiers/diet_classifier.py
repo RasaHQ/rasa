@@ -1794,7 +1794,7 @@ class DIET(TransformerRasaModel):
 
         _, scores = self._tf_layers[
             f"loss.{LABEL}"
-        ].similarity_confidence_from_embeddings(
+        ].get_similarities_and_confidences_from_embeddings(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
         )

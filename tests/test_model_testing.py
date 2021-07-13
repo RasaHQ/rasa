@@ -206,7 +206,7 @@ def test_write_classification_errors():
 
 def test_log_failed_stories(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
-    rasa.core.test._log_stories([], path)
+    rasa.core.test._log_stories([], path, "Some text")
 
     dump = rasa.shared.utils.io.read_file(path)
 

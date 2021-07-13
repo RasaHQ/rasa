@@ -33,6 +33,7 @@ from rasa.shared.core.constants import (
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
 )
@@ -77,6 +78,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionDefaultAskAffirmation(),
         ActionDefaultAskRephrase(),
         TwoStageFallbackAction(action_endpoint),
+        ActionUnlikelyIntent(),
         ActionBack(),
     ]
 
@@ -252,6 +254,7 @@ class Action:
             prediction.policy_name,
             prediction.max_confidence,
             hide_rule_turn=prediction.hide_rule_turn,
+            metadata=prediction.action_metadata,
         )
 
 
@@ -338,6 +341,7 @@ class ActionEndToEndResponse(Action):
             confidence=prediction.max_confidence,
             action_text=self.action_text,
             hide_rule_turn=prediction.hide_rule_turn,
+            metadata=prediction.action_metadata,
         )
 
 
@@ -778,7 +782,29 @@ class ActionRevertFallbackEvents(Action):
             return []
 
 
+class ActionUnlikelyIntent(Action):
+    """An action that indicates that the intent predicted by NLU is unexpected.
+
+    This action can be predicted by `UnexpecTEDIntentPolicy`.
+    """
+
+    def name(self) -> Text:
+        """Returns the name of the action."""
+        return ACTION_UNLIKELY_INTENT_NAME
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
+        return []
+
+
 def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
+    """Indicates if the last executed action is `action_default_ask_affirmation`."""
     return tracker.last_executed_action_has(ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
 
 
