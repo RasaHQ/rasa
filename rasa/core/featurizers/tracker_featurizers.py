@@ -762,7 +762,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[
-        List[List[State]], List[List[Optional[Text]]], List[List[Dict[Text, Any]]]
+        List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]
     ]:
         """Transforms trackers to states, action labels, and entity data.
 
