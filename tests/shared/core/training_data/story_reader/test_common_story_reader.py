@@ -278,34 +278,6 @@ def test_session_started_event_is_not_serialised():
 
 
 @pytest.mark.parametrize(
-    "story_payload, file_suffix",
-    [
-        (
-            """## my story
-* greet
-  - action_deactivate_form""",
-            ".md",
-        ),
-        (
-            """stories:
-- story: my story
-  steps:
-  - intent: greet
-  - action: action_deactivate_form""",
-            ".yml",
-        ),
-    ],
-)
-async def test_legacy_action_deactivate_form_raises_error(
-    story_payload: Text, file_suffix: Text, domain: Domain, tmp_path: Path
-):
-    stories_file = tmp_path / f"stories{file_suffix}"
-    stories_file.write_text(story_payload)
-    with pytest.raises(ValueError):
-        await training.load_data(str(stories_file), domain, augmentation_factor=3)
-
-
-@pytest.mark.parametrize(
     "stories_file",
     [
         "data/test_stories/story_slot_different_types.md",
