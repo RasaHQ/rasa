@@ -277,6 +277,8 @@ class ListSlot(Slot):
 
 
 class CategoricalSlot(Slot):
+    """Slot type which can be used to branch conversations based on its value."""
+
     type_name = "categorical"
 
     def __init__(
