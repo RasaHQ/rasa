@@ -8,12 +8,10 @@ import numpy as np
 import pytest
 
 from rasa.core import training
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEACTIVATE_LOOP_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, SessionStarted, SlotSet
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.shared.core.training_data.story_reader.story_reader import StoryParseError
 
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT, INTENT_NAME_KEY
