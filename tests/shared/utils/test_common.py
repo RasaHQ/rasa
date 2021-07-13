@@ -175,17 +175,13 @@ def test_class_from_module_path_not_found(
         rasa.shared.utils.common.class_from_module_path(module_path, lookup_path)
 
 
-@pytest.mark.parametrize(
-    "module_path, result, outcome",
-    [
-        ("rasa.shared.core.domain.Domain", rasa.shared.core.domain.Domain, True),
-        ("rasa.shared.core.domain.logger", rasa.shared.core.domain.logger, False),
-    ],
-)
-def test_class_from_module_path_ensure_class(
-    module_path: Text, outcome: bool, result: Any, recwarn: WarningsRecorder
-):
+def test_class_from_module_path():
+    module_path = "rasa.shared.core.domain.Domain"
     klass = rasa.shared.utils.common.class_from_module_path(module_path)
-    assert klass is result
+    assert klass is rasa.shared.core.domain.Domain
 
-    assert bool(len(recwarn)) is not outcome
+
+def test_class_from_module_path_fails():
+    module_path = "rasa.shared.core.domain.logger"
+    with pytest.raises(TypeError):
+        rasa.shared.utils.common.class_from_module_path(module_path)
