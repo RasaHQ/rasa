@@ -1,9 +1,8 @@
 import asyncio
-from typing import Any, Collection, List, Optional, Text
+from typing import Collection, List, Optional, Text
 from unittest.mock import Mock
 
 import pytest
-from _pytest.recwarn import WarningsRecorder
 
 import rasa.shared.core.domain
 import rasa.shared.utils.common
