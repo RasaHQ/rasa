@@ -179,7 +179,7 @@ def load_component_by_meta(
 
 def create_component_by_config(
     component_config: Dict[Text, Any], config: "RasaNLUModelConfig"
-) -> Optional["Component"]:
+) -> "Component":
     """Resolves a component and calls it's create method.
 
     Inits it based on a previously persisted model.

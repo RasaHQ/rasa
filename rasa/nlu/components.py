@@ -911,7 +911,7 @@ class ComponentBuilder:
 
     def create_component(
         self, component_config: Dict[Text, Any], cfg: RasaNLUModelConfig
-    ) -> Optional[Component]:
+    ) -> Component:
         """Creates a component.
 
         Tries to retrieve a component from the cache,
