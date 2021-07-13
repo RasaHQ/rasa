@@ -28,4 +28,4 @@ responses:
     - text: should I continue?
 
 forms:
-  - some_form
+  some_form: {}

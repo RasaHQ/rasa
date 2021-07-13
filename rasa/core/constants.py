@@ -20,12 +20,26 @@ BEARER_TOKEN_PREFIX = "Bearer "
 
 # The lowest priority is intended to be used by machine learning policies.
 DEFAULT_POLICY_PRIORITY = 1
+
+# The priority of intent-prediction policies.
+# This should be below all rule based policies but higher than ML
+# based policies. This enables a loop inside ensemble where if none
+# of the rule based policies predict an action and intent prediction
+# policy predicts one, its prediction is chosen by the ensemble and
+# then the ML based policies are again run to get the prediction for
+# an actual action. To prevent an infinite loop, intent prediction
+# policies only predict an action if the last event in
+# the tracker is of type `UserUttered`. Hence, they make at most
+# one action prediction in each conversation turn. This allows other
+# policies to predict a winning action prediction.
+UNLIKELY_INTENT_POLICY_PRIORITY = DEFAULT_POLICY_PRIORITY + 1
+
 # The priority intended to be used by memoization policies.
 # It is higher than default to prioritize training stories.
-MEMOIZATION_POLICY_PRIORITY = 2
+MEMOIZATION_POLICY_PRIORITY = UNLIKELY_INTENT_POLICY_PRIORITY + 1
 # The priority of the `RulePolicy` is higher than all other policies since
 # rule execution takes precedence over training stories or predicted actions.
-RULE_POLICY_PRIORITY = 3
+RULE_POLICY_PRIORITY = MEMOIZATION_POLICY_PRIORITY + 1
 
 DIALOGUE = "dialogue"
 
@@ -39,3 +53,10 @@ POSTGRESQL_SCHEMA = "POSTGRESQL_SCHEMA"
 # Names of the environment variables defining PostgreSQL pool size and max overflow
 POSTGRESQL_POOL_SIZE = "SQL_POOL_SIZE"
 POSTGRESQL_MAX_OVERFLOW = "SQL_MAX_OVERFLOW"
+
+# File names for testing
+CONFUSION_MATRIX_STORIES_FILE = "story_confusion_matrix.png"
+REPORT_STORIES_FILE = "story_report.json"
+FAILED_STORIES_FILE = "failed_test_stories.yml"
+SUCCESSFUL_STORIES_FILE = "successful_test_stories.yml"
+STORIES_WITH_WARNINGS_FILE = "stories_with_warnings.yml"

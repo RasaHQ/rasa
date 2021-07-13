@@ -79,7 +79,7 @@ async def test_agent_train(trained_rasa_model: Text):
     assert loaded.domain.action_names_or_texts == domain.action_names_or_texts
     assert loaded.domain.intents == domain.intents
     assert loaded.domain.entities == domain.entities
-    assert loaded.domain.templates == domain.templates
+    assert loaded.domain.responses == domain.responses
     assert [s.name for s in loaded.domain.slots] == [s.name for s in domain.slots]
 
     # test policies
@@ -233,7 +233,7 @@ async def test_load_agent(trained_rasa_model: Text):
 def test_form_without_form_policy(policy_config: Dict[Text, List[Text]]):
     with pytest.raises(InvalidDomain) as execinfo:
         Agent(
-            domain=Domain.from_dict({"forms": ["restaurant_form"]}),
+            domain=Domain.from_dict({"forms": {"restaurant_form": {}}}),
             policies=PolicyEnsemble.from_dict(policy_config),
         )
     assert "have not added the 'RulePolicy'" in str(execinfo.value)
@@ -248,7 +248,7 @@ def test_form_without_form_policy(policy_config: Dict[Text, List[Text]]):
 def test_forms_with_suited_policy(policy_config: Dict[Text, List[Text]]):
     # Doesn't raise
     Agent(
-        domain=Domain.from_dict({"forms": ["restaurant_form"]}),
+        domain=Domain.from_dict({"forms": {"restaurant_form": {}}}),
         policies=PolicyEnsemble.from_dict(policy_config),
     )
 
