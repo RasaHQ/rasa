@@ -53,7 +53,7 @@ def test_slots_states_before_user_utterance(domain: Domain):
         ],
         slots=domain.slots,
     )
-    trackers_as_states, _ = featurizer.training_states_and_actions([tracker], domain)
+    trackers_as_states, _ = featurizer.training_states_and_labels([tracker], domain)
     expected_states = [[{"slots": {"name": (1.0,)}}]]
     assert trackers_as_states == expected_states
 
@@ -65,7 +65,7 @@ async def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     )
 
     assert len(training_trackers) == 4
-    (decoded, _) = featurizer.training_states_and_actions(training_trackers, domain)
+    (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -94,7 +94,7 @@ async def test_create_train_data_with_history(domain: Domain, stories_path: Text
         stories_path, domain, augmentation_factor=0
     )
     assert len(training_trackers) == 4
-    (decoded, _) = featurizer.training_states_and_actions(training_trackers, domain)
+    (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -142,7 +142,7 @@ async def test_create_train_data_unfeaturized_entities():
     )
 
     assert len(training_trackers) == 2
-    (decoded, _) = featurizer.training_states_and_actions(training_trackers, domain)
+    (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -176,7 +176,7 @@ async def test_create_train_data_unfeaturized_entities():
 def test_domain_from_template(domain: Domain):
     assert not domain.is_empty()
     assert len(domain.intents) == 10 + len(DEFAULT_INTENTS)
-    assert len(domain.action_names_or_texts) == 16
+    assert len(domain.action_names_or_texts) == 17
 
 
 def test_avoid_action_repetition(domain: Domain):
@@ -1447,3 +1447,11 @@ def test_domain_with_empty_required_slots():
                 required_slots:
             """
         )
+
+
+def test_domain_invalid_yml_in_folder():
+    """
+    Check if invalid YAML files in a domain folder lead to the proper UserWarning
+    """
+    with pytest.warns(UserWarning, match="The file .* your file\\."):
+        Domain.from_directory("data/test_domains/test_domain_from_directory1/")

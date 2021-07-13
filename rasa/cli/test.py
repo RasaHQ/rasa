@@ -9,6 +9,11 @@ from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
 from rasa.cli.arguments import test as arguments
+from rasa.core.constants import (
+    FAILED_STORIES_FILE,
+    SUCCESSFUL_STORIES_FILE,
+    STORIES_WITH_WARNINGS_FILE,
+)
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
     DEFAULT_E2E_TESTS_PATH,
@@ -68,6 +73,25 @@ def add_subparser(
     test_parser.set_defaults(func=test, stories=DEFAULT_E2E_TESTS_PATH)
 
 
+def _print_core_test_execution_info(args: argparse.Namespace) -> None:
+    output = args.out or DEFAULT_RESULTS_PATH
+
+    if args.successes:
+        rasa.shared.utils.cli.print_info(
+            f"Successful stories written to "
+            f"'{os.path.join(output, SUCCESSFUL_STORIES_FILE)}'"
+        )
+    if not args.no_errors:
+        rasa.shared.utils.cli.print_info(
+            f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
+        )
+    if not args.no_warnings:
+        rasa.shared.utils.cli.print_info(
+            f"Stories with prediction warnings written to "
+            f"'{os.path.join(output, STORIES_WITH_WARNINGS_FILE)}'"
+        )
+
+
 def run_core_test(args: argparse.Namespace) -> None:
     """Run core tests."""
     from rasa.model_testing import (
@@ -75,7 +99,6 @@ def run_core_test(args: argparse.Namespace) -> None:
         test_core,
         test_core_models,
     )
-    from rasa.core.test import FAILED_STORIES_FILE
 
     stories = rasa.cli.utils.get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH
@@ -83,6 +106,7 @@ def run_core_test(args: argparse.Namespace) -> None:
 
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
+    args.warnings = not args.no_warnings
 
     rasa.shared.utils.io.create_directory(output)
 
@@ -119,9 +143,7 @@ def run_core_test(args: argparse.Namespace) -> None:
             args.model, stories, output, use_conversation_test_files=args.e2e
         )
 
-    rasa.shared.utils.cli.print_info(
-        f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
-    )
+    _print_core_test_execution_info(args)
 
 
 async def run_nlu_test_async(

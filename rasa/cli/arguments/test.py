@@ -191,3 +191,9 @@ def add_errors_success_params(parser: argparse.ArgumentParser) -> None:
         default=False,
         help="If set incorrect predictions will NOT be written to a file.",
     )
+    parser.add_argument(
+        "--no-warnings",
+        action="store_true",
+        default=False,
+        help="If set prediction warnings will NOT be written to a file.",
+    )
