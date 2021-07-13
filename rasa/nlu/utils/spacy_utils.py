@@ -76,7 +76,7 @@ class SpacyNLP(Component):
         component_config = rasa.utils.train_utils.override_defaults(
             cls.defaults, component_config
         )
-        
+
         spacy_model_name = component_config.get("model")
 
         logger.info(f"Trying to load spacy model with name '{spacy_model_name}'")
@@ -101,7 +101,6 @@ class SpacyNLP(Component):
                 f"  model: en_core_web_md\n"
                 f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
             )
-
 
         return cls.name + "-" + spacy_model_name
 
