@@ -276,58 +276,6 @@ class ListSlot(Slot):
         super(ListSlot, self.__class__).value.fset(self, value)
 
 
-class UnfeaturizedSlot(Slot):
-    """Deprecated slot type to represent slots which don't influence conversations."""
-
-    type_name = "unfeaturized"
-
-    def __init__(
-        self,
-        name: Text,
-        initial_value: Any = None,
-        value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
-        influence_conversation: bool = False,
-    ) -> None:
-        """Creates unfeaturized slot.
-
-        Args:
-            name: The name of the slot.
-            initial_value: Its initial value.
-            value_reset_delay: After how many turns the slot should be reset to the
-                initial_value. This is behavior is currently not implemented.
-            auto_fill: `True` if it should be auto-filled by entities with the same
-                name.
-            influence_conversation: `True` if it should be featurized. Only `False`
-                is allowed. Any other value will lead to a `InvalidSlotConfigError`.
-        """
-        if influence_conversation:
-            raise InvalidSlotConfigError(
-                f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
-                f"Please use a different slot type for slot '{name}' instead. See the "
-                f"documentation for more information: {DOCS_URL_SLOTS}"
-            )
-
-        rasa.shared.utils.io.raise_warning(
-            f"{UnfeaturizedSlot.__name__} is deprecated "
-            f"and will be removed in Rasa Open Source "
-            f"3.0. Please change the type and configure the 'influence_conversation' "
-            f"flag for slot '{name}' instead.",
-            docs=DOCS_URL_SLOTS,
-            category=FutureWarning,
-        )
-
-        super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
-        )
-
-    def _as_feature(self) -> List[float]:
-        return []
-
-    def _feature_dimensionality(self) -> int:
-        return 0
-
-
 class CategoricalSlot(Slot):
     type_name = "categorical"
 
