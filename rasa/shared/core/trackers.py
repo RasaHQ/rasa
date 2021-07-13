@@ -273,25 +273,6 @@ class DialogueStateTracker:
 
         return parse_data_with_nlu_state
 
-    @staticmethod
-    def freeze_current_state(state: State) -> FrozenState:
-        """Convert State dict into a hashable format FrozenState.
-
-        Args:
-            state: The state which should be converted
-
-        Return:
-            hashable form of the state of type `FrozenState`
-        """
-        return frozenset(
-            {
-                key: frozenset(values.items())
-                if isinstance(values, Dict)
-                else frozenset(values)
-                for key, values in state.items()
-            }.items()
-        )
-
     def past_states(
         self,
         omit_unset_slots: bool = False,

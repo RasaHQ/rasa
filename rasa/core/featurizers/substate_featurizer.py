@@ -155,6 +155,13 @@ class InterpreterHandler(SetupMixin):
 
 
 class SubStateFeaturizer(SetupMixin):
+    """
+    NOTE: Why on SubState level? Because attributes in the produced dictionary of
+    features might be different from the attributes in the given sub_state. E.g. an
+    interpreter pipeline might generate new information about the sub_state on the
+    fly here.
+    """
+
     @abstractmethod
     def featurize(
         self,
@@ -169,7 +176,7 @@ class SubStateFeaturizer(SetupMixin):
         return self._featurize(sub_state, attributes)
 
 
-class FallbackSubStateFeaturizer(SubStateFeaturizer):
+class SubstateFeaturizerUsingMultiHotVectors(SubStateFeaturizer):
     # TODO: version that converts to indices, from which fallback featurizer inherits
     # TODO: in the old versoin, padding was done *here* -> need to introduce some
     # further glue component to batch the indices.... or just store them in
@@ -235,9 +242,10 @@ class FallbackSubStateFeaturizer(SubStateFeaturizer):
         encoding: Dict[Text, int] = self._encoding(sub_state, attribute)
 
         # convert to a sparse matrix
-        row = np.zeros(len(encoding), dtype=int)
-        col = np.zeros(len(encoding), dtype=int)
-        data = np.zeros(len(encoding), dtype=float)
+        dim = len(self._item2index_mappings[attribute])
+        row = np.zeros(dim, dtype=int)
+        col = np.zeros(dim, dtype=int)
+        data = np.zeros(dim, dtype=float)
         for feature_name, value in encoding.items():
             if feature_name in self.item2index_mapping:
                 col.append(self.item2index_mappings[feature_name])
@@ -268,67 +276,26 @@ class FallbackSubStateFeaturizer(SubStateFeaturizer):
 
 
 class SubStateFeaturizerUsingInterpreter(SubStateFeaturizer):
-    def __init__(self, use_regex_interpreter: Optional[bool] = None,) -> None:
+    """
+    NOTE: This class is the only reason we don't work on single-attribute level. There
+    might be reasons to run the interpreter on a complete substate instead (e.g.
+    NLU pipeline inserts entities and intent predictions). Hence
+    """
+
+    def __init__(
+        self, use_regex_interpreter: Optional[bool] = None, bilou_tagging: bool = False
+    ) -> None:
         self.interpreter_handler = InterpreterHandler(
             use_regex_interpreter=use_regex_interpreter
         )
+        self.bilou_tagging = bilou_tagging
+        self.encoding_spec = None
 
     def setup(self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]):
         self.interpreter_handler.set_or_fallback(interpreter)
+        self._setup_entity_tagging(domain)
 
-    def is_setup(self) -> bool:
-        return self.interpreter_handler.is_setup()
-
-    def _featurize(
-        self, sub_state: SubState, attributes: List[Text]
-    ) -> Dict[Text, List[Features]]:
-
-        message = Message(data=sub_state)
-        parsed_message = self.interpreter.featurize_message(message)
-
-        attribute_to_features: Dict[Text, List[Features]] = dict()
-        for attr in attributes:
-            all_features = parsed_message.get_sparse_features(
-                attr
-            ) + parsed_message.get_dense_features(attr)
-            for features in all_features:
-                if features is not None:
-                    attribute_to_features[attr].append(features)
-
-        return attribute_to_features
-
-
-class ActionAttributeFeaturizerUsingInterpreter(SubStateFeaturizerUsingInterpreter):
-    def _featurize(
-        self, sub_state: SubState, attributes: List[Text]
-    ) -> Dict[Text, List[Features]]:
-        # filter what is left to only featurize the action attribute
-        attributes = set(attributes).intersection([ACTION_NAME, ACTION_TEXT])
-        return super()._featurize(sub_state, attributes)
-
-    def featurize_action(self, action: Text) -> Dict[Text, List["Features"]]:
-        """
-
-        """
-        self.raise_if_setup_is(False)
-
-        sub_state = state_utils.create_substate_from_action(
-            action, as_text=(action in self.action_texts)
-        )
-        return self._featurize(sub_state, attributes=list(sub_state.keys()))
-
-
-class EntityAttributeFeaturizer(SubStateFeaturizer):
-    def __init__(
-        self, bilou_tagging: bool, encoding_spec: Optional[EntityTagSpec] = None
-    ) -> None:
-        """
-
-        """
-        self.bilou_tagging = bilou_tagging  # this should be known in advance?
-        self.encoding_spec = encoding_spec
-
-    def setup(self, domain: Domain):
+    def _setup_entity_tagging(self, domain: Domain):
         entities = sorted(domain.entity_states)
         if self.bilou_tagging:
             tag_id_index_mapping = {
@@ -358,29 +325,34 @@ class EntityAttributeFeaturizer(SubStateFeaturizer):
             num_tags=len(tag_id_index_mapping),
         )
 
-    def is_setup(self):
-        return self.encoding_spec is not None
+    def is_setup(self) -> bool:
+        return self.interpreter_handler.is_setup() and (self.encoding_spec is not None)
 
     def _featurize(
         self, sub_state: SubState, attributes: List[Text]
     ) -> Dict[Text, List[Features]]:
 
-        if not attributes:
-            return {}
-
-        message = Message(sub_state)
-        message = self.interpreter.featurize_message(message)
-
-        if not message:
-            return {}
+        # FIXME: does this always work?
+        message = Message(data=sub_state)
+        parsed_message = self.interpreter.featurize_message(message)
 
         if self.bilou_tagging:
             bilou_utils.apply_bilou_schema_to_message(message)
 
-        return {
-            ENTITY_TAGS: [
+        attribute_to_features: Dict[Text, List[Features]] = dict()
+        for attr in attributes:
+            all_features = parsed_message.get_sparse_features(
+                attr
+            ) + parsed_message.get_dense_features(attr)
+            for features in all_features:
+                if features is not None:
+                    attribute_to_features[attr].append(features)
+
+        if ENTITIES in attributes:
+            attribute_to_features[ENTITY_TAGS] = [
                 model_data_utils.get_tag_ids(
                     message, self.encoding_specs, self.bilou_tagging
                 )
             ]
-        }
+
+        return attribute_to_features
