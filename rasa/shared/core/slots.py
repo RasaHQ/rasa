@@ -290,6 +290,7 @@ class CategoricalSlot(Slot):
         auto_fill: bool = True,
         influence_conversation: bool = True,
     ) -> None:
+        """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
