@@ -150,7 +150,7 @@ def _raise_exception_for_legacy_event_names(event: Event) -> None:
         isinstance(event, ActionExecuted)
         and event.action_name == LEGACY_ACTION_DEACTIVATE_LOOP_NAME
     ):
-        StoryParseError(
+        raise StoryParseError(
             f"Using action '{event.action_name}' has been deprecated. Please use "
             f"'{ACTION_DEACTIVATE_LOOP_NAME}' instead."
         )
