@@ -154,9 +154,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         return feature_to_idx_dict
 
     @staticmethod
-    def _build_feature_vocabulary(
-        features: List[List[Dict[Text, Any]]]
-    ) -> OrderedDict:
+    def _build_feature_vocabulary(features: List[List[Dict[Text, Any]]]) -> OrderedDict:
         feature_vocabulary = defaultdict(set)
 
         for sentence_features in features:
