@@ -940,14 +940,3 @@ class ComponentBuilder:
                 f"Failed to create component '{component_config['name']}'. "
                 f"Error: {e}"
             )
-
-    def create_component_from_class(
-        self, component_class: Type[Component], **cfg: Any
-    ) -> Optional[Component]:
-        """Create a component based on a class and a configuration.
-
-        Mainly used to make use of caching when instantiating component classes.
-        """
-        component_config = {"name": component_class.name}
-
-        return self.create_component(component_config, RasaNLUModelConfig(cfg))
