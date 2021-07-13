@@ -152,7 +152,7 @@ class SingleStateFeaturizer:
 
     def _create_features(
         self, sub_state: SubState, attribute: Text, sparse: bool = False
-    ) -> List["Features"]:
+    ) -> List[Features]:
         state_features = self._state_features_for_attribute(sub_state, attribute)
 
         features = np.zeros(len(self._default_feature_states[attribute]), np.float32)
@@ -174,8 +174,8 @@ class SingleStateFeaturizer:
 
     @staticmethod
     def _to_sparse_sentence_features(
-        sparse_sequence_features: List["Features"],
-    ) -> List["Features"]:
+        sparse_sequence_features: List[Features],
+    ) -> List[Features]:
         return [
             Features(
                 scipy.sparse.coo_matrix(feature.features.sum(0)),
@@ -188,7 +188,7 @@ class SingleStateFeaturizer:
 
     def _get_features_from_parsed_message(
         self, parsed_message: Optional[Message], attributes: Set[Text]
-    ) -> Dict[Text, List["Features"]]:
+    ) -> Dict[Text, List[Features]]:
         if parsed_message is None:
             return {}
 
@@ -229,7 +229,7 @@ class SingleStateFeaturizer:
         sub_state: SubState,
         interpreter: NaturalLanguageInterpreter,
         sparse: bool = False,
-    ) -> Dict[Text, List["Features"]]:
+    ) -> Dict[Text, List[Features]]:
         # this method is called during both prediction and training,
         # `self._use_regex_interpreter == True` means that core was trained
         # separately, therefore substitute interpreter based on some trained
@@ -264,8 +264,8 @@ class SingleStateFeaturizer:
 
     def encode_state(
         self, state: State, interpreter: NaturalLanguageInterpreter
-    ) -> Dict[Text, List["Features"]]:
-        """Encode the given state with the help of the given interpreter.
+    ) -> Dict[Text, List[Features]]:
+        """Encodes the given state with the help of the given interpreter.
 
         Args:
             state: The state to encode
@@ -303,8 +303,8 @@ class SingleStateFeaturizer:
         entity_data: Dict[Text, Any],
         interpreter: NaturalLanguageInterpreter,
         bilou_tagging: bool = False,
-    ) -> Dict[Text, List["Features"]]:
-        """Encode the given entity data with the help of the given interpreter.
+    ) -> Dict[Text, List[Features]]:
+        """Encodes the given entity data with the help of the given interpreter.
 
         Produce numeric entity tags for tokens.
 
@@ -346,7 +346,7 @@ class SingleStateFeaturizer:
 
     def _encode_action(
         self, action: Text, interpreter: NaturalLanguageInterpreter
-    ) -> Dict[Text, List["Features"]]:
+    ) -> Dict[Text, List[Features]]:
         if action in self.action_texts:
             action_as_sub_state = {ACTION_TEXT: action}
         else:
@@ -354,10 +354,30 @@ class SingleStateFeaturizer:
 
         return self._extract_state_features(action_as_sub_state, interpreter)
 
+    def encode_all_labels(
+        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+    ) -> List[Dict[Text, List[Features]]]:
+        """Encodes all labels from the domain using the given interpreter.
+
+        Args:
+            domain: The domain that contains the labels.
+            interpreter: The interpreter used to encode the labels.
+
+        Returns:
+            A list of encoded labels.
+        """
+        return [
+            self._encode_action(action, interpreter)
+            for action in domain.action_names_or_texts
+        ]
+
     def encode_all_actions(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
-    ) -> List[Dict[Text, List["Features"]]]:
-        """Encode all action from the domain using the given interpreter.
+    ) -> List[Dict[Text, List[Features]]]:
+        """Encodes all actions from the domain using the given interpreter.
+
+        This method is deprecated and will be removed in Rasa Open Source 3.0.0 .
+        It is recommended to use `encode_all_labels` instead.
 
         Args:
             domain: The domain that contains the actions.
@@ -366,11 +386,48 @@ class SingleStateFeaturizer:
         Returns:
             A list of encoded actions.
         """
+        rasa.shared.utils.io.raise_deprecation_warning(
+            f"'{self.__class__.__name__}.encode_all_actions' is deprecated and "
+            f"will be removed in Rasa Open Source 3.0.0. "
+            f"It is recommended to use the method 'encode_all_labels' instead.",
+            docs=DOCS_URL_MIGRATION_GUIDE,
+        )
 
-        return [
-            self._encode_action(action, interpreter)
-            for action in domain.action_names_or_texts
-        ]
+        return self.encode_all_labels(domain, interpreter)
+
+
+class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
+    """A SingleStateFeaturizer for use with policies that predict intent labels."""
+
+    def _encode_intent(
+        self, intent: Text, interpreter: NaturalLanguageInterpreter
+    ) -> Dict[Text, List[Features]]:
+        """Extracts a numeric representation of an intent.
+
+        Args:
+            intent: Intent to be encoded.
+            interpreter: NLU Interpreter to be used for encoding.
+
+        Returns:
+            Encoded representation of intent.
+        """
+        intent_as_sub_state = {INTENT: intent}
+
+        return self._extract_state_features(intent_as_sub_state, interpreter)
+
+    def encode_all_labels(
+        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+    ) -> List[Dict[Text, List[Features]]]:
+        """Encodes all relevant labels from the domain using the given interpreter.
+
+        Args:
+            domain: The domain that contains the labels.
+            interpreter: The interpreter used to encode the labels.
+
+        Returns:
+            A list of encoded labels.
+        """
+        return [self._encode_intent(intent, interpreter) for intent in domain.intents]
 
 
 class BinarySingleStateFeaturizer(SingleStateFeaturizer):
@@ -391,7 +448,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         sub_state: SubState,
         interpreter: NaturalLanguageInterpreter,
         sparse: bool = False,
-    ) -> Dict[Text, List["Features"]]:
+    ) -> Dict[Text, List[Features]]:
         # create a special method that doesn't use passed interpreter
         name_attribute = self._get_name_attribute(set(sub_state.keys()))
         if name_attribute:
