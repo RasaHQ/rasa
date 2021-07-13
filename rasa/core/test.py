@@ -609,7 +609,7 @@ def _run_action_prediction(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
     expected_action: Text,
-) -> Tuple[Text, PolicyPrediction, EntityEvaluationResult]:
+) -> Tuple[Text, PolicyPrediction, Optional[EntityEvaluationResult]]:
     action, prediction = processor.predict_next_action(partial_tracker)
     predicted_action = action.name()
 

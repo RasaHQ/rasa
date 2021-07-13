@@ -760,7 +760,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         domain: Domain,
         omit_unset_slots: bool = False,
     ) -> Tuple[
-        List[List[State]], List[List[Optional[Text]]], List[List[Dict[Text, Any]]]
+        List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]
     ]:
         """Transforms list of trackers to lists of states, actions and entity data.
 
