@@ -169,7 +169,7 @@ def ensure_loaded_agent(
 def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
     """Wraps a request handler ensuring the conversation exists."""
 
-    def decorator(f: "SanicView") -> SanicView:
+    def decorator(f: "SanicView") -> "SanicView":
         @wraps(f)
         def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
