@@ -1258,7 +1258,7 @@ def test_predict_next_action_with_hidden_rules():
         domain,
         tracker_store,
         lock_store,
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
     )
 
     tracker = DialogueStateTracker.from_events(
