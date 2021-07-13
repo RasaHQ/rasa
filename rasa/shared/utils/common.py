@@ -7,7 +7,7 @@ from typing import Text, Dict, Optional, Any, List, Callable, Collection
 
 import rasa.shared.utils.io
 from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
-
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +45,10 @@ def class_from_module_path(
         raise ImportError(f"Cannot retrieve class from path {module_path}.")
 
     if not inspect.isclass(klass):
-        rasa.shared.utils.io.raise_deprecation_warning(
+        raise TypeError(
             f"`class_from_module_path()` is expected to return a class, "
-            f"but {module_path} is not one. "
-            f"This warning will be converted "
-            f"into an exception in {NEXT_MAJOR_VERSION_FOR_DEPRECATIONS}."
+            f"but {module_path} is {type(klass)}."
         )
-
     return klass
 
 
