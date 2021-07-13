@@ -782,6 +782,29 @@ def test_load_on_invalid_domain_duplicate_actions():
         Domain.load("data/test_domains/duplicate_actions.yml")
 
 
+def test_schema_error_with_forms_as_lists():
+    with pytest.raises(YamlException):
+        Domain.from_yaml(
+            """
+        version: '2.0'
+        forms: []
+        """
+        )
+
+
+def test_schema_error_with_forms_and_slots_but_without_required_slots_key():
+    with pytest.raises(YamlException):
+        Domain.from_yaml(
+            """
+        version: '2.0'
+        forms:
+          my_form:
+            cool_slot:
+            - type: from_text
+        """
+        )
+
+
 def test_load_on_invalid_domain_duplicate_responses():
     with pytest.raises(YamlSyntaxException):
         Domain.load("data/test_domains/duplicate_responses.yml")
