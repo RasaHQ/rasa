@@ -91,7 +91,9 @@ component_classes: List[Type[Component]] = [
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
-registered_components = {c.name: c for c in component_classes}
+registered_components: Dict[Text, Type[Component]] = {
+    c.name: c for c in component_classes
+}
 
 
 class ComponentNotFoundException(ModuleNotFoundError, RasaException):

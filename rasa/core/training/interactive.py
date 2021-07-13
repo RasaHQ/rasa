@@ -190,7 +190,7 @@ async def retrieve_tracker(
     endpoint: EndpointConfig,
     conversation_id: Text,
     verbosity: EventVerbosity = EventVerbosity.ALL,
-) -> Optional[Any]:
+) -> Dict[Text, Any]:
     """Retrieve a tracker from core."""
     path = f"/conversations/{conversation_id}/tracker?include_events={verbosity.name}"
     return await endpoint.request(
