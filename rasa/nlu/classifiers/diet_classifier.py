@@ -40,7 +40,11 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
 )
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.shared.exceptions import InvalidConfigException
+from rasa.shared.exceptions import (
+    InvalidConfigException,
+    RasaException,
+    CorruptMetaDataException,
+)
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.model import Metadata
@@ -1166,6 +1170,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         model_dir: Text,
         finetune_mode: bool = False,
     ) -> "RasaModel":
+        if "file" not in meta:
+            raise CorruptMetaDataException(
+                f"Metadata for trained component {cls.name}"
+                f"is missing the 'file' attribute."
+            )
         file_name = meta["file"]
         tf_model_file = os.path.join(model_dir, file_name + ".tf_model")
 
