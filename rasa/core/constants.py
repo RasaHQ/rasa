@@ -18,23 +18,14 @@ DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
 BEARER_TOKEN_PREFIX = "Bearer "
 
-# the lowest priority intended to be used by machine learning policies
+# The lowest priority is intended to be used by machine learning policies.
 DEFAULT_POLICY_PRIORITY = 1
-# the priority intended to be used by mapping policies
-MAPPING_POLICY_PRIORITY = 2
-# the priority intended to be used by memoization policies
-# it is higher than default and mapping to prioritize training stories
-MEMOIZATION_POLICY_PRIORITY = 3
-# the priority intended to be used by fallback policies
-# it is higher than memoization to prioritize fallback
-FALLBACK_POLICY_PRIORITY = 4
-# the priority intended to be used by form policies
-# it is the highest to prioritize form to the rest of the policies
-FORM_POLICY_PRIORITY = 5
-# The priority of the `RulePolicy` is higher than the priorities for `FallbackPolicy`,
-# `TwoStageFallbackPolicy` and `FormPolicy` to make it possible to use the
-# `RulePolicy` in conjunction with these deprecated policies.
-RULE_POLICY_PRIORITY = 6
+# The priority intended to be used by memoization policies.
+# It is higher than default to prioritize training stories.
+MEMOIZATION_POLICY_PRIORITY = 2
+# The priority of the `RulePolicy` is higher than all other policies since
+# rule execution takes precedence over training stories or predicted actions.
+RULE_POLICY_PRIORITY = 3
 
 DIALOGUE = "dialogue"
 

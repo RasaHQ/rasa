@@ -558,7 +558,6 @@ def _collect_action_executed_predictions(
     fail_on_prediction_errors: bool,
     circuit_breaker_tripped: bool,
 ) -> Tuple[EvaluationStore, PolicyPrediction, Optional[EntityEvaluationResult]]:
-    from rasa.core.policies.form_policy import FormPolicy
 
     action_executed_eval_store = EvaluationStore()
 
@@ -617,14 +616,6 @@ def _collect_action_executed_predictions(
             error_msg = (
                 f"Model predicted a wrong action. Failed Story: " f"\n\n{story_dump}"
             )
-            if FormPolicy.__name__ in prediction.policy_name:
-                error_msg += (
-                    "FormAction is not run during "
-                    "evaluation therefore it is impossible to know "
-                    "if validation failed or this story is wrong. "
-                    "If the story is correct, add it to the "
-                    "training stories and retrain."
-                )
             raise WrongPredictionException(error_msg)
     else:
         partial_tracker.update(
