@@ -33,6 +33,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     WEIGHT_SPARSITY,
     CONNECTION_DENSITY,
+    TOLERANCE,
     CHECKPOINT_MODEL,
 )
 from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
@@ -535,7 +536,17 @@ def validate_configuration_settings(component_config: Dict[Text, Any]) -> None:
     _check_loss_setting(component_config)
     _check_confidence_setting(component_config)
     _check_similarity_loss_setting(component_config)
+    _check_tolerance_setting(component_config)
     _check_evaluation_setting(component_config)
+
+
+def _check_tolerance_setting(component_config: Dict[Text, Any]) -> None:
+    if not (0.0 <= component_config.get(TOLERANCE, 0.0) <= 1.0):
+        raise InvalidConfigException(
+            f"`{TOLERANCE}` was set to `{component_config.get(TOLERANCE)}` "
+            f"which is an invalid setting. Please set it to a value "
+            f"between 0.0 and 1.0 inclusive."
+        )
 
 
 def _check_evaluation_setting(component_config: Dict[Text, Any]) -> None:

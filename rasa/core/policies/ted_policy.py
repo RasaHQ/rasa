@@ -9,7 +9,7 @@ import rasa.shared.utils.io
 import rasa.utils.train_utils
 import tensorflow as tf
 import tensorflow_addons as tfa
-from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING
+from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING, Type
 
 import rasa.utils.io as io_utils
 import rasa.core.actions.action
@@ -111,6 +111,7 @@ from rasa.utils.tensorflow.constants import (
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.utils import io as shared_io_utils
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -125,17 +126,21 @@ LENGTH = "length"
 INDICES = "indices"
 SENTENCE_FEATURES_TO_ENCODE = [INTENT, TEXT, ACTION_NAME, ACTION_TEXT]
 SEQUENCE_FEATURES_TO_ENCODE = [TEXT, ACTION_TEXT, f"{LABEL}_{ACTION_TEXT}"]
-LABEL_FEATURES_TO_ENCODE = [f"{LABEL}_{ACTION_NAME}", f"{LABEL}_{ACTION_TEXT}"]
+LABEL_FEATURES_TO_ENCODE = [
+    f"{LABEL}_{ACTION_NAME}",
+    f"{LABEL}_{ACTION_TEXT}",
+    f"{LABEL}_{INTENT}",
+]
 STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
 
-SAVE_MODEL_FILE_NAME = "ted_policy"
-
 
 class TEDPolicy(Policy):
-    """Transformer Embedding Dialogue (TED) Policy is described in
-    https://arxiv.org/abs/1910.00486.
-    This policy has a pre-defined architecture, which comprises the
+    """Transformer Embedding Dialogue (TED) Policy.
+
+    The model architecture is described in
+    detail in https://arxiv.org/abs/1910.00486.
+    In summary, the architecture comprises of the
     following steps:
         - concatenate user input (user intent and entities), previous system actions,
           slots and active forms for each time step into an input vector to
@@ -322,12 +327,17 @@ class TEDPolicy(Policy):
         should_finetune: bool = False,
         **kwargs: Any,
     ) -> None:
-        """Declare instance variables with default values."""
+        """Declares instance variables with default values."""
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
             kwargs.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE),
-            self.defaults[SPLIT_ENTITIES_BY_COMMA],
+            self.defaults.get(
+                SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
+            ),
         )
 
+        # TODO: check if the else statement can be removed.
+        #  More context here -
+        #  https://github.com/RasaHQ/rasa/issues/5786#issuecomment-840762751
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
         else:
@@ -349,11 +359,24 @@ class TEDPolicy(Policy):
         self.only_e2e = TEXT in self.fake_features and INTENT not in self.fake_features
 
         self._label_data: Optional[RasaModelData] = None
-        self.data_example: Optional[Dict[Text, List[np.ndarray]]] = None
+        self.data_example: Optional[Dict[Text, Dict[Text, List[FeatureArray]]]] = None
 
         self.tmp_checkpoint_dir = None
         if self.config[CHECKPOINT_MODEL]:
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
+
+    @staticmethod
+    def model_class() -> Type["TED"]:
+        """Gets the class of the model architecture to be used by the policy.
+
+        Returns:
+            Required class.
+        """
+        return TED
+
+    @classmethod
+    def _metadata_filename(cls) -> Optional[Text]:
+        return "ted_policy"
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
@@ -361,9 +384,12 @@ class TEDPolicy(Policy):
             self.defaults, new_config
         )
 
+        self._auto_update_configuration()
+
+    def _auto_update_configuration(self) -> None:
+        """Takes care of deprecations and compatibility of parameters."""
         self.config = rasa.utils.train_utils.update_confidence_type(self.config)
         rasa.utils.train_utils.validate_configuration_settings(self.config)
-
         self.config = rasa.utils.train_utils.update_deprecated_loss_type(self.config)
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
@@ -376,12 +402,34 @@ class TEDPolicy(Policy):
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_actions(domain, interpreter)
+        encoded_all_labels = state_featurizer.encode_all_labels(domain, interpreter)
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
         )
 
+        label_data = self._assemble_label_data(attribute_data, domain)
+
+        return label_data, encoded_all_labels
+
+    def _assemble_label_data(
+        self, attribute_data: Data, domain: Domain
+    ) -> RasaModelData:
+        """Constructs data regarding labels to be fed to the model.
+
+        The resultant model data can possibly contain one or both of the
+        keys - [`label_action_name`, `label_action_text`] but will definitely
+        contain the `label` key.
+        `label_action_*` will contain the sequence, sentence and mask features
+        for corresponding labels and `label` will contain the numerical label ids.
+
+        Args:
+            attribute_data: Feature data for all labels.
+            domain: Domain of the assistant.
+
+        Returns:
+            Features of labels ready to be fed to the model.
+        """
         label_data = RasaModelData()
         label_data.add_data(attribute_data, key_prefix=f"{LABEL_KEY}_")
         label_data.add_lengths(
@@ -390,15 +438,13 @@ class TEDPolicy(Policy):
             f"{LABEL}_{ACTION_TEXT}",
             SEQUENCE,
         )
-
         label_ids = np.arange(domain.num_actions)
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
             [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
         )
-
-        return label_data, encoded_all_labels
+        return label_data
 
     @staticmethod
     def _should_extract_entities(
@@ -502,22 +548,24 @@ class TEDPolicy(Policy):
 
         return model_data
 
-    def train(
+    def _prepare_for_training(
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> None:
-        """Train the policy on given training trackers."""
+    ) -> Tuple[RasaModelData, np.ndarray]:
+        """Prepares data to be fed into the model.
 
-        if not training_trackers:
-            logger.error(
-                f"Can not train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the policy."
-            )
-            return
+        Args:
+            training_trackers: List of training trackers to be featurized.
+            domain: Domain of the assistant.
+            interpreter: NLU interpreter to be used for featurizing states.
+            **kwargs: Any other arguments.
 
+        Returns:
+            Featurized data to be fed to the model and corresponding label ids.
+        """
         # dealing with training data
         tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
             training_trackers,
@@ -527,6 +575,9 @@ class TEDPolicy(Policy):
             **kwargs,
         )
 
+        if not tracker_state_features:
+            return RasaModelData(), label_ids
+
         self._label_data, encoded_all_labels = self._create_label_data(
             domain, interpreter
         )
@@ -535,12 +586,6 @@ class TEDPolicy(Policy):
         model_data = self._create_model_data(
             tracker_state_features, label_ids, entity_tags, encoded_all_labels
         )
-        if model_data.is_empty():
-            logger.error(
-                f"Can not train '{self.__class__.__name__}'. No data was provided. "
-                f"Skipping training of the policy."
-            )
-            return
 
         if self.config[ENTITY_RECOGNITION]:
             self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
@@ -548,11 +593,24 @@ class TEDPolicy(Policy):
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
 
+        return model_data, label_ids
+
+    def run_training(
+        self, model_data: RasaModelData, label_ids: Optional[np.ndarray] = None
+    ) -> None:
+        """Feeds the featurized training data to the model.
+
+        Args:
+            model_data: Featurized training data.
+            label_ids: Label ids corresponding to the data points in `model_data`.
+                These may or may not be used by the function depending
+                on how the policy is trained.
+        """
         if not self.finetune_mode:
             # This means the model wasn't loaded from a
             # previously trained model and hence needs
             # to be instantiated.
-            self.model = TED(
+            self.model = self.model_class()(
                 model_data.get_signature(),
                 self.config,
                 isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
@@ -562,7 +620,6 @@ class TEDPolicy(Policy):
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
             )
-
         (
             data_generator,
             validation_data_generator,
@@ -580,7 +637,6 @@ class TEDPolicy(Policy):
             self.config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
         )
-
         self.model.fit(
             data_generator,
             epochs=self.config[EPOCHS],
@@ -590,6 +646,48 @@ class TEDPolicy(Policy):
             verbose=False,
             shuffle=False,  # we use custom shuffle inside data generator
         )
+
+    def train(
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
+        **kwargs: Any,
+    ) -> None:
+        """Trains the policy on given training trackers.
+
+        Args:
+            training_trackers: List of training trackers to be used
+                for training the model.
+            domain: Domain of the assistant.
+            interpreter: NLU Interpreter to be used for featurizing the states.
+            **kwargs: Any other argument.
+        """
+        if not training_trackers:
+            shared_io_utils.raise_warning(
+                f"Skipping training of `{self.__class__.__name__}` "
+                f"as no data was provided. You can exclude this "
+                f"policy in the configuration "
+                f"file to avoid this warning.",
+                category=UserWarning,
+            )
+            return
+
+        model_data, label_ids = self._prepare_for_training(
+            training_trackers, domain, interpreter, **kwargs
+        )
+
+        if model_data.is_empty():
+            shared_io_utils.raise_warning(
+                f"Skipping training of `{self.__class__.__name__}` "
+                f"as no data was provided. You can exclude this "
+                f"policy in the configuration "
+                f"file to avoid this warning.",
+                category=UserWarning,
+            )
+            return
+
+        self.run_training(model_data, label_ids)
 
     def _featurize_tracker_for_e2e(
         self,
@@ -688,7 +786,7 @@ class TEDPolicy(Policy):
 
         # take the last prediction in the sequence
         similarities = outputs["similarities"][:, -1, :]
-        confidences = outputs["action_scores"][:, -1, :]
+        confidences = outputs["scores"][:, -1, :]
         # take correct prediction from batch
         confidence, is_e2e_prediction = self._pick_confidence(
             confidences, similarities, domain
@@ -774,7 +872,8 @@ class TEDPolicy(Policy):
             return
 
         model_path = Path(path)
-        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
+        model_filename = self._metadata_filename()
+        tf_model_file = model_path / f"{model_filename}.tf_model"
 
         rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
@@ -784,78 +883,62 @@ class TEDPolicy(Policy):
             shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
         self.model.save(str(tf_model_file))
 
+        self.persist_model_utilities(model_path)
+
+    def persist_model_utilities(self, model_path: Path) -> None:
+        """Persists model's utility attributes like model weights, etc.
+
+        Args:
+            model_path: Path where model is to be persisted
+        """
+        model_filename = self._metadata_filename()
         io_utils.json_pickle(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl", self.priority
+            model_path / f"{model_filename}.priority.pkl", self.priority
+        )
+        io_utils.pickle_dump(model_path / f"{model_filename}.meta.pkl", self.config)
+        io_utils.pickle_dump(
+            model_path / f"{model_filename}.data_example.pkl", self.data_example,
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl", self.config
+            model_path / f"{model_filename}.fake_features.pkl", self.fake_features,
         )
         io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl", self.data_example
-        )
-        io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.fake_features.pkl",
-            self.fake_features,
-        )
-        io_utils.pickle_dump(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl",
+            model_path / f"{model_filename}.label_data.pkl",
             dict(self._label_data.data),
         )
-
         entity_tag_specs = (
             [tag_spec._asdict() for tag_spec in self._entity_tag_specs]
             if self._entity_tag_specs
             else []
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.entity_tag_specs.json",
-            entity_tag_specs,
+            model_path / f"{model_filename}.entity_tag_specs.json", entity_tag_specs,
         )
 
     @classmethod
-    def load(
-        cls,
-        path: Union[Text, Path],
-        should_finetune: bool = False,
-        epoch_override: int = defaults[EPOCHS],
-        **kwargs: Any,
-    ) -> "TEDPolicy":
-        """Loads a policy from the storage.
+    def _load_model_utilities(cls, model_path: Path) -> Dict[Text, Any]:
+        """Loads model's utility attributes.
 
-        **Needs to load its featurizer**
+        Args:
+            model_path: Path where model is to be persisted.
         """
-        model_path = Path(path)
-
-        if not model_path.exists():
-            logger.error(
-                f"Failed to load TED policy model. Path "
-                f"'{model_path.absolute()}' doesn't exist."
-            )
-            return
-
-        tf_model_file = model_path / f"{SAVE_MODEL_FILE_NAME}.tf_model"
-
-        featurizer = TrackerFeaturizer.load(path)
-
-        if not (model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl").is_file():
-            return cls(featurizer=featurizer)
-
+        tf_model_file = model_path / f"{cls._metadata_filename()}.tf_model"
         loaded_data = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.data_example.pkl"
+            model_path / f"{cls._metadata_filename()}.data_example.pkl"
         )
         label_data = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.label_data.pkl"
+            model_path / f"{cls._metadata_filename()}.label_data.pkl"
         )
         fake_features = io_utils.pickle_load(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.fake_features.pkl"
+            model_path / f"{cls._metadata_filename()}.fake_features.pkl"
         )
         label_data = RasaModelData(data=label_data)
-        meta = io_utils.pickle_load(model_path / f"{SAVE_MODEL_FILE_NAME}.meta.pkl")
+        meta = io_utils.pickle_load(model_path / f"{cls._metadata_filename()}.meta.pkl")
         priority = io_utils.json_unpickle(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.priority.pkl"
+            model_path / f"{cls._metadata_filename()}.priority.pkl"
         )
         entity_tag_specs = rasa.shared.utils.io.read_json_file(
-            model_path / f"{SAVE_MODEL_FILE_NAME}.entity_tag_specs.json"
+            model_path / f"{cls._metadata_filename()}.entity_tag_specs.json"
         )
         entity_tag_specs = [
             EntityTagSpec(
@@ -871,16 +954,124 @@ class TEDPolicy(Policy):
             for tag_spec in entity_tag_specs
         ]
 
+        return {
+            "tf_model_file": tf_model_file,
+            "loaded_data": loaded_data,
+            "fake_features": fake_features,
+            "label_data": label_data,
+            "meta": meta,
+            "priority": priority,
+            "entity_tag_specs": entity_tag_specs,
+        }
+
+    @classmethod
+    def load(
+        cls,
+        path: Union[Text, Path],
+        should_finetune: bool = False,
+        epoch_override: int = defaults[EPOCHS],
+        **kwargs: Any,
+    ) -> "TEDPolicy":
+        """Loads a policy from the storage.
+
+        Args:
+            path: Path on disk where policy is persisted.
+            should_finetune: Whether to load the policy for finetuning.
+            epoch_override: Override the number of epochs in persisted
+                configuration for further finetuning.
+            **kwargs: Any other arguments
+
+        Returns:
+            Loaded policy
+
+        Raises:
+            `PolicyModelNotFound` if the model is not found in the supplied `path`.
+        """
+        model_path = Path(path)
+
+        if not model_path.exists():
+            logger.warning(
+                f"Failed to load {cls.__class__.__name__} model. Path "
+                f"'{model_path.absolute()}' doesn't exist."
+            )
+            return cls()
+
+        featurizer = TrackerFeaturizer.load(path)
+
+        if not (model_path / f"{cls._metadata_filename()}.data_example.pkl").is_file():
+            return cls(featurizer=featurizer)
+
+        model_utilities = cls._load_model_utilities(model_path)
+
+        model_utilities["meta"] = cls._update_loaded_params(model_utilities["meta"])
+        model_utilities["meta"][EPOCHS] = epoch_override
+
+        (
+            model_data_example,
+            predict_data_example,
+        ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
+
+        model = cls._load_tf_model(
+            model_utilities,
+            model_data_example,
+            predict_data_example,
+            featurizer,
+            should_finetune,
+        )
+
+        return cls._load_policy_with_model(
+            model, featurizer, model_utilities, should_finetune
+        )
+
+    @classmethod
+    def _load_policy_with_model(
+        cls,
+        model: "TED",
+        featurizer: TrackerFeaturizer,
+        model_utilities: Dict[Text, Any],
+        should_finetune: bool,
+    ) -> "TEDPolicy":
+        return cls(
+            featurizer=featurizer,
+            priority=model_utilities["priority"],
+            model=model,
+            fake_features=model_utilities["fake_features"],
+            entity_tag_specs=model_utilities["entity_tag_specs"],
+            should_finetune=should_finetune,
+            **model_utilities["meta"],
+        )
+
+    @classmethod
+    def _load_tf_model(
+        cls,
+        model_utilities: Dict[Text, Any],
+        model_data_example: RasaModelData,
+        predict_data_example: RasaModelData,
+        featurizer: TrackerFeaturizer,
+        should_finetune: bool,
+    ) -> "TED":
+        model = cls.model_class().load(
+            str(model_utilities["tf_model_file"]),
+            model_data_example,
+            predict_data_example,
+            data_signature=model_data_example.get_signature(),
+            config=model_utilities["meta"],
+            max_history_featurizer_is_used=isinstance(
+                featurizer, MaxHistoryTrackerFeaturizer
+            ),
+            label_data=model_utilities["label_data"],
+            entity_tag_specs=model_utilities["entity_tag_specs"],
+            finetune_mode=should_finetune,
+        )
+        return model
+
+    @classmethod
+    def _construct_model_initialization_data(
+        cls, loaded_data: Dict[Text, Dict[Text, List[FeatureArray]]]
+    ) -> Tuple[RasaModelData, RasaModelData]:
         model_data_example = RasaModelData(
             label_key=LABEL_KEY, label_sub_key=LABEL_SUB_KEY, data=loaded_data
         )
-        meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
-        meta = rasa.utils.train_utils.update_confidence_type(meta)
-        meta = rasa.utils.train_utils.update_similarity_type(meta)
-        meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
-
-        meta[EPOCHS] = epoch_override
-
         predict_data_example = RasaModelData(
             label_key=LABEL_KEY,
             label_sub_key=LABEL_SUB_KEY,
@@ -892,33 +1083,21 @@ class TEDPolicy(Policy):
                 in PREDICTION_FEATURES
             },
         )
+        return model_data_example, predict_data_example
 
-        model = TED.load(
-            str(tf_model_file),
-            model_data_example,
-            predict_data_example,
-            data_signature=model_data_example.get_signature(),
-            config=meta,
-            max_history_featurizer_is_used=isinstance(
-                featurizer, MaxHistoryTrackerFeaturizer
-            ),
-            label_data=label_data,
-            entity_tag_specs=entity_tag_specs,
-            finetune_mode=should_finetune,
-        )
+    @classmethod
+    def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
+        meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
+        meta = rasa.utils.train_utils.update_confidence_type(meta)
+        meta = rasa.utils.train_utils.update_similarity_type(meta)
+        meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
 
-        return cls(
-            featurizer=featurizer,
-            priority=priority,
-            model=model,
-            fake_features=fake_features,
-            entity_tag_specs=entity_tag_specs,
-            should_finetune=should_finetune,
-            **meta,
-        )
+        return meta
 
 
 class TED(TransformerRasaModel):
+    """TED model architecture from https://arxiv.org/abs/1910.00486."""
+
     def __init__(
         self,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
@@ -1119,17 +1298,7 @@ class TED(TransformerRasaModel):
                 )
                 all_labels_encoded[key] = attribute_features
 
-        if (
-            all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None
-            and all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_NAME}") is not None
-        ):
-            x = all_labels_encoded.pop(
-                f"{LABEL_KEY}_{ACTION_TEXT}"
-            ) + all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
-        elif all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None:
-            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}")
-        else:
-            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
+        x = self._collect_label_attribute_encodings(all_labels_encoded)
 
         # additional sequence axis is artifact of our RasaModelData creation
         # TODO check whether this should be solved in data creation
@@ -1138,6 +1307,20 @@ class TED(TransformerRasaModel):
         all_labels_embed = self._tf_layers[f"embed.{LABEL}"](x)
 
         return all_label_ids, all_labels_embed
+
+    @staticmethod
+    def _collect_label_attribute_encodings(
+        all_labels_encoded: Dict[Text, tf.Tensor]
+    ) -> tf.Tensor:
+        # Initialize with at least one attribute first
+        # so that the subsequent TF ops are simplified.
+        all_attributes_present = list(all_labels_encoded.keys())
+        x = all_labels_encoded.pop(all_attributes_present[0])
+
+        # Add remaining attributes
+        for attribute in all_labels_encoded:
+            x += all_labels_encoded.get(attribute)
+        return x
 
     def _embed_dialogue(
         self,
@@ -1795,14 +1978,14 @@ class TED(TransformerRasaModel):
 
         sim_all, scores = self._tf_layers[
             f"loss.{LABEL}"
-        ].similarity_confidence_from_embeddings(
+        ].get_similarities_and_confidences_from_embeddings(
             dialogue_embed[:, :, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, tf.newaxis, :, :],
             dialogue_mask,
         )
 
         predictions = {
-            "action_scores": scores,
+            "scores": scores,
             "similarities": sim_all,
             DIAGNOSTIC_DATA: {"attention_weights": attention_weights},
         }
