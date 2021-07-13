@@ -459,6 +459,14 @@ class RasaYAMLWriter(TrainingDataWriter):
 
     @classmethod
     def process_lookup_tables(cls, training_data: "TrainingData") -> List[OrderedDict]:
+        """Serializes the look up tables.
+
+        Args:
+            training_data: The training data object with potential look up tables.
+
+        Returns:
+            The serialized lookup tables.
+        """
         prepared_lookup_tables: Dict[Text, List[Text]] = OrderedDict()
         for lookup_table in training_data.lookup_tables:
             # this is a lookup table filename
@@ -480,6 +488,23 @@ class RasaYAMLWriter(TrainingDataWriter):
         key_examples: Text,
         example_extraction_predicate: Callable[[Dict[Text, Any]], Text],
     ) -> List[OrderedDict]:
+        """Prepares training examples  to be written to YAML.
+
+        This can be any NLU training data (intent examples, lookup tables, etc.)
+
+        Args:
+            training_examples: Multiple training examples. Mappings in case additional
+                values were specified for an example (e.g. metadata) or just the plain
+                value.
+            key_name: The top level key which the examples belong to (e.g. `intents`)
+            key_examples: The sub key which the examples should be added to
+                (e.g. `examples`).
+            example_extraction_predicate: Function to extract example value (e.g. the
+                the text for an intent example)
+
+        Returns:
+            NLU training data examples prepared for writing to YAML.
+        """
         intents = []
 
         for intent_name, examples in training_examples.items():

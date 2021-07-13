@@ -28,9 +28,9 @@ T = TypeVar("T")
 
 
 class TempDirectoryPath(str, ContextManager):
-    """Represents a path to an temporary directory. When used as a context
-    manager, it erases the contents of the directory on exit.
+    """Represents a path to an temporary directory.
 
+    When used as a context manager, it erases the contents of the directory on exit.
     """
 
     def __enter__(self) -> "TempDirectoryPath":
