@@ -145,7 +145,7 @@ class RulePolicy(MemoizationPolicy):
         self._restrict_rules = restrict_rules
         self._check_for_contradictions = check_for_contradictions
 
-        self._rules_sources = None
+        self._rules_sources = defaultdict(list)
 
         # max history is set to `None` in order to capture any lengths of rule stories
         super().__init__(
@@ -730,7 +730,7 @@ class RulePolicy(MemoizationPolicy):
         (
             rule_trackers_as_states,
             rule_trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(
+        ) = self.featurizer.training_states_and_labels(
             rule_trackers, domain, omit_unset_slots=True
         )
 
@@ -742,7 +742,7 @@ class RulePolicy(MemoizationPolicy):
         (
             story_trackers_as_states,
             story_trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(story_trackers, domain)
+        ) = self.featurizer.training_states_and_labels(story_trackers, domain)
 
         if self._check_for_contradictions:
             (

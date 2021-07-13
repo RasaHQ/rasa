@@ -10,7 +10,11 @@ from typing import Type, Optional, Text, List, Any, Dict
 import rasa.shared.utils.common
 import rasa.shared.core.events
 from rasa.shared.exceptions import UnsupportedFeatureException
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    ACTION_SESSION_START_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
+)
 from rasa.shared.core.events import (
     Event,
     UserUttered,
@@ -555,3 +559,58 @@ def test_events_begin_with_session_start(
 def test_print_end_to_end_events_in_markdown(end_to_end_event: Event):
     with pytest.raises(UnsupportedFeatureException):
         end_to_end_event.as_story_string()
+
+
+@pytest.mark.parametrize(
+    "events,comparison_result",
+    [
+        (
+            [
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+            ],
+            True,
+        ),
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME),
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+            ],
+            False,
+        ),
+        (
+            [
+                ActionExecuted(
+                    ACTION_UNLIKELY_INTENT_NAME, metadata={"test": {"data1": 1}}
+                ),
+                ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+            ],
+            False,
+        ),
+        (
+            [
+                ActionExecuted(
+                    ACTION_UNLIKELY_INTENT_NAME, metadata={"test": {"data1": 1}}
+                ),
+                ActionExecuted(
+                    ACTION_UNLIKELY_INTENT_NAME, metadata={"test": {"data1": 1}}
+                ),
+            ],
+            True,
+        ),
+        (
+            [
+                ActionExecuted(ACTION_LISTEN_NAME, metadata={"test": {"data1": 1}}),
+                ActionExecuted(
+                    ACTION_UNLIKELY_INTENT_NAME, metadata={"test": {"data1": 1}}
+                ),
+            ],
+            False,
+        ),
+    ],
+)
+def test_event_executed_comparison(
+    events: List[Event], comparison_result: bool,
+):
+    result = all(event == events[0] for event in events)
+    assert result == comparison_result

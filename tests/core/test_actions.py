@@ -71,6 +71,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
     RULE_SNIPPET_ACTION_NAME,
     ACTIVE_LOOP,
     FOLLOWUP_ACTION,
@@ -123,7 +124,7 @@ def test_domain_action_instantiation():
         for action_name in domain.action_names_or_texts
     ]
 
-    assert len(instantiated_actions) == 14
+    assert len(instantiated_actions) == 15
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -133,11 +134,12 @@ def test_domain_action_instantiation():
     assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
     assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
     assert instantiated_actions[8].name() == ACTION_TWO_STAGE_FALLBACK_NAME
-    assert instantiated_actions[9].name() == ACTION_BACK_NAME
-    assert instantiated_actions[10].name() == RULE_SNIPPET_ACTION_NAME
-    assert instantiated_actions[11].name() == "my_module.ActionTest"
-    assert instantiated_actions[12].name() == "utter_test"
-    assert instantiated_actions[13].name() == "utter_chitchat"
+    assert instantiated_actions[9].name() == ACTION_UNLIKELY_INTENT_NAME
+    assert instantiated_actions[10].name() == ACTION_BACK_NAME
+    assert instantiated_actions[11].name() == RULE_SNIPPET_ACTION_NAME
+    assert instantiated_actions[12].name() == "my_module.ActionTest"
+    assert instantiated_actions[13].name() == "utter_test"
+    assert instantiated_actions[14].name() == "utter_chitchat"
 
 
 async def test_remote_action_runs(
