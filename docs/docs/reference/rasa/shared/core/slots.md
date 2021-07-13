@@ -165,38 +165,21 @@ class ListSlot(Slot)
 
 Sets the slot&#x27;s value.
 
-## UnfeaturizedSlot Objects
-
-```python
-class UnfeaturizedSlot(Slot)
-```
-
-Deprecated slot type to represent slots which don&#x27;t influence conversations.
-
-#### \_\_init\_\_
-
-```python
- | __init__(name: Text, initial_value: Any = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, influence_conversation: bool = False) -> None
-```
-
-Creates unfeaturized slot.
-
-**Arguments**:
-
-- `name` - The name of the slot.
-- `initial_value` - Its initial value.
-- `value_reset_delay` - After how many turns the slot should be reset to the
-  initial_value. This is behavior is currently not implemented.
-- `auto_fill` - `True` if it should be auto-filled by entities with the same
-  name.
-- `influence_conversation` - `True` if it should be featurized. Only `False`
-  is allowed. Any other value will lead to a `InvalidSlotConfigError`.
-
 ## CategoricalSlot Objects
 
 ```python
 class CategoricalSlot(Slot)
 ```
+
+Slot type which can be used to branch conversations based on its value.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(name: Text, values: Optional[List[Any]] = None, initial_value: Any = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, influence_conversation: bool = True) -> None
+```
+
+Creates a `Categorical  Slot` (see parent class for detailed docstring).
 
 #### persistence\_info
 

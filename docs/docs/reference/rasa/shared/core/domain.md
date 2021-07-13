@@ -242,15 +242,6 @@ Returns a unique hash for the domain which is stable across python runs.
 
 Returns combination of user actions and forms.
 
-#### action\_names
-
-```python
- | @rasa.shared.utils.common.lazy_property
- | action_names() -> List[Text]
-```
-
-Returns action names or texts.
-
 #### num\_actions
 
 ```python
@@ -269,15 +260,6 @@ Returns the number of available actions.
 
 Number of used input states for the action prediction.
 
-#### retrieval\_intent\_templates
-
-```python
- | @rasa.shared.utils.common.lazy_property
- | retrieval_intent_templates() -> Dict[Text, List[Dict[Text, Any]]]
-```
-
-Return only the responses which are defined for retrieval intents.
-
 #### retrieval\_intent\_responses
 
 ```python
@@ -286,27 +268,6 @@ Return only the responses which are defined for retrieval intents.
 ```
 
 Return only the responses which are defined for retrieval intents.
-
-#### templates
-
-```python
- | @rasa.shared.utils.common.lazy_property
- | templates() -> Dict[Text, List[Dict[Text, Any]]]
-```
-
-Temporary property before templates become completely deprecated.
-
-#### is\_retrieval\_intent\_template
-
-```python
- | @staticmethod
- | is_retrieval_intent_template(response: Tuple[Text, List[Dict[Text, Any]]]) -> bool
-```
-
-Check if the response is for a retrieval intent.
-
-These templates have a `/` symbol in their name. Use that to filter them from
-the rest.
 
 #### is\_retrieval\_intent\_response
 
@@ -319,30 +280,6 @@ Check if the response is for a retrieval intent.
 
 These responses have a `/` symbol in their name. Use that to filter them from
 the rest.
-
-#### add\_categorical\_slot\_default\_value
-
-```python
- | add_categorical_slot_default_value() -> None
-```
-
-See `_add_categorical_slot_default_value` for docstring.
-
-#### add\_requested\_slot
-
-```python
- | add_requested_slot() -> None
-```
-
-See `_add_categorical_slot_default_value` for docstring.
-
-#### add\_knowledge\_base\_slots
-
-```python
- | add_knowledge_base_slots() -> None
-```
-
-See `_add_categorical_slot_default_value` for docstring.
 
 #### index\_for\_action
 
@@ -370,23 +307,6 @@ Raises exception if action name or text not part of the domain or stories.
 
 - `ActionNotFoundException` - If `action_name_or_text` are not part of this
   domain.
-
-#### random\_template\_for
-
-```python
- | random_template_for(utter_action: Text) -> Optional[Dict[Text, Any]]
-```
-
-Returns a random response for an action name.
-
-**Arguments**:
-
-- `utter_action` - The name of the utter action.
-  
-
-**Returns**:
-
-  A response for an utter action.
 
 #### slot\_states
 
@@ -636,14 +556,6 @@ Generate domain warnings from intents, entities, actions and slots.
 Returns a dictionary with entries for `intent_warnings`,
 `entity_warnings`, `action_warnings` and `slot_warnings`. Excludes domain slots
 from domain warnings in case they are not featurized.
-
-#### check\_missing\_templates
-
-```python
- | check_missing_templates() -> None
-```
-
-Warn user of utterance names which have no specified response.
 
 #### check\_missing\_responses
 
