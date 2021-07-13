@@ -90,10 +90,10 @@ def _parse_gpu_config(gpu_memory_config: Text) -> Dict[int, int]:
     try:
         for instance in gpu_memory_config.split(","):
             instance_gpu_id, instance_gpu_mem = instance.split(":")
-            instance_gpu_id = int(instance_gpu_id)
-            instance_gpu_mem = int(instance_gpu_mem)
+            parsed_instance_gpu_id = int(instance_gpu_id)
+            parsed_instance_gpu_mem = int(instance_gpu_mem)
 
-            parsed_gpu_config[instance_gpu_id] = instance_gpu_mem
+            parsed_gpu_config[parsed_instance_gpu_id] = parsed_instance_gpu_mem
     except ValueError:
         # Helper explanation of where the error comes from
         raise ValueError(

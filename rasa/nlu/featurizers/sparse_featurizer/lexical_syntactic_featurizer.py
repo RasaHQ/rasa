@@ -260,7 +260,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         token_idx: int,
         pointer_position: int,
         token_length: int,
-    ) -> Union[bool, int, Text]:
+    ) -> Union[bool, int, Text, None]:
         if feature == END_OF_SENTENCE:
             return token_idx + pointer_position == token_length - 1
 
@@ -279,8 +279,8 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
                 f"Invalid value '{value}' for feature '{feature}'."
                 f" Feature is ignored."
             )
-        else:
-            return value
+
+        return value
 
     @classmethod
     def load(

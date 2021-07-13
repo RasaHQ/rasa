@@ -570,7 +570,7 @@ async def _train_core_with_validated_data(
                 model_prefix="core-",
             )
 
-        return _train_path
+    return _train_path
 
 
 async def _core_model_for_finetuning(
@@ -780,7 +780,7 @@ async def _train_nlu_with_validated_data(
                 model_prefix="nlu-",
             )
 
-        return _train_path
+    return _train_path
 
 
 async def _nlu_model_for_finetuning(

@@ -711,7 +711,7 @@ class Agent:
         use_story_concatenation: bool = True,
         debug_plots: bool = False,
         exclusion_percentage: Optional[int] = None,
-    ) -> List[TrackerWithCachedStates]:
+    ) -> List["TrackerWithCachedStates"]:
         """Load training data from a resource."""
         max_history = self._max_history()
 
