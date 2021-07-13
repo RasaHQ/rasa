@@ -3,7 +3,6 @@ import logging
 import os
 import shutil
 import warnings
-from contextlib import AbstractContextManager
 from types import TracebackType
 from typing import (
     Any,
@@ -15,6 +14,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    ContextManager,
 )
 
 import rasa.utils.io
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class TempDirectoryPath(str, AbstractContextManager):
+class TempDirectoryPath(str, ContextManager):
     """Represents a path to an temporary directory. When used as a context
     manager, it erases the contents of the directory on exit.
 
