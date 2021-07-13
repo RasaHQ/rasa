@@ -9,7 +9,12 @@ from rasa.core.training.story_conflict import (
 from rasa.shared.core.generator import TrainingDataGenerator, TrackerWithCachedStates
 from rasa.validator import Validator
 from rasa.shared.importers.rasa import RasaFileImporter
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
+from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
+    PREVIOUS_ACTION,
+    USER,
+    ACTION_UNLIKELY_INTENT_NAME,
+)
 
 
 async def _setup_trackers_for_testing(
@@ -129,6 +134,20 @@ async def test_find_conflicts_multiple_stories():
 
     assert len(conflicts) == 1
     assert "and 2 other trackers" in str(conflicts[0])
+
+
+async def test_find_unlearnable_actions():
+    trackers, domain = await _setup_trackers_for_testing(
+        "data/test_domains/default.yml",
+        "data/test_yaml_stories/stories_unexpected_intent_unlearnable.yml",
+    )
+
+    # Create a list of `StoryConflict` objects
+    conflicts = find_story_conflicts(trackers, domain)
+
+    assert len(conflicts) == 2
+    assert ACTION_UNLIKELY_INTENT_NAME in str(conflicts[0])
+    assert ACTION_UNLIKELY_INTENT_NAME in str(conflicts[1])
 
 
 async def test_add_conflicting_action():
