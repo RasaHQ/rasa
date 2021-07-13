@@ -50,7 +50,7 @@ def print_buttons(
         return None
 
 
-def print_bot_output(
+def _print_bot_output(
     message: Dict[Text, Any],
     is_latest_message: bool = False,
     color: Text = rasa.shared.utils.io.bcolors.OKBLUE,
@@ -94,16 +94,16 @@ def print_bot_output(
     return None
 
 
-def get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
+def _get_user_input(previous_response: Optional[Dict[str, Any]]) -> Optional[Text]:
     button_response = None
     if previous_response is not None:
-        button_response = print_bot_output(previous_response, is_latest_message=True)
+        button_response = _print_bot_output(previous_response, is_latest_message=True)
 
     if button_response is not None:
         response = cli_utils.payload_from_button_question(button_response)
         if response == cli_utils.FREE_TEXT_INPUT_PROMPT:
             # Re-prompt user with a free text input
-            response = get_user_input({})
+            response = _get_user_input({})
     else:
         response = questionary.text(
             "",
@@ -172,7 +172,7 @@ async def record_messages(
     previous_response = None
     await asyncio.sleep(0.5)  # Wait for server to start
     while not utils.is_limit_reached(num_messages, max_message_limit):
-        text = get_user_input(previous_response)
+        text = _get_user_input(previous_response)
 
         if text == exit_text or text is None:
             break
@@ -184,7 +184,7 @@ async def record_messages(
             previous_response = None
             async for response in bot_responses:
                 if previous_response is not None:
-                    print_bot_output(previous_response)
+                    _print_bot_output(previous_response)
                 previous_response = response
         else:
             bot_responses = await send_message_receive_block(
@@ -193,7 +193,7 @@ async def record_messages(
             previous_response = None
             for response in bot_responses:
                 if previous_response is not None:
-                    print_bot_output(previous_response)
+                    _print_bot_output(previous_response)
                 previous_response = response
 
         num_messages += 1

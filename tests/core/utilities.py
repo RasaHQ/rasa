@@ -49,18 +49,18 @@ def mocked_cmd_input(package, text: Text):
         text = [text]
 
     text_generator = itertools.cycle(text)
-    i = package.get_user_input
+    i = package._get_user_input
 
     def mocked_input(*args, **kwargs):
         value = next(text_generator)
         print(f"wrote '{value}' to input")
         return value
 
-    package.get_user_input = mocked_input
+    package._get_user_input = mocked_input
     try:
         yield
     finally:
-        package.get_user_input = i
+        package._get_user_input = i
 
 
 def user_uttered(
