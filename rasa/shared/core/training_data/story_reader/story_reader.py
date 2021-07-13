@@ -128,7 +128,7 @@ class StoryReader:
             )
 
         for p in parsed_events:
-            _map_legacy_event_names(p)
+            _raise_exception_for_legacy_event_names(p)
             if self._is_parsing_conditions:
                 self.current_step_builder.add_event_as_condition(p)
             else:
@@ -148,18 +148,15 @@ class StoryReader:
         self.current_step_builder.add_checkpoint(name, conditions)
 
 
-def _map_legacy_event_names(event: Event) -> None:
+def _raise_exception_for_legacy_event_names(event: Event) -> None:
     if (
         isinstance(event, ActionExecuted)
         and event.action_name == LEGACY_ACTION_DEACTIVATE_LOOP_NAME
     ):
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"Using action '{event.action_name}' is deprecated. Please use "
-            f"'{ACTION_DEACTIVATE_LOOP_NAME}' instead. Support for "
-            f"'{event.action_name}' will be removed in Rasa Open Source version "
-            f"{NEXT_MAJOR_VERSION_FOR_DEPRECATIONS}."
+        StoryParseError(
+            f"Using action '{event.action_name}' has been deprecated. Please use "
+            f"'{ACTION_DEACTIVATE_LOOP_NAME}' instead."
         )
-        event.action_name = ACTION_DEACTIVATE_LOOP_NAME
 
 
 class StoryParseError(RasaCoreException, ValueError):
