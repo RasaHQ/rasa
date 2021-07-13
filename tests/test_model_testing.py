@@ -25,7 +25,6 @@ import rasa.model
 import rasa.cli.utils
 from rasa.nlu.test import NO_ENTITY
 import rasa.core
-from rasa.shared.importers.importer import TrainingDataImporter
 
 
 def monkeypatch_get_latest_model(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
