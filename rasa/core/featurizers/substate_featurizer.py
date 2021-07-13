@@ -7,6 +7,8 @@ NOTE:
 
 from abc import abstractmethod
 import logging
+from operator import sub
+from rasa.core import featurizers
 import numpy as np
 import scipy.sparse
 from typing import Generic, List, Optional, Dict, Text, Any, Iterable
@@ -22,12 +24,14 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.nlu.constants import (
+    ACTION_TEXT,
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     ACTION_NAME,
     FEATURE_TYPE_SEQUENCE,
     INTENT,
     ENTITY_TAGS,
+    INTENT_RESPONSE_KEY,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
     PREVIOUS_ACTION,
@@ -93,49 +97,90 @@ def convert_sparse_sequence_to_sentence_features(
     ]
 
 
-class SubStateFeaturizer:
+def from_given_choose_supported_and_remove_excluded(
+    given: Iterable[Text],
+    supported: Optional[Iterable[Text]] = None,
+    excluded: Optional[Iterable[Text]] = None,
+) -> List[Text]:
+    result = set(given)
+    if supported:
+        result = result.intersection(supported)
+    if excluded:
+        result = result.difference(excluded)
+    result = sorted(result)
+    return result
+
+
+class SetupMixin:
     @abstractmethod
-    def setup_domain(self, domain: Domain) -> None:
-        # TODO: that name is debatable...
+    def is_setup(self) -> bool:
         pass
 
-    @abstractmethod
-    def is_ready(self) -> bool:
-        pass
-
-    def raise_if_ready_is(self, should_be_ready: bool) -> None:
-        if not self.is_ready() and should_be_ready:
+    def raise_if_setup_is(self, should_be_setup: bool) -> None:
+        if not self.is_setup() and should_be_setup:
+            raise RuntimeError(f"Expected {self.__class__.__name__} to be configured.")
+        elif self.is_setup() and not should_be_setup:
             raise RuntimeError(
-                f"Expected {self.__class__.__name__} has been `setup()`."
-            )
-        elif self.is_ready() and not should_be_ready:
-            raise RuntimeError(
-                f"Expected {self.__class__.__name__} had not been `setup()` before."
+                f"Expected {self.__class__.__name__} to not be configured yet."
             )
 
+
+class InterpreterHandler(SetupMixin):
+    def __init__(self, use_regex_interpreter: Optional[bool] = None) -> None:
+        self._use_regex_interpreter = use_regex_interpreter
+        self._interpreter = None
+
+    def is_setup(self):
+        return self._interpreter is not None
+
+    def set_or_fallback(
+        self, interpreter: Optional[NaturalLanguageInterpreter]
+    ) -> None:
+        if self._use_regex_interpreter is None:
+            if interpreter is None:
+                self._use_regex_interpreter = True
+            else:
+                self._use_regex_interpreter = isinstance(interpreter, RegexInterpreter)
+        elif interpreter is None or (
+            self._use_regex_interpreter
+            and not isinstance(interpreter, RegexInterpreter)
+        ):
+            interpreter = RegexInterpreter()
+            logger.debug("Fallback to RegexInterpreter.")
+        self._interpreter = interpreter
+
+    def get(self) -> NaturalLanguageInterpreter:
+        self.raise_if_setup_is(False)
+        return self._interpreter
+
+
+class SubStateFeaturizer(SetupMixin):
     @abstractmethod
     def featurize(
-        self, sub_state: SubState, attributes: Optional[List[Text]] = None
+        self,
+        sub_state: SubState,
+        attributes: Optional[List[Text]] = None,
+        excluded_attributes: Optional[List[Text]] = None,
     ) -> Dict[Text, List[Features]]:
-        pass
+        self.raise_if_setup_is(False)
+        attributes = from_given_choose_supported_and_remove_excluded(
+            given=sub_state.keys(), supported=attributes, excluded=excluded_attributes
+        )
+        return self._featurize(sub_state, attributes)
 
 
 class FallbackSubStateFeaturizer(SubStateFeaturizer):
     # TODO: version that converts to indices, from which fallback featurizer inherits
     # TODO: in the old versoin, padding was done *here* -> need to introduce some
-    # further glue component to batch the indices.... or just store them in sparse
+    # further glue component to batch the indices.... or just store them in
     # matrices just like everythin else here... -> check why indices
     def __init__(
         self, item2index_mappings: Optional[Dict[Text, Dict[Text, Any]]] = None,
     ) -> None:
-        self.item2index_mappings = item2index_mappings
+        self._item2index_mappings = item2index_mappings
 
-    def is_ready(self) -> bool:
-        return self.item2index_mappings is not None
-
-    def setup_domain(self, domain: Domain) -> None:
-        self.raise_if_ready_is(True)
-        self.item2index_mappings = {
+    def setup(self, domain: Domain) -> None:
+        self._item2index_mappings = {
             key: item2index_mapping(items)
             for key, items in [
                 (INTENT, domain.intents),
@@ -145,7 +190,9 @@ class FallbackSubStateFeaturizer(SubStateFeaturizer):
                 (ACTIVE_LOOP, domain.form_names),
             ]
         }
-        assert set(self.attributes) <= set(self.item2index_mappings.keys())
+
+    def is_setup(self) -> bool:
+        return self.item2index_mappings is not None
 
     def _encoding(self, sub_state: SubState, attribute: Text):
         """Turns the given mapping from a categorical variable name to a value.
@@ -178,22 +225,24 @@ class FallbackSubStateFeaturizer(SubStateFeaturizer):
                 f"It must be one of '{self.item2index_mappings.keys()}'."
             )
 
-    def _featurize(self, sub_state: SubState, attribute: Text) -> Features:
+    def featurize_attribute(self, sub_state: SubState, attribute: Text) -> Features:
         """Creates a multi-hot encoding like feature for the given attribute.
 
-        Leverages the item2index mappings computed during `prepare_training`.
         """
+        if attribute not in sub_state:
+            raise ValueError(f"Expected {attribute} to be attribute of given substate.")
+
         encoding: Dict[Text, int] = self._encoding(sub_state, attribute)
 
-        # FIXME: always sparse? (dense on demand)
-        features = np.zeros(len(self.item2index_mapping), np.float32)
+        # convert to a sparse matrix
+        row = np.zeros(len(encoding), dtype=int)
+        col = np.zeros(len(encoding), dtype=int)
+        data = np.zeros(len(encoding), dtype=float)
         for feature_name, value in encoding.items():
             if feature_name in self.item2index_mapping:
-                features[self.item2index_mappings[feature_name]] = value
-        features = np.expand_dims(features, 0)
-
-        if self.sparse:
-            features = scipy.sparse.coo_matrix(features)
+                col.append(self.item2index_mappings[feature_name])
+                data.append(value)
+        features = scipy.sparse.coo_matrix((data, (row, col)))
 
         return Features(
             features,
@@ -202,120 +251,96 @@ class FallbackSubStateFeaturizer(SubStateFeaturizer):
             origin=self.__class__.__name__,
         )
 
-    def featurize(
-        self, sub_state: SubState, attributes: List[Text]
+    def _featurize(
+        self, sub_state: SubState, attributes: Optional[List[Text]] = None,
     ) -> Dict[Text, List[Features]]:
-        self.raise_if_ready_is(False)
+        self.raise_if_setup_is(False)
+
+        attributes = from_given_choose_supported_and_remove_excluded(
+            given=sub_state.keys(),
+            supported=self.item2index_mappings.keys(),
+            excluded=None,
+        )
         return {
-            attribute: self._featurize(sub_state, attribute) for attribute in attributes
+            attribute: self.featurize_attribute(sub_state, attribute)
+            for attribute in attributes
         }
 
 
 class SubStateFeaturizerUsingInterpreter(SubStateFeaturizer):
-    def __init__(
-        self,
-        keep_only_sparse_seq_converted_to_sent: Optional[List[Text]],
-        use_fallback_interpreter: Optional[List[Text]],
-        use_regex_interpreter: Optional[bool] = None,
-    ) -> None:
-        super().__init__()
-        self.use_regex_interpreter = use_regex_interpreter
-        self.keep_only_sparse_seq_converted_to_sent = (
-            keep_only_sparse_seq_converted_to_sent
+    def __init__(self, use_regex_interpreter: Optional[bool] = None,) -> None:
+        self.interpreter_handler = InterpreterHandler(
+            use_regex_interpreter=use_regex_interpreter
         )
-        if use_fallback_interpreter:
-            self.fallback_featurizer = FallbackSubStateFeaturizer(
-                attributes=use_fallback_interpreter
-            )
 
-    def setup_interpreter(
-        self, interpreter: Optional[NaturalLanguageInterpreter],
-    ) -> None:
-        # do NOT raise an exception here
-        if self.use_regex_interpreter is not None:
-            self.use_regex_interpreter = (
-                isinstance(interpreter, RegexInterpreter) if interpreter else False
-            )
-        self.interpreter = interpreter
+    def setup(self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]):
+        self.interpreter_handler.set_or_fallback(interpreter)
 
-    def is_ready(self) -> bool:
-        return self.interpreter is not None
+    def is_setup(self) -> bool:
+        return self.interpreter_handler.is_setup()
 
-    def featurize(
-        self, sub_state: SubState
-    ) -> Dict[Text, List[Features]]:  # FIXME: attributes
-
-        self.raise_if_ready_is(False)
+    def _featurize(
+        self, sub_state: SubState, attributes: List[Text]
+    ) -> Dict[Text, List[Features]]:
 
         # (1) featurize the message/sub_state...
         message = Message(data=sub_state)
         parsed_message = self.interpreter.featurize_message(message)
-        # TODO: is it clear that this works? if not, it should be made explicit
-        # somewhere somehow .... -> SubState and Message dataclass things....
 
-        # (2) gather all features from the featurized message -- except the ones
-        # we are told to `exclude`
+        # (2) gather all features from the featurized message
         attribute_to_features: Dict[Text, List[Features]] = dict()
-        for attribute in self.attributes:
+        for attr in attributes:
             all_features = parsed_message.get_sparse_features(
-                attribute
-            ) + parsed_message.get_dense_features(attribute)
-
+                attr
+            ) + parsed_message.get_dense_features(attr)
             for features in all_features:
                 if features is not None:
-                    attribute_to_features[attribute].append(features)
+                    attribute_to_features[attr].append(features)
 
-        # (3) for the attributes in `keep_only_sparse_seq_converted_to_sent`
-        # create a sentence feature from the sparse sequence features
-        # and forget all other features (iff such features exist, otherwise
-        # keep the existing sentence feature)
-        attribute_list = self.keep_only_sparse_seq_converted_to_sent or []
-        for attribute in attribute_list:
-            if attribute_to_features.get(attribute):
-                converted_features = convert_sparse_sequence_to_sentence_features(
-                    attribute_to_features[attribute]
-                )
-                if converted_features:
-                    attribute_to_features[attribute] = converted_features
+        # # (3) for the attributes in `keep_only_sparse_seq_converted_to_sent`
+        # # create a sentence feature from the sparse sequence features
+        # # and forget all other features (iff such features exist, otherwise
+        # # keep the existing sentence feature)
+        # attribute_list = self.keep_only_sparse_seq_converted_to_sent or []
+        # for attribute in attribute_list:
+        #     if attribute_to_features.get(attribute):
+        #         converted_features = convert_sparse_sequence_to_sentence_features(
+        #             attribute_to_features[attribute]
+        #         )
+        #         if converted_features:
+        #             attribute_to_features[attribute] = converted_features
 
-        # (4) for all attributes listed in `use_fallback_interpreter`, *for which
-        # no features have been extracted via the interpreter until now*, use the
-        # `featurize_attribute_via_fallback_interpreter` method to create features
-        # from scratch
-        attribute_list = self.use_fallback_interpreter or []
-        for attribute in attribute_list:
-            if attribute not in attribute_to_features:
-                attribute_to_features[attribute] = self.fallback_featurizer.featurize(
-                    sub_state, attribute, sparse=self.sparse,
-                )
+        # # (4) for all attributes listed in `use_fallback_interpreter`, *for which
+        # # no features have been extracted via the interpreter until now*, use the
+        # # `featurize_attribute_via_fallback_interpreter` method to create features
+        # # from scratch
+        # attribute_list = self.use_fallback_interpreter or []
+        # for attribute in attribute_list:
+        #     if attribute not in attribute_to_features:
+        #         attribute_to_features[attribute] = self.fallback_featurizer.featurize(
+        #             sub_state, attribute, sparse=self.sparse,
+        #         )
         return attribute_to_features
 
 
-class ActionAttributeFeaturizer(SubStateFeaturizerUsingInterpreter):
-    def __init__(
-        self, use_regex_interpreter: Optional[bool] = None,
-    ):
-
-        super().__init__(
-            # attributes=[ACTION_NAME, ACTION_TEXT],
-            keep_only_sparse_seq_converted_to_sent=None,
-            use_fallback_interpreter=None,
-            use_regex_interpreter=use_regex_interpreter,
-        )
-
-    # TODO: check whether attribute == action in featurize (super featurizes all)
+class ActionAttributeFeaturizerUsingInterpreter(SubStateFeaturizerUsingInterpreter):
+    def _featurize(
+        self, sub_state: SubState, attributes: List[Text]
+    ) -> Dict[Text, List[Features]]:
+        # filter what is left to only featurize the action attribute
+        attributes = set(attributes).intersection([ACTION_NAME, ACTION_TEXT])
+        return super()._featurize(sub_state, attributes)
 
     def featurize_action(self, action: Text) -> Dict[Text, List["Features"]]:
         """
 
-
         """
-        self.raise_if_ready_is(False)
+        self.raise_if_setup_is(False)
 
         sub_state = state_utils.create_substate_from_action(
             action, as_text=(action in self.action_texts)
         )
-        return self.featurize(sub_state)
+        return self._featurize(sub_state, attributes=list(sub_state.keys()))
 
 
 class EntityAttributeFeaturizer(SubStateFeaturizer):
@@ -325,11 +350,10 @@ class EntityAttributeFeaturizer(SubStateFeaturizer):
         """
 
         """
-        super().__init__(attributes=...)  # TODO
         self.bilou_tagging = bilou_tagging  # this should be known in advance?
         self.encoding_spec = encoding_spec
 
-    def setup_domain(self, domain: Domain):
+    def setup(self, domain: Domain):
         entities = sorted(domain.entity_states)
         if self.bilou_tagging:
             tag_id_index_mapping = {
@@ -359,14 +383,15 @@ class EntityAttributeFeaturizer(SubStateFeaturizer):
             num_tags=len(tag_id_index_mapping),
         )
 
-    def featurize(
+    def is_setup(self):
+        return self.encoding_spec is not None
+
+    def _featurize(
         self, sub_state: SubState, attributes: List[Text]
     ) -> Dict[Text, List[Features]]:
-        self.raise_if_ready_is(False)
-        assert attributes == [
-            ENTITY_TAGS
-        ]  # TODO: supported attributes def in __init__?
-        self.raise_if_ready_is(False)
+
+        if not attributes:
+            return {}
 
         message = Message(sub_state)
         message = self.interpreter.featurize_message(message)

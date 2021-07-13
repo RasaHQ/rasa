@@ -112,20 +112,3 @@ def forget_states_after_last_user_input(  # FIXME: meaningful name?
         # remove text features to only use intent
         if state.get(USER, {}).get(INTENT) and state.get(USER, {}).get(TEXT):
             del state[USER][TEXT]
-
-
-def get_name_attribute(sub_state: SubState) -> Optional[Text]:
-    """
-    """
-    # TODO: this could go into some SubState class....
-    # there is always either INTENT or ACTION_NAME
-    name_attributes = [
-        attribute
-        for attribute in sub_state.keys()
-        if attribute in {INTENT, ACTION_NAME}
-    ]
-    if len(name_attributes) == 0:
-        raise ValueError("Expected INTENT or ACTION_NAME.")
-    elif len(name_attributes) > 1:  # TODO: added this because the comment said so..
-        raise ValueError("Expected either INTENT or ACTION_NAME, not both.")
-    return name_attributes[0]

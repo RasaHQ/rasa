@@ -5,22 +5,15 @@ NOTE:
 -
 """
 
+from abc import abstractmethod
 import logging
 from rasa.shared.nlu.training_data.features import Features
-import numpy as np
-import scipy.sparse
-from typing import List, Optional, Dict, Text, Any, Iterable
+from typing import List, Optional, Dict, Sequence, Text, Any, Iterable
 
-# from rasa.nlu.extractors.extractor import EntityTagSpec
-# from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
-# from rasa.nlu.utils import bilou_utils
-from rasa.shared import io as io_utils
 from rasa.shared.core.domain import SubState, State, Domain
 from rasa.shared.core.domain import Domain
 from rasa.shared.core import state as state_utils
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.nlu.constants import (
     ENTITIES,
     ACTION_NAME,
@@ -33,14 +26,15 @@ from rasa.shared.nlu.constants import (
 
 logger = logging.getLogger(__name__)
 
-
+from rasa.core.featurizers import substate_featurizer
 from rasa.core.featurizers.substate_featurizer import (
-    FallbackFeaturizer,
-    FeaturizerUsingInterpreter,
+    FallbackSubStateFeaturizer,
+    SetupMixin,
+    SubStateFeaturizerUsingInterpreter,
 )
 
 
-class StateFeaturizer:
+class StateFeaturizer(SetupMixin):
     """Base class to transform the dialogue state into an ML format.
 
     Subclasses of SingleStateFeaturizer will decide how a bot will
@@ -50,10 +44,23 @@ class StateFeaturizer:
     featurized into a list of `rasa.utils.features.Features`.
     """
 
+    @abstractmethod
+    def setup(
+        self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def featurize_state(self, state: State) -> Dict[Text, List["Features"]]:
+        pass
+
+
+class DefaultStateFeaturizer(SetupMixin):
     def __init__(self,) -> None:
         # TODO: parameter, pass on ...
-        self.featurizer_using_interpreter = FeaturizerUsingInterpreter(...)
-        self.fallback_featurizer = FallbackFeaturizer()
+        self.featurizer_using_interpreter = SubStateFeaturizerUsingInterpreter()
+        self.fallback_featurizer = FallbackSubStateFeaturizer()
+        self._setup_done = False
 
     def setup(
         self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
@@ -64,78 +71,99 @@ class StateFeaturizer:
         Raises:
           RuntimeError if it has already been setup (cf. `is_ready`)
         """
-        self.raise_if_ready_is(True)
-        self.featurizer_using_interpreter.setup_domain(domain)
-        self.fallback_featurizer.setup_domain(domain)
-        self.featurizer_using_interpreter.setup_interpreter(interpreter)
+        if self.configured:
+            raise RuntimeError(
+                f"Expected that {self.__class__.__name__} had not been configured before"
+            )
+        self.featurizer_using_interpreter.setup(domain=domain, interpreter=interpreter)
+        self.fallback_featurizer.setup(domain)
+        self._setup_done = True
 
-    def is_ready(self) -> bool:
-        return (
-            self.featurizer_using_interpreter
-            and self.featurizer_using_interpreter.is_ready()
+    def is_setup(self) -> bool:
+        return self._setup_done
+
+    def _featurize_substate(
+        self,
+        sub_state: SubState,
+        excluded_attributes: List[Text],
+        attributes_requiring_sentence_feat: List[Text],
+    ):
+        """Featurization pipeline with special handling of given attribute.
+        """
+        substate_features = self.featurizer_using_interpreter.featurize(
+            sub_state=sub_state, excluded_attributes=excluded_attributes,
         )
+        for attribute in attributes_requiring_sentence_feat:
+            attribute_features = substate_features.get(attribute, [])
 
-    def featurize_state(
-        self, state: State, interpreter: Optional[NaturalLanguageInterpreter]
-    ) -> Dict[Text, List["Features"]]:
+            if not attribute_features or any(
+                [f.type == Sequence for f in attribute_features]
+            ):
+                """
+                TODO: existing sentence feature were (?) be overwritten, is this intended?
+                """
+                sentence_features = substate_featurizer.convert_sparse_sequence_to_sentence_features(
+                    attribute_features
+                )
+
+            else:
+
+                fallback_feats = self.fallback_featurizer.featurize(
+                    sub_state, attribues=[attribute]
+                )
+                sentence_features = fallback_feats[attribute]
+
+            substate_features[attribute] = [sentence_features]
+        return substate_features
+
+    def featurize_state(self, state: State) -> Dict[Text, List["Features"]]:
         """Encode the given state with the help of the given interpreter.
 
         Args:
             state: The state to encode
-            interpreter: The interpreter used to encode the state
 
         Returns:
             A dictionary of state_type to list of features.
         """
         self.raise_if_ready_is(False)
-        interpreter = self.check_and_replace_interpreter_if_needed(interpreter)
 
         state_features = {}
         for substate_type, sub_state in state.items():
 
-            # nlu pipeline didn't create features for user or action
-            # this might happen, for example, when we have action_name in the state
-            # but it did not get featurized because only character level
-            # CountVectorsFeaturizer was included in the config.
-            name_attribute = state_utils.get_name_attribute(sub_state)
+            # we distinguish three cases:
+            if substate_type == USER and state_utils.previous_action_was_listen(state):
 
-            if substate_type == PREVIOUS_ACTION:
-                substate_features = self.featurizer_using_interpreter.featurize(
-                    # TODO
-                    # sub_state,
-                    # exclude={ENTITIES},
-                    # keep_only_sparse_seq_converted_to_sent={INTENT, ACTION_NAME},
-                    # use_fallback_interpreter={name_attribute},
-                    # fallback_is_sparse=True,
+                substate_features = self._featurize_substate(
+                    sub_state=sub_state,
+                    excluded_attributes={ENTITIES},
+                    attributes_requiring_sentence_feat=[INTENT],
                 )
 
-            elif substate_type == USER and state_utils.previous_action_was_listen(
-                state
-            ):
-                # featurize user only if it is "real" user input,
-                # i.e. input from a turn after action_listen
-                substate_features = self.featurizer_using_interpreter.featurize(
-                    # TODO
-                    # sub_state,
-                    # interpreter,
-                    # exclude={ENTITIES},
-                    # keep_only_sparse_seq_converted_to_sent={INTENT, ACTION_NAME},
-                    # use_fallback_interpreter={name_attribute},
-                    # fallback_is_sparse=True,
-                )
                 if sub_state.get(ENTITIES):
-                    state_features[ENTITIES] = self.fallback_featurizer.featurize(
-                        # sub_state=sub_state, attribute=ENTITIES, # TODO:
+                    substate_features[ENTITIES] = self.fallback_featurizer.featurize(
+                        sub_state=sub_state, attributes=[ENTITIES],
                     )
+
+            elif substate_type == PREVIOUS_ACTION:
+
+                substate_features = self._featurize_substate(
+                    sub_state=sub_state,
+                    excluded_attributes={ENTITIES},
+                    attributes_requiring_sentence_feat=[INTENT],
+                )
 
             elif substate_type in {SLOTS, ACTIVE_LOOP}:
                 substate_features = {
                     substate_type: self.self.fallback_featurizer.featurize(
-                        # sub_state=sub_state, attribute=substate_type, # TODO:
+                        sub_state=sub_state, attribute=substate_type,  # TODO:
                     )
                 }
             else:
                 substate_features = {}
+
+            # TODO: this looks dangerous... attributes of substates must not overlap
+            # (note: this was done like this before: https://github.com/RasaHQ/rasa/blob/main/rasa/core/featurizers/single_state_featurizer.py#L281)
+            assert set(state_features.keys()).isdisjoint(substate_features.keys())
 
             state_features.update(substate_features)
 
