@@ -174,12 +174,6 @@ def test_class_from_module_path_not_found(
         rasa.shared.utils.common.class_from_module_path(module_path, lookup_path)
 
 
-def test_class_from_module_path():
-    module_path = "rasa.shared.core.domain.Domain"
-    klass = rasa.shared.utils.common.class_from_module_path(module_path)
-    assert klass is rasa.shared.core.domain.Domain
-
-
 def test_class_from_module_path_fails():
     module_path = "rasa.shared.core.domain.logger"
     with pytest.raises(TypeError):
