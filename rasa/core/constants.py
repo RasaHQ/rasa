@@ -18,37 +18,14 @@ DEFAULT_LOCK_LIFETIME = 60  # in seconds
 
 BEARER_TOKEN_PREFIX = "Bearer "
 
-# the lowest priority intended to be used by machine learning policies
+# The lowest priority is intended to be used by machine learning policies.
 DEFAULT_POLICY_PRIORITY = 1
-
-# The priority of intent-prediction policies.
-# This should be below all rule based policies but higher than ML
-# based policies. This enables a loop inside ensemble where if none
-# of the rule based policies predict an action and intent prediction
-# policy predicts one, its prediction is chosen by the ensemble and
-# then the ML based policies are again run to get the prediction for
-# an actual action. To prevent an infinite loop, intent prediction
-# policies only predict an action if the last event in
-# the tracker is of type `UserUttered`. Hence, they make at most
-# one action prediction in each conversation turn. This allows other
-# policies to predict a winning action prediction.
-UNLIKELY_INTENT_POLICY_PRIORITY = DEFAULT_POLICY_PRIORITY + 1
-
-# the priority intended to be used by mapping policies
-MAPPING_POLICY_PRIORITY = UNLIKELY_INTENT_POLICY_PRIORITY + 1
-# the priority intended to be used by memoization policies
-# it is higher than default and mapping to prioritize training stories
-MEMOIZATION_POLICY_PRIORITY = MAPPING_POLICY_PRIORITY + 1
-# the priority intended to be used by fallback policies
-# it is higher than memoization to prioritize fallback
-FALLBACK_POLICY_PRIORITY = MEMOIZATION_POLICY_PRIORITY + 1
-# the priority intended to be used by form policies
-# it is the highest to prioritize form to the rest of the policies
-FORM_POLICY_PRIORITY = FALLBACK_POLICY_PRIORITY + 1
-# The priority of the `RulePolicy` is higher than the priorities for `FallbackPolicy`,
-# `TwoStageFallbackPolicy` and `FormPolicy` to make it possible to use the
-# `RulePolicy` in conjunction with these deprecated policies.
-RULE_POLICY_PRIORITY = FORM_POLICY_PRIORITY + 1
+# The priority intended to be used by memoization policies.
+# It is higher than default to prioritize training stories.
+MEMOIZATION_POLICY_PRIORITY = 2
+# The priority of the `RulePolicy` is higher than all other policies since
+# rule execution takes precedence over training stories or predicted actions.
+RULE_POLICY_PRIORITY = 3
 
 DIALOGUE = "dialogue"
 

@@ -11,7 +11,6 @@ from typing import Text, Optional, Any, List, Dict, Tuple, Type, Union, Callable
 
 import rasa.core
 import rasa.core.training.training
-from rasa.core.constants import FALLBACK_POLICY_PRIORITY
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -41,7 +40,6 @@ from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, SupportedData, PolicyPrediction
-from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.training import training
@@ -82,17 +80,16 @@ class PolicyEnsemble:
             policy.set_shared_policy_states(rule_only_data=rule_only_data)
 
     def _check_for_important_policies(self) -> None:
-        from rasa.core.policies.mapping_policy import MappingPolicy
 
         if not any(
-            isinstance(policy, (MappingPolicy, RulePolicy)) for policy in self.policies
+            isinstance(policy, RulePolicy) for policy in self.policies
         ):
             rasa.shared.utils.io.raise_warning(
-                f"Neither '{RulePolicy.__name__}' nor '{MappingPolicy.__name__}' "
-                f"(deprecated) are included in the model's policy configuration. "
-                f"Default intents such as '{USER_INTENT_RESTART}' and "
-                f"'{USER_INTENT_BACK}' will not trigger actions "
-                f"'{ACTION_RESTART_NAME}' and '{ACTION_BACK_NAME}'.",
+                f"'{RulePolicy.__name__}' is not included in the model's "
+                f"policy configuration. Default intents such as "
+                f"'{USER_INTENT_RESTART}' and '{USER_INTENT_BACK}' will "
+                f"not trigger actions '{ACTION_RESTART_NAME}' and "
+                f"'{ACTION_BACK_NAME}'.",
                 docs=DOCS_URL_DEFAULT_ACTIONS,
             )
 
@@ -102,12 +99,7 @@ class PolicyEnsemble:
     ) -> None:
         """Check for elements that only work with certain policy/domain combinations."""
 
-        from rasa.core.policies.mapping_policy import MappingPolicy
-        from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-
         policies_needing_validation = [
-            MappingPolicy,
-            TwoStageFallbackPolicy,
             RulePolicy,
         ]
         for policy in policies_needing_validation:
@@ -436,8 +428,6 @@ class PolicyEnsemble:
                     f"name is a valid policy."
                 ) from e
 
-        cls._check_if_rule_policy_used_with_rule_like_policies(parsed_policies)
-
         return parsed_policies
 
     @classmethod
@@ -474,39 +464,6 @@ class PolicyEnsemble:
 
         return state_featurizer_func, state_featurizer_config
 
-    @staticmethod
-    def _check_if_rule_policy_used_with_rule_like_policies(
-        policies: List[Policy],
-    ) -> None:
-        if not any(isinstance(policy, RulePolicy) for policy in policies):
-            return
-
-        from rasa.core.policies.mapping_policy import MappingPolicy
-        from rasa.core.policies.form_policy import FormPolicy
-        from rasa.core.policies.two_stage_fallback import TwoStageFallbackPolicy
-
-        policies_not_be_used_with_rule_policy = (
-            MappingPolicy,
-            FormPolicy,
-            FallbackPolicy,
-            TwoStageFallbackPolicy,
-        )
-
-        if any(
-            isinstance(policy, policies_not_be_used_with_rule_policy)
-            for policy in policies
-        ):
-            rasa.shared.utils.io.raise_warning(
-                f"It is not recommended to use the '{RulePolicy.__name__}' with "
-                f"other policies which implement rule-like "
-                f"behavior. It is highly recommended to migrate all deprecated "
-                f"policies to use the '{RulePolicy.__name__}'. Note that the "
-                f"'{RulePolicy.__name__}' will supersede the predictions of the "
-                f"deprecated policies if the confidence levels of the predictions are "
-                f"equal.",
-                docs=DOCS_URL_MIGRATION_GUIDE,
-            )
-
 
 class SimplePolicyEnsemble(PolicyEnsemble):
     """Default implementation of a `Policy` ensemble."""
@@ -538,22 +495,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         # also check if confidence is 0, than it cannot be count as prediction
         return not is_memorized or max_confidence == 0.0
-
-    @staticmethod
-    def _is_not_mapping_policy(
-        policy_name: Text, max_confidence: Optional[float] = None
-    ) -> bool:
-        from rasa.core.policies.mapping_policy import MappingPolicy
-
-        is_mapping = policy_name.endswith("_" + MappingPolicy.__name__)
-        # also check if confidence is 0, than it cannot be count as prediction
-        return not is_mapping or max_confidence == 0.0
-
-    @staticmethod
-    def _is_form_policy(policy_name: Text) -> bool:
-        from rasa.core.policies.form_policy import FormPolicy
-
-        return policy_name.endswith("_" + FormPolicy.__name__)
 
     def _pick_best_policy(
         self, predictions: Dict[Text, PolicyPrediction]
@@ -604,18 +545,12 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 continue
 
             confidence = (prediction.max_confidence, prediction.policy_priority)
-            if self._is_form_policy(policy_name):
-                # store form prediction separately
-                form_confidence = confidence
-                form_policy_name = policy_name
-            elif confidence > best_confidence:
+            if confidence > best_confidence:
                 # pick the best policy
                 best_confidence = confidence
                 best_policy_name = policy_name
 
-        if form_confidence is not None and self._is_not_mapping_policy(
-            best_policy_name, best_confidence[0]
-        ):
+        if form_confidence is not None:
             # if mapping didn't win, check form policy predictions
             if form_confidence > best_confidence:
                 best_policy_name = form_policy_name
@@ -694,43 +629,50 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         return self._pick_best_policy(predictions)
 
-    def _fallback_after_listen(
-        self, domain: Domain, prediction: PolicyPrediction
+    @staticmethod
+    def _get_prediction(
+        policy: Policy,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
     ) -> PolicyPrediction:
-        """Triggers fallback if `action_listen` is predicted after a user utterance.
-
-        This is done on the condition that:
-        - a fallback policy is present,
-        - we received a user message and the predicted action is `action_listen`
-          by a policy other than the `MemoizationPolicy` or one of its subclasses.
-
-        Args:
-            domain: the :class:`rasa.shared.core.domain.Domain`
-            prediction: The winning prediction.
-
-        Returns:
-            The prediction for the next action.
-        """
-        fallback_idx_policy = [
-            (i, p) for i, p in enumerate(self.policies) if isinstance(p, FallbackPolicy)
-        ]
-
-        if not fallback_idx_policy:
-            return prediction
-
-        fallback_idx, fallback_policy = fallback_idx_policy[0]
-
-        logger.debug(
-            f"Action '{ACTION_LISTEN_NAME}' was predicted after "
-            f"a user message using {prediction.policy_name}. Predicting "
-            f"fallback action: {fallback_policy.fallback_action_name}"
+        number_of_arguments_in_rasa_1_0 = 2
+        arguments = rasa.shared.utils.common.arguments_of(
+            policy.predict_action_probabilities
         )
 
-        return PolicyPrediction(
-            fallback_policy.fallback_scores(domain),
-            f"policy_{fallback_idx}_{type(fallback_policy).__name__}",
-            FALLBACK_POLICY_PRIORITY,
-        )
+        if (
+            len(arguments) > number_of_arguments_in_rasa_1_0
+            and "interpreter" in arguments
+        ):
+            prediction = policy.predict_action_probabilities(
+                tracker, domain, interpreter
+            )
+        else:
+            rasa.shared.utils.io.raise_warning(
+                "The function `predict_action_probabilities` of "
+                "the `Policy` interface was changed to support "
+                "additional parameters. Please make sure to "
+                "adapt your custom `Policy` implementation.",
+                category=DeprecationWarning,
+            )
+            prediction = policy.predict_action_probabilities(
+                tracker, domain, RegexInterpreter()
+            )
+
+        if isinstance(prediction, list):
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The function `predict_action_probabilities` of "
+                f"the `{Policy.__name__}` interface was changed to return "
+                f"a `{PolicyPrediction.__name__}` object. Please make sure to "
+                f"adapt your custom `{Policy.__name__}` implementation. Support for "
+                f"returning a list of floats will be removed in Rasa Open Source 3.0.0"
+            )
+            prediction = PolicyPrediction(
+                prediction, policy.__class__.__name__, policy_priority=policy.priority
+            )
+
+        return prediction
 
     def probabilities_using_best_policy(
         self,
@@ -754,17 +696,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             The best policy prediction.
         """
         winning_prediction = self._best_policy_prediction(tracker, domain, interpreter)
-
-        if (
-            tracker.latest_action_name == ACTION_LISTEN_NAME
-            and winning_prediction.probabilities is not None
-            and winning_prediction.max_confidence_index
-            == domain.index_for_action(ACTION_LISTEN_NAME)
-            and self.is_not_in_training_data(
-                winning_prediction.policy_name, winning_prediction.max_confidence
-            )
-        ):
-            winning_prediction = self._fallback_after_listen(domain, winning_prediction)
 
         if tracker.latest_action_name == ACTION_LISTEN_NAME:
             if winning_prediction.is_end_to_end_prediction:
@@ -790,9 +721,7 @@ def _check_policy_for_forms_available(
     if not ensemble:
         return
 
-    from rasa.core.policies.form_policy import FormPolicy
-
-    suited_policies_for_forms = (FormPolicy, RulePolicy)
+    suited_policies_for_forms = (RulePolicy)
 
     has_policy_for_forms = ensemble is not None and any(
         isinstance(policy, suited_policies_for_forms) for policy in ensemble.policies
@@ -800,10 +729,10 @@ def _check_policy_for_forms_available(
 
     if domain.form_names and not has_policy_for_forms:
         raise InvalidDomain(
-            "You have defined a form action, but have neither added the "
-            f"'{RulePolicy.__name__}' nor the '{FormPolicy.__name__}' (deprecated) to "
-            f"your policy ensemble. Either remove all forms from your domain or add "
-            f"the missing policy to your policy configuration."
+            "You have defined a form action, but have not added the "
+            f"'{RulePolicy.__name__}' to your policy ensemble. Either "
+            f"remove all forms from your domain or add the missing policy "
+            f"to your policy configuration."
         )
 
 
