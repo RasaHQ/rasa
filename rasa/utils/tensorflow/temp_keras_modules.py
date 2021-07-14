@@ -22,6 +22,7 @@ from tensorflow.python.keras.utils import version_utils
 from tensorflow.python.eager import context
 from tensorflow.python.keras.engine.data_adapter import DataHandler
 from tensorflow.python.keras.engine import base_layer
+from tensorflow.python.keras.utils import tf_utils
 
 
 # noinspection PyMethodOverriding
@@ -178,6 +179,7 @@ class TmpKerasModel(tf.keras.models.Model):
             data_handler._initial_epoch = self._maybe_load_initial_epoch_from_ckpt(  # pylint: disable=protected-access # noqa: E501
                 initial_epoch
             )
+            logs = None
             for epoch, iterator in data_handler.enumerate_epochs():
                 self.reset_metrics()
                 callbacks.on_epoch_begin(epoch)
@@ -197,6 +199,8 @@ class TmpKerasModel(tf.keras.models.Model):
                             logs = tmp_logs  # No error, now safe to assign to logs.
                             end_step = step + data_handler.step_increment
                             callbacks.on_train_batch_end(end_step, logs)
+
+                logs = tf_utils.sync_to_numpy_or_python_type(logs)
                 epoch_logs = copy.copy(logs)
 
                 # Run validation.
