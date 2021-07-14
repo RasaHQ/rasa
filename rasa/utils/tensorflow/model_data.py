@@ -741,7 +741,7 @@ class RasaModelData:
                 if min(num_data_cycles) > 0:
                     break
 
-        final_data = defaultdict(lambda: defaultdict(list))
+        final_data: Data = defaultdict(lambda: defaultdict(list))
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
@@ -789,7 +789,7 @@ class RasaModelData:
         Returns:
             The filtered data
         """
-        new_data = defaultdict(lambda: defaultdict(list))
+        new_data: Data = defaultdict(lambda: defaultdict(list))
 
         if data is None:
             return new_data
