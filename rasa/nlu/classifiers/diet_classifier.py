@@ -471,7 +471,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             or self.label_attribute is not None
         )
 
-    def _needs_sentence_features_for_labels(self):
+    def _needs_sentence_features_for_labels(self) -> bool:
         """Whether we expect/require sentence level features for the label attribute.
 
         For the DIETClassifier, we don't because DIET uses a BOW representation for
