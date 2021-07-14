@@ -96,16 +96,3 @@ async def test_close_resources(loop: AbstractEventLoop):
         await run.close_resources(app, loop)
 
     assert len(warnings) == 0
-
-
-async def test_close_resources_with_sync(loop: AbstractEventLoop):
-    class TestBroker(SQLEventBroker):
-        def close(self) -> None:
-            pass
-
-    broker = TestBroker()
-    app = Mock()
-    app.agent.tracker_store.event_broker = broker
-
-    with pytest.warns(FutureWarning):
-        await run.close_resources(app, loop)
