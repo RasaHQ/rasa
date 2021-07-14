@@ -477,7 +477,8 @@ class Component(metaclass=ComponentMetaclass):
         will be a proper pipeline definition where `ComponentA`
         is the name of the first component of the pipeline.
         """
-        return type(self).name
+        # cast due to https://github.com/python/mypy/issues/7945
+        return typing.cast(str, type(self).name)
 
     @property
     def unique_name(self) -> Text:
