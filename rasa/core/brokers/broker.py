@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from asyncio import AbstractEventLoop
 from typing import Any, Dict, Text, Optional, Union

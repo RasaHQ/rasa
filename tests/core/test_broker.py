@@ -1,9 +1,8 @@
 import json
 import logging
 import textwrap
-from asyncio.events import AbstractEventLoop
 from pathlib import Path
-from typing import Union, Text, List, Optional, Type, Dict, Any
+from typing import Union, Text, List, Optional, Type
 
 import aio_pika.exceptions
 import aiormq.exceptions
