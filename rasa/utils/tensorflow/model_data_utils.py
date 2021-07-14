@@ -141,7 +141,7 @@ def get_tag_ids(
 def _surface_attributes(
     features: List[List[Dict[Text, List["Features"]]]],
     featurizers: Optional[List[Text]] = None,
-) -> DefaultDict[Text, List[List[List["Features"]]]]:
+) -> DefaultDict[Text, List[List[Optional[List["Features"]]]]]:
     """Restructure the input.
 
     "features" can, for example, be a dictionary of attributes (INTENT,

@@ -471,7 +471,7 @@ class StoryGraph:
     @staticmethod
     def overlapping_checkpoint_names(
         cps: List[Checkpoint], other_cps: List[Checkpoint]
-    ) -> Set[Optional[Text]]:
+    ) -> Set[Text]:
         """Find overlapping checkpoints names."""
         return {cp.name for cp in cps} & {cp.name for cp in other_cps}
 
