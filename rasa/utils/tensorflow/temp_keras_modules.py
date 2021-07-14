@@ -23,6 +23,7 @@ from tensorflow.python.eager import context
 from tensorflow.python.keras.engine.data_adapter import DataHandler
 from tensorflow.python.keras.engine import base_layer
 from tensorflow.python.keras.utils import tf_utils
+from tensorflow.python.profiler import trace
 
 
 # noinspection PyMethodOverriding
@@ -183,7 +184,7 @@ class TmpKerasModel(tf.keras.models.Model):
                 callbacks.on_epoch_begin(epoch)
                 with data_handler.catch_stop_iteration():
                     for step in data_handler.steps():
-                        with training.trace.Trace(
+                        with trace.Trace(
                             "TraceContext",
                             graph_type="train",
                             epoch_num=epoch,
