@@ -641,16 +641,35 @@ class ResponseSelector(DIETClassifier):
 
         return model
 
-    def uses_sequential_data(self) -> bool:
-        """Returns whether the model processes sequential data.
+    def _uses_sequence_features_for_text(self) -> bool:
+        """Whether we make use of sequence features for the TEXT attribute.
 
-        Note that in case INTENT_RESPONSE_KEY is our target, we deal with sequential
-        output because of intents like `chitchat/ask_name` which are interpreted as
-        sequences of length 2.
+        Note that, just like the DIETClassifier, DIET2BOW can make use of sentence
+        features even if the number of transformer layers is set to 0 because it creates
+        a BOW representation from sequence+sentence features.
+
+        In contrast to that, DIET2DIET classifier uses the last token from the
+        sequence that is obtained by concatenating sequence and sentence features.
+        Hence, it only makes use of sequence features if and only if the number of
+        transformer layers is > 0.
         """
         return (
             self.component_config[NUM_TRANSFORMER_LAYERS] > 0
-            or self.label_attribute == INTENT_RESPONSE_KEY
+            or not self.use_text_as_label
+        )
+
+    def _needs_sentence_features_for_labels(self) -> bool:
+        """Whether we expect/require sentence level features for the label attribute.
+
+        For the DIET2DIET, we do need sentence level features in case the number
+        of transformer layers is 0, because the last token from the sequence that is
+        created by passing sequence+sentence features (concatenated) through the
+        transformer is used for prediction. And if the number of transformer layers is
+        0 then this last token is not meaningful.
+        """
+        return (
+            self.use_text_as_label
+            and self.component_config[NUM_TRANSFORMER_LAYERS] == 0
         )
 
 

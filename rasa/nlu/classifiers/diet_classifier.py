@@ -21,6 +21,7 @@ from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
+from rasa.utils.tensorflow import model_data_utils
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
     FeatureSignature,
@@ -36,6 +37,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
+    FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
@@ -455,13 +457,28 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return tag_id_dict
 
-    def uses_sequential_data(self) -> bool:
-        """Returns whether the model processes or outputs sequential data."""
+    def _uses_sequence_features_for_text(self) -> bool:
+        """Whether we need sequence features for the TEXT attribute.
+
+        Note that, for prediction of some label attribute, the DIETClassifier
+        can make use of sequence features even if the number of
+        transformer layers is 0 because for that it creates a BOW representation
+        by simply summing over sequence+sentence features.
+        """
         return (
             self.component_config[NUM_TRANSFORMER_LAYERS] > 0
             or self.component_config[ENTITY_RECOGNITION]
-            or self.label_attribute == INTENT
+            or self.label_attribute is not None
         )
+
+    def _needs_sentence_features_for_labels(self):
+        """Whether we expect/require sentence level features for the label attribute.
+
+        For the DIETClassifier, we don't because DIET uses a BOW representation for
+        it's final prediction which is obtained by simply summing over
+        sequence+sentence features.
+        """
+        return False
 
     def _extract_features_from_message(
         self,
@@ -541,7 +558,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         messages: List[Message],
         attribute: Text = INTENT,
         type: Optional[Text] = None,
-        level: Optional[Text] = None,
         featurizers: Optional[List[Text]] = None,
     ) -> Tuple[List[FeatureArray], List[FeatureArray]]:
         """Collects and combines the attribute related features from all messages.
@@ -549,15 +565,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         Args:
             messages: list of messages to extract features from
             attribute: the only attribute which will be considered
-            type: if not None, the other type will be ignored
-            level: if not None, the other level will be ignored
+            type: if not None, the other type (sentence/sequence) will be ignored
             featurizers: the featurizers to be considered
         Returns:
             Sentence level features and sequence level features. Each feature contains
             FeatureArrays with sparse features first.
         """
-        assert not type or type in [SPARSE, DENSE]
-        assert not level or level in [SENTENCE, SEQUENCE]
+        assert (type is None) or (type in [SENTENCE, SEQUENCE])
         # for each label_example, collect sparse and dense feature (matrices) in lists
         collected_features: Dict[
             Tuple[Text, Text], List[Union[np.ndarray, scipy.sparse.spmatrix]]
@@ -567,7 +581,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 message=msg, attribute=attribute, featurizers=featurizers,
             )
             for (feat_type, feat_lvl), feat_mat in type_level_to_feature.items():
-                if (not type or type == feat_type) and (not level or level == feat_lvl):
+                assert feat_lvl in [SEQUENCE, SENTENCE]
+                if (type is None) or (type == feat_lvl):
                     collected_features.setdefault((feat_type, feat_lvl), []).append(
                         feat_mat
                     )
@@ -664,8 +679,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         sorted_messages = [example for (_, example) in labelidx_message_tuples]
 
         # Collect features, precomputed if they exist, else compute on the fly
-        # (Note: `features_present` only checks if there it at least one feature
-        # from at least one featurizer present)
+        sequence_features, sentence_features = None, None
+        # Are there any features in the given data for the label attribute?
         if all(
             message.features_present(
                 attribute=self.label_attribute,
@@ -673,28 +688,32 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             )
             for message in sorted_messages
         ):
-            level_to_consider = (
-                SENTENCE if not self.uses_sequential_data() else None  # i.e. all
-            )
             (
                 sequence_features,
                 sentence_features,
             ) = self._extract_features_from_all_messages(
                 messages=sorted_messages,
                 attribute=self.label_attribute,
-                level=level_to_consider,
                 featurizers=self.component_config[FEATURIZERS],
             )
 
-        else:
+        if not sentence_features and (
+            not sequence_features or self._needs_sentence_features_for_labels()
+        ):
+
+            if (
+                sequence_features
+                and not sentence_features
+                and self._needs_sentence_features_for_labels()
+            ):
+                rasa.shared.io.utils.raise_warning(
+                    f"Expected sentence level features but only received "
+                    f"sequence level features for {self.label_attribute}. "
+                    f"Falling back to using default one-hot embedding vectors. "
+                )
             sequence_features = None
             sentence_features = self._compute_default_label_features(
                 num_labels=len(label_id_dict)
-            )
-
-        if not (sequence_features or sentence_features):
-            raise ValueError(
-                "No label features are present. Please check your configuration file."
             )
 
         label_data = RasaModelData()
@@ -754,34 +773,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
           label_id_dict: A mapping from labels to label ids that is
             only required for label data creation (i.e. if `training` is set to `True`)
         """
-        from rasa.utils.tensorflow import model_data_utils
-
         if training:
             if label_id_dict is None:
                 raise ValueError("Expected some label id mapping.")
             if self._label_data is None:
-                raise ValueError(
-                    "Expected a RasaDataModel containing label data "
-                    "(cf. `self._label_data` and `self._create_label_data())."
-                )
-
-        attributes_to_consider = [TEXT]
-        if training and self.component_config[INTENT_CLASSIFICATION]:
-            # we don't have any intent labels during prediction, just add them during
-            # training
-            attributes_to_consider.append(self.label_attribute)
-        if (
-            training
-            and self.component_config[ENTITY_RECOGNITION]
-            and self._entity_tag_specs
-        ):
-            # Add entities as labels only during training and only if there was
-            # training data added for entities with DIET configured to predict entities.
-            attributes_to_consider.append(ENTITIES)
+                raise ValueError("Expected a RasaDataModel containing label data ")
 
         if training:
             # only use those training examples that have the label_attribute set
-            # during training
             messages = [
                 example for example in messages if self.label_attribute in example.data
             ]
@@ -790,49 +789,94 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # no training data are present to train
             return RasaModelData()
 
-        type_to_consider = (
-            SENTENCE if not self.uses_sequential_data() else None  # i.e. use all
-        )
+        # collect all features for the text input first
         (
-            features_for_examples,
+            features,
             sparse_feature_sizes,
         ) = model_data_utils.featurize_training_examples(
             messages,
-            attributes_to_consider,
-            type=type_to_consider,
+            [TEXT],
             entity_tag_specs=self._entity_tag_specs,
             featurizers=self.component_config[FEATURIZERS],
             bilou_tagging=self.component_config[BILOU_FLAG],
-        )
-        attribute_data, _ = model_data_utils.convert_to_data_format(
-            features_for_examples, consider_dialogue_dimension=False
+            type=(
+                None
+                if self._uses_sequence_features_for_text()
+                else FEATURE_TYPE_SENTENCE
+            ),
         )
 
+        if not self._uses_sequence_features_for_text() and all(
+            not feats[TEXT] for feats in features
+        ):
+            rasa.shared.utils.io.raise_warning(
+                "Expected sentence level features for TEXT. "
+                "Falling back to empty input sequences."
+            )
+
+        if training:
+            # collect features for the labels next
+
+            labels_to_consider = []
+            if self.label_attribute is not None:
+                labels_to_consider.append(self.label_attribute)
+            if self.component_config[ENTITY_RECOGNITION] and self._entity_tag_specs:
+                # Add entities as labels only during training and only if there was
+                # training data added for entities with DIET configured to predict
+                # entities.
+                labels_to_consider.append(ENTITIES)
+
+            (
+                features_for_labels,
+                sparse_feature_sizes_for_labels,
+            ) = model_data_utils.featurize_training_examples(
+                messages,
+                attributes=labels_to_consider,
+                entity_tag_specs=self._entity_tag_specs,
+                featurizers=self.component_config[FEATURIZERS],
+                bilou_tagging=self.component_config[BILOU_FLAG],
+            )
+
+            # add the label features to the text features
+            for feats_txt, feats_lbl in zip(features, features_for_labels):
+                feats_txt.update(feats_lbl)
+            sparse_feature_sizes.update(sparse_feature_sizes_for_labels)
+
+        # create one RasaModelData containing features for text and labels
+
+        attribute_data, _ = model_data_utils.convert_to_data_format(
+            features, consider_dialogue_dimension=False
+        )
         model_data = RasaModelData(
             label_key=self.label_key, label_sub_key=self.label_sub_key,
         )
         model_data.add_data(attribute_data)
-
-        # the following will only add a sequence length if SEQUENCE sub_key exists
+        # Note: the following will only add a sequence length if SEQUENCE sub_key exists
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
-
         # Current implementation doesn't yet account for updating sparse
         # feature sizes of label attributes. That's why we remove them.
         sparse_feature_sizes.pop(self.label_attribute, None)
-
         model_data.add_sparse_feature_sizes(sparse_feature_sizes)
 
-        label_ids = []
-        if training and self.component_config[INTENT_CLASSIFICATION]:
+        # finalize the label features
+        if training and self.label_attribute is not None:
+
             label_ids = self._add_label_id_features(model_data, messages, label_id_dict)
 
-            # if no label features have been found before (see above RasaModel
-            # creation), then we load the default label features that should've been
-            # computed by an self._create_label_data() call (cf. check at the beginning
-            # of this function).
-            if model_data.does_feature_not_exist(
+            # If *no* label features have been found before, then we load the default
+            # label features that should've been computed by an `_create_label_data`.
+            sent_miss = model_data.does_feature_not_exist(
                 self.label_attribute, SENTENCE
-            ) and model_data.does_feature_not_exist(self.label_attribute, SEQUENCE):
+            )
+            seq_miss = model_data.does_feature_not_exist(self.label_attribute, SEQUENCE)
+            need_sent = self._needs_sentence_features_for_labels()
+            if sent_miss and (need_sent or seq_miss):
+                if (not seq_miss) and sent_miss and need_sent:
+                    rasa.shared.io.utils.raise_warning(
+                        f"Expected sentence level features but only received "
+                        f"sequence level features for {self.label_attribute}. "
+                        f"Falling back to using default one-hot embedding vectors. "
+                    )
                 # no label features are present, get default features from _label_data
                 model_data.add_features(
                     LABEL_KEY,
