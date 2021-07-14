@@ -1383,7 +1383,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ### Bugfixes
-- [#7089](https://github.com/rasahq/rasa/issues/7089): Fix [ConveRTTokenizer](components.mdx#converttokenizer) failing because of wrong model URL by making the `model_url` parameter of `ConveRTTokenizer` mandatory.
+- [#7089](https://github.com/rasahq/rasa/issues/7089): Fix `ConveRTTokenizer` failing because of wrong model URL by making the `model_url` parameter of `ConveRTTokenizer` mandatory.
 
   Since the ConveRT model was taken [offline](https://github.com/RasaHQ/rasa/issues/6806), we can no longer use
   the earlier public URL of the model. Additionally, since the licence for the model is unknown,
@@ -2593,7 +2593,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
   Add a new NLP component [HFTransformersNLP](./components.mdx#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
   pre-trained model with the Transformers library as the backend.
-  Add [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which use the information from
+  Add `LanguageModelTokenizer` and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which use the information from
   [HFTransformersNLP](./components.mdx#hftransformersnlp) and sets them correctly for message object.
   Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
 
