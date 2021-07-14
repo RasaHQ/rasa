@@ -1,4 +1,3 @@
-import asyncio
 import itertools
 import logging
 import uuid
