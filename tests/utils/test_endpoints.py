@@ -93,7 +93,7 @@ async def test_endpoint_config():
             assert s._default_auth.password == "pass"
 
 
-async def test_endpoint_config_with_cafile(tmp_path):
+async def test_endpoint_config_with_cafile(tmp_path: Path):
     cafile = "data/test_endpoints/cert.pem"
 
     with aioresponses() as mocked:
@@ -114,7 +114,7 @@ async def test_endpoint_config_with_cafile(tmp_path):
         assert certs[0]["subject"][4][0] == ("organizationalUnitName", "rasa")
 
 
-async def test_endpoint_config_with_non_existent_cafile(tmp_path):
+async def test_endpoint_config_with_non_existent_cafile(tmp_path: Path):
     cafile = "data/test_endpoints/no_file.pem"
 
     endpoint = endpoint_utils.EndpointConfig(
@@ -170,7 +170,7 @@ def test_read_endpoint_config(filename: Text, endpoint_type: Text):
     "endpoint_type, cafile",
     [("action_endpoint", "./some_test_file"), ("tracker_store", None)],
 )
-def test_read_endpoint_config_with_cafile(endpoint_type, cafile):
+def test_read_endpoint_config_with_cafile(endpoint_type: Text, cafile: Optional[Text]):
     conf = endpoint_utils.read_endpoint_config(
         "data/test_endpoints/example_endpoints.yml", endpoint_type
     )

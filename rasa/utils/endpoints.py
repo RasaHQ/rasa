@@ -82,7 +82,7 @@ class EndpointConfig:
         basic_auth: Dict[Text, Text] = None,
         token: Optional[Text] = None,
         token_name: Text = "token",
-        cafile: Text = None,
+        cafile: Optional[Text] = None,
         **kwargs: Any,
     ) -> None:
         self.url = url
@@ -96,7 +96,7 @@ class EndpointConfig:
         self.kwargs = kwargs
 
     def session(self) -> aiohttp.ClientSession:
-        """Create and return a configured aiohttp client session."""
+        """Creates and returns a configured aiohttp client session."""
         # create authentication parameters
         if self.basic_auth:
             auth = aiohttp.BasicAuth(
@@ -153,11 +153,11 @@ class EndpointConfig:
         if self.cafile:
             try:
                 sslcontext = ssl.create_default_context(cafile=self.cafile)
-            except FileNotFoundError:
+            except FileNotFoundError as e:
                 raise FileNotFoundException(
                     f"Failed to find certificate file, "
                     f"'{os.path.abspath(self.cafile)}' does not exist."
-                )
+                ) from e
 
         async with self.session() as session:
             async with session.request(
