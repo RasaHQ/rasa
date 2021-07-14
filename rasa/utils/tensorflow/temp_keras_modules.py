@@ -112,8 +112,6 @@ class TmpKerasModel(tf.keras.models.Model):
             ValueError: In case of mismatch between the provided input data
                 and what the model expects.
         """
-        # TODO: TF 2.5 verify this is the correct equivalent for
-        #  training._keras_api_gauge
         base_layer.keras_api_gauge.get_cell("fit").set(True)
         # Legacy graph support is contained in `training_v1.Model`.
         version_utils.disallow_legacy_graph("Model", "fit")
