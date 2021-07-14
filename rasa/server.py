@@ -82,7 +82,8 @@ if TYPE_CHECKING:
     from mypy_extensions import Arg, VarArg, KwArg
 
     SanicView = Callable[
-        [Arg(Any, "request"), VarArg(), KwArg()], response.BaseHTTPResponse
+        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
+        response.BaseHTTPResponse,
     ]
 
 
