@@ -103,13 +103,14 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         # if don't have it cached, we use the domain to calculate the states
         # from the events
-        if self._states_for_hashing is None:
+        states_for_hashing = self._states_for_hashing
+        if states_for_hashing is None:
             states = super().past_states(domain, omit_unset_slots=omit_unset_slots)
-            self._states_for_hashing = deque(
-                self.freeze_current_state(s) for s in states
-            )
+            states_for_hashing = deque(self.freeze_current_state(s) for s in states)
 
-        return self._states_for_hashing
+        self._states_for_hashing = states_for_hashing
+
+        return states_for_hashing
 
     @staticmethod
     def _unfreeze_states(frozen_states: Deque[FrozenState]) -> List[State]:
