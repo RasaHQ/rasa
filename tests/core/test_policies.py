@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from rasa.core.channels import OutputChannel
-from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.shared.core.generator import TrackerWithCachedStates
 import rasa.shared.utils.io
@@ -29,6 +28,7 @@ from rasa.shared.core.constants import (
     ACTION_BACK_NAME,
     PREVIOUS_ACTION,
     USER,
+    ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import (
@@ -36,6 +36,8 @@ from rasa.shared.core.events import (
     ConversationPaused,
     Event,
     UserUttered,
+    EntitiesAdded,
+    SlotSet,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
@@ -402,7 +404,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         (
             all_states,
             all_actions,
-        ) = trained_policy.featurizer.training_states_and_actions(
+        ) = trained_policy.featurizer.training_states_and_labels(
             trackers, default_domain
         )
 
@@ -471,7 +473,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         )
 
         # Get the hash of the tracker state of new story
-        new_story_states, _ = loaded_policy.featurizer.training_states_and_actions(
+        new_story_states, _ = loaded_policy.featurizer.training_states_and_labels(
             [new_story], default_domain
         )
 
@@ -479,6 +481,65 @@ class TestMemoizationPolicy(PolicyTestCollection):
         for states in new_story_states:
             state_key = loaded_policy._create_feature_key(states)
             assert state_key in loaded_policy.lookup
+
+    @pytest.mark.parametrize(
+        "tracker_events_with_action, tracker_events_without_action",
+        [
+            (
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
+                    SlotSet("name", "Peter"),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    SlotSet("name", "Peter"),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"}]),
+                ],
+            ),
+        ],
+    )
+    def test_ignore_action_unlikely_intent(
+        self,
+        trained_policy: MemoizationPolicy,
+        default_domain: Domain,
+        tracker_events_with_action: List[Event],
+        tracker_events_without_action: List[Event],
+    ):
+        interpreter = RegexInterpreter()
+        tracker_with_action = DialogueStateTracker.from_events(
+            "test 1", evts=tracker_events_with_action, slots=default_domain.slots
+        )
+        tracker_without_action = DialogueStateTracker.from_events(
+            "test 2", evts=tracker_events_without_action, slots=default_domain.slots
+        )
+        prediction_with_action = trained_policy.predict_action_probabilities(
+            tracker_with_action, default_domain, interpreter
+        )
+        prediction_without_action = trained_policy.predict_action_probabilities(
+            tracker_without_action, default_domain, interpreter
+        )
+
+        # Memoization shouldn't be affected with the
+        # presence of action_unlikely_intent.
+        assert (
+            prediction_with_action.probabilities
+            == prediction_without_action.probabilities
+        )
 
 
 class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
@@ -520,7 +581,7 @@ class TestFormPolicy(TestMemoizationPolicy):
         (
             all_states,
             all_actions,
-        ) = trained_policy.featurizer.training_states_and_actions(trackers, domain)
+        ) = trained_policy.featurizer.training_states_and_labels(trackers, domain)
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             for state in states:
@@ -991,34 +1052,3 @@ def test_get_training_trackers_for_policy(
 def test_deprecation_warnings_for_old_rule_like_policies(policy: Type[Policy]):
     with pytest.warns(FutureWarning):
         policy(None)
-
-
-class PolicyWithoutInitKwargs(Policy):
-    def __init__(self, *args: Any) -> None:
-        pass
-
-    def persist(self, _) -> None:
-        pass
-
-    @classmethod
-    def _metadata_filename(cls) -> Text:
-        return "no_finetune_policy"
-
-
-def test_loading_policy_with_no_constructor_kwargs(tmp_path: Path):
-    rasa.shared.utils.io.write_text_file(
-        "{}", tmp_path / PolicyWithoutInitKwargs._metadata_filename()
-    )
-    with pytest.raises(UnsupportedDialogueModelError) as execinfo:
-        PolicyWithoutInitKwargs.load(str(tmp_path), should_finetune=True)
-    assert "`PolicyWithoutInitKwargs.__init__` does not accept `**kwargs`." in str(
-        execinfo.value
-    )
-
-
-def test_loading_policy_with_no_constructor_kwargs_but_required_args(tmp_path: Path):
-    rasa.shared.utils.io.write_text_file(
-        "{}", tmp_path / PolicyWithoutInitKwargs._metadata_filename()
-    )
-    with pytest.warns(FutureWarning):
-        PolicyWithoutInitKwargs.load(str(tmp_path))

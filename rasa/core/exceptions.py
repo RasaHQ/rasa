@@ -35,3 +35,7 @@ class AgentNotReady(RasaCoreException):
 
 class ChannelConfigError(RasaCoreException):
     """Raised if a channel is not configured correctly."""
+
+
+class InvalidTrackerFeaturizerUsageError(RasaCoreException):
+    """Raised if a tracker featurizer is incorrectly used."""
