@@ -519,7 +519,7 @@ def test_incomplete_rules_due_to_loops():
         intents:
         - {GREET_INTENT_NAME}
         forms:
-          {some_form}:
+          {some_form}: {{}}
         """
     )
     policy = RulePolicy()
@@ -797,9 +797,9 @@ async def test_predict_form_action_if_in_form():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -842,9 +842,9 @@ async def test_predict_loop_action_if_in_loop_but_there_is_e2e_rule():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {loop_name}:
+          {loop_name}: {{}}
         """
     )
     e2e_rule = TrackerWithCachedStates.from_events(
@@ -899,9 +899,9 @@ async def test_predict_form_action_if_multiple_turns():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1049,9 +1049,9 @@ async def test_predict_action_listen_after_form():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1096,9 +1096,9 @@ async def test_dont_predict_form_if_already_finished():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1147,9 +1147,9 @@ async def test_form_unhappy_path():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1192,9 +1192,9 @@ async def test_form_unhappy_path_from_general_rule():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1250,9 +1250,9 @@ async def test_form_unhappy_path_from_in_form_rule():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1326,9 +1326,9 @@ async def test_form_unhappy_path_from_story():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1401,9 +1401,9 @@ async def test_form_unhappy_path_no_validation_from_rule():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1493,9 +1493,9 @@ async def test_form_unhappy_path_no_validation_from_story():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1563,9 +1563,9 @@ async def test_form_unhappy_path_without_rule():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1608,9 +1608,9 @@ async def test_form_activation_rule():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1648,9 +1648,9 @@ async def test_failing_form_activation_due_to_no_rule():
         - some-action
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1688,9 +1688,9 @@ def test_form_submit_rule():
         - {submit_action_name}
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -1742,11 +1742,11 @@ def test_immediate_submit():
         - {submit_action_name}
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
           {slot}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         entities:
         - {entity}
         """
@@ -2367,10 +2367,10 @@ def test_hide_rule_turn_with_loops():
         - {action_chitchat}
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
-          {another_form_name}:
+          {form_name}: {{}}
+          {another_form_name}: {{}}
         """
     )
 
@@ -2465,9 +2465,9 @@ def test_do_not_hide_rule_turn_with_loops_in_stories():
         - {activate_form}
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
@@ -2525,9 +2525,9 @@ def test_hide_rule_turn_with_loops_as_followup_action():
         - {UTTER_GREET_ACTION}
         slots:
           {REQUESTED_SLOT}:
-            type: unfeaturized
+            type: any
         forms:
-          {form_name}:
+          {form_name}: {{}}
         """
     )
 
