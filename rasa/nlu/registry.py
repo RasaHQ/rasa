@@ -184,7 +184,6 @@ def create_component_by_config(
 
     Inits it based on a previously persisted model.
     """
-
     # try to get class name first, else create by name
     component_name = component_config.get("class", component_config["name"])
     component_class = get_component_class(component_name)
