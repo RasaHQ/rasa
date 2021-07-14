@@ -24,8 +24,6 @@ class SpacyNLP(Component):
     """The core component that links spaCy to related components in the pipeline."""
 
     defaults = {
-        # name of the language model to load
-        "model": None,
         # when retrieving word vectors, this will decide if the casing
         # of the word is relevant. E.g. `hello` and `Hello` will
         # retrieve the same vector, if set to `False`. For some
@@ -78,6 +76,7 @@ class SpacyNLP(Component):
         component_config = rasa.utils.train_utils.override_defaults(
             cls.defaults, component_config
         )
+
         spacy_model_name = component_config.get("model")
 
         logger.info(f"Trying to load spacy model with name '{spacy_model_name}'")
@@ -93,6 +92,15 @@ class SpacyNLP(Component):
     ) -> Optional[Text]:
 
         spacy_model_name = component_meta.get("model")
+        if not spacy_model_name:
+            raise InvalidModelError(
+                f"Missing model configuration for `SpacyNLP` in `config.yml`.\n"
+                f"You must pass a model to the `SpacyNLP` component explicitly.\n"
+                f"For example:\n"
+                f"- name: SpacyNLP\n"
+                f"  model: en_core_web_md\n"
+                f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
+            )
 
         return cls.name + "-" + spacy_model_name
 
