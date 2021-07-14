@@ -264,7 +264,7 @@ class RasaModelData:
         self.label_sub_key = label_sub_key
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
-        self.sparse_feature_sizes = None
+        self.sparse_feature_sizes = {}
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
