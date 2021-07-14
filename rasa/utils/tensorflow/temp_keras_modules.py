@@ -36,8 +36,6 @@ class TmpKerasModel(tf.keras.models.Model):
     # This code is adapted from
     # https://github.com/tensorflow/tensorflow/blob/v2.3.1/tensorflow/python/keras/engine/training.py#L824-L1146
 
-    # TODO: TF 2.5 figure out if equivalent for previous @training.enable_multi_worker
-    #  is needed
     def fit(
         self,
         x: Optional[
