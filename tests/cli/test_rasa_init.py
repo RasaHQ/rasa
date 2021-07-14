@@ -1,7 +1,12 @@
+import copy
 import os
 from pathlib import Path
-from typing import Callable
-from _pytest.pytester import RunResult
+from typing import Any, Callable, Dict, Text
+from _pytest.pytester import RunResult, Testdir
+import pytest
+
+from rasa.cli import scaffold
+from rasa.shared.utils.io import read_yaml_file, write_yaml
 
 
 def test_init_using_init_dir_option(run_with_stdin: Callable[..., RunResult]):

@@ -26,6 +26,7 @@ pipeline:
 # https://rasa.com/docs/rasa/policies
 policies:
   - name: MemoizationPolicy
+    max_history: null
   - name: RulePolicy
   - name: UnexpecTEDIntentPolicy
     max_history: 5
