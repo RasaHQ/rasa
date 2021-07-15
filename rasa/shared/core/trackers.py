@@ -273,6 +273,77 @@ class DialogueStateTracker:
 
         return parse_data_with_nlu_state
 
+    def get_active_state(self, omit_unset_slots: bool = False,) -> State:
+        """Given a dialogue tracker, makes a representation of current dialogue state.
+
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns:
+            A representation of the dialogue's current state.
+        """
+        state = {
+            rasa.shared.core.constants.USER: self._get_user_sub_state(),
+            rasa.shared.core.constants.SLOTS: self._get_slots_sub_state(
+                omit_unset_slots=omit_unset_slots
+            ),
+            rasa.shared.core.constants.PREVIOUS_ACTION: self.latest_action,
+            rasa.shared.core.constants.ACTIVE_LOOP: self._get_active_loop_sub_state(),
+        }
+        return self._clean_state(state)
+
+    def _get_slots_sub_state(
+        self, omit_unset_slots: bool = False,
+    ) -> Dict[Text, Union[Text, Tuple[float]]]:
+        """Sets all set slots with the featurization of the stored value.
+
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns:
+            a dictionary mapping slot names to their featurization
+        """
+        slots = {}
+        for slot_name, slot in self.slots.items():
+            if slot is not None and slot.as_feature():
+                if omit_unset_slots and not slot.has_been_set:
+                    continue
+                if slot.value == rasa.shared.core.constants.SHOULD_NOT_BE_SET:
+                    slots[slot_name] = rasa.shared.core.constants.SHOULD_NOT_BE_SET
+                elif any(slot.as_feature()):
+                    # only add slot if some of the features are not zero
+                    slots[slot_name] = tuple(slot.as_feature())
+
+        return slots
+
+    def _get_active_loop_sub_state(self) -> Dict[Text, Text]:
+        """Turn tracker's active loop into a state name.
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary mapping "name" to active loop name if present
+        """
+
+        # we don't use tracker.active_loop_name
+        # because we need to keep should_not_be_set
+        active_loop: Optional[Text] = self.active_loop.get(
+            rasa.shared.core.constants.LOOP_NAME
+        )
+        if active_loop:
+            return {rasa.shared.core.constants.LOOP_NAME: active_loop}
+        else:
+            return {}
+
+    @staticmethod
+    def _clean_state(state: State) -> State:
+        return {
+            state_type: sub_state
+            for state_type, sub_state in state.items()
+            if sub_state
+        }
+
     def past_states(
         self,
         omit_unset_slots: bool = False,
@@ -954,3 +1025,67 @@ def get_trackers_for_conversation_sessions(
         )
         for evts in split_conversations
     ]
+
+    def _get_user_sub_state(self,) -> Dict[Text, Union[Text, Tuple[Text]]]:
+        """Turns latest UserUttered event into a substate.
+
+        The substate will contain intent, text, and entities (if any are present).
+
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+        Returns:
+            a dictionary containing intent, text and set entities
+        """
+        # proceed with values only if the user of a bot have done something
+        # at the previous step i.e., when the state is not empty.
+        latest_message = self.latest_message
+        if not latest_message or latest_message.is_empty():
+            return {}
+
+        sub_state = latest_message.as_sub_state()
+
+        # Filter entities based on intent config. We need to convert the set into a
+        # tuple because sub_state will be later transformed into a frozenset (so it can
+        # be hashed for deduplication).
+        entities = tuple(
+            self._get_featurized_entities(latest_message).intersection(
+                set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
+            )
+        )
+        # Sort entities so that any derived state representation is consistent across
+        # runs and invariant to the order in which the entities for an utterance are
+        # listed in data files.
+        entities = tuple(sorted(entities))
+
+        if entities:
+            sub_state[rasa.shared.nlu.constants.ENTITIES] = entities
+        else:
+            sub_state.pop(rasa.shared.nlu.constants.ENTITIES, None)
+
+        return sub_state
+
+    @staticmethod
+    def _get_slots_sub_state(
+        tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+    ) -> Dict[Text, Union[Text, Tuple[float]]]:
+        """Sets all set slots with the featurization of the stored value.
+
+        Args:
+            tracker: dialog state tracker containing the dialog so far
+            omit_unset_slots: If `True` do not include the initial values of slots.
+
+        Returns:
+            a dictionary mapping slot names to their featurization
+        """
+        slots = {}
+        for slot_name, slot in tracker.slots.items():
+            if slot is not None and slot.as_feature():
+                if omit_unset_slots and not slot.has_been_set:
+                    continue
+                if slot.value == rasa.shared.core.constants.SHOULD_NOT_BE_SET:
+                    slots[slot_name] = rasa.shared.core.constants.SHOULD_NOT_BE_SET
+                elif any(slot.as_feature()):
+                    # only add slot if some of the features are not zero
+                    slots[slot_name] = tuple(slot.as_feature())
+
+        return slots

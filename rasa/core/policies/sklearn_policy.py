@@ -17,7 +17,7 @@ import rasa.utils.io as io_utils
 import rasa.utils.tensorflow.model_data_utils as model_data_utils
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.shared.core.domain import Domain
-from rasa.core.featurizers.state_featurizer import StateFeaturizer
+from rasa.core.featurizers.message_data_featurizer import StateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
@@ -52,7 +52,7 @@ class SklearnPolicy(Policy):
     ) -> MaxHistoryTrackerFeaturizer:
         # Sklearn policy always uses MaxHistoryTrackerFeaturizer
         return MaxHistoryTrackerFeaturizer(
-            state_featurizer=StateFeaturizer(), max_history=5
+            message_data_featurizer=StateFeaturizer(), max_history=5
         )
 
     def __init__(

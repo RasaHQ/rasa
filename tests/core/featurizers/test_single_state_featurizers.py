@@ -7,7 +7,7 @@ import scipy.sparse
 
 import pytest
 
-from rasa.core.featurizers.state_featurizer import StateFeaturizer
+from rasa.core.featurizers.message_data_featurizer import StateFeaturizer
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
@@ -29,7 +29,7 @@ from rasa.shared.core.slots import Slot
 from rasa.shared.nlu.training_data.features import Features
 
 
-def test_state_featurizer_without_interpreter_state_not_with_action_listen():
+def test_message_data_featurizer_without_interpreter_state_not_with_action_listen():
     """This test are for encoding state without a trained interpreter.
     action_name is not action_listen, so, INTENT, TEXT and ENTITIES should not be
     featurized.
@@ -61,7 +61,7 @@ def test_state_featurizer_without_interpreter_state_not_with_action_listen():
     assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[0, 0, 1]])).nnz == 0
 
 
-def test_state_featurizer_without_interpreter_state_with_action_listen():
+def test_message_data_featurizer_without_interpreter_state_with_action_listen():
     """This test are for encoding state without a trained interpreter.
     action_name is action_listen, so, INTENT and ENTITIES should be featurized
     while text shouldn't because we don't have an interpreter.
@@ -94,7 +94,7 @@ def test_state_featurizer_without_interpreter_state_with_action_listen():
     assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[1, 0, 0]])).nnz == 0
 
 
-def test_state_featurizer_without_interpreter_state_no_intent_no_action_name():
+def test_message_data_featurizer_without_interpreter_state_no_intent_no_action_name():
     f = StateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1, "action_listen": 2}
@@ -121,7 +121,7 @@ def test_state_featurizer_without_interpreter_state_no_intent_no_action_name():
     assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[1, 0, 0]])).nnz == 0
 
 
-def test_state_featurizer_correctly_encodes_non_existing_value():
+def test_message_data_featurizer_correctly_encodes_non_existing_value():
     f = StateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1}
@@ -135,7 +135,7 @@ def test_state_featurizer_correctly_encodes_non_existing_value():
     assert (encoded[INTENT][0].features != scipy.sparse.coo_matrix([[0, 0]])).nnz == 0
 
 
-def test_state_featurizer_prepare_for_training():
+def test_message_data_featurizer_prepare_for_training():
     domain = Domain(
         intents=["greet"],
         entities=["name"],
@@ -160,7 +160,7 @@ def test_state_featurizer_prepare_for_training():
     assert len(f._default_feature_states[ACTIVE_LOOP]) == 0
 
 
-def test_state_featurizer_creates_encoded_all_actions():
+def test_message_data_featurizer_creates_encoded_all_actions():
     domain = Domain(
         intents=[],
         entities=[],
@@ -186,7 +186,7 @@ def test_state_featurizer_creates_encoded_all_actions():
 @pytest.mark.timeout(
     300, func_only=True
 )  # these can take a longer time than the default timeout
-def test_state_featurizer_with_entity_roles_and_groups(
+def test_message_data_featurizer_with_entity_roles_and_groups(
     unpacked_trained_spacybot_path: Text,
 ):
     from rasa.core.agent import Agent
@@ -232,7 +232,7 @@ def test_state_featurizer_with_entity_roles_and_groups(
 @pytest.mark.timeout(
     300, func_only=True
 )  # these can take a longer time than the default timeout
-def test_state_featurizer_with_bilou_entity_roles_and_groups(
+def test_message_data_featurizer_with_bilou_entity_roles_and_groups(
     unpacked_trained_spacybot_path: Text,
 ):
     from rasa.core.agent import Agent
@@ -295,7 +295,7 @@ def test_state_featurizer_with_bilou_entity_roles_and_groups(
     assert np.all(encoded[ENTITY_TAGS][0].features == [[0], [0], [0], [0], [1], [3]])
 
 
-def test_state_featurizer_uses_dtype_float():
+def test_message_data_featurizer_uses_dtype_float():
     f = StateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1}
@@ -315,7 +315,7 @@ def test_state_featurizer_uses_dtype_float():
 @pytest.mark.timeout(
     300, func_only=True
 )  # these can take a longer time than the default timeout
-def test_state_featurizer_with_interpreter_state_with_action_listen(
+def test_message_data_featurizer_with_interpreter_state_with_action_listen(
     unpacked_trained_spacybot_path: Text,
 ):
     interpreter = Agent.load(unpacked_trained_spacybot_path).interpreter
@@ -379,7 +379,7 @@ def test_state_featurizer_with_interpreter_state_with_action_listen(
 @pytest.mark.timeout(
     300, func_only=True
 )  # these can take a longer time than the default timeout
-def test_state_featurizer_with_interpreter_state_not_with_action_listen(
+def test_message_data_featurizer_with_interpreter_state_not_with_action_listen(
     unpacked_trained_spacybot_path: Text,
 ):
     # check that user features are ignored when action_name is not action_listen
@@ -418,7 +418,7 @@ def test_state_featurizer_with_interpreter_state_not_with_action_listen(
 @pytest.mark.timeout(
     300, func_only=True
 )  # these can take a longer time than the default timeout
-def test_state_featurizer_with_interpreter_state_with_no_action_name(
+def test_message_data_featurizer_with_interpreter_state_with_no_action_name(
     unpacked_trained_spacybot_path: Text,
 ):
     # check that action name features are not added by the featurizer when not
@@ -483,7 +483,9 @@ def test_to_sparse_sentence_features():
 @pytest.mark.timeout(
     300, func_only=True
 )  # these can take a longer time than the default timeout
-def test_state_featurizer_uses_regex_interpreter(unpacked_trained_spacybot_path: Text,):
+def test_message_data_featurizer_uses_regex_interpreter(
+    unpacked_trained_spacybot_path: Text,
+):
     from rasa.core.agent import Agent
 
     domain = Domain(

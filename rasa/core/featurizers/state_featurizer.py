@@ -1,108 +1,78 @@
 import logging
 from typing import (
     List,
+    NamedTuple,
     Optional,
     Dict,
     Text,
 )
-from typing_extensions import TypedDict
+from rasa.core import featurizers
 
-from rasa.shared.core.domain import SubState, State, Domain
-from rasa.shared.core.domain import Domain
-from rasa.shared.core import state as state_utils
+from rasa.shared.core.domain import State, Domain
+from rasa.shared.core.domain import Domain, Message
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.shared.nlu.constants import (
-    ENTITIES,
-    ACTION_NAME,
-    INTENT,
-    PREVIOUS_ACTION,
-    ACTIVE_LOOP,
-    USER,
-    SLOTS,
-    FEATURE_TYPE_SEQUENCE,
-)
+from rasa.shared.nlu.constants import FEATURE_TYPE_SEQUENCE
 from rasa.shared.nlu.training_data.features import Features
-from rasa.core.featurizers import substate_featurizer
-from rasa.core.featurizers.substate_featurizer import (
-    SubstateFeaturizerUsingMultiHotVectors,
+from rasa.core.featurizers import message_data_featurizer
+from rasa.core.featurizers.message_data_featurizer import (
+    MessageDataFeaturizerUsingInterpreter,
+    MessageDataFeaturizerUsingMultiHotVectors,
     SetupMixin,
-    SubStateFeaturizerUsingInterpreter,
 )
 
 logger = logging.getLogger(__name__)
 
 
-USE_INTERPRETER = "use_interpreter"
-USE_MULTIHOT = "use_multihot"
-ENFORCE_SENTENCE_FEATURE = "enforce_sentence_feature"
-ALL_METHODS = [USE_INTERPRETER, USE_MULTIHOT, ENFORCE_SENTENCE_FEATURE]
+FEATURIZE_USING_INTERPRETER = "use_interpreter"
+FEATURIZE_USING_MULTIHOT = "use_multihot"
+POSTPROCESS_ENFORCE_SENTENCE_FEATURE = "enforce_sentence_feature"
 
 
-SubtypeToAttributeToMethod = TypedDict(
-    "SubtypeToAttributeToMethod",
-    {
-        USER: Dict[Text, List[Text]],
-        PREVIOUS_ACTION: Dict[Text, List[Text]],
-        ACTIVE_LOOP: bool,
-        SLOTS: bool,
-    },
-)
+class FeaturizationStep(NamedTuple):
+    method: Text
+    attributes: List[Text]
 
 
-def convert_to_subtype_to_method_to_attribute_map(
-    config: SubtypeToAttributeToMethod,
-) -> Dict[Text, Dict[Text, List[Text]]]:
-    """Convert config to a mapping from state type and method to attribute list ."""
-    return {
-        {
-            method: [
-                attribute
-                for attribute, usage_config in config[sub_type].items()
-                if method in usage_config
-            ]
-            for method in ALL_METHODS
-        }
-        for sub_type in SubtypeToAttributeToMethod.__annotations__
-    }
+class FeaturizationConfig(NamedTuple):
+    type: Text  # TODO: SubState -> MessageData
+    pipeline: List[FeaturizationStep]
+    postprocessing: List[FeaturizationStep]
 
 
 class StateFeaturizer(SetupMixin):
-    """
-
-    """
-
     def __init__(
         self,
-        config: SubtypeToAttributeToMethod,
+        config: List[FeaturizationConfig],
         featurizer_using_interpreter: Optional[
-            SubStateFeaturizerUsingInterpreter
+            MessageDataFeaturizerUsingInterpreter
         ] = None,
         featurizer_using_multihot: Optional[
-            SubstateFeaturizerUsingMultiHotVectors
+            MessageDataFeaturizerUsingMultiHotVectors
         ] = None,
     ) -> None:
-        self._config = config
-        self._config_rearranged = convert_to_subtype_to_method_to_attribute_map(config)
-        self._featurizer_using_interpreter = featurizer_using_interpreter
-        self._featurizer_using_multihot = featurizer_using_multihot
+        self._config = {
+            config_for_type.type: config_for_type for config_for_type in config
+        }
+        self._featurizers = {
+            FEATURIZE_USING_INTERPRETER: featurizer_using_interpreter,
+            FEATURIZE_USING_MULTIHOT: featurizer_using_multihot,
+        }
 
     def setup(
         self, domain: Domain, interpreter: Optional[NaturalLanguageInterpreter]
     ) -> None:
-        """
-        NOTE: domain and interpreter might not be known during instantiation
-
-        Raises:
-          RuntimeError if it has already been setup (cf. `is_ready`)
-        """
-        if self.configured:
-            raise RuntimeError(
-                f"Expected that {self.__class__.__name__} had not been configured before"
-            )
-        self._featurizer_using_interpreter = SubStateFeaturizerUsingInterpreter()
-        self._featurizer_using_interpreter.setup(domain=domain, interpreter=interpreter)
-        self._featurizer_using_multihot = SubstateFeaturizerUsingMultiHotVectors()
-        self._featurizer_using_multihot.setup(domain)
+        self.raise_if_setup_is(False)
+        self._featurizers = {
+            FEATURIZE_USING_INTERPRETER: MessageDataFeaturizerUsingInterpreter(
+                interpreter=interpreter, domain=domain
+            ),
+            FEATURIZE_USING_MULTIHOT: MessageDataFeaturizerUsingMultiHotVectors(
+                domain=domain
+            ),
+        }
+        self._postprocessors = {
+            POSTPROCESS_ENFORCE_SENTENCE_FEATURE: self._postprocess_features__autofill_sentence_feature,
+        }
 
     def is_setup(self) -> bool:
         return (
@@ -110,47 +80,40 @@ class StateFeaturizer(SetupMixin):
             and self._featurizer_using_multihot.is_setup()
         )
 
-    def featurize_state(self, state: State) -> Dict[Text, List["Features"]]:
-        """Encode the given state with the help of the given interpreter.
-
-        Args:
-            state: The state to encode
-
-        Returns:
-            A dictionary of state_type to list of features.
-        """
-        self.raise_if_ready_is(False)
+    def featurize(self, state: Dict[Text, Message]) -> Dict[Text, List[Features]]:
+        self.raise_if_setup_is(False)
 
         attribute_feature_map = {}
-        for substate_type, sub_state in state.items():
+        for type, message_data in state.items():
 
-            # skip this # TODO: when does this happen?
-            if substate_type == USER and not state_utils.previous_action_was_listen(
-                state
-            ):
-                continue
+            config_for_type: FeaturizationConfig = self._config.get(type)
 
-            methods_to_attributes = self._config_rearranged.get(substate_type, [])
+            feature_subset = dict()
 
-            substate_features = {}
+            for step in config_for_type.pipeline:
 
-            for method in [USE_INTERPRETER, USE_MULTIHOT]:
-
-                new_features = self._featurizer_using_interpreter.featurize(
-                    sub_state=sub_state, attributes=methods_to_attributes[method],
+                featurizer = featurizers.get(step.method)
+                if featurizer is None:
+                    raise ValueError(f"Unknown featurizer {step.method} requested.")
+                new_features = featurizer.featurize(
+                    message_data=message_data, attribute=step.attributes,
                 )
                 for attribute, feat in new_features:
-                    feature_list = substate_features.setdefault(attribute, [])
+                    feature_list = feature_subset.setdefault(attribute, [])
                     feature_list.append(feat)
 
-            if ENFORCE_SENTENCE_FEATURE in methods_to_attributes:
+            for step in config_for_type.postprocessing:
 
-                self._autofill_sentence_feature(
-                    substate_features=substate_features,
-                    attribute=methods_to_attributes[ENFORCE_SENTENCE_FEATURE],
+                postprocessor = featurizers.get(step.method)
+                if postprocessor is None:
+                    raise ValueError(f"Unknown postprocessor {step.method} requested.")
+                postprocessor(
+                    message_data=message_data,
+                    feature_dict=feature_subset,
+                    attribute=step.attributes,
                 )
 
-            attribute_feature_map.update(substate_features)
+            attribute_feature_map.update(feature_subset)
 
         # NOTE: checking whether all expected attributes are populated here makes
         # no sense since that would require the interpreter to add some indicator
@@ -158,32 +121,31 @@ class StateFeaturizer(SetupMixin):
 
         return attribute_feature_map
 
-    def _autofill_sentence_feature(
+    def _postprocess_features__autofill_sentence_feature(
         self,
-        sub_state: SubState,
-        substate_features: Dict[Text, Features],
-        attribute: Text,
+        message_data: Dict[Text, Any],
+        feature_dict: Dict[Text, List[Features]],
+        attributes: List[Text],
     ):
         """
-
         """
-        attribute_features = substate_features.get(attribute, [])
-        if any([f.type == FEATURE_TYPE_SEQUENCE for f in attribute_features]):
-            # yeay, we have sentence features already
-            # FIXME: this is different from current pipeline
-            pass
+        for attribute in attributes:
+            attribute_features = feature_dict.get(attribute, [])
+            if any([f.type == FEATURE_TYPE_SEQUENCE for f in attribute_features]):
+                # yeay, we have sentence features already
+                # FIXME: this is different from current pipeline
+                pass
 
-        elif any([f.type == FEATURE_TYPE_SEQUENCE for f in attribute_features]):
-            # we can deduce them from sequence features...
-            sentence_features = substate_featurizer.convert_sparse_sequence_to_sentence_features(
-                attribute_features
-            )
-        else:
-            # we have nothing at all...
-            fallback_feats = self._featurizer_using_multihot.featurize(
-                sub_state, attribues=[attribute]
-            )
-            sentence_features = fallback_feats[attribute]
+            elif any([f.type == FEATURE_TYPE_SEQUENCE for f in attribute_features]):
+                # we can deduce them from sequence features...
+                sentence_features = message_data_featurizer.convert_sparse_sequence_to_sentence_features(
+                    attribute_features
+                )
+            else:
+                # we have nothing at all...
+                fallback_feats = self._featurizer_using_multihot.featurize(
+                    message_data=message_data, attribues=[attribute]
+                )
+                sentence_features = [fallback_feats[attribute]]
 
-        substate_features[attribute] = [sentence_features]
-        return substate_features
+            feature_dict[attribute] = sentence_features

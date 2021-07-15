@@ -1,6 +1,5 @@
 import logging
-from typing import Callable, Generator, Tuple, List, Optional, Dict, Text, Any
-import typing
+from typing import Callable, Generator, Tuple, List, Optional, Dict, Text, TypeVar, Any
 
 
 from rasa.shared.core.domain import State
@@ -8,52 +7,31 @@ from rasa.shared.core import state as state_utils
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT
 
-FEATURIZER_FILE = "featurizer.json"  # FIXME: persist/load
 
 logger = logging.getLogger(__name__)
 
 
-class Extractor:
+class StateFilter:
+    """TODO: move this to tracker?"""
+
     def __init__(
         self,
-        input_attributes: Dict[Text, List[Text]],
-        output_attributes: Dict[Text, List[Text]],
-        state_filter: Optional[Callable[[State], bool]] = True,
+        omit_unset_slots: bool = True,  # FIXME: this should not be here... -> MessageDataExtractor?
+        extra_state_filter: Optional[Callable[[State], bool]] = True,
     ):
-        self.input_attributes = set(input_attributes)
-        self.ouput_state_attributes = set(output_attributes)
-        self.state_filter = state_filter
+        self.extra_state_filter = extra_state_filter
+        self.omit_unset_slots = omit_unset_slots
 
     def extract_for_training(
         self, tracker: DialogueStateTracker, omit_unset_slots: bool = False,
-    ) -> List[Tuple[State, State]]:
+    ) -> List[State]:
 
-        input_output_sequences = []
-        for state in enumerate(tracker.past_states(omit_unset_slots=omit_unset_slots)):
-
-            # skip the state if the filter says so - or if it isn't a user
-            # utterance
-            if (self.state_filter and self.state_filter(state)) or (
-                not state_utils.is_prev_action_listen_in_state(state)
-            ):
-                continue
-
-            # NOTE: Why don't we skip the first state which is an "unpredictable"
-            # event? Because it's still a valid input. We'll take care of not asking
-            # to predict from empty input later.
-
-            input_state = state_utils.copy(state=state, key_dict=self.input_attributes)
-            # remove text if an intent is given to avoid working on intent level
-            if state_utils.get_user_intent(input_state):
-                state_utils.forget_user_text(input_state)
-
-            output_state = state_utils.copy(
-                state=state, key_dict=self.output_attributes
-            )
-
-            input_output_sequences.append((input_state, output_state))
-
-        return input_output_sequences
+        return [
+            state
+            for state in tracker.past_states(omit_unset_slots=omit_unset_slots)
+            if state_utils.is_prev_action_listen_in_state(state)
+            and not self.extra_state_filter(state)
+        ]
 
     @staticmethod
     def extract_for_prediction(
@@ -92,17 +70,37 @@ class Extractor:
         return states
 
 
-T = typing.TypeVar("T")
+class MessageDataExtractor:
+    """Converts a State into input or output message data that can be featurized."""
+
+    def __init__(
+        self,
+        input_attributes: Dict[Text, List[Text]],
+        output_attributes: Dict[Text, List[Text]],
+    ):
+        self.input_attributes = set(input_attributes)
+        self.ouput_state_attributes = set(output_attributes)
+
+    def extract_input(self, state: State) -> Dict[Text, Any]:
+        state = state_utils.copy(state=state, key_dict=self.input_attributes)
+        # remove text if an intent is given to avoid working on intent level
+        if state_utils.get_user_intent(state):
+            state_utils.forget_user_text(state)
+        return state
+
+    def extract_output(self, state: State) -> Dict[Text, Any]:
+        return state_utils.copy(state=state, key_dict=self.output_attributes)
 
 
-def unroll(items: List[T], max_history: Optional[int] = None) -> Generator[List[T]]:
-    """
-    FIXME:
-    """
-    window = max_history if max_history is not None else len(items)
-    # Note that we start with "2" so that we have at least one input state.
-    for rolling_end in range(2, len(items)):
-        rolling_start = max(rolling_end - window, 0)
+T = TypeVar("T")
+
+
+def unroll(
+    items: List[T], min_window_end: int = 2, max_window_size: Optional[int] = None
+) -> Generator[List[T]]:
+    max_window_size = max_window_size if max_window_size else len(items)
+    for rolling_end in range(min_window_end, len(items)):
+        rolling_start = max(rolling_end - max_window_size, 0)
         yield items[rolling_start:rolling_end]
 
 
@@ -145,7 +143,7 @@ class UnRoller:
         """
         TODO: remove this?
 
-        Note: no need to _choose_last_user_input because Extractor has taken care of that
+        NOTE: no need to _choose_last_user_input because Extractor has taken care of that
         """
         return [
             state_sequence

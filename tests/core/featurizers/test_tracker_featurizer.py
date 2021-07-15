@@ -3,7 +3,7 @@ from typing import Text
 import numpy as np
 import pytest
 
-from rasa.core.featurizers.state_featurizer import StateFeaturizer
+from rasa.core.featurizers.message_data_featurizer import StateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
@@ -19,16 +19,16 @@ def test_fail_to_load_non_existent_featurizer():
 
 
 def test_persist_and_load_tracker_featurizer(tmp_path: Text, moodbot_domain: Domain):
-    state_featurizer = StateFeaturizer()
-    state_featurizer.prepare_for_training(moodbot_domain, RegexInterpreter())
-    tracker_featurizer = MaxHistoryTrackerFeaturizer(state_featurizer)
+    message_data_featurizer = StateFeaturizer()
+    message_data_featurizer.prepare_for_training(moodbot_domain, RegexInterpreter())
+    tracker_featurizer = MaxHistoryTrackerFeaturizer(message_data_featurizer)
 
     tracker_featurizer.persist(tmp_path)
 
     loaded_tracker_featurizer = TrackerFeaturizer.load(tmp_path)
 
     assert loaded_tracker_featurizer is not None
-    assert loaded_tracker_featurizer.state_featurizer is not None
+    assert loaded_tracker_featurizer.message_data_featurizer is not None
 
 
 def test_convert_labels_to_ids(domain: Domain):
@@ -49,7 +49,7 @@ def test_convert_labels_to_ids(domain: Domain):
         assert np.all(expected_array == actual_array)
 
 
-def test_featurize_trackers_raises_on_missing_state_featurizer(domain: Domain):
+def test_featurize_trackers_raises_on_missing_message_data_featurizer(domain: Domain):
     tracker_featurizer = TrackerFeaturizer()
 
     with pytest.raises(ValueError):
@@ -59,8 +59,8 @@ def test_featurize_trackers_raises_on_missing_state_featurizer(domain: Domain):
 def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
     moodbot_domain: Domain,
 ):
-    state_featurizer = StateFeaturizer()
-    tracker_featurizer = FullDialogueTrackerFeaturizer(state_featurizer)
+    message_data_featurizer = StateFeaturizer()
+    tracker_featurizer = FullDialogueTrackerFeaturizer(message_data_featurizer)
 
     tracker = tracker_from_dialogue_file(
         "data/test_dialogues/moodbot.json", moodbot_domain
@@ -78,8 +78,8 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
 
 
 def test_featurize_trackers_with_max_history_tracker_featurizer(moodbot_domain: Domain):
-    state_featurizer = StateFeaturizer()
-    tracker_featurizer = MaxHistoryTrackerFeaturizer(state_featurizer)
+    message_data_featurizer = StateFeaturizer()
+    tracker_featurizer = MaxHistoryTrackerFeaturizer(message_data_featurizer)
 
     tracker = tracker_from_dialogue_file(
         "data/test_dialogues/moodbot.json", moodbot_domain

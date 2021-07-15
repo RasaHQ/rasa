@@ -24,7 +24,7 @@ import rasa.shared.utils.common
 import rasa.utils.common
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain, State
-from rasa.core.featurizers.state_featurizer import StateFeaturizer
+from rasa.core.featurizers.message_data_featurizer import StateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,

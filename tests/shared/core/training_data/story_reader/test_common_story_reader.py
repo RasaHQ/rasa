@@ -12,7 +12,7 @@ from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEACTIVATE_LOO
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, SessionStarted, SlotSet
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.core.featurizers.state_featurizer import StateFeaturizer
+from rasa.core.featurizers.message_data_featurizer import StateFeaturizer
 
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT, INTENT_NAME_KEY

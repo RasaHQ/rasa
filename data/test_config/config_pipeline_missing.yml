@@ -5,7 +5,7 @@ policies:
     featurizer:
     - name: MaxHistoryTrackerFeaturizer
       max_history: 5
-      state_featurizer:
+      message_data_featurizer:
         - name: SingleStateFeaturizer
   - name: "MemoizationPolicy"
     max_history: 5

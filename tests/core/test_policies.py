@@ -37,7 +37,7 @@ from rasa.shared.core.events import (
     Event,
     UserUttered,
 )
-from rasa.core.featurizers.state_featurizer import StateFeaturizer
+from rasa.core.featurizers.message_data_featurizer import StateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
@@ -121,12 +121,14 @@ class PolicyTestCollection:
     def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
-        assert isinstance(trained_policy.featurizer.state_featurizer, StateFeaturizer)
+        assert isinstance(
+            trained_policy.featurizer.message_data_featurizer, StateFeaturizer
+        )
         trained_policy.persist(str(tmp_path))
         loaded = trained_policy.__class__.load(str(tmp_path))
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
-        assert isinstance(loaded.featurizer.state_featurizer, StateFeaturizer)
+        assert isinstance(loaded.featurizer.message_data_featurizer, StateFeaturizer)
 
     @pytest.mark.parametrize("should_finetune", [False, True])
     async def test_persist_and_load(
@@ -375,11 +377,11 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
     def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
-        assert trained_policy.featurizer.state_featurizer is None
+        assert trained_policy.featurizer.message_data_featurizer is None
         trained_policy.persist(str(tmp_path))
         loaded = trained_policy.__class__.load(str(tmp_path))
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
-        assert loaded.featurizer.state_featurizer is None
+        assert loaded.featurizer.message_data_featurizer is None
 
     async def test_memorise(
         self,

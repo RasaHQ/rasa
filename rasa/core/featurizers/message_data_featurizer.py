@@ -1,42 +1,27 @@
-"""
-NOTE:
-- it would be great if we could turn the state featurizer into a combination of
-  state item featurizers (cf. target featurizers)
--
-"""
-
 from abc import abstractmethod
 import logging
-from operator import sub
-from rasa.core import featurizers
 import numpy as np
 import scipy.sparse
-from typing import Generic, List, Optional, Dict, Text, Any, Iterable
+from typing import List, Optional, Dict, Text, Any, Iterable
 
 from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared import io as io_utils
-from rasa.shared.core.domain import SubState, State, Domain
+from rasa.shared.core.domain import Message, Domain
 from rasa.shared.core.domain import Domain
-from rasa.shared.core import state as state_utils
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.nlu.constants import (
-    ACTION_TEXT,
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     ACTION_NAME,
     FEATURE_TYPE_SEQUENCE,
     INTENT,
     ENTITY_TAGS,
-    INTENT_RESPONSE_KEY,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
-    PREVIOUS_ACTION,
     ACTIVE_LOOP,
-    USER,
     SLOTS,
 )
 from rasa.utils.tensorflow import model_data_utils
@@ -125,68 +110,31 @@ class SetupMixin:
             )
 
 
-class InterpreterHandler(SetupMixin):
-    def __init__(self, use_regex_interpreter: Optional[bool] = None) -> None:
-        self._use_regex_interpreter = use_regex_interpreter
-        self._interpreter = None
-
-    def is_setup(self):
-        return self._interpreter is not None
-
-    def set_or_fallback(
-        self, interpreter: Optional[NaturalLanguageInterpreter]
-    ) -> None:
-        if self._use_regex_interpreter is None:
-            if interpreter is None:
-                self._use_regex_interpreter = True
-            else:
-                self._use_regex_interpreter = isinstance(interpreter, RegexInterpreter)
-        elif interpreter is None or (
-            self._use_regex_interpreter
-            and not isinstance(interpreter, RegexInterpreter)
-        ):
-            interpreter = RegexInterpreter()
-            logger.debug("Fallback to RegexInterpreter.")
-        self._interpreter = interpreter
-
-    def get(self) -> NaturalLanguageInterpreter:
-        self.raise_if_setup_is(False)
-        return self._interpreter
-
-
-class SubStateFeaturizer(SetupMixin):
-    """
-    NOTE: Why on SubState level? Because attributes in the produced dictionary of
-    features might be different from the attributes in the given sub_state. E.g. an
-    interpreter pipeline might generate new information about the sub_state on the
-    fly here.
-    """
-
+class MessageDataFeaturizer(SetupMixin):
     @abstractmethod
     def featurize(
         self,
-        sub_state: SubState,
+        message_data: Dict[Text, Any],
         attributes: Optional[List[Text]] = None,
         excluded_attributes: Optional[List[Text]] = None,
     ) -> Dict[Text, List[Features]]:
         self.raise_if_setup_is(False)
         attributes = from_given_choose_supported_and_remove_excluded(
-            given=sub_state.keys(), supported=attributes, excluded=excluded_attributes
+            given=message_data.keys(),
+            supported=attributes,
+            excluded=excluded_attributes,
         )
-        return self._featurize(sub_state, attributes)
+        return self._featurize(message_data, attributes)
 
 
-class SubstateFeaturizerUsingMultiHotVectors(SubStateFeaturizer):
-    # TODO: version that converts to indices, from which fallback featurizer inherits
-    # TODO: in the old versoin, padding was done *here* -> need to introduce some
-    # further glue component to batch the indices.... or just store them in
-    # matrices just like everythin else here... -> check why indices
-    def __init__(
-        self, item2index_mappings: Optional[Dict[Text, Dict[Text, Any]]] = None,
-    ) -> None:
-        self._item2index_mappings = item2index_mappings
+class MessageDataFeaturizerUsingMultiHotVectors(MessageDataFeaturizer):
+    def __init__(self, domain: Optional[Domain] = None,) -> None:
+        self._item2index_mappings = None
+        if domain is not None:
+            self.setup(domain)
 
     def setup(self, domain: Domain) -> None:
+        self.raise_if_setup_is(True)
         self._item2index_mappings = {
             key: item2index_mapping(items)
             for key, items in [
@@ -201,7 +149,7 @@ class SubstateFeaturizerUsingMultiHotVectors(SubStateFeaturizer):
     def is_setup(self) -> bool:
         return self.item2index_mappings is not None
 
-    def _encoding(self, sub_state: SubState, attribute: Text):
+    def _encoding(self, message_data: Message, attribute: Text):
         """Turns the given mapping from a categorical variable name to a value.
 
         Note that the space of possible cateorical variables is determined by the
@@ -209,21 +157,18 @@ class SubstateFeaturizerUsingMultiHotVectors(SubStateFeaturizer):
 
         # NOTE: this was `_state_features_for_attribute`
         """
-        # FIXME: Create dataclasses for states, substates, messages,...
-        #   Then, e.g. the following would be type-safe.
-
         if attribute in {INTENT, ACTION_NAME}:
-            return {sub_state[attribute]: 1}  # type: ignore[dict-item]
+            return {message_data[attribute]: 1}  # type: ignore[dict-item]
         elif attribute == ENTITIES:
             # TODO/FIXME: no bilou tagging handled here, in contrast
             # featurize_entities
-            return {entity: 1 for entity in sub_state.get(ENTITIES, [])}
+            return {entity: 1 for entity in message_data.get(ENTITIES, [])}
         elif attribute == ACTIVE_LOOP:
-            return {sub_state["name"]: 1}  # type: ignore[dict-item]
+            return {message_data["name"]: 1}  # type: ignore[dict-item]
         elif attribute == SLOTS:
             return {
                 f"{slot_name}_{i}": value
-                for slot_name, slot_as_feature in sub_state.items()
+                for slot_name, slot_as_feature in message_data.items()
                 for i, value in enumerate(slot_as_feature)
             }
         else:
@@ -232,14 +177,14 @@ class SubstateFeaturizerUsingMultiHotVectors(SubStateFeaturizer):
                 f"It must be one of '{self.item2index_mappings.keys()}'."
             )
 
-    def featurize_attribute(self, sub_state: SubState, attribute: Text) -> Features:
+    def featurize_attribute(self, message_data: Message, attribute: Text) -> Features:
         """Creates a multi-hot encoding like feature for the given attribute.
 
         """
-        if attribute not in sub_state:
+        if attribute not in message_data:
             raise ValueError(f"Expected {attribute} to be attribute of given substate.")
 
-        encoding: Dict[Text, int] = self._encoding(sub_state, attribute)
+        encoding: Dict[Text, int] = self._encoding(message_data, attribute)
 
         # convert to a sparse matrix
         dim = len(self._item2index_mappings[attribute])
@@ -260,33 +205,30 @@ class SubstateFeaturizerUsingMultiHotVectors(SubStateFeaturizer):
         )
 
     def _featurize(
-        self, sub_state: SubState, attributes: Optional[List[Text]] = None,
+        self, message_data: Dict[Text, Any], attributes: Optional[List[Text]] = None,
     ) -> Dict[Text, List[Features]]:
         self.raise_if_setup_is(False)
 
         attributes = from_given_choose_supported_and_remove_excluded(
-            given=sub_state.keys(),
+            given=message_data.keys(),
             supported=self.item2index_mappings.keys(),
             excluded=None,
         )
         return {
-            attribute: self.featurize_attribute(sub_state, attribute)
+            attribute: self.featurize_attribute(message_data, attribute)
             for attribute in attributes
         }
 
 
-class SubStateFeaturizerUsingInterpreter(SubStateFeaturizer):
-    """
-    NOTE: This class is the only reason we don't work on single-attribute level. There
-    might be reasons to run the interpreter on a complete substate instead (e.g.
-    NLU pipeline inserts entities and intent predictions). Hence
-    """
-
+class MessageDataFeaturizerUsingInterpreter(MessageDataFeaturizer):
     def __init__(
-        self, use_regex_interpreter: Optional[bool] = None, bilou_tagging: bool = False
+        self,
+        use_regex_interpreter: Optional[bool] = None,
+        interpreter: Optional[NaturalLanguageInterpreter] = None,
+        bilou_tagging: bool = False,
     ) -> None:
         self.interpreter_handler = InterpreterHandler(
-            use_regex_interpreter=use_regex_interpreter
+            use_regex_interpreter=use_regex_interpreter, interpreter=interpreter,
         )
         self.bilou_tagging = bilou_tagging
         self.encoding_spec = None
@@ -329,11 +271,10 @@ class SubStateFeaturizerUsingInterpreter(SubStateFeaturizer):
         return self.interpreter_handler.is_setup() and (self.encoding_spec is not None)
 
     def _featurize(
-        self, sub_state: SubState, attributes: List[Text]
+        self, message_data: Dict[Text, Any], attributes: List[Text]
     ) -> Dict[Text, List[Features]]:
 
-        # FIXME: does this always work?
-        message = Message(data=sub_state)
+        message = Message(data=message_data)
         parsed_message = self.interpreter.featurize_message(message)
 
         if self.bilou_tagging:
@@ -356,3 +297,36 @@ class SubStateFeaturizerUsingInterpreter(SubStateFeaturizer):
             ]
 
         return attribute_to_features
+
+
+class InterpreterHandler(SetupMixin):
+    def __init__(
+        self,
+        use_regex_interpreter: Optional[bool] = None,
+        interpreter: Optional[NaturalLanguageInterpreter] = None,
+    ) -> None:
+        self._use_regex_interpreter = use_regex_interpreter
+        self._interpreter = interpreter
+
+    def is_setup(self):
+        return self._interpreter is not None
+
+    def set_or_fallback(
+        self, interpreter: Optional[NaturalLanguageInterpreter]
+    ) -> None:
+        if self._use_regex_interpreter is None:
+            if interpreter is None:
+                self._use_regex_interpreter = True
+            else:
+                self._use_regex_interpreter = isinstance(interpreter, RegexInterpreter)
+        elif interpreter is None or (
+            self._use_regex_interpreter
+            and not isinstance(interpreter, RegexInterpreter)
+        ):
+            interpreter = RegexInterpreter()
+            logger.debug("Fallback to RegexInterpreter.")
+        self._interpreter = interpreter
+
+    def get(self) -> NaturalLanguageInterpreter:
+        self.raise_if_setup_is(False)
+        return self._interpreter

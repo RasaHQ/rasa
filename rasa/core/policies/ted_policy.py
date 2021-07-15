@@ -20,7 +20,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.core.featurizers.state_featurizer import StateFeaturizer
+from rasa.core.featurizers.message_data_featurizer import StateFeaturizer
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
@@ -373,8 +373,10 @@ class TEDPolicy(Policy):
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
-        state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_actions(domain, interpreter)
+        message_data_featurizer = self.featurizer.message_data_featurizer
+        encoded_all_labels = message_data_featurizer.encode_all_actions(
+            domain, interpreter
+        )
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
@@ -541,7 +543,9 @@ class TEDPolicy(Policy):
             return
 
         if self.config[ENTITY_RECOGNITION]:
-            self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
+            self._entity_tag_specs = (
+                self.featurizer.message_data_featurizer.entity_tag_specs
+            )
 
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()

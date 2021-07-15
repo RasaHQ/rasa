@@ -1,9 +1,15 @@
-"""TODO/FIXME: temporary workaround until we introduce a state interface"""
-from typing import Dict, Optional, List, Text
+from dataclasses import dataclass
+from typing import Any, Dict, Optional, List, Text, Union, Tuple
+
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, LOOP_NAME
 from rasa.shared.core.domain import State, SubState
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT, USER, TEXT
-from rasa.shared.core.trackers import FrozenState, is_prev_action_listen_in_state
+from rasa.shared.core.trackers import (
+    DialogueStateTracker,
+    FrozenState,
+    is_prev_action_listen_in_state,
+)
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     LOOP_NAME,
@@ -24,10 +30,188 @@ from rasa.shared.core.constants import (
 # State = Dict[Text, SubState]
 
 
+######## Message / State
+
+
+from abc import ABC
+from typing import TypeVar, Generic
+
+T = TypeVar("T")
+
+
+@dataclass
+class Information(Generic[T], ABC):
+    raw: T
+    featurized: List[Features]
+
+
+class DisplayedText(Information[Text]):
+    pass
+
+
+class Action(Information[Text]):
+    text: DisplayedText
+    pass
+
+
+class Intents(Information[List[Text]]):
+    pass
+
+
+class Entities(Information[List[Text]]):
+    pass
+
+
+class MetaData(Information):
+    pass
+
+
 ########## Creation
 
+# FIXME: move all here...
 
-def create_substate_from_action(action: Text, as_text: bool = False) -> SubState:
+
+def get_active_state(self, omit_unset_slots: bool = False,) -> State:
+    """Given a dialogue tracker, makes a representation of current dialogue state.
+
+    Args:
+        tracker: dialog state tracker containing the dialog so far
+        omit_unset_slots: If `True` do not include the initial values of slots.
+
+    Returns:
+        A representation of the dialogue's current state.
+    """
+    state = {
+        USER: self._get_user_sub_state(),
+        SLOTS: self._get_slots_sub_state(omit_unset_slots=omit_unset_slots),
+        PREVIOUS_ACTION: self.latest_action,
+        ACTIVE_LOOP: self._get_active_loop_sub_state(),
+    }
+    return self._clean_state(state)
+
+
+def get_slots_sub_state(
+    self, omit_unset_slots: bool = False,
+) -> Dict[Text, Union[Text, Tuple[float]]]:
+    """Sets all set slots with the featurization of the stored value.
+
+    Args:
+        tracker: dialog state tracker containing the dialog so far
+        omit_unset_slots: If `True` do not include the initial values of slots.
+
+    Returns:
+        a dictionary mapping slot names to their featurization
+    """
+    slots = {}
+    for slot_name, slot in self.slots.items():
+        if slot is not None and slot.as_feature():
+            if omit_unset_slots and not slot.has_been_set:
+                continue
+            if slot.value == SHOULD_NOT_BE_SET:
+                slots[slot_name] = SHOULD_NOT_BE_SET
+            elif any(slot.as_feature()):
+                # only add slot if some of the features are not zero
+                slots[slot_name] = tuple(slot.as_feature())
+
+    return slots
+
+
+def get_active_loop_sub_state(self, tracker: DialogueStateTracker) -> Dict[Text, Text]:
+    """Turn tracker's active loop into a state name.
+    Args:
+        tracker: dialog state tracker containing the dialog so far
+    Returns:
+        a dictionary mapping "name" to active loop name if present
+    """
+
+    # we don't use tracker.active_loop_name
+    # because we need to keep should_not_be_set
+    active_loop: Optional[Text] = self.active_loop.get(LOOP_NAME)
+    if active_loop:
+        return {LOOP_NAME: active_loop}
+    else:
+        return {}
+
+
+def clean_state(state: State) -> State:
+    return {
+        state_type: sub_state for state_type, sub_state in state.items() if sub_state
+    }
+
+
+def past_states(
+    self,
+    omit_unset_slots: bool = False,
+    ignore_rule_only_turns: bool = False,
+    ignored_active_loop_names: Optional[List[Text]] = None,
+    ignored_slots: Optional[List[Text]] = None,
+) -> List[State]:
+    """Generates the past states of this tracker based on the history.
+
+    Args:
+        domain: The Domain.
+        omit_unset_slots: If `True` do not include the initial values of slots.
+        ignore_rule_only_turns: If True ignore dialogue turns that are present
+            only in rules.
+        ignored_slots: slots to be ignored iff `ignore_rule_only_turns` is True
+        ignored_active_loop_names: active loops with names included in this
+            list will be ignored iff `ignore_rule_only_turns` is True
+
+    Returns:
+        A list of states
+    """
+    states = []
+    last_ml_action_sub_state = None
+    turn_was_hidden = False
+    for tr, hide_rule_turn in self.generate_all_prior_trackers():
+        if ignore_rule_only_turns:
+            # remember previous ml action based on the last non hidden turn
+            # we need this to override previous action in the ml state
+            if not turn_was_hidden:
+                last_ml_action_sub_state = self.latest_action
+
+            # followup action or happy path loop prediction
+            # don't change the fact whether dialogue turn should be hidden
+            if (
+                not tr.followup_action
+                and not tr.latest_action_name == tr.active_loop_name
+            ):
+                turn_was_hidden = hide_rule_turn
+
+            if turn_was_hidden:
+                continue
+
+        state = self.get_active_state(tr, omit_unset_slots=omit_unset_slots)
+
+        if ignore_rule_only_turns:
+            # clean state from only rule features
+            # TODO: generic state.forget substates... (?)
+            forget_active_loop_if_name_is_in(ignored_active_loop_names)
+            forget_slots(ignored_slots)
+            # make sure user input is the same as for previous state
+            # for non action_listen turns
+            if states:
+                self._substitute_rule_only_user_input(state, states[-1])
+            # substitute previous rule action with last_ml_action_sub_state
+            if last_ml_action_sub_state:
+                state[PREVIOUS_ACTION] = last_ml_action_sub_state
+
+        states.append(self._clean_state(state))
+
+    return states
+
+
+def get_prev_action_sub_state(tracker: DialogueStateTracker) -> Dict[Text, Text]:
+    """Turn the previous taken action into a state name.
+    Args:
+        tracker: dialog state tracker containing the dialog so far
+    Returns:
+        a dictionary with the information on latest action
+    """
+    return tracker.latest_action
+
+
+def create_action_sub_state(action: Text, as_text: bool = False) -> SubState:
     key = ACTION_TEXT if as_text else ACTION_NAME
     return {key: action}
 

@@ -422,17 +422,17 @@ class PolicyEnsemble:
                     policy
                 )
 
-                if featurizer_config.get("state_featurizer"):
+                if featurizer_config.get("message_data_featurizer"):
                     (
-                        state_featurizer_func,
-                        state_featurizer_config,
-                    ) = cls.get_state_featurizer_from_dict(featurizer_config)
+                        message_data_featurizer_func,
+                        message_data_featurizer_config,
+                    ) = cls.get_message_data_featurizer_from_dict(featurizer_config)
 
-                    # override featurizer's state_featurizer
-                    # with real state_featurizer class
-                    featurizer_config["state_featurizer"] = state_featurizer_func(
-                        **state_featurizer_config
-                    )
+                    # override featurizer's message_data_featurizer
+                    # with real message_data_featurizer class
+                    featurizer_config[
+                        "message_data_featurizer"
+                    ] = message_data_featurizer_func(**message_data_featurizer_config)
 
                 # override policy's featurizer with real featurizer class
                 policy["featurizer"] = featurizer_func(**featurizer_config)
@@ -472,23 +472,23 @@ class PolicyEnsemble:
         return featurizer_func, featurizer_config
 
     @classmethod
-    def get_state_featurizer_from_dict(
+    def get_message_data_featurizer_from_dict(
         cls, featurizer_config: Dict[Text, Any]
     ) -> Tuple[Callable, Dict[Text, Any]]:
         # featurizer can have only 1 state featurizer
-        if len(featurizer_config["state_featurizer"]) > 1:
+        if len(featurizer_config["message_data_featurizer"]) > 1:
             raise InvalidPolicyConfig(
                 f"Every featurizer can only have 1 state "
                 f"featurizer but one of the featurizers uses "
-                f"{len(featurizer_config['state_featurizer'])}."
+                f"{len(featurizer_config['message_data_featurizer'])}."
             )
-        state_featurizer_config = featurizer_config["state_featurizer"][0]
-        state_featurizer_name = state_featurizer_config.pop("name")
-        state_featurizer_func = registry.state_featurizer_from_module_path(
-            state_featurizer_name
+        message_data_featurizer_config = featurizer_config["message_data_featurizer"][0]
+        message_data_featurizer_name = message_data_featurizer_config.pop("name")
+        message_data_featurizer_func = registry.message_data_featurizer_from_module_path(
+            message_data_featurizer_name
         )
 
-        return state_featurizer_func, state_featurizer_config
+        return message_data_featurizer_func, message_data_featurizer_config
 
     @staticmethod
     def _check_if_rule_policy_used_with_rule_like_policies(
