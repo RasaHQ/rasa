@@ -370,7 +370,6 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             max_history = featurizer.max_history
         return AugmentedMemoizationPolicy(priority=priority, max_history=max_history)
 
-
 @pytest.mark.parametrize(
     "policy,supported_data",
     [
