@@ -1,9 +1,7 @@
 import glob
 import os
-import shutil
 import tempfile
 from pathlib import Path
-from typing import Text
 
 import pytest
 import rasa.shared
