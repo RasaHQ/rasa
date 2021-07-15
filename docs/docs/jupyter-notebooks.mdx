@@ -81,7 +81,7 @@ and copies them into temporary directories.
 The return values are the paths to these newly created directories.
 
 ```bash
-import rasa.data as data
+import rasa.shared.data as data
 nlu_data_directory = data.get_nlu_directory(training_files)
 stories_directory = data.get_core_directory(training_files)
 print(stories_directory, nlu_data_directory)
