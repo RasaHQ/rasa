@@ -845,7 +845,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Improvements
 - [#7520](https://github.com/rasahq/rasa/issues/7520): Improve the warning in case the [RulePolicy](policies.mdx#rule-policy) or the deprecated 
-  [MappingPolicy](policies.mdx#mapping-policy) are missing
+  `MappingPolicy` are missing
   from the model's `policies` configuration. Changed the info log to a warning as one
   of this policies should be added to the model configuration.
 
@@ -1492,7 +1492,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   Rasa Open Source will continue to be able to read and process old `form_validation`
   events.
 - [#6658](https://github.com/rasahq/rasa/issues/6658): `SklearnPolicy` was deprecated. `TEDPolicy` is the preferred machine-learning policy for dialogue models.
-- [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](domain.mdx#slots) of type `unfeaturized` are
+- [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](domain.mdx#slots) of type [`unfeaturized`](domain.mdx#unfeaturized-slot) are
   now deprecated and will be removed in Rasa Open Source 3.0. Instead you should use
   the property `influence_conversation: false` for every slot type as described in the
   [migration guide](migration-guide.mdx#unfeaturized-slots).
@@ -1590,10 +1590,10 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   custom `Policy` implementation doesn't provide this parameter Rasa Open Source
   will print a warning and omit passing the `interpreter`.
 - [#6088](https://github.com/rasahq/rasa/issues/6088): Added the new dialogue policy RulePolicy which will replace the old “rule-like”
-  policies [Mapping Policy](./policies.mdx#mapping-policy),
-  [Fallback Policy](./policies.mdx#fallback-policy),
-  [Two-Stage Fallback Policy](./policies.mdx#two-stage-fallback-policy), and
-  [Form Policy](./policies.mdx#form-policy). These policies are now
+  policies Mapping Policy,
+  Fallback Policy,
+  Two-Stage Fallback Policy, and
+  Form Policy. These policies are now
   deprecated and will be removed in the future. Please see the
   [rules documentation](./rules.mdx) for more information.
 
