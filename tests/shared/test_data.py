@@ -187,60 +187,6 @@ def test_get_core_nlu_files(project):
     assert any(file.endswith("rules.yml") for file in core_files)
 
 
-def test_get_core_nlu_directories(project):
-    data_dir = os.path.join(project, "data")
-    core_directory, nlu_directory = rasa.shared.data.get_core_nlu_directories(
-        [data_dir]
-    )
-
-    nlu_files = os.listdir(nlu_directory)
-
-    assert len(nlu_files) == 1
-    assert nlu_files[0].endswith("nlu.yml")
-
-    core_files = os.listdir(core_directory)
-
-    assert len(core_files) == 2
-    assert any(file.endswith("stories.yml") for file in core_files)
-    assert any(file.endswith("rules.yml") for file in core_files)
-
-
-def test_get_core_nlu_directories_with_none():
-    directories = rasa.shared.data.get_core_nlu_directories(None)
-
-    assert all(directories)
-    assert all(not os.listdir(directory) for directory in directories)
-
-
-def test_same_file_names_get_resolved(
-    tmp_path: Path, stories_path: Text, nlu_data_path: Text
-):
-    # makes sure the resolution properly handles if there are two files with
-    # with the same name in different directories
-
-    (tmp_path / "one").mkdir()
-    (tmp_path / "two").mkdir()
-    shutil.copy2(stories_path, tmp_path / "one" / "stories.yml")
-    shutil.copy2(stories_path, tmp_path / "two" / "stories.yml")
-
-    shutil.copy2(nlu_data_path, tmp_path / "one" / "nlu.yml")
-    shutil.copy2(nlu_data_path, tmp_path / "two" / "nlu.yml")
-
-    core_directory, nlu_directory = rasa.shared.data.get_core_nlu_directories(
-        [str(tmp_path)]
-    )
-
-    nlu_files = os.listdir(nlu_directory)
-
-    assert len(nlu_files) == 2
-    assert all(f.endswith("nlu.yml") for f in nlu_files)
-
-    stories = os.listdir(core_directory)
-
-    assert len(stories) == 2
-    assert all(f.endswith("stories.yml") for f in stories)
-
-
 @pytest.mark.parametrize(
     "test_input,expected",
     [
