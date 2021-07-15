@@ -308,7 +308,6 @@ class SlackInput(InputChannel):
     @staticmethod
     def _get_interactive_response(action: Dict) -> Optional[Text]:
         """Parse the payload for the response value."""
-
         if action["type"] == "button":
             return action.get("value")
         elif action["type"] == "select":
@@ -327,6 +326,8 @@ class SlackInput(InputChannel):
             return action.get("selected_option", {}).get("value")
         elif action["type"] == "datepicker":
             return action.get("selected_date")
+
+        return None
 
     async def process_message(
         self,
