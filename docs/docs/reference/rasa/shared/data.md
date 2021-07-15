@@ -70,23 +70,6 @@ Check if a file likely contains markdown.
   `True` if the file likely contains data in markdown format,
   `False` otherwise.
 
-#### get\_test\_directory
-
-```python
-get_test_directory(paths: Optional[Union[Text, List[Text]]]) -> Text
-```
-
-Recursively collects all Core training files from a list of paths.
-
-**Arguments**:
-
-- `paths` - List of paths to training files or folders containing them.
-  
-
-**Returns**:
-
-  Path to temporary directory containing all found Core training files.
-
 #### get\_core\_directory
 
 ```python
@@ -120,24 +103,6 @@ Recursively collects all NLU training files from a list of paths.
 **Returns**:
 
   Path to temporary directory containing all found NLU training files.
-
-#### get\_core\_nlu\_directories
-
-```python
-get_core_nlu_directories(paths: Optional[Union[Text, List[Text]]]) -> Tuple[Text, Text]
-```
-
-Recursively collects all training files from a list of paths.
-
-**Arguments**:
-
-- `paths` - List of paths to training files or folders containing them.
-  
-
-**Returns**:
-
-  Path to directory containing the Core files and path to directory
-  containing the NLU training files.
 
 #### get\_data\_files
 
