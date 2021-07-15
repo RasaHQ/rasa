@@ -507,14 +507,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         """
         best_confidence = (-1, -1)
         best_policy_name = None
-        # form and mapping policies are special:
-        # form should be above fallback
-        # mapping should be below fallback
-        # mapping is above form if it wins over fallback
-        # therefore form predictions are stored separately
 
-        form_confidence = None
-        form_policy_name = None
         # different type of predictions have different priorities
         # No user predictions overrule all other predictions.
         is_no_user_prediction = any(
@@ -546,11 +539,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 # pick the best policy
                 best_confidence = confidence
                 best_policy_name = policy_name
-
-        if form_confidence is not None:
-            # if mapping didn't win, check form policy predictions
-            if form_confidence > best_confidence:
-                best_policy_name = form_policy_name
 
         best_prediction = predictions.get(best_policy_name)
 
