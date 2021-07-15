@@ -5,7 +5,8 @@ from typing import Text
 
 import pytest
 
-from rasa.core.policies.memoization import MemoizationPolicy, OLD_DEFAULT_MAX_HISTORY
+from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.constants import DEFAULT_MAX_HISTORY
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import Domain
 from rasa.core.interpreter import RasaNLUInterpreter
@@ -69,7 +70,7 @@ async def test_training_script_without_max_history_set(
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, "max_history"):
             if type(policy) == MemoizationPolicy:
-                assert policy.featurizer.max_history == OLD_DEFAULT_MAX_HISTORY
+                assert policy.featurizer.max_history == DEFAULT_MAX_HISTORY
             else:
                 assert policy.featurizer.max_history is None
 
