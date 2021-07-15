@@ -928,6 +928,11 @@ def create_app(
         request_params = request.json
 
         intent_to_trigger = request_params.get("name")
+
+        request.app.metrics['TRIGGER_INTENT_COUNT'].labels(
+            conversation_id, intent_to_trigger
+        ).inc()
+
         entities = request_params.get("entities", [])
 
         with Tracer.start_span(f"server.trigger_intent / {intent_to_trigger}",

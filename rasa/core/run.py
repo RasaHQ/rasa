@@ -26,7 +26,8 @@ from rasa.core.utils import AvailableEndpoints
 import rasa.shared.utils.io
 from sanic import Sanic
 from asyncio import AbstractEventLoop
-from rasa.otel import Tracer
+from sanic_prometheus import monitor
+from prometheus_client import Counter
 
 logger = logging.getLogger()  # get the root logger
 
@@ -217,6 +218,20 @@ def serve_application(
     )
 
     app.register_listener(clear_model_files, "after_server_stop")
+
+    # Discussion from https://github.com/RasaHQ/rasa/issues/6319
+    # Before this line we will be adding/integrating Sanic-prometheus
+
+    # FIXME: Put all metrics inside a module, like in driver-telemetry
+    # @see https://github.com/StuartApp/driver-telemetry/blob/develop/lib/driver_telemetry_web/channels/locations_channel.ex#L52
+    # @see https://github.com/StuartApp/driver-telemetry/blob/develop/lib/driver_telemetry/metrics.ex
+    metrics = {}
+    metrics['TRIGGER_INTENT_COUNT'] = Counter(
+        'trigger_intent_count',
+        'Trigger Intent Count',
+        ['conversation_id', 'intent_name'] # add something like status + messages_count?
+    )
+    monitor(app, metrics_list=metrics.items()).expose_endpoint()
 
     rasa.utils.common.update_sanic_log_level(log_file)
     app.run(

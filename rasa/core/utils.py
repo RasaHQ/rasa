@@ -508,6 +508,26 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
         logger.debug(f"Using {env_value} Sanic workers.")
         return env_value
 
+    # Discussion from https://github.com/RasaHQ/rasa/issues/6319
+
+    # Q: From behaviour point, since the prometheus-client support multi-process monitoring if and only if prometheus
+    # multiproc_dir environment variable exist otherwise it will not monitor metrics across multiple processes.
+    # So was think of added 1 more check here if this environment variable is present then only use whatever is
+    # provided by user otherwise use default value of no of workers (1) .
+    #
+    # A: I'm assuming here that if num_workers>1, and prometheus_multiproc_dir is not set, then we'll log a descriptive
+    # error telling the user how to fix it, and then only run 1 worker?
+
+
+    # Q: Also whatever directory path user has provided we need to create it if doesn't exist and delete all the previous
+    # file present inside the folder before starting it. As mentioned here. So this new function(handling this cleanup
+    # and creation part) would be called from above point once condition for environment variable present satisfied
+    #
+    # A: I'm worried about randomly deleting files in a directory. What about instead doing the same as the env var,
+    # logging a descriptive error for the user, and then running a single worker, if the directory has files in it?
+    # If the directory doesn't exist, I think we can create it for the user, provided that we have correct filesystem
+    # permissions.
+
     logger.debug(
         f"Unable to assign desired number of Sanic workers ({env_value}) as "
         f"no `RedisLockStore` or custom `LockStore` endpoint configuration has been found."
