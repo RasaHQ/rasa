@@ -66,7 +66,7 @@ Update the data after every epoch.
 
 ```python
  | @staticmethod
- | prepare_batch(data: Data, start: Optional[int] = None, end: Optional[int] = None, tuple_sizes: Optional[Dict[Text, int]] = None) -> Tuple[Optional[np.ndarray]]
+ | prepare_batch(data: Data, start: Optional[int] = None, end: Optional[int] = None, tuple_sizes: Optional[Dict[Text, int]] = None) -> Tuple[Optional[np.ndarray], ...]
 ```
 
 Slices model data into batch using given start and end value.

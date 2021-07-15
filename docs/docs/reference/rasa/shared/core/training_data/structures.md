@@ -77,7 +77,7 @@ Checks if the executed action is a `action_session_start`.
 #### explicit\_events
 
 ```python
- | explicit_events(domain: Domain, should_append_final_listen: bool = True) -> List[Union[Event, List[Event]]]
+ | explicit_events(domain: Domain, should_append_final_listen: bool = True) -> List[Event]
 ```
 
 Returns events contained in the story step including implicit events.
@@ -193,7 +193,7 @@ Returns the story steps ordered by topological order of the DAG.
  | overlapping_checkpoint_names(cps: List[Checkpoint], other_cps: List[Checkpoint]) -> Set[Text]
 ```
 
-Find overlapping checkpoints names
+Find overlapping checkpoints names.
 
 #### with\_cycles\_removed
 

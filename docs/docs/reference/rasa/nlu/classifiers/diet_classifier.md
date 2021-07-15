@@ -85,7 +85,7 @@ Return the metadata necessary to load the model again.
 
 ```python
  | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Metadata = None, cached_component: Optional["DIETClassifier"] = None, should_finetune: bool = False, **kwargs: Any, ,) -> "DIETClassifier"
+ | load(cls: T, meta: Dict[Text, Any], model_dir: Text, model_metadata: Metadata = None, cached_component: Optional["DIETClassifier"] = None, should_finetune: bool = False, **kwargs: Any, ,) -> T
 ```
 
 Loads the trained model from the provided directory.

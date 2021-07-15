@@ -80,3 +80,11 @@ Creates a ``SocketIOInput`` object.
 
 Creates socket.io output channel object.
 
+#### blueprint
+
+```python
+ | blueprint(on_new_message: Callable[[UserMessage], Awaitable[Any]]) -> Blueprint
+```
+
+Defines a Sanic blueprint.
+

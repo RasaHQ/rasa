@@ -554,7 +554,7 @@ Caches components for reuse.
 #### load\_component
 
 ```python
- | load_component(component_meta: Dict[Text, Any], model_dir: Text, model_metadata: "Metadata", **context: Any, ,) -> Component
+ | load_component(component_meta: Dict[Text, Any], model_dir: Text, model_metadata: "Metadata", **context: Any, ,) -> Optional[Component]
 ```
 
 Loads a component.
@@ -596,14 +596,4 @@ calls `create` to create a new component.
 **Returns**:
 
   The created component.
-
-#### create\_component\_from\_class
-
-```python
- | create_component_from_class(component_class: Type[C], **cfg: Any) -> C
-```
-
-Create a component based on a class and a configuration.
-
-Mainly used to make use of caching when instantiating component classes.
 

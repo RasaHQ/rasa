@@ -167,6 +167,14 @@ Create a lock store which uses Redis for persistence.
 
 Retrieves lock (see parent docstring for more information).
 
+#### delete\_lock
+
+```python
+ | delete_lock(conversation_id: Text) -> None
+```
+
+Deletes lock for conversation ID.
+
 ## InMemoryLockStore Objects
 
 ```python

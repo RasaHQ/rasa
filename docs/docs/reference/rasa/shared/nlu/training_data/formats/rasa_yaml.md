@@ -111,3 +111,48 @@ serialized as YAML.
 
   `OrderedDict` containing all training data.
 
+#### process\_lookup\_tables
+
+```python
+ | @classmethod
+ | process_lookup_tables(cls, training_data: "TrainingData") -> List[OrderedDict]
+```
+
+Serializes the look up tables.
+
+**Arguments**:
+
+- `training_data` - The training data object with potential look up tables.
+  
+
+**Returns**:
+
+  The serialized lookup tables.
+
+#### process\_training\_examples\_by\_key
+
+```python
+ | @staticmethod
+ | process_training_examples_by_key(training_examples: Dict[Text, List[Union[Dict, Text]]], key_name: Text, key_examples: Text, example_extraction_predicate: Callable[[Dict[Text, Any]], Text]) -> List[OrderedDict]
+```
+
+Prepares training examples  to be written to YAML.
+
+This can be any NLU training data (intent examples, lookup tables, etc.)
+
+**Arguments**:
+
+- `training_examples` - Multiple training examples. Mappings in case additional
+  values were specified for an example (e.g. metadata) or just the plain
+  value.
+- `key_name` - The top level key which the examples belong to (e.g. `intents`)
+- `key_examples` - The sub key which the examples should be added to
+  (e.g. `examples`).
+- `example_extraction_predicate` - Function to extract example value (e.g. the
+  the text for an intent example)
+  
+
+**Returns**:
+
+  NLU training data examples prepared for writing to YAML.
+

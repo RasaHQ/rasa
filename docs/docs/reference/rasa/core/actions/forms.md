@@ -180,7 +180,7 @@ Extract the value of requested slot from a user input else return `None`.
 #### validate\_slots
 
 ```python
- | async validate_slots(slot_candidates: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Event]
+ | async validate_slots(slot_candidates: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Union[SlotSet, Event]]
 ```
 
 Validate the extracted slots.
@@ -207,7 +207,7 @@ them. Otherwise there is no validation.
 #### validate
 
 ```python
- | async validate(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Event]
+ | async validate(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Union[SlotSet, Event]]
 ```
 
 Extract and validate value of requested slot.
@@ -218,7 +218,7 @@ Subclass this method to add custom validation and rejection logic
 #### request\_next\_slot
 
 ```python
- | async request_next_slot(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator, events_so_far: List[Event]) -> List[Event]
+ | async request_next_slot(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator, events_so_far: List[Event]) -> List[Union[SlotSet, Event]]
 ```
 
 Request the next slot and response if needed, else return `None`.

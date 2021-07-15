@@ -1134,7 +1134,7 @@ Returns event as string for debugging.
 #### \_\_str\_\_
 
 ```python
- | __str__() -> Text
+ | __str__() -> Optional[Text]
 ```
 
 Returns event as human readable string.
@@ -1158,7 +1158,7 @@ Compares object with other object.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+ | as_story_string() -> Optional[Text]
 ```
 
 Returns event in Markdown format.

@@ -5,11 +5,12 @@ title: rasa.utils.common
 ## TempDirectoryPath Objects
 
 ```python
-class TempDirectoryPath(str)
+class TempDirectoryPath(str,  ContextManager)
 ```
 
-Represents a path to an temporary directory. When used as a context
-manager, it erases the contents of the directory on exit.
+Represents a path to an temporary directory.
+
+When used as a context manager, it erases the contents of the directory on exit.
 
 #### read\_global\_config
 

@@ -263,7 +263,9 @@ Creates training data that uses each time output for prediction.
 #### training\_states\_labels\_and\_entities
 
 ```python
- | training_states_labels_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+ | training_states_labels_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[
+ |         List[List[State]], List[List[Optional[Text]]], List[List[Dict[Text, Any]]]
+ |     ]
 ```
 
 Transforms trackers to states, action labels, and entity data.

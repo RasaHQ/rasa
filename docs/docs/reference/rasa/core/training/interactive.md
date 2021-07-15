@@ -43,7 +43,7 @@ Exception used to abort the interactive learning and exit.
 #### send\_message
 
 ```python
-async send_message(endpoint: EndpointConfig, conversation_id: Text, message: Text, parse_data: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
+async send_message(endpoint: EndpointConfig, conversation_id: Text, message: Text, parse_data: Optional[Dict[Text, Any]] = None) -> Optional[Any]
 ```
 
 Send a user message to a conversation.
@@ -51,7 +51,7 @@ Send a user message to a conversation.
 #### request\_prediction
 
 ```python
-async request_prediction(endpoint: EndpointConfig, conversation_id: Text) -> Dict[Text, Any]
+async request_prediction(endpoint: EndpointConfig, conversation_id: Text) -> Optional[Any]
 ```
 
 Request the next action prediction from core.
@@ -59,7 +59,7 @@ Request the next action prediction from core.
 #### retrieve\_domain
 
 ```python
-async retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]
+async retrieve_domain(endpoint: EndpointConfig) -> Optional[Any]
 ```
 
 Retrieve the domain from core.
@@ -67,7 +67,7 @@ Retrieve the domain from core.
 #### retrieve\_status
 
 ```python
-async retrieve_status(endpoint: EndpointConfig) -> Dict[Text, Any]
+async retrieve_status(endpoint: EndpointConfig) -> Optional[Any]
 ```
 
 Retrieve the status from core.
@@ -83,7 +83,7 @@ Retrieve a tracker from core.
 #### send\_action
 
 ```python
-async send_action(endpoint: EndpointConfig, conversation_id: Text, action_name: Text, policy: Optional[Text] = None, confidence: Optional[float] = None, is_new_action: bool = False) -> Dict[Text, Any]
+async send_action(endpoint: EndpointConfig, conversation_id: Text, action_name: Text, policy: Optional[Text] = None, confidence: Optional[float] = None, is_new_action: bool = False) -> Optional[Any]
 ```
 
 Log an action to a conversation.
@@ -91,7 +91,7 @@ Log an action to a conversation.
 #### send\_event
 
 ```python
-async send_event(endpoint: EndpointConfig, conversation_id: Text, evt: Union[List[Dict[Text, Any]], Dict[Text, Any]]) -> Dict[Text, Any]
+async send_event(endpoint: EndpointConfig, conversation_id: Text, evt: Union[List[Dict[Text, Any]], Dict[Text, Any]]) -> Optional[Any]
 ```
 
 Log an event to a conversation.

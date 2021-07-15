@@ -522,7 +522,7 @@ Checks whether response selector is present.
 #### get\_available\_response\_selector\_types
 
 ```python
-get_available_response_selector_types(interpreter: Interpreter) -> List[Text]
+get_available_response_selector_types(interpreter: Interpreter) -> List[Optional[Text]]
 ```
 
 Gets all available response selector types.

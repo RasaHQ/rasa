@@ -349,7 +349,7 @@ Overwrites the domain of an unpacked model with a new domain.
 #### get\_model\_for\_finetuning
 
 ```python
-get_model_for_finetuning(previous_model_file: Optional[Union[Path, Text]]) -> Optional[Text]
+get_model_for_finetuning(previous_model_file: Optional[Union[Path, Text]]) -> Optional[Union[Path, Text]]
 ```
 
 Gets validated path for model to finetune.

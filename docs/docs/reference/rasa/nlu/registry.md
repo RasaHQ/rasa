@@ -37,7 +37,7 @@ Inits it based on a previously persisted model.
 #### create\_component\_by\_config
 
 ```python
-create_component_by_config(component_config: Dict[Text, Any], config: "RasaNLUModelConfig") -> Optional["Component"]
+create_component_by_config(component_config: Dict[Text, Any], config: "RasaNLUModelConfig") -> "Component"
 ```
 
 Resolves a component and calls it&#x27;s create method.

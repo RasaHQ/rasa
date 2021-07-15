@@ -51,12 +51,10 @@ Writes `obj` to the filename in YAML repr.
 #### list\_routes
 
 ```python
-list_routes(app: Sanic) -> Text
+list_routes(app: Sanic) -> Dict[Text, Text]
 ```
 
-List all the routes of a sanic application.
-
-Mainly used for debugging.
+List all the routes of a sanic application. Mainly used for debugging.
 
 #### extract\_args
 
