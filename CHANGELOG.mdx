@@ -1492,7 +1492,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   Rasa Open Source will continue to be able to read and process old `form_validation`
   events.
 - [#6658](https://github.com/rasahq/rasa/issues/6658): `SklearnPolicy` was deprecated. `TEDPolicy` is the preferred machine-learning policy for dialogue models.
-- [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](domain.mdx#slots) of type [`unfeaturized`](domain.mdx#unfeaturized-slot) are
+- [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](domain.mdx#slots) of type `unfeaturized` are
   now deprecated and will be removed in Rasa Open Source 3.0. Instead you should use
   the property `influence_conversation: false` for every slot type as described in the
   [migration guide](migration-guide.mdx#unfeaturized-slots).
@@ -2488,7 +2488,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 ### Bugfixes
 
 * [#5205](https://github.com/rasahq/rasa/issues/5205): Fixed the bug when FormPolicy was overwriting MappingPolicy prediction (e.g. `/restart`).
-  Priorities for [Mapping Policy](./policies.mdx#mapping-policy) and [Form Policy](./policies.mdx#form-policy) are no longer linear:
+  Priorities for Mapping Policy and Form Policy are no longer linear:
   `FormPolicy` priority is 5, but its prediction is ignored if `MappingPolicy` is used for prediction.
 
 * [#5215](https://github.com/rasahq/rasa/issues/5215): Fixed issue related to storing Python `float` values as `decimal.Decimal` objects
@@ -2684,7 +2684,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 * [#4006](https://github.com/rasahq/rasa/issues/4006): Fixed timestamp parsing warning when using DucklingHTTPExtractor
 
 * [#4601](https://github.com/rasahq/rasa/issues/4601): Fixed issue with `action_restart` getting overridden by `action_listen` when the `MappingPolicy` and the
-  [TwoStageFallbackPolicy](./policies.mdx#two-stage-fallback-policy) are used together.
+  `TwoStageFallbackPolicy` are used together.
 
 * [#5201](https://github.com/rasahq/rasa/issues/5201): Fixed incorrectly raised Error encountered in pipelines with a `ResponseSelector` and NLG.
 
