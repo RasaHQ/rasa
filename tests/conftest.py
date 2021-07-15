@@ -192,6 +192,7 @@ async def _trained_default_agent(
     agent = Agent(
         "data/test_domains/default_with_slots.yml",
         policies=[AugmentedMemoizationPolicy(max_history=3), RulePolicy()],
+        model_directory=model_path,
     )
 
     training_data = await agent.load_data(stories_path)
@@ -223,6 +224,15 @@ async def trained_moodbot_path(trained_async: Callable) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
+        training_files="data/test_moodbot/data/",
+    )
+
+
+@pytest.fixture(scope="session")
+async def trained_unexpected_intent_policy_path(trained_async: Callable) -> Text:
+    return await trained_async(
+        domain="data/test_moodbot/domain.yml",
+        config="data/test_moodbot/unexpected_intent_policy_config.yml",
         training_files="data/test_moodbot/data/",
     )
 
@@ -272,6 +282,18 @@ async def core_agent(trained_core_model: Text) -> Agent:
 @pytest.fixture(scope="session")
 async def nlu_agent(trained_nlu_model: Text) -> Agent:
     return await load_agent(model_path=trained_nlu_model)
+
+
+@pytest.fixture(scope="session")
+async def unexpected_intent_policy_agent(
+    trained_unexpected_intent_policy_path: Text,
+) -> Agent:
+    return await load_agent(model_path=trained_unexpected_intent_policy_path)
+
+
+@pytest.fixture(scope="session")
+async def mood_agent(trained_moodbot_path: Text) -> Agent:
+    return await load_agent(model_path=trained_moodbot_path)
 
 
 @pytest.fixture(scope="session")
@@ -502,6 +524,24 @@ async def trained_response_selector_bot(trained_async: Callable) -> Path:
 
 
 @pytest.fixture(scope="session")
+async def trained_restaurantbot(trained_async: Callable) -> Path:
+    zipped_model = await trained_async(
+        domain="data/test_restaurantbot/domain.yml",
+        config="data/test_restaurantbot/config.yml",
+        training_files=[
+            "data/test_restaurantbot/data/rules.yml",
+            "data/test_restaurantbot/data/stories.yml",
+            "data/test_restaurantbot/data/nlu.yml",
+        ],
+    )
+
+    if not zipped_model:
+        raise RasaException("Model training for formbot failed.")
+
+    return Path(zipped_model)
+
+
+@pytest.fixture(scope="session")
 async def e2e_bot_domain_file() -> Path:
     return Path("data/test_e2ebot/domain.yml")
 
@@ -549,6 +589,11 @@ async def response_selector_agent(
     trained_response_selector_bot: Optional[Path],
 ) -> Agent:
     return Agent.load_local_model(trained_response_selector_bot)
+
+
+@pytest.fixture(scope="session")
+async def restaurantbot_agent(trained_restaurantbot: Optional[Path],) -> Agent:
+    return Agent.load_local_model(trained_restaurantbot)
 
 
 @pytest.fixture(scope="session")

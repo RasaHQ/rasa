@@ -35,7 +35,6 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
-    ENTITY_ATTRIBUTE_TEXT,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -50,12 +49,14 @@ from rasa.shared.nlu.constants import (
     NO_ENTITY_TAG,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    ENTITY_ATTRIBUTE_TEXT,
 )
 from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.components import Component
+from rasa.nlu.classifiers import fallback_classifier
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -338,7 +339,7 @@ def plot_attribute_confidences(
         if getattr(r, target_key) != getattr(r, prediction_key)
     ]
 
-    plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
+    plot_utils.plot_paired_histogram([pos_hist, neg_hist], title, hist_filename)
 
 
 def plot_entity_confidences(
@@ -373,7 +374,7 @@ def plot_entity_confidences(
         if prediction not in (NO_ENTITY, target)
     ]
 
-    plot_utils.plot_histogram([pos_hist, neg_hist], title, hist_filename)
+    plot_utils.plot_paired_histogram([pos_hist, neg_hist], title, hist_filename)
 
 
 def evaluate_response_selections(
@@ -1264,20 +1265,19 @@ def get_eval_data(
         interpreter
     )
 
-    should_eval_entities = is_entity_extractor_present(interpreter)
+    should_eval_entities = (
+        is_entity_extractor_present(interpreter) and len(test_data.entities) > 0
+    )
 
     for example in tqdm(test_data.nlu_examples):
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
 
         if should_eval_intents:
-            if rasa.nlu.classifiers.fallback_classifier.is_fallback_classifier_prediction(
-                result
-            ):
-                # Revert fallback prediction to not shadow the wrongly predicted intent
+            if fallback_classifier.is_fallback_classifier_prediction(result):
+                # Revert fallback prediction to not shadow
+                # the wrongly predicted intent
                 # during the test phase.
-                result = rasa.nlu.classifiers.fallback_classifier.undo_fallback_prediction(
-                    result
-                )
+                result = fallback_classifier.undo_fallback_prediction(result)
             intent_prediction = result.get(INTENT, {}) or {}
 
             intent_results.append(
@@ -1439,13 +1439,14 @@ async def run_evaluation(
     Returns: dictionary containing evaluation results
     """
     import rasa.shared.nlu.training_data.loading
+    from rasa.shared.constants import DEFAULT_DOMAIN_PATH
 
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 
     interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path]
+        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
     )
     test_data = await test_data_importer.get_nlu_data()
 

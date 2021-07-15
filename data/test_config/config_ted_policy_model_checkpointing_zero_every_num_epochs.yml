@@ -1,0 +1,7 @@
+language: "en"
+policies:
+  - name: TEDPolicy
+    epochs: 1
+    evaluate_on_number_of_examples: 14
+    evaluate_every_number_of_epochs: 0
+    checkpoint_model: True

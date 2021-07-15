@@ -1,14 +1,17 @@
 import logging
+import jwt
 from typing import Dict
 from unittest.mock import patch, MagicMock
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 from aiohttp import ClientTimeout
 from aioresponses import aioresponses
 from sanic import Sanic
 
 import rasa.core.run
+import rasa.core.channels.channel
 from rasa.core import utils
 from rasa.core.channels import RasaChatInput, console
 from rasa.core.channels.channel import UserMessage
@@ -18,6 +21,7 @@ from rasa.core.channels.rasa_chat import (
     INTERACTIVE_LEARNING_PERMISSION,
 )
 from rasa.core.channels.telegram import TelegramOutput
+from rasa.shared.exceptions import RasaException
 from rasa.utils.endpoints import EndpointConfig
 from tests.core import utilities
 
@@ -35,7 +39,8 @@ def noop(*args, **kwargs):
 async def test_send_response(default_channel, default_tracker):
     text_only_message = {"text": "hey"}
     multiline_text_message = {
-        "text": "This message should come first:  \n\nThis is message two  \nThis as well\n\n"
+        "text": "This message should come first:  \n\n"
+        "This is message two  \nThis as well\n\n"
     }
     image_only_message = {"image": "https://i.imgur.com/nGF1K8f.jpg"}
     text_and_image_message = {
@@ -295,6 +300,24 @@ def test_telegram_channel():
     )
 
 
+def test_telegram_channel_raise_rasa_exception_webhook_not_set():
+    from rasa.core.channels.telegram import TelegramInput
+
+    input_channel = TelegramInput(
+        # you get this when setting up a bot
+        access_token="123:YOUR_ACCESS_TOKEN",
+        # this is your bots username
+        verify="YOUR_TELEGRAM_BOT",
+        # the url your bot should listen for messages
+        webhook_url="",
+    )
+
+    with pytest.raises(RasaException) as e:
+        rasa.core.run.configure_app([input_channel], port=5004)
+
+    assert "Failed to set channel webhook:" in str(e.value)
+
+
 async def test_handling_of_integer_user_id():
     # needed for telegram to work properly as this channel sends integer ids,
     # but we expect the sender_id to be a string everywhere else
@@ -367,6 +390,69 @@ def test_socketio_channel():
     routes_list = utils.list_routes(s)
     assert routes_list["socketio_webhook.health"].startswith("/webhooks/socketio")
     assert routes_list["handle_request"].startswith("/socket.io")
+
+
+async def test_socketio_channel_jwt_authentication():
+    from rasa.core.channels.socketio import SocketIOInput
+
+    public_key = "random_key123"
+    jwt_algorithm = "HS256"
+    auth_token = jwt.encode({"payload": "value"}, public_key, algorithm=jwt_algorithm)
+
+    input_channel = SocketIOInput(
+        # event name for messages sent from the user
+        user_message_evt="user_uttered",
+        # event name for messages sent from the bot
+        bot_message_evt="bot_uttered",
+        # socket.io namespace to use for the messages
+        namespace=None,
+        # public key for JWT methods
+        jwt_key=public_key,
+        # method used for the signature of the JWT authentication payload
+        jwt_method=jwt_algorithm,
+    )
+
+    assert input_channel.jwt_key == public_key
+    assert input_channel.jwt_algorithm == jwt_algorithm
+    assert rasa.core.channels.channel.decode_bearer_token(
+        auth_token, input_channel.jwt_key, input_channel.jwt_algorithm
+    )
+
+
+async def test_socketio_channel_jwt_authentication_invalid_key(
+    caplog: LogCaptureFixture,
+):
+    from rasa.core.channels.socketio import SocketIOInput
+
+    public_key = "random_key123"
+    invalid_public_key = "my_invalid_key"
+    jwt_algorithm = "HS256"
+    invalid_auth_token = jwt.encode(
+        {"payload": "value"}, invalid_public_key, algorithm=jwt_algorithm
+    )
+
+    input_channel = SocketIOInput(
+        # event name for messages sent from the user
+        user_message_evt="user_uttered",
+        # event name for messages sent from the bot
+        bot_message_evt="bot_uttered",
+        # socket.io namespace to use for the messages
+        namespace=None,
+        # public key for JWT methods
+        jwt_key=public_key,
+        # method used for the signature of the JWT authentication payload
+        jwt_method=jwt_algorithm,
+    )
+
+    assert input_channel.jwt_key == public_key
+    assert input_channel.jwt_algorithm == jwt_algorithm
+
+    with caplog.at_level(logging.ERROR):
+        rasa.core.channels.channel.decode_bearer_token(
+            invalid_auth_token, input_channel.jwt_key, input_channel.jwt_algorithm
+        )
+
+    assert any("JWT public key invalid." in message for message in caplog.messages)
 
 
 async def test_callback_calls_endpoint():

@@ -12,11 +12,14 @@ from rasa.core.test import (
     _create_data_generator,
     _collect_story_predictions,
     test as evaluate_stories,
-    FAILED_STORIES_FILE,
+    _clean_entity_results,
+)
+from rasa.core.constants import (
     CONFUSION_MATRIX_STORIES_FILE,
     REPORT_STORIES_FILE,
+    FAILED_STORIES_FILE,
     SUCCESSFUL_STORIES_FILE,
-    _clean_entity_results,
+    STORIES_WITH_WARNINGS_FILE,
 )
 from rasa.core.policies.memoization import MemoizationPolicy
 
@@ -31,6 +34,7 @@ async def test_evaluation_file_creation(
 ):
     failed_stories_path = str(tmpdir / FAILED_STORIES_FILE)
     success_stories_path = str(tmpdir / SUCCESSFUL_STORIES_FILE)
+    stories_with_warnings_path = str(tmpdir / STORIES_WITH_WARNINGS_FILE)
     report_path = str(tmpdir / REPORT_STORIES_FILE)
     confusion_matrix_path = str(tmpdir / CONFUSION_MATRIX_STORIES_FILE)
 
@@ -42,10 +46,12 @@ async def test_evaluation_file_creation(
         e2e=False,
         errors=True,
         successes=True,
+        warnings=True,
     )
 
     assert os.path.isfile(failed_stories_path)
     assert os.path.isfile(success_stories_path)
+    assert os.path.isfile(stories_with_warnings_path)
     assert os.path.isfile(report_path)
     assert os.path.isfile(confusion_matrix_path)
 
@@ -402,6 +408,7 @@ stories:
                     "accuracy": 2.0 / 3.0,
                     "total": 3,
                     "correct": 2,
+                    "with_warnings": 0,
                 },
             },
         ],
@@ -495,3 +502,76 @@ def test_log_evaluation_table(caplog, skip_field, skip_value):
         assert f"Classification report: \n{kwargs['report']}" in caplog.text
     else:
         assert "Classification report:" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "test_file, correct_intent, correct_entity",
+    [
+        [
+            "data/test_yaml_stories/"
+            "test_prediction_with_correct_intent_wrong_entity.yml",
+            True,
+            False,
+        ],
+        [
+            "data/test_yaml_stories/"
+            "test_prediction_with_wrong_intent_correct_entity.yml",
+            False,
+            True,
+        ],
+        [
+            "data/test_yaml_stories/"
+            "test_prediction_with_wrong_intent_wrong_entity.yml",
+            False,
+            False,
+        ],
+    ],
+)
+async def test_wrong_predictions_with_intent_and_entities(
+    tmpdir: Path,
+    restaurantbot_agent: Agent,
+    test_file: Text,
+    correct_intent: bool,
+    correct_entity: bool,
+):
+    stories_path = str(tmpdir / FAILED_STORIES_FILE)
+
+    await evaluate_stories(
+        stories=test_file,
+        agent=restaurantbot_agent,
+        out_directory=str(tmpdir),
+        max_stories=None,
+        e2e=True,
+    )
+
+    failed_stories = rasa.shared.utils.io.read_file(stories_path)
+
+    if correct_intent and not correct_entity:
+        # check if there is no comment on the intent line
+        assert "- intent: request_restaurant  # predicted:" not in failed_stories
+        # check if there is a comment with the predicted entity on the entity line
+        assert "# predicted: cuisine: greek" in failed_stories
+        # check that the correctly predicted entity is printed as well
+        assert "- seating: outside\n" in failed_stories
+        # check that it does not double print entities
+        assert failed_stories.count("\n") == 8
+
+    elif not correct_intent and correct_entity:
+        # check if there is a comment with the predicted intent on the intent line
+        assert "- intent: greet  # predicted: request_restaurant" in failed_stories
+        # check if there is no comment on the entity line
+        assert "# predicted: cuisine: greek" not in failed_stories
+        # check that the correctly predicted entity is printed as well
+        assert "- seating: outside\n" in failed_stories
+        # check that it does not double print entities
+        assert failed_stories.count("\n") == 9
+
+    elif not correct_intent and not correct_entity:
+        # check if there is a comment with the predicted intent on the intent line
+        assert "- intent: greet  # predicted: request_restaurant" in failed_stories
+        # check if there is a comment with the predicted entity on the entity line
+        assert "# predicted: cuisine: greek" in failed_stories
+        # check that the correctly predicted entity is printed as well
+        assert "- seating: outside\n" in failed_stories
+        # check that it does not double print entities
+        assert failed_stories.count("\n") == 9

@@ -1,0 +1,47 @@
+name: Assign default project to issues
+
+on:
+  issues:
+    types:
+    - opened
+    - labeled
+
+jobs:
+  assign_default_project:
+    name: Assign default project to issue
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Assign vulnerability scans or Sentry issues to Enable
+      if: contains(github.event.issue.labels.*.name, 'tool:trivy') || contains(github.event.issue.labels.*.name, 'tool:sentry')
+      uses: RasaHQ/create-or-update-project-card@d99652311b24f83aeb7e9c308a30302317a08fa3
+
+      with:
+        token: ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}
+        # https://github.com/orgs/RasaHQ/projects/40
+        project-location: RasaHQ
+        project-number: 40
+        column-name: Inbox
+        skip-update: true
+
+    - name: Assign model regression issues to Research
+      if: contains(github.event.issue.labels.*.name, 'tool:model-regression-tests')
+      uses: RasaHQ/create-or-update-project-card@d99652311b24f83aeb7e9c308a30302317a08fa3
+
+      with:
+        token: ${{ secrets.RASABOT_ASSIGN_ISSUES_BOARD_TOKEN }}
+        # https://github.com/orgs/RasaHQ/projects/21
+        project-location: RasaHQ
+        project-number: 21
+        column-name: Inbox
+        skip-update: true
+
+    - name: Notify slack on failure
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985
+      with:
+        channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+        status: FAILED
+        color: danger

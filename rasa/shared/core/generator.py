@@ -184,7 +184,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         if self._states_for_hashing is None:
             self._states_for_hashing = self.past_states_for_hashing(self.domain)
         else:
-            state = self.domain.get_active_states(self)
+            state = self.domain.get_active_state(self)
             frozen_state = self.freeze_current_state(state)
             self._states_for_hashing.append(frozen_state)
 
@@ -657,8 +657,10 @@ class TrainingDataGenerator:
                 and event.action_text not in self.domain.action_texts
             ):
                 rasa.shared.utils.cli.print_warning(
-                    f"Test story '{step.block_name}' in '{step.source_name}' contains the bot utterance "
-                    f"'{event.action_text}', which is not part of the training data / domain."
+                    f"Test story '{step.block_name}' in "
+                    f"'{step.source_name}' contains the bot utterance "
+                    f"'{event.action_text}', which is not part "
+                    f"of the training data / domain."
                 )
             for tracker in trackers:
                 if isinstance(

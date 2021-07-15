@@ -12,7 +12,7 @@ from typing import Text, Optional, Any, List, Dict, Tuple, Type, Union, Callable
 import rasa.core
 import rasa.core.training.training
 from rasa.core.constants import FALLBACK_POLICY_PRIORITY
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, InvalidConfigException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
@@ -39,11 +39,12 @@ from rasa.shared.core.events import (
 )
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, SupportedData, PolicyPrediction
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.training import training
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core import registry
@@ -167,14 +168,11 @@ class PolicyEnsemble:
         is_rules_consuming_policy_available = (
             self._policy_ensemble_contains_policy_with_rules_support()
         )
-        training_trackers_contain_rule_trackers = self._training_trackers_contain_rule_trackers(
+        contain_rule_trackers = self._training_trackers_contain_rule_trackers(
             training_trackers
         )
 
-        if (
-            is_rules_consuming_policy_available
-            and not training_trackers_contain_rule_trackers
-        ):
+        if is_rules_consuming_policy_available and not contain_rule_trackers:
             rasa.shared.utils.io.raise_warning(
                 f"Found a rule-based policy in your pipeline but "
                 f"no rule-based training data. Please add rule-based "
@@ -183,10 +181,7 @@ class PolicyEnsemble:
                 f"your pipeline.",
                 docs=DOCS_URL_RULES,
             )
-        elif (
-            not is_rules_consuming_policy_available
-            and training_trackers_contain_rule_trackers
-        ):
+        elif not is_rules_consuming_policy_available and contain_rule_trackers:
             rasa.shared.utils.io.raise_warning(
                 f"Found rule-based training data but no policy supporting rule-based "
                 f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
@@ -212,7 +207,7 @@ class PolicyEnsemble:
                     trackers_to_train, domain, interpreter=interpreter, **kwargs
                 )
 
-            self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(
+            self.action_fingerprints = training.create_action_fingerprints(
                 training_trackers, domain
             )
             # set rule only data after training in order to make ensemble usable
@@ -373,22 +368,6 @@ class PolicyEnsemble:
                 if epochs:
                     context["epoch_override"] = epochs
 
-            if "kwargs" not in rasa.shared.utils.common.arguments_of(policy_cls.load):
-                if context:
-                    raise UnsupportedDialogueModelError(
-                        f"`{policy_cls.__name__}.{policy_cls.load.__name__}` does not "
-                        f"accept `**kwargs`. Attempting to pass {context} to the "
-                        f"policy. `**kwargs` should be added to all policies by "
-                        f"Rasa Open Source 3.0.0."
-                    )
-                else:
-                    rasa.shared.utils.io.raise_deprecation_warning(
-                        f"`{policy_cls.__name__}.{policy_cls.load.__name__}` does not "
-                        f"accept `**kwargs`. `**kwargs` are required for contextual "
-                        f"information e.g. the flag `should_finetune`.",
-                        warn_until_version="3.0.0",
-                    )
-
             policy = policy_cls.load(policy_path, **context)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             if policy is not None:
@@ -448,14 +427,14 @@ class PolicyEnsemble:
                 try:
                     policy_object = constr_func(**policy)
                 except TypeError as e:
-                    raise Exception(f"Could not initialize {policy_name}. {e}")
+                    raise Exception(f"Could not initialize {policy_name}. {e}") from e
                 parsed_policies.append(policy_object)
-            except (ImportError, AttributeError):
+            except (ImportError, AttributeError) as e:
                 raise InvalidPolicyConfig(
                     f"Module for policy '{policy_name}' could not "
                     f"be loaded. Please make sure the "
                     f"name is a valid policy."
-                )
+                ) from e
 
         cls._check_if_rule_policy_used_with_rule_like_policies(parsed_policies)
 
@@ -641,7 +620,13 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             if form_confidence > best_confidence:
                 best_policy_name = form_policy_name
 
-        best_prediction = predictions[best_policy_name]
+        best_prediction = predictions.get(best_policy_name)
+
+        if not best_prediction:
+            raise InvalidConfigException(
+                f"No prediction for policy '{best_policy_name}' found. Please check "
+                f"your model configuration."
+            )
 
         policy_events += best_prediction.optional_events
 
@@ -691,8 +676,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             rejected_action_name = last_action_event.action_name
 
         predictions = {
-            f"policy_{i}_{type(p).__name__}": self._get_prediction(
-                p, tracker, domain, interpreter
+            f"policy_{i}_{type(p).__name__}": p.predict_action_probabilities(
+                tracker, domain, interpreter
             )
             for i, p in enumerate(self.policies)
         }
@@ -708,51 +693,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 ] = 0.0
 
         return self._pick_best_policy(predictions)
-
-    @staticmethod
-    def _get_prediction(
-        policy: Policy,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-    ) -> PolicyPrediction:
-        number_of_arguments_in_rasa_1_0 = 2
-        arguments = rasa.shared.utils.common.arguments_of(
-            policy.predict_action_probabilities
-        )
-
-        if (
-            len(arguments) > number_of_arguments_in_rasa_1_0
-            and "interpreter" in arguments
-        ):
-            prediction = policy.predict_action_probabilities(
-                tracker, domain, interpreter
-            )
-        else:
-            rasa.shared.utils.io.raise_warning(
-                "The function `predict_action_probabilities` of "
-                "the `Policy` interface was changed to support "
-                "additional parameters. Please make sure to "
-                "adapt your custom `Policy` implementation.",
-                category=DeprecationWarning,
-            )
-            prediction = policy.predict_action_probabilities(
-                tracker, domain, RegexInterpreter()
-            )
-
-        if isinstance(prediction, list):
-            rasa.shared.utils.io.raise_deprecation_warning(
-                f"The function `predict_action_probabilities` of "
-                f"the `{Policy.__name__}` interface was changed to return "
-                f"a `{PolicyPrediction.__name__}` object. Please make sure to "
-                f"adapt your custom `{Policy.__name__}` implementation. Support for "
-                f"returning a list of floats will be removed in Rasa Open Source 3.0.0"
-            )
-            prediction = PolicyPrediction(
-                prediction, policy.__class__.__name__, policy_priority=policy.priority
-            )
-
-        return prediction
 
     def _fallback_after_listen(
         self, domain: Domain, prediction: PolicyPrediction

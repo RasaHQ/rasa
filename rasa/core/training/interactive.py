@@ -22,6 +22,7 @@ from sanic.exceptions import NotFound
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from terminaltables import AsciiTable, SingleTable
+import terminaltables.width_and_alignment
 import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
@@ -43,6 +44,7 @@ from rasa.shared.core.constants import (
     LOOP_REJECTED,
     REQUESTED_SLOT,
     LOOP_INTERRUPTED,
+    ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.core import run, utils
 import rasa.core.train
@@ -59,7 +61,12 @@ from rasa.shared.core.events import (
     UserUtteranceReverted,
 )
 import rasa.core.interpreter
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID, UTTER_PREFIX
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DEFAULT_SENDER_ID,
+    UTTER_PREFIX,
+    DOCS_URL_POLICIES,
+)
 from rasa.shared.core.trackers import EventVerbosity, DialogueStateTracker
 from rasa.shared.core.training_data import visualization
 from rasa.shared.core.training_data.visualization import (
@@ -70,6 +77,7 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.utils.common import update_sanic_log_level
 from rasa.utils.endpoints import EndpointConfig
+from rasa.shared.exceptions import InvalidConfigException
 
 # noinspection PyProtectedMember
 from rasa.shared.nlu.training_data import loading
@@ -486,7 +494,10 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
     prediction probabilities."""
 
     def wrap(txt: Text, max_width: int) -> Text:
-        return "\n".join(textwrap.wrap(txt, max_width, replace_whitespace=False))
+        true_wrapping_width = calc_true_wrapping_width(txt, max_width)
+        return "\n".join(
+            textwrap.wrap(txt, true_wrapping_width, replace_whitespace=False)
+        )
 
     def colored(txt: Text, color: Text) -> Text:
         return "{" + color + "}" + txt + "{/" + color + "}"
@@ -535,6 +546,11 @@ def _chat_history_table(events: List[Dict[Text, Any]]) -> Text:
 
     for idx, event in enumerate(applied_events):
         if isinstance(event, ActionExecuted):
+            if (
+                event.action_name == ACTION_UNLIKELY_INTENT_NAME
+                and event.confidence == 0
+            ):
+                continue
             bot_column.append(colored(str(event), "autocyan"))
             if event.confidence is not None:
                 bot_column[-1] += colored(f" {event.confidence:03.2f}", "autowhite")
@@ -954,7 +970,15 @@ async def _predict_till_next_listen(
     listen = False
     while not listen:
         result = await request_prediction(endpoint, conversation_id)
-        predictions = result.get("scores")
+        predictions = result.get("scores") or []
+        if not predictions:
+            raise InvalidConfigException(
+                "Cannot continue as no action was predicted by the dialogue manager. "
+                "This can happen if you trained the assistant with no policy included "
+                "in the configuration. If so, please re-train the assistant with at "
+                f"least one policy ({DOCS_URL_POLICIES}) included in the configuration."
+            )
+
         probabilities = [prediction["score"] for prediction in predictions]
         pred_out = int(np.argmax(probabilities))
         action_name = predictions[pred_out].get("action")
@@ -1126,11 +1150,23 @@ async def _validate_action(
 
     Returns `True` if the prediction is correct, `False` otherwise."""
 
-    question = questionary.confirm(f"The bot wants to run '{action_name}', correct?")
+    if action_name == ACTION_UNLIKELY_INTENT_NAME:
+        question = questionary.confirm(
+            f"The bot wants to run '{action_name}' "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
+            f"Check out UnexpecTEDIntentPolicy "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
+            f"to learn more. Is that correct?"
+        )
+    else:
+        question = questionary.confirm(
+            f"The bot wants to run '{action_name}', correct?"
+        )
 
     is_correct = await _ask_questions(question, conversation_id, endpoint)
 
-    if not is_correct:
+    if not is_correct and action_name != ACTION_UNLIKELY_INTENT_NAME:
         action_name, is_new_action = await _request_action_from_user(
             predictions, conversation_id, endpoint
         )
@@ -1412,7 +1448,8 @@ async def _plot_trackers(
 
     from networkx.drawing.nx_pydot import write_dot
 
-    write_dot(graph, output_file)
+    with open(output_file, "w", encoding="utf-8") as f:
+        write_dot(graph, f)
 
 
 def _print_help(skip_visualization: bool) -> None:
@@ -1672,3 +1709,42 @@ def run_interactive_learning(
     if not skip_visualization and p is not None:
         p.terminate()
         p.join()
+
+
+def calc_true_wrapping_width(text: Text, monospace_wrapping_width: int) -> int:
+    """Calculates a wrapping width that also works for CJK characters.
+
+    Chinese, Japanese and Korean characters are often broader than ascii
+    characters:
+    abcdefgh (8 chars)
+    我要去北京 (5 chars, roughly same visible width)
+
+    We need to account for that otherwise the wrapping doesn't work
+    appropriately for long strings and the table overflows and creates
+    errors.
+
+    params:
+        text: text sequence that should be wrapped into multiple lines
+        monospace_wrapping_width: the maximum width per line in number of
+            standard ascii characters
+    returns:
+        The maximum line width for the given string that takes into account
+        the strings visible width, so that it won't lead to table overflow.
+    """
+    true_wrapping_width = 0
+
+    # testing potential width from longest to shortest
+    for potential_width in range(monospace_wrapping_width, -1, -1):
+        lines = textwrap.wrap(text, potential_width)
+        # test whether all lines' visible width fits the available width
+        if all(
+            [
+                terminaltables.width_and_alignment.visible_width(line)
+                <= monospace_wrapping_width
+                for line in lines
+            ]
+        ):
+            true_wrapping_width = potential_width
+            break
+
+    return true_wrapping_width
