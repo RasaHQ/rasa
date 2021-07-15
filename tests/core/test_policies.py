@@ -371,6 +371,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         return AugmentedMemoizationPolicy(priority=priority, max_history=max_history)
       
 
+@pytest.mark.parametrize(
     "policy,supported_data",
     [
         (TEDPolicy, SupportedData.ML_DATA),
