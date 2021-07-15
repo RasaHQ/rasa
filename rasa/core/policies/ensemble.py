@@ -428,7 +428,6 @@ class PolicyEnsemble:
 
     @classmethod
     def get_featurizer_from_dict(cls, policy: Dict[Text, Any]) -> Tuple[Any, Any]:
-
         # policy can have only 1 featurizer
         if len(policy["featurizer"]) > 1:
             raise InvalidPolicyConfig(
