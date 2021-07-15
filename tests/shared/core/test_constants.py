@@ -12,10 +12,7 @@ from rasa.shared.core.constants import (
 
 @pytest.mark.parametrize(
     "name_in_constant, policy_class",
-    [
-        (POLICY_NAME_RULE, RulePolicy),
-        (CLASSIFIER_NAME_FALLBACK, FallbackClassifier),
-    ],
+    [(POLICY_NAME_RULE, RulePolicy), (CLASSIFIER_NAME_FALLBACK, FallbackClassifier),],
 )
 def test_policy_names(name_in_constant: Text, policy_class: Type):
     assert name_in_constant == policy_class.__name__
