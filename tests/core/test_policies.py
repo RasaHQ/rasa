@@ -4,12 +4,9 @@ from typing import Type, List, Text, Optional, Any
 import numpy as np
 import pytest
 
-from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.shared.core.generator import TrackerWithCachedStates
-import rasa.shared.utils.io
 
 from rasa.core import training
-import rasa.core.actions.action
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
