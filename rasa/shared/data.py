@@ -3,8 +3,7 @@ import shutil
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Text, Optional, Union, List, Tuple, Callable, Set, Iterable
-import rasa.shared.utils.io
+from typing import Text, Optional, Union, List, Callable, Set, Iterable
 
 YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
 JSON_FILE_EXTENSIONS = [".json"]
