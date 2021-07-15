@@ -467,8 +467,8 @@ class TrainingData:
     def validate(self) -> None:
         """Ensures that the loaded training data is valid.
 
-        Checks that the data has a minimum of certain training examples."""
-
+        Checks that the data has a minimum of certain training examples.
+        """
         logger.debug("Validating training data...")
         if "" in self.intents:
             rasa.shared.utils.io.raise_warning(
