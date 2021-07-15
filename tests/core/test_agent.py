@@ -239,10 +239,8 @@ def test_form_without_form_policy(policy_config: Dict[Text, List[Text]]):
     assert "have not added the 'RulePolicy'" in str(execinfo.value)
 
 
-@pytest.mark.parametrize(
-    "policy_config", [{"policies": [{"name": RulePolicy.__name__}]},],
-)
-def test_forms_with_suited_policy(policy_config: Dict[Text, List[Text]]):
+def test_forms_with_suited_policy():
+    policy_config = {"policies": [{"name": RulePolicy.__name__}]}
     # Doesn't raise
     Agent(
         domain=Domain.from_dict({"forms": {"restaurant_form": {}}}),
