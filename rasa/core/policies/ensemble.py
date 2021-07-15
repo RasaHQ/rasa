@@ -721,10 +721,8 @@ def _check_policy_for_forms_available(
     if not ensemble:
         return
 
-    suited_policies_for_forms = (RulePolicy)
-
     has_policy_for_forms = ensemble is not None and any(
-        isinstance(policy, suited_policies_for_forms) for policy in ensemble.policies
+        isinstance(policy, RulePolicy) for policy in ensemble.policies
     )
 
     if domain.form_names and not has_policy_for_forms:
