@@ -95,7 +95,6 @@ class PolicyEnsemble:
         ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
     ) -> None:
         """Check for elements that only work with certain policy/domain combinations."""
-
         policies_needing_validation = [
             RulePolicy,
         ]
