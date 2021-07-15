@@ -61,23 +61,6 @@ def is_likely_markdown_file(file_path: Text) -> bool:
     return Path(file_path).suffix in set(MARKDOWN_FILE_EXTENSIONS)
 
 
-def get_test_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
-    """Recursively collects all Core training files from a list of paths.
-
-    Args:
-        paths: List of paths to training files or folders containing them.
-
-    Returns:
-        Path to temporary directory containing all found Core training files.
-    """
-    rasa.shared.utils.io.raise_warning(
-        "`get_test_directory` is deprecated and will be removed in Rasa 3.0.0. ",
-        category=DeprecationWarning,
-    )
-    test_files = get_data_files(paths, is_test_stories_file)
-    return _copy_files_to_new_dir(test_files)
-
-
 def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     """Recursively collects all Core training files from a list of paths.
 
@@ -102,31 +85,6 @@ def get_nlu_directory(paths: Optional[Union[Text, List[Text]]],) -> Text:
     """
     nlu_files = get_data_files(paths, is_nlu_file)
     return _copy_files_to_new_dir(nlu_files)
-
-
-def get_core_nlu_directories(
-    paths: Optional[Union[Text, List[Text]]]
-) -> Tuple[Text, Text]:
-    """Recursively collects all training files from a list of paths.
-
-    Args:
-        paths: List of paths to training files or folders containing them.
-
-    Returns:
-        Path to directory containing the Core files and path to directory
-        containing the NLU training files.
-    """
-    rasa.shared.utils.io.raise_warning(
-        "`get_core_nlu_directories` is deprecated and will be removed in Rasa 3.0.0. ",
-        category=DeprecationWarning,
-    )
-    story_files = get_data_files(paths, is_story_file)
-    nlu_data_files = get_data_files(paths, is_nlu_file)
-
-    story_directory = _copy_files_to_new_dir(story_files)
-    nlu_directory = _copy_files_to_new_dir(nlu_data_files)
-
-    return story_directory, nlu_directory
 
 
 def get_data_files(
