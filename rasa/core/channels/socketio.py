@@ -192,9 +192,7 @@ class SocketIOInput(InputChannel):
             return response.json({"status": "ok"})
 
         @sio.on("connect", namespace=self.namespace)
-        async def connect(
-            sid: Text, environ: Dict, auth: Optional[Dict]
-        ) -> Optional[bool]:
+        async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> bool:
             if self.jwt_key:
                 jwt_payload = None
                 if auth and auth.get("token"):
