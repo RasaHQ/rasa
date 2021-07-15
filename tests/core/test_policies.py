@@ -1,39 +1,23 @@
 from pathlib import Path
-from typing import Type, List, Text, Tuple, Optional, Any
-from unittest.mock import patch
+from typing import Type, List, Text, Optional, Any
 
 import numpy as np
 import pytest
 
-from rasa.core.channels import OutputChannel
-from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.shared.core.generator import TrackerWithCachedStates
 import rasa.shared.utils.io
 
 from rasa.core import training
 import rasa.core.actions.action
 from rasa.shared.constants import DEFAULT_SENDER_ID
-from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
-    MarkdownStoryWriter,
-)
-from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 from rasa.shared.core.constants import (
-    USER_INTENT_RESTART,
-    USER_INTENT_BACK,
     ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_BACK_NAME,
-    PREVIOUS_ACTION,
-    USER,
     ACTION_UNLIKELY_INTENT_NAME,
 )
-from rasa.shared.core.domain import State, Domain
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
-    ConversationPaused,
     Event,
     UserUttered,
     EntitiesAdded,
@@ -50,8 +34,7 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.nlu.training_data.formats.markdown import INTENT
-from tests.core.utilities import get_tracker, read_dialogue_file, user_uttered
+from tests.core.utilities import get_tracker, read_dialogue_file
 
 
 async def train_trackers(

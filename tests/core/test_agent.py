@@ -240,10 +240,7 @@ def test_form_without_form_policy(policy_config: Dict[Text, List[Text]]):
 
 
 @pytest.mark.parametrize(
-    "policy_config",
-    [
-        {"policies": [{"name": RulePolicy.__name__}]},
-    ],
+    "policy_config", [{"policies": [{"name": RulePolicy.__name__}]},],
 )
 def test_forms_with_suited_policy(policy_config: Dict[Text, List[Text]]):
     # Doesn't raise
