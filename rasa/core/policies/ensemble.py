@@ -19,7 +19,6 @@ from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
     DOCS_URL_RULES,
     DOCS_URL_POLICIES,
-    DOCS_URL_MIGRATION_GUIDE,
     DEFAULT_CONFIG_PATH,
     DOCS_URL_DEFAULT_ACTIONS,
 )
@@ -38,7 +37,7 @@ from rasa.shared.core.events import (
 )
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import Policy, SupportedData, PolicyPrediction
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.policies.rule_policy import RulePolicy
@@ -81,9 +80,7 @@ class PolicyEnsemble:
 
     def _check_for_important_policies(self) -> None:
 
-        if not any(
-            isinstance(policy, RulePolicy) for policy in self.policies
-        ):
+        if not any(isinstance(policy, RulePolicy) for policy in self.policies):
             rasa.shared.utils.io.raise_warning(
                 f"'{RulePolicy.__name__}' is not included in the model's "
                 f"policy configuration. Default intents such as "
@@ -432,6 +429,7 @@ class PolicyEnsemble:
 
     @classmethod
     def get_featurizer_from_dict(cls, policy: Dict[Text, Any]) -> Tuple[Any, Any]:
+
         # policy can have only 1 featurizer
         if len(policy["featurizer"]) > 1:
             raise InvalidPolicyConfig(

@@ -13,7 +13,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpr
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.shared.core.events import UserUttered, ActiveLoop, Event, SlotSet
+from rasa.shared.core.events import UserUttered, Event, SlotSet
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.policies.ensemble import (
     PolicyEnsemble,
@@ -21,13 +21,10 @@ from rasa.core.policies.ensemble import (
     SimplePolicyEnsemble,
 )
 from rasa.core.policies.rule_policy import RulePolicy
-import rasa.core.actions.action
 
-from tests.core import utilities
 from rasa.shared.core.events import ActionExecuted, DefinePrevUserUtteredFeaturization
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
 )
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
