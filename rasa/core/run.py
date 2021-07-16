@@ -13,7 +13,7 @@ import rasa.utils
 import rasa.utils.common
 import rasa.utils.io
 from rasa import model, server, telemetry
-from rasa.constants import ENV_SANIC_BACKLOG, ENV_SANIC_HOST
+from rasa.constants import ENV_SANIC_BACKLOG
 from rasa.core import agent, channels, constants
 from rasa.core.agent import Agent
 from rasa.core.brokers.broker import EventBroker
@@ -149,6 +149,7 @@ def serve_application(
     model_path: Optional[Text] = None,
     channel: Optional[Text] = None,
     port: int = constants.DEFAULT_SERVER_PORT,
+    interface: Optional[Text] = constants.DEFAULT_SERVER_INTERFACE,
     credentials: Optional[Text] = None,
     cors: Optional[Union[Text, List[Text]]] = None,
     auth_token: Optional[Text] = None,
@@ -190,11 +191,13 @@ def serve_application(
         ssl_certificate, ssl_keyfile, ssl_ca_file, ssl_password
     )
     protocol = "https" if ssl_context else "http"
-    host = os.environ.get(ENV_SANIC_HOST, "0.0.0.0")
 
     logger.info(
-        f"Starting Rasa server on "
-        f"{constants.DEFAULT_SERVER_FORMAT.format(protocol, port)}"
+        "Starting Rasa server on " + constants.DEFAULT_SERVER_FORMAT.format(
+            protocol,
+            interface, 
+            port,
+        )
     )
 
     app.register_listener(
@@ -220,7 +223,7 @@ def serve_application(
 
     rasa.utils.common.update_sanic_log_level(log_file)
     app.run(
-        host=host,
+        host=interface,
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
