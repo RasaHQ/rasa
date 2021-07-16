@@ -1,4 +1,5 @@
-import logging, json
+import logging
+import json
 from typing import Any, Dict, List, Text
 from pathlib import Path
 from rasa.shared.nlu.constants import INTENT, ENTITIES, TEXT

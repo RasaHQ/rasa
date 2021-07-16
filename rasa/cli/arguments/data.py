@@ -34,7 +34,7 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> N
         "-s",
         "--source",
         choices=["watson"],
-        help="source file type. Currently only watson is possible to be converted to yaml",
+        help="source file type. Currently only watson is possible",
     )
 
 

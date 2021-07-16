@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Text
 
 import pytest
 
@@ -20,7 +19,8 @@ def test_watson_data():
 def test_filter():
     source = Path("data/examples/watson/demo_watson_v2.json")
     filter = WatsonTrainingDataConverter().filter(source)
-    assert filter == True
+    if filter:
+        assert True
 
 
 async def test_convert_and_write(tmp_path: Path):
