@@ -2,6 +2,14 @@
 sidebar_label: rasa.core.tracker_store
 title: rasa.core.tracker_store
 ---
+## TrackerDeserialisationException Objects
+
+```python
+class TrackerDeserialisationException(RasaException)
+```
+
+Raised when an error is encountered while deserialising a tracker.
+
 ## TrackerStore Objects
 
 ```python
@@ -337,6 +345,22 @@ Returns the current conversation.
 
 Saves the current conversation state.
 
+#### retrieve
+
+```python
+ | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Retrieves tracker for the latest conversation session.
+
+#### retrieve\_full\_tracker
+
+```python
+ | retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Fetching all tracker events across conversation sessions.
+
 #### keys
 
 ```python
@@ -455,7 +479,23 @@ Provide a transactional scope around a series of operations.
  | keys() -> Iterable[Text]
 ```
 
-Returns sender_ids of the SQLTrackerStore
+Returns sender_ids of the SQLTrackerStore.
+
+#### retrieve
+
+```python
+ | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Retrieves tracker for the latest conversation session.
+
+#### retrieve\_full\_tracker
+
+```python
+ | retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Fetching all tracker events across conversation sessions.
 
 #### save
 
