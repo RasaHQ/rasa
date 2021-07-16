@@ -183,7 +183,12 @@ class Message:
     def separate_intent_response_key(
         original_intent: Text,
     ) -> Tuple[Text, Optional[Text]]:
-        """Splits intent into main intent name and optional sub-intent name."""
+        """Splits intent into main intent name and optional sub-intent name.
+
+        For example, `"FAQ/how_to_contribute"` would be split into
+        `("FAQ", "how_to_contribute")`. If there is no response delimiter, the
+        second tuple item is `None`, e.g. "FAQ" would be mapped to `("FAQ", None)`.
+        """
         split_title = original_intent.split(RESPONSE_IDENTIFIER_DELIMITER)
         if len(split_title) == 2:
             return split_title[0], split_title[1]
