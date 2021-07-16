@@ -8,6 +8,7 @@ from rasa.core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
     DEFAULT_CORE_FALLBACK_THRESHOLD,
     DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+    DEFAULT_MAX_HISTORY
 )
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.rule_policy import RulePolicy
@@ -223,6 +224,7 @@ def test_ensemble_from_dict():
         assert p.priority == 3
 
     def check_rule(p):
+        assert p.max_history == DEFAULT_MAX_HISTORY
         assert p.priority == 1
 
     ensemble_dict = {
