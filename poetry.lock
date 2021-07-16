@@ -2073,11 +2073,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
 
 [[package]]
 name = "questionary"
-version = "1.9.0"
+version = "1.10.0"
 description = "Python library to build pretty command line user prompts ⭐️"
 category = "main"
 optional = false
-python-versions = ">=3.6,<3.10"
+python-versions = ">=3.6,<4.0"
 
 [package.dependencies]
 prompt_toolkit = ">=2.0,<4.0"
@@ -4663,8 +4663,8 @@ pyyaml = [
     {file = "PyYAML-5.4.1.tar.gz", hash = "sha256:607774cbba28732bfa802b54baa7484215f530991055bb562efbed5b2f20a45e"},
 ]
 questionary = [
-    {file = "questionary-1.9.0-py3-none-any.whl", hash = "sha256:fa50c06af4e3826d986efbc90be16e42ff367a634e6a169e42a3f9fccd90648b"},
-    {file = "questionary-1.9.0.tar.gz", hash = "sha256:a050fdbb81406cddca679a6f492c6272da90cb09988963817828f697cf091c55"},
+    {file = "questionary-1.10.0-py3-none-any.whl", hash = "sha256:fecfcc8cca110fda9d561cb83f1e97ecbb93c613ff857f655818839dac74ce90"},
+    {file = "questionary-1.10.0.tar.gz", hash = "sha256:600d3aefecce26d48d97eee936fdb66e4bc27f934c3ab6dd1e292c4f43946d90"},
 ]
 rasa-sdk = [
     {file = "rasa-sdk-2.8.1.tar.gz", hash = "sha256:61752ed300fb470fbef66f7a740463c8074635e075fc8a0b598081bb5db15ad1"},
