@@ -304,30 +304,6 @@ def test_tracker_serialisation():
     assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
 
 
-def test_deprecated_pickle_deserialisation():
-    def pickle_serialise_tracker(_tracker):
-        # mocked version of TrackerStore.serialise_tracker() that uses
-        # the deprecated pickle serialisation
-        import pickle
-
-        dialogue = _tracker.as_dialogue()
-
-        return pickle.dumps(dialogue)
-
-    store, tracker = _tracker_store_and_tracker_with_slot_set()
-
-    serialised = pickle_serialise_tracker(tracker)
-
-    # deprecation warning should be emitted
-
-    with pytest.warns(FutureWarning) as record:
-        assert tracker == store.deserialise_tracker(DEFAULT_SENDER_ID, serialised)
-    assert len(record) == 1
-    assert (
-        "Deserialization of pickled trackers is deprecated" in record[0].message.args[0]
-    )
-
-
 @pytest.mark.parametrize(
     "full_url",
     [
@@ -554,18 +530,8 @@ def _saved_tracker_with_multiple_session_starts(
     return tracker_store.retrieve(sender_id)
 
 
-@pytest.mark.parametrize(
-    "retrieve_events_from_previous_conversation_sessions", [True, False],
-)
-def test_mongo_additional_events(
-    domain: Domain, retrieve_events_from_previous_conversation_sessions
-):
-    tracker_store = MockedMongoTrackerStore(
-        domain,
-        retrieve_events_from_previous_conversation_sessions=(
-            retrieve_events_from_previous_conversation_sessions
-        ),
-    )
+def test_mongo_additional_events(domain: Domain):
+    tracker_store = MockedMongoTrackerStore(domain)
     events, tracker = create_tracker_with_partially_saved_events(tracker_store)
 
     # make sure only new events are returned
@@ -573,19 +539,9 @@ def test_mongo_additional_events(
     assert list(tracker_store._additional_events(tracker)) == events
 
 
-@pytest.mark.parametrize(
-    "retrieve_events_from_previous_conversation_sessions", [True, False],
-)
-def test_mongo_additional_events_with_session_start(
-    domain: Domain, retrieve_events_from_previous_conversation_sessions
-):
+def test_mongo_additional_events_with_session_start(domain: Domain):
     sender = "test_mongo_additional_events_with_session_start"
-    tracker_store = MockedMongoTrackerStore(
-        domain,
-        retrieve_events_from_previous_conversation_sessions=(
-            retrieve_events_from_previous_conversation_sessions
-        ),
-    )
+    tracker_store = MockedMongoTrackerStore(domain)
     tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
 
     tracker.update(UserUttered("hi2"))
@@ -597,20 +553,10 @@ def test_mongo_additional_events_with_session_start(
     assert isinstance(additional_events[0], UserUttered)
 
 
-@pytest.mark.parametrize(
-    "retrieve_events_from_previous_conversation_sessions", [True, False],
-)
 # we cannot parametrise over this and the previous test due to the different ways of
 # calling _additional_events()
-def test_sql_additional_events(
-    domain: Domain, retrieve_events_from_previous_conversation_sessions
-):
-    tracker_store = SQLTrackerStore(
-        domain,
-        retrieve_events_from_previous_conversation_sessions=(
-            retrieve_events_from_previous_conversation_sessions
-        ),
-    )
+def test_sql_additional_events(domain: Domain):
+    tracker_store = SQLTrackerStore(domain)
     additional_events, tracker = create_tracker_with_partially_saved_events(
         tracker_store
     )
@@ -624,19 +570,9 @@ def test_sql_additional_events(
         )
 
 
-@pytest.mark.parametrize(
-    "retrieve_events_from_previous_conversation_sessions", [True, False],
-)
-def test_sql_additional_events_with_session_start(
-    domain: Domain, retrieve_events_from_previous_conversation_sessions
-):
+def test_sql_additional_events_with_session_start(domain: Domain):
     sender = "test_sql_additional_events_with_session_start"
-    tracker_store = SQLTrackerStore(
-        domain,
-        retrieve_events_from_previous_conversation_sessions=(
-            retrieve_events_from_previous_conversation_sessions
-        ),
-    )
+    tracker_store = SQLTrackerStore(domain)
     tracker = _saved_tracker_with_multiple_session_starts(tracker_store, sender)
 
     tracker.update(UserUttered("hi2"), domain)
@@ -738,31 +674,6 @@ def test_tracker_store_retrieve_with_events_from_previous_sessions(
     actual = tracker_store.retrieve_full_tracker(conversation_id)
 
     assert len(actual.events) == len(tracker.events)
-
-
-def test_tracker_store_deprecated_session_retrieval_kwarg():
-    tracker_store = SQLTrackerStore(
-        Domain.empty(), retrieve_events_from_previous_conversation_sessions=True
-    )
-
-    conversation_id = uuid.uuid4().hex
-    tracker = DialogueStateTracker.from_events(
-        conversation_id,
-        [
-            ActionExecuted(ACTION_SESSION_START_NAME),
-            SessionStarted(),
-            UserUttered("hi"),
-        ],
-    )
-
-    mocked_retrieve_full_tracker = Mock()
-    tracker_store.retrieve_full_tracker = mocked_retrieve_full_tracker
-
-    tracker_store.save(tracker)
-
-    _ = tracker_store.retrieve(conversation_id)
-
-    mocked_retrieve_full_tracker.assert_called_once()
 
 
 def test_session_scope_error(
@@ -947,7 +858,7 @@ def test_current_state_without_events(domain: Domain):
 
 def test_login_db_with_no_postgresql(tmp_path: Path):
     with pytest.warns(UserWarning):
-        SQLTrackerStore(db=str(tmp_path / "rasa.db"), login_db="other")
+        SQLTrackerStore(db=str(tmp_path / "rasa.db"), login_db=str(tmp_path / "other"))
 
 
 @pytest.mark.parametrize(
