@@ -3,7 +3,6 @@ import itertools
 import json
 import logging
 import os
-from datetime import datetime, timezone
 
 from time import sleep
 from typing import (
@@ -62,6 +61,10 @@ POSTGRESQL_DEFAULT_POOL_SIZE = 50
 
 # default value for key prefix in RedisTrackerStore
 DEFAULT_REDIS_TRACKER_STORE_KEY_PREFIX = "tracker:"
+
+
+class TrackerDeserialisationException(RasaException):
+    """Raised when an error is encountered while deserialising a tracker."""
 
 
 class TrackerStore:
@@ -244,13 +247,12 @@ class TrackerStore:
         self, sender_id: Text, serialised_tracker: Union[Text, bytes]
     ) -> Optional[DialogueStateTracker]:
         """Deserializes the tracker and returns it."""
-
         tracker = self.init_tracker(sender_id)
 
         try:
             dialogue = Dialogue.from_parameters(json.loads(serialised_tracker))
         except UnicodeDecodeError as e:
-            raise RasaException(
+            raise TrackerDeserialisationException(
                 "Tracker cannot be deserialised. "
                 "Trackers must be serialised as json. "
                 "Support for deserialising pickled trackers has been removed."
@@ -947,7 +949,7 @@ class SQLTrackerStore(TrackerStore):
             session.close()
 
     def keys(self) -> Iterable[Text]:
-        """Returns sender_ids of the SQLTrackerStore"""
+        """Returns sender_ids of the SQLTrackerStore."""
         with self.session_scope() as session:
             sender_ids = session.query(self.SQLEvent.sender_id).distinct().all()
             return [sender_id for (sender_id,) in sender_ids]
