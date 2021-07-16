@@ -669,7 +669,7 @@ def _check_policy_for_forms_available(
         raise InvalidDomain(
             "You have defined a form action, but have not added the "
             f"'{RulePolicy.__name__}' to your policy ensemble. Either "
-            f"remove all forms from your domain or add the missing policy "
+            f"remove all forms from your domain or add the '{RulePolicy.__name__}' "
             f"to your policy configuration."
         )
 
