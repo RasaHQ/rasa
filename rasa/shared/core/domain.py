@@ -32,7 +32,7 @@ from rasa.shared.constants import (
     REQUIRED_SLOTS_KEY,
     IGNORED_INTENTS,
 )
-import rasa.shared.core.constants
+from rasa.shared.core import constants as shared_core_constants
 from rasa.shared.exceptions import RasaException, YamlException, YamlSyntaxException
 import rasa.shared.nlu.constants
 import rasa.shared.utils.validation
@@ -556,7 +556,7 @@ class Domain:
         roles: Optional[Dict[Text, List[Text]]],
         groups: Optional[Dict[Text, List[Text]]],
     ) -> None:
-        for intent_name in rasa.shared.core.constants.DEFAULT_INTENTS:
+        for intent_name in shared_core_constants.DEFAULT_INTENTS:
             if intent_name not in intent_properties:
                 _, properties = cls._intent_properties(
                     intent_name, entities, roles, groups
@@ -679,7 +679,7 @@ class Domain:
             for intent in intents
         }
         return sorted(
-            intent_names.intersection(set(rasa.shared.core.constants.DEFAULT_INTENTS))
+            intent_names.intersection(set(shared_core_constants.DEFAULT_INTENTS))
         )
 
     @staticmethod
@@ -877,13 +877,12 @@ class Domain:
         The value of this slot will hold the name of the slot which the user
         needs to fill in next (either explicitly or implicitly) as part of a form.
         """
-        if self.form_names and rasa.shared.core.constants.REQUESTED_SLOT not in [
+        if self.form_names and shared_core_constants.REQUESTED_SLOT not in [
             slot.name for slot in self.slots
         ]:
             self.slots.append(
                 TextSlot(
-                    rasa.shared.core.constants.REQUESTED_SLOT,
-                    influence_conversation=False,
+                    shared_core_constants.REQUESTED_SLOT, influence_conversation=False,
                 )
             )
 
@@ -907,19 +906,19 @@ class Domain:
         base slots.
         """
         if (
-            rasa.shared.core.constants.DEFAULT_KNOWLEDGE_BASE_ACTION
+            shared_core_constants.DEFAULT_KNOWLEDGE_BASE_ACTION
             in self.action_names_or_texts
         ):
             logger.warning(
                 "You are using an experiential feature: Action '{}'!".format(
-                    rasa.shared.core.constants.DEFAULT_KNOWLEDGE_BASE_ACTION
+                    shared_core_constants.DEFAULT_KNOWLEDGE_BASE_ACTION
                 )
             )
             slot_names = [slot.name for slot in self.slots]
             knowledge_base_slots = [
-                rasa.shared.core.constants.SLOT_LISTED_ITEMS,
-                rasa.shared.core.constants.SLOT_LAST_OBJECT,
-                rasa.shared.core.constants.SLOT_LAST_OBJECT_TYPE,
+                shared_core_constants.SLOT_LISTED_ITEMS,
+                shared_core_constants.SLOT_LAST_OBJECT,
+                shared_core_constants.SLOT_LAST_OBJECT_TYPE,
             ]
             for slot in knowledge_base_slots:
                 if slot not in slot_names:
@@ -936,9 +935,10 @@ class Domain:
         self._add_knowledge_base_slots()
 
     def _add_session_metadata_slot(self) -> None:
-        self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
-        )
+        self.slots.append(AnySlot(shared_core_constants.SESSION_START_METADATA_SLOT,))
+
+    # TODO: we have label2index things all over the place, it might be worth having
+    # more of these:
 
     def index_for_action(self, action_name: Text) -> int:
         """Looks up which action index corresponds to this action name."""
@@ -1036,14 +1036,14 @@ class Domain:
         if entity:
             return [
                 f"{entity}"
-                f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}"
+                f"{shared_core_constants.ENTITY_LABEL_SEPARATOR}"
                 f"{sub_label}"
                 for sub_label in entity_labels[entity]
             ]
 
         return [
             f"{entity_label}"
-            f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}"
+            f"{shared_core_constants.ENTITY_LABEL_SEPARATOR}"
             f"{entity_sub_label}"
             for entity_label, entity_sub_labels in entity_labels.items()
             for entity_sub_label in entity_sub_labels
@@ -1065,6 +1065,7 @@ class Domain:
             + self.form_names
         )
 
+    # TODO: USED_ENTITIES_KEY ?
     def _get_featurized_entities(self, latest_message: UserUttered) -> Set[Text]:
         """Gets the names of all entities that are present and wanted in the message.
 
@@ -1086,13 +1087,13 @@ class Domain:
         )
         entity_names_roles = set(
             f"{entity['entity']}"
-            f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
+            f"{shared_core_constants.ENTITY_LABEL_SEPARATOR}{entity['role']}"
             for entity in entities
             if "entity" in entity.keys() and "role" in entity.keys()
         )
         entity_names_groups = set(
             f"{entity['entity']}"
-            f"{rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
+            f"{shared_core_constants.ENTITY_LABEL_SEPARATOR}{entity['group']}"
             for entity in entities
             if "entity" in entity.keys() and "group" in entity.keys()
         )
@@ -1104,46 +1105,6 @@ class Domain:
 
         return entity_names.intersection(wanted_entities)
 
-    def _get_user_sub_state(
-        self, tracker: "DialogueStateTracker"
-    ) -> Dict[Text, Union[Text, Tuple[Text]]]:
-        """Turns latest UserUttered event into a substate.
-
-        The substate will contain intent, text, and entities (if any are present).
-
-        Args:
-            tracker: dialog state tracker containing the dialog so far
-        Returns:
-            a dictionary containing intent, text and set entities
-        """
-        # proceed with values only if the user of a bot have done something
-        # at the previous step i.e., when the state is not empty.
-        latest_message = tracker.latest_message
-        if not latest_message or latest_message.is_empty():
-            return {}
-
-        sub_state = latest_message.as_sub_state()
-
-        # Filter entities based on intent config. We need to convert the set into a
-        # tuple because sub_state will be later transformed into a frozenset (so it can
-        # be hashed for deduplication).
-        entities = tuple(
-            self._get_featurized_entities(latest_message).intersection(
-                set(sub_state.get(rasa.shared.nlu.constants.ENTITIES, ()))
-            )
-        )
-        # Sort entities so that any derived state representation is consistent across
-        # runs and invariant to the order in which the entities for an utterance are
-        # listed in data files.
-        entities = tuple(sorted(entities))
-
-        if entities:
-            sub_state[rasa.shared.nlu.constants.ENTITIES] = entities
-        else:
-            sub_state.pop(rasa.shared.nlu.constants.ENTITIES, None)
-
-        return sub_state
-
     @staticmethod
     def _remove_rule_only_features(
         state: State, rule_only_data: Optional[Dict[Text, Any]],
@@ -1151,37 +1112,33 @@ class Domain:
         if not rule_only_data:
             return
 
-        rule_only_slots = rule_only_data.get(
-            rasa.shared.core.constants.RULE_ONLY_SLOTS, []
-        )
-        rule_only_loops = rule_only_data.get(
-            rasa.shared.core.constants.RULE_ONLY_LOOPS, []
-        )
+        rule_only_slots = rule_only_data.get(shared_core_constants.RULE_ONLY_SLOTS, [])
+        rule_only_loops = rule_only_data.get(shared_core_constants.RULE_ONLY_LOOPS, [])
 
         # remove slots which only occur in rules but not in stories
         if rule_only_slots:
             for slot in rule_only_slots:
-                state.get(rasa.shared.core.constants.SLOTS, {}).pop(slot, None)
+                state.get(shared_core_constants.SLOTS, {}).pop(slot, None)
         # remove active loop which only occur in rules but not in stories
         if (
             rule_only_loops
-            and state.get(rasa.shared.core.constants.ACTIVE_LOOP, {}).get(
-                rasa.shared.core.constants.LOOP_NAME
+            and state.get(shared_core_constants.ACTIVE_LOOP, {}).get(
+                shared_core_constants.LOOP_NAME
             )
             in rule_only_loops
         ):
-            del state[rasa.shared.core.constants.ACTIVE_LOOP]
+            del state[shared_core_constants.ACTIVE_LOOP]
 
     @staticmethod
     def _substitute_rule_only_user_input(state: State, last_ml_state: State) -> None:
         if not rasa.shared.core.trackers.is_prev_action_listen_in_state(state):
-            if not last_ml_state.get(rasa.shared.core.constants.USER) and state.get(
-                rasa.shared.core.constants.USER
+            if not last_ml_state.get(shared_core_constants.USER) and state.get(
+                shared_core_constants.USER
             ):
-                del state[rasa.shared.core.constants.USER]
-            elif last_ml_state.get(rasa.shared.core.constants.USER):
-                state[rasa.shared.core.constants.USER] = last_ml_state[
-                    rasa.shared.core.constants.USER
+                del state[shared_core_constants.USER]
+            elif last_ml_state.get(shared_core_constants.USER):
+                state[shared_core_constants.USER] = last_ml_state[
+                    shared_core_constants.USER
                 ]
 
     def slots_for_entities(self, entities: List[Dict[Text, Any]]) -> List[SlotSet]:
@@ -1317,7 +1274,7 @@ class Domain:
 
         for intent_name, intent_props in intent_properties.items():
             if (
-                intent_name in rasa.shared.core.constants.DEFAULT_INTENTS
+                intent_name in shared_core_constants.DEFAULT_INTENTS
                 and intent_name not in self.overridden_default_intents
             ):
                 # Default intents should be not dumped with the domain
@@ -1328,7 +1285,7 @@ class Domain:
             use_entities = set(
                 entity
                 for entity in intent_props[USED_ENTITIES_KEY]
-                if rasa.shared.core.constants.ENTITY_LABEL_SEPARATOR not in entity
+                if shared_core_constants.ENTITY_LABEL_SEPARATOR not in entity
             )
             ignore_entities = set(self.entities) - use_entities
             if len(use_entities) == len(self.entities):
@@ -1482,7 +1439,7 @@ class Domain:
         return [
             action
             for action in self.user_actions_and_forms
-            if action not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
+            if action not in shared_core_constants.DEFAULT_ACTION_NAMES
         ]
 
     @staticmethod
@@ -1529,9 +1486,9 @@ class Domain:
         unique_user_actions = [
             action
             for action in user_actions
-            if action not in rasa.shared.core.constants.DEFAULT_ACTION_NAMES
+            if action not in shared_core_constants.DEFAULT_ACTION_NAMES
         ]
-        return rasa.shared.core.constants.DEFAULT_ACTION_NAMES + unique_user_actions
+        return shared_core_constants.DEFAULT_ACTION_NAMES + unique_user_actions
 
     def domain_warnings(
         self,

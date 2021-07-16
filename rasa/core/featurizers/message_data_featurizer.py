@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Text, Any, Iterable
 from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.core.domain import Message, Domain
+from rasa.shared.core.domain import Message, Domain, SubState, State
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.nlu.training_data.message import Message
@@ -50,38 +50,6 @@ def item2index_mapping(unique_items: Iterable[Text]) -> Dict[Text, int]:
     }
 
 
-def convert_sparse_sequence_to_sentence_features(
-    features: List["Features"],
-) -> List["Features"]:
-    """Grabs all sparse sequence features and turns them into sparse sentence features.
-
-    That is, this function filters all sparse sequence features and then
-    turns each of these sparse sequence features into sparse sentence feature
-    by summing over their first axis, respectively.
-
-    TODO: move this somewhere else
-    TODO: extend features to obtain meaningful aggregations
-
-    Returns:
-      a list with as many sparse sentenc features as there are sparse sequence features
-      in the given list
-    """
-    # TODO: add functionality to `Features` to obtain a meaningful conversion from
-    # sequence to sentence features depending on it's "origin" (requires rework of
-    # Features class to work properly because the origin attribute is really a
-    # tag defined by the user...)
-    return [
-        Features(
-            scipy.sparse.coo_matrix(feature.features.sum(0)),
-            FEATURE_TYPE_SENTENCE,
-            feature.attribute,
-            feature.origin,
-        )
-        for feature in features
-        if (feature.is_sparse and feature.type == FEATURE_TYPE_SEQUENCE)
-    ]
-
-
 def from_given_choose_supported_and_remove_excluded(
     given: Iterable[Text],
     supported: Optional[Iterable[Text]] = None,
@@ -114,7 +82,7 @@ class MessageDataFeaturizer(SetupMixin):
     @abstractmethod
     def featurize(
         self,
-        message_data: Dict[Text, Any],
+        message_data: SubState,
         attributes: Optional[List[Text]] = None,
         excluded_attributes: Optional[List[Text]] = None,
     ) -> Dict[Text, List[Features]]:
@@ -149,7 +117,7 @@ class MessageDataFeaturizerUsingMultiHotVectors(MessageDataFeaturizer):
     def is_setup(self) -> bool:
         return self.item2index_mappings is not None
 
-    def _encoding(self, message_data: Message, attribute: Text):
+    def _encoding(self, message_data: SubState, attribute: Text):
         """Turns the given mapping from a categorical variable name to a value.
 
         Note that the space of possible cateorical variables is determined by the
@@ -177,7 +145,7 @@ class MessageDataFeaturizerUsingMultiHotVectors(MessageDataFeaturizer):
                 f"It must be one of '{self.item2index_mappings.keys()}'."
             )
 
-    def featurize_attribute(self, message_data: Message, attribute: Text) -> Features:
+    def featurize_attribute(self, message_data: SubState, attribute: Text) -> Features:
         """Creates a multi-hot encoding like feature for the given attribute.
 
         """
@@ -205,7 +173,7 @@ class MessageDataFeaturizerUsingMultiHotVectors(MessageDataFeaturizer):
         )
 
     def _featurize(
-        self, message_data: Dict[Text, Any], attributes: Optional[List[Text]] = None,
+        self, message_data: SubState, attributes: Optional[List[Text]] = None,
     ) -> Dict[Text, List[Features]]:
         self.raise_if_setup_is(False)
 
@@ -271,7 +239,7 @@ class MessageDataFeaturizerUsingInterpreter(MessageDataFeaturizer):
         return self.interpreter_handler.is_setup() and (self.encoding_spec is not None)
 
     def _featurize(
-        self, message_data: Dict[Text, Any], attributes: List[Text]
+        self, message_data: SubState, attributes: List[Text]
     ) -> Dict[Text, List[Features]]:
 
         message = Message(data=message_data)

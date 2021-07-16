@@ -16,6 +16,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.constants import ENTITIES, ACTION_NAME
 from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.core.domain import IS_RETRIEVAL_INTENT_KEY
+from rasa.shared.core.state import state_utils
 
 logger = logging.getLogger(__name__)
 
@@ -557,17 +558,17 @@ def _unique_events_from_stories(
 
 def _messages_from_user_utterance(event: UserUttered) -> Message:
     # sub state correctly encodes intent vs text
-    data = event.as_sub_state()
+    data = state_utils.convert_user_uttered_event_to_user_substate(event)
     # sub state stores entities differently
     if data.get(ENTITIES) and event.entities:
         data[ENTITIES] = event.entities
 
-    return Message(data=data)
+    return Message(data=data)  # FIXME/REMINDER: substate = message data
 
 
 def _messages_from_action(event: ActionExecuted) -> Message:
     # sub state correctly encodes action_name vs action_text
-    return Message(data=event.as_sub_state())
+    return Message(data=event.as_sub_state())  # FIXME/REMINDER: substate = message data
 
 
 def _additional_training_data_from_default_actions() -> TrainingData:

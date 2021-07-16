@@ -2,7 +2,7 @@ import logging
 from typing import Callable, Generator, Tuple, List, Optional, Dict, Text, TypeVar, Any
 
 
-from rasa.shared.core.domain import State
+from rasa.shared.core.domain import State, SubState
 from rasa.shared.core import state as state_utils
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.constants import TEXT
@@ -11,12 +11,16 @@ from rasa.shared.nlu.constants import TEXT
 logger = logging.getLogger(__name__)
 
 
-class StateFilter:
-    """TODO: move this to tracker?"""
+class StateSequenceExtractor:
+    """Extracts the right state sequence from the tracker.
+
+    NOTE: if this makes things easier, we can also iterate over the "events" from the
+    tracker here and apply filters on events instead of states
+    """
 
     def __init__(
         self,
-        omit_unset_slots: bool = True,  # FIXME: this should not be here... -> MessageDataExtractor?
+        omit_unset_slots: bool = True,
         extra_state_filter: Optional[Callable[[State], bool]] = True,
     ):
         self.extra_state_filter = extra_state_filter
@@ -29,7 +33,9 @@ class StateFilter:
         return [
             state
             for state in tracker.past_states(omit_unset_slots=omit_unset_slots)
-            if state_utils.is_prev_action_listen_in_state(state)
+            if state_utils.is_prev_action_listen_in_state(
+                state
+            )  # FIXME: this only gives us answers to 'action_listen'
             and not self.extra_state_filter(state)
         ]
 
@@ -70,25 +76,49 @@ class StateFilter:
         return states
 
 
-class MessageDataExtractor:
-    """Converts a State into input or output message data that can be featurized."""
+class PartialStateExtractor:
+    """Extracts the information from a single state that should be featurized."""
 
     def __init__(
         self,
-        input_attributes: Dict[Text, List[Text]],
-        output_attributes: Dict[Text, List[Text]],
+        input_schema: Dict[Text, List[Text]],
+        input_schema_filter: Callable[[Dict[Text, List[Text]]], Dict[Text, List[Text]]],
+        output_schema: Dict[Text, List[Text]],
     ):
-        self.input_attributes = set(input_attributes)
-        self.ouput_state_attributes = set(output_attributes)
+        """
+        Args:
+          input_schema: the key/subkey combinations you'll want to extract from a state
+            and featurize to obtain some input for a policy
+          input_schema_filter: can be used in case certain key/subkey combinations
+            should only be used iff certain other other key/subkey combinations that are
+            (not) available (the input_schema is not sufficient to specify that);
 
-    def extract_input(self, state: State) -> Dict[Text, Any]:
-        state = state_utils.copy(state=state, key_dict=self.input_attributes)
-        # remove text if an intent is given to avoid working on intent level
-        if state_utils.get_user_intent(state):
-            state_utils.forget_user_text(state)
-        return state
+        Example:
+           If we *do not* want to use the TEXT attribute in case the INTENT attribute
+           is populated, define an input_schema that covers TEXT *and* INTENT and then
+           define an input_schema_filter that helps to map {USER:[TEXT,INTENT]} to
+           {USER:[INTENT]}.
+        """
+        self.input_schema = input_schema
+        self.input_schema_filter = input_schema_filter
+        self.output_schema = set(output_schema)
 
-    def extract_output(self, state: State) -> Dict[Text, Any]:
+    def extract_input(self, state: State) -> Dict[Text, SubState]:
+        """
+
+        """
+        # yeah, this should not be implemented like this - but just to describe
+        # what this should do:
+        # (1) first filter all input_attributes
+        input = state_utils.copy(state=state, key_dict=self.input_attributes)
+        # (2) determine what is left and whether you still want that...
+        input_schema = state_utils.schema(input)
+        input_schema = self.input_spec_filter(input_schema)
+        # (3) filter what you really wanted
+        input = state_utils.copy(input=input, key_dict=input_schema)
+        return input
+
+    def extract_output(self, state: State) -> Dict[Text, SubState]:
         return state_utils.copy(state=state, key_dict=self.output_attributes)
 
 
@@ -104,18 +134,21 @@ def unroll(
         yield items[rolling_start:rolling_end]
 
 
-class UnRoller:
-    """
-    TODO: there is probably a better name for this.... :)
-    FIXME: state and entities/actions tuples always belong to the same step
-     --> need to cutoff the last state...
+class MaxHistoryGenerator:
+    """Helps to generate subsequences from state sequences.
+
+    NOTE:  we could either
+    - generate sub-sequences from sequences of states first -> then we have to featurize
+      the same states again and again
+    - generate sub-sequences from the featurized input/output tuples -> then the only
+      computations we throw away are the "outputs" computed for the first max_history-1
+      steps of a sequence (iff we don't catch that at the right point :) - that's not
+      defined anywhere yet)
     """
 
-    def __init__(self, max_history: Optional[int] = None,) -> None:
+    def __init__(self, max_window_size: Optional[int] = None,) -> None:
 
-        self.max_history = max_history
-        # from multiple states that create equal featurizations
-        # we only need to keep one.
+        self.max_window_size = max_window_size
         self._hashes = set()
         # TODO: This should NOT be persisted and loaded again, because it won't mean a
         # thing in the next session...
@@ -123,7 +156,9 @@ class UnRoller:
     def clear_history(self):
         self._hashes = set()
 
-    def unroll_and_deduplicate(self, inputs_and_targets: List[Tuple[State, State]]):
+    def unroll_and_deduplicate(
+        self, inputs_and_targets: List[Tuple[State, State]]
+    ):  # FIXME: these should be partial states
         for subsequence in self.unroll_up_to(inputs_and_targets, self.max_history):
             input_states = [
                 tuple[0] for tuple in subsequence[:-1]
@@ -131,21 +166,12 @@ class UnRoller:
             last_target = subsequence[-1][1]
             hashed_subsequence = hash(
                 tuple(
-                    (state_utils.FrozenState(s), state_utils.FrozenState(last_target))
+                    (
+                        state_utils.FrozenState(s),
+                        state_utils.FrozenState(last_target),
+                    )  # FIXME: this works for partial states...
                     for s in input_states
                 )
             )
             if hashed_subsequence not in self._hashes:
                 yield subsequence
-
-    @staticmethod
-    def unroll_for_prediction(states: List[State], max_history: Optional[int] = None):
-        """
-        TODO: remove this?
-
-        NOTE: no need to _choose_last_user_input because Extractor has taken care of that
-        """
-        return [
-            state_sequence
-            for state_sequence in UnRoller.unroll(items=states, max_history=max_history)
-        ]
