@@ -10,7 +10,7 @@ from typing import Optional, Any, Dict, List, Text
 import rasa.utils.io
 
 from rasa.core.domain import Domain
-from rasa.core.events import ActionExecuted, Event
+from rasa.core.events import ActionExecuted
 from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
@@ -66,6 +66,7 @@ class MemoizationPolicy(Policy):
         max_history: Optional[int] = None,
         lookup: Optional[Dict] = None,
     ) -> None:
+
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
@@ -104,6 +105,7 @@ class MemoizationPolicy(Policy):
         )
         for states, actions in pbar:
             action = actions[0]
+
             feature_key = self._create_feature_key(states)
             feature_item = domain.index_for_action(action)
 
@@ -171,6 +173,7 @@ class MemoizationPolicy(Policy):
         tracker: DialogueStateTracker,
         domain: Domain,
     ) -> Optional[int]:
+
         return self._recall_states(states)
 
     def predict_action_probabilities(
@@ -243,19 +246,19 @@ class MemoizationPolicy(Policy):
 
 class AugmentedMemoizationPolicy(MemoizationPolicy):
     """The policy that remembers examples from training stories
-    for `max_history` turns.
+        for `max_history` turns.
 
-    If it is needed to recall turns from training dialogues
-    where some slots might not be set during prediction time,
-    add relevant stories without such slots to training data.
-    E.g. reminder stories.
+        If it is needed to recall turns from training dialogues
+        where some slots might not be set during prediction time,
+        add relevant stories without such slots to training data.
+        E.g. reminder stories.
 
-    Since `slots` that are set some time in the past are
-    preserved in all future feature vectors until they are set
-    to None, this policy has a capability to recall the turns
-    up to `max_history` from training stories during prediction
-    even if additional slots were filled in the past
-    for current dialogue.
+        Since `slots` that are set some time in the past are
+        preserved in all future feature vectors until they are set
+        to None, this policy has a capability to recall the turns
+        up to `max_history` from training stories during prediction
+        even if additional slots were filled in the past
+        for current dialogue.
     """
 
     @staticmethod
@@ -263,7 +266,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         tracker: DialogueStateTracker, again: bool = False
     ) -> Optional[DialogueStateTracker]:
         """Send Marty to the past to get
-        the new featurization for the future"""
+            the new featurization for the future"""
 
         idx_of_first_action = None
         idx_of_second_action = None
@@ -283,12 +286,12 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         # use first action, if we went first time and second action, if we went again
         idx_to_use = idx_of_second_action if again else idx_of_first_action
         if idx_to_use is None:
-            return
+            return None
 
         # make second ActionExecuted the first one
         events = applied_events[idx_to_use:]
         if not events:
-            return
+            return None
 
         mcfly_tracker = tracker.init_copy()
         for e in events:
@@ -296,25 +299,13 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         return mcfly_tracker
 
-    def _recall_using_delorean(
-        self, old_states: List, tracker: DialogueStateTracker, domain: Domain,
-    ) -> Optional[int]:
-        """Applies to the future idea to change the past and get the new future.
+    def _recall_using_delorean(self, old_states, tracker, domain) -> Optional[int]:
+        """Recursively go to the past to correctly forget slots,
+            and then back to the future to recall."""
 
-        Recursively go to the past to correctly forget slots,
-        and then back to the future to recall.
-
-        Args:
-            old_states: List of states.
-            tracker: The tracker.
-            domain: The Domain.
-
-        Returns:
-            The name of the action.
-        """
         logger.debug("Launch DeLorean...")
 
-        # Count how many events we need to look at, based on `max_history`
+        # Truncate the tracker based on `max_history`
         mcfly_tracker = _trim_tracker_by_max_history(tracker, self.max_history)
         mcfly_tracker = self._back_to_the_future(tracker)
         while mcfly_tracker is not None:
@@ -339,27 +330,18 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         return None
 
     def recall(
-        self, states: List, tracker: DialogueStateTracker, domain: Domain,
+        self,
+        states: List[Dict[Text, float]],
+        tracker: DialogueStateTracker,
+        domain: Domain,
     ) -> Optional[int]:
-        """Finds the action based on the given states.
 
-        Uses back to the future idea to change the past and check whether the new future
-        can be used to recall the action.
-
-        Args:
-            states: List of states.
-            tracker: The tracker.
-            domain: The Domain.
-
-        Returns:
-            The index of the action.
-        """
-        predicted_action_index = self._recall_states(states)
-        if predicted_action_index is None:
+        recalled = self._recall_states(states)
+        if recalled is None:
             # let's try a different method to recall that tracker
             return self._recall_using_delorean(states, tracker, domain)
         else:
-            return predicted_action_index
+            return recalled
 
 
 def _get_max_applied_events_for_max_history(
@@ -396,7 +378,7 @@ def _trim_tracker_by_max_history(
 
     Args:
         tracker: Some tracker.
-        max_history: Number of events to keep.
+        max_history: Number of actions to keep.
 
     Returns:
         A new tracker with up to `max_history` actions, or the same tracker if
