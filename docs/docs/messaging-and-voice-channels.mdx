@@ -60,11 +60,11 @@ As of writing this, it is set to 40 connections / minute.
 
 :::
 
-Alternatively you can make your assistent listen on a specific address using the `SANIC_HOST` environment
-variable:
+Alternatively you can make your assistent listen on a specific address using the `-i` command line 
+argument:
 
 ```bash
-SANIC_HOST=192.168.69.150 rasa run -p 5005
+rasa run -p 5005 -i 192.168.69.150
 ```
 
 This is particulary useful when your internet facing machines connect to backend servers using a VPN 
