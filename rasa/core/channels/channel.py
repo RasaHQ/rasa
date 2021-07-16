@@ -200,6 +200,8 @@ def decode_bearer_token(
     except Exception:
         logger.exception("Failed to decode bearer token.")
 
+    return None
+
 
 class OutputChannel:
     """Output channel base class.

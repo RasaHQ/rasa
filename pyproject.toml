@@ -119,7 +119,7 @@ ujson = ">=1.35,<5.0"
 oauth2client = "4.1.3"
 regex = ">=2020.6,<2021.8"
 joblib = ">=0.15.1,<1.1.0"
-sentry-sdk = ">=0.17.0,<1.3.0"
+sentry-sdk = ">=0.17.0,<1.4.0"
 aio-pika = "^6.7.1"
 pyTelegramBotAPI = "^3.7.3"
 
@@ -156,6 +156,7 @@ types-requests = "^2.25.0"
 types-setuptools = "^57.0.0"
 memory-profiler = "^0.58.0"
 psutil = "^5.8.0"
+mypy-extensions = "^0.4.3"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]
