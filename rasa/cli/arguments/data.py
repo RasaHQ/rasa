@@ -30,6 +30,12 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> N
     )
 
     parser.add_argument("-l", "--language", default="en", help="Language of data.")
+    parser.add_argument(
+        "-s",
+        "--source",
+        choices=["watson"],
+        help="source file type. Currently only watson is possible to be converted to yaml",
+    )
 
 
 def set_split_arguments(parser: argparse.ArgumentParser) -> None:
