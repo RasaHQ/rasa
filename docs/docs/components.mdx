@@ -213,8 +213,9 @@ now implements its behavior.
       # If the requested model is not found in the
       # directory, it will be downloaded and
       # cached in this directory for future use.
-      # The default value of `cache_dir` is the
-      # constant `TRANSFORMERS_CACHE`, defined in
+      # The default value of `cache_dir` can be
+      # set using the environment variable
+      # `TRANSFORMERS_CACHE`, as per the
       # Transformers library.
       cache_dir: null
   ```
@@ -799,9 +800,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
       # If the requested model is not found in the
       # directory, it will be downloaded and
       # cached in this directory for future use.
-      # The default value of `cache_dir` is the
-      # constant `TRANSFORMERS_CACHE`, defined in
-      # the Transformers library.
+      # The default value of `cache_dir` can be
+      # set using the environment variable
+      # `TRANSFORMERS_CACHE`, as per the
+      # Transformers library.
       cache_dir: null
   ```
 
