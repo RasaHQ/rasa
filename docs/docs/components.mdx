@@ -208,8 +208,15 @@ now implements its behavior.
       # Pre-Trained weights to be loaded
       model_weights: "rasa/LaBSE"
 
-      # An optional path to a specific directory to download and cache the pre-trained model weights.
-      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+      # An optional path to a directory from which
+      # to load pre-trained model weights.
+      # If the requested model is not found in the
+      # directory, it will be downloaded and
+      # cached in this directory for future use.
+      # The default value of `cache_dir` can be
+      # set using the environment variable
+      # `TRANSFORMERS_CACHE`, as per the
+      # Transformers library.
       cache_dir: null
   ```
 
@@ -419,6 +426,108 @@ now implements its behavior.
       # Regular expression to detect tokens
       "token_pattern": None
     ```
+
+
+  ### ConveRTTokenizer
+
+:::caution Deprecated
+The `ConveRTTokenizer` is deprecated and will be removed in a future release. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
+should now be used with any other [tokenizer](./components.mdx#tokenizers), for example [WhitespaceTokenizer](./components.mdx#whitespacetokenizer).
+:::
+
+  * **Short**
+
+    Tokenizer using [ConveRT](https://github.com/PolyAI-LDN/polyai-models#convert) model.
+
+
+
+  * **Outputs**
+
+    `tokens` for user messages, responses (if present), and intents (if specified)
+
+
+
+  * **Requires**
+
+    Nothing
+
+
+
+  * **Description**
+
+    Creates tokens using the ConveRT tokenizer.
+
+    :::note
+    Since `ConveRT` model is trained only on an English corpus of conversations, this tokenizer should only
+    be used if your training data is in English language.
+
+    :::
+
+    :::note
+    To use `ConveRTTokenizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
+
+    :::
+
+
+
+  * **Configuration**
+
+    ```yaml-rasa
+    pipeline:
+    - name: "ConveRTTokenizer"
+      # Flag to check whether to split intents
+      "intent_tokenization_flag": False
+      # Symbol on which intent should be split
+      "intent_split_symbol": "_"
+      # Regular expression to detect tokens
+      "token_pattern": None
+      # Remote URL/Local directory of model files(Required)
+      "model_url": None
+    ```
+
+
+
+  ### LanguageModelTokenizer
+
+:::caution Deprecated
+The `LanguageModelTokenizer` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
+should now be used with any other [tokenizer](./components.mdx#tokenizers), for example [WhitespaceTokenizer](./components.mdx#whitespacetokenizer).
+:::
+
+* **Short**
+
+Tokenizer from pre-trained language models
+
+
+
+* **Outputs**
+
+`tokens` for user messages, responses (if present), and intents (if specified)
+
+
+
+* **Requires**
+
+[HFTransformersNLP](./components.mdx#hftransformersnlp)
+
+
+
+* **Description**
+
+Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
+
+
+
+* **Configuration**
+
+```yaml-rasa
+pipeline:
+- name: "LanguageModelTokenizer"
+  # Flag to check whether to split intents
+  "intent_tokenization_flag": False
+  # Symbol on which intent should be split
+  "intent_split_symbol": "_"
+```
 
 
 ## Featurizers
@@ -686,8 +795,15 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
       # Pre-Trained weights to be loaded
       model_weights: "rasa/LaBSE"
 
-      # An optional path to a specific directory to download and cache the pre-trained model weights.
-      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+      # An optional path to a directory from which
+      # to load pre-trained model weights.
+      # If the requested model is not found in the
+      # directory, it will be downloaded and
+      # cached in this directory for future use.
+      # The default value of `cache_dir` can be
+      # set using the environment variable
+      # `TRANSFORMERS_CACHE`, as per the
+      # Transformers library.
       cache_dir: null
   ```
 
