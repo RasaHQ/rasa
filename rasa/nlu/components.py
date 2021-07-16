@@ -477,7 +477,8 @@ class Component(metaclass=ComponentMetaclass):
         will be a proper pipeline definition where `ComponentA`
         is the name of the first component of the pipeline.
         """
-        return type(self).name
+        # cast due to https://github.com/python/mypy/issues/7945
+        return typing.cast(str, type(self).name)
 
     @property
     def unique_name(self) -> Text:
@@ -822,9 +823,6 @@ class Component(metaclass=ComponentMetaclass):
             return language not in not_supported_language_list
 
 
-C = typing.TypeVar("C", bound=Component)
-
-
 class ComponentBuilder:
     """Creates trainers and interpreters based on configurations.
 
@@ -875,7 +873,7 @@ class ComponentBuilder:
         model_dir: Text,
         model_metadata: "Metadata",
         **context: Any,
-    ) -> Component:
+    ) -> Optional[Component]:
         """Loads a component.
 
         Tries to retrieve a component from the cache, else calls
@@ -892,7 +890,6 @@ class ComponentBuilder:
         Returns:
             The loaded component.
         """
-
         from rasa.nlu import registry
 
         try:
@@ -928,7 +925,6 @@ class ComponentBuilder:
         Returns:
             The created component.
         """
-
         from rasa.nlu import registry
         from rasa.nlu.model import Metadata
 
@@ -945,12 +941,3 @@ class ComponentBuilder:
                 f"Failed to create component '{component_config['name']}'. "
                 f"Error: {e}"
             )
-
-    def create_component_from_class(self, component_class: Type[C], **cfg: Any) -> C:
-        """Create a component based on a class and a configuration.
-
-        Mainly used to make use of caching when instantiating component classes."""
-
-        component_config = {"name": component_class.name}
-
-        return self.create_component(component_config, RasaNLUModelConfig(cfg))

@@ -5,35 +5,29 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 
 
-supported_langauges = [
-    "zh",
-    "da",
-    "nl",
-    "en",
-    "fr",
-    "de",
-    "el",
-    "it",
-    "ja",
-    "lt",
-    "mk",
-    "nb",
-    "pl",
-    "pt",
-    "ro",
-    "ru",
-    "es",
-]
+@pytest.mark.parametrize(
+    "params,msg",
+    [
+        (
+            {"model": "dinosaurhead"},
+            "Please confirm that dinosaurhead is an available spaCy model",
+        ),
+        ({}, "Missing model configuration for `SpacyNLP` in `config.yml`"),
+    ],
+)
+def test_model_raises_error_not_exist(params, msg):
+    """It should throw a direct error when a bad model setting goes in."""
+    with pytest.raises(InvalidModelError) as err:
+        SpacyNLP.create(params, RasaNLUModelConfig())
+    assert msg in str(err.value)
 
 
-@pytest.mark.parametrize("lang", supported_langauges)
-def test_model_fallback_raises_warning(lang: str):
-    """Make sure we raise a warning but we will perform a fallback."""
-    with pytest.warns(FutureWarning):
-        SpacyNLP._check_model_fallback(None, lang, warn=True)
-
-
-def test_model_raises_error_not_exist():
-    """It should throw a direct error when a model doesn't exist."""
-    with pytest.raises(InvalidModelError):
-        SpacyNLP.create({"model": "dinosaurhead"}, RasaNLUModelConfig())
+def test_cache_key_raises_error():
+    """
+    The cache_key is created before the rest of the model.
+    Error also needs to be raised there.
+    """
+    with pytest.raises(InvalidModelError) as err:
+        SpacyNLP.cache_key(component_meta={}, model_metadata={})
+    msg = "Missing model configuration for `SpacyNLP` in `config.yml`"
+    assert msg in str(err.value)

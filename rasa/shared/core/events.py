@@ -544,7 +544,7 @@ class UserUttered(Event):
         )
         return _dict
 
-    def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+    def as_sub_state(self,) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
         """Turns a UserUttered event into features.
 
         The substate contains information about entities, intent and text of the
@@ -571,7 +571,7 @@ class UserUttered(Event):
             if ENTITY_ATTRIBUTE_GROUP in entity
         )
 
-        out = {}
+        out: Dict[Text, Union[None, Text, List[Optional[Text]]]] = {}
         # During training we expect either intent_name or text to be set.
         # During prediction both will be set.
         if self.text and (
@@ -959,7 +959,9 @@ class SlotSet(Event):
         return f"{self.type_name}{props}"
 
     @classmethod
-    def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
+    def _from_story_string(
+        cls, parameters: Dict[Text, Any]
+    ) -> Optional[List["SlotSet"]]:
 
         slots = []
         for slot_key, slot_val in parameters.items():
@@ -1512,32 +1514,36 @@ class ActionExecuted(Event):
 
         super().__init__(timestamp, metadata)
 
+    def __members__(self) -> Tuple[Optional[Text], Optional[Text], Text]:
+        meta_no_nones = {k: v for k, v in self.metadata.items() if v is not None}
+        return (
+            self.action_name,
+            self.action_text,
+            jsonpickle.encode(meta_no_nones),
+        )
+
     def __repr__(self) -> Text:
         """Returns event as string for debugging."""
         return "ActionExecuted(action: {}, policy: {}, confidence: {})".format(
             self.action_name, self.policy, self.confidence
         )
 
-    def __str__(self) -> Text:
+    def __str__(self) -> Optional[Text]:
         """Returns event as human readable string."""
         return self.action_name or self.action_text
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(self.action_name or self.action_text)
+        return hash(self.__members__())
 
     def __eq__(self, other: Any) -> bool:
-        """Checks if object is equal to another."""
+        """Compares object with other object."""
         if not isinstance(other, ActionExecuted):
             return NotImplemented
 
-        equal = self.action_name == other.action_name
-        if hasattr(self, "action_text") and hasattr(other, "action_text"):
-            equal = equal and self.action_text == other.action_text
+        return self.__members__() == other.__members__()
 
-        return equal
-
-    def as_story_string(self) -> Text:
+    def as_story_string(self) -> Optional[Text]:
         """Returns event in Markdown format."""
         if self.action_text:
             raise UnsupportedFeatureException(
