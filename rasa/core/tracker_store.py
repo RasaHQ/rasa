@@ -42,7 +42,7 @@ from rasa.shared.core.trackers import (
     DialogueStateTracker,
     EventVerbosity,
 )
-from rasa.shared.exceptions import ConnectionException
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 import sqlalchemy as sa
@@ -250,8 +250,8 @@ class TrackerStore:
         try:
             dialogue = Dialogue.from_parameters(json.loads(serialised_tracker))
         except UnicodeDecodeError as e:
-            raise ValueError(
-                "Tracker can not be deserialised. "
+            raise RasaException(
+                "Tracker cannot be deserialised. "
                 "Trackers must be serialised as json. "
                 "Support for deserialising pickled trackers has been removed."
             ) from e
@@ -427,17 +427,6 @@ class DynamoTrackerStore(TrackerStore):
         else:
             table = dynamo.Table(table_name)
 
-            column_names = [
-                attribute["AttributeName"] for attribute in table.attribute_definitions
-            ]
-            if "session_date" in column_names:
-                rasa.shared.utils.io.raise_warning(
-                    "Attribute 'session_date' is no longer required when using a "
-                    "DynamoDB TrackerStore. Please remove this attribute from "
-                    "any existing tables.",
-                    FutureWarning,
-                )
-
         return table
 
     def save(self, tracker: DialogueStateTracker) -> None:
@@ -447,18 +436,6 @@ class DynamoTrackerStore(TrackerStore):
         serialized = self.serialise_tracker(tracker)
 
         self.db.put_item(Item=serialized)
-
-    def _retrieve_latest_session_date(self, sender_id: Text) -> Optional[int]:
-        dialogues = self.db.query(
-            KeyConditionExpression=Key("sender_id").eq(sender_id),
-            Limit=1,
-            ScanIndexForward=False,
-        )["Items"]
-
-        if not dialogues:
-            return int(datetime.now(tz=timezone.utc).timestamp())
-
-        return dialogues[0].get("session_date")
 
     def serialise_tracker(self, tracker: "DialogueStateTracker") -> Dict:
         """Serializes the tracker, returns object with decimal types."""
