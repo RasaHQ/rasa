@@ -640,18 +640,3 @@ async def test_can_finetune_min_version(
 
     with mock.patch("rasa.model.MINIMUM_COMPATIBLE_VERSION", min_compatible_version):
         assert can_finetune(old_fingerprint, new_fingerprint) == can_tune
-
-
-@pytest.mark.parametrize("empty_key", ["pipeline", "policies"])
-async def test_fingerprinting_config_epochs_empty_pipeline_or_policies(
-    project: Text, tmp_path: Path, empty_key: Text,
-):
-    config = {
-        "language": "en",
-        "pipeline": [{"name": "WhitespaceTokenizer"},],
-        "policies": [{"name": "MemoizationPolicy"},],
-    }
-
-    config[empty_key] = None
-
-    model._get_fingerprint_of_config_without_epochs(config)

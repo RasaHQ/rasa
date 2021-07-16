@@ -193,7 +193,8 @@ def serve_application(
     host = os.environ.get(ENV_SANIC_HOST, "0.0.0.0")
 
     logger.info(
-        f"Starting Rasa server on {protocol}://{host}:{port}"
+        f"Starting Rasa server on "
+        f"{constants.DEFAULT_SERVER_FORMAT.format(protocol, port)}"
     )
 
     app.register_listener(

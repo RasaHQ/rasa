@@ -55,7 +55,8 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             ],
         ),
         (
-            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 https://rasa.com/docs/rasa/components#whitespacetokenizer",
+            "https://www.google.com/search?client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8 "  # noqa: E501, W505
+            "https://rasa.com/docs/rasa/components#whitespacetokenizer",
             [
                 "https://www.google.com/search?"
                 "client=safari&rls=en&q=i+like+rasa&ie=UTF-8&oe=UTF-8",
@@ -158,8 +159,6 @@ def test_whitespace_training(supervised_embeddings_config: RasaNLUModelConfig):
 
 
 def test_whitespace_does_not_throw_error():
-    import rasa.utils.io as io_utils
-
     texts = rasa.shared.utils.io.read_json_file(
         "data/test_tokenizers/naughty_strings.json"
     )

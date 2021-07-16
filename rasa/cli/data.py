@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Dict, List, Text, TYPE_CHECKING
+from typing import Dict, Union, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
@@ -273,7 +273,11 @@ def validate_stories(args: argparse.Namespace) -> None:
 
 
 def _validate_domain(validator: "Validator") -> bool:
-    return validator.verify_domain_validity()
+    return (
+        validator.verify_domain_validity()
+        and validator.verify_actions_in_stories_rules()
+        and validator.verify_form_slots()
+    )
 
 
 def _validate_nlu(validator: "Validator", args: argparse.Namespace) -> bool:
@@ -284,7 +288,8 @@ def _validate_story_structure(validator: "Validator", args: argparse.Namespace) 
     # Check if a valid setting for `max_history` was given
     if isinstance(args.max_history, int) and args.max_history < 1:
         raise argparse.ArgumentTypeError(
-            f"The value of `--max-history {args.max_history}` is not a positive integer."
+            f"The value of `--max-history {args.max_history}` "
+            f"is not a positive integer."
         )
 
     return validator.verify_story_structure(
@@ -376,8 +381,11 @@ def _migrate_responses(args: argparse.Namespace) -> None:
 
 
 async def _convert_to_yaml(
-    out_path: Text, data_path: Text, converter: "TrainingDataConverter"
+    out_path: Text, data_path: Union[list, Text], converter: "TrainingDataConverter"
 ) -> None:
+
+    if isinstance(data_path, list):
+        data_path = data_path[0]
 
     output = Path(out_path)
     if not os.path.exists(output):

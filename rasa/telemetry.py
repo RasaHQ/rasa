@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-import functools
 from functools import wraps
 import hashlib
 import json
@@ -73,6 +72,9 @@ CI_ENVIRONMENT_TELL = [
     "JENKINS_URL",
     "TEAMCITY_VERSION",
     "TRAVIS",
+    "CODEBUILD_BUILD_ARN",
+    "CODEBUILD_BUILD_ID",
+    "CODEBUILD_BATCH_BUILD_IDENTIFIER",
 ]
 
 # If updating or creating a new event, remember to update
@@ -649,6 +651,7 @@ def initialize_error_reporting() -> None:
             asyncio.CancelledError,  # an async operation has been cancelled by the user
             # expected Rasa errors
             RasaException,
+            OSError,
         ],
         in_app_include=["rasa"],  # only submit errors in this package
         with_locals=False,  # don't submit local variables
@@ -699,6 +702,7 @@ async def track_model_training(
     stories = await training_data.get_stories()
     nlu_data = await training_data.get_nlu_data()
     domain = await training_data.get_domain()
+    count_conditional_responses = domain.count_conditional_response_variations()
 
     training_id = uuid.uuid4().hex
 
@@ -718,6 +722,7 @@ async def track_model_training(
             # Old nomenclature from when 'responses' were still called
             # 'templates' in the domain
             "num_templates": len(domain.responses),
+            "num_conditional_response_variations": count_conditional_responses,
             "num_slots": len(domain.slots),
             "num_forms": len(domain.forms),
             "num_intents": len(domain.intents),

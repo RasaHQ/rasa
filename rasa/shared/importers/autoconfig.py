@@ -2,7 +2,6 @@ import copy
 import logging
 import os
 from enum import Enum
-from pathlib import Path
 from typing import Text, Dict, Any, List, Set, Optional
 
 import rasa.shared.constants
@@ -110,7 +109,7 @@ def _auto_configure(
     if keys_to_configure:
         logger.debug(
             f"The provided configuration does not contain the key(s) "
-            f"{rasa.shared.utils.common.transform_collection_to_sentence(keys_to_configure)}. "
+            f"{rasa.shared.utils.common.transform_collection_to_sentence(keys_to_configure)}. "  # noqa: E501, W505
             f"Values will be provided from the default configuration."
         )
 
@@ -254,16 +253,16 @@ def _get_lines_including_autoconfig(
 def _get_commented_out_autoconfig_lines(
     config: Dict[Text, Any], auto_configured_keys: Set[Text]
 ) -> Dict[Text, List[Text]]:
-    import ruamel.yaml as yaml
+    import ruamel.yaml
     import ruamel.yaml.compat
 
-    yaml_parser = yaml.YAML()
+    yaml_parser = ruamel.yaml.YAML()
     yaml_parser.indent(mapping=2, sequence=4, offset=2)
 
     autoconfig_lines = {}
 
     for key in auto_configured_keys:
-        stream = yaml.compat.StringIO()
+        stream = ruamel.yaml.compat.StringIO()
         yaml_parser.dump(config.get(key), stream)
         dump = stream.getvalue()
 

@@ -21,7 +21,7 @@ import rasa.shared.utils.io
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa import server
-from rasa.core import config
+from rasa.core import config as core_config
 from rasa.core.agent import Agent, load_agent
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.channels import channel, RestInput
@@ -192,6 +192,7 @@ async def _trained_default_agent(
     agent = Agent(
         "data/test_domains/default_with_slots.yml",
         policies=[AugmentedMemoizationPolicy(max_history=3), RulePolicy()],
+        model_directory=model_path,
     )
 
     training_data = await agent.load_data(stories_path)
@@ -223,6 +224,15 @@ async def trained_moodbot_path(trained_async: Callable) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
+        training_files="data/test_moodbot/data/",
+    )
+
+
+@pytest.fixture(scope="session")
+async def trained_unexpected_intent_policy_path(trained_async: Callable) -> Text:
+    return await trained_async(
+        domain="data/test_moodbot/domain.yml",
+        config="data/test_moodbot/unexpected_intent_policy_config.yml",
         training_files="data/test_moodbot/data/",
     )
 
@@ -275,6 +285,18 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
 
 
 @pytest.fixture(scope="session")
+async def unexpected_intent_policy_agent(
+    trained_unexpected_intent_policy_path: Text,
+) -> Agent:
+    return await load_agent(model_path=trained_unexpected_intent_policy_path)
+
+
+@pytest.fixture(scope="session")
+async def mood_agent(trained_moodbot_path: Text) -> Agent:
+    return await load_agent(model_path=trained_moodbot_path)
+
+
+@pytest.fixture(scope="session")
 def _domain(domain_path: Text) -> Domain:
     return Domain.load(domain_path)
 
@@ -286,7 +308,7 @@ def domain(_domain: Domain) -> Domain:
 
 @pytest.fixture(scope="session")
 def config(config_path: Text) -> List[Policy]:
-    return config.load(config_path)
+    return core_config.load(config_path)
 
 
 @pytest.fixture(scope="session")
@@ -502,15 +524,58 @@ async def trained_response_selector_bot(trained_async: Callable) -> Path:
 
 
 @pytest.fixture(scope="session")
-async def e2e_bot(trained_async: Callable) -> Path:
+async def trained_restaurantbot(trained_async: Callable) -> Path:
     zipped_model = await trained_async(
-        domain="data/test_e2ebot/domain.yml",
-        config="data/test_e2ebot/config.yml",
+        domain="data/test_restaurantbot/domain.yml",
+        config="data/test_restaurantbot/config.yml",
         training_files=[
-            "data/test_e2ebot/data/rules.yml",
-            "data/test_e2ebot/data/stories.yml",
-            "data/test_e2ebot/data/nlu.yml",
+            "data/test_restaurantbot/data/rules.yml",
+            "data/test_restaurantbot/data/stories.yml",
+            "data/test_restaurantbot/data/nlu.yml",
         ],
+    )
+
+    if not zipped_model:
+        raise RasaException("Model training for formbot failed.")
+
+    return Path(zipped_model)
+
+
+@pytest.fixture(scope="session")
+async def e2e_bot_domain_file() -> Path:
+    return Path("data/test_e2ebot/domain.yml")
+
+
+@pytest.fixture(scope="session")
+async def e2e_bot_config_file() -> Path:
+    return Path("data/test_e2ebot/config.yml")
+
+
+@pytest.fixture(scope="session")
+async def e2e_bot_training_files() -> List[Path]:
+    return [
+        Path("data/test_e2ebot/data/rules.yml"),
+        Path("data/test_e2ebot/data/stories.yml"),
+        Path("data/test_e2ebot/data/nlu.yml"),
+    ]
+
+
+@pytest.fixture(scope="session")
+async def e2e_bot_test_stories_with_unknown_bot_utterances() -> Path:
+    return Path("data/test_e2ebot/tests/test_stories_with_unknown_bot_utterances.yml")
+
+
+@pytest.fixture(scope="session")
+async def e2e_bot(
+    trained_async: Callable,
+    e2e_bot_domain_file: Path,
+    e2e_bot_config_file: Path,
+    e2e_bot_training_files: List[Path],
+) -> Path:
+    zipped_model = await trained_async(
+        domain=e2e_bot_domain_file,
+        config=e2e_bot_config_file,
+        training_files=e2e_bot_training_files,
     )
 
     if not zipped_model:
@@ -524,6 +589,11 @@ async def response_selector_agent(
     trained_response_selector_bot: Optional[Path],
 ) -> Agent:
     return Agent.load_local_model(trained_response_selector_bot)
+
+
+@pytest.fixture(scope="session")
+async def restaurantbot_agent(trained_restaurantbot: Optional[Path],) -> Agent:
+    return Agent.load_local_model(trained_restaurantbot)
 
 
 @pytest.fixture(scope="session")

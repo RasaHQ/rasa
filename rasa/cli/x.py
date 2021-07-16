@@ -2,7 +2,7 @@ import argparse
 import asyncio
 import importlib.util
 import logging
-from multiprocessing import get_context
+from multiprocessing import get_context, Process
 import os
 import signal
 import sys
@@ -196,9 +196,10 @@ def _is_correct_event_broker(event_broker: EndpointConfig) -> bool:
     )
 
 
-def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text) -> None:
+def start_rasa_for_local_rasa_x(
+    args: argparse.Namespace, rasa_x_token: Text
+) -> Process:
     """Starts the Rasa X API with Rasa as a background process."""
-
     credentials_path, endpoints_path = _get_credentials_and_endpoints_paths(args)
     endpoints = AvailableEndpoints.read_endpoints(endpoints_path)
 
@@ -217,9 +218,10 @@ def start_rasa_for_local_rasa_x(args: argparse.Namespace, rasa_x_token: Text) ->
 
     ctx = get_context("spawn")
     p = ctx.Process(
-        target=_rasa_service, args=(args, endpoints, rasa_x_url, credentials_path)
+        target=_rasa_service,
+        args=(args, endpoints, rasa_x_url, credentials_path),
+        daemon=True,
     )
-    p.daemon = True
     p.start()
     return p
 

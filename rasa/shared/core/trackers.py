@@ -50,7 +50,6 @@ from rasa.shared.core.events import (
     UserUttered,
     ActionExecuted,
     Event,
-    SlotSet,
     Restarted,
     ActionReverted,
     UserUtteranceReverted,
@@ -67,6 +66,7 @@ from rasa.shared.core.slots import Slot
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
 
+    from rasa.shared.core.events import NLUPredictionData
     from rasa.shared.core.training_data.structures import Story
     from rasa.shared.core.training_data.story_writer.story_writer import StoryWriter
 
@@ -261,11 +261,14 @@ class DialogueStateTracker:
 
         return None
 
-    def _latest_message_data(self) -> Dict[Text, Any]:
+    def _latest_message_data(self) -> Optional["NLUPredictionData"]:
+        if not self.latest_message:
+            return None
+
         parse_data_with_nlu_state = self.latest_message.parse_data.copy()
         # Combine entities predicted by NLU with entities predicted by policies so that
         # users can access them together via `latest_message` (e.g. in custom actions)
-        parse_data_with_nlu_state["entities"] = self.latest_message.entities
+        parse_data_with_nlu_state[ENTITIES] = self.latest_message.entities
 
         return parse_data_with_nlu_state
 
@@ -852,23 +855,6 @@ class DialogueStateTracker:
         """Clears follow up action when it was executed."""
 
         self.followup_action = None
-
-    def _merge_slots(
-        self, entities: Optional[List[Dict[Text, Any]]] = None
-    ) -> List[SlotSet]:
-        """Take a list of entities and create tracker slot set events.
-
-        If an entity type matches a slots name, the entities value is set
-        as the slots value by creating a ``SlotSet`` event.
-        """
-
-        entities = entities if entities else self.latest_message.entities
-        new_slots = [
-            SlotSet(e["entity"], e["value"])
-            for e in entities
-            if e["entity"] in self.slots.keys()
-        ]
-        return new_slots
 
     @property
     def active_loop_name(self) -> Optional[Text]:

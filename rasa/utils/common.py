@@ -14,7 +14,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    NoReturn,
 )
 
 import rasa.utils.io
@@ -177,19 +176,6 @@ def set_log_and_warnings_filters() -> None:
     warnings.filterwarnings("once", category=UserWarning)
 
 
-def obtain_verbosity() -> int:
-    """Returns a verbosity level according to the set log level."""
-    log_level = os.environ.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL)
-
-    verbosity = 0
-    if log_level == "DEBUG":
-        verbosity = 2
-    if log_level == "INFO":
-        verbosity = 1
-
-    return verbosity
-
-
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     """Sorts a list of dictionaries by their first key."""
     return sorted(dicts, key=lambda d: list(d.keys())[0])
@@ -310,7 +296,11 @@ def run_in_loop(
     result = loop.run_until_complete(f)
 
     # Let's also finish all running tasks:
-    pending = asyncio.Task.all_tasks()
+    # fallback for python 3.6, which doesn't have asyncio.all_tasks
+    try:
+        pending = asyncio.all_tasks(loop)
+    except AttributeError:
+        pending = asyncio.Task.all_tasks()
     loop.run_until_complete(asyncio.gather(*pending))
 
     return result

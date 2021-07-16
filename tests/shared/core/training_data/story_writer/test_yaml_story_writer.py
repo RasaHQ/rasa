@@ -1,10 +1,14 @@
 from pathlib import Path
 import textwrap
 from typing import Text
-
+from collections import OrderedDict
 import pytest
 
-from rasa.shared.core.constants import ACTION_SESSION_START_NAME, ACTION_LISTEN_NAME
+from rasa.shared.core.constants import (
+    ACTION_SESSION_START_NAME,
+    ACTION_LISTEN_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
+)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -118,6 +122,35 @@ def test_yaml_writer_dumps_user_messages():
     )
 
 
+def test_yaml_writer_doesnt_dump_action_unlikely_intent():
+    events = [
+        UserUttered("Hello", {"name": "greet"}),
+        ActionExecuted("utter_hello"),
+        ActionExecuted(ACTION_UNLIKELY_INTENT_NAME, metadata={"key1": "value1"}),
+        ActionExecuted("utter_bye"),
+    ]
+    tracker = DialogueStateTracker.from_events("default", events)
+    dump = YAMLStoryWriter().dumps(tracker.as_story().story_steps, is_test_story=True)
+
+    assert (
+        dump.strip()
+        == textwrap.dedent(
+            """
+    version: "2.0"
+    stories:
+    - story: default
+      steps:
+      - intent: greet
+        user: |-
+          Hello
+      - action: utter_hello
+      - action: utter_bye
+
+"""
+        ).strip()
+    )
+
+
 def test_yaml_writer_avoids_dumping_not_existing_user_messages():
     events = [UserUttered("greet", {"name": "greet"}), ActionExecuted("utter_greet")]
     tracker = DialogueStateTracker.from_events("default", events)
@@ -169,8 +202,6 @@ async def test_action_start_action_listen_are_not_dumped():
 
 
 def test_yaml_writer_stories_to_yaml(domain: Domain):
-    from collections import OrderedDict
-
     reader = YAMLStoryReader(domain, None, False)
     writer = YAMLStoryWriter()
     steps = reader.read_from_file(
@@ -181,6 +212,31 @@ def test_yaml_writer_stories_to_yaml(domain: Domain):
     assert isinstance(result, OrderedDict)
     assert "stories" in result
     assert len(result["stories"]) == 1
+
+
+def test_yaml_writer_stories_to_yaml_with_null_entities(domain: Domain):
+    writer = YAMLStoryWriter()
+    stories = textwrap.dedent(
+        """
+    version: "2.0"
+    stories:
+    - story: happy path
+      steps:
+      - intent: test_intent
+        entities:
+        - test_entity: null
+        - test_entity2: false
+    """
+    )
+
+    stories_yaml = YAMLStoryReader().read_from_string(stories)
+    result = writer.stories_to_yaml(stories_yaml)
+    assert isinstance(result, OrderedDict)
+    assert "stories" in result
+    assert len(result["stories"]) == 1
+    entities = result["stories"][0]["steps"][0]["entities"]
+    assert entities[0] == "test_entity"
+    assert entities[1] == OrderedDict({"test_entity2": False})
 
 
 def test_writing_end_to_end_stories(domain: Domain):

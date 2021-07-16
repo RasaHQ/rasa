@@ -10,6 +10,7 @@ from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
+from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu import components, utils
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component, ComponentBuilder
@@ -40,8 +41,9 @@ class InvalidModelError(RasaException):
     """
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
-        super(InvalidModelError, self).__init__()
+        super(InvalidModelError, self).__init__(message)
 
     def __str__(self) -> Text:
         return self.message
@@ -55,8 +57,9 @@ class UnsupportedModelError(RasaException):
     """
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
-        super(UnsupportedModelError, self).__init__()
+        super(UnsupportedModelError, self).__init__(message)
 
     def __str__(self) -> Text:
         return self.message
@@ -203,6 +206,12 @@ class Trainer:
                 self.pipeline, self.training_data
             )
 
+        # Warn if there is an obvious case of competing entity extractors
+        components.warn_of_competing_extractors(self.pipeline)
+        components.warn_of_competition_with_regex_extractor(
+            self.pipeline, self.training_data
+        )
+
         # data gets modified internally during the training - hence the copy
         working_data: TrainingData = copy.deepcopy(data)
 
@@ -291,7 +300,8 @@ class Interpreter:
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedModelError(
                 f"The model version is trained using Rasa Open Source {model_version} "
-                f"and is not compatible with your current installation ({rasa.__version__}). "
+                f"and is not compatible with your current installation "
+                f"({rasa.__version__}). "
                 f"This means that you either need to retrain your model "
                 f"or revert back to the Rasa version that trained the model "
                 f"to ensure that the versions match up again."
@@ -348,6 +358,7 @@ class Interpreter:
         new_config: Optional[Dict] = None,
         finetuning_epoch_fraction: float = 1.0,
     ) -> Metadata:
+        new_config = new_config or {}
         for old_component_config, new_component_config in zip(
             model_metadata.metadata["pipeline"], new_config["pipeline"]
         ):
@@ -428,6 +439,7 @@ class Interpreter:
         self.pipeline = pipeline
         self.context = context if context is not None else {}
         self.model_metadata = model_metadata
+        self.has_already_warned_of_overlapping_entities = False
 
     def parse(
         self,
@@ -457,6 +469,9 @@ class Interpreter:
         for component in self.pipeline:
             component.process(message, **self.context)
 
+        if not self.has_already_warned_of_overlapping_entities:
+            self.warn_of_overlapping_entities(message)
+
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=only_output_properties))
         return output
@@ -475,3 +490,30 @@ class Interpreter:
             if not isinstance(component, (EntityExtractor, IntentClassifier)):
                 component.process(message, **self.context)
         return message
+
+    def warn_of_overlapping_entities(self, message: Message) -> None:
+        """Issues a warning when there are overlapping entity annotations.
+
+        This warning is only issued once per Interpreter life time.
+
+        Args:
+            message: user message with all processing metadata such as entities
+        """
+        overlapping_entity_pairs = message.find_overlapping_entities()
+        if len(overlapping_entity_pairs) > 0:
+            message_text = message.get("text")
+            first_pair = overlapping_entity_pairs[0]
+            entity_1 = first_pair[0]
+            entity_2 = first_pair[1]
+            rasa.shared.utils.io.raise_warning(
+                f"Parsing of message: '{message_text}' lead to overlapping "
+                f"entities: {entity_1['value']} of type "
+                f"{entity_1['entity']} extracted by "
+                f"{entity_1['extractor']} overlaps with "
+                f"{entity_2['value']} of type {entity_2['entity']} extracted by "
+                f"{entity_2['extractor']}. This can lead to unintended filling of "
+                f"slots. Please refer to the documentation section on entity "
+                f"extractors and entities getting extracted multiple times:"
+                f"{DOCS_URL_COMPONENTS}#entity-extractors"
+            )
+            self.has_already_warned_of_overlapping_entities = True

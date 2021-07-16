@@ -25,6 +25,9 @@ DOCS_URL_MIGRATION_GUIDE = DOCS_BASE_URL + "/migration-guide"
 DOCS_URL_MIGRATION_GUIDE_MD_DEPRECATION = (
     f"{DOCS_URL_MIGRATION_GUIDE}#rasa-21-to-rasa-22"
 )
+DOCS_URL_MIGRATION_GUIDE_WEIGHT_SPARSITY = (
+    f"{DOCS_URL_MIGRATION_GUIDE}#rasa-24-to-rasa-25"
+)
 DOCS_URL_TELEMETRY = DOCS_BASE_URL + "/telemetry/telemetry"
 DOCS_BASE_URL_RASA_X = "https://rasa.com/docs/rasa-x"
 DOCS_BASE_URL_ACTION_SERVER = "https://rasa.com/docs/action-server"
@@ -68,6 +71,10 @@ CONFIG_MANDATORY_KEYS_CORE = []
 CONFIG_MANDATORY_KEYS_NLU = ["language"]
 CONFIG_MANDATORY_KEYS = CONFIG_MANDATORY_KEYS_CORE + CONFIG_MANDATORY_KEYS_NLU
 
+# Keys related to Forms (in the Domain)
+REQUIRED_SLOTS_KEY = "required_slots"
+IGNORED_INTENTS = "ignored_intents"
+
 # Constants for default Rasa Open Source project layout
 DEFAULT_ENDPOINTS_PATH = "endpoints.yml"
 DEFAULT_CREDENTIALS_PATH = "credentials.yml"
@@ -84,3 +91,6 @@ DEFAULT_NLU_SUBDIRECTORY_NAME = "nlu"
 DEFAULT_CONVERSATION_TEST_PATH = "tests"
 
 DIAGNOSTIC_DATA = "diagnostic_data"
+
+RESPONSE_CONDITION = "condition"
+CHANNEL = "channel"
