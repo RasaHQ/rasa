@@ -16,6 +16,15 @@ class StateSequenceExtractor:
 
     NOTE: if this makes things easier, we can also iterate over the "events" from the
     tracker here and apply filters on events instead of states
+
+    Args:
+      omit_unset_slots: ... # TODO: should this be here / should this whole thing be part of tracker?
+      extra_state_filter: use this to filter states on the fly instead of creating a
+        new subclass
+
+    Example:
+      E.g. for extra_state_filter you might want to pass something like
+      `state_utils.previous_action_was_unlikely_intent_action`
     """
 
     def __init__(

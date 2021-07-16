@@ -349,7 +349,9 @@ def get_previous_action(state: State) -> Optional[Text]:
 
 
 def previous_action_was_unlikely_intent_action(state: State) -> bool:
-    return get_previous_action() == shared_core_constants.ACTION_UNLIKELY_INTENT_NAME
+    return (
+        get_previous_action(state) == shared_core_constants.ACTION_UNLIKELY_INTENT_NAME
+    )
 
 
 def previous_action_was_listen(state: State) -> bool:
