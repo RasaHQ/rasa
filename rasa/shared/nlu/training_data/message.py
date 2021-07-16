@@ -183,7 +183,7 @@ class Message:
     def separate_intent_response_key(
         original_intent: Text,
     ) -> Tuple[Text, Optional[Text]]:
-        """Split intent into main intent name and optional sub-intent name."""
+        """Splits intent into main intent name and optional sub-intent name."""
         split_title = original_intent.split(RESPONSE_IDENTIFIER_DELIMITER)
         if len(split_title) == 2:
             return split_title[0], split_title[1]
