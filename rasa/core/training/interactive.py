@@ -15,6 +15,7 @@ from typing import (
     Tuple,
     Union,
     Set,
+    cast,
 )
 
 from sanic import Sanic, response
@@ -90,6 +91,8 @@ from rasa.shared.nlu.training_data.message import Message
 # still works.
 import rasa.utils.io as io_utils
 
+from rasa.shared.core.generator import TrackerWithCachedStates
+
 logger = logging.getLogger(__name__)
 
 PATHS = {
@@ -148,9 +151,8 @@ async def send_message(
     conversation_id: Text,
     message: Text,
     parse_data: Optional[Dict[Text, Any]] = None,
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Send a user message to a conversation."""
-
     payload = {
         "sender": UserUttered.type_name,
         "text": message,
@@ -166,25 +168,22 @@ async def send_message(
 
 async def request_prediction(
     endpoint: EndpointConfig, conversation_id: Text
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Request the next action prediction from core."""
-
     return await endpoint.request(
         method="post", subpath=f"/conversations/{conversation_id}/predict"
     )
 
 
-async def retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]:
+async def retrieve_domain(endpoint: EndpointConfig) -> Optional[Any]:
     """Retrieve the domain from core."""
-
     return await endpoint.request(
         method="get", subpath="/domain", headers={"Accept": "application/json"}
     )
 
 
-async def retrieve_status(endpoint: EndpointConfig) -> Dict[Text, Any]:
+async def retrieve_status(endpoint: EndpointConfig) -> Optional[Any]:
     """Retrieve the status from core."""
-
     return await endpoint.request(method="get", subpath="/status")
 
 
@@ -194,11 +193,14 @@ async def retrieve_tracker(
     verbosity: EventVerbosity = EventVerbosity.ALL,
 ) -> Dict[Text, Any]:
     """Retrieve a tracker from core."""
-
     path = f"/conversations/{conversation_id}/tracker?include_events={verbosity.name}"
-    return await endpoint.request(
+    result = await endpoint.request(
         method="get", subpath=path, headers={"Accept": "application/json"}
     )
+
+    # If the request wasn't successful the previous call had already raised. Hence,
+    # we can be sure we have the tracker in the right format.
+    return cast(Dict[Text, Any], result)
 
 
 async def send_action(
@@ -208,9 +210,8 @@ async def send_action(
     policy: Optional[Text] = None,
     confidence: Optional[float] = None,
     is_new_action: bool = False,
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Log an action to a conversation."""
-
     payload = ActionExecuted(action_name, policy, confidence).as_dict()
 
     subpath = f"/conversations/{conversation_id}/execute"
@@ -252,9 +253,8 @@ async def send_event(
     endpoint: EndpointConfig,
     conversation_id: Text,
     evt: Union[List[Dict[Text, Any]], Dict[Text, Any]],
-) -> Dict[Text, Any]:
+) -> Optional[Any]:
     """Log an event to a conversation."""
-
     subpath = f"/conversations/{conversation_id}/tracker/events"
 
     return await endpoint.request(json=evt, method="post", subpath=subpath)
@@ -262,7 +262,6 @@ async def send_event(
 
 def format_bot_output(message: BotUttered) -> Text:
     """Format a bot response to be displayed in the history table."""
-
     # First, add text to output
     output = message.text or ""
 
@@ -301,7 +300,6 @@ def format_bot_output(message: BotUttered) -> Text:
 
 def latest_user_message(events: List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]:
     """Return most recent user message."""
-
     for i, e in enumerate(reversed(events)):
         if e.get("event") == UserUttered.type_name:
             return e
@@ -374,7 +372,6 @@ async def _request_free_text_action(
 async def _request_free_text_utterance(
     conversation_id: Text, endpoint: EndpointConfig, action: Text
 ) -> Text:
-
     question = questionary.text(
         message=(f"Please type the message for your new bot response '{action}':"),
         validate=io_utils.not_empty_validator("Please enter a response"),
@@ -650,16 +647,16 @@ async def _ask_if_quit(conversation_id: Text, endpoint: EndpointConfig) -> bool:
         # this is also the default answer if the user presses Ctrl-C
         await _write_data_to_file(conversation_id, endpoint)
         raise Abort()
-    elif answer == "continue":
-        # in this case we will just return, and the original
-        # question will get asked again
-        return True
     elif answer == "undo":
         raise UndoLastStep()
     elif answer == "fork":
         raise ForkTracker()
     elif answer == "restart":
         raise RestartConversation()
+    else:  # `continue` or no answer
+        # in this case we will just return, and the original
+        # question will get asked again
+        return True
 
 
 async def _request_action_from_user(
@@ -1584,7 +1581,7 @@ async def _get_tracker_events_to_plot(
 
 async def _get_training_trackers(
     file_importer: TrainingDataImporter, domain: Dict[str, Any]
-) -> List[DialogueStateTracker]:
+) -> List[TrackerWithCachedStates]:
     from rasa.core import training
 
     return await training.load_data(
