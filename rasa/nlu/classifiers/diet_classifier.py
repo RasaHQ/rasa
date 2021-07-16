@@ -8,7 +8,7 @@ import os
 import scipy.sparse
 import tensorflow as tf
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
+from typing import Any, Dict, List, Optional, Text, Tuple, TypeVar, Union, Type
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
@@ -1046,16 +1046,18 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return {"file": file_name}
 
+    T = TypeVar("T")
+
     @classmethod
     def load(
-        cls,
+        cls: T,
         meta: Dict[Text, Any],
         model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
-    ) -> "DIETClassifier":
+    ) -> T:
         """Loads the trained model from the provided directory."""
         if not meta.get("file"):
             logger.debug(
@@ -1792,7 +1794,7 @@ class DIET(TransformerRasaModel):
 
         _, scores = self._tf_layers[
             f"loss.{LABEL}"
-        ].similarity_confidence_from_embeddings(
+        ].get_similarities_and_confidences_from_embeddings(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
         )

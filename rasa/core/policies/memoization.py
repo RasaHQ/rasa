@@ -185,7 +185,7 @@ class MemoizationPolicy(Policy):
         (
             trackers_as_states,
             trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(training_trackers, domain)
+        ) = self.featurizer.training_states_and_labels(training_trackers, domain)
         self.lookup = self._create_lookup_from_states(
             trackers_as_states, trackers_as_actions
         )
@@ -308,12 +308,12 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         # use first action, if we went first time and second action, if we went again
         idx_to_use = idx_of_second_action if again else idx_of_first_action
         if idx_to_use is None:
-            return
+            return None
 
         # make second ActionExecuted the first one
         events = tracker.applied_events()[idx_to_use:]
         if not events:
-            return
+            return None
 
         mcfly_tracker = tracker.init_copy()
         for e in events:
