@@ -16,8 +16,7 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
     """Reads Watson training data and train a Rasa NLU model."""
 
     def filter(self, source_path: Path) -> bool:
-        """Checks if the given training data file contains NLU data in `Markdown` format
-        and can be converted to `YAML`.
+        """Checks if the given training data file Watson NLU Data.
 
         Args:
             source_path: Path to the training data file.
@@ -31,6 +30,14 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
         return False
 
     async def convert_and_write(self, source_path: Path, output_path: Path) -> None:
+        """Converts Watson NLU data into Rasa NLU Data Format.
+
+        Args:
+            source_path: Path to the training data file.
+
+        Returns:
+            None
+        """
         output_nlu_path = self.generate_path_for_converted_training_data_file(
             source_path, output_path
         )
