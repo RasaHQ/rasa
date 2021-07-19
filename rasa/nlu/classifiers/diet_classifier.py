@@ -1688,7 +1688,7 @@ class DIET(TransformerRasaModel):
         # Edge Case: In some cases, the model_data preparation will have
         # skipped sequence-level features because they are not needed for
         # the concrete architecture.
-        _ = tf_batch_data[TEXT].setdefault(SEQUENCE, [])
+        tf_batch_data[TEXT].setdefault(SEQUENCE, [])
 
         sequence_feature_lengths = self._get_sequence_feature_lengths(
             tf_batch_data, TEXT
