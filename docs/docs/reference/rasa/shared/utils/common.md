@@ -5,7 +5,7 @@ title: rasa.shared.utils.common
 #### class\_from\_module\_path
 
 ```python
-class_from_module_path(module_path: Text, lookup_path: Optional[Text] = None) -> Any
+class_from_module_path(module_path: Text, lookup_path: Optional[Text] = None) -> Type
 ```
 
 Given the module name and path of a class, tries to retrieve the class.
@@ -28,6 +28,7 @@ The loaded class can be used to instantiate new objects.
 **Raises**:
 
   ImportError, in case the Python class cannot be found.
+  RasaException, in case the imported result is something other than a class
 
 #### all\_subclasses
 
