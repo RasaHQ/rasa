@@ -1198,15 +1198,6 @@ def test_writing_trackers_with_legacy_form_events():
         assert event["event"] == ActiveLoop.type_name
 
 
-def test_change_form_to_deprecation_warning():
-    tracker = DialogueStateTracker.from_events("conversation", evts=[])
-    new_form = "new form"
-    with pytest.warns(DeprecationWarning):
-        tracker.change_form_to(new_form)
-
-    assert tracker.active_loop_name == new_form
-
-
 def test_reading_of_trackers_with_legacy_form_validation_events():
     tracker = DialogueStateTracker.from_dict(
         "sender",
@@ -1237,16 +1228,6 @@ def test_writing_trackers_with_legacy_for_validation_events():
 
     assert not events_as_dict[0][LOOP_INTERRUPTED]
     assert events_as_dict[1][LOOP_INTERRUPTED]
-
-
-@pytest.mark.parametrize("validate", [True, False])
-def test_set_form_validation_deprecation_warning(validate: bool):
-    tracker = DialogueStateTracker.from_events("conversation", evts=[])
-
-    with pytest.warns(DeprecationWarning):
-        tracker.set_form_validation(validate)
-
-    assert tracker.active_loop[LOOP_INTERRUPTED] == (not validate)
 
 
 @pytest.mark.parametrize(

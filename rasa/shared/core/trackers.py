@@ -334,31 +334,12 @@ class DialogueStateTracker:
         else:
             self.active_loop = {}
 
-    def change_form_to(self, form_name: Text) -> None:
-        rasa.shared.utils.io.raise_warning(
-            "`change_form_to` is deprecated and will be removed "
-            "in future versions. Please use `change_loop_to` "
-            "instead.",
-            category=DeprecationWarning,
-        )
-        self.change_loop_to(form_name)
-
     def interrupt_loop(self, is_interrupted: bool) -> None:
         """Interrupt loop and mark that we entered an unhappy path in the conversation.
         Args:
             is_interrupted: `True` if the loop was run after an unhappy path.
         """
         self.active_loop[LOOP_INTERRUPTED] = is_interrupted
-
-    def set_form_validation(self, validate: bool) -> None:
-        rasa.shared.utils.io.raise_warning(
-            "`set_form_validation` is deprecated and will be removed "
-            "in future versions. Please use `interrupt_loop` "
-            "instead.",
-            category=DeprecationWarning,
-        )
-        # `validate = True` means `is_interrupted = False`
-        self.interrupt_loop(not validate)
 
     def reject_action(self, action_name: Text) -> None:
         """Notify active loop that it was rejected"""
