@@ -761,7 +761,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _create_model_data(
         self,
         messages: List[Message],
-        *,
+        *: Any,
         training: bool = True,
         label_id_dict: Optional[Dict[Text, int]] = None,
     ) -> RasaModelData:
