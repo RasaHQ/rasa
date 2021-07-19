@@ -11,6 +11,7 @@ from rasa.constants import RESULTS_FILE, NUMBER_OF_TRAINING_STORIES_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.exceptions import ModelNotFound
 import rasa.shared.nlu.training_data.loading
+import rasa.shared.importers.autoconfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
@@ -289,7 +290,7 @@ def plot_nlu_results(output_directory: Text, number_of_examples: List[int]) -> N
 
 
 def perform_nlu_cross_validation(
-    config: Text,
+    config: Dict[Text, Any],
     data: TrainingData,
     output: Text,
     additional_arguments: Optional[Dict[Text, Any]],
@@ -313,13 +314,14 @@ def perform_nlu_cross_validation(
 
     additional_arguments = additional_arguments or {}
     folds = int(additional_arguments.get("folds", 3))
-    nlu_config = rasa.nlu.config.load(config)
+
     data = drop_intents_below_freq(data, cutoff=folds)
     kwargs = rasa.shared.utils.common.minimal_kwargs(
         additional_arguments, cross_validate
     )
+
     results, entity_results, response_selection_results = cross_validate(
-        data, folds, nlu_config, output, **kwargs
+        data, folds, config, output, **kwargs
     )
     logger.info(f"CV evaluation (n={folds})")
 

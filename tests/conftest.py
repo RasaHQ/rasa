@@ -429,6 +429,11 @@ def moodbot_domain() -> Domain:
     return Domain.load(domain_path)
 
 
+@pytest.fixture(scope="session")
+def moodbot_nlu_data_path() -> Path:
+    return Path(os.getcwd()) / "data" / "test_moodbot" / "data" / "nlu.yml"
+
+
 @pytest.fixture
 async def rasa_server(stack_agent: Agent) -> Sanic:
     app = server.create_app(agent=stack_agent)
