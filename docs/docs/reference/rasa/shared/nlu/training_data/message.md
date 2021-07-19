@@ -97,13 +97,21 @@ Builds a Message from `UserUttered` data.
 
 Get intent as it appears in training data
 
-#### get\_combined\_intent\_response\_key
+#### separate\_intent\_response\_key
 
 ```python
- | get_combined_intent_response_key() -> Text
+ | @staticmethod
+ | separate_intent_response_key(original_intent: Text) -> Tuple[Text, Optional[Text]]
 ```
 
-Get intent as it appears in training data.
+Splits intent into main intent name and optional sub-intent name.
+
+For example, `&quot;FAQ/how_to_contribute&quot;` would be split into
+`(&quot;FAQ&quot;, &quot;how_to_contribute&quot;)`. The response delimiter can
+take different values (not just `&quot;/&quot;`) and depends on the
+constant - `RESPONSE_IDENTIFIER_DELIMITER`.
+If there is no response delimiter in the intent, the second tuple
+item is `None`, e.g. `&quot;FAQ&quot;` would be mapped to `(&quot;FAQ&quot;, None)`.
 
 #### get\_sparse\_features
 
