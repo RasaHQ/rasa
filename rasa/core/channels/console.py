@@ -73,14 +73,14 @@ def _print_bot_output(
 
     if "elements" in message:
         rasa.shared.utils.cli.print_color("Elements:", color=color)
-        for idx, element in enumerate(message.get("elements")):
+        for idx, element in enumerate(message["elements"]):
             rasa.shared.utils.cli.print_color(
                 cli_utils.element_to_string(element, idx), color=color
             )
 
     if "quick_replies" in message:
         rasa.shared.utils.cli.print_color("Quick Replies:", color=color)
-        for idx, element in enumerate(message.get("quick_replies")):
+        for idx, element in enumerate(message["quick_replies"]):
             rasa.shared.utils.cli.print_color(
                 cli_utils.button_to_string(element, idx), color=color
             )
@@ -88,7 +88,7 @@ def _print_bot_output(
     if "custom" in message:
         rasa.shared.utils.cli.print_color("Custom json:", color=color)
         rasa.shared.utils.cli.print_color(
-            json.dumps(message.get("custom"), indent=2), color=color
+            json.dumps(message["custom"], indent=2), color=color
         )
 
     return None
