@@ -680,7 +680,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         # Collect features, precomputed if they exist, else compute on the fly
         sequence_features, sentence_features = None, None
-        # Are there any features in the given data for the label attribute?
+        # Does any message contain features for the label attribute?
         if all(
             message.features_present(
                 attribute=self.label_attribute,
