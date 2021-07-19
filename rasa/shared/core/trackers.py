@@ -336,13 +336,14 @@ class DialogueStateTracker:
 
     def interrupt_loop(self, is_interrupted: bool) -> None:
         """Interrupt loop and mark that we entered an unhappy path in the conversation.
+
         Args:
             is_interrupted: `True` if the loop was run after an unhappy path.
         """
         self.active_loop[LOOP_INTERRUPTED] = is_interrupted
 
     def reject_action(self, action_name: Text) -> None:
-        """Notify active loop that it was rejected"""
+        """Notify active loop that it was rejected."""
         if action_name == self.active_loop_name:
             self.active_loop[LOOP_REJECTED] = True
 
