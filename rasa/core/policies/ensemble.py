@@ -39,7 +39,7 @@ from rasa.shared.core.events import (
 )
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import Policy, SupportedData, PolicyPrediction
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
@@ -368,22 +368,6 @@ class PolicyEnsemble:
                 if epochs:
                     context["epoch_override"] = epochs
 
-            if "kwargs" not in rasa.shared.utils.common.arguments_of(policy_cls.load):
-                if context:
-                    raise UnsupportedDialogueModelError(
-                        f"`{policy_cls.__name__}.{policy_cls.load.__name__}` does not "
-                        f"accept `**kwargs`. Attempting to pass {context} to the "
-                        f"policy. `**kwargs` should be added to all policies by "
-                        f"Rasa Open Source 3.0.0."
-                    )
-                else:
-                    rasa.shared.utils.io.raise_deprecation_warning(
-                        f"`{policy_cls.__name__}.{policy_cls.load.__name__}` does not "
-                        f"accept `**kwargs`. `**kwargs` are required for contextual "
-                        f"information e.g. the flag `should_finetune`.",
-                        warn_until_version="3.0.0",
-                    )
-
             policy = policy_cls.load(policy_path, **context)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             if policy is not None:
@@ -692,8 +676,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             rejected_action_name = last_action_event.action_name
 
         predictions = {
-            f"policy_{i}_{type(p).__name__}": self._get_prediction(
-                p, tracker, domain, interpreter
+            f"policy_{i}_{type(p).__name__}": p.predict_action_probabilities(
+                tracker, domain, interpreter
             )
             for i, p in enumerate(self.policies)
         }
@@ -709,51 +693,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 ] = 0.0
 
         return self._pick_best_policy(predictions)
-
-    @staticmethod
-    def _get_prediction(
-        policy: Policy,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-    ) -> PolicyPrediction:
-        number_of_arguments_in_rasa_1_0 = 2
-        arguments = rasa.shared.utils.common.arguments_of(
-            policy.predict_action_probabilities
-        )
-
-        if (
-            len(arguments) > number_of_arguments_in_rasa_1_0
-            and "interpreter" in arguments
-        ):
-            prediction = policy.predict_action_probabilities(
-                tracker, domain, interpreter
-            )
-        else:
-            rasa.shared.utils.io.raise_warning(
-                "The function `predict_action_probabilities` of "
-                "the `Policy` interface was changed to support "
-                "additional parameters. Please make sure to "
-                "adapt your custom `Policy` implementation.",
-                category=DeprecationWarning,
-            )
-            prediction = policy.predict_action_probabilities(
-                tracker, domain, RegexInterpreter()
-            )
-
-        if isinstance(prediction, list):
-            rasa.shared.utils.io.raise_deprecation_warning(
-                f"The function `predict_action_probabilities` of "
-                f"the `{Policy.__name__}` interface was changed to return "
-                f"a `{PolicyPrediction.__name__}` object. Please make sure to "
-                f"adapt your custom `{Policy.__name__}` implementation. Support for "
-                f"returning a list of floats will be removed in Rasa Open Source 3.0.0"
-            )
-            prediction = PolicyPrediction(
-                prediction, policy.__class__.__name__, policy_priority=policy.priority
-            )
-
-        return prediction
 
     def _fallback_after_listen(
         self, domain: Domain, prediction: PolicyPrediction
