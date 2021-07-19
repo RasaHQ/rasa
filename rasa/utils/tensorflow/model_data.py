@@ -271,7 +271,7 @@ class RasaModelData:
         self.label_sub_key = label_sub_key
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
-        self.sparse_feature_sizes = None
+        self.sparse_feature_sizes = {}
 
     def __str__(self) -> Text:
         def to_str(item: Any, indent: int = 0) -> Text:
@@ -778,7 +778,7 @@ class RasaModelData:
                 if min(num_data_cycles) > 0:
                     break
 
-        final_data = defaultdict(lambda: defaultdict(list))
+        final_data: Data = defaultdict(lambda: defaultdict(list))
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
@@ -826,7 +826,7 @@ class RasaModelData:
         Returns:
             The filtered data
         """
-        new_data = defaultdict(lambda: defaultdict(list))
+        new_data: Data = defaultdict(lambda: defaultdict(list))
 
         if data is None:
             return new_data

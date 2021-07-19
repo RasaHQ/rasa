@@ -1,6 +1,13 @@
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Dict, List, Text, Union, Optional
+from typing import (
+    Any,
+    Dict,
+    List,
+    Text,
+    Union,
+    Optional,
+)
 
 from ruamel import yaml
 from ruamel.yaml.comments import CommentedMap
@@ -287,14 +294,14 @@ class YAMLStoryWriter(StoryWriter):
         return result
 
     @staticmethod
-    def process_slot(event: SlotSet) -> Dict[Text, List[Dict]]:
+    def process_slot(event: SlotSet) -> OrderedDict:
         """Converts a single `SlotSet` event into an ordered dict.
 
         Args:
             event: Original `SlotSet` event.
 
         Returns:
-            Dict with an `SlotSet` event.
+            OrderedDict with an `SlotSet` event.
         """
         return OrderedDict([(KEY_SLOT_NAME, [{event.key: event.value}])])
 
