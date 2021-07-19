@@ -918,18 +918,6 @@ class MessageProcessor:
                 "and predict the next action."
             )
 
-        prediction = self.policy_ensemble.probabilities_using_best_policy(
+        return self.policy_ensemble.probabilities_using_best_policy(
             tracker, self.domain, self.interpreter
         )
-
-        if isinstance(prediction, PolicyPrediction):
-            return prediction
-
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"Returning a tuple of probabilities and policy name for "
-            f"`{PolicyEnsemble.probabilities_using_best_policy.__name__}` is "
-            f"deprecated and will be removed in Rasa Open Source 3.0.0. Please return "
-            f"a `{PolicyPrediction.__name__}` object instead."
-        )
-        probabilities, policy_name = prediction
-        return PolicyPrediction(probabilities, policy_name)

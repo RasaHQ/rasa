@@ -17,7 +17,6 @@ from typing import (
 )
 import numpy as np
 
-from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.shared.core.events import Event
 
 import rasa.shared.utils.common
@@ -390,23 +389,6 @@ class Policy:
                 data["featurizer"] = featurizer
 
             data.update(kwargs)
-
-            constructor_args = rasa.shared.utils.common.arguments_of(cls)
-            if "kwargs" not in constructor_args:
-                if set(data.keys()).issubset(set(constructor_args)):
-                    rasa.shared.utils.io.raise_deprecation_warning(
-                        f"`{cls.__name__}.__init__` does not accept `**kwargs` "
-                        f"This is required for contextual information e.g. the flag "
-                        f"`should_finetune`.",
-                        warn_until_version="3.0.0",
-                    )
-                else:
-                    raise UnsupportedDialogueModelError(
-                        f"`{cls.__name__}.__init__` does not accept `**kwargs`. "
-                        f"Attempting to pass {data} to the policy. "
-                        f"This argument should be added to all policies by "
-                        f"Rasa Open Source 3.0.0."
-                    )
 
             return cls(**data)
 

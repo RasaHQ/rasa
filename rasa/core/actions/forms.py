@@ -428,7 +428,7 @@ class FormAction(LoopAction):
         domain: Domain,
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
-    ) -> List[Event]:
+    ) -> List[Union[SlotSet, Event]]:
         """Validate the extracted slots.
 
         If a custom action is available for validating the slots, we call it to validate
@@ -448,7 +448,7 @@ class FormAction(LoopAction):
             for the validated slots.
         """
         logger.debug(f"Validating extracted slots: {slot_candidates}")
-        events = [
+        events: List[Union[SlotSet, Event]] = [
             SlotSet(slot_name, value) for slot_name, value in slot_candidates.items()
         ]
 
@@ -509,7 +509,7 @@ class FormAction(LoopAction):
         domain: Domain,
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
-    ) -> List[Event]:
+    ) -> List[Union[SlotSet, Event]]:
         """Extract and validate value of requested slot.
 
         If nothing was extracted reject execution of the form action.
@@ -563,7 +563,7 @@ class FormAction(LoopAction):
         output_channel: OutputChannel,
         nlg: NaturalLanguageGenerator,
         events_so_far: List[Event],
-    ) -> List[Event]:
+    ) -> List[Union[SlotSet, Event]]:
         """Request the next slot and response if needed, else return `None`."""
         request_slot_events: List[Event] = []
 

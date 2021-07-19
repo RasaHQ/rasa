@@ -76,7 +76,7 @@ class RasaDataGenerator(tf.keras.utils.Sequence):
         start: Optional[int] = None,
         end: Optional[int] = None,
         tuple_sizes: Optional[Dict[Text, int]] = None,
-    ) -> Tuple[Optional[np.ndarray]]:
+    ) -> Tuple[Optional[np.ndarray], ...]:
         """Slices model data into batch using given start and end value.
 
         Args:
