@@ -179,21 +179,19 @@ class Message:
             else self.get(INTENT)
         )
 
-    def get_combined_intent_response_key(self) -> Text:
-        """Get intent as it appears in training data."""
-        rasa.shared.utils.io.raise_warning(
-            "`get_combined_intent_response_key` is deprecated and "
-            "will be removed in Rasa 3.0.0. "
-            "Please use `get_full_intent` instead.",
-            category=DeprecationWarning,
-        )
-        return self.get_full_intent()
-
     @staticmethod
     def separate_intent_response_key(
         original_intent: Text,
     ) -> Tuple[Text, Optional[Text]]:
+        """Splits intent into main intent name and optional sub-intent name.
 
+        For example, `"FAQ/how_to_contribute"` would be split into
+        `("FAQ", "how_to_contribute")`. The response delimiter can
+        take different values (not just `"/"`) and depends on the
+        constant - `RESPONSE_IDENTIFIER_DELIMITER`.
+        If there is no response delimiter in the intent, the second tuple
+        item is `None`, e.g. `"FAQ"` would be mapped to `("FAQ", None)`.
+        """
         split_title = original_intent.split(RESPONSE_IDENTIFIER_DELIMITER)
         if len(split_title) == 2:
             return split_title[0], split_title[1]
