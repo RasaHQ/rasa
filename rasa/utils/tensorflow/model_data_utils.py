@@ -52,7 +52,8 @@ def featurize_training_examples(
         A list of attribute to features.
         A dictionary of attribute to feature sizes.
     """
-    assert type is None or type in [SEQUENCE, SENTENCE]
+    if (type is not None) and (type not in [SEQUENCE, SENTENCE]):
+        raise ValueError(f"Unknown type {type}")
     output = []
 
     for example in training_examples:
@@ -107,7 +108,8 @@ def _collect_sparse_feature_sizes(
     Returns:
         A dictionary of attribute to feature sizes.
     """
-    assert type is None or type in [SEQUENCE, SENTENCE]
+    if (type is not None) and (type not in [SEQUENCE, SENTENCE]):
+        raise ValueError(f"Unknown type {type}")
     sparse_feature_sizes = {}
     sparse_attributes = []
     for attribute, features in featurized_example.items():

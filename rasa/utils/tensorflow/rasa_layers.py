@@ -678,7 +678,10 @@ class RasaFeatureCombiningLayer(RasaCustomLayer):
 
 
 class RasaSequenceLayer(RasaCustomLayer):
-    """A sequence-to-sequence model for embeddings that optionally creates MLM examples.
+    """A sequence-to-sequence model for embeddings that leverages a Transformer.
+
+    Optionally, this layer also creates masked language modelling (MLM) training
+    examples.
 
     More precisely, this layer applies the following steps:
     1. Combine features using the `RasaFeatureCombiningLayer` which

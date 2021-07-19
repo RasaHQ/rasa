@@ -257,7 +257,40 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         MODEL_CONFIDENCE: SOFTMAX,
     }
 
-    # init helpers
+    def _check_and_autocorrect_component_config(self) -> None:
+
+        # auto correct general settings in the component config via train_utils
+        self.component_config = train_utils.check_deprecated_options(
+            self.component_config
+        )
+        self.component_config = train_utils.update_confidence_type(
+            self.component_config
+        )
+        self.component_config = train_utils.update_deprecated_loss_type(
+            self.component_config
+        )
+        self.component_config = train_utils.update_deprecated_sparsity_to_density(
+            self.component_config
+        )
+        self.component_config = train_utils.update_similarity_type(
+            self.component_config
+        )
+
+        # validation of general settings
+        # Note: This needs to happen before next check because the
+        # next check would set CHECKPOINT_MODEL to False and hence we'd end up
+        # with a silent fail of checkpointing.
+        train_utils.validate_configuration_settings(self.component_config)
+
+        # convert `EVAL_NUM_EPOCHS == -1` to actual number
+        self.component_config = train_utils.update_evaluation_parameters(
+            self.component_config
+        )
+
+        # sanity checks for architecture
+        self._check_masked_lm()
+        self._check_share_hidden_layers_sizes()
+
     def _check_masked_lm(self) -> None:
         if (
             self.component_config[MASKED_LM]
@@ -286,38 +319,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     f"{HIDDEN_LAYERS_SIZES} must coincide."
                 )
 
-    def _check_config_parameters(self) -> None:
-        self.component_config = train_utils.check_deprecated_options(
-            self.component_config
-        )
-
-        self._check_masked_lm()
-        self._check_share_hidden_layers_sizes()
-
-        self.component_config = train_utils.update_confidence_type(
-            self.component_config
-        )
-
-        train_utils.validate_configuration_settings(self.component_config)
-
-        self.component_config = train_utils.update_deprecated_loss_type(
-            self.component_config
-        )
-
-        self.component_config = train_utils.update_deprecated_sparsity_to_density(
-            self.component_config
-        )
-
-        self.component_config = train_utils.update_similarity_type(
-            self.component_config
-        )
-        self.component_config = train_utils.update_evaluation_parameters(
-            self.component_config
-        )
-
     # package safety checks
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Returns the required python packages."""
         return ["tensorflow"]
 
     def __init__(
@@ -337,8 +342,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             )
 
         super().__init__(component_config)
-
-        self._check_config_parameters()
+        self._check_and_autocorrect_component_config()
 
         self.label_attribute = (
             INTENT if self.component_config[INTENT_CLASSIFICATION] else None
@@ -571,7 +575,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             Sequence level features and sentence level features. Each feature contains
             FeatureArrays with sparse features first.
         """
-        assert (type is None) or (type in [SENTENCE, SEQUENCE])
+        if (type is not None) and (type not in [SENTENCE, SEQUENCE]):
+            raise ValueError(f"Unknown type {type}")
         # for each label_example, collect sparse and dense feature (matrices) in lists
         collected_features: Dict[
             Tuple[Text, Text], List[Union[np.ndarray, scipy.sparse.spmatrix]]
@@ -581,7 +586,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 message=msg, attribute=attribute, featurizers=featurizers,
             )
             for (feat_type, feat_lvl), feat_mat in type_level_to_feature.items():
-                assert feat_lvl in [SEQUENCE, SENTENCE]
+                if feat_lvl not in [SEQUENCE, SENTENCE]:
+                    raise ValueError(f"Unknown type {feat_lvl}")
                 if (type is None) or (type == feat_lvl):
                     collected_features.setdefault((feat_type, feat_lvl), []).append(
                         feat_mat
@@ -761,7 +767,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _create_model_data(
         self,
         messages: List[Message],
-        *: Any,
+        *,
         training: bool = True,
         label_id_dict: Optional[Dict[Text, int]] = None,
     ) -> RasaModelData:
@@ -865,13 +871,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
             # If *no* label features have been found before, then we load the default
             # label features that should've been computed by an `_create_label_data`.
-            sent_miss = model_data.does_feature_not_exist(
+            sentence_missing = model_data.does_feature_not_exist(
                 self.label_attribute, SENTENCE
             )
-            seq_miss = model_data.does_feature_not_exist(self.label_attribute, SEQUENCE)
-            need_sent = self._needs_sentence_features_for_labels()
-            if sent_miss and (need_sent or seq_miss):
-                if (not seq_miss) and sent_miss and need_sent:
+            sequence_missing = model_data.does_feature_not_exist(
+                self.label_attribute, SEQUENCE
+            )
+            needs_sentence = self._needs_sentence_features_for_labels()
+            if sentence_missing and (needs_sentence or sequence_missing):
+                if (not sequence_missing) and sentence_missing and needs_sentence:
                     rasa.shared.io.utils.raise_warning(
                         f"Expected sentence level features but only received "
                         f"sequence level features for {self.label_attribute}. "
