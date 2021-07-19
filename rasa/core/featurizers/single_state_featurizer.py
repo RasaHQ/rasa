@@ -4,14 +4,12 @@ import scipy.sparse
 from typing import List, Optional, Dict, Text, Set, Any
 from collections import defaultdict
 
-import rasa.shared.utils.io
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.utils import bilou_utils
 from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
 from rasa.shared.core.domain import SubState, State, Domain
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
-from rasa.shared.constants import DOCS_URL_MIGRATION_GUIDE
 from rasa.shared.core.trackers import is_prev_action_listen_in_state
 from rasa.shared.nlu.constants import (
     ENTITIES,
