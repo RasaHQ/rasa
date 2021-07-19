@@ -146,7 +146,8 @@ class ResponseSelector(DIETClassifier):
         KEY_RELATIVE_ATTENTION: False,
         # If 'True' use key relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
-        # Max position for relative embeddings
+        # Max position for relative embeddings. Only in effect if key- or value relative
+        # attention are turned on
         MAX_RELATIVE_POSITION: 5,
         # Use a unidirectional or bidirectional encoder.
         UNIDIRECTIONAL_ENCODER: False,
