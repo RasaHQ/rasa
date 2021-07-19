@@ -371,30 +371,6 @@ class SingleStateFeaturizer:
             for action in domain.action_names_or_texts
         ]
 
-    def encode_all_actions(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
-    ) -> List[Dict[Text, List[Features]]]:
-        """Encodes all actions from the domain using the given interpreter.
-
-        This method is deprecated and will be removed in Rasa Open Source 3.0.0 .
-        It is recommended to use `encode_all_labels` instead.
-
-        Args:
-            domain: The domain that contains the actions.
-            interpreter: The interpreter used to encode the actions.
-
-        Returns:
-            A list of encoded actions.
-        """
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.__class__.__name__}.encode_all_actions' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. "
-            f"It is recommended to use the method 'encode_all_labels' instead.",
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-
-        return self.encode_all_labels(domain, interpreter)
-
 
 class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     """A SingleStateFeaturizer for use with policies that predict intent labels."""
@@ -428,45 +404,3 @@ class IntentTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
             A list of encoded labels.
         """
         return [self._encode_intent(intent, interpreter) for intent in domain.intents]
-
-
-class BinarySingleStateFeaturizer(SingleStateFeaturizer):
-    """Dialogue State featurizer which features the state as binaries."""
-
-    def __init__(self) -> None:
-        """Creates featurizer."""
-        super().__init__()
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.__class__.__name__}' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. "
-            f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
-
-    def _extract_state_features(
-        self,
-        sub_state: SubState,
-        interpreter: NaturalLanguageInterpreter,
-        sparse: bool = False,
-    ) -> Dict[Text, List[Features]]:
-        # create a special method that doesn't use passed interpreter
-        name_attribute = self._get_name_attribute(set(sub_state.keys()))
-        if name_attribute:
-            return {
-                name_attribute: self._create_features(sub_state, name_attribute, sparse)
-            }
-
-        return {}
-
-
-class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__()
-        # it is hard to fully mimic old behavior, but SingleStateFeaturizer
-        # does the same thing if nlu pipeline is configured correctly
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"'{self.__class__.__name__}' is deprecated and "
-            f"will be removed in Rasa Open Source 3.0.0. "
-            f"It is recommended to use the '{SingleStateFeaturizer.__name__}' instead.",
-            docs=DOCS_URL_MIGRATION_GUIDE,
-        )
