@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Type, List, Text, Optional, Any
+from typing import Type, List, Text, Optional
 
 import numpy as np
 import pytest
