@@ -7,8 +7,9 @@ import this in module scope."""
 import logging
 import traceback
 import typing
-from typing import Any, Dict, Optional, Text, Type
+from typing import Any, Dict, Optional, Text, Type, List
 
+from rasa.nlu.components import Component
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
 from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
@@ -46,7 +47,6 @@ import rasa.utils.io
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 
 if typing.TYPE_CHECKING:
-    from rasa.nlu.components import Component
     from rasa.nlu.config import RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 
 # Classes of all known components. If a new component should be added,
 # its class name should be listed here.
-component_classes = [
+component_classes: List[Type[Component]] = [
     # utils
     SpacyNLP,
     MitieNLP,
@@ -89,7 +89,9 @@ component_classes = [
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
-registered_components = {c.name: c for c in component_classes}
+registered_components: Dict[Text, Type[Component]] = {
+    c.name: c for c in component_classes
+}
 
 
 class ComponentNotFoundException(ModuleNotFoundError, RasaException):
@@ -175,12 +177,11 @@ def load_component_by_meta(
 
 def create_component_by_config(
     component_config: Dict[Text, Any], config: "RasaNLUModelConfig"
-) -> Optional["Component"]:
+) -> "Component":
     """Resolves a component and calls it's create method.
 
     Inits it based on a previously persisted model.
     """
-
     # try to get class name first, else create by name
     component_name = component_config.get("class", component_config["name"])
     component_class = get_component_class(component_name)
