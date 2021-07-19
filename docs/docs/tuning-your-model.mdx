@@ -219,8 +219,6 @@ We support a few components that provide pre-trained word embeddings:
 
 3. [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
 
-4. [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
-
 If your training data is in English, we recommend using the [ConveRTFeaturizer](./components.mdx#convertfeaturizer).
 The advantage of the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is that it doesn't treat each word of the user message independently, but
 creates a contextual vector representation for the complete sentence. For example, if you
@@ -230,7 +228,7 @@ for both is highly likely to be the same. This is also useful if you don't have 
 
 An alternative to [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which uses pre-trained language
 models such as BERT, GPT-2, etc. to extract similar contextual vector representations for the complete sentence. See
-[HFTransformersNLP](./components.mdx#hftransformersnlp) for a full list of supported language models.
+[LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) for a full list of supported language models.
 
 If your training data is not in English you can also use a different variant of a language model which
 is pre-trained in the language specific to your training data.
