@@ -280,14 +280,14 @@ class EvaluationStore:
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text, self.entity_targets
                 ),
-                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],
             )
             entity_predictions = sorted(
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text,
                     self.entity_predictions,
                 ),
-                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],
             )
 
             i_pred, i_target = 0, 0
@@ -447,7 +447,7 @@ def _clean_entity_results(
     cleaned_entities = []
 
     for r in tuple(entity_results):
-        cleaned_entity = {ENTITY_ATTRIBUTE_TEXT: text}
+        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}
         for k in (
             ENTITY_ATTRIBUTE_START,
             ENTITY_ATTRIBUTE_END,
@@ -596,13 +596,14 @@ def _get_e2e_entity_evaluation_result(
                 return EntityEvaluationResult(
                     entity_targets, entities_predicted_by_policies, tokens, text
                 )
+    return None
 
 
 def _run_action_prediction(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
     expected_action: Text,
-) -> Tuple[Text, PolicyPrediction, EntityEvaluationResult]:
+) -> Tuple[Text, PolicyPrediction, Optional[EntityEvaluationResult]]:
     action, prediction = processor.predict_next_action(partial_tracker)
     predicted_action = action.name()
 

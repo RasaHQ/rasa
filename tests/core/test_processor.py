@@ -8,7 +8,7 @@ import json
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
-from typing import Optional, Text, List, Callable, Type, Any, Tuple
+from typing import Optional, Text, List, Callable, Type, Any
 from unittest.mock import patch, Mock
 
 from rasa.core.policies.rule_policy import RulePolicy
@@ -18,7 +18,6 @@ from rasa.core.actions.action import (
     ActionExecutionRejection,
     ActionUnlikelyIntent,
 )
-import rasa.core.policies.policy
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 import tests.utilities
@@ -926,41 +925,6 @@ async def test_action_unlikely_intent_metadata(default_processor: MessageProcess
     assert applied_events[1].metadata == metadata
 
 
-@pytest.mark.parametrize(
-    "predict_function",
-    [
-        lambda tracker, domain, _: PolicyPrediction([1, 0, 2, 3], "some-policy"),
-        lambda tracker, domain, _=True: PolicyPrediction([1, 0], "some-policy"),
-    ],
-)
-def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
-    predict_function: Callable,
-):
-    policy = TEDPolicy()
-
-    policy.predict_action_probabilities = predict_function
-
-    ensemble = SimplePolicyEnsemble(policies=[policy])
-    interpreter = Mock()
-    domain = Domain.empty()
-
-    processor = MessageProcessor(
-        interpreter,
-        ensemble,
-        domain,
-        InMemoryTrackerStore(domain),
-        InMemoryLockStore(),
-        Mock(),
-    )
-
-    with pytest.warns(DeprecationWarning):
-        processor._get_next_action_probabilities(
-            DialogueStateTracker.from_events(
-                "lala", [ActionExecuted(ACTION_LISTEN_NAME)]
-            )
-        )
-
-
 async def test_restart_triggers_session_start(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -1047,39 +1011,6 @@ async def test_handle_message_if_action_manually_rejects(
 
     assert ActionExecuted("utter_greet") not in logged_events
     assert all(event in logged_events for event in rejection_events)
-
-
-def test_predict_next_action_with_deprecated_ensemble(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch
-):
-    expected_confidence = 2.0
-    expected_action = "utter_greet"
-    expected_probabilities = rasa.core.policies.policy.confidence_scores_for(
-        expected_action, expected_confidence, default_processor.domain
-    )
-    expected_policy_name = "deprecated ensemble"
-
-    class DeprecatedEnsemble(PolicyEnsemble):
-        def probabilities_using_best_policy(
-            self,
-            tracker: DialogueStateTracker,
-            domain: Domain,
-            interpreter: NaturalLanguageInterpreter,
-            **kwargs: Any,
-        ) -> Tuple[List[float], Optional[Text]]:
-            return expected_probabilities, expected_policy_name
-
-    monkeypatch.setattr(default_processor, "policy_ensemble", DeprecatedEnsemble([]))
-
-    tracker = DialogueStateTracker.from_events(
-        "some sender", [ActionExecuted(ACTION_LISTEN_NAME)]
-    )
-
-    with pytest.warns(FutureWarning):
-        action, prediction = default_processor.predict_next_action(tracker)
-
-    assert action.name() == expected_action
-    assert prediction == PolicyPrediction(expected_probabilities, expected_policy_name)
 
 
 async def test_policy_events_are_applied_to_tracker(
@@ -1327,7 +1258,7 @@ def test_predict_next_action_with_hidden_rules():
         domain,
         tracker_store,
         lock_store,
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
     )
 
     tracker = DialogueStateTracker.from_events(
