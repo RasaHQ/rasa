@@ -1050,18 +1050,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return {"file": file_name}
 
-    T = TypeVar("T")
-
     @classmethod
     def load(
-        cls: T,
+        cls,
         meta: Dict[Text, Any],
         model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
-    ) -> T:
+    ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
         if not meta.get("file"):
             logger.debug(
