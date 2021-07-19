@@ -3,14 +3,14 @@ import functools
 import importlib
 import inspect
 import logging
-from typing import Text, Dict, Optional, Any, List, Callable, Collection
+from typing import Text, Dict, Optional, Any, List, Callable, Collection, Type
 
 logger = logging.getLogger(__name__)
 
 
 def class_from_module_path(
     module_path: Text, lookup_path: Optional[Text] = None
-) -> Any:
+) -> Type:
     """Given the module name and path of a class, tries to retrieve the class.
 
     The loaded class can be used to instantiate new objects.
@@ -26,6 +26,7 @@ def class_from_module_path(
 
     Raises:
         ImportError, in case the Python class cannot be found.
+        TypeError, in case the module path contains something other than a class
     """
     klass = None
     if "." in module_path:
