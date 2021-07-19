@@ -602,7 +602,7 @@ class MessageProcessor:
         # don't ever directly mutate the tracker
         # - instead pass its events to log
         with Tracer.start_span("tracker.update / UserUttered", attributes={"text": message.text,
-                                                                           "intent": parse_data["intent"],
+                                                                           "intent": json.dumps(parse_data["intent"]),
                                                                            "entities": json.dumps(parse_data["entities"]),
                                                                            "parse_data": json.dumps(parse_data),
                                                                            "message_id": message.message_id,
