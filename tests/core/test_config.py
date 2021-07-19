@@ -8,7 +8,7 @@ from rasa.core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
     DEFAULT_CORE_FALLBACK_THRESHOLD,
     DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
-    DEFAULT_MAX_HISTORY
+    DEFAULT_MAX_HISTORY,
 )
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.policies.rule_policy import RulePolicy
