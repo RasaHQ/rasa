@@ -11,7 +11,7 @@ from rasa.constants import RESULTS_FILE
 from rasa.shared.constants import DEFAULT_RESULTS_PATH
 from rasa.shared.utils.io import list_files, write_yaml, write_text_file
 from typing import Callable
-from _pytest.pytester import RunResult
+from _pytest.pytester import RunResult, Testdir, Pytester, ExitCode
 
 
 def test_test_core(run_in_simple_project: Callable[..., RunResult]):
@@ -151,6 +151,37 @@ def test_test_nlu_cross_validation(run_in_simple_project: Callable[..., RunResul
 
     assert os.path.exists("results/intent_histogram.png")
     assert os.path.exists("results/intent_confusion_matrix.png")
+
+
+def test_test_nlu_cross_validation_with_autoconfig(
+    testdir: Testdir, moodbot_nlu_data_path: Path
+):
+    os.environ["LOG_LEVEL"] = "ERROR"
+    config_path = str(testdir.tmpdir / "config.yml")
+    nlu_path = str(testdir.tmpdir / "nlu.yml")
+    shutil.copy(str(moodbot_nlu_data_path), nlu_path)
+    write_yaml(
+        {"language": "en", "pipeline": [], "policies": [],}, config_path,
+    )
+    args = [
+        shutil.which("rasa"),
+        "test",
+        "nlu",
+        "--cross-validation",
+        "-c",
+        "config.yml",
+        "--nlu",
+        "nlu.yml",
+    ]
+
+    # we don't wanna run the cross validation for real, just want to see that it does
+    # not crash
+    try:
+        run_result = testdir.run(*args, timeout=8.0)
+        # we'll only get here if the run fails due to an exception
+        assert run_result.ret != ExitCode.TESTS_FAILED
+    except Pytester.TimeoutExpired:
+        pass
 
 
 def test_test_nlu_comparison(run_in_simple_project: Callable[..., RunResult]):
