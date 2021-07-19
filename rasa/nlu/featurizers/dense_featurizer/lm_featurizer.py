@@ -21,7 +21,6 @@ from rasa.nlu.constants import (
     NO_LENGTH_RESTRICTION,
     NUMBER_OF_SUB_TOKENS,
     TOKENS_NAMES,
-    LANGUAGE_MODEL_DOCS,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
