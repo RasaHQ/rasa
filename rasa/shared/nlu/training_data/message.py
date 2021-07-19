@@ -186,8 +186,11 @@ class Message:
         """Splits intent into main intent name and optional sub-intent name.
 
         For example, `"FAQ/how_to_contribute"` would be split into
-        `("FAQ", "how_to_contribute")`. If there is no response delimiter, the
-        second tuple item is `None`, e.g. "FAQ" would be mapped to `("FAQ", None)`.
+        `("FAQ", "how_to_contribute")`. The response delimiter can
+        take different values (not just `"/"`) and depends on the
+        constant - `RESPONSE_IDENTIFIER_DELIMITER`.
+        If there is no response delimiter in the intent, the second tuple
+        item is `None`, e.g. `"FAQ"` would be mapped to `("FAQ", None)`.
         """
         split_title = original_intent.split(RESPONSE_IDENTIFIER_DELIMITER)
         if len(split_title) == 2:
