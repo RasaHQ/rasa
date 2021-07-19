@@ -8,7 +8,7 @@ import os
 import scipy.sparse
 import tensorflow as tf
 
-from typing import Any, Dict, List, Optional, Text, Tuple, TypeVar, Union, Type
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
