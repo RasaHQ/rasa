@@ -340,7 +340,8 @@ jobs:
         if: failure() && steps.issue-exists.outputs.result == 'false'
         uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
+          github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
           script: |
             var issue = await github.issues.create({
               owner: context.repo.owner,
