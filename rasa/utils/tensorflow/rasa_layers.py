@@ -689,7 +689,7 @@ class RasaSequenceLayer(RasaCustomLayer):
     3. Optionally, and only during training for the `text` attribute, apply masking to
         the resulting features and create further helper variables for masked language
         modeling. Note that this is only done if the given attribute is the text
-        attributeand only if sequence-level (token-level) features are present, because
+        attribute and only if sequence-level (token-level) features are present, because
         MLM requires token-level information.
     4. Pass the resulting embeddings through a transformer.
 
