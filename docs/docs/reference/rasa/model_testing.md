@@ -87,7 +87,7 @@ Plot NLU model comparison graph.
 #### perform\_nlu\_cross\_validation
 
 ```python
-perform_nlu_cross_validation(config: Text, data: TrainingData, output: Text, additional_arguments: Optional[Dict[Text, Any]]) -> None
+perform_nlu_cross_validation(config: Dict[Text, Any], data: TrainingData, output: Text, additional_arguments: Optional[Dict[Text, Any]]) -> None
 ```
 
 Runs cross-validation on test data.
