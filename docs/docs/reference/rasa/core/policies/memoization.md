@@ -8,8 +8,7 @@ title: rasa.core.policies.memoization
 class MemoizationPolicy(Policy)
 ```
 
-The policy that remembers exact examples of
-`max_history` turns from training stories.
+A policy that follows exact examples of `max_history` turns in training stories.
 
 Since `slots` that are set some time in the past are
 preserved in all future feature vectors until they are set
@@ -30,7 +29,7 @@ training stories for this, use AugmentedMemoizationPolicy.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = MEMOIZATION_POLICY_PRIORITY, max_history: Optional[int] = MAX_HISTORY_NOT_SET, lookup: Optional[Dict] = None, **kwargs: Any, ,) -> None
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = MEMOIZATION_POLICY_PRIORITY, max_history: Optional[int] = DEFAULT_MAX_HISTORY, lookup: Optional[Dict] = None, **kwargs: Any, ,) -> None
 ```
 
 Initialize the policy.

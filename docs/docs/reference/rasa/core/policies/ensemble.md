@@ -34,6 +34,15 @@ Persists the policy to storage.
 
 Loads policy and domain specification from disk.
 
+#### get\_featurizer\_from\_dict
+
+```python
+ | @classmethod
+ | get_featurizer_from_dict(cls, policy: Dict[Text, Any]) -> Tuple[Any, Any]
+```
+
+Gets the featurizer initializer and its arguments from a policy config.
+
 ## SimplePolicyEnsemble Objects
 
 ```python

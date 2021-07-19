@@ -92,15 +92,10 @@
         {
           "items": [
             "reference/rasa/core/policies/ensemble",
-            "reference/rasa/core/policies/fallback",
-            "reference/rasa/core/policies/form_policy",
-            "reference/rasa/core/policies/mapping_policy",
             "reference/rasa/core/policies/memoization",
             "reference/rasa/core/policies/policy",
             "reference/rasa/core/policies/rule_policy",
-            "reference/rasa/core/policies/sklearn_policy",
             "reference/rasa/core/policies/ted_policy",
-            "reference/rasa/core/policies/two_stage_fallback",
             "reference/rasa/core/policies/unexpected_intent_policy"
           ],
           "label": "rasa.core.policies",
