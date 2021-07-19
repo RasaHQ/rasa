@@ -1260,7 +1260,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "moto"
-version = "2.0.11"
+version = "2.1.0"
 description = "A library that allows your python tests to easily mock out the boto library"
 category = "dev"
 optional = false
@@ -1297,7 +1297,7 @@ server = ["PyYAML (>=5.1)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.
 ses = ["docker (>=2.5.1)"]
 sns = ["docker (>=2.5.1)"]
 sqs = ["docker (>=2.5.1)"]
-ssm = ["docker (>=2.5.1)", "PyYAML (>=5.1)", "cfn-lint (>=0.4.0)", "decorator (<=4.4.2)"]
+ssm = ["docker (>=2.5.1)", "PyYAML (>=5.1)", "decorator (<=4.4.2)"]
 xray = ["aws-xray-sdk (>=0.93,!=0.96)"]
 
 [[package]]
@@ -3157,7 +3157,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6,<3.9"
-content-hash = "0a49ea99947e134d67ad845aafd7563c88c320cd5f184121e862210dab6239f4"
+content-hash = "c32e412d4ae175c2e7ad16cb4ec78d4d71fc07f59296af03367c12a179a0bb62"
 
 [metadata.files]
 absl-py = [
@@ -4013,8 +4013,8 @@ more-itertools = [
     {file = "more_itertools-8.8.0-py3-none-any.whl", hash = "sha256:2cf89ec599962f2ddc4d568a05defc40e0a587fbc10d5989713638864c36be4d"},
 ]
 moto = [
-    {file = "moto-2.0.11-py2.py3-none-any.whl", hash = "sha256:765d01bfa85807a5a180ae5b993b293c3cf56dd9c694d2834a30e9016b74a933"},
-    {file = "moto-2.0.11.tar.gz", hash = "sha256:569049a42bc63b6c4702fda0fee952e4d0088cd7f4989aa8eaaae0b222f7a2a1"},
+    {file = "moto-2.1.0-py2.py3-none-any.whl", hash = "sha256:4a0b84975235ee902f3d5081dfbd6938c8d9544863ba19cff7ea8ef85ccd5df1"},
+    {file = "moto-2.1.0.tar.gz", hash = "sha256:ab4f094bf50885c7e593c9d0a27756eeb522c916d6f58c02437cb3654835f8dd"},
 ]
 msrest = [
     {file = "msrest-0.6.21-py2.py3-none-any.whl", hash = "sha256:c840511c845330e96886011a236440fafc2c9aff7b2df9c0a92041ee2dee3782"},
