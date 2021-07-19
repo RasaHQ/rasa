@@ -1636,6 +1636,7 @@ def cross_validate(
     import rasa.nlu.config
 
     if isinstance(nlu_config, (str, Dict)):
+        # nlu_config = rasa.nlu.config.load(nlu_config)
         nlu_config = rasa.nlu.config.load(nlu_config)
 
     if output:

@@ -208,8 +208,15 @@ now implements its behavior.
       # Pre-Trained weights to be loaded
       model_weights: "rasa/LaBSE"
 
-      # An optional path to a specific directory to download and cache the pre-trained model weights.
-      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+      # An optional path to a directory from which
+      # to load pre-trained model weights.
+      # If the requested model is not found in the
+      # directory, it will be downloaded and
+      # cached in this directory for future use.
+      # The default value of `cache_dir` can be
+      # set using the environment variable
+      # `TRANSFORMERS_CACHE`, as per the
+      # Transformers library.
       cache_dir: null
   ```
 
@@ -686,8 +693,15 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
       # Pre-Trained weights to be loaded
       model_weights: "rasa/LaBSE"
 
-      # An optional path to a specific directory to download and cache the pre-trained model weights.
-      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+      # An optional path to a directory from which
+      # to load pre-trained model weights.
+      # If the requested model is not found in the
+      # directory, it will be downloaded and
+      # cached in this directory for future use.
+      # The default value of `cache_dir` can be
+      # set using the environment variable
+      # `TRANSFORMERS_CACHE`, as per the
+      # Transformers library.
       cache_dir: null
   ```
 
