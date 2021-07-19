@@ -224,7 +224,10 @@ async def run_nlu_test_async(
         config = rasa.cli.utils.get_validated_path(
             config, "config", DEFAULT_CONFIG_PATH
         )
-        perform_nlu_cross_validation(config, nlu_data, output, all_args)
+        config_importer = TrainingDataImporter.load_from_dict(config_path=config)
+
+        config_dict = await config_importer.get_config()
+        perform_nlu_cross_validation(config_dict, nlu_data, output, all_args)
     else:
         model_path = rasa.cli.utils.get_validated_path(
             models_path, "model", DEFAULT_MODELS_PATH
