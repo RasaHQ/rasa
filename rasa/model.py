@@ -8,7 +8,16 @@ from subprocess import CalledProcessError, DEVNULL, check_output  # skipcq:BAN-B
 import tempfile
 import typing
 from pathlib import Path
-from typing import Any, Text, Tuple, Union, Optional, List, Dict, NamedTuple
+from typing import (
+    Any,
+    Text,
+    Tuple,
+    Union,
+    Optional,
+    List,
+    Dict,
+    NamedTuple,
+)
 
 from packaging import version
 
@@ -621,7 +630,7 @@ async def update_model_with_new_domain(
 
 def get_model_for_finetuning(
     previous_model_file: Optional[Union[Path, Text]]
-) -> Optional[Text]:
+) -> Optional[Union[Path, Text]]:
     """Gets validated path for model to finetune.
 
     Args:

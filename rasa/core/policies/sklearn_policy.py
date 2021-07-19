@@ -347,7 +347,7 @@ class SklearnPolicy(Policy):
                 f"Failed to load dialogue model. Path {filename.absolute()} "
                 f"doesn't exist."
             )
-            return
+            return cls()
 
         featurizer = TrackerFeaturizer.load(path)
         assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), (

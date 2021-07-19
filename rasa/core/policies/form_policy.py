@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Text, Optional, Any, Union, Tuple
+from typing import List, Dict, Text, Optional, Any
 
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -12,7 +12,7 @@ from rasa.shared.core.constants import (
     ACTIVE_LOOP,
     LOOP_REJECTED,
 )
-from rasa.shared.core.domain import State, Domain
+from rasa.shared.core.domain import State, Domain, SubStateValue
 from rasa.shared.core.events import LoopInterrupted
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -55,9 +55,7 @@ class FormPolicy(MemoizationPolicy):
         )
 
     @staticmethod
-    def _get_active_form_name(
-        state: State,
-    ) -> Optional[Union[Text, Tuple[Union[float, Text]]]]:
+    def _get_active_form_name(state: State,) -> Optional[SubStateValue]:
         return state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
 
     @staticmethod
@@ -87,8 +85,8 @@ class FormPolicy(MemoizationPolicy):
         self,
         trackers_as_states: List[List[State]],
         trackers_as_actions: List[List[Text]],
-    ) -> Dict[Text, Text]:
-        """Add states to lookup dict"""
+    ) -> Dict[Text, SubStateValue]:
+        """Add states to lookup dict."""
         lookup = {}
         for states in trackers_as_states:
             active_form = self._get_active_form_name(states[-1])
