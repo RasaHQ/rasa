@@ -263,7 +263,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             attribute_vocab = self._get_attribute_vocabulary(attribute)
             if attribute_vocab is not None and self.OOV_token in attribute_vocab:
                 # CountVectorizer is trained, process for prediction
-                attribute_vocabulary_tokens = list(attribute_vocab.keys())
+                attribute_vocabulary_tokens = set(attribute_vocab.keys())
                 tokens = [
                     t if t in attribute_vocabulary_tokens else self.OOV_token
                     for t in tokens
