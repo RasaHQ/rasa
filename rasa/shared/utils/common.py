@@ -5,6 +5,8 @@ import inspect
 import logging
 from typing import Text, Dict, Optional, Any, List, Callable, Collection, Type
 
+from rasa.shared.exceptions import RasaException
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +28,7 @@ def class_from_module_path(
 
     Raises:
         ImportError, in case the Python class cannot be found.
-        TypeError, in case the module path contains something other than a class
+        RasaException, in case the imported result is something other than a class
     """
     klass = None
     if "." in module_path:
@@ -42,7 +44,7 @@ def class_from_module_path(
         raise ImportError(f"Cannot retrieve class from path {module_path}.")
 
     if not inspect.isclass(klass):
-        raise TypeError(
+        raise RasaException(
             f"`class_from_module_path()` is expected to return a class, "
             f"but for {module_path} we got a {type(klass)}."
         )

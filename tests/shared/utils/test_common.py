@@ -6,6 +6,7 @@ import pytest
 
 import rasa.shared.core.domain
 import rasa.shared.utils.common
+from rasa.shared.exceptions import RasaException
 
 
 def test_all_subclasses():
@@ -176,5 +177,5 @@ def test_class_from_module_path_not_found(
 
 def test_class_from_module_path_fails():
     module_path = "rasa.shared.core.domain.logger"
-    with pytest.raises(TypeError):
+    with pytest.raises(RasaException):
         rasa.shared.utils.common.class_from_module_path(module_path)
