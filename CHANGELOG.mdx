@@ -783,7 +783,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Improvements
 - [#7520](https://github.com/rasahq/rasa/issues/7520): Improve the warning in case the [RulePolicy](policies.mdx#rule-policy) or the deprecated 
-  [MappingPolicy](policies.mdx#mapping-policy) are missing
+  `MappingPolicy` are missing
   from the model's `policies` configuration. Changed the info log to a warning as one
   of this policies should be added to the model configuration.
 
@@ -1528,10 +1528,10 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   custom `Policy` implementation doesn't provide this parameter Rasa Open Source
   will print a warning and omit passing the `interpreter`.
 - [#6088](https://github.com/rasahq/rasa/issues/6088): Added the new dialogue policy RulePolicy which will replace the old “rule-like”
-  policies [Mapping Policy](./policies.mdx#mapping-policy),
-  [Fallback Policy](./policies.mdx#fallback-policy),
-  [Two-Stage Fallback Policy](./policies.mdx#two-stage-fallback-policy), and
-  [Form Policy](./policies.mdx#form-policy). These policies are now
+  policies Mapping Policy,
+  Fallback Policy,
+  Two-Stage Fallback Policy, and
+  Form Policy. These policies are now
   deprecated and will be removed in the future. Please see the
   [rules documentation](./rules.mdx) for more information.
 
@@ -2426,7 +2426,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 ### Bugfixes
 
 * [#5205](https://github.com/rasahq/rasa/issues/5205): Fixed the bug when FormPolicy was overwriting MappingPolicy prediction (e.g. `/restart`).
-  Priorities for [Mapping Policy](./policies.mdx#mapping-policy) and [Form Policy](./policies.mdx#form-policy) are no longer linear:
+  Priorities for Mapping Policy and Form Policy are no longer linear:
   `FormPolicy` priority is 5, but its prediction is ignored if `MappingPolicy` is used for prediction.
 
 * [#5215](https://github.com/rasahq/rasa/issues/5215): Fixed issue related to storing Python `float` values as `decimal.Decimal` objects
@@ -2622,7 +2622,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 * [#4006](https://github.com/rasahq/rasa/issues/4006): Fixed timestamp parsing warning when using DucklingHTTPExtractor
 
 * [#4601](https://github.com/rasahq/rasa/issues/4601): Fixed issue with `action_restart` getting overridden by `action_listen` when the `MappingPolicy` and the
-  [TwoStageFallbackPolicy](./policies.mdx#two-stage-fallback-policy) are used together.
+  `TwoStageFallbackPolicy` are used together.
 
 * [#5201](https://github.com/rasahq/rasa/issues/5201): Fixed incorrectly raised Error encountered in pipelines with a `ResponseSelector` and NLG.
 
