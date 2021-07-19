@@ -568,7 +568,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             type: if not None, the other type (sentence/sequence) will be ignored
             featurizers: the featurizers to be considered
         Returns:
-            Sentence level features and sequence level features. Each feature contains
+            Sequence level features and sentence level features. Each feature contains
             FeatureArrays with sparse features first.
         """
         assert (type is None) or (type in [SENTENCE, SEQUENCE])
