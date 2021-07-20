@@ -21,10 +21,8 @@ class Tracer:
 
     @classmethod
     def init(cls, config):
-        service_name = config.get('service_name')
+        service_name = config.get('service_name', 'Rasa')
         exporters = config.get('exporters')
-        if not service_name or not exporters:
-            return
 
         logger.info(f"Starting tracing for {service_name}")
 
