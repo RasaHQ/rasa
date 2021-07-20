@@ -272,3 +272,19 @@ def test_split_action_name(text: Text, expected_tokens: List[Text]):
     message.set(ACTION_NAME, text)
 
     assert [t.text for t in tk._split_name(message, ACTION_NAME)] == expected_tokens
+
+
+@pytest.mark.parametrize(
+    "token, fingerprint",
+    [
+        (Token("testing", 2, 9, {"x": 3}, "test"), "52e90b4006431ab400cbb7778c3abe57"),
+        (Token("testing", 3, 10, {"x": 3}, "test"), "805dd02340b33225c1e9212716f8784a"),
+        (Token("working", 2, 9, {"x": 3}, "work"), "06982a425f3783eb8ff9d077ff8a8e7c"),
+        (Token("testing", 2, 9, None, "test"), "e2c40c1e477c7c21ddb332afa175ad44"),
+        (Token("testing", 2, 9), "18ebd2ba03e30f4f477f85fc4830dfe1"),
+        (Token("testing", 2), "18ebd2ba03e30f4f477f85fc4830dfe1"),
+    ],
+)
+def test_token_fingerprinting_consistency(token: Token, fingerprint: Text):
+    """Tests that token fingerprints are consistent across runs and machines."""
+    assert token.fingerprint() == fingerprint
