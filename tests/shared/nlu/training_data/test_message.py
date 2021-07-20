@@ -381,3 +381,29 @@ def test_add_diagnostic_data_with_repeated_component_raises_warning():
     message.add_diagnostic_data("a", {})
     with pytest.warns(UserWarning):
         message.add_diagnostic_data("a", {})
+
+
+def test_features_are_part_of_fingerprint():
+    features_1 = [
+        Features(
+            scipy.sparse.csr_matrix([1, 1, 0]), FEATURE_TYPE_SEQUENCE, TEXT, "c2",
+        ),
+        Features(np.ndarray([1, 2, 2]), FEATURE_TYPE_SEQUENCE, TEXT, "c1"),
+    ]
+    message_1 = Message(data={TEXT: "This is a test sentence."}, features=features_1)
+
+    features_2 = [
+        Features(
+            scipy.sparse.csr_matrix([1, 1, 0, 0]), FEATURE_TYPE_SEQUENCE, TEXT, "c1",
+        ),
+        Features(
+            scipy.sparse.csr_matrix([1, 2, 1]), FEATURE_TYPE_SENTENCE, TEXT, "test",
+        ),
+        Features(np.array([1, 1, 0]), FEATURE_TYPE_SEQUENCE, TEXT, "c1"),
+        Features(np.array([1, 2, 1]), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+    ]
+    message_2 = Message(data={TEXT: "This is a test sentence."}, features=features_2)
+    message_3 = Message(data={TEXT: "This is a test sentence."})
+    assert message_1.fingerprint() != message_2.fingerprint()
+    assert message_1.fingerprint() != message_3.fingerprint()
+    assert message_2.fingerprint() != message_3.fingerprint()
