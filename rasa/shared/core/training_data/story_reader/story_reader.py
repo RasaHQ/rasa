@@ -2,13 +2,6 @@ import logging
 from pathlib import Path
 from typing import Optional, Dict, Text, List, Any, Union
 
-import rasa.shared.utils.common
-import rasa.shared.utils.io
-from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
-from rasa.shared.core.constants import (
-    LEGACY_ACTION_DEACTIVATE_LOOP_NAME,
-    ACTION_DEACTIVATE_LOOP_NAME,
-)
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import SlotSet, ActionExecuted, Event
 from rasa.shared.exceptions import RasaCoreException
@@ -128,7 +121,6 @@ class StoryReader:
             )
 
         for p in parsed_events:
-            _map_legacy_event_names(p)
             if self._is_parsing_conditions:
                 self.current_step_builder.add_event_as_condition(p)
             else:
@@ -146,20 +138,6 @@ class StoryReader:
             )
 
         self.current_step_builder.add_checkpoint(name, conditions)
-
-
-def _map_legacy_event_names(event: Event) -> None:
-    if (
-        isinstance(event, ActionExecuted)
-        and event.action_name == LEGACY_ACTION_DEACTIVATE_LOOP_NAME
-    ):
-        rasa.shared.utils.io.raise_deprecation_warning(
-            f"Using action '{event.action_name}' is deprecated. Please use "
-            f"'{ACTION_DEACTIVATE_LOOP_NAME}' instead. Support for "
-            f"'{event.action_name}' will be removed in Rasa Open Source version "
-            f"{NEXT_MAJOR_VERSION_FOR_DEPRECATIONS}."
-        )
-        event.action_name = ACTION_DEACTIVATE_LOOP_NAME
 
 
 class StoryParseError(RasaCoreException, ValueError):
