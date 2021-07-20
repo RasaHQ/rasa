@@ -3,6 +3,8 @@ from typing import Union, Text, Optional, List, Any, Tuple
 import numpy as np
 import scipy.sparse
 
+import rasa.shared.utils.io
+
 
 class Features:
     """Stores the features produced by any featurizer."""
@@ -114,4 +116,15 @@ class Features:
             other.type == self.type
             and other.attribute == self.attribute
             and other.features == self.features
+        )
+
+    def fingerprint(self) -> Text:
+        """Calculate a stable string fingerprint for the features."""
+        features_as_str = (
+            self.features.tostring()
+            if isinstance(self.features, np.ndarray)
+            else str(self.features)
+        )
+        return rasa.shared.utils.io.deep_container_fingerprint(
+            [self.type, self.origin, self.attribute, features_as_str]
         )
