@@ -60,7 +60,6 @@ class Tracer:
         if not cls.tracer:
             trace.Span()
 
-        logger.info(f"Start span: {name}")
         span = cls.tracer.start_as_current_span(name, attributes=attributes, context=context)
         return span
 
