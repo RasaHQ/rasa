@@ -15,6 +15,7 @@ from rasa.shared.nlu.constants import (
     RESPONSE,
 )
 from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 @pytest.mark.parametrize(
@@ -383,27 +384,28 @@ def test_add_diagnostic_data_with_repeated_component_raises_warning():
         message.add_diagnostic_data("a", {})
 
 
-def test_features_are_part_of_fingerprint():
-    features_1 = [
-        Features(
-            scipy.sparse.csr_matrix([1, 1, 0]), FEATURE_TYPE_SEQUENCE, TEXT, "c2",
-        ),
-        Features(np.ndarray([1, 2, 2]), FEATURE_TYPE_SEQUENCE, TEXT, "c1"),
-    ]
-    message_1 = Message(data={TEXT: "This is a test sentence."}, features=features_1)
+def test_message_fingerprint_includes_data_and_features():
+    message = Message(data={TEXT: "This is a test sentence."})
+    fp1 = message.fingerprint()
+    tokenizer = WhitespaceTokenizer()
+    tokenizer.process(message)
+    fp2 = message.fingerprint()
 
-    features_2 = [
-        Features(
-            scipy.sparse.csr_matrix([1, 1, 0, 0]), FEATURE_TYPE_SEQUENCE, TEXT, "c1",
-        ),
-        Features(
-            scipy.sparse.csr_matrix([1, 2, 1]), FEATURE_TYPE_SENTENCE, TEXT, "test",
-        ),
-        Features(np.array([1, 1, 0]), FEATURE_TYPE_SEQUENCE, TEXT, "c1"),
-        Features(np.array([1, 2, 1]), FEATURE_TYPE_SENTENCE, TEXT, "test"),
-    ]
-    message_2 = Message(data={TEXT: "This is a test sentence."}, features=features_2)
-    message_3 = Message(data={TEXT: "This is a test sentence."})
-    assert message_1.fingerprint() != message_2.fingerprint()
-    assert message_1.fingerprint() != message_3.fingerprint()
-    assert message_2.fingerprint() != message_3.fingerprint()
+    assert fp1 != fp2
+
+    message.add_features(
+        Features(scipy.sparse.csr_matrix([1, 1, 0]), FEATURE_TYPE_SEQUENCE, TEXT, "c2",)
+    )
+
+    fp3 = message.fingerprint()
+    assert fp2 != fp3
+
+    message.add_features(
+        Features(np.ndarray([1, 2, 2]), FEATURE_TYPE_SEQUENCE, TEXT, "c1")
+    )
+
+    fp4 = message.fingerprint()
+
+    assert fp3 != fp4
+
+    assert len({fp1, fp2, fp3, fp4}) == 4
