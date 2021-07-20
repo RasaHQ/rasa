@@ -12,9 +12,9 @@ from rasa.shared.nlu.constants import (
 
 from rasa.shared.nlu.training_data.features import Features
 
-m1 = [[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]]
+m1 = np.asarray([[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]])
 
-m2 = [[0, 0, 0], [1, 2, 3], [0, 0, 1]]
+m2 = np.asarray([[0, 0, 0], [1, 2, 3], [0, 0, 1]])
 
 
 @pytest.mark.parametrize(
