@@ -35,7 +35,9 @@ from rasa.shared.core.events import UserUttered
 ########################################################################################
 
 
-def drop_empty_values_from_dict(given: Dict[Any, Optional[Sized]]) -> State:
+def shallow_copy_without_empty_values(
+    given: Dict[Any, Optional[Sized]]
+) -> Dict[Any, Optional[Sized]]:
     """
     NOTE: this was _clean_state (with the difference that that would've dropped values
     evaluating to False (of which we have nothing yet))
@@ -49,7 +51,7 @@ def drop_empty_values_from_dict(given: Dict[Any, Optional[Sized]]) -> State:
 
 
 def get_active_state(
-    tracker: DialogueStateTracker, omit_unset_slots: bool = False,
+    tracker: DialogueStateTracker, domain: Domain, omit_unset_slots: bool = False,
 ) -> State:
     """Given a dialogue tracker, makes a representation of current dialogue state.
 
@@ -61,59 +63,94 @@ def get_active_state(
         A representation of the dialogue's current state.
     """
     state = {
-        shared_nlu_constants.USER: get_user_sub_state(tracker),
+        shared_nlu_constants.USER: get_user_sub_state(
+            user_uttered_event=tracker.latest_message,
+            apply_restriction_from_intent=True,
+            domain=domain,
+        ),
         shared_nlu_constants.SLOTS: get_slots_sub_state(
             tracker, omit_unset_slots=omit_unset_slots
         ),
         shared_nlu_constants.PREVIOUS_ACTION: tracker.latest_action,
+        # == get_prev_action_sub_state(tracker)
         shared_nlu_constants.ACTIVE_LOOP: get_active_loop_sub_state(tracker),
     }
-    return drop_empty_values_from_dict(state)
+    return shallow_copy_without_empty_values(state)
 
 
 def get_user_sub_state(
-    tracker: DialogueStateTracker, domain: Domain,
+    user_uttered_event: UserUttered,
+    apply_restriction_from_intent: bool = False,
+    domain: Optional[Domain] = None,
 ) -> Dict[Text, Union[Text, Tuple[Text]]]:
     """Turns latest UserUttered event into a substate.
 
-        The substate will contain intent, text, and entities (if any are present).
+    The substate will contain intent, text, and entities (if any are present).
 
-        Args:
-            tracker: dialog state tracker containing the dialog so far
-        Returns:
-            a dictionary containing intent, text and set entities
-        """
-    # proceed with values only if the user of a bot have done something
-    # at the previous step i.e., when the state is not empty.
-    latest_message = tracker.latest_message
-    if not latest_message or latest_message.is_empty():
-        return {}
+    Args:
+        tracker: dialog state tracker containing the dialog so far
+    Returns:
+        a dictionary containing intent, text and set entities
 
-    # Collect all possible entity_names i.e. combinations of type+(role/group) first
-    entity_names = collect_all_entity_type_role_group_combinations(
-        latest_message.entities
-    )
+    TODO: why does *the event* get to decide how it is featurized? and why is that
+      ignored in UserUttered.as_sub_state ?
+    NOTE: to replicate UserUttered.as_sub_state() call this function with
+      apply_restriction_from_intent set to False (and no domain, won't be used)
+    """
+    if not user_uttered_event or user_uttered_event.is_empty():
+        # where empty means: no intent, no text and no entities
+        return dict()
 
-    # Filter by intent config
-    intent_name = latest_message.intent.get(shared_nlu_constants.INTENT_NAME_KEY)
-    intent_config = domain.intent_config(intent_name)
-    restriction = intent_config.get(shared_nlu_constants.USED_ENTITIES_KEY)
-    if restriction:
-        entity_names = entity_names.intersection(restriction)
+    # TODO: Why is this defined in event and how is it set?
+    # During training we expect either intent_name or text to be set
+    #   -> means use_text_for_featurization should be True/False (?)
+    # During prediction both will be set
+    #   -> means use_text_for_featurization should be None (?)
 
-    # Sort entities so that any derived state representation is consistent across
-    # runs and invariant to the order in which the entities for an utterance are
-    # listed in data files.
-    entity_names = tuple(sorted(entity_names))
+    featurization_undefined = user_uttered_event.use_text_for_featurization is None
+    featurization_using_text = user_uttered_event.use_text_for_featurization
 
-    # Get the rest of the state...
-    sub_state = convert_user_uttered_event_to_user_substate(
-        latest_message, ignore_entities=True
-    )
-    if entity_names:
+    sub_state = {}
+    if featurization_undefined or featurization_using_text:
+        sub_state[shared_nlu_constants.TEXT] = user_uttered_event.text
+    if (
+        featurization_undefined
+        or not featurization_using_text
+        or apply_restriction_from_intent
+    ):
+        intent_name = user_uttered_event.intent_name
+        # don't add entities for e2e utterances # TODO: ? / why defined in event?
+        entity_names = collect_all_entity_type_role_group_combinations(
+            user_uttered_event.entities
+        )
+
+        if apply_restriction_from_intent:
+            # FIXME: here, we don't care whether the featurization method was undefined
+            # or whether we don't "use_text_for_featurization" ... which matches what is
+            # happening in the current version. But why? :)
+
+            if domain is None:
+                raise ValueError(
+                    "Expected domain to be able to filter entities according to "
+                    "restrictions defined in intent configuration."
+                )
+
+            # Filter by intent config
+            intent_config = domain.intent_config(intent_name)
+            restriction = intent_config.get(shared_nlu_constants.USED_ENTITIES_KEY)
+
+            if restriction:
+                entity_names = entity_names.intersection(restriction)
+
+                # Sort entities so that any derived state representation is consistent
+                # acrossruns and invariant to the order in which the entities for an
+                # utterance are listed in data files.
+                entity_names = tuple(sorted(entity_names))
+
         sub_state[shared_nlu_constants.ENTITIES] = entity_names
+        sub_state[shared_nlu_constants.INTENT] = intent_name
 
-    return sub_state
+    return shallow_copy_without_empty_values(sub_state)
 
 
 def collect_all_entity_type_role_group_combinations(entities: List[Dict[Text, Text]]):
@@ -154,51 +191,6 @@ def collect_all_entity_type_role_group_combinations(entities: List[Dict[Text, Te
     return combinations
 
 
-def convert_user_uttered_event_to_user_substate(
-    user_uttered_event: UserUttered, ignore_entities: bool = False,
-) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
-    """Turns a UserUttered event into features.
-
-    The substate contains information about entities, intent and text of the
-    `UserUttered` event.
-
-    Returns:
-        a dictionary with intent name, text and entities
-
-    # NOTE: this was as_sub_state in UserUtteredEvent
-    """
-
-    # During training we expect either intent_name or text to be set
-    #   - and use_text_for_featurization should be True/False (?)
-    # During prediction both will be set
-    #   - and use_text_for_featurization should be None (?)
-
-    out = {}
-    if (
-        user_uttered_event.use_text_for_featurization
-        or user_uttered_event.use_text_for_featurization is None
-    ):
-        if user_uttered_event.text:
-            out[shared_nlu_constants.TEXT] = user_uttered_event.text
-
-    if (
-        not user_uttered_event.use_text_for_featurization
-        # or user_uttered_event.use_text_for_featurization is None # implicitly
-    ):
-        if user_uttered_event.intent_name:
-            out[shared_nlu_constants.INTENT] = user_uttered_event.intent_name
-        # don't add entities for e2e utterances
-
-        if not ignore_entities:
-            entities = collect_all_entity_type_role_group_combinations(
-                user_uttered_event.entities
-            )
-            if entities:
-                out[shared_nlu_constants.ENTITIES] = entities
-
-    return out
-
-
 def get_slots_sub_state(
     tracker, omit_unset_slots: bool = False,
 ) -> Dict[Text, Union[Text, Tuple[float]]]:
@@ -214,10 +206,10 @@ def get_slots_sub_state(
     slots = {}
     for slot_name, slot in tracker.slots.items():
         if (
-            slot is not None and slot.as_feature()
-        ):  # TODO: "as feature"? not a `Features`
-            if omit_unset_slots and not slot.has_been_set:
-                continue
+            slot is not None
+            and slot.as_feature()  # TODO: "as_feature"? This is not a `Features`
+            and not (omit_unset_slots and not slot.has_been_set)
+        ):
             if slot.value == shared_nlu_constants.SHOULD_NOT_BE_SET:
                 slots[slot_name] = shared_nlu_constants.SHOULD_NOT_BE_SET
             elif any(slot.as_feature()):
@@ -234,7 +226,6 @@ def get_active_loop_sub_state(tracker: DialogueStateTracker) -> Dict[Text, Text]
     Returns:
         a dictionary mapping "name" to active loop name if present
     """
-
     # we don't use tracker.active_loop_name
     # because we need to keep should_not_be_set
     active_loop: Optional[Text] = tracker.active_loop.get(LOOP_NAME)
@@ -251,7 +242,7 @@ def get_prev_action_sub_state(tracker: DialogueStateTracker) -> Dict[Text, Text]
     Returns:
         a dictionary with the information on latest action
     """
-    return tracker.latest_action
+    return tracker.latest_action  # TODO: how does this look?
 
 
 def create_action_sub_state(action: Text, as_text: bool = False) -> SubState:
@@ -295,8 +286,13 @@ def get_schema(state: State):
 def copy(state: State, key_dict: Dict[Text, Optional[List[Text]]]):
     """Copy only the requested (state_type, attribute) entries, if they exist.
 
+    # TODO: rename to deep_copy or convert to shallow copy (is deep copy needed?)
+
     Args:
         key_dict: mapping substate_types to a list of attribute names
+    Returns:
+        a deep copy of the given state that only contains those (substate_type,
+        attribute) combinations that are needed.
     """
     state_copy = dict()
     for key, sub_keys in key_dict.items():
