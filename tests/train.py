@@ -63,10 +63,7 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
         (
             "en",
             as_pipeline(
-                "HFTransformersNLP",
-                "LanguageModelTokenizer",
-                "LanguageModelFeaturizer",
-                "DIETClassifier",
+                "WHitespaceTokenizer", "LanguageModelFeaturizer", "DIETClassifier",
             ),
         ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
