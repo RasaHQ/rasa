@@ -229,6 +229,15 @@ async def trained_moodbot_path(trained_async: Callable) -> Text:
 
 
 @pytest.fixture(scope="session")
+async def trained_unexpected_intent_policy_path(trained_async: Callable) -> Text:
+    return await trained_async(
+        domain="data/test_moodbot/domain.yml",
+        config="data/test_moodbot/unexpected_intent_policy_config.yml",
+        training_files="data/test_moodbot/data/",
+    )
+
+
+@pytest.fixture(scope="session")
 async def trained_nlu_moodbot_path(trained_nlu_async: Callable) -> Text:
     return await trained_nlu_async(
         domain="data/test_moodbot/domain.yml",
@@ -273,6 +282,18 @@ async def core_agent(trained_core_model: Text) -> Agent:
 @pytest.fixture(scope="session")
 async def nlu_agent(trained_nlu_model: Text) -> Agent:
     return await load_agent(model_path=trained_nlu_model)
+
+
+@pytest.fixture(scope="session")
+async def unexpected_intent_policy_agent(
+    trained_unexpected_intent_policy_path: Text,
+) -> Agent:
+    return await load_agent(model_path=trained_unexpected_intent_policy_path)
+
+
+@pytest.fixture(scope="session")
+async def mood_agent(trained_moodbot_path: Text) -> Agent:
+    return await load_agent(model_path=trained_moodbot_path)
 
 
 @pytest.fixture(scope="session")
@@ -406,6 +427,11 @@ async def trained_e2e_model(
 def moodbot_domain() -> Domain:
     domain_path = os.path.join("data", "test_moodbot", "domain.yml")
     return Domain.load(domain_path)
+
+
+@pytest.fixture(scope="session")
+def moodbot_nlu_data_path() -> Path:
+    return Path(os.getcwd()) / "data" / "test_moodbot" / "data" / "nlu.yml"
 
 
 @pytest.fixture

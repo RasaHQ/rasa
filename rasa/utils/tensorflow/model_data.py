@@ -264,6 +264,7 @@ class RasaModelData:
         self.label_sub_key = label_sub_key
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
+        self.sparse_feature_sizes = {}
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
@@ -532,6 +533,30 @@ class RasaModelData:
             self.data[key][sub_key].extend([lengths])
             break
 
+    def add_sparse_feature_sizes(
+        self, sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]]
+    ) -> None:
+        """Adds a dictionary of feature sizes for different attributes.
+
+        Args:
+            sparse_feature_sizes: a dictionary of attribute that has sparse
+                           features to a dictionary of a feature type
+                           to a list of different sparse feature sizes.
+        """
+        self.sparse_feature_sizes = sparse_feature_sizes
+
+    def get_sparse_feature_sizes(self) -> Dict[Text, Dict[Text, List[int]]]:
+        """Get feature sizes of the model.
+
+        sparse_feature_sizes is a dictionary of attribute that has sparse features to
+        a dictionary of a feature type to a list of different sparse feature sizes.
+
+        Returns:
+            A dictionary of key and sub-key to a list of feature signatures
+            (same structure as the data attribute).
+        """
+        return self.sparse_feature_sizes
+
     def split(
         self, number_of_test_examples: int, random_seed: int
     ) -> Tuple["RasaModelData", "RasaModelData"]:
@@ -716,7 +741,7 @@ class RasaModelData:
                 if min(num_data_cycles) > 0:
                     break
 
-        final_data = defaultdict(lambda: defaultdict(list))
+        final_data: Data = defaultdict(lambda: defaultdict(list))
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
@@ -764,7 +789,7 @@ class RasaModelData:
         Returns:
             The filtered data
         """
-        new_data = defaultdict(lambda: defaultdict(list))
+        new_data: Data = defaultdict(lambda: defaultdict(list))
 
         if data is None:
             return new_data

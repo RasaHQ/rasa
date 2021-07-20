@@ -165,6 +165,7 @@ def run_core_training(
         rasa.utils.common.run_in_loop(
             do_compare_training(args, story_file, additional_arguments)
         )
+        return None
 
 
 def run_nlu_training(

@@ -9,7 +9,6 @@ from typing import Optional, Any, Dict, List, Text
 
 import rasa.utils.io
 import rasa.shared.utils.io
-from rasa.shared.constants import DOCS_URL_POLICIES
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import (
@@ -21,18 +20,13 @@ from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
-from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY
+from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY, DEFAULT_MAX_HISTORY
 
 logger = logging.getLogger(__name__)
 
-# temporary constants to support back compatibility
-MAX_HISTORY_NOT_SET = -1
-OLD_DEFAULT_MAX_HISTORY = 5
-
 
 class MemoizationPolicy(Policy):
-    """The policy that remembers exact examples of
-    `max_history` turns from training stories.
+    """A policy that follows exact examples of `max_history` turns in training stories.
 
     Since `slots` that are set some time in the past are
     preserved in all future feature vectors until they are set
@@ -69,7 +63,7 @@ class MemoizationPolicy(Policy):
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = MEMOIZATION_POLICY_PRIORITY,
-        max_history: Optional[int] = MAX_HISTORY_NOT_SET,
+        max_history: Optional[int] = DEFAULT_MAX_HISTORY,
         lookup: Optional[Dict] = None,
         **kwargs: Any,
     ) -> None:
@@ -82,18 +76,6 @@ class MemoizationPolicy(Policy):
             lookup: a dictionary that stores featurized tracker states and
                 predicted actions for them
         """
-        if max_history == MAX_HISTORY_NOT_SET:
-            max_history = OLD_DEFAULT_MAX_HISTORY  # old default value
-            rasa.shared.utils.io.raise_warning(
-                f"Please configure the max history in your configuration file, "
-                f"currently 'max_history' is set to old default value of "
-                f"'{max_history}'. If you want to have infinite max history "
-                f"set it to 'None' explicitly. We will change the default value of "
-                f"'max_history' in the future to 'None'.",
-                DeprecationWarning,
-                docs=DOCS_URL_POLICIES,
-            )
-
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
@@ -185,7 +167,7 @@ class MemoizationPolicy(Policy):
         (
             trackers_as_states,
             trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(training_trackers, domain)
+        ) = self.featurizer.training_states_and_labels(training_trackers, domain)
         self.lookup = self._create_lookup_from_states(
             trackers_as_states, trackers_as_actions
         )
@@ -308,12 +290,12 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         # use first action, if we went first time and second action, if we went again
         idx_to_use = idx_of_second_action if again else idx_of_first_action
         if idx_to_use is None:
-            return
+            return None
 
         # make second ActionExecuted the first one
         events = tracker.applied_events()[idx_to_use:]
         if not events:
-            return
+            return None
 
         mcfly_tracker = tracker.init_copy()
         for e in events:

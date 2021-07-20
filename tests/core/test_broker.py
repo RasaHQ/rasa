@@ -1,9 +1,8 @@
 import json
 import logging
 import textwrap
-from asyncio.events import AbstractEventLoop
 from pathlib import Path
-from typing import Union, Text, List, Optional, Type, Dict, Any
+from typing import Union, Text, List, Optional, Type
 
 import aio_pika.exceptions
 import aiormq.exceptions
@@ -240,30 +239,6 @@ async def test_load_custom_broker_name(tmp_path: Path):
     )
     broker = await EventBroker.create(config)
     assert broker
-
-
-class CustomEventBrokerWithoutAsync(EventBroker):
-    @classmethod
-    def from_endpoint_config(
-        cls, _: EndpointConfig, __: Optional[AbstractEventLoop] = None,
-    ) -> "EventBroker":
-        return FileEventBroker()
-
-    def publish(self, event: Dict[Text, Any]) -> None:
-        pass
-
-
-async def test_load_custom_broker_without_async_support(tmp_path: Path):
-    config = EndpointConfig(
-        **{
-            "type": f"{CustomEventBrokerWithoutAsync.__module__}."
-            f"{CustomEventBrokerWithoutAsync.__name__}",
-            "path": str(tmp_path / "rasa_event.log"),
-        }
-    )
-
-    with pytest.warns(FutureWarning):
-        assert isinstance(await EventBroker.create(config), FileEventBroker)
 
 
 async def test_load_non_existent_custom_broker_name():

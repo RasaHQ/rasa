@@ -1,11 +1,12 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from unittest.mock import Mock
-
 import numpy as np
 import pytest
 import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
+from _pytest.logging import LogCaptureFixture
+
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
@@ -13,13 +14,16 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.core.policies.policy import Policy
 from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
     ActionExecuted,
     UserUttered,
+    Event,
+    EntitiesAdded,
+    ActiveLoop,
 )
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, InvalidConfigException
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -38,9 +42,16 @@ from rasa.utils.tensorflow.constants import (
     COSINE,
     AUTO,
     LINEAR_NORM,
+    LABEL,
+    MASK,
+    SENTENCE,
+    IDS,
+    EVAL_NUM_EPOCHS,
 )
+from rasa.shared.nlu.constants import ACTION_NAME
+from rasa.utils.tensorflow import model_data_utils
 from tests.core.test_policies import PolicyTestCollection
-from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.constants import DEFAULT_SENDER_ID, DEFAULT_CORE_SUBDIRECTORY_NAME
 
 UTTER_GREET_ACTION = "utter_greet"
 GREET_INTENT_NAME = "greet"
@@ -50,6 +61,21 @@ intents:
 actions:
 - {UTTER_GREET_ACTION}
 """
+
+
+def get_checkpoint_dir_path(train_path: Path, ted_pos: Optional[int] = 0) -> Path:
+    """
+    Produce the path of the checkpoint directory for TED.
+
+    This is very tightly coupled to the persist methods of PolicyEnsemble, Agent, and
+    TEDPolicy.
+    Args:
+        train_path: the path passed to model_training.train_core for training output.
+        ted_pos: the position of TED in the policies listed in the config.
+    """
+    policy_dir_name = Path("policy_{}_{}".format(ted_pos, TEDPolicy.__name__))
+    policy_path = train_path / DEFAULT_CORE_SUBDIRECTORY_NAME / policy_dir_name
+    return policy_path / "checkpoints"
 
 
 def test_diagnostics():
@@ -76,32 +102,84 @@ def test_diagnostics():
 
 
 class TestTEDPolicy(PolicyTestCollection):
-    def test_train_model_checkpointing(self, tmp_path: Path):
-        model_name = "core-checkpointed-model"
-        best_model_file = tmp_path / (model_name + ".tar.gz")
-        assert not best_model_file.exists()
-
-        train_core(
-            domain="data/test_domains/default.yml",
-            stories="data/test_yaml_stories/stories_defaultdomain.yaml",
-            output=str(tmp_path),
-            fixed_model_name=model_name,
-            config="data/test_config/config_ted_policy_model_checkpointing.yml",
-        )
-
-        assert best_model_file.exists()
-
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> TEDPolicy:
         return TEDPolicy(featurizer=featurizer, priority=priority)
 
-    async def test_raise_rasa_exception_no_user_features(
+    def test_train_model_checkpointing(self, tmp_path: Path):
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
+
+        train_core(
+            domain="data/test_domains/default.yml",
+            stories="data/test_yaml_stories/stories_defaultdomain.yml",
+            train_path=str(tmp_path),
+            output=str(tmp_path),
+            config="data/test_config/config_ted_policy_model_checkpointing.yml",
+        )
+        assert checkpoint_dir.is_dir()
+
+    def test_doesnt_checkpoint_with_no_checkpointing(self, tmp_path: Path):
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
+
+        train_core(
+            domain="data/test_domains/default.yml",
+            stories="data/test_yaml_stories/stories_defaultdomain.yml",
+            train_path=str(tmp_path),
+            output=str(tmp_path),
+            config="data/test_config/config_ted_policy_no_model_checkpointing.yml",
+        )
+        assert not checkpoint_dir.is_dir()
+
+    def test_doesnt_checkpoint_with_zero_eval_num_examples(self, tmp_path: Path):
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
+        config_file = "config_ted_policy_model_checkpointing_zero_eval_num_examples.yml"
+        with pytest.warns(UserWarning) as warning:
+            train_core(
+                domain="data/test_domains/default.yml",
+                stories="data/test_yaml_stories/stories_defaultdomain.yml",
+                train_path=str(tmp_path),
+                output=str(tmp_path),
+                config=f"data/test_config/{config_file}",
+            )
+        warn_text = (
+            f"You have opted to save the best model, but the value of "
+            f"'{EVAL_NUM_EXAMPLES}' is not greater than 0. No checkpoint model will be "
+            f"saved."
+        )
+        assert not checkpoint_dir.is_dir()
+        assert len([w for w in warning if warn_text in str(w.message)]) == 1
+
+    def test_train_fails_with_checkpoint_zero_eval_num_epochs(self, tmp_path: Path):
+        checkpoint_dir = get_checkpoint_dir_path(tmp_path)
+        assert not checkpoint_dir.is_dir()
+        config_file = "config_ted_policy_model_checkpointing_zero_every_num_epochs.yml"
+        with pytest.raises(InvalidConfigException):
+            with pytest.warns(UserWarning) as warning:
+                train_core(
+                    domain="data/test_domains/default.yml",
+                    stories="data/test_yaml_stories/stories_defaultdomain.yml",
+                    train_path=str(tmp_path),
+                    output=str(tmp_path),
+                    config=f"data/test_config/{config_file}",
+                )
+        warn_text = (
+            f"You have opted to save the best model, but the value of "
+            f"'{EVAL_NUM_EPOCHS}' is not -1 or greater than 0. Training will fail."
+        )
+        assert len([w for w in warning if warn_text in str(w.message)]) == 1
+        assert not checkpoint_dir.is_dir()
+
+    async def test_training_with_no_intent(
         self,
         featurizer: Optional[TrackerFeaturizer],
         priority: int,
         default_domain: Domain,
         tmp_path: Path,
+        caplog: LogCaptureFixture,
     ):
         stories = tmp_path / "stories.yml"
         stories.write_text(
@@ -158,6 +236,36 @@ class TestTEDPolicy(PolicyTestCollection):
         )
 
         mock.normalize.assert_called_once()
+
+    def test_label_data_assembly(
+        self, trained_policy: TEDPolicy, default_domain: Domain
+    ):
+        interpreter = RegexInterpreter()
+
+        state_featurizer = trained_policy.featurizer.state_featurizer
+        encoded_all_labels = state_featurizer.encode_all_labels(
+            default_domain, interpreter
+        )
+
+        attribute_data, _ = model_data_utils.convert_to_data_format(encoded_all_labels)
+        assembled_label_data = trained_policy._assemble_label_data(
+            attribute_data, default_domain
+        )
+        assembled_label_data_signature = assembled_label_data.get_signature()
+
+        assert list(assembled_label_data_signature.keys()) == [
+            f"{LABEL}_{ACTION_NAME}",
+            f"{LABEL}",
+        ]
+        assert assembled_label_data.num_examples == default_domain.num_actions
+        assert list(
+            assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"].keys()
+        ) == [MASK, SENTENCE,]
+        assert list(assembled_label_data_signature[LABEL].keys()) == [IDS]
+        assert (
+            assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"][SENTENCE][0].units
+            == default_domain.num_actions
+        )
 
     async def test_gen_batch(
         self, trained_policy: TEDPolicy, default_domain: Domain, stories_path: Path
@@ -297,6 +405,86 @@ class TestTEDPolicy(PolicyTestCollection):
         assert (
             batch_slots_sentence_shape[1] == seq_len
             or batch_slots_sentence_shape[1] == 0
+        )
+
+    @pytest.mark.parametrize(
+        "tracker_events_with_action, tracker_events_without_action",
+        [
+            (
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                    ActionExecuted("utter_greet"),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    ActionExecuted("utter_greet"),
+                ],
+            ),
+            (
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                    ActionExecuted("some_form"),
+                    ActiveLoop("some_form"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="default", intent={"name": "default"}),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
+                    ActionExecuted("some_form"),
+                    ActiveLoop("some_form"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="default", intent={"name": "default"}),
+                ],
+            ),
+        ],
+    )
+    def test_ignore_action_unlikely_intent(
+        self,
+        trained_policy: TEDPolicy,
+        default_domain: Domain,
+        tracker_events_with_action: List[Event],
+        tracker_events_without_action: List[Event],
+    ):
+        interpreter = RegexInterpreter()
+        tracker_with_action = DialogueStateTracker.from_events(
+            "test 1", evts=tracker_events_with_action
+        )
+        tracker_without_action = DialogueStateTracker.from_events(
+            "test 2", evts=tracker_events_without_action
+        )
+        prediction_with_action = trained_policy.predict_action_probabilities(
+            tracker_with_action, default_domain, interpreter
+        )
+        prediction_without_action = trained_policy.predict_action_probabilities(
+            tracker_without_action, default_domain, interpreter
+        )
+
+        # If the weights didn't change then both trackers
+        # should result in same prediction.
+        assert (
+            prediction_with_action.probabilities
+            == prediction_without_action.probabilities
         )
 
 
