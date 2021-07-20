@@ -41,7 +41,6 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_SLOT_NAME,
     KEY_ACTION,
 )
-from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
