@@ -56,6 +56,7 @@ from rasa.shared.nlu.training_data.formats.readerwriter import TrainingDataWrite
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.utils.io import DEFAULT_ENCODING
 from rasa.utils.tensorflow.constants import QUERY_INTENT_KEY, SEVERITY_KEY
+from rasa.exceptions import ActionLimitReached
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -643,7 +644,6 @@ def _collect_action_executed_predictions(
     partial_tracker: DialogueStateTracker,
     event: ActionExecuted,
     fail_on_prediction_errors: bool,
-    circuit_breaker_tripped: bool,
 ) -> Tuple[EvaluationStore, PolicyPrediction, Optional[EntityEvaluationResult]]:
 
     action_executed_eval_store = EvaluationStore()
@@ -655,13 +655,13 @@ def _collect_action_executed_predictions(
     policy_entity_result = None
     prev_action_unlikely_intent = False
 
-    if circuit_breaker_tripped:
-        prediction = PolicyPrediction([], policy_name=None)
-        predicted_action = "circuit breaker tripped"
-    else:
+    try:
         predicted_action, prediction, policy_entity_result = _run_action_prediction(
             processor, partial_tracker, expected_action
         )
+    except ActionLimitReached:
+        prediction = PolicyPrediction([], policy_name=None)
+        predicted_action = "circuit breaker tripped"
 
     predicted_action_unlikely_intent = predicted_action == ACTION_UNLIKELY_INTENT_NAME
     if predicted_action_unlikely_intent and predicted_action != expected_action:
@@ -767,25 +767,16 @@ async def _predict_tracker_actions(
     )
 
     tracker_actions = []
-    should_predict_another_action = True
-    num_predicted_actions = 0
     policy_entity_results = []
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
-            circuit_breaker_tripped = processor.is_action_limit_reached(
-                num_predicted_actions, should_predict_another_action
-            )
             (
                 action_executed_result,
                 prediction,
                 entity_result,
             ) = _collect_action_executed_predictions(
-                processor,
-                partial_tracker,
-                event,
-                fail_on_prediction_errors,
-                circuit_breaker_tripped,
+                processor, partial_tracker, event, fail_on_prediction_errors,
             )
 
             if entity_result:
@@ -801,10 +792,6 @@ async def _predict_tracker_actions(
                         "confidence": prediction.max_confidence,
                     }
                 )
-                should_predict_another_action = processor.should_predict_another_action(
-                    action_executed_result.action_predictions[0]
-                )
-                num_predicted_actions += 1
 
         elif use_e2e and isinstance(event, UserUttered):
             # This means that user utterance didn't have a user message, only intent,
@@ -824,8 +811,6 @@ async def _predict_tracker_actions(
             tracker_eval_store.merge_store(user_uttered_result)
         else:
             partial_tracker.update(event)
-        if isinstance(event, UserUttered):
-            num_predicted_actions = 0
 
     return tracker_eval_store, partial_tracker, tracker_actions, policy_entity_results
 

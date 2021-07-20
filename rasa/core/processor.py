@@ -15,6 +15,7 @@ from rasa.core.channels.channel import (
 )
 import rasa.core.utils
 from rasa.core.policies.policy import PolicyPrediction
+from rasa.exceptions import ActionLimitReached
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -33,12 +34,14 @@ from rasa.shared.core.events import (
     ReminderScheduled,
     SlotSet,
     UserUttered,
+    ActionExecuted,
 )
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     KEY_SLOT_NAME,
     KEY_ACTION,
 )
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.constants import (
     INTENT_MESSAGE_PREFIX,
@@ -376,6 +379,23 @@ class MessageProcessor:
         This should be overwritten by more advanced policies to use
         ML to predict the action. Returns the index of the next action.
         """
+        should_predict_another_action = self.should_predict_another_action(
+            tracker.latest_action_name
+        )
+        reversed_events = list(tracker.events)[::-1]
+        num_predicted_actions = 0
+
+        for e in reversed_events:
+            if isinstance(e, ActionExecuted):
+                if e.action_name in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME):
+                    break
+                num_predicted_actions += 1
+
+        if self.is_action_limit_reached(
+            num_predicted_actions, should_predict_another_action
+        ):
+            raise ActionLimitReached()
+
         prediction = self._get_next_action_probabilities(tracker)
 
         action = rasa.core.actions.action.action_for_index(
