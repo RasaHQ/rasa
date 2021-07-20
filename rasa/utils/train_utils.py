@@ -139,7 +139,7 @@ def align_token_features(
 ) -> np.ndarray:
     """Align token features to match tokens.
 
-    ConveRTTokenizer, LanguageModelTokenizers might split up tokens into sub-tokens.
+    ConveRTFeaturizer and LanguageModelFeaturizer might split up tokens into sub-tokens.
     We need to take the mean of the sub-token vectors and take that as token vector.
 
     Args:
