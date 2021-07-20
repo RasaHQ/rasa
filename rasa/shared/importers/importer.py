@@ -196,6 +196,10 @@ class TrainingDataImporter:
             config_path, domain_path, training_data_paths, **constructor_arguments
         )
 
+    def fingerprint(self) -> Text:
+        """Returns a static fingerprint."""
+        return "TrainingDataImporter"
+
 
 class NluDataImporter(TrainingDataImporter):
     """Importer that skips any Core-related file reading."""
