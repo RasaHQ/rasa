@@ -111,7 +111,3 @@ class ConnectionException(RasaException):
     It's used by our broker and tracker store classes, when
     they can't connect to services like postgres, dynamoDB, mongo.
     """
-
-
-class CorruptMetaDataException(ValueError, RasaException):
-    """Raised if metadata of a trained component is corrupted."""

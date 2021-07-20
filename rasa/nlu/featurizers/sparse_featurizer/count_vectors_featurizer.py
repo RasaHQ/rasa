@@ -806,7 +806,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
         """Loads trained component (see parent class for full docstring)."""
-        file_name = meta.get("file")
+        file_name = meta["file"]
         featurizer_file = os.path.join(model_dir, file_name)
 
         if not os.path.exists(featurizer_file):

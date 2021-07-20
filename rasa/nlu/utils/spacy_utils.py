@@ -266,7 +266,7 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        nlp = cls.load_model(meta.get("model"))
+        nlp = cls.load_model(meta["model"])
         cls.ensure_proper_language_model(nlp)
         return cls(meta, nlp)
 
