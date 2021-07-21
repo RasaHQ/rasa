@@ -1,4 +1,5 @@
 from typing import Optional, Text, List
+import subprocess
 
 import pytest
 import numpy as np
@@ -409,3 +410,25 @@ def test_message_fingerprint_includes_data_and_features():
     assert fp3 != fp4
 
     assert len({fp1, fp2, fp3, fp4}) == 4
+
+
+def test_message_fingerprints_are_consistent_across_runs():
+    """Tests that fingerprints are consistent across python interpreter invocations."""
+    # unfortunately, monkeypatching PYTHONHASHSEED does not work in a running process
+    # https://stackoverflow.com/questions/30585108/disable-hash-randomization-from-within-python-program
+    cmd = """python -c \
+        'import numpy as np; \
+        from rasa.shared.nlu.training_data.features import Features; \
+        from rasa.shared.nlu.training_data.message import Message; \
+        m1 = np.asarray([[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]]); \
+        feature = Features(m1, "sentence", "text", "CountVectorsFeaturizer"); \
+        message = Message(data={"text": "This is a test sentence."}); \
+        message.add_features(feature); \
+        print(message.fingerprint())'"""
+
+    fp1 = subprocess.getoutput(cmd)
+    fp2 = subprocess.getoutput(cmd)
+    print(fp1)
+    print(fp2)
+    assert len(fp1) == 32
+    assert fp1 == fp2

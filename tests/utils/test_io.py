@@ -1,5 +1,6 @@
 import copy
 from pathlib import Path
+import subprocess
 
 import pytest
 from prompt_toolkit.document import Document
@@ -7,6 +8,8 @@ from prompt_toolkit.validation import ValidationError
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
+
+from rasa.shared.nlu.training_data.features import Features
 
 
 @pytest.mark.parametrize("file, parents", [("A/test.md", "A"), ("A", "A")])
@@ -114,12 +117,22 @@ def test_fingerprint_containers(container):
     ) == rasa.shared.utils.io.deep_container_fingerprint(copy.deepcopy(container))
 
 
-def test_fingerprint_does_not_use_string_hashing(monkeypatch):
-    dictionary = {"a": ["b"], "c": {"d": "e"}}
-    f1 = rasa.shared.utils.io.deep_container_fingerprint(dictionary)
-
-    # in case we would rely on string hashes anywhere, using a different seed
+def test_fingerprint_is_consistent_across_runs():
+    cmd = """python -c \
+        'import rasa.shared.utils.io; \
+        dictionary = {"a": ["b"], "c": {"d": "e"}}; \
+        print(rasa.shared.utils.io.deep_container_fingerprint(dictionary));'"""
+    fp1 = subprocess.getoutput(cmd)
+    # in case we would rely on string hashes anywhere, a second invocation
     # would lead to different fingerprints and let this test fail
-    monkeypatch.setenv("PYTHONHASHSEED", "42")
-    f2 = rasa.shared.utils.io.deep_container_fingerprint(dictionary)
-    assert f1 == f2
+    # monkey patching, as done previously, does not work here. see:
+    # https://stackoverflow.com/questions/30585108/disable-hash-randomization-from-within-python-program
+    fp2 = subprocess.getoutput(cmd)
+    assert len(fp1) == 32
+    assert fp1 == fp2
+
+
+def test_deep_container_fingerprint_can_use_instance_fingerprint():
+    m1 = [[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]]
+    f = Features(m1, "sentence", "text", "CountVectorsFeaturizer")
+    assert rasa.shared.utils.io.deep_container_fingerprint(f) == f.fingerprint()
