@@ -95,27 +95,6 @@ Encodes all labels from the domain using the given interpreter.
 
   A list of encoded labels.
 
-#### encode\_all\_actions
-
-```python
- | encode_all_actions(domain: Domain, interpreter: NaturalLanguageInterpreter) -> List[Dict[Text, List[Features]]]
-```
-
-Encodes all actions from the domain using the given interpreter.
-
-This method is deprecated and will be removed in Rasa Open Source 3.0.0 .
-It is recommended to use `encode_all_labels` instead.
-
-**Arguments**:
-
-- `domain` - The domain that contains the actions.
-- `interpreter` - The interpreter used to encode the actions.
-  
-
-**Returns**:
-
-  A list of encoded actions.
-
 ## IntentTokenizerSingleStateFeaturizer Objects
 
 ```python
@@ -141,20 +120,4 @@ Encodes all relevant labels from the domain using the given interpreter.
 **Returns**:
 
   A list of encoded labels.
-
-## BinarySingleStateFeaturizer Objects
-
-```python
-class BinarySingleStateFeaturizer(SingleStateFeaturizer)
-```
-
-Dialogue State featurizer which features the state as binaries.
-
-#### \_\_init\_\_
-
-```python
- | __init__() -> None
-```
-
-Creates featurizer.
 
