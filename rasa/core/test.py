@@ -677,9 +677,14 @@ def _collect_action_executed_predictions(
             )
         )
         prev_action_unlikely_intent = True
-        predicted_action, prediction, policy_entity_result = _run_action_prediction(
-            processor, partial_tracker, expected_action
-        )
+
+        try:
+            predicted_action, prediction, policy_entity_result = _run_action_prediction(
+                processor, partial_tracker, expected_action
+            )
+        except ActionLimitReached:
+            prediction = PolicyPrediction([], policy_name=None)
+            predicted_action = "circuit breaker tripped"
 
     action_executed_eval_store.add_to_store(
         action_predictions=[predicted_action], action_targets=[expected_action]
