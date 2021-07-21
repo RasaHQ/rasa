@@ -117,8 +117,6 @@ def test_for_features_fingerprinting_collisions():
     sparse_fingerprints = {f.fingerprint() for f in sparse_features}
     assert len(sparse_fingerprints) == len(sparse_features)
 
-    assert sparse_fingerprints == dense_fingerprints
-
 
 def test_dense_feature_fingerprints_are_consistent_across_runs(tmp_path):
     python_script = """
