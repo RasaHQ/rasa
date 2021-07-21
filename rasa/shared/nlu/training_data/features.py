@@ -120,11 +120,12 @@ class Features:
 
     def fingerprint(self) -> Text:
         """Calculate a stable string fingerprint for the features."""
-        features_as_str = (
-            self.features.tostring()
+
+        features_as_array = (
+            self.features
             if isinstance(self.features, np.ndarray)
-            else str(self.features)
+            else self.features.toarray()
         )
         return rasa.shared.utils.io.deep_container_fingerprint(
-            [self.type, self.origin, self.attribute, features_as_str]
+            [self.type, self.origin, self.attribute, features_as_array.tostring()]
         )
