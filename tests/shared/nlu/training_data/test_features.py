@@ -11,8 +11,6 @@ from rasa.shared.nlu.constants import (
     INTENT,
 )
 
-from rasa.shared.nlu.training_data.features import Features
-
 
 def test_combine_with_existing_dense_features():
     existing_features = Features(
@@ -77,24 +75,17 @@ def test_for_features_fingerprinting_collisions():
 
     m2 = np.asarray([[0, 0, 0], [1, 2, 3], [0, 0, 1]])
 
-    features = [
+    dense_features = [
         Features(m1, FEATURE_TYPE_SENTENCE, TEXT, "CountVectorsFeaturizer"),
         Features(m2, FEATURE_TYPE_SENTENCE, TEXT, "CountVectorsFeaturizer"),
         Features(m1, FEATURE_TYPE_SEQUENCE, TEXT, "CountVectorsFeaturizer"),
         Features(m1, FEATURE_TYPE_SEQUENCE, TEXT, "RegexFeaturizer"),
         Features(m1, FEATURE_TYPE_SENTENCE, INTENT, "CountVectorsFeaturizer"),
-        Features(
-            scipy.sparse.coo_matrix(m1),
-            FEATURE_TYPE_SENTENCE,
-            INTENT,
-            "CountVectorsFeaturizer",
-        ),
-        Features(
-            scipy.sparse.coo_matrix(m2),
-            FEATURE_TYPE_SENTENCE,
-            INTENT,
-            "CountVectorsFeaturizer",
-        ),
+    ]
+    dense_fingerprints = {f.fingerprint() for f in dense_features}
+    assert len(dense_fingerprints) == len(dense_features)
+
+    sparse_features = [
         Features(
             scipy.sparse.coo_matrix(m1),
             FEATURE_TYPE_SENTENCE,
@@ -102,7 +93,10 @@ def test_for_features_fingerprinting_collisions():
             "CountVectorsFeaturizer",
         ),
         Features(
-            scipy.sparse.coo_matrix(m1), FEATURE_TYPE_SENTENCE, TEXT, "RegexFeaturizer",
+            scipy.sparse.coo_matrix(m2),
+            FEATURE_TYPE_SENTENCE,
+            TEXT,
+            "CountVectorsFeaturizer",
         ),
         Features(
             scipy.sparse.coo_matrix(m1),
@@ -110,9 +104,20 @@ def test_for_features_fingerprinting_collisions():
             TEXT,
             "CountVectorsFeaturizer",
         ),
+        Features(
+            scipy.sparse.coo_matrix(m1), FEATURE_TYPE_SEQUENCE, TEXT, "RegexFeaturizer"
+        ),
+        Features(
+            scipy.sparse.coo_matrix(m1),
+            FEATURE_TYPE_SENTENCE,
+            INTENT,
+            "CountVectorsFeaturizer",
+        ),
     ]
-    fingerprints = {f.fingerprint() for f in features}
-    assert len(fingerprints) == len(features)
+    sparse_fingerprints = {f.fingerprint() for f in sparse_features}
+    assert len(sparse_fingerprints) == len(sparse_features)
+
+    assert sparse_fingerprints == dense_fingerprints
 
 
 def test_dense_feature_fingerprints_are_consistent_across_runs():

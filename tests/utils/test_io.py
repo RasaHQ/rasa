@@ -2,6 +2,7 @@ import copy
 from pathlib import Path
 import subprocess
 
+import numpy as np
 import pytest
 from prompt_toolkit.document import Document
 from prompt_toolkit.validation import ValidationError
@@ -133,6 +134,6 @@ def test_fingerprint_is_consistent_across_runs():
 
 
 def test_deep_container_fingerprint_can_use_instance_fingerprint():
-    m1 = [[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]]
+    m1 = np.asarray([[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]])
     f = Features(m1, "sentence", "text", "CountVectorsFeaturizer")
     assert rasa.shared.utils.io.deep_container_fingerprint(f) == f.fingerprint()

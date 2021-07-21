@@ -293,12 +293,13 @@ def test_token_fingerprints_are_consistent_across_runs():
     # unfortunately, monkeypatching PYTHONHASHSEED does not work in a running process
     # https://stackoverflow.com/questions/30585108/disable-hash-randomization-from-within-python-program
     cmd = """python -c \
-        from rasa.nlu.tokenizers.tokenizer import Token; \
+        'from rasa.nlu.tokenizers.tokenizer import Token; \
         token = Token("testing", 2, 9, {"x": 3}, "test"); \
         print(token.fingerprint());'"""
 
     fp1 = subprocess.getoutput(cmd)
     fp2 = subprocess.getoutput(cmd)
-
+    print(fp1)
+    print(fp2)
     assert len(fp1) == 32
     assert fp1 == fp2
