@@ -29,6 +29,7 @@ from rasa.core.channels.channel import (
     UserMessage,
     OutputChannel,
 )
+from rasa.exceptions import ActionLimitReached
 from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -1274,3 +1275,33 @@ def test_predict_next_action_with_hidden_rules():
     action, prediction = processor.predict_next_action(tracker)
     assert isinstance(action, ActionListen)
     assert not prediction.hide_rule_turn
+
+
+def test_predict_next_action_raises_exception(domain: Domain):
+    interpreter = RegexInterpreter()
+    ensemble = SimplePolicyEnsemble(policies=[RulePolicy(), MemoizationPolicy()])
+    tracker_store = InMemoryTrackerStore(domain)
+    lock_store = InMemoryLockStore()
+
+    processor = MessageProcessor(
+        interpreter,
+        ensemble,
+        domain,
+        tracker_store,
+        lock_store,
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        max_number_of_predictions=1,
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("Hi!"),
+            ActionExecuted("test_action"),
+        ],
+    )
+    tracker.set_latest_action({"action_name": "test_action"})
+
+    with pytest.raises(ActionLimitReached):
+        processor.predict_next_action(tracker)
