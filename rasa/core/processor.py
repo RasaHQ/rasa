@@ -376,7 +376,13 @@ class MessageProcessor:
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
-        ML to predict the action. Returns the index of the next action.
+        ML to predict the action.
+
+        Returns:
+             The index of the next action and prediction of the policy.
+
+        Raises:
+            ActionLimitReached if the limit of actions to predict has been reached.
         """
         should_predict_another_action = self.should_predict_another_action(
             tracker.latest_action_name
@@ -393,7 +399,9 @@ class MessageProcessor:
         if self.is_action_limit_reached(
             num_predicted_actions, should_predict_another_action
         ):
-            raise ActionLimitReached()
+            raise ActionLimitReached(
+                "The limit of actions to predict has been reached."
+            )
 
         prediction = self._get_next_action_probabilities(tracker)
 
