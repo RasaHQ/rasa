@@ -120,11 +120,15 @@ class Features:
 
     def fingerprint(self) -> Text:
         """Calculate a stable string fingerprint for the features."""
-        features_as_array = (
-            self.features
-            if isinstance(self.features, np.ndarray)
-            else self.features.toarray()
-        )
+        if isinstance(self.features, np.ndarray):
+            features_as_text = self.features.tostring()
+        else:
+            # sparse features, need to increase printed values
+            current_maxprint = self.features.maxprint
+            # set maxprint to number of values in sparse matrix
+            self.features.maxprint = self.features.nnz
+            features_as_text = str(self.features)
+            self.features.maxprint = current_maxprint
         return rasa.shared.utils.io.deep_container_fingerprint(
-            [self.type, self.origin, self.attribute, features_as_array.tostring()]
+            [self.type, self.origin, self.attribute, features_as_text]
         )
