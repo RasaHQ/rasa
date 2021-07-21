@@ -1,6 +1,4 @@
-from typing import Text
 import subprocess
-import pytest
 
 import numpy as np
 import scipy.sparse
