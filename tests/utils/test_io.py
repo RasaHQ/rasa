@@ -119,7 +119,7 @@ def test_fingerprint_containers(container):
 
 
 def test_fingerprint_is_consistent_across_runs(tmp_path):
-    fingerprint_script = """ 
+    fingerprint_script = """
         import rasa.shared.utils.io
         dictionary = {"a": ["b"], "c": {"d": "e"}}
         print(rasa.shared.utils.io.deep_container_fingerprint(dictionary))"""
