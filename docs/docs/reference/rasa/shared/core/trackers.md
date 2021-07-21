@@ -158,7 +158,7 @@ Interrupt loop and mark that we entered an unhappy path in the conversation.
  | reject_action(action_name: Text) -> None
 ```
 
-Notify active loop that it was rejected
+Notify active loop that it was rejected.
 
 #### set\_latest\_action
 
