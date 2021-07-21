@@ -73,3 +73,15 @@ def test_feature_fingerprints_are_consistent_across_runs():
     print(fp2)
     assert len(fp1) == 32
     assert fp1 == fp2
+
+
+def test_feature_fingerprints_take_into_account_full_array():
+    """Tests that fingerprint isn't using summary/abbreviated array info."""
+    big_array = np.random.random((128, 128, 8))
+
+    f1 = Features(big_array, FEATURE_TYPE_SENTENCE, TEXT, "RegexFeaturizer")
+    big_array_with_zero = np.copy(big_array)
+    big_array_with_zero[64, 64, 4] = 0.0
+    f2 = Features(big_array_with_zero, FEATURE_TYPE_SENTENCE, TEXT, "RegexFeaturizer")
+
+    assert f1.fingerprint() != f2.fingerprint()
