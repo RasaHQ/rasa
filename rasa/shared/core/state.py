@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, List, Text, Union, Tuple, Sized, Set
+from typing import Any, Dict, Optional, List, Text, Union, Tuple, Sized, Set, cast
 
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, LOOP_NAME
 from rasa.shared.core.domain import Domain, State, SubState
@@ -10,7 +10,7 @@ from rasa.shared.core.trackers import (
 )
 from rasa.shared.core import constants as shared_core_constants
 from rasa.shared.nlu import constants as shared_nlu_constants
-from rasa.shared.core.events import UserUttered
+from rasa.shared.core.events import ActionExecuted, UserUttered
 
 
 ########################################################################################
@@ -49,6 +49,8 @@ def shallow_copy_without_empty_values(
 #                               SubState Creation
 ########################################################################################
 
+# TODO: rename these get-functions
+
 
 def get_active_state(
     tracker: DialogueStateTracker, domain: Domain, omit_unset_slots: bool = False,
@@ -71,9 +73,13 @@ def get_active_state(
         shared_nlu_constants.SLOTS: get_slots_sub_state(
             tracker, omit_unset_slots=omit_unset_slots
         ),
-        shared_nlu_constants.PREVIOUS_ACTION: tracker.latest_action,
+        shared_nlu_constants.PREVIOUS_ACTION: get_prev_action_sub_state(
+            tracker.latest_action
+        ),
         # == get_prev_action_sub_state(tracker)
+        # == {ACTION_NAME: <Text>} or {ACTION_TEXT : <Text>}
         shared_nlu_constants.ACTIVE_LOOP: get_active_loop_sub_state(tracker),
+        # == <TEXT>
     }
     return shallow_copy_without_empty_values(state)
 
@@ -235,19 +241,19 @@ def get_active_loop_sub_state(tracker: DialogueStateTracker) -> Dict[Text, Text]
         return {}
 
 
-def get_prev_action_sub_state(tracker: DialogueStateTracker) -> Dict[Text, Text]:
-    """Turn the previous taken action into a state name.
-    Args:
-        tracker: dialog state tracker containing the dialog so far
-    Returns:
-        a dictionary with the information on latest action
-    """
-    return tracker.latest_action  # TODO: how does this look?
+def get_prev_action_sub_state(action_executed: ActionExecuted) -> Dict[Text, Text]:
+    if action_executed.action_name:
+        key = shared_nlu_constants.ACTION_NAME
+        value = action_executed.action_name
+    else:
+        key = shared_nlu_constants.ACTION_TEXT
+        value = cast(Text, action_executed.action_text)
+    return {key: value}
 
 
-def create_action_sub_state(action: Text, as_text: bool = False) -> SubState:
-    key = shared_nlu_constants.ACTION_TEXT if as_text else ACTION_NAME
-    return {key: action}
+# def create_action_sub_state(text: Text, as_text: bool = False) -> SubState:
+#     key = shared_nlu_constants.ACTION_TEXT if as_text else ACTION_NAME
+#     return {key: text}
 
 
 ########################################################################################

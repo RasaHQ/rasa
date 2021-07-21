@@ -56,6 +56,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_CONFIDENCE,
     ENTITY_ATTRIBUTE_END,
 )
+from rasa.shared.core import state as state_utils
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict
@@ -483,7 +484,7 @@ class UserUttered(Event):
 
     def __hash__(self) -> int:
         """Returns unique hash of object."""
-        return hash(json.dumps(self.as_sub_state()))
+        return hash(json.dumps(state_utils.get_user_sub_state(self)))
 
     @property
     def intent_name(self) -> Optional[Text]:
@@ -544,47 +545,47 @@ class UserUttered(Event):
         )
         return _dict
 
-    def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
-        """Turns a UserUttered event into features.
+    # def as_sub_state(self) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+    #     """Turns a UserUttered event into features.
 
-        The substate contains information about entities, intent and text of the
-        `UserUttered` event.
+    #     The substate contains information about entities, intent and text of the
+    #     `UserUttered` event.
 
-        Returns:
-            a dictionary with intent name, text and entities
-        """
-        entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
-        entities.extend(
-            (
-                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
-                f"{entity.get(ENTITY_ATTRIBUTE_ROLE)}"
-            )
-            for entity in self.entities
-            if ENTITY_ATTRIBUTE_ROLE in entity
-        )
-        entities.extend(
-            (
-                f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
-                f"{entity.get(ENTITY_ATTRIBUTE_GROUP)}"
-            )
-            for entity in self.entities
-            if ENTITY_ATTRIBUTE_GROUP in entity
-        )
+    #     Returns:
+    #         a dictionary with intent name, text and entities
+    #     """
+    #     entities = [entity.get(ENTITY_ATTRIBUTE_TYPE) for entity in self.entities]
+    #     entities.extend(
+    #         (
+    #             f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
+    #             f"{entity.get(ENTITY_ATTRIBUTE_ROLE)}"
+    #         )
+    #         for entity in self.entities
+    #         if ENTITY_ATTRIBUTE_ROLE in entity
+    #     )
+    #     entities.extend(
+    #         (
+    #             f"{entity.get(ENTITY_ATTRIBUTE_TYPE)}{ENTITY_LABEL_SEPARATOR}"
+    #             f"{entity.get(ENTITY_ATTRIBUTE_GROUP)}"
+    #         )
+    #         for entity in self.entities
+    #         if ENTITY_ATTRIBUTE_GROUP in entity
+    #     )
 
-        out = {}
-        # During training we expect either intent_name or text to be set.
-        # During prediction both will be set.
-        if self.text and (
-            self.use_text_for_featurization or self.use_text_for_featurization is None
-        ):
-            out[TEXT] = self.text
-        if self.intent_name and not self.use_text_for_featurization:
-            out[INTENT] = self.intent_name
-        # don't add entities for e2e utterances
-        if entities and not self.use_text_for_featurization:
-            out[ENTITIES] = entities
+    #     out = {}
+    #     # During training we expect either intent_name or text to be set.
+    #     # During prediction both will be set.
+    #     if self.text and (
+    #         self.use_text_for_featurization or self.use_text_for_featurization is None
+    #     ):
+    #         out[TEXT] = self.text
+    #     if self.intent_name and not self.use_text_for_featurization:
+    #         out[INTENT] = self.intent_name
+    #     # don't add entities for e2e utterances
+    #     if entities and not self.use_text_for_featurization:
+    #         out[ENTITIES] = entities
 
-        return out
+    #     return out
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -712,7 +713,7 @@ class DefinePrevUserUtteredFeaturization(SkipEventInMDStoryMixin):
         Args:
             tracker: The current conversation state.
         """
-        if tracker.latest_action_name != ACTION_LISTEN_NAME:
+        if tracker.latest_action_name_or_text != ACTION_LISTEN_NAME:
             # featurization belong only to the last user message
             # a user message is always followed by action listen
             return
@@ -792,7 +793,7 @@ class EntitiesAdded(SkipEventInMDStoryMixin):
         Args:
             tracker: The current conversation state.
         """
-        if tracker.latest_action_name != ACTION_LISTEN_NAME:
+        if tracker.latest_action_name_or_text != ACTION_LISTEN_NAME:
             # entities belong only to the last user message
             # a user message always comes after action listen
             return
@@ -1576,25 +1577,25 @@ class ActionExecuted(Event):
         )
         return d
 
-    def as_sub_state(self) -> Dict[Text, Text]:
-        """Turns ActionExecuted into a dictionary containing action name or action text.
+    # def as_sub_state(self) -> Dict[Text, Text]:
+    #     """Turns ActionExecuted into a dictionary containing action name or action text.
 
-        One action cannot have both set at the same time
+    #     One action cannot have both set at the same time
 
-        Returns:
-            a dictionary containing action name or action text with the corresponding
-            key.
-        """
-        if self.action_name:
-            return {ACTION_NAME: self.action_name}
-        else:
-            # FIXME: we should define the type better here, and require either
-            #        `action_name` or `action_text`
-            return {ACTION_TEXT: cast(Text, self.action_text)}
+    #     Returns:
+    #         a dictionary containing action name or action text with the corresponding
+    #         key.
+    #     """
+    #     if self.action_name:
+    #         return {ACTION_NAME: self.action_name}
+    #     else:
+    #         # FIXME: we should define the type better here, and require either
+    #         #        `action_name` or `action_text`
+    #         return {ACTION_TEXT: cast(Text, self.action_text)}
 
     def apply_to(self, tracker: "DialogueStateTracker") -> None:
         """Applies event to current conversation state."""
-        tracker.set_latest_action(self.as_sub_state())
+        tracker.set_latest_action(self)  #
         tracker.clear_followup_action()
 
 

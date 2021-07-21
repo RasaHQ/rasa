@@ -215,7 +215,7 @@ class DialogueStateTracker:
         self._paused = False
         # A deterministically scheduled action to be executed next
         self.followup_action = ACTION_LISTEN_NAME
-        self.latest_action = None
+        self.latest_action: Optional[ActionExecuted] = None
         # Stores the most recent message sent by the user
         self.latest_message: Optional[UserUttered] = None
         self.latest_bot_utterance = None
@@ -247,7 +247,7 @@ class DialogueStateTracker:
             "latest_input_channel": self.get_latest_input_channel(),
             ACTIVE_LOOP: self.active_loop,
             "latest_action": self.latest_action,
-            "latest_action_name": self.latest_action_name,
+            "latest_action_name": self.latest_action_name_or_text,
         }
 
     def _events_for_verbosity(
@@ -302,13 +302,15 @@ class DialogueStateTracker:
                 # remember previous ml action based on the last non hidden turn
                 # we need this to override previous action in the ml state
                 if not turn_was_hidden:
-                    last_ml_action_sub_state = self.latest_action
+                    last_ml_action_sub_state = state_utils.get_prev_action_sub_state(
+                        self.latest_action
+                    )
 
                 # followup action or happy path loop prediction
                 # don't change the fact whether dialogue turn should be hidden
                 if (
                     not tr.followup_action
-                    and not tr.latest_action_name == tr.active_loop_name
+                    and not tr.latest_action_name_or_text == tr.active_loop_name
                 ):
                     turn_was_hidden = hide_rule_turn
 
@@ -381,7 +383,7 @@ class DialogueStateTracker:
         if action_name == self.active_loop_name:
             self.active_loop[LOOP_REJECTED] = True
 
-    def set_latest_action(self, action: Dict[Text, Text]) -> None:
+    def set_latest_action(self, action: ActionExecuted) -> None:
         """Sets latest action name or text.
 
         Resets loop validation and rejection parameters.
@@ -884,14 +886,12 @@ class DialogueStateTracker:
         return self.active_loop.get(LOOP_NAME)
 
     @property
-    def latest_action_name(self) -> Optional[Text]:
+    def latest_action_name_or_text(self) -> Optional[Text]:
         """Get the name of the previously executed action or text of e2e action.
 
         Returns: name of the previously executed action or text of e2e action
         """
-        return self.latest_action.get(ACTION_NAME) or self.latest_action.get(
-            ACTION_TEXT
-        )
+        return self.latest_action.action_name or self.latest_action.action_text
 
 
 def get_active_loop_name(state: State) -> Optional[Text]:
