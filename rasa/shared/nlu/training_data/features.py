@@ -120,7 +120,6 @@ class Features:
 
     def fingerprint(self) -> Text:
         """Calculate a stable string fingerprint for the features."""
-
         features_as_array = (
             self.features
             if isinstance(self.features, np.ndarray)
