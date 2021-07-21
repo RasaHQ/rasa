@@ -4,6 +4,7 @@ import numpy as np
 import scipy.sparse
 
 import rasa.shared.utils.io
+import rasa.shared.nlu.training_data.util
 
 
 class Features:
@@ -121,14 +122,12 @@ class Features:
     def fingerprint(self) -> Text:
         """Calculate a stable string fingerprint for the features."""
         if isinstance(self.features, np.ndarray):
-            features_as_text = self.features.tostring()
+            f_as_text = self.features.tostring()
         else:
-            # sparse features, need to increase printed values
-            current_maxprint = self.features.maxprint
-            # set maxprint to number of values in sparse matrix
-            self.features.maxprint = self.features.nnz
-            features_as_text = str(self.features)
-            self.features.maxprint = current_maxprint
+            f_as_text = rasa.shared.nlu.training_data.util.sparse_matrix_to_string(
+                self.features
+            )
+
         return rasa.shared.utils.io.deep_container_fingerprint(
-            [self.type, self.origin, self.attribute, features_as_text]
+            [self.type, self.origin, self.attribute, f_as_text]
         )

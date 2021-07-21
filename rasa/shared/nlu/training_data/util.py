@@ -4,6 +4,7 @@ import os
 import re
 from typing import Any, Dict, Optional, Text, Match, List
 
+import scipy.sparse
 from rasa.shared.nlu.constants import (
     ENTITIES,
     EXTRACTOR,
@@ -210,3 +211,15 @@ def build_entity(
 
     entity.update(kwargs)
     return entity
+
+
+def sparse_matrix_to_string(m: scipy.sparse.spmatrix) -> Text:
+    """Turn sparse matrix into string.
+
+    taken from official scipy source to operate on full sparse matrix.
+    Normally you would have to 1) change the maxprint property in-place first,
+    2) use str(m_sparse), and 3) change maxprint back.
+    """
+    m_coo = m.tocoo()
+    triples = zip(list(zip(m_coo.row, m_coo.col)), m_coo.data)
+    return "\n".join([("  %s\t%s" % t) for t in triples])
