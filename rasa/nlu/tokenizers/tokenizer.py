@@ -36,6 +36,7 @@ class Token:
         self.lemma = lemma or text
 
     def set(self, prop: Text, info: Any) -> None:
+        """Set property value."""
         self.data[prop] = info
 
     def get(self, prop: Text, default: Optional[Any] = None) -> Any:
@@ -70,6 +71,8 @@ class Token:
 
 
 class Tokenizer(Component):
+    """Base class for tokenizers."""
+
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
 
