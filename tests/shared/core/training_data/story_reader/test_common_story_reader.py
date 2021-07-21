@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 from rasa.core import training
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEACTIVATE_LOOP_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, SessionStarted, SlotSet
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -276,45 +275,6 @@ async def test_load_training_data_reader_not_found_throws(
 
 def test_session_started_event_is_not_serialised():
     assert SessionStarted().as_story_string() is None
-
-
-@pytest.mark.parametrize(
-    "story_payload, file_suffix",
-    [
-        (
-            """## my story
-* greet
-  - action_deactivate_form""",
-            ".md",
-        ),
-        (
-            """stories:
-- story: my story
-  steps:
-  - intent: greet
-  - action: action_deactivate_form""",
-            ".yml",
-        ),
-    ],
-)
-async def test_action_deactivate_form_is_mapped_to_new_form(
-    story_payload: Text, file_suffix: Text, domain: Domain, tmp_path: Path
-):
-    stories_file = tmp_path / f"stories{file_suffix}"
-    stories_file.write_text(story_payload)
-    with pytest.warns(FutureWarning):
-        training_trackers = await training.load_data(
-            str(stories_file), domain, augmentation_factor=3
-        )
-
-    expected_events = [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered(None, intent={"name": "greet", "confidence": 1.0}),
-        ActionExecuted(ACTION_DEACTIVATE_LOOP_NAME),
-        ActionExecuted(ACTION_LISTEN_NAME),
-    ]
-
-    assert list(training_trackers[0].events) == expected_events
 
 
 @pytest.mark.parametrize(
