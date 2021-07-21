@@ -1,5 +1,4 @@
 from typing import Tuple, Text, List
-import subprocess
 import pytest
 
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -15,6 +14,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+import tests.utilities
 
 
 def test_tokens_comparison():
@@ -288,18 +288,10 @@ def test_token_fingerprints_are_unique():
     assert len(fingerprints) == len(tokens)
 
 
-def test_token_fingerprints_are_consistent_across_runs():
-    """Tests that fingerprints are consistent across python interpreter invocations."""
-    # unfortunately, monkeypatching PYTHONHASHSEED does not work in a running process
-    # https://stackoverflow.com/questions/30585108/disable-hash-randomization-from-within-python-program
-    cmd = """python -c \
-        'from rasa.nlu.tokenizers.tokenizer import Token; \
-        token = Token("testing", 2, 9, {"x": 3}, "test"); \
-        print(token.fingerprint());'"""
+def test_token_fingerprints_are_consistent_across_runs(tmp_path):
+    fingerprint_script = """
+        from rasa.nlu.tokenizers.tokenizer import Token
+        token = Token("testing", 2, 9, {"x": 3}, "test")
+        print(token.fingerprint())"""
 
-    fp1 = subprocess.getoutput(cmd)
-    fp2 = subprocess.getoutput(cmd)
-    print(fp1)
-    print(fp2)
-    assert len(fp1) == 32
-    assert fp1 == fp2
+    tests.utilities.fingerprint_consistency_test(fingerprint_script, tmp_path)
