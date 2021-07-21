@@ -217,6 +217,7 @@ def sparse_matrix_to_string(m: scipy.sparse.spmatrix) -> Text:
     """Turn sparse matrix into string.
 
     taken from official scipy source to operate on full sparse matrix.
+    https://github.com/scipy/scipy/blob/v1.7.0/scipy/sparse/base.py#L258
     Normally you would have to 1) change the maxprint property in-place first,
     2) use str(m_sparse), and 3) change maxprint back.
     """
