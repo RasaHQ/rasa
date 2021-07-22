@@ -14,7 +14,6 @@ import rasa.shared.utils.io
 logger = logging.getLogger(__name__)
 
 
-# TODO(alwx): update this as well
 class RasaFileImporter(TrainingDataImporter):
     """Default `TrainingFileImporter` implementation."""
 
@@ -40,36 +39,36 @@ class RasaFileImporter(TrainingDataImporter):
 
         self.config = autoconfig.get_configuration(config_file, training_type)
 
-    async def get_config(self) -> Dict:
+    def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
         return self.config
 
-    async def get_stories(
+    def get_stories(
         self,
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
-        return await utils.story_graph_from_paths(
+        return utils.run_in_loop(utils.story_graph_from_paths(
             self._story_files,
-            await self.get_domain(),
+            self.get_domain(),
             template_variables,
             use_e2e,
             exclusion_percentage,
-        )
+        ))
 
-    async def get_conversation_tests(self) -> StoryGraph:
+    def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
-        return await utils.story_graph_from_paths(
-            self._conversation_test_files, await self.get_domain(), use_e2e=True,
-        )
+        return utils.run_in_loop(utils.story_graph_from_paths(
+            self._conversation_test_files, self.get_domain(), use_e2e=True,
+        ))
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
         return utils.training_data_from_paths(self._nlu_files, language)
 
-    async def get_domain(self) -> Domain:
+    def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
         domain = Domain.empty()
 
