@@ -27,10 +27,10 @@ from rasa.shared.core.training_data.structures import StoryStep, RuleStep
 
 
 @pytest.fixture()
-async def rule_steps_without_stories(domain: Domain) -> List[StoryStep]:
+def rule_steps_without_stories(domain: Domain) -> List[StoryStep]:
     yaml_file = "data/test_yaml_stories/rules_without_stories.yml"
 
-    return await loading.load_data_from_files([yaml_file], domain)
+    return loading.load_data_from_files([yaml_file], domain)
 
 
 async def test_can_read_test_story_with_slots(domain: Domain):
@@ -256,11 +256,11 @@ async def test_yaml_wrong_yaml_format_warning(domain: Domain):
         )
 
 
-async def test_read_rules_with_stories(domain: Domain):
+def test_read_rules_with_stories(domain: Domain):
 
     yaml_file = "data/test_yaml_stories/stories_and_rules.yml"
 
-    steps = await loading.load_data_from_files([yaml_file], domain)
+    steps = loading.load_data_from_files([yaml_file], domain)
 
     ml_steps = [s for s in steps if not isinstance(s, RuleStep)]
     rule_steps = [s for s in steps if isinstance(s, RuleStep)]

@@ -130,12 +130,12 @@ async def train_comparison_models(
                     )
 
 
-async def get_no_of_stories(story_file: Text, domain: Text) -> int:
+def get_no_of_stories(story_file: Text, domain: Text) -> int:
     """Get number of stories in a file."""
     from rasa.shared.core.domain import Domain
     from rasa.shared.core.training_data import loading
 
-    stories = await loading.load_data_from_files([story_file], Domain.load(domain))
+    stories = loading.load_data_from_files([story_file], Domain.load(domain))
     return len(stories)
 
 
@@ -144,18 +144,16 @@ async def do_compare_training(
     story_file: Text,
     additional_arguments: Optional[Dict] = None,
 ) -> None:
-    _, no_stories = await asyncio.gather(
-        train_comparison_models(
-            story_file=story_file,
-            domain=args.domain,
-            output_path=args.out,
-            exclusion_percentages=args.percentages,
-            policy_configs=args.config,
-            runs=args.runs,
-            additional_arguments=additional_arguments,
-        ),
-        get_no_of_stories(args.stories, args.domain),
+    await train_comparison_models(
+        story_file=story_file,
+        domain=args.domain,
+        output_path=args.out,
+        exclusion_percentages=args.percentages,
+        policy_configs=args.config,
+        runs=args.runs,
+        additional_arguments=additional_arguments,
     )
+    no_stories = get_no_of_stories(args.stories, args.domain)
 
     # store the list of the number of stories present at each exclusion
     # percentage

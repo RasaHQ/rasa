@@ -1,4 +1,3 @@
-import asyncio
 from functools import reduce
 from typing import Text, Optional, List, Dict, Set, Any, Tuple
 import logging
@@ -438,16 +437,15 @@ class E2EImporter(TrainingDataImporter):
         self.importer = importer
 
     @rasa.shared.utils.common.cached_method
-    async def get_domain(self) -> Domain:
+    def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
-        original, e2e_domain = await asyncio.gather(
-            self.importer.get_domain(), self._get_domain_with_e2e_actions()
-        )
+        original = self.importer.get_domain()
+        e2e_domain = self._get_domain_with_e2e_actions()
         return original.merge(e2e_domain)
 
-    async def _get_domain_with_e2e_actions(self) -> Domain:
+    def _get_domain_with_e2e_actions(self) -> Domain:
 
-        stories = await self.get_stories()
+        stories = self.get_stories()
 
         additional_e2e_action_names = set()
         for story_step in stories.story_steps:
@@ -497,10 +495,11 @@ class E2EImporter(TrainingDataImporter):
     @rasa.shared.utils.common.cached_method
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
-        training_datasets = [_additional_training_data_from_default_actions()]
-
-        training_datasets += self.importer.get_nlu_data(language)
-        training_datasets += self._additional_training_data_from_stories()
+        training_datasets = [
+            _additional_training_data_from_default_actions(),
+            self.importer.get_nlu_data(language),
+            self._additional_training_data_from_stories()
+        ]
 
         return reduce(
             lambda merged, other: merged.merge(other), training_datasets, TrainingData()

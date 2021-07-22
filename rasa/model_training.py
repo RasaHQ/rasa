@@ -277,7 +277,7 @@ async def _train_async_internal(
         fingerprint_comparison = FingerprintComparisonResult(force_training=True)
 
     if not old_model or fingerprint_comparison.is_training_required():
-        with telemetry.track_model_training(
+        async with telemetry.track_model_training(
             file_importer, model_type="rasa",
         ):
             await _do_training(
@@ -533,7 +533,7 @@ async def _train_core_with_validated_data(
                     f"model within the directory '{output}'."
                 )
 
-        with telemetry.track_model_training(
+        async with telemetry.track_model_training(
             file_importer,
             model_type="core",
             is_finetuning=model_to_finetune is not None,
@@ -742,7 +742,7 @@ async def _train_nlu_with_validated_data(
                     f"model within the directory '{output}'."
                 )
 
-        with telemetry.track_model_training(
+        async with telemetry.track_model_training(
             file_importer,
             model_type="nlu",
             is_finetuning=model_to_finetune is not None,
