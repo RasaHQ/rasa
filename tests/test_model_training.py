@@ -23,7 +23,8 @@ from rasa.core.agent import Agent
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.nlu.model import Interpreter
 
-from rasa.model_training import train_core, train_nlu, train, dry_run_result
+from rasa import train
+from rasa.model_training import train_core, train_nlu, dry_run_result
 from rasa.utils.tensorflow.constants import EPOCHS
 from tests.conftest import AsyncMock
 from tests.test_model import _fingerprint
