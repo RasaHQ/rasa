@@ -75,7 +75,7 @@ async def load_data_from_resource(
     if not os.path.exists(resource):
         raise ValueError(f"Resource '{resource}' does not exist.")
 
-    return await load_data_from_files(
+    return load_data_from_files(
         rasa.shared.utils.io.list_files(resource),
         domain,
         template_variables,
@@ -84,7 +84,7 @@ async def load_data_from_resource(
     )
 
 
-async def load_data_from_files(
+def load_data_from_files(
     story_files: List[Text],
     domain: Domain,
     template_variables: Optional[Dict] = None,
