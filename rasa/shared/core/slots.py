@@ -149,6 +149,14 @@ class Slot:
             "influence_conversation": self.influence_conversation,
         }
 
+    def fingerprint(self) -> Text:
+        data = [
+            self.name,
+            self.value,
+            rasa.shared.utils.common.module_path_from_instance(self),
+        ]
+        return rasa.shared.utils.io.get_list_fingerprint(data)
+
 
 class FloatSlot(Slot):
     type_name = "float"

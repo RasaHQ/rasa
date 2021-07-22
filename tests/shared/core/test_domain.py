@@ -1468,3 +1468,72 @@ def test_domain_invalid_yml_in_folder():
     """
     with pytest.warns(UserWarning, match="The file .* your file\\."):
         Domain.from_directory("data/test_domains/test_domain_from_directory1/")
+
+
+def test_domain_fingerprint_consistency_across_runs(domain: Domain):
+    f1 = domain.fingerprint()
+    f2 = domain.fingerprint()
+    assert f1 == f2
+
+
+def test_domain_fingerprint_uniqueness():
+    domain = Domain.from_yaml(
+        """
+         version: "2.0"
+         intents:
+         - greet
+         - goodbye
+         
+         actions:
+         - action_test
+         """
+    )
+    f1 = domain.fingerprint()
+
+    domain_with_extra_intent = Domain.from_yaml(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - goodbye
+        - test
+        
+        actions:
+        - action_test
+        """
+    )
+    f2 = domain_with_extra_intent.fingerprint()
+    assert f1 != f2
+
+    domain_with_extra_action = Domain.from_yaml(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - goodbye
+        
+        actions:
+        - action_test
+        - action_double_test
+        """
+    )
+    f3 = domain_with_extra_action.fingerprint()
+    assert f1 != f3
+
+    domain_with_extra_responses = Domain.from_yaml(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - goodbye
+        
+        responses:
+          utter_greet:
+           - text: "Hi!"
+           
+        actions:
+        - action_test
+        """
+    )
+    f4 = domain_with_extra_responses.fingerprint()
+    assert f1 != f4

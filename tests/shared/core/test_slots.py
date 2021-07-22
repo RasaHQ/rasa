@@ -109,6 +109,21 @@ class SlotTestCollection:
         slot.reset()
         assert not slot.has_been_set
 
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_slot_fingerprint_consistency(self, influence_conversation: bool):
+        slot = self.create_slot(influence_conversation)
+        f1 = slot.fingerprint()
+        f2 = slot.fingerprint()
+        assert f1 == f2
+
+    @pytest.mark.parametrize("influence_conversation", [True, False])
+    def test_slot_fingerprint_uniqueness(self, influence_conversation: bool):
+        slot = self.create_slot(influence_conversation)
+        f1 = slot.fingerprint()
+        slot.name = "changed"
+        f2 = slot.fingerprint()
+        assert f1 != f2
+
 
 class TestTextSlot(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
