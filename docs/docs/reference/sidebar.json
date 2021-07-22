@@ -206,9 +206,7 @@
         },
         {
           "items": [
-            "reference/rasa/nlu/tokenizers/convert_tokenizer",
             "reference/rasa/nlu/tokenizers/jieba_tokenizer",
-            "reference/rasa/nlu/tokenizers/lm_tokenizer",
             "reference/rasa/nlu/tokenizers/tokenizer",
             "reference/rasa/nlu/tokenizers/whitespace_tokenizer"
           ],
@@ -233,7 +231,6 @@
           "items": [
             {
               "items": [
-                "reference/rasa/nlu/utils/hugging_face/hf_transformers",
                 "reference/rasa/nlu/utils/hugging_face/transformers_pre_post_processors"
               ],
               "label": "rasa.nlu.utils.hugging_face",
