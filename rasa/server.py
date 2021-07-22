@@ -1233,7 +1233,6 @@ def create_app(
             data_path, nlu_model, disable_plotting=True, report_as_dict=True
         )
 
-    # TODO(alwx): no async needed here
     async def _cross_validate(data_file: Text, config_file: Text, folds: int) -> Dict:
         logger.info(f"Starting cross-validation with {folds} folds.")
         importer = TrainingDataImporter.load_from_dict(

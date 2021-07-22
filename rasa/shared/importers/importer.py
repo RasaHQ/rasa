@@ -499,10 +499,8 @@ class E2EImporter(TrainingDataImporter):
         """Retrieves NLU training data (see parent class for full docstring)."""
         training_datasets = [_additional_training_data_from_default_actions()]
 
-        training_datasets += await asyncio.gather(
-            self.importer.get_nlu_data(language),
-            self._additional_training_data_from_stories(),
-        )
+        training_datasets += self.importer.get_nlu_data(language)
+        training_datasets += self._additional_training_data_from_stories()
 
         return reduce(
             lambda merged, other: merged.merge(other), training_datasets, TrainingData()
