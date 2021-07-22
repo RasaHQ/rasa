@@ -111,7 +111,7 @@ def main() -> None:
 
     try:
         if hasattr(cmdline_arguments, "func"):
-            Tracer.init(json.loads(os.getenv('TELEMETRY_CONFIG', "{}")))
+            Tracer.init(json.loads(os.getenv('TELEMETRY_CONFIG_RASA', "{}")))
             rasa.utils.io.configure_colored_logging(log_level)
             set_log_and_warnings_filters()
             rasa.telemetry.initialize_telemetry()

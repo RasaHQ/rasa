@@ -1,12 +1,9 @@
-import logging
 import typing
 from typing import Optional
 from os import linesep
 
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
-
-logger = logging.getLogger(__name__)
 
 
 class ConsoleCompactSpanExporter(SpanExporter):
@@ -30,5 +27,5 @@ class ConsoleCompactSpanExporter(SpanExporter):
 
     def export(self, spans: typing.Sequence[ReadableSpan]) -> SpanExportResult:
         for span in spans:
-            logger.debug(self.formatter(span))
+            print(self.formatter(span), flush=True)
         return SpanExportResult.SUCCESS
