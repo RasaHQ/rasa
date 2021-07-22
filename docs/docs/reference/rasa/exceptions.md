@@ -62,3 +62,11 @@ Raised when publishing of an event fails.
 
 Returns string representation of exception.
 
+## ActionLimitReached Objects
+
+```python
+class ActionLimitReached(RasaException)
+```
+
+Raised when predicted action limit is reached.
+

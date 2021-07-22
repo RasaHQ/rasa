@@ -182,7 +182,16 @@ to execute certain behavior within a conversation (e.g. by using
 Predicts the next action the bot should take after seeing x.
 
 This should be overwritten by more advanced policies to use
-ML to predict the action. Returns the index of the next action.
+ML to predict the action.
+
+**Returns**:
+
+  The index of the next action and prediction of the policy.
+  
+
+**Raises**:
+
+  ActionLimitReached if the limit of actions to predict has been reached.
 
 #### handle\_reminder
 
@@ -231,14 +240,14 @@ Interprete the passed message using the NLU interpreter.
 #### is\_action\_limit\_reached
 
 ```python
- | is_action_limit_reached(num_predicted_actions: int, should_predict_another_action: bool) -> bool
+ | is_action_limit_reached(tracker: DialogueStateTracker, should_predict_another_action: bool) -> bool
 ```
 
 Check whether the maximum number of predictions has been met.
 
 **Arguments**:
 
-- `num_predicted_actions` - Number of predicted actions.
+- `tracker` - instance of DialogueStateTracker.
 - `should_predict_another_action` - Whether the last executed action allows
   for more actions to be predicted or not.
   
