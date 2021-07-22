@@ -664,6 +664,8 @@ async def test_handle_message_with_session_start(
             ],
         ),
         SlotSet(entity, slot_2[entity]),
+        ActionExecuted("utter_greet"),
+        BotUttered("hey there post-session start hello!"),
         ActionExecuted(ACTION_LISTEN_NAME),
     ]
 
