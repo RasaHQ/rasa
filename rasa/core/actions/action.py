@@ -685,7 +685,8 @@ class RemoteAction(Action):
 
             with Tracer.start_span("action_endpoint.request / " + json_body["next_action"],
                                    attributes={"sender_id": json_body["sender_id"],
-                                               "tracker": json.dumps(json_body["tracker"])}) as span:
+                                               "slots": json_body["tracker"]["slots"],
+                                               "latest_message": json_body["tracker"]["latest_message"]}) as span:
                 headers = Tracer.inject()
                 span.set_attribute(key="headers", value=json.dumps(headers))
 
