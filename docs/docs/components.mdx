@@ -208,8 +208,15 @@ now implements its behavior.
       # Pre-Trained weights to be loaded
       model_weights: "rasa/LaBSE"
 
-      # An optional path to a specific directory to download and cache the pre-trained model weights.
-      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+      # An optional path to a directory from which
+      # to load pre-trained model weights.
+      # If the requested model is not found in the
+      # directory, it will be downloaded and
+      # cached in this directory for future use.
+      # The default value of `cache_dir` can be
+      # set using the environment variable
+      # `TRANSFORMERS_CACHE`, as per the
+      # Transformers library.
       cache_dir: null
   ```
 
@@ -425,7 +432,7 @@ now implements its behavior.
 
 :::caution Deprecated
 The `ConveRTTokenizer` is deprecated and will be removed in a future release. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
-now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
+should now be used with any other [tokenizer](./components.mdx#tokenizers), for example [WhitespaceTokenizer](./components.mdx#whitespacetokenizer).
 :::
 
   * **Short**
@@ -448,7 +455,7 @@ now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be
 
   * **Description**
 
-    Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is used.
+    Creates tokens using the ConveRT tokenizer.
 
     :::note
     Since `ConveRT` model is trained only on an English corpus of conversations, this tokenizer should only
@@ -484,7 +491,7 @@ now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be
 
 :::caution Deprecated
 The `LanguageModelTokenizer` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
-now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
+should now be used with any other [tokenizer](./components.mdx#tokenizers), for example [WhitespaceTokenizer](./components.mdx#whitespacetokenizer).
 :::
 
 * **Short**
@@ -508,7 +515,6 @@ Tokenizer from pre-trained language models
 * **Description**
 
 Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
-Must be used whenever the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) is used.
 
 
 
@@ -789,8 +795,15 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
       # Pre-Trained weights to be loaded
       model_weights: "rasa/LaBSE"
 
-      # An optional path to a specific directory to download and cache the pre-trained model weights.
-      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+      # An optional path to a directory from which
+      # to load pre-trained model weights.
+      # If the requested model is not found in the
+      # directory, it will be downloaded and
+      # cached in this directory for future use.
+      # The default value of `cache_dir` can be
+      # set using the environment variable
+      # `TRANSFORMERS_CACHE`, as per the
+      # Transformers library.
       cache_dir: null
   ```
 

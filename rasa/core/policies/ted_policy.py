@@ -461,7 +461,7 @@ class TEDPolicy(Policy):
         self, entity_tags: Optional[List[List[Dict[Text, List["Features"]]]]]
     ) -> Optional[Data]:
         if not self.config[ENTITY_RECOGNITION]:
-            return
+            return None
 
         # check that there are real entity tags
         if entity_tags and self._should_extract_entities(entity_tags):
@@ -474,6 +474,8 @@ class TEDPolicy(Policy):
             f"set '{ENTITY_RECOGNITION}' config parameter to 'False'."
         )
         self.config[ENTITY_RECOGNITION] = False
+
+        return None
 
     def _create_model_data(
         self,
@@ -820,11 +822,11 @@ class TEDPolicy(Policy):
             # entities belong only to the last user message
             # and only if user text was used for prediction,
             # a user message always comes after action listen
-            return
+            return None
 
         if not self.config[ENTITY_RECOGNITION]:
             # entity recognition is not turned on, no entities can be predicted
-            return
+            return None
 
         # The batch dimension of entity prediction is not the same as batch size,
         # rather it is the number of last (if max history featurizer else all)
@@ -840,7 +842,7 @@ class TEDPolicy(Policy):
 
         if ENTITY_ATTRIBUTE_TYPE not in predicted_tags:
             # no entities detected
-            return
+            return None
 
         # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities

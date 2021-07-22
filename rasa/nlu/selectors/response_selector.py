@@ -630,8 +630,7 @@ class ResponseSelector(DIETClassifier):
         **kwargs: Any,
     ) -> "ResponseSelector":
         """Loads the trained model from the provided directory."""
-
-        model = super().load(
+        model: ResponseSelector = super().load(
             meta, model_dir, model_metadata, cached_component, **kwargs
         )
         if not meta.get("file"):

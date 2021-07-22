@@ -280,14 +280,14 @@ class EvaluationStore:
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text, self.entity_targets
                 ),
-                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],
             )
             entity_predictions = sorted(
                 filter(
                     lambda x: x.get(ENTITY_ATTRIBUTE_TEXT) == text,
                     self.entity_predictions,
                 ),
-                key=lambda x: x.get(ENTITY_ATTRIBUTE_START),
+                key=lambda x: x[ENTITY_ATTRIBUTE_START],
             )
 
             i_pred, i_target = 0, 0
@@ -447,7 +447,7 @@ def _clean_entity_results(
     cleaned_entities = []
 
     for r in tuple(entity_results):
-        cleaned_entity = {ENTITY_ATTRIBUTE_TEXT: text}
+        cleaned_entity: EntityPrediction = {ENTITY_ATTRIBUTE_TEXT: text}
         for k in (
             ENTITY_ATTRIBUTE_START,
             ENTITY_ATTRIBUTE_END,
@@ -596,13 +596,14 @@ def _get_e2e_entity_evaluation_result(
                 return EntityEvaluationResult(
                     entity_targets, entities_predicted_by_policies, tokens, text
                 )
+    return None
 
 
 def _run_action_prediction(
     processor: "MessageProcessor",
     partial_tracker: DialogueStateTracker,
     expected_action: Text,
-) -> Tuple[Text, PolicyPrediction, EntityEvaluationResult]:
+) -> Tuple[Text, PolicyPrediction, Optional[EntityEvaluationResult]]:
     action, prediction = processor.predict_next_action(partial_tracker)
     predicted_action = action.name()
 
@@ -638,7 +639,6 @@ def _collect_action_executed_predictions(
     fail_on_prediction_errors: bool,
     circuit_breaker_tripped: bool,
 ) -> Tuple[EvaluationStore, PolicyPrediction, Optional[EntityEvaluationResult]]:
-    from rasa.core.policies.form_policy import FormPolicy
 
     action_executed_eval_store = EvaluationStore()
 
@@ -701,14 +701,6 @@ def _collect_action_executed_predictions(
             error_msg = (
                 f"Model predicted a wrong action. Failed Story: " f"\n\n{story_dump}"
             )
-            if FormPolicy.__name__ in prediction.policy_name:
-                error_msg += (
-                    "FormAction is not run during "
-                    "evaluation therefore it is impossible to know "
-                    "if validation failed or this story is wrong. "
-                    "If the story is correct, add it to the "
-                    "training stories and retrain."
-                )
             raise WrongPredictionException(error_msg)
     elif prev_action_unlikely_intent:
         partial_tracker.update(

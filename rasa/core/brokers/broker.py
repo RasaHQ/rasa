@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from asyncio import AbstractEventLoop
 from typing import Any, Dict, Text, Optional, Union
@@ -114,16 +113,6 @@ async def _load_from_module_name_in_endpoint_config(
         event_broker_class = rasa.shared.utils.common.class_from_module_path(
             broker_config.type
         )
-        if not asyncio.iscoroutinefunction(event_broker_class.from_endpoint_config):
-            rasa.shared.utils.io.raise_deprecation_warning(
-                f"The method "
-                f"'{EventBroker.__name__}.{EventBroker.from_endpoint_config.__name__}' "
-                f"was changed to be 'async'. Your event broker '{broker_config.type}' "
-                f"is currently synchronous. Support for synchronous implementations of "
-                f"'{EventBroker.from_endpoint_config.__name__}' will be removed in "
-                f"3.0.0."
-            )
-            return event_broker_class.from_endpoint_config(broker_config)
         return await event_broker_class.from_endpoint_config(broker_config)
     except (AttributeError, ImportError) as e:
         logger.warning(
