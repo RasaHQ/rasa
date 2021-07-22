@@ -387,18 +387,8 @@ class MessageProcessor:
         should_predict_another_action = self.should_predict_another_action(
             tracker.latest_action_name
         )
-        reversed_events = list(tracker.events)[::-1]
-        num_predicted_actions = 0
 
-        for e in reversed_events:
-            if isinstance(e, ActionExecuted):
-                if e.action_name in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME):
-                    break
-                num_predicted_actions += 1
-
-        if self.is_action_limit_reached(
-            num_predicted_actions, should_predict_another_action
-        ):
+        if self.is_action_limit_reached(tracker, should_predict_another_action):
             raise ActionLimitReached(
                 "The limit of actions to predict has been reached."
             )
@@ -650,18 +640,27 @@ class MessageProcessor:
         )
 
     def is_action_limit_reached(
-        self, num_predicted_actions: int, should_predict_another_action: bool
+        self, tracker: DialogueStateTracker, should_predict_another_action: bool,
     ) -> bool:
         """Check whether the maximum number of predictions has been met.
 
         Args:
-            num_predicted_actions: Number of predicted actions.
+            tracker: instance of DialogueStateTracker.
             should_predict_another_action: Whether the last executed action allows
             for more actions to be predicted or not.
 
         Returns:
             `True` if the limit of actions to predict has been reached.
         """
+        reversed_events = list(tracker.events)[::-1]
+        num_predicted_actions = 0
+
+        for e in reversed_events:
+            if isinstance(e, ActionExecuted):
+                if e.action_name in (ACTION_LISTEN_NAME, ACTION_SESSION_START_NAME):
+                    break
+                num_predicted_actions += 1
+
         return (
             num_predicted_actions >= self.max_number_of_predictions
             and should_predict_another_action
@@ -672,33 +671,25 @@ class MessageProcessor:
     ) -> None:
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
-        num_predicted_actions = 0
 
         # action loop. predicts actions until we hit action listen
-        while (
-            should_predict_another_action
-            and self._should_handle_message(tracker)
-            and num_predicted_actions < self.max_number_of_predictions
-        ):
+        while should_predict_another_action and self._should_handle_message(tracker):
             # this actually just calls the policy's method by the same name
-            action, prediction = self.predict_next_action(tracker)
+            try:
+                action, prediction = self.predict_next_action(tracker)
+            except ActionLimitReached:
+                logger.warning(
+                    "Circuit breaker tripped. Stopped predicting "
+                    f"more actions for sender '{tracker.sender_id}'."
+                )
+                if self.on_circuit_break:
+                    # call a registered callback
+                    self.on_circuit_break(tracker, output_channel, self.nlg)
+                break
 
             should_predict_another_action = await self._run_action(
                 action, tracker, output_channel, self.nlg, prediction
             )
-            num_predicted_actions += 1
-
-        if self.is_action_limit_reached(
-            num_predicted_actions, should_predict_another_action
-        ):
-            # circuit breaker was tripped
-            logger.warning(
-                "Circuit breaker tripped. Stopped predicting "
-                f"more actions for sender '{tracker.sender_id}'."
-            )
-            if self.on_circuit_break:
-                # call a registered callback
-                self.on_circuit_break(tracker, output_channel, self.nlg)
 
     @staticmethod
     def should_predict_another_action(action_name: Text) -> bool:
