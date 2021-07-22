@@ -76,7 +76,7 @@ async def load_data(
 
     if resource_name:
         if isinstance(resource_name, TrainingDataImporter):
-            graph = await resource_name.get_stories(
+            graph = resource_name.get_stories(
                 exclusion_percentage=exclusion_percentage
             )
         else:

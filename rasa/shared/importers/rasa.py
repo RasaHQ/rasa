@@ -14,6 +14,7 @@ import rasa.shared.utils.io
 logger = logging.getLogger(__name__)
 
 
+# TODO(alwx): update this as well
 class RasaFileImporter(TrainingDataImporter):
     """Default `TrainingFileImporter` implementation."""
 

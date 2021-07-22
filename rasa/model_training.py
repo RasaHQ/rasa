@@ -93,7 +93,7 @@ async def train_async(
         config, domain, training_files
     )
     with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
-        domain = await file_importer.get_domain()
+        domain = file_importer.get_domain()
 
         if domain.is_empty():
             nlu_model = await handle_domain_if_not_exists(
@@ -207,9 +207,8 @@ async def _train_async_internal(
     Returns:
         An instance of `TrainingResult`.
     """
-    stories, nlu_data = await asyncio.gather(
-        file_importer.get_stories(), file_importer.get_nlu_data()
-    )
+    stories = file_importer.get_stories()
+    nlu_data = file_importer.get_nlu_data()
 
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
@@ -278,7 +277,7 @@ async def _train_async_internal(
         fingerprint_comparison = FingerprintComparisonResult(force_training=True)
 
     if not old_model or fingerprint_comparison.is_training_required():
-        async with telemetry.track_model_training(
+        with telemetry.track_model_training(
             file_importer, model_type="rasa",
         ):
             await _do_training(
@@ -363,7 +362,7 @@ async def _do_training(
             "the updated responses will be created.",
             color=rasa.shared.utils.io.bcolors.OKBLUE,
         )
-        await model.update_model_with_new_domain(file_importer, train_path)
+        model.update_model_with_new_domain(file_importer, train_path)
     else:
         rasa.shared.utils.cli.print_color(
             "Core stories/configuration did not change. No need to retrain Core model.",
@@ -452,11 +451,9 @@ async def train_core_async(
     file_importer = TrainingDataImporter.load_core_importer_from_config(
         config, domain, [stories]
     )
-    stories, nlu_data, domain = await asyncio.gather(
-        file_importer.get_stories(),
-        file_importer.get_nlu_data(),
-        file_importer.get_domain(),
-    )
+    stories = file_importer.get_stories()
+    nlu_data = file_importer.get_nlu_data()
+    domain = file_importer.get_domain()
 
     if nlu_data.has_e2e_examples():
         rasa.shared.utils.cli.print_error(
@@ -516,9 +513,8 @@ async def _train_core_with_validated_data(
         rasa.shared.utils.cli.print_color(
             "Training Core model...", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
-        domain, config = await asyncio.gather(
-            file_importer.get_domain(), file_importer.get_config()
-        )
+        domain = file_importer.get_domain()
+        config = file_importer.get_config()
 
         if model_to_finetune:
             rasa.shared.utils.common.mark_as_experimental_feature(
@@ -537,7 +533,7 @@ async def _train_core_with_validated_data(
                     f"model within the directory '{output}'."
                 )
 
-        async with telemetry.track_model_training(
+        with telemetry.track_model_training(
             file_importer,
             model_type="core",
             is_finetuning=model_to_finetune is not None,
@@ -590,7 +586,7 @@ async def _core_model_for_finetuning(
                 "Core model can not be finetuned."
             )
 
-        config = await file_importer.get_config()
+        config = file_importer.get_config()
         agent = Agent.load(
             unpacked,
             new_config=config,
@@ -680,7 +676,7 @@ async def train_nlu_async(
         config, domain, training_data_paths=[nlu_data]
     )
 
-    training_data = await file_importer.get_nlu_data()
+    training_data = file_importer.get_nlu_data()
     if training_data.contains_no_pure_nlu_data():
         rasa.shared.utils.cli.print_error(
             f"Path '{nlu_data}' doesn't contain valid NLU data in it. "
@@ -724,7 +720,7 @@ async def _train_nlu_with_validated_data(
         else:
             # Otherwise, create a temp train path and clean it up on exit.
             _train_path = stack.enter_context(TempDirectoryPath(tempfile.mkdtemp()))
-        config = await file_importer.get_config()
+        config = file_importer.get_config()
         rasa.shared.utils.cli.print_color(
             "Training NLU model...", color=rasa.shared.utils.io.bcolors.OKBLUE
         )
@@ -746,7 +742,7 @@ async def _train_nlu_with_validated_data(
                     f"model within the directory '{output}'."
                 )
 
-        async with telemetry.track_model_training(
+        with telemetry.track_model_training(
             file_importer,
             model_type="nlu",
             is_finetuning=model_to_finetune is not None,
@@ -807,7 +803,7 @@ async def _nlu_model_for_finetuning(
                 "NLU model can not be finetuned."
             )
 
-        config = await file_importer.get_config()
+        config = file_importer.get_config()
         loaded_model_to_finetune = Interpreter.load(
             old_nlu,
             new_config=config,

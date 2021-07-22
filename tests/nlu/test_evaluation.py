@@ -386,7 +386,7 @@ async def test_eval_data(
     )
     interpreter = Interpreter.load(nlu_model_directory, component_builder)
 
-    data = await data_importer.get_nlu_data()
+    data = data_importer.get_nlu_data()
     (intent_results, response_selection_results, entity_results) = get_eval_data(
         interpreter, data
     )
@@ -975,7 +975,7 @@ async def test_nlu_comparison(
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[nlu_as_json_path]
     )
-    test_data = await test_data_importer.get_nlu_data()
+    test_data = test_data_importer.get_nlu_data()
     await compare_nlu_models(
         configs, test_data, output, runs=2, exclusion_percentages=[50, 80]
     )

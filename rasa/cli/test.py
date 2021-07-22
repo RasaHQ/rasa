@@ -184,7 +184,7 @@ async def run_nlu_test_async(
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
     )
-    nlu_data = await test_data_importer.get_nlu_data()
+    nlu_data = test_data_importer.get_nlu_data()
 
     output = output_dir or DEFAULT_RESULTS_PATH
     all_args["errors"] = not no_errors

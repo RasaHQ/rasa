@@ -1409,6 +1409,7 @@ def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
     return pipeline
 
 
+# TODO(alwx): no async?
 async def run_evaluation(
     data_path: Text,
     model_path: Text,
@@ -1446,7 +1447,7 @@ async def run_evaluation(
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
     )
-    test_data = await test_data_importer.get_nlu_data()
+    test_data = test_data_importer.get_nlu_data()
 
     result: Dict[Text, Optional[Dict]] = {
         "intent_evaluation": None,
