@@ -1277,7 +1277,7 @@ def test_predict_next_action_with_hidden_rules():
     assert not prediction.hide_rule_turn
 
 
-def test_predict_next_action_raises_exception(domain: Domain):
+def test_predict_next_action_raises_limit_reached_exception(domain: Domain):
     interpreter = RegexInterpreter()
     ensemble = SimplePolicyEnsemble(policies=[RulePolicy(), MemoizationPolicy()])
     tracker_store = InMemoryTrackerStore(domain)
