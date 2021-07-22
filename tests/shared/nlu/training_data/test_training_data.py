@@ -323,7 +323,7 @@ def test_number_of_examples_per_intent():
     assert training_data.number_of_examples_per_intent["ask_weather"] == 2
 
 
-async def test_number_of_examples_per_intent_with_yaml(tmp_path: Path):
+def test_number_of_examples_per_intent_with_yaml(tmp_path: Path):
     domain_path = tmp_path / "domain.yml"
     domain_path.write_text(Domain.empty().as_yaml())
 
@@ -341,7 +341,7 @@ async def test_number_of_examples_per_intent_with_yaml(tmp_path: Path):
         ],
     )
 
-    training_data = await importer.get_nlu_data()
+    training_data = importer.get_nlu_data()
     assert training_data.intents == {"greet", "ask_weather"}
     assert training_data.number_of_examples_per_intent["greet"] == 2
     assert training_data.number_of_examples_per_intent["ask_weather"] == 3
@@ -744,11 +744,11 @@ async def test_without_additional_e2e_examples(tmp_path: Path):
     )
 
     # Patch to return our test stories
-    existing.get_stories = asyncio.coroutine(lambda *args: stories)
+    existing.get_stories = lambda *args: stories
 
     importer = E2EImporter(existing)
 
-    training_data = await importer.get_nlu_data()
+    training_data = importer.get_nlu_data()
 
     assert training_data.training_examples
     assert not training_data.is_empty()

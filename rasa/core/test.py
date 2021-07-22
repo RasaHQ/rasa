@@ -434,9 +434,9 @@ async def _create_data_generator(
         training_data_paths=[resource_name], domain_path=domain_path
     )
     if use_conversation_test_files:
-        story_graph = await test_data_importer.get_conversation_tests()
+        story_graph = test_data_importer.get_conversation_tests()
     else:
-        story_graph = await test_data_importer.get_stories()
+        story_graph = test_data_importer.get_stories()
 
     return TrainingDataGenerator(
         story_graph,

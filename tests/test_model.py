@@ -242,14 +242,14 @@ async def test_fingerprinting_changed_response_text(project: Text):
     importer = _project_files(project)
 
     old_fingerprint = await model_fingerprint(importer)
-    old_domain = await importer.get_domain()
+    old_domain = importer.get_domain()
 
     # Change NLG content but keep actions the same
     domain_with_changed_nlg = old_domain.as_dict()
     domain_with_changed_nlg[KEY_RESPONSES]["utter_greet"].append({"text": "hi"})
     domain_with_changed_nlg = Domain.from_dict(domain_with_changed_nlg)
 
-    importer.get_domain = asyncio.coroutine(lambda: domain_with_changed_nlg)
+    importer.get_domain = lambda: domain_with_changed_nlg
 
     new_fingerprint = await model_fingerprint(importer)
 
@@ -382,13 +382,13 @@ async def test_fingerprinting_additional_action(project: Text):
     importer = _project_files(project)
 
     old_fingerprint = await model_fingerprint(importer)
-    old_domain = await importer.get_domain()
+    old_domain = importer.get_domain()
 
     domain_with_new_action = old_domain.as_dict()
     domain_with_new_action[KEY_RESPONSES]["utter_new"] = [{"text": "hi"}]
     domain_with_new_action = Domain.from_dict(domain_with_new_action)
 
-    importer.get_domain = asyncio.coroutine(lambda: domain_with_new_action)
+    importer.get_domain = lambda: domain_with_new_action
 
     new_fingerprint = await model_fingerprint(importer)
 
@@ -587,7 +587,7 @@ async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
 
     mocked_importer.get_domain = get_domain
 
-    await model.update_model_with_new_domain(mocked_importer, tmpdir)
+    model.update_model_with_new_domain(mocked_importer, tmpdir)
 
     actual = Domain.load(tmpdir / DEFAULT_CORE_SUBDIRECTORY_NAME / DEFAULT_DOMAIN_PATH)
 
@@ -612,7 +612,7 @@ async def test_update_with_new_domain_preserves_domain(
 
     mocked_importer.get_domain = get_domain
 
-    await model.update_model_with_new_domain(mocked_importer, tmpdir)
+    model.update_model_with_new_domain(mocked_importer, tmpdir)
 
     new_persisted = Domain.load(core_directory / DEFAULT_DOMAIN_PATH)
     new_persisted.compare_with_specification(str(core_directory))

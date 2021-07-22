@@ -736,10 +736,10 @@ async def track_model_training(
         yield  # runs the training
         return  # closes the async context
 
-    config = await training_data.get_config()
-    stories = await training_data.get_stories()
-    nlu_data = await training_data.get_nlu_data()
-    domain = await training_data.get_domain()
+    config = training_data.get_config()
+    stories = training_data.get_stories()
+    nlu_data = training_data.get_nlu_data()
+    domain = training_data.get_domain()
     count_conditional_responses = domain.count_conditional_response_variations()
 
     training_id = uuid.uuid4().hex

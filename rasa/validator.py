@@ -46,12 +46,12 @@ class Validator:
         self.nlu_config = RasaNLUModelConfig(config)
 
     @classmethod
-    async def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
+    def from_importer(cls, importer: TrainingDataImporter) -> "Validator":
         """Create an instance from the domain, nlu and story files."""
-        domain = await importer.get_domain()
-        story_graph = await importer.get_stories()
-        intents = await importer.get_nlu_data()
-        config = await importer.get_config()
+        domain = importer.get_domain()
+        story_graph = importer.get_stories()
+        intents = importer.get_nlu_data()
+        config = importer.get_config()
 
         return cls(domain, intents, story_graph, config)
 
