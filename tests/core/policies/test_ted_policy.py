@@ -162,13 +162,11 @@ class TestTEDPolicy(PolicyTestCollection):
         "should_finetune, epoch_override, expected_epoch_value",
         [
             (True, TEDPolicy.defaults[EPOCHS] + 1, TEDPolicy.defaults[EPOCHS] + 1),
-            (True, TEDPolicy.defaults[EPOCHS], TEDPolicy.defaults[EPOCHS]),
             (
                 False,
                 TEDPolicy.defaults[EPOCHS] + 1,
                 TEDPolicy.defaults[EPOCHS],
             ),  # trained_policy uses default epochs during training
-            (False, TEDPolicy.defaults[EPOCHS], TEDPolicy.defaults[EPOCHS],),
         ],
     )
     def test_epoch_override_when_loaded(
