@@ -754,7 +754,8 @@ def test_event_executed_comparison(
 )
 def test_event_fingerprint_consistency_across_runs(event: Event):
     f1 = event.fingerprint()
-    f2 = event.fingerprint()
+    event2 = Event.from_parameters(event.as_dict())
+    f2 = event2.fingerprint()
     assert f1 == f2
 
 

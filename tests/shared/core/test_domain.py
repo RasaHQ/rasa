@@ -1470,9 +1470,30 @@ def test_domain_invalid_yml_in_folder():
         Domain.from_directory("data/test_domains/test_domain_from_directory1/")
 
 
-def test_domain_fingerprint_consistency_across_runs(domain: Domain):
-    f1 = domain.fingerprint()
-    f2 = domain.fingerprint()
+def test_domain_fingerprint_consistency_across_runs():
+    domain1 = Domain.from_yaml(
+        """
+         version: "2.0"
+         intents:
+         - greet
+         - goodbye
+         actions:
+         - action_test
+         """
+    )
+    domain2 = Domain.from_yaml(
+        """
+         version: "2.0"
+         intents:
+         - greet
+         - goodbye
+         actions:
+         - action_test
+         """
+    )
+
+    f1 = domain1.fingerprint()
+    f2 = domain2.fingerprint()
     assert f1 == f2
 
 
