@@ -235,7 +235,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
                 data.append(slot.fingerprint())
 
         if self._states_for_hashing:
-            last_state = self._states_for_hashing.pop()
+            last_state = self._states_for_hashing[-1]
             for value in dict(last_state).values():
                 sub_state = dict(value)
                 for sub_state_value in sub_state.values():
