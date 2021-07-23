@@ -111,9 +111,10 @@ class SlotTestCollection:
 
     @pytest.mark.parametrize("influence_conversation", [True, False])
     def test_slot_fingerprint_consistency(self, influence_conversation: bool):
-        slot = self.create_slot(influence_conversation)
-        f1 = slot.fingerprint()
-        f2 = slot.fingerprint()
+        slot1 = self.create_slot(influence_conversation)
+        slot2 = self.create_slot(influence_conversation)
+        f1 = slot1.fingerprint()
+        f2 = slot2.fingerprint()
         assert f1 == f2
 
     @pytest.mark.parametrize("influence_conversation", [True, False])

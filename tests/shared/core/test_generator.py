@@ -29,12 +29,14 @@ def test_subsample_array():
 def test_tracker_with_cached_states_fingerprinting_consistency(domain: Domain):
     slot = TextSlot(name="name", influence_conversation=True)
     slot.value = "example"
-    tr = rasa.shared.core.generator.TrackerWithCachedStates(
+    tr1 = rasa.shared.core.generator.TrackerWithCachedStates(
         "test_sender_id", slots=[slot], domain=domain
     )
-
-    f1 = tr.fingerprint()
-    f2 = tr.fingerprint()
+    tr2 = rasa.shared.core.generator.TrackerWithCachedStates(
+        "test_sender_id", slots=[slot], domain=domain
+    )
+    f1 = tr1.fingerprint()
+    f2 = tr2.fingerprint()
     assert f1 == f2
 
 
