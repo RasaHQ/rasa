@@ -69,7 +69,7 @@ def pretrained_embeddings_convert_config() -> RasaNLUModelConfig:
         {
             "language": "en",
             "pipeline": [
-                {"name": "ConveRTTokenizer"},
+                {"name": "WhitespaceTokenizer"},
                 {"name": "ConveRTFeaturizer"},
                 {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
             ],
