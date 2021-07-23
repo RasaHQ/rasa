@@ -1483,7 +1483,6 @@ def test_domain_fingerprint_uniqueness():
          intents:
          - greet
          - goodbye
-         
          actions:
          - action_test
          """
@@ -1497,7 +1496,6 @@ def test_domain_fingerprint_uniqueness():
         - greet
         - goodbye
         - test
-        
         actions:
         - action_test
         """
@@ -1511,7 +1509,6 @@ def test_domain_fingerprint_uniqueness():
         intents:
         - greet
         - goodbye
-        
         actions:
         - action_test
         - action_double_test
@@ -1526,11 +1523,9 @@ def test_domain_fingerprint_uniqueness():
         intents:
         - greet
         - goodbye
-        
         responses:
           utter_greet:
            - text: "Hi!"
-           
         actions:
         - action_test
         """
