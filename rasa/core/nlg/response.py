@@ -75,12 +75,20 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         )
 
         if conditional_channel:
+            logger.debug(
+                "Selecting response variation with condition: "
+                f"'{conditional_channel[0].get('condition')}'"
+            )
             return conditional_channel
 
         if default_channel:
             return default_channel
 
         if conditional_no_channel:
+            logger.debug(
+                "Selecting response variation with condition: "
+                f"'{conditional_no_channel[0].get('condition')}'"
+            )
             return conditional_no_channel
 
         return default_no_channel
