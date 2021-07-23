@@ -247,19 +247,7 @@ class Event(ABC):
         metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         self.timestamp = timestamp or time.time()
-        self._metadata = metadata or {}
-
-    @property
-    def metadata(self) -> Dict[Text, Any]:
-        # Needed for compatibility with Rasa versions <1.4.0. Previous versions
-        # of Rasa serialized trackers using the pickle module. For the moment,
-        # Rasa still supports loading these serialized trackers with pickle,
-        # but will use JSON in any subsequent save operations. Versions of
-        # trackers serialized with pickle won't include the `_metadata`
-        # attribute in their events, so it is necessary to define this getter
-        # in case the attribute does not exist. For more information see
-        # CHANGELOG.rst.
-        return getattr(self, "_metadata", {})
+        self.metadata = metadata or {}
 
     def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
