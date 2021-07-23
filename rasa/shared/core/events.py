@@ -307,6 +307,11 @@ class Event(ABC):
         return d
 
     def fingerprint(self) -> Text:
+        """Returns a unique hash for the event which is stable across python runs.
+
+        Returns:
+            fingerprint of the event
+        """
         return rasa.shared.utils.io.get_dictionary_fingerprint(self.as_dict())
 
     @classmethod
@@ -316,8 +321,8 @@ class Event(ABC):
         By default uses the same implementation as the story line
         conversation ``_from_story_string``. But the subclass might
         decide to handle parameters differently if the parsed parameters
-        don't origin from a story file."""
-
+        don't origin from a story file.
+        """
         result = cls._from_story_string(parameters)
         if len(result) > 1:
             logger.warning(

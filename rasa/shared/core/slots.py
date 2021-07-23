@@ -150,6 +150,11 @@ class Slot:
         }
 
     def fingerprint(self) -> Text:
+        """Returns a unique hash for the slot which is stable across python runs.
+
+        Returns:
+            fingerprint of the slot
+        """
         data = [
             self.name,
             self.value,
@@ -159,6 +164,8 @@ class Slot:
 
 
 class FloatSlot(Slot):
+    """A slot storing a float value."""
+
     type_name = "float"
 
     def __init__(
@@ -171,6 +178,12 @@ class FloatSlot(Slot):
         min_value: float = 0.0,
         influence_conversation: bool = True,
     ) -> None:
+        """Creates a FloatSlot.
+
+        Raises:
+            InvalidSlotConfigError, if the min-max range is invalid.
+            UserWarning, if initial_value is outside the min-max range.
+        """
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
