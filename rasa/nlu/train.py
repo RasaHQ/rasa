@@ -108,10 +108,6 @@ async def train(
         training_data = load_data(data, nlu_config.language)
 
     training_data.print_stats()
-    if training_data.entity_roles_groups_used():
-        rasa.shared.utils.common.mark_as_experimental_feature(
-            "Entity Roles and Groups feature"
-        )
 
     interpreter = trainer.train(training_data, **kwargs)
 
