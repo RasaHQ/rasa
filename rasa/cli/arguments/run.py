@@ -32,6 +32,19 @@ def add_port_argument(
     )
 
 
+def add_interface_argument(
+    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]
+) -> None:
+    """Binds the RASA process to a network interface."""
+    parser.add_argument(
+        "-i",
+        "--interface",
+        default=constants.DEFAULT_SERVER_INTERFACE,
+        type=str,
+        help="Network interface to run the server on.",
+    )
+
+
 def add_server_arguments(parser: argparse.ArgumentParser) -> None:
     """Add arguments for running API endpoint."""
     parser.add_argument(
@@ -51,6 +64,7 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
     server_arguments = parser.add_argument_group("Server Settings")
 
     add_port_argument(server_arguments)
+    add_interface_argument(server_arguments)
 
     server_arguments.add_argument(
         "-t",
