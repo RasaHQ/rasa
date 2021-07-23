@@ -23,6 +23,7 @@ from typing import (
 )
 
 import rasa.shared.utils.common
+import rasa.shared.utils.io
 from typing import Union
 
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA
@@ -304,6 +305,9 @@ class Event(ABC):
             d["metadata"] = self.metadata
 
         return d
+
+    def fingerprint(self) -> Text:
+        return rasa.shared.utils.io.get_dictionary_fingerprint(self.as_dict())
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> Optional["Event"]:
