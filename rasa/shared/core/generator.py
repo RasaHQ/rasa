@@ -217,6 +217,40 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
             self._append_current_state()
 
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the tracker which is stable across python runs.
+
+        Returns:
+            fingerprint of the tracker
+        """
+        data = []
+        sender_id_hash = rasa.shared.utils.io.get_text_hash(self.sender_id)
+        data.append(sender_id_hash)
+
+        if self.domain:
+            data.append(self.domain.fingerprint())
+
+        if self.slots:
+            for slot in self.slots.values():
+                data.append(slot.fingerprint())
+
+        if self._states_for_hashing:
+            last_state = self._states_for_hashing.pop()
+            for value in dict(last_state).values():
+                sub_state = dict(value)
+                for sub_state_value in sub_state.values():
+                    if isinstance(sub_state_value, str):
+                        data.append(rasa.shared.utils.io.get_text_hash(sub_state_value))
+                    else:
+                        sub_state_val_list = [str(v) for v in sub_state_value]
+                        data.append(
+                            rasa.shared.utils.io.get_list_fingerprint(
+                                sub_state_val_list
+                            )
+                        )
+
+        return rasa.shared.utils.io.get_list_fingerprint(data)
+
 
 # define types
 TrackerLookupDict = Dict[Text, List[TrackerWithCachedStates]]
