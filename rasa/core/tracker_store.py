@@ -417,7 +417,9 @@ class DynamoTrackerStore(TrackerStore):
         except self.client.exceptions.ResourceNotFoundException:
             table = dynamo.create_table(
                 TableName=self.table_name,
-                KeySchema=[{"AttributeName": "sender_id", "KeyType": "HASH"},],
+                KeySchema=[
+                    {"AttributeName": "sender_id", "KeyType": "HASH"},
+                ],
                 AttributeDefinitions=[
                     {"AttributeName": "sender_id", "AttributeType": "S"},
                 ],
@@ -443,7 +445,9 @@ class DynamoTrackerStore(TrackerStore):
         """Serializes the tracker, returns object with decimal types."""
         d = tracker.as_dialogue().as_dict()
         d.update(
-            {"sender_id": tracker.sender_id,}
+            {
+                "sender_id": tracker.sender_id,
+            }
         )
         # DynamoDB cannot store `float`s, so we'll convert them to `Decimal`s
         return core_utils.replace_floats_with_decimals(d)
@@ -471,10 +475,17 @@ class DynamoTrackerStore(TrackerStore):
 
     def keys(self) -> Iterable[Text]:
         """Returns sender_ids of the `DynamoTrackerStore`."""
-        return [
-            i["sender_id"]
-            for i in self.db.scan(ProjectionExpression="sender_id")["Items"]
-        ]
+        response = self.db.scan(ProjectionExpression="sender_id")
+        sender_ids = [i["sender_id"] for i in response["Items"]]
+
+        while response.get("LastEvaluatedKey"):
+            response = self.db.scan(
+                ProjectionExpression="sender_id",
+                ExclusiveStartKey=response["LastEvaluatedKey"],
+            )
+            sender_ids.extend([i["sender_id"] for i in response["Items"]])
+
+        return sender_ids
 
 
 class MongoTrackerStore(TrackerStore):
