@@ -53,6 +53,7 @@ from rasa.shared.core.events import (
 from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 from rasa.shared.core.domain import Domain
+from rasa.tracing import trace_async_method, get_tracing_http_headers
 
 
 if TYPE_CHECKING:
@@ -314,6 +315,7 @@ class ActionEndToEndResponse(Action):
         # We fake a name by returning the text which the bot sends back to the user.
         return self.action_text
 
+    @trace_async_method
     async def run(
         self,
         output_channel: "OutputChannel",
@@ -659,6 +661,7 @@ class RemoteAction(Action):
 
         return bot_messages
 
+    @trace_async_method
     async def run(
         self,
         output_channel: "OutputChannel",

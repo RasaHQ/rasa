@@ -11,6 +11,7 @@ from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.tracing import trace_async_method
 
 
 logger = logging.getLogger(__name__)
@@ -126,6 +127,7 @@ class EndpointConfig:
             del kwargs["params"]
         return params
 
+    @trace_async_method
     async def request(
         self,
         method: Text = "post",

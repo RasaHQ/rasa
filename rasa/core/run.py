@@ -26,6 +26,7 @@ from rasa.core.utils import AvailableEndpoints
 import rasa.shared.utils.io
 from sanic import Sanic
 from asyncio import AbstractEventLoop
+import rasa.tracing
 
 logger = logging.getLogger()  # get the root logger
 
@@ -251,6 +252,7 @@ async def load_agent_on_start(
         logger.debug(f"Could not load interpreter from '{model_path}'.")
         _interpreter = None
 
+    rasa.tracing.configure_tracing(endpoints.tracing)
     _broker = await EventBroker.create(endpoints.event_broker, loop=loop)
     _tracker_store = TrackerStore.create(endpoints.tracker_store, event_broker=_broker)
     _lock_store = LockStore.create(endpoints.lock_store)

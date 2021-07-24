@@ -13,6 +13,7 @@ import rasa.shared.utils.common
 import rasa.shared.nlu.interpreter
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
+from rasa.tracing import trace_async_method
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ class RasaNLUHttpInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpre
         else:
             self.endpoint_config = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
+    @trace_async_method
     async def parse(
         self,
         text: Text,

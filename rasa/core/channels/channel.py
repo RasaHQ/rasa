@@ -20,6 +20,7 @@ from rasa.cli import utils as cli_utils
 from rasa.shared.constants import DOCS_BASE_URL, DEFAULT_SENDER_ID
 from rasa.core.constants import BEARER_TOKEN_PREFIX
 from rasa.shared.exceptions import RasaException
+from rasa.tracing import trace_async_fn
 
 try:
     from urlparse import urljoin
@@ -85,6 +86,7 @@ def register(
 ) -> None:
     """Registers input channel blueprints with Sanic."""
 
+    @trace_async_fn
     async def handler(message: UserMessage) -> None:
         await app.agent.handle_message(message)
 
