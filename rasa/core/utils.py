@@ -180,8 +180,9 @@ class AvailableEndpoints:
         lock_store = read_endpoint_config(endpoint_file, endpoint_type="lock_store")
         event_broker = read_endpoint_config(endpoint_file, endpoint_type="event_broker")
         tracing = read_endpoint_config(endpoint_file, endpoint_type="tracing")
+        prometheus = read_endpoint_config(endpoint_file, endpoint_type="prometheus")
 
-        return cls(nlg, nlu, action, model, tracker_store, lock_store, event_broker, tracing)
+        return cls(nlg, nlu, action, model, tracker_store, lock_store, event_broker, tracing, prometheus)
 
     def __init__(
         self,
@@ -193,6 +194,7 @@ class AvailableEndpoints:
         lock_store: Optional[EndpointConfig] = None,
         event_broker: Optional[EndpointConfig] = None,
         tracing: Optional[EndpointConfig] = None,
+        prometheus: Optional[EndpointConfig] = None,
     ) -> None:
         self.model = model
         self.action = action
@@ -202,6 +204,7 @@ class AvailableEndpoints:
         self.lock_store = lock_store
         self.event_broker = event_broker
         self.tracing = tracing
+        self.prometheus = prometheus
 
 
 def read_endpoints_from_path(
