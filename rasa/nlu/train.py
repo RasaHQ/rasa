@@ -2,7 +2,6 @@ import logging
 import typing
 from typing import Any, Optional, Text, Tuple, Union, Dict
 
-import rasa.shared.utils.common
 from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
