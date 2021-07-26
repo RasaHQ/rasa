@@ -155,12 +155,9 @@ class Slot:
         Returns:
             fingerprint of the slot
         """
-        data = [
-            self.name,
-            self.value,
-            rasa.shared.utils.common.module_path_from_instance(self),
-        ]
-        return rasa.shared.utils.io.get_list_fingerprint(data)
+        data = {"slot_name": self.name, "slot_value": self.value}
+        data.update(self.persistence_info())
+        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
 
 
 class FloatSlot(Slot):
