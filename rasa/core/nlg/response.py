@@ -75,9 +75,12 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         )
 
         if conditional_channel:
+            formatted_response_conditions = self._format_response_conditions(
+                conditional_channel[0].get(RESPONSE_CONDITION)
+            )
             logger.debug(
-                "Selecting response variation with condition: "
-                f"'{conditional_channel[0].get('condition')}'"
+                "Selecting response variations with conditions:"
+                f"{formatted_response_conditions}"
             )
             return conditional_channel
 
@@ -85,9 +88,12 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             return default_channel
 
         if conditional_no_channel:
+            formatted_response_conditions = self._format_response_conditions(
+                conditional_no_channel[0].get(RESPONSE_CONDITION)
+            )
             logger.debug(
-                "Selecting response variation with condition: "
-                f"'{conditional_no_channel[0].get('condition')}'"
+                "Selecting response variations with conditions:"
+                f"{formatted_response_conditions}"
             )
             return conditional_no_channel
 
@@ -185,3 +191,18 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         response_vars = filled_slots.copy()
         response_vars.update(kwargs)
         return response_vars
+
+    @staticmethod
+    def _format_response_conditions(response_conditions: List[Dict]) -> Text:
+        formatted_response_conditions = [""]
+        for index, condition in enumerate(response_conditions):
+            constraints = []
+            constraints.append(f"type: {str(condition['type'])}")
+            constraints.append(f"name: {str(condition['name'])}")
+            constraints.append(f"value: {str(condition['value'])}")
+
+            condition_message = " | ".join(constraints)
+            formatted_condition = f"[condition {str(index + 1)}] {condition_message}"
+            formatted_response_conditions.append(formatted_condition)
+
+        return "\n".join(formatted_response_conditions)
