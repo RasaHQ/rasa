@@ -223,33 +223,19 @@ class TrackerWithCachedStates(DialogueStateTracker):
         Returns:
             fingerprint of the tracker
         """
-        data = []
-        sender_id_hash = rasa.shared.utils.io.get_text_hash(self.sender_id)
-        data.append(sender_id_hash)
+        data = {"sender_id": self.sender_id}
 
         if self.domain:
-            data.append(self.domain.fingerprint())
+            data.update(self.domain.as_dict())
 
         if self.slots:
-            for slot in self.slots.values():
-                data.append(slot.fingerprint())
+            data.update(self.slots)
 
-        if self._states_for_hashing:
-            last_state = self._states_for_hashing[-1]
-            for value in dict(last_state).values():
-                sub_state = dict(value)
-                for sub_state_value in sub_state.values():
-                    if isinstance(sub_state_value, str):
-                        data.append(rasa.shared.utils.io.get_text_hash(sub_state_value))
-                    else:
-                        sub_state_val_list = [str(v) for v in sub_state_value]
-                        data.append(
-                            rasa.shared.utils.io.get_list_fingerprint(
-                                sub_state_val_list
-                            )
-                        )
+        if self.events:
+            for event in list(self.events):
+                data.update(event.as_dict())
 
-        return rasa.shared.utils.io.get_list_fingerprint(data)
+        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
 
 
 # define types
@@ -259,6 +245,8 @@ TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedState
 
 
 class TrainingDataGenerator:
+    """Generates training data given a domain and a set of story parts."""
+
     def __init__(
         self,
         story_graph: StoryGraph,

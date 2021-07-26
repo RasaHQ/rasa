@@ -1,10 +1,7 @@
-from collections import deque
-
 import rasa.shared.core.generator
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted
 from rasa.shared.core.slots import TextSlot
-from rasa.shared.core.trackers import DialogueStateTracker
 
 
 def test_subsample_array_read_only():
@@ -48,8 +45,7 @@ def test_tracker_with_cached_states_unique_fingerprint(domain: Domain):
     )
     f1 = tr.fingerprint()
 
-    tracker = DialogueStateTracker("test_sender_id", slots=[slot])
-    event = UserUttered(
+    event1 = UserUttered(
         text="hello",
         parse_data={
             "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
@@ -67,16 +63,11 @@ def test_tracker_with_cached_states_unique_fingerprint(domain: Domain):
             ],
         },
     )
-    tracker.update(event, domain=domain)
-    container = deque()
-    container.append(tracker.freeze_current_state(domain.get_active_state(tracker)))
-    tr._states_for_hashing = container
+    tr.update(event1)
     f2 = tr.fingerprint()
     assert f1 != f2
 
-    event = ActionExecuted(action_name="action_listen")
-    tracker.update(event, domain=domain)
-    container.append(tracker.freeze_current_state(domain.get_active_state(tracker)))
-    tr._states_for_hashing = container
+    event2 = ActionExecuted(action_name="action_listen")
+    tr.update(event2)
     f3 = tr.fingerprint()
     assert f2 != f3
