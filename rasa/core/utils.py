@@ -206,6 +206,7 @@ class AvailableEndpoints:
         tracing: Optional[EndpointConfig] = None,
         prometheus: Optional[EndpointConfig] = None,
     ) -> None:
+        """Init `AvailableEndpoints`."""
         self.model = model
         self.action = action
         self.nlu = nlu

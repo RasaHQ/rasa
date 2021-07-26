@@ -16,24 +16,31 @@ logger = logging.getLogger(__name__)
 
 
 class IsAwaitable(Exception):
+    """IsAwaitable."""
+
     ...
 
 
 class IsNotAwaitable(Exception):
+    """IsNotAwaitable."""
+
     ...
 
 
-#             rasa.tracing.configure_tracing("rasa", "127.0.0.1", 6831, "b3", True)
-# def configure_tracing(
-#    app_name: str= 'rasa', host: str = '127.0.0.1', port: int = 831, propagation: str = b3, jaeger_enabled: bool = True
-# ) -> Tracer:
 def configure_tracing(tracing_endpoint: Any) -> Tracer:
-    # tracing_endpoint is the endpoints.yml / tracing section
-    # tracing:
-    #   service_name: rasa
-    #   agent_host: localhost
-    #   agent_port: 6831
-    #   propogation: b3
+    """Configure and initialize tracing using `endpoints.yml` config.
+
+    `endpoints.yml`:
+      tracing:
+        service_name: rasa
+        agent_host: localhost
+        agent_port: 6831
+        propogation: b3
+
+    Returns:
+        Sets global `tracer`.
+
+    """
     global tracer
     host = "localhost"
     port = 6831
@@ -64,6 +71,7 @@ def configure_tracing(tracing_endpoint: Any) -> Tracer:
 
 
 def get_tracer() -> Tracer:
+    """Returns global tracer."""
     global tracer
     if not tracer:
         logger.warning("configure_tracing first")
@@ -72,18 +80,21 @@ def get_tracer() -> Tracer:
 
 
 def get_current_span() -> Optional[Span]:
+    """Returns active tracer span."""
     tracer = get_tracer()
     active = tracer.scope_manager.active
     return cast(Span, active.span) if active else None
 
 
 def get_current_trace_id() -> Optional[str]:
+    """Returns the active trace id."""
     span = get_current_span()
     trace_id = span.trace_id if span else None
     return "{:x}".format(trace_id) if trace_id else None
 
 
 def get_tracing_http_headers() -> Dict[str, str]:
+    """Returns an http header block with the trace and span."""
     tracer = get_tracer()
     span = get_current_span()
     if not span:
@@ -95,6 +106,10 @@ def get_tracing_http_headers() -> Dict[str, str]:
 
 
 def _get_span_and_scope(f: Callable[..., Any], *args: Any, **kwargs: Any):
+    """Returns gets the current span.
+
+    It also optionally attaches tags based upon the operation_name.
+    """
     operation_name = f.__name__
     current_tags = {}
     if f.__qualname__ == "Agent.handle_message":
@@ -117,11 +132,9 @@ def _get_span_and_scope(f: Callable[..., Any], *args: Any, **kwargs: Any):
 
 
 def trace_fn(f: Callable[..., Any]) -> Callable[..., Any]:
-    """
-    Trace synchronous functions
+    """Trace synchronous functions.
 
-    Example
-    ------
+    Example:
     >>> @trace_fn
     ... def any_function(*args, **kwargs):
     ...     pass
@@ -149,11 +162,9 @@ def trace_fn(f: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def trace_async_fn(f: Callable[..., Any]) -> Callable[..., Any]:
-    """
-    Trace async functions
+    """Trace async functions.
 
-    Example
-    ------
+    Example:
     >>> @trace_async_fn
     ... async def any_function(*args, **kwargs):
     ...     pass
@@ -181,11 +192,9 @@ def trace_async_fn(f: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def trace_method(f: Callable[..., Any]) -> Callable[..., Any]:
-    """
-    Trace synchronous methods
+    """Trace synchronous methods.
 
-    Example
-    ------
+    Example:
     >>> class AnyClass:
     ...     @trace_method
     ...     def any_method(self, *args, **kwargs):
@@ -214,11 +223,9 @@ def trace_method(f: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def trace_async_method(f: Callable[..., Any]) -> Callable[..., Any]:
-    """
-    Trace asynchronus method
+    """Trace asynchronus method.
 
-    Example
-    ------
+    Example:
     >>> class AnyClass:
     ...     @trace_async_method
     ...     async def any_method(self, *args, **kwargs):
@@ -247,11 +254,9 @@ def trace_async_method(f: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def trace_classmethod(f: Callable[..., Any]) -> Callable[..., Any]:
-    """
-    Trace synchronous class method
+    """Trace synchronous class method.
 
-    Example
-    ------
+    Example:
     >>> class AnyClass:
     ...     @classmethod
     ...     @trace_classmethod
@@ -261,7 +266,7 @@ def trace_classmethod(f: Callable[..., Any]) -> Callable[..., Any]:
     """
     if inspect.iscoroutinefunction(f):
         raise IsAwaitable(
-            f"{f.__qualname__} is awaitable. Use @trace_async_classmethod decorator instead."
+            f"{f.__qualname__} is awaitable. Use @trace_async_classmethod decorator."
         )
 
     @wraps(f)
@@ -281,11 +286,9 @@ def trace_classmethod(f: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def trace_async_classmethod(f: Callable[..., Any]) -> Callable[..., Any]:
-    """
-    Trace asynchronous class method
+    """Trace asynchronous class method.
 
-    Example
-    ------
+    Example:
     >>> class AnyClass:
     ...     @classmethod
     ...     @trace_async_classmethod
@@ -295,7 +298,7 @@ def trace_async_classmethod(f: Callable[..., Any]) -> Callable[..., Any]:
     """
     if not inspect.iscoroutinefunction(f):
         raise IsNotAwaitable(
-            f"{f.__qualname__} is not awaitable. Use @trace_classmethod decorator instead."
+            f"{f.__qualname__} is not awaitable. Use @trace_classmethod decorator."
         )
 
     @wraps(f)
