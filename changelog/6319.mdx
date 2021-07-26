@@ -1,0 +1,8 @@
+- [#6319](https://github.com/RasaHQ/rasa/issues/6319): Add Prometheus `/metrics` endpoint support
+
+To enable the tracing and prometheus integrations, start a jaeger server and add the following block to your `endpoints.yml`:
+
+```yml
+prometheus:
+  enable: True
+```
