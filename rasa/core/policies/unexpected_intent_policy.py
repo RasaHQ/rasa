@@ -417,17 +417,14 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         """
         trackers_for_training = []
         for tracker in trackers:
-            user_events_contain_intents = [
-                event.intent_name is not None
-                for event in tracker.events
-                if isinstance(event, UserUttered)
-            ]
-            bot_actions_contain_labels = [
-                event.action_name is not None
-                for event in tracker.events
-                if isinstance(event, ActionExecuted)
-            ]
-            if all(user_events_contain_intents) and all(bot_actions_contain_labels):
+            tracker_compatible = True
+            for event in tracker.events:
+                if (isinstance(event, UserUttered) and event.intent_name is None) or (
+                    isinstance(event, ActionExecuted) and event.action_name is None
+                ):
+                    tracker_compatible = False
+                    break
+            if tracker_compatible:
                 trackers_for_training.append(tracker)
         return trackers_for_training
 
