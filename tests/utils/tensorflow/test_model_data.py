@@ -2,8 +2,14 @@ import copy
 
 import pytest
 import numpy as np
+import scipy.sparse
 
-from rasa.utils.tensorflow.model_data import RasaModelData
+from rasa.utils.tensorflow.model_data import FeatureArray, RasaModelData
+from rasa.utils.tensorflow.constants import (
+    SEQUENCE,
+    SENTENCE,
+    SEQUENCE_LENGTH,
+)
 
 
 def test_shuffle_session_data(model_data: RasaModelData):
@@ -180,3 +186,36 @@ def test_update_key(model_data: RasaModelData):
     assert not model_data.does_feature_exist("label", "ids")
     assert model_data.does_feature_exist("intent", "ids")
     assert "label" not in model_data.data
+
+
+@pytest.mark.parametrize("adds_lengths", [True, False])
+def test_add_length(adds_lengths: bool):
+    # create minimal example with/without sequence feature
+    type = SEQUENCE if adds_lengths else SENTENCE
+    attribute = "attribute"
+    features = [
+        scipy.sparse.csr_matrix(np.random.randint(5, size=(5, 10))),
+    ]
+    if type == SEQUENCE:
+        features = [features]
+        num_dimensions = 4
+    else:  # sentence
+        num_dimensions = 3
+    minimal_example = RasaModelData(
+        data={
+            attribute: {
+                type: [
+                    FeatureArray(
+                        np.array(features), number_of_dimensions=num_dimensions
+                    )
+                ]
+            }
+        }
+    )
+    # check whether add_lengths only adds a sequence length attribute iff a
+    # sequence attribute is present
+    minimal_example.add_lengths(attribute, SEQUENCE_LENGTH, attribute, SEQUENCE)
+    if adds_lengths:
+        assert minimal_example.does_feature_exist(attribute, SEQUENCE_LENGTH)
+    else:
+        assert minimal_example.does_feature_not_exist(attribute, SEQUENCE_LENGTH)

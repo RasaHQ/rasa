@@ -177,7 +177,7 @@ def test_extract_features():
 
 
 @pytest.mark.parametrize(
-    "text, intent, entities, attributes, real_sparse_feature_sizes",
+    "text, intent, entities, attributes, real_sparse_feature_sizes, type",
     [
         (
             "Hello!",
@@ -185,6 +185,7 @@ def test_extract_features():
             None,
             [TEXT],
             {"text": {"sequence": [1], "sentence": [1]}},
+            None,
         ),
         (
             "Hello!",
@@ -195,6 +196,15 @@ def test_extract_features():
                 "intent": {"sentence": [], "sequence": [1]},
                 "text": {"sequence": [1], "sentence": [1]},
             },
+            None,
+        ),
+        (
+            "Hello!",
+            "greet",
+            None,
+            [TEXT, INTENT],
+            {"text": {"sentence": [1]},},  # due to sentence type filter
+            SENTENCE,
         ),
         (
             "Hello Max!",
@@ -202,6 +212,7 @@ def test_extract_features():
             [{"entity": "name", "value": "Max", "start": 6, "end": 9}],
             [TEXT, ENTITIES],
             {"text": {"sequence": [2], "sentence": [2]}},
+            None,
         ),
     ],
 )
@@ -212,6 +223,7 @@ def test_convert_training_examples(
     entities: Optional[List[Dict[Text, Any]]],
     attributes: List[Text],
     real_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    type: Optional[Text],
 ):
     message = Message(data={TEXT: text, INTENT: intent, ENTITIES: entities})
 
@@ -235,7 +247,7 @@ def test_convert_training_examples(
         )
     ]
     output, sparse_feature_sizes = model_data_utils.featurize_training_examples(
-        [message], attributes=attributes, entity_tag_specs=entity_tag_spec,
+        [message], attributes=attributes, entity_tag_specs=entity_tag_spec, type=type,
     )
 
     assert len(output) == 1
@@ -243,12 +255,22 @@ def test_convert_training_examples(
         assert attribute in output[0]
     for attribute in {INTENT, TEXT, ENTITIES} - set(attributes):
         assert attribute not in output[0]
-    # we have sparse sentence, sparse sequence, dense sentence, and dense sequence
-    # features in the list
-    assert len(output[0][TEXT]) == 4
-    if INTENT in attributes:
-        # we will just have space sentence features
-        assert len(output[0][INTENT]) == 1
+    if type is None:
+        # we have sparse sentence, sparse sequence, dense sentence, and dense sequence
+        # features in the list
+        assert len(output[0][TEXT]) == 4
+        if INTENT in attributes:
+            # we will just have sparse sequence features
+            assert len(output[0][INTENT]) == 1
+    elif type == SENTENCE:
+        assert len(output[0][TEXT]) == 2
+        if INTENT in attributes:
+            # we will just have sparse sequence features - and filter them out
+            assert len(output[0][INTENT]) == 0
+    else:
+        raise NotImplementedError(
+            f"Expected None or {SENTENCE} for type but received {type}."
+        )
     if ENTITIES in attributes:
         # we will just have space sentence features
         assert len(output[0][ENTITIES]) == len(entity_tag_spec)

@@ -158,6 +158,13 @@ class FeatureArray(np.ndarray):
         self.units = state[-1]
         super(FeatureArray, self).__setstate__(state[0:-3], **kwargs)
 
+    def __str__(self) -> Text:
+        return (
+            f"{self.__class__.__name__}"
+            f"(number_of_dimensions={self.number_of_dimensions}, "
+            f"is_sparse={self.is_sparse}, units={self.units}, shape={self.shape})"
+        )
+
     # pytype: enable=attribute-error
 
     @staticmethod
@@ -264,7 +271,36 @@ class RasaModelData:
         self.label_sub_key = label_sub_key
         # should be updated when features are added
         self.num_examples = self.number_of_examples()
-        self.sparse_feature_sizes = None
+        self.sparse_feature_sizes = {}
+
+    def __str__(self) -> Text:
+        def to_str(item: Any, indent: int = 0) -> Text:
+            if item is None:
+                return "None"
+            elif isinstance(item, Dict):
+                # print all keys and run recursively on values
+                space = "  " * indent
+                item_str = "".join(
+                    f"{space}- {key} : {to_str(val, indent=indent+1)}\n"
+                    for key, val in item.items()
+                )
+                return f"\n{item_str}"
+            elif isinstance(item, List):
+                # just print the first element in this case and add "..." and
+                # the total count if there are more
+                dots = ",..." if len(item) > 1 else ""
+                count = f" ({len(item)} elements)" if len(item) > 1 else ""
+                return f"[{to_str(item[0])}{dots}]{count}" if len(item) else "[]"
+            return str(item)
+
+        return (
+            f"{self.__class__.__name__}(\n"
+            f"  label_key={repr(self.label_key)},\n"
+            f"  label_sub_key={repr(self.label_sub_key)},\n"
+            f"  data={{{to_str(self.data, indent=2)}}},\n"
+            f"  num_examples={self.num_examples},\n"
+            f"  signature={self.get_signature()})\n"
+        )
 
     def get(
         self, key: Text, sub_key: Optional[Text] = None
@@ -276,15 +312,16 @@ class RasaModelData:
             sub_key: The optional sub key.
 
         Returns:
-            The requested data.
+            Either the requested data (which can be a dictionary mapping
+            sub-keys to a list of `FeatureArray`s or just a list of
+            `FeatureArray`s in case there is no subkey), or
+            an empty list in case the requested data cannot be found
         """
-        if sub_key is None and key in self.data:
-            return self.data[key]
-
-        if sub_key and key in self.data and sub_key in self.data[key]:
-            return self.data[key][sub_key]
-
-        return []
+        default = []
+        if sub_key is None:
+            return self.data.get(key, default)
+        else:
+            return self.data.get(key, {}).get(sub_key, default)
 
     def items(self) -> ItemsView:
         """Return the items of the data attribute.
@@ -741,7 +778,7 @@ class RasaModelData:
                 if min(num_data_cycles) > 0:
                     break
 
-        final_data = defaultdict(lambda: defaultdict(list))
+        final_data: Data = defaultdict(lambda: defaultdict(list))
         for key, attribute_data in new_data.items():
             for sub_key, features in attribute_data.items():
                 for f in features:
@@ -789,7 +826,7 @@ class RasaModelData:
         Returns:
             The filtered data
         """
-        new_data = defaultdict(lambda: defaultdict(list))
+        new_data: Data = defaultdict(lambda: defaultdict(list))
 
         if data is None:
             return new_data

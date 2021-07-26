@@ -8,7 +8,6 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import rasa.model
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.shared.nlu.training_data.features import Features
 import rasa.nlu.train
 from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.nlu.config import RasaNLUModelConfig
@@ -50,21 +49,15 @@ from rasa.utils.tensorflow.model_data_utils import FeatureArray
 
 
 def test_compute_default_label_features():
-    label_features = [
-        Message(data={TEXT: "test a"}),
-        Message(data={TEXT: "test b"}),
-        Message(data={TEXT: "test c"}),
-        Message(data={TEXT: "test d"}),
-    ]
-
-    output = DIETClassifier._compute_default_label_features(label_features)
+    num_labels = 4
+    output = DIETClassifier._compute_default_label_features(num_labels=num_labels)
 
     output = output[0]
 
     for i, o in enumerate(output):
         assert isinstance(o, np.ndarray)
         assert o[0][i] == 1
-        assert o.shape == (1, len(label_features))
+        assert o.shape == (1, num_labels)
 
 
 def get_checkpoint_dir_path(path: Path, model_dir: Path) -> Path:
@@ -79,59 +72,6 @@ def get_checkpoint_dir_path(path: Path, model_dir: Path) -> Path:
 
     """
     return path / model_dir / "checkpoints"
-
-
-@pytest.mark.parametrize(
-    "messages, expected",
-    [
-        (
-            [
-                Message(
-                    data={TEXT: "test a"},
-                    features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
-                    ],
-                ),
-                Message(
-                    data={TEXT: "test b"},
-                    features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, TEXT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, TEXT, "test"),
-                    ],
-                ),
-            ],
-            True,
-        ),
-        (
-            [
-                Message(
-                    data={TEXT: "test a"},
-                    features=[
-                        Features(np.zeros(1), FEATURE_TYPE_SEQUENCE, INTENT, "test"),
-                        Features(np.zeros(1), FEATURE_TYPE_SENTENCE, INTENT, "test"),
-                    ],
-                )
-            ],
-            False,
-        ),
-        (
-            [
-                Message(
-                    data={TEXT: "test a"},
-                    features=[
-                        Features(np.zeros(2), FEATURE_TYPE_SEQUENCE, INTENT, "test")
-                    ],
-                )
-            ],
-            False,
-        ),
-    ],
-)
-def test_check_labels_features_exist(messages, expected):
-    attribute = TEXT
-    classifier = DIETClassifier()
-    assert classifier._check_labels_features_exist(messages, attribute) == expected
 
 
 @pytest.mark.parametrize(
@@ -789,37 +729,6 @@ async def test_process_gives_diagnostic_data(
     assert isinstance(diagnostic_data[name].get("attention_weights"), np.ndarray)
     assert "text_transformed" in diagnostic_data[name]
     assert isinstance(diagnostic_data[name].get("text_transformed"), np.ndarray)
-
-
-@pytest.mark.parametrize(
-    "initial_sparse_feature_sizes, final_sparse_feature_sizes, label_attribute",
-    [
-        (
-            {
-                TEXT: {FEATURE_TYPE_SEQUENCE: [10], FEATURE_TYPE_SENTENCE: [20]},
-                INTENT: {FEATURE_TYPE_SEQUENCE: [5], FEATURE_TYPE_SENTENCE: []},
-            },
-            {TEXT: {FEATURE_TYPE_SEQUENCE: [10], FEATURE_TYPE_SENTENCE: [20]}},
-            INTENT,
-        ),
-        (
-            {TEXT: {FEATURE_TYPE_SEQUENCE: [10], FEATURE_TYPE_SENTENCE: [20]}},
-            {TEXT: {FEATURE_TYPE_SEQUENCE: [10], FEATURE_TYPE_SENTENCE: [20]}},
-            INTENT,
-        ),
-    ],
-)
-def test_removing_label_sparse_feature_sizes(
-    initial_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
-    final_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
-    label_attribute: Text,
-):
-    """Tests if label attribute is removed from sparse feature sizes collection."""
-    sparse_feature_sizes = DIETClassifier._remove_label_sparse_feature_sizes(
-        sparse_feature_sizes=initial_sparse_feature_sizes,
-        label_attribute=label_attribute,
-    )
-    assert sparse_feature_sizes == final_sparse_feature_sizes
 
 
 @pytest.mark.timeout(120)

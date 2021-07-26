@@ -3,11 +3,11 @@ import copy
 import numpy as np
 import scipy.sparse
 from collections import defaultdict, OrderedDict
-from typing import List, Optional, Text, Dict, Tuple, Union, Any
+from typing import List, Optional, Text, Dict, Tuple, Union, Any, DefaultDict
 
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.utils.tensorflow.model_data import Data, FeatureArray
-from rasa.utils.tensorflow.constants import MASK, IDS
+from rasa.utils.tensorflow.constants import MASK, IDS, SENTENCE, SEQUENCE
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -30,6 +30,7 @@ def featurize_training_examples(
     entity_tag_specs: Optional[List["EntityTagSpec"]] = None,
     featurizers: Optional[List[Text]] = None,
     bilou_tagging: bool = False,
+    type: Optional[Text] = None,
 ) -> Tuple[List[Dict[Text, List["Features"]]], Dict[Text, Dict[Text, List[int]]]]:
     """Converts training data into a list of attribute to features.
 
@@ -41,6 +42,8 @@ def featurize_training_examples(
     Args:
         training_examples: the list of training examples
         attributes: the attributes to consider
+        type: feature type to consider; if set to None all types
+          (i.e. sequence and sentence) will be considered
         entity_tag_specs: the entity specs
         featurizers: the featurizers to consider
         bilou_tagging: indicates whether BILOU tagging should be used or not
@@ -49,6 +52,8 @@ def featurize_training_examples(
         A list of attribute to features.
         A dictionary of attribute to feature sizes.
     """
+    if (type is not None) and (type not in [SEQUENCE, SENTENCE]):
+        raise ValueError(f"Unknown type {type}")
     output = []
 
     for example in training_examples:
@@ -61,18 +66,23 @@ def featurize_training_examples(
                     attribute_to_features[attribute].append(
                         get_tag_ids(example, tag_spec, bilou_tagging)
                     )
+
             elif attribute in example.data:
                 attribute_to_features[attribute] = example.get_all_features(
                     attribute, featurizers
                 )
+            if type:  # filter results by type
+                attribute_to_features[attribute] = [
+                    f for f in attribute_to_features[attribute] if f.type == type
+                ]
         output.append(attribute_to_features)
-
     sparse_feature_sizes = {}
     if output and training_examples:
         sparse_feature_sizes = _collect_sparse_feature_sizes(
             featurized_example=output[0],
             training_example=training_examples[0],
             featurizers=featurizers,
+            type=type,
         )
     return output, sparse_feature_sizes
 
@@ -81,6 +91,7 @@ def _collect_sparse_feature_sizes(
     featurized_example: Dict[Text, List["Features"]],
     training_example: Message,
     featurizers: Optional[List[Text]] = None,
+    type: Optional[Text] = None,
 ) -> Dict[Text, Dict[Text, List[int]]]:
     """Collects sparse feature sizes for all attributes that have sparse features.
 
@@ -91,10 +102,14 @@ def _collect_sparse_feature_sizes(
         featurized_example: a featurized example
         training_example: a training example
         featurizers: the featurizers to consider
+        type: the feature type to consider; if set to None, all types will be
+          considered
 
     Returns:
         A dictionary of attribute to feature sizes.
     """
+    if (type is not None) and (type not in [SEQUENCE, SENTENCE]):
+        raise ValueError(f"Unknown type {type}")
     sparse_feature_sizes = {}
     sparse_attributes = []
     for attribute, features in featurized_example.items():
@@ -104,6 +119,12 @@ def _collect_sparse_feature_sizes(
         sparse_feature_sizes[attribute] = training_example.get_sparse_feature_sizes(
             attribute=attribute, featurizers=featurizers
         )
+        if type:  # filter results by type
+            sparse_feature_sizes[attribute] = {
+                key: val
+                for key, val in sparse_feature_sizes[attribute].items()
+                if key == type
+            }
     return sparse_feature_sizes
 
 
@@ -141,7 +162,7 @@ def get_tag_ids(
 def _surface_attributes(
     features: List[List[Dict[Text, List["Features"]]]],
     featurizers: Optional[List[Text]] = None,
-) -> Dict[Text, List[List[List["Features"]]]]:
+) -> DefaultDict[Text, List[List[Optional[List["Features"]]]]]:
     """Restructure the input.
 
     "features" can, for example, be a dictionary of attributes (INTENT,
@@ -171,20 +192,21 @@ def _surface_attributes(
     )
 
     output = defaultdict(list)
-
     for list_of_attribute_to_features in features:
         intermediate_features = defaultdict(list)
         for attribute_to_features in list_of_attribute_to_features:
             for attribute in attributes:
-                features = attribute_to_features.get(attribute)
+                attribute_features = attribute_to_features.get(attribute)
                 if featurizers:
-                    features = _filter_features(features, featurizers)
+                    attribute_features = _filter_features(
+                        attribute_features, featurizers
+                    )
 
                 # if attribute is not present in the example, populate it with None
-                intermediate_features[attribute].append(features)
+                intermediate_features[attribute].append(attribute_features)
 
-        for key, value in intermediate_features.items():
-            output[key].append(value)
+        for key, collection_of_feature_collections in intermediate_features.items():
+            output[key].append(collection_of_feature_collections)
 
     return output
 

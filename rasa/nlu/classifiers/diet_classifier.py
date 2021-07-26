@@ -1,6 +1,5 @@
 import copy
 import logging
-from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -8,7 +7,7 @@ import os
 import scipy.sparse
 import tensorflow as tf
 
-from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
+from typing import Any, Dict, List, Optional, Text, Tuple, TypeVar, Union, Type
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
@@ -22,6 +21,7 @@ from rasa.nlu.classifiers import LABEL_RANKING_LENGTH
 from rasa.utils import train_utils
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
+from rasa.utils.tensorflow import model_data_utils
 from rasa.utils.tensorflow.model_data import (
     RasaModelData,
     FeatureSignature,
@@ -31,13 +31,13 @@ from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
-    INTENT_RESPONSE_KEY,
     ENTITIES,
     ENTITY_ATTRIBUTE_TYPE,
     ENTITY_ATTRIBUTE_GROUP,
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
+    FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.exceptions import InvalidConfigException
@@ -257,7 +257,40 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         MODEL_CONFIDENCE: SOFTMAX,
     }
 
-    # init helpers
+    def _check_and_autocorrect_component_config(self) -> None:
+
+        # auto correct general settings in the component config via train_utils
+        self.component_config = train_utils.check_deprecated_options(
+            self.component_config
+        )
+        self.component_config = train_utils.update_confidence_type(
+            self.component_config
+        )
+        self.component_config = train_utils.update_deprecated_loss_type(
+            self.component_config
+        )
+        self.component_config = train_utils.update_deprecated_sparsity_to_density(
+            self.component_config
+        )
+        self.component_config = train_utils.update_similarity_type(
+            self.component_config
+        )
+
+        # validation of general settings
+        # Note: This needs to happen before next check because the
+        # next check would set CHECKPOINT_MODEL to False and hence we'd end up
+        # with a silent fail of checkpointing.
+        train_utils.validate_configuration_settings(self.component_config)
+
+        # convert `EVAL_NUM_EPOCHS == -1` to actual number
+        self.component_config = train_utils.update_evaluation_parameters(
+            self.component_config
+        )
+
+        # sanity checks for architecture
+        self._check_masked_lm()
+        self._check_share_hidden_layers_sizes()
+
     def _check_masked_lm(self) -> None:
         if (
             self.component_config[MASKED_LM]
@@ -286,38 +319,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     f"{HIDDEN_LAYERS_SIZES} must coincide."
                 )
 
-    def _check_config_parameters(self) -> None:
-        self.component_config = train_utils.check_deprecated_options(
-            self.component_config
-        )
-
-        self._check_masked_lm()
-        self._check_share_hidden_layers_sizes()
-
-        self.component_config = train_utils.update_confidence_type(
-            self.component_config
-        )
-
-        train_utils.validate_configuration_settings(self.component_config)
-
-        self.component_config = train_utils.update_deprecated_loss_type(
-            self.component_config
-        )
-
-        self.component_config = train_utils.update_deprecated_sparsity_to_density(
-            self.component_config
-        )
-
-        self.component_config = train_utils.update_similarity_type(
-            self.component_config
-        )
-        self.component_config = train_utils.update_evaluation_parameters(
-            self.component_config
-        )
-
     # package safety checks
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Returns the required python packages."""
         return ["tensorflow"]
 
     def __init__(
@@ -337,8 +342,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             )
 
         super().__init__(component_config)
+        self._check_and_autocorrect_component_config()
 
-        self._check_config_parameters()
+        self.label_attribute = (
+            INTENT if self.component_config[INTENT_CLASSIFICATION] else None
+        )
 
         # transform numbers to labels
         self.index_label_id_mapping = index_label_id_mapping or {}
@@ -388,7 +396,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         training_data: TrainingData, attribute: Text
     ) -> Dict[Text, int]:
         """Create label_id dictionary."""
-
         distinct_label_ids = {
             example.get(attribute) for example in training_data.intent_examples
         } - {None}
@@ -404,7 +411,6 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self, training_data: TrainingData
     ) -> List[EntityTagSpec]:
         """Create entity tag specifications with their respective tag id mappings."""
-
         _tag_specs = []
 
         for tag_name in POSSIBLE_TAGS:
@@ -455,37 +461,51 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return tag_id_dict
 
-    @staticmethod
-    def _find_example_for_label(
-        label: Text, examples: List[Message], attribute: Text
-    ) -> Optional[Message]:
-        for ex in examples:
-            if ex.get(attribute) == label:
-                return ex
-        return None
+    def _uses_sequence_features_for_text(self) -> bool:
+        """Whether we need sequence features for the TEXT attribute.
 
-    def _check_labels_features_exist(
-        self, labels_example: List[Message], attribute: Text
-    ) -> bool:
-        """Checks if all labels have features set."""
-
-        return all(
-            label_example.features_present(
-                attribute, self.component_config[FEATURIZERS]
-            )
-            for label_example in labels_example
+        Note that, for prediction of some label attribute, the DIETClassifier
+        can make use of sequence features even if the number of
+        transformer layers is 0 because for that it creates a BOW representation
+        by simply summing over sequence+sentence features.
+        """
+        return (
+            self.component_config[NUM_TRANSFORMER_LAYERS] > 0
+            or self.component_config[ENTITY_RECOGNITION]
+            or self.label_attribute is not None
         )
 
-    def _extract_features(
-        self, message: Message, attribute: Text
-    ) -> Dict[Text, Union[scipy.sparse.spmatrix, np.ndarray]]:
+    def _needs_sentence_features_for_labels(self) -> bool:
+        """Whether we expect/require sentence level features for the label attribute.
 
+        For the DIETClassifier, we don't because DIET uses a BOW representation for
+        it's final prediction which is obtained by simply summing over
+        sequence+sentence features.
+        """
+        return False
+
+    def _extract_features_from_message(
+        self,
+        message: Message,
+        attribute: Text,
+        featurizers: Optional[List[Text]] = None,
+    ) -> Dict[Tuple[Text, Text], Union[scipy.sparse.spmatrix, np.ndarray]]:
+        """Extracts and combines features from the given messages.
+
+        Args:
+           message: any message
+           attribute: attribute for which features should be collected
+           featurizers: the list of featurizers to consider
+        Returns:
+           a dictionary mapping keys that take the form
+          `([SPARSE|DENSE],[SEQUENCE|SENTENCE])' to a sparse or dense matrix
+        """
         (
             sparse_sequence_features,
             sparse_sentence_features,
-        ) = message.get_sparse_features(attribute, self.component_config[FEATURIZERS])
+        ) = message.get_sparse_features(attribute, featurizers)
         dense_sequence_features, dense_sentence_features = message.get_dense_features(
-            attribute, self.component_config[FEATURIZERS]
+            attribute, featurizers
         )
 
         if dense_sequence_features is not None and sparse_sequence_features is not None:
@@ -509,28 +529,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     f"for attribute '{attribute}'."
                 )
 
-        # If we don't use the transformer and we don't want to do entity recognition,
-        # to speed up training take only the sentence features as feature vector.
-        # We would not make use of the sequence anyway in this setup. Carrying over
-        # those features to the actual training process takes quite some time.
-        if (
-            self.component_config[NUM_TRANSFORMER_LAYERS] == 0
-            and not self.component_config[ENTITY_RECOGNITION]
-            and attribute not in [INTENT, INTENT_RESPONSE_KEY]
-        ):
-            sparse_sequence_features = None
-            dense_sequence_features = None
-
         out = {}
-
         if sparse_sentence_features is not None:
-            out[f"{SPARSE}_{SENTENCE}"] = sparse_sentence_features.features
+            out[(SPARSE, SENTENCE)] = sparse_sentence_features.features
         if sparse_sequence_features is not None:
-            out[f"{SPARSE}_{SEQUENCE}"] = sparse_sequence_features.features
+            out[(SPARSE, SEQUENCE)] = sparse_sequence_features.features
         if dense_sentence_features is not None:
-            out[f"{DENSE}_{SENTENCE}"] = dense_sentence_features.features
+            out[(DENSE, SENTENCE)] = dense_sentence_features.features
         if dense_sequence_features is not None:
-            out[f"{DENSE}_{SEQUENCE}"] = dense_sequence_features.features
+            out[(DENSE, SEQUENCE)] = dense_sequence_features.features
 
         return out
 
@@ -550,37 +557,67 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                     "must coincide. Check the output dimensions of previous components."
                 )
 
-    def _extract_labels_precomputed_features(
-        self, label_examples: List[Message], attribute: Text = INTENT
+    def _extract_features_from_all_messages(
+        self,
+        messages: List[Message],
+        attribute: Text = INTENT,
+        type: Optional[Text] = None,
+        featurizers: Optional[List[Text]] = None,
     ) -> Tuple[List[FeatureArray], List[FeatureArray]]:
-        """Collects precomputed encodings."""
-        features = defaultdict(list)
+        """Collects and combines the attribute related features from all messages.
 
-        for e in label_examples:
-            label_features = self._extract_features(e, attribute)
-            for feature_key, feature_value in label_features.items():
-                features[feature_key].append(feature_value)
+        Args:
+            messages: list of messages to extract features from
+            attribute: the only attribute which will be considered
+            type: if not None, the other type (sentence/sequence) will be ignored
+            featurizers: the featurizers to be considered
+        Returns:
+            Sequence level features and sentence level features. Each feature contains
+            FeatureArrays with sparse features first.
+        """
+        if (type is not None) and (type not in [SENTENCE, SEQUENCE]):
+            raise ValueError(f"Unknown type {type}")
+        # for each label_example, collect sparse and dense feature (matrices) in lists
+        collected_features: Dict[
+            Tuple[Text, Text], List[Union[np.ndarray, scipy.sparse.spmatrix]]
+        ] = dict()
+        for msg in messages:
+            type_level_to_feature = self._extract_features_from_message(
+                message=msg, attribute=attribute, featurizers=featurizers,
+            )
+            for (feat_type, feat_lvl), feat_mat in type_level_to_feature.items():
+                if feat_lvl not in [SEQUENCE, SENTENCE]:
+                    raise ValueError(f"Unknown type {feat_lvl}")
+                if (type is None) or (type == feat_lvl):
+                    collected_features.setdefault((feat_type, feat_lvl), []).append(
+                        feat_mat
+                    )
+
+        # finally wrap the lists of feature_matrices into FeatureArrays
+        # and collect the resulting arrays in one list per type:
         sequence_features = []
         sentence_features = []
-        for feature_name, feature_value in features.items():
-            if SEQUENCE in feature_name:
-                sequence_features.append(
-                    FeatureArray(np.array(feature_value), number_of_dimensions=3)
-                )
-            else:
-                sentence_features.append(
-                    FeatureArray(np.array(feature_value), number_of_dimensions=3)
-                )
+        for level, collection in [
+            (SEQUENCE, sequence_features),
+            (SENTENCE, sentence_features),
+        ]:
+            for type in [SPARSE, DENSE]:
+                # Note: the for loops make the order explicit, which would
+                # otherwise (i.e. iteration over collected_features) depend on
+                # insertion order inside _extract_features
+                list_of_matrices = collected_features.get((type, level), None)
+                if list_of_matrices:
+                    collection.append(
+                        FeatureArray(np.array(list_of_matrices), number_of_dimensions=3)
+                    )
         return sequence_features, sentence_features
 
     @staticmethod
-    def _compute_default_label_features(
-        labels_example: List[Message],
-    ) -> List[FeatureArray]:
+    def _compute_default_label_features(num_labels: int) -> List[FeatureArray]:
         """Computes one-hot representation for the labels."""
         logger.debug("No label features found. Computing default label features.")
 
-        eye_matrix = np.eye(len(labels_example), dtype=np.float32)
+        eye_matrix = np.eye(num_labels, dtype=np.float32)
         # add sequence dimension to one-hot labels
         return [
             FeatureArray(
@@ -590,56 +627,111 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         ]
 
     def _create_label_data(
-        self,
-        training_data: TrainingData,
-        label_id_dict: Dict[Text, int],
-        attribute: Text,
+        self, training_data: TrainingData, label_id_dict: Dict[Text, int],
     ) -> RasaModelData:
-        """Create matrix with label_ids encoded in rows as bag of words.
+        """Creates a rasa data model that represents the specified labels.
 
-        Find a training example for each label and get the encoded features
-        from the corresponding Message object.
-        If the features are already computed, fetch them from the message object
-        else compute a one hot encoding for the label as the feature vector.
+        First, this method extracts **one** training example for each label.
+        If all of these training examples contain at least one feature, then this
+        method just extracts these. Otherwise, it computes one-hot encodings
+        which serve as sentence level features.
+
+        Note that, if and only if sequence level features have been extracted, a
+        SEQUENCE_LENGTH key will be added under the LABEL key.
+
+        Moreover, FeatureArrays containing the corresponding label ids will be added
+        with subkey ID.
+
+        Args:
+            training_data: a training data object holding messages
+            label_attribute: the message attribute which corresponds to the label
+            label_id_dict: a dictionary mapping all relevant labels to some index
+
+        Returns:
+            a RasaDataModel that contains, for each kind of feature (see above),
+            list with one `FeatureArray` per label
+
+        Raises:
+            a ValueError if some label does not
         """
-        # Collect one example for each label
-        labels_idx_examples = []
-        for label_name, idx in label_id_dict.items():
-            label_example = self._find_example_for_label(
-                label_name, training_data.intent_examples, attribute
+        # Collect one example message for each label
+        labelidx_message_tuples = []
+        debug_unsupported_labels = set()
+        for label_name, label_idx in label_id_dict.items():
+            message = next(
+                (
+                    message
+                    for message in training_data.intent_examples
+                    if message.get(self.label_attribute) == label_name
+                ),
+                None,
             )
-            labels_idx_examples.append((idx, label_example))
+            if message is None:
+                debug_unsupported_labels.update([label_name])
+            labelidx_message_tuples.append((label_idx, message))
 
-        # Sort the list of tuples based on label_idx
-        labels_idx_examples = sorted(labels_idx_examples, key=lambda x: x[0])
-        labels_example = [example for (_, example) in labels_idx_examples]
+        if len(debug_unsupported_labels):
+            raise ValueError(
+                "Expected at least one example for each label "
+                "in the given training_data but could not find "
+                f"any example(s) for {sorted(debug_unsupported_labels)}."
+            )
+
+        # Sort the list of tuples based on the label_idx
+        labelidx_message_tuples = sorted(labelidx_message_tuples, key=lambda x: x[0])
+
+        # Extract the (aligned sequences of) label indices and messages
+        sorted_labelidx = np.array([idx for (idx, _) in labelidx_message_tuples])
+        sorted_messages = [example for (_, example) in labelidx_message_tuples]
+
         # Collect features, precomputed if they exist, else compute on the fly
-        if self._check_labels_features_exist(labels_example, attribute):
+        sequence_features, sentence_features = None, None
+        # Does any message contain features for the label attribute?
+        if all(
+            message.features_present(
+                attribute=self.label_attribute,
+                featurizers=self.component_config[FEATURIZERS],
+            )
+            for message in sorted_messages
+        ):
             (
                 sequence_features,
                 sentence_features,
-            ) = self._extract_labels_precomputed_features(labels_example, attribute)
-        else:
+            ) = self._extract_features_from_all_messages(
+                messages=sorted_messages,
+                attribute=self.label_attribute,
+                featurizers=self.component_config[FEATURIZERS],
+            )
+
+        if not sentence_features and (
+            not sequence_features or self._needs_sentence_features_for_labels()
+        ):
+
+            if (
+                sequence_features
+                and not sentence_features
+                and self._needs_sentence_features_for_labels()
+            ):
+                rasa.shared.io.utils.raise_warning(
+                    f"Expected sentence level features but only received "
+                    f"sequence level features for {self.label_attribute}. "
+                    f"Falling back to using default one-hot embedding vectors. "
+                )
             sequence_features = None
-            sentence_features = self._compute_default_label_features(labels_example)
+            sentence_features = self._compute_default_label_features(
+                num_labels=len(label_id_dict)
+            )
 
         label_data = RasaModelData()
         label_data.add_features(LABEL, SEQUENCE, sequence_features)
         label_data.add_features(LABEL, SENTENCE, sentence_features)
-        if label_data.does_feature_not_exist(
-            LABEL, SENTENCE
-        ) and label_data.does_feature_not_exist(LABEL, SEQUENCE):
-            raise ValueError(
-                "No label features are present. Please check your configuration file."
-            )
 
-        label_ids = np.array([idx for (idx, _) in labels_idx_examples])
         # explicitly add last dimension to label_ids
         # to track correctly dynamic sequences
         label_data.add_features(
             LABEL_KEY,
             LABEL_SUB_KEY,
-            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+            [FeatureArray(np.expand_dims(sorted_labelidx, -1), number_of_dimensions=2)],
         )
 
         label_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
@@ -647,6 +739,22 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return label_data
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[FeatureArray]:
+        """Grabs the pre-computed sentence level default features for the LABEL key.
+
+        In case that no features had been present during training for
+        the label key, these sentence level default features are the one-hot
+        features that have been computed via `_compute_default_label_features`.
+
+        Otherwise, this function will return some precomputed features
+        that have been present for the LABEL key in training data during
+        training.
+
+        Args:
+          label_ids: an int array respresenting label IDs
+
+        Returns:
+          The `SENTENCE`-level features.
+        """
         feature_arrays: List[FeatureArray] = self._label_data.get(LABEL, SENTENCE)
         all_label_features = feature_arrays[0]
         return [
@@ -658,68 +766,140 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _create_model_data(
         self,
-        training_data: List[Message],
-        label_id_dict: Optional[Dict[Text, int]] = None,
-        label_attribute: Optional[Text] = None,
+        messages: List[Message],
+        *,
         training: bool = True,
+        label_id_dict: Optional[Dict[Text, int]] = None,
     ) -> RasaModelData:
-        """Prepare data for training and create a RasaModelData object."""
-        from rasa.utils.tensorflow import model_data_utils
+        """Prepare data for training and create a RasaModelData object.
 
-        attributes_to_consider = [TEXT]
-        if training and self.component_config[INTENT_CLASSIFICATION]:
-            # we don't have any intent labels during prediction, just add them during
-            # training
-            attributes_to_consider.append(label_attribute)
-        if (
-            training
-            and self.component_config[ENTITY_RECOGNITION]
-            and self._entity_tag_specs
-        ):
-            # Add entities as labels only during training and only if there was
-            # training data added for entities with DIET configured to predict entities.
-            attributes_to_consider.append(ENTITIES)
+        Args:
+          messages: The messages to be turned into a RasaModelData
+          training: whether we're in training mode and should add label data
+          label_id_dict: A mapping from labels to label ids that is
+            only required for label data creation (i.e. if `training` is set to `True`)
+        """
+        if training:
+            if label_id_dict is None:
+                raise ValueError("Expected some label id mapping.")
+            if self._label_data is None:
+                raise ValueError("Expected a RasaDataModel containing label data ")
 
-        if training and label_attribute is not None:
+        if training:
             # only use those training examples that have the label_attribute set
-            # during training
-            training_data = [
-                example for example in training_data if label_attribute in example.data
+            messages = [
+                example for example in messages if self.label_attribute in example.data
             ]
 
-        if not training_data:
+        if not messages:
             # no training data are present to train
             return RasaModelData()
 
+        # collect all features for the text input first
         (
-            features_for_examples,
+            features,
             sparse_feature_sizes,
         ) = model_data_utils.featurize_training_examples(
-            training_data,
-            attributes_to_consider,
+            messages,
+            [TEXT],
             entity_tag_specs=self._entity_tag_specs,
             featurizers=self.component_config[FEATURIZERS],
             bilou_tagging=self.component_config[BILOU_FLAG],
-        )
-        attribute_data, _ = model_data_utils.convert_to_data_format(
-            features_for_examples, consider_dialogue_dimension=False
+            type=(
+                None
+                if self._uses_sequence_features_for_text()
+                else FEATURE_TYPE_SENTENCE
+            ),
         )
 
+        if not self._uses_sequence_features_for_text() and all(
+            not feats[TEXT] for feats in features
+        ):
+            rasa.shared.utils.io.raise_warning(
+                "Expected sentence level features for TEXT. "
+                "Falling back to empty input sequences."
+            )
+
+        if training:
+            # collect features for the labels next
+
+            labels_to_consider = []
+            if self.label_attribute is not None:
+                labels_to_consider.append(self.label_attribute)
+            if self.component_config[ENTITY_RECOGNITION] and self._entity_tag_specs:
+                # Add entities as labels only during training and only if there was
+                # training data added for entities with DIET configured to predict
+                # entities.
+                labels_to_consider.append(ENTITIES)
+
+            (
+                features_for_labels,
+                sparse_feature_sizes_for_labels,
+            ) = model_data_utils.featurize_training_examples(
+                messages,
+                attributes=labels_to_consider,
+                entity_tag_specs=self._entity_tag_specs,
+                featurizers=self.component_config[FEATURIZERS],
+                bilou_tagging=self.component_config[BILOU_FLAG],
+            )
+
+            # add the label features to the text features
+            for feats_txt, feats_lbl in zip(features, features_for_labels):
+                feats_txt.update(feats_lbl)
+            sparse_feature_sizes.update(sparse_feature_sizes_for_labels)
+
+        # create one RasaModelData containing features for text and labels
+
+        attribute_data, _ = model_data_utils.convert_to_data_format(
+            features, consider_dialogue_dimension=False
+        )
         model_data = RasaModelData(
-            label_key=self.label_key, label_sub_key=self.label_sub_key
+            label_key=self.label_key, label_sub_key=self.label_sub_key,
         )
         model_data.add_data(attribute_data)
+        # Note: the following will only add a sequence length if SEQUENCE sub_key exists
         model_data.add_lengths(TEXT, SEQUENCE_LENGTH, TEXT, SEQUENCE)
         # Current implementation doesn't yet account for updating sparse
         # feature sizes of label attributes. That's why we remove them.
-        sparse_feature_sizes = self._remove_label_sparse_feature_sizes(
-            sparse_feature_sizes=sparse_feature_sizes, label_attribute=label_attribute
-        )
+        sparse_feature_sizes.pop(self.label_attribute, None)
         model_data.add_sparse_feature_sizes(sparse_feature_sizes)
 
-        self._add_label_features(
-            model_data, training_data, label_attribute, label_id_dict, training
-        )
+        # finalize the label features
+        if training and self.label_attribute is not None:
+
+            label_ids = self._add_label_id_features(model_data, messages, label_id_dict)
+
+            # If *no* label features have been found before, then we load the default
+            # label features that should've been computed by an `_create_label_data`.
+            sentence_missing = model_data.does_feature_not_exist(
+                self.label_attribute, SENTENCE
+            )
+            sequence_missing = model_data.does_feature_not_exist(
+                self.label_attribute, SEQUENCE
+            )
+            needs_sentence = self._needs_sentence_features_for_labels()
+            if sentence_missing and (needs_sentence or sequence_missing):
+                if (not sequence_missing) and sentence_missing and needs_sentence:
+                    rasa.shared.io.utils.raise_warning(
+                        f"Expected sentence level features but only received "
+                        f"sequence level features for {self.label_attribute}. "
+                        f"Falling back to using default one-hot embedding vectors. "
+                    )
+                # no label features are present, get default features from _label_data
+                model_data.add_features(
+                    LABEL_KEY,
+                    SENTENCE,
+                    self._use_default_label_features(np.array(label_ids)),
+                )
+
+            # As label_attribute can have different values, e.g. INTENT or RESPONSE,
+            # copy over the features to the LABEL key to make
+            # it easier to access the label features inside the model itself.
+            # Note that update_key doesn't update any keys that aren't there.
+            for subkey in [SENTENCE, SEQUENCE_LENGTH, MASK, SEQUENCE]:
+                model_data.update_key(self.label_attribute, subkey, LABEL_KEY, subkey)
+
+        model_data.add_lengths(LABEL_KEY, SEQUENCE_LENGTH, LABEL_KEY, SEQUENCE)
 
         # make sure all keys are in the same order during training and prediction
         # as we rely on the order of key and sub-key when constructing the actual
@@ -728,55 +908,25 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return model_data
 
-    @staticmethod
-    def _remove_label_sparse_feature_sizes(
-        sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
-        label_attribute: Optional[Text] = None,
-    ) -> Dict[Text, Dict[Text, List[int]]]:
-
-        if label_attribute in sparse_feature_sizes:
-            del sparse_feature_sizes[label_attribute]
-        return sparse_feature_sizes
-
-    def _add_label_features(
+    def _add_label_id_features(
         self,
         model_data: RasaModelData,
-        training_data: List[Message],
-        label_attribute: Text,
+        messages: List[Message],
         label_id_dict: Dict[Text, int],
-        training: bool = True,
-    ) -> None:
+    ) -> List[int]:
         label_ids = []
-        if training and self.component_config[INTENT_CLASSIFICATION]:
-            for example in training_data:
-                if example.get(label_attribute):
-                    label_ids.append(label_id_dict[example.get(label_attribute)])
-            # explicitly add last dimension to label_ids
-            # to track correctly dynamic sequences
-            model_data.add_features(
-                LABEL_KEY,
-                LABEL_SUB_KEY,
-                [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
-            )
+        for example in messages:
+            if example.get(self.label_attribute):
+                label_ids.append(label_id_dict[example.get(self.label_attribute)])
 
-        if (
-            label_attribute
-            and model_data.does_feature_not_exist(label_attribute, SENTENCE)
-            and model_data.does_feature_not_exist(label_attribute, SEQUENCE)
-        ):
-            # no label features are present, get default features from _label_data
-            model_data.add_features(
-                LABEL, SENTENCE, self._use_default_label_features(np.array(label_ids))
-            )
-
-        # as label_attribute can have different values, e.g. INTENT or RESPONSE,
-        # copy over the features to the LABEL key to make
-        # it easier to access the label features inside the model itself
-        model_data.update_key(label_attribute, SENTENCE, LABEL, SENTENCE)
-        model_data.update_key(label_attribute, SEQUENCE, LABEL, SEQUENCE)
-        model_data.update_key(label_attribute, MASK, LABEL, MASK)
-
-        model_data.add_lengths(LABEL, SEQUENCE_LENGTH, LABEL, SEQUENCE)
+        # explicitly add last dimension to label_ids
+        # to track correctly dynamic sequences
+        model_data.add_features(
+            LABEL_KEY,
+            LABEL_SUB_KEY,
+            [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
+        )
+        return label_ids
 
     # train helpers
     def preprocess_train_data(self, training_data: TrainingData) -> RasaModelData:
@@ -788,7 +938,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             bilou_utils.apply_bilou_schema(training_data)
 
         label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=INTENT
+            training_data, attribute=self.label_attribute
         )
 
         if not label_id_index_mapping:
@@ -798,18 +948,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
 
         self._label_data = self._create_label_data(
-            training_data, label_id_index_mapping, attribute=INTENT
+            training_data, label_id_index_mapping,
         )
 
         self._entity_tag_specs = self._create_entity_tag_specs(training_data)
 
-        label_attribute = (
-            INTENT if self.component_config[INTENT_CLASSIFICATION] else None
-        )
         model_data = self._create_model_data(
             training_data.nlu_examples,
-            label_id_index_mapping,
-            label_attribute=label_attribute,
+            label_id_dict=label_id_index_mapping,
+            training=True,
         )
 
         self._check_input_dimension_consistency(model_data)
@@ -1046,16 +1193,18 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return {"file": file_name}
 
+    T = TypeVar("T")
+
     @classmethod
     def load(
-        cls,
+        cls: T,
         meta: Dict[Text, Any],
         model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
-    ) -> "DIETClassifier":
+    ) -> T:
         """Loads the trained model from the provided directory."""
         if not meta.get("file"):
             logger.debug(
@@ -1224,6 +1373,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
 
 class DIET(TransformerRasaModel):
+    """Dual Intent and Entity Transformer (DIET) implementation."""
+
     def __init__(
         self,
         data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]],
@@ -1231,6 +1382,14 @@ class DIET(TransformerRasaModel):
         entity_tag_specs: Optional[List[EntityTagSpec]],
         config: Dict[Text, Any],
     ) -> None:
+        """Instantiate DIET.
+
+        Args:
+          data_signature: the model's signature
+          label_data: label data
+          entity_tag_specs: specification of entity specs
+          config: configuration
+        """
         # create entity tag spec before calling super otherwise building the model
         # will fail
         super().__init__("DIET", config, data_signature, label_data)
@@ -1450,6 +1609,11 @@ class DIET(TransformerRasaModel):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
+        # Edge Case: In some cases, the model_data preparation will have
+        # skipped sequence-level features because they are not needed for
+        # the concrete architecture.
+        self.tf_label_data[LABEL].setdefault(SEQUENCE, [])
+
         sequence_feature_lengths = self._get_sequence_feature_lengths(
             self.tf_label_data, LABEL
         )
@@ -1531,6 +1695,11 @@ class DIET(TransformerRasaModel):
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
+        # Edge Case: In some cases, the model_data preparation will have
+        # skipped sequence-level features because they are not needed for
+        # the concrete architecture.
+        tf_batch_data[TEXT].setdefault(SEQUENCE, [])
+
         sequence_feature_lengths = self._get_sequence_feature_lengths(
             tf_batch_data, TEXT
         )
@@ -1599,6 +1768,11 @@ class DIET(TransformerRasaModel):
         sentence_vector = self._last_token(
             text_transformed, combined_sequence_sentence_feature_lengths_text
         )
+
+        # Edge Case: In some cases, the model_data preparation will have
+        # skipped sequence-level features because they are not needed for
+        # the concrete architecture.
+        tf_batch_data[LABEL].setdefault(SEQUENCE, [])
 
         sequence_feature_lengths_label = self._get_sequence_feature_lengths(
             tf_batch_data, LABEL
@@ -1683,7 +1857,7 @@ class DIET(TransformerRasaModel):
             _, self.all_labels_embed = self._create_all_labels()
 
     def batch_predict(
-        self, batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]
+        self, batch_in: Union[Tuple[tf.Tensor, ...], Tuple[np.ndarray, ...]]
     ) -> Dict[Text, tf.Tensor]:
         """Predicts the output of the given batch.
 
@@ -1696,6 +1870,11 @@ class DIET(TransformerRasaModel):
         tf_batch_data = self.batch_to_model_data_format(
             batch_in, self.predict_data_signature
         )
+
+        # Edge Case: In some cases, the model_data preparation will have
+        # skipped sequence-level features because they are not needed for
+        # the concrete architecture.
+        tf_batch_data[TEXT].setdefault(SEQUENCE, [])
 
         sequence_feature_lengths = self._get_sequence_feature_lengths(
             tf_batch_data, TEXT
