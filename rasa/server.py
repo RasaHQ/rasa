@@ -677,7 +677,9 @@ def create_app(
     configure_cors(app, cors_origins)
 
     if endpoints.prometheus:
-        monitor(app).expose_endpoint() # adds Prometheus /metrics endpoint to your Sanic server
+        monitor(
+            app
+        ).expose_endpoint()  # adds Prometheus /metrics endpoint to your Sanic server
 
     # Setup the Sanic-JWT extension
     if jwt_secret and jwt_method:

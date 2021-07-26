@@ -182,7 +182,17 @@ class AvailableEndpoints:
         tracing = read_endpoint_config(endpoint_file, endpoint_type="tracing")
         prometheus = read_endpoint_config(endpoint_file, endpoint_type="prometheus")
 
-        return cls(nlg, nlu, action, model, tracker_store, lock_store, event_broker, tracing, prometheus)
+        return cls(
+            nlg,
+            nlu,
+            action,
+            model,
+            tracker_store,
+            lock_store,
+            event_broker,
+            tracing,
+            prometheus,
+        )
 
     def __init__(
         self,
