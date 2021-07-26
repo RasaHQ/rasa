@@ -121,7 +121,7 @@ class SlotTestCollection:
     def test_slot_fingerprint_uniqueness(self, influence_conversation: bool):
         slot = self.create_slot(influence_conversation)
         f1 = slot.fingerprint()
-        slot.name = "changed"
+        slot.value = "changed"
         f2 = slot.fingerprint()
         assert f1 != f2
 
