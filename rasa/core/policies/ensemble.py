@@ -39,7 +39,7 @@ from rasa.shared.core.events import (
     DefinePrevUserUtteredFeaturization,
 )
 from rasa.core.exceptions import UnsupportedDialogueModelError
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy, SupportedData, PolicyPrediction
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
@@ -207,9 +207,7 @@ class PolicyEnsemble(metaclass=GraphComponentMetaclass):
                 trackers_to_train = SupportedData.trackers_for_policy(
                     policy, training_trackers
                 )
-                policy.train(
-                    trackers_to_train, domain, **kwargs
-                )
+                policy.train(trackers_to_train, domain, **kwargs)
 
             self.action_fingerprints = rasa.core.training.training.create_action_fingerprints(
                 training_trackers, domain
@@ -223,10 +221,7 @@ class PolicyEnsemble(metaclass=GraphComponentMetaclass):
         self.date_trained = datetime.now().strftime("%Y%m%d-%H%M%S")
 
     def probabilities_using_best_policy(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
     ) -> PolicyPrediction:
         raise NotImplementedError
 
@@ -235,7 +230,7 @@ class PolicyEnsemble(metaclass=GraphComponentMetaclass):
 
         max_histories = []
         for p in self.policies:
-            if isinstance(p.featurizer, MaxHistoryTrackerFeaturizer):
+            if isinstance(p.featurizer, TrackerFeaturizer):
                 max_histories.append(p.featurizer.max_history)
             else:
                 max_histories.append(None)
@@ -708,21 +703,15 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
     @staticmethod
     def _get_prediction(
-        policy: Policy,
-        tracker: DialogueStateTracker,
-        domain: Domain,
+        policy: Policy, tracker: DialogueStateTracker, domain: Domain,
     ) -> PolicyPrediction:
         number_of_arguments_in_rasa_1_0 = 2
         arguments = rasa.shared.utils.common.arguments_of(
             policy.predict_action_probabilities
         )
 
-        if (
-            len(arguments) > number_of_arguments_in_rasa_1_0
-        ):
-            prediction = policy.predict_action_probabilities(
-                tracker, domain
-            )
+        if len(arguments) > number_of_arguments_in_rasa_1_0:
+            prediction = policy.predict_action_probabilities(tracker, domain)
         else:
             rasa.shared.utils.io.raise_warning(
                 "The function `predict_action_probabilities` of "
@@ -731,9 +720,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 "adapt your custom `Policy` implementation.",
                 category=DeprecationWarning,
             )
-            prediction = policy.predict_action_probabilities(
-                tracker, domain
-            )
+            prediction = policy.predict_action_probabilities(tracker, domain)
 
         if isinstance(prediction, list):
             rasa.shared.utils.io.raise_deprecation_warning(
@@ -788,10 +775,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         )
 
     def probabilities_using_best_policy(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
@@ -811,9 +795,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             if name.endswith("_prediction")
         }
 
-        winning_prediction = self._best_policy_prediction(
-            tracker, domain, predictions
-        )
+        winning_prediction = self._best_policy_prediction(tracker, domain, predictions)
 
         if (
             tracker.latest_action_name == ACTION_LISTEN_NAME

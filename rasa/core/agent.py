@@ -688,7 +688,7 @@ class Agent:
         return max(max_histories or [0])
 
     def _are_all_featurizers_using_a_max_history(self) -> bool:
-        """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
+        """Check if all featurizers are TrackerFeaturizer."""
 
         def has_max_history_featurizer(policy: Policy) -> bool:
             return (
@@ -721,7 +721,7 @@ class Agent:
             # for speed up of data generation
             # automatically detect unique_last_num_states
             # if it was not set and
-            # if all featurizers are MaxHistoryTrackerFeaturizer
+            # if all featurizers are TrackerFeaturizer
             if self._are_all_featurizers_using_a_max_history():
                 unique_last_num_states = max_history
         elif unique_last_num_states < max_history:

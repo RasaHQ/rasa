@@ -101,7 +101,7 @@ TED Policy architecture comprises the following steps:
    - previous system actions or bot utterances processed through a bot sequence transformer encoder,
    - slots and active forms
 
-   for each time step into an input vector to the embedding layer that precedes the 
+   for each time step into an input vector to the embedding layer that precedes the
    dialogue transformer.
 
 2. Feed the embedding of the input vector into the dialogue transformer encoder.
@@ -707,7 +707,7 @@ The smaller dialogues are padded with `0` for all features.
 
 ##### 2. Max History
 
-`MaxHistoryTrackerFeaturizer` creates an array of previous tracker
+`TrackerFeaturizer` creates an array of previous tracker
 states for each bot action or bot utterance, with the parameter
 `max_history` defining how many states go into each row of input features.
 If `max_history` is not specified, the algorithm takes

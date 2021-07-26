@@ -451,7 +451,7 @@ def test_from_dict_does_not_change_passed_dict_parameter():
                 "name": "TEDPolicy",
                 "featurizer": [
                     {
-                        "name": "MaxHistoryTrackerFeaturizer",
+                        "name": "TrackerFeaturizer",
                         "max_history": 5,
                         "state_featurizer": [{"name": "BinarySingleStateFeaturizer"}],
                     }

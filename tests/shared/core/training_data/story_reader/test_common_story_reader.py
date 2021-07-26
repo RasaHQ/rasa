@@ -11,7 +11,7 @@ from rasa.core import training
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEACTIVATE_LOOP_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, SessionStarted, SlotSet
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -98,12 +98,12 @@ async def test_read_story_file_with_cycles(stories_file: Text, domain: Domain):
     ],
 )
 async def test_generate_training_data_with_cycles(stories_file: Text, domain: Domain):
-    featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
+    featurizer = TrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
     training_trackers = await training.load_data(
         stories_file, domain, augmentation_factor=0,
     )
 
-    _, label_ids, _ = featurizer.featurize_trackers(
+    _, label_ids, _ = featurizer.featurize_trackers_for_training(
         training_trackers, domain, interpreter=RegexInterpreter()
     )
 
@@ -204,7 +204,7 @@ async def test_visualize_training_data_graph(
 async def test_load_multi_file_training_data(stories_resources: List, domain: Domain):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
-    featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
+    featurizer = TrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
     trackers = await training.load_data(
         stories_resources[0], domain, augmentation_factor=0
     )
@@ -216,11 +216,11 @@ async def test_load_multi_file_training_data(stories_resources: List, domain: Do
         hashed.append(json.dumps(sts + acts, sort_keys=True))
     hashed = sorted(hashed, reverse=True)
 
-    data, label_ids, _ = featurizer.featurize_trackers(
+    data, label_ids, _ = featurizer.featurize_trackers_for_training(
         trackers, domain, interpreter=RegexInterpreter()
     )
 
-    featurizer_mul = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
+    featurizer_mul = TrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
     trackers_mul = await training.load_data(
         stories_resources[1], domain, augmentation_factor=0
     )
@@ -234,7 +234,7 @@ async def test_load_multi_file_training_data(stories_resources: List, domain: Do
         hashed_mul.append(json.dumps(sts_mul + acts_mul, sort_keys=True))
     hashed_mul = sorted(hashed_mul, reverse=True)
 
-    data_mul, label_ids_mul, _ = featurizer_mul.featurize_trackers(
+    data_mul, label_ids_mul, _ = featurizer_mul.featurize_trackers_for_training(
         trackers_mul, domain, interpreter=RegexInterpreter()
     )
 

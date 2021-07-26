@@ -8,7 +8,7 @@ import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
     TrackerFeaturizer,
 )
 from rasa.core.policies.policy import Policy
@@ -440,18 +440,18 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> Policy:
         # use standard featurizer from TEDPolicy,
-        # since it is using MaxHistoryTrackerFeaturizer
+        # since it is using TrackerFeaturizer
         # if max_history is not specified
         return TEDPolicy(priority=priority)
 
     def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
-        assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(trained_policy.featurizer, TrackerFeaturizer)
         assert isinstance(
             trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
         )
         trained_policy.persist(str(tmp_path))
         loaded = trained_policy.__class__.load(str(tmp_path))
-        assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(loaded.featurizer, TrackerFeaturizer)
         assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
 
@@ -460,19 +460,19 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> Policy:
         # use standard featurizer from TEDPolicy,
-        # since it is using MaxHistoryTrackerFeaturizer
+        # since it is using TrackerFeaturizer
         # if max_history is specified
         return TEDPolicy(priority=priority, max_history=self.max_history)
 
     def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
-        assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(trained_policy.featurizer, TrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
             trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
         )
         trained_policy.persist(str(tmp_path))
         loaded = trained_policy.__class__.load(str(tmp_path))
-        assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(loaded.featurizer, TrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
         assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 

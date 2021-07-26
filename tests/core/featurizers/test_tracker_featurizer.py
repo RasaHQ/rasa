@@ -7,7 +7,7 @@ from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
 )
 from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -21,7 +21,7 @@ def test_fail_to_load_non_existent_featurizer():
 def test_persist_and_load_tracker_featurizer(tmp_path: Text, moodbot_domain: Domain):
     state_featurizer = SingleStateFeaturizer()
     state_featurizer.prepare_for_training(moodbot_domain, RegexInterpreter())
-    tracker_featurizer = MaxHistoryTrackerFeaturizer(state_featurizer)
+    tracker_featurizer = TrackerFeaturizer(state_featurizer)
 
     tracker_featurizer.persist(tmp_path)
 
@@ -53,7 +53,9 @@ def test_featurize_trackers_raises_on_missing_state_featurizer(domain: Domain):
     tracker_featurizer = TrackerFeaturizer()
 
     with pytest.raises(ValueError):
-        tracker_featurizer.featurize_trackers([], domain, RegexInterpreter())
+        tracker_featurizer.featurize_trackers_for_training(
+            [], domain, RegexInterpreter()
+        )
 
 
 def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
@@ -79,12 +81,16 @@ def test_featurize_trackers_with_full_dialogue_tracker_featurizer(
 
 def test_featurize_trackers_with_max_history_tracker_featurizer(moodbot_domain: Domain):
     state_featurizer = SingleStateFeaturizer()
-    tracker_featurizer = MaxHistoryTrackerFeaturizer(state_featurizer)
+    tracker_featurizer = TrackerFeaturizer(state_featurizer)
 
     tracker = tracker_from_dialogue_file(
         "data/test_dialogues/moodbot.json", moodbot_domain
     )
-    state_features, labels, entity_tags = tracker_featurizer.featurize_trackers(
+    (
+        state_features,
+        labels,
+        entity_tags,
+    ) = tracker_featurizer.featurize_trackers_for_training(
         [tracker], moodbot_domain, RegexInterpreter()
     )
 

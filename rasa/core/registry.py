@@ -31,7 +31,7 @@ def policy_from_module_path(module_path: Text) -> Type["Policy"]:
         raise ImportError(f"Cannot retrieve policy from path '{module_path}'")
 
 
-def featurizer_from_module_path(module_path: Text) -> Type["TrackerFeaturizer"]:
+def featurizer_from_module_path(module_path: Text,) -> Type["TrackerFeaturizer"]:
     """Given the name of a featurizer module tries to retrieve it.
 
     Args:

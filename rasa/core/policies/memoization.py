@@ -1,3 +1,6 @@
+from attr import attributes
+from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT
+from rasa.shared.core.constants import PREVIOUS_ACTION
 import zlib
 
 import base64
@@ -13,10 +16,7 @@ import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_POLICIES
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -58,10 +58,10 @@ class MemoizationPolicy(Policy):
     @staticmethod
     def _standard_featurizer(
         persistor: ComponentPersistorInterface, max_history: Optional[int] = None,
-    ) -> MaxHistoryTrackerFeaturizer:
-        # Memoization policy always uses MaxHistoryTrackerFeaturizer
+    ) -> TrackerFeaturizer:
+        # Memoization policy always uses TrackerFeaturizer
         # without state_featurizer
-        return MaxHistoryTrackerFeaturizer(
+        return TrackerFeaturizer(
             state_featurizer=None, max_history=max_history, persistor=persistor
         )
 
@@ -182,13 +182,21 @@ class MemoizationPolicy(Policy):
             for t in training_trackers
             if not hasattr(t, "is_augmented") or not t.is_augmented
         ]
-        (
-            trackers_as_states,
-            trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(training_trackers, domain)
-        self.lookup = self._create_lookup_from_states(
-            trackers_as_states, trackers_as_actions
+        states = self.featurizer.extract_states_from_trackers_for_training(
+            training_trackers, domain, omit_unset_slots=False,
         )
+        inputs = states[:-1] + [
+            self.featurizer._get_partial_state(states[-1], sub_state=USER)
+        ]  # FIXME: this is different from before
+        outputs = [
+            [
+                sub_state
+                for key, sub_state in state[PREVIOUS_ACTION]
+                if key in [ACTION_NAME, ACTION_TEXT]
+            ]
+            for state in states[1:]
+        ]
+        self.lookup = self._create_lookup_from_states(inputs, outputs,)
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
         return self.persist()
 
@@ -227,10 +235,7 @@ class MemoizationPolicy(Policy):
         return result
 
     def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 

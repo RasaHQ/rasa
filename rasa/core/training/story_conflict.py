@@ -3,7 +3,7 @@ import logging
 import json
 from typing import Dict, Generator, List, NamedTuple, Optional, Text, Tuple, Any
 
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, PREVIOUS_ACTION, USER
 from rasa.shared.core.domain import Domain, PREV_PREFIX, State, SubState
 from rasa.shared.core.events import ActionExecuted, Event
@@ -327,7 +327,7 @@ def _sliced_states_iterator(
         idx = 0
         for event in tracker.events:
             if isinstance(event, ActionExecuted):
-                sliced_states = MaxHistoryTrackerFeaturizer.slice_state_history(
+                sliced_states = TrackerFeaturizer.slice_state_history(
                     states[: idx + 1], max_history
                 )
                 if tokenizer:

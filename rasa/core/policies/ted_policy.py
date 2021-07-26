@@ -19,7 +19,7 @@ from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.nlu.constants import (
@@ -306,7 +306,7 @@ class TEDPolicy(Policy):
     def _standard_featurizer(
         persistor: ComponentPersistorInterface, max_history: Optional[int] = None
     ) -> TrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(
+        return TrackerFeaturizer(
             SingleStateFeaturizer(), max_history=max_history, persistor=persistor
         )
 
@@ -371,15 +371,11 @@ class TEDPolicy(Policy):
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
     def _create_label_data(
-        self,
-        domain: Domain,
-        e2e_features: Optional[Dict[Text, Message]] = None,
+        self, domain: Domain, e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_actions(
-            domain, e2e_features
-        )
+        encoded_all_labels = state_featurizer.encode_all_actions(domain, e2e_features)
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
@@ -559,7 +555,7 @@ class TEDPolicy(Policy):
             self.model = TED(
                 model_data.get_signature(),
                 self.config,
-                isinstance(self.featurizer, MaxHistoryTrackerFeaturizer),
+                isinstance(self.featurizer, TrackerFeaturizer),
                 self._label_data,
                 self._entity_tag_specs,
             )
@@ -901,9 +897,7 @@ class TEDPolicy(Policy):
             predict_data_example,
             data_signature=model_data_example.get_signature(),
             config=meta,
-            max_history_featurizer_is_used=isinstance(
-                featurizer, MaxHistoryTrackerFeaturizer
-            ),
+            max_history_featurizer_is_used=isinstance(featurizer, TrackerFeaturizer),
             label_data=label_data,
             entity_tag_specs=entity_tag_specs,
             finetune_mode=should_finetune,

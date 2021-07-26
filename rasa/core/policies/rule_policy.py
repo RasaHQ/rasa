@@ -1060,10 +1060,7 @@ class RulePolicy(MemoizationPolicy):
         )
 
     def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
     ) -> "PolicyPrediction":
         """Predicts the next action (see parent class for more information)."""
         prediction, _ = self._predict(tracker, domain)

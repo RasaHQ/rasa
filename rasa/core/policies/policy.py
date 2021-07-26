@@ -28,7 +28,6 @@ from rasa.shared.core.domain import Domain, State
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer,
     FEATURIZER_FILE,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -42,9 +41,7 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
 from rasa.shared.nlu.training_data.message import Message
-
-if TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
@@ -113,8 +110,8 @@ class Policy(metaclass=PolicyMetaclass):
     @staticmethod
     def _standard_featurizer(
         persistor: ComponentPersistorInterface,
-    ) -> MaxHistoryTrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), persistor=persistor)
+    ) -> TrackerFeaturizer:
+        return TrackerFeaturizer(SingleStateFeaturizer(), persistor=persistor)
 
     @classmethod
     def _create_featurizer(
@@ -201,7 +198,11 @@ class Policy(metaclass=PolicyMetaclass):
               containing entity tag ids for text user inputs otherwise empty dict
               for all dialogue turns in all training trackers
         """
-        state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
+        (
+            state_features,
+            label_ids,
+            entity_tags,
+        ) = self.featurizer.featurize_trackers_for_training(
             training_trackers, domain, bilou_tagging, e2e_features
         )
 
@@ -234,7 +235,7 @@ class Policy(metaclass=PolicyMetaclass):
         Returns:
             A list of states.
         """
-        return self.featurizer.prediction_states(
+        return self.featurizer.extract_states_from_trackers_for_prediction(
             [tracker],
             domain,
             use_text_for_last_user_input=use_text_for_last_user_input,
@@ -267,7 +268,7 @@ class Policy(metaclass=PolicyMetaclass):
             ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
             turns in all trackers.
         """
-        return self.featurizer.create_state_features(
+        return self.featurizer.featurize_trackers_for_prediction(
             [tracker],
             domain,
             e2e_features=e2e_features,
@@ -292,10 +293,7 @@ class Policy(metaclass=PolicyMetaclass):
         raise NotImplementedError("Policy must have the capacity to train.")
 
     def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
     ) -> "PolicyPrediction":
         """Predicts the next action the bot should take after seeing the tracker.
 

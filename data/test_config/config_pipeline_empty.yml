@@ -5,7 +5,7 @@ pipeline:
 policies:
   - name: "KerasPolicy"
     featurizer:
-    - name: MaxHistoryTrackerFeaturizer
+    - name: TrackerFeaturizer
       max_history: 5
       state_featurizer:
         - name: BinarySingleStateFeaturizer

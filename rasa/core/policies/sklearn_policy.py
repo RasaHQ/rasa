@@ -19,7 +19,7 @@ from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.shared.core.domain import Domain
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
     TrackerFeaturizer,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
@@ -48,15 +48,15 @@ class SklearnPolicy(Policy):
     @staticmethod
     def _standard_featurizer(
         max_history: int = DEFAULT_MAX_HISTORY,
-    ) -> MaxHistoryTrackerFeaturizer:
-        # Sklearn policy always uses MaxHistoryTrackerFeaturizer
-        return MaxHistoryTrackerFeaturizer(
+    ) -> TrackerFeaturizer:
+        # Sklearn policy always uses TrackerFeaturizer
+        return TrackerFeaturizer(
             state_featurizer=SingleStateFeaturizer(), max_history=5
         )
 
     def __init__(
         self,
-        featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
+        featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
         max_history: int = DEFAULT_MAX_HISTORY,
         model: Optional["sklearn.base.BaseEstimator"] = None,
@@ -89,10 +89,10 @@ class SklearnPolicy(Policy):
             zero_state_features: Contains default feature values for attributes
         """
         if featurizer:
-            if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
+            if not isinstance(featurizer, TrackerFeaturizer):
                 raise TypeError(
                     f"Passed featurizer of type '{type(featurizer).__name__}', "
-                    f"should be MaxHistoryTrackerFeaturizer."
+                    f"should be TrackerFeaturizer."
                 )
             if not featurizer.max_history:
                 raise ValueError(
@@ -350,9 +350,9 @@ class SklearnPolicy(Policy):
             return
 
         featurizer = TrackerFeaturizer.load(path)
-        assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), (
+        assert isinstance(featurizer, TrackerFeaturizer), (
             f"Loaded featurizer of type {type(featurizer).__name__}, should be "
-            f"MaxHistoryTrackerFeaturizer."
+            f"TrackerFeaturizer."
         )
 
         meta_file = Path(path) / "sklearn_policy.json"

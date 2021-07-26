@@ -1067,9 +1067,9 @@ model before trying to use it with this improved version.
 
 * Default `max_history` for `EmbeddingPolicy` is `None` which means it'll use
   the `FullDialogueTrackerFeaturizer`. We recommend to set `max_history` to
-  some finite value in order to use `MaxHistoryTrackerFeaturizer`
+  some finite value in order to use `TrackerFeaturizer`
   for **faster training**. See [Featurizers](./policies.mdx#featurizers) for details.
-  We recommend to increase `batch_size` for `MaxHistoryTrackerFeaturizer`
+  We recommend to increase `batch_size` for `TrackerFeaturizer`
   (e.g. `"batch_size": [32, 64]`)
 
 * **Compare** mode of `rasa train core` allows the whole core config comparison.

@@ -39,7 +39,7 @@ from rasa.shared.core.events import (
 )
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
-    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
     TrackerFeaturizer,
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
@@ -86,7 +86,7 @@ class PolicyTestCollection:
 
     @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:
-        featurizer = MaxHistoryTrackerFeaturizer(
+        featurizer = TrackerFeaturizer(
             SingleStateFeaturizer(), max_history=self.max_history
         )
         return featurizer
@@ -119,14 +119,14 @@ class PolicyTestCollection:
         return policy
 
     def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
-        assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(trained_policy.featurizer, TrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
             trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
         )
         trained_policy.persist(str(tmp_path))
         loaded = trained_policy.__class__.load(str(tmp_path))
-        assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(loaded.featurizer, TrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
         assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
@@ -192,7 +192,7 @@ class PolicyTestCollection:
 
 class TestSklearnPolicy(PolicyTestCollection):
     def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int, **kwargs: Any
+        self, featurizer: Optional[TrackerFeaturizer], priority: int, **kwargs: Any,
     ) -> SklearnPolicy:
         return SklearnPolicy(featurizer, priority, **kwargs)
 
@@ -371,16 +371,16 @@ class TestMemoizationPolicy(PolicyTestCollection):
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> Policy:
         max_history = None
-        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
+        if isinstance(featurizer, TrackerFeaturizer):
             max_history = featurizer.max_history
         return MemoizationPolicy(priority=priority, max_history=max_history)
 
     def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
-        assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(trained_policy.featurizer, TrackerFeaturizer)
         assert trained_policy.featurizer.state_featurizer is None
         trained_policy.persist(str(tmp_path))
         loaded = trained_policy.__class__.load(str(tmp_path))
-        assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
+        assert isinstance(loaded.featurizer, TrackerFeaturizer)
         assert loaded.featurizer.state_featurizer is None
 
     async def test_memorise(
@@ -486,7 +486,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> Policy:
         max_history = None
-        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
+        if isinstance(featurizer, TrackerFeaturizer):
             max_history = featurizer.max_history
         return AugmentedMemoizationPolicy(priority=priority, max_history=max_history)
 
