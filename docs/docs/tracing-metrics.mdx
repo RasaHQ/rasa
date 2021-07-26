@@ -1,0 +1,38 @@
+---
+id: tracing-metrics
+sidebar_label: Tracing & Metrics
+title: Tracing & Metrics
+description: How to enable tracing and metrics
+---
+
+Rasa supports OpenTracing and provides a Prometheus `/metrics` endpoint to report metrics.
+
+## OpenTracing
+
+You can find more information on OpenTracing and Jaeger [here](https://github.com/yurishkuro/opentracing-tutorial).
+
+To enable the tracing, add the following block to your `endpoints.yml` replacing the name of the `agent_host` and `agent_port` with your Jaeger endpoint:
+
+```yml
+tracing:
+  service_name: rasa
+  agent_host: jaeger
+  agent_port: 6831
+```
+
+* **Parameters**
+
+  * `service_name` (default: `rasa`): The OpenTracing service name for this Rasa OSS instance
+
+  * `agent_host` (default: `localhost`): The hostname for the Jaeger collector
+
+  * `agent_port` (default: `6831`): The port for the Jaeger collector
+
+## Prometheus Metrics
+
+To enable the tracing and prometheus integrations, start a jaeger server and add the following block to your `endpoints.yml`:
+
+```yml
+prometheus:
+  enable: True
+```

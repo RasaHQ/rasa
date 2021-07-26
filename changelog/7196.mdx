@@ -1,0 +1,10 @@
+- [#7196](https://github.com/RasaHQ/rasa/issues/7196): Add support for OpenTracing with Jaeger
+
+To enable the tracing, add the following block to your `endpoints.yml` replacing the name of the `agent_host` and `agent_port` with your Jaeger endpoint:
+
+```yml
+tracing:
+  service_name: rasa
+  agent_host: jaeger
+  agent_port: 6831
+```
