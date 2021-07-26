@@ -105,7 +105,7 @@ module.exports = {
             'lock-stores',
             'nlu-only',
             'nlg',
-            'trcing-metrics',
+            'tracing-metrics',
           ],
         },
       ],
