@@ -245,7 +245,7 @@ TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedState
 
 
 class TrainingDataGenerator:
-    """Generates training data given a domain and a set of story parts."""
+    """Generates trackers from training data."""
 
     def __init__(
         self,

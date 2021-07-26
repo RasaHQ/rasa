@@ -9,6 +9,13 @@ from typing import Type, Optional, Text, List, Any, Dict
 
 import rasa.shared.utils.common
 import rasa.shared.core.events
+from rasa.core.test import (
+    WronglyClassifiedUserUtterance,
+    WarningPredictedAction,
+    WronglyPredictedAction,
+    EndToEndUserUtterance,
+    EvaluationStore,
+)
 from rasa.shared.exceptions import UnsupportedFeatureException
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
@@ -637,126 +644,134 @@ def test_event_executed_comparison(
     assert result == comparison_result
 
 
-@pytest.mark.parametrize(
-    "event",
-    [
-        EntitiesAdded(
-            entities=[
-                {
-                    "entity": "city",
-                    "value": "London",
-                    "role": "destination",
-                    "group": "test",
-                },
+tested_events = [
+    EntitiesAdded(
+        entities=[
+            {
+                "entity": "city",
+                "value": "London",
+                "role": "destination",
+                "group": "test",
+            },
+            {"entity": "count", "value": 1},
+        ],
+        timestamp=None,
+    ),
+    DefinePrevUserUtteredFeaturization(
+        use_text_for_featurization=False, timestamp=None, metadata=None
+    ),
+    ReminderCancelled(timestamp=1621590172.3872123),
+    ReminderScheduled(timestamp=None, trigger_date_time=datetime.now(), intent="greet"),
+    ActionExecutionRejected(action_name="my_action"),
+    LegacyFormValidation(validate=True, timestamp=None),
+    LoopInterrupted(timestamp=None, is_interrupted=False),
+    ActiveLoop(name="loop"),
+    LegacyForm(name="my_form"),
+    AllSlotsReset(),
+    SlotSet(key="my_slot", value={}),
+    SlotSet(key="my slot", value=[]),
+    SlotSet(key="test", value=1),
+    SlotSet(key="test", value="text"),
+    ConversationResumed(),
+    ConversationPaused(),
+    FollowupAction(name="test"),
+    StoryExported(),
+    Restarted(),
+    ActionReverted(),
+    UserUtteranceReverted(),
+    BotUttered(text="Test bot utterance"),
+    UserUttered(
+        parse_data={
+            "entities": [],
+            "response_selector": {
+                "all_retrieval_intents": [],
+                "chitchat/ask_weather": {"response": {}, "ranking": []},
+            },
+        }
+    ),
+    UserUttered(
+        text="hello",
+        parse_data={
+            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271,},
+            "entities": [
+                {"entity": "city", "value": "London"},
                 {"entity": "count", "value": 1},
             ],
-            timestamp=None,
-        ),
-        DefinePrevUserUtteredFeaturization(
-            use_text_for_featurization=False, timestamp=None, metadata=None
-        ),
-        ReminderCancelled(timestamp=1621590172.3872123),
-        ReminderScheduled(
-            timestamp=None, trigger_date_time=datetime.now(), intent="greet"
-        ),
-        ActionExecutionRejected(action_name="my_action"),
-        LegacyFormValidation(validate=True, timestamp=None),
-        LoopInterrupted(timestamp=None, is_interrupted=False),
-        ActiveLoop(name="loop"),
-        LegacyForm(name="my_form"),
-        AllSlotsReset(),
-        SlotSet(key="my_slot", value={}),
-        SlotSet(key="my slot", value=[]),
-        SlotSet(key="test", value=1),
-        SlotSet(key="test", value="text"),
-        ConversationResumed(),
-        ConversationPaused(),
-        FollowupAction(name="test"),
-        StoryExported(),
-        Restarted(),
-        ActionReverted(),
-        UserUtteranceReverted(),
-        BotUttered(text="Test bot utterance"),
-        UserUttered(
-            parse_data={
-                "entities": [],
-                "response_selector": {
-                    "all_retrieval_intents": [],
-                    "chitchat/ask_weather": {"response": {}, "ranking": []},
+            "text": "hi",
+            "message_id": "3f4c04602a4947098c574b107d3ccc50",
+            "metadata": {},
+            "intent_ranking": [
+                {"id": 2, "name": "greet", "confidence": 0.9604260921478271,},
+                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748,},
+                {"id": 0, "name": "deny", "confidence": 0.011255578137934208,},
+                {"id": 3, "name": "bot_challenge", "confidence": 0.004019865766167641,},
+                {"id": 4, "name": "affirm", "confidence": 0.002524246694520116,},
+                {"id": 5, "name": "mood_great", "confidence": 0.002214624546468258,},
+                {"id": 6, "name": "chitchat", "confidence": 0.0009614597074687481,},
+                {
+                    "id": 7,
+                    "name": "mood_unhappy",
+                    "confidence": 0.00024030178610701114,
                 },
-            }
-        ),
-        UserUttered(
-            text="hello",
-            parse_data={
-                "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271,},
-                "entities": [
-                    {"entity": "city", "value": "London"},
-                    {"entity": "count", "value": 1},
-                ],
-                "text": "hi",
-                "message_id": "3f4c04602a4947098c574b107d3ccc50",
-                "metadata": {},
-                "intent_ranking": [
-                    {"id": 2, "name": "greet", "confidence": 0.9604260921478271,},
-                    {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748,},
-                    {"id": 0, "name": "deny", "confidence": 0.011255578137934208,},
-                    {
-                        "id": 3,
-                        "name": "bot_challenge",
-                        "confidence": 0.004019865766167641,
+            ],
+            "response_selector": {
+                "all_retrieval_intents": [],
+                "default": {
+                    "response": {
+                        "id": 11,
+                        "responses": [{"text": "chitchat/ask_name"}],
+                        "response_templates": [{"text": "chitchat/ask_name"}],
+                        "confidence": 0.9618658423423767,
+                        "intent_response_key": "chitchat/ask_name",
+                        "utter_action": "utter_chitchat/ask_name",
+                        "template_name": "utter_chitchat/ask_name",
                     },
-                    {"id": 4, "name": "affirm", "confidence": 0.002524246694520116,},
-                    {
-                        "id": 5,
-                        "name": "mood_great",
-                        "confidence": 0.002214624546468258,
-                    },
-                    {"id": 6, "name": "chitchat", "confidence": 0.0009614597074687481,},
-                    {
-                        "id": 7,
-                        "name": "mood_unhappy",
-                        "confidence": 0.00024030178610701114,
-                    },
-                ],
-                "response_selector": {
-                    "all_retrieval_intents": [],
-                    "default": {
-                        "response": {
+                    "ranking": [
+                        {
                             "id": 11,
-                            "responses": [{"text": "chitchat/ask_name"}],
-                            "response_templates": [{"text": "chitchat/ask_name"}],
                             "confidence": 0.9618658423423767,
                             "intent_response_key": "chitchat/ask_name",
-                            "utter_action": "utter_chitchat/ask_name",
-                            "template_name": "utter_chitchat/ask_name",
                         },
-                        "ranking": [
-                            {
-                                "id": 11,
-                                "confidence": 0.9618658423423767,
-                                "intent_response_key": "chitchat/ask_name",
-                            },
-                            {
-                                "id": 12,
-                                "confidence": 0.03813415765762329,
-                                "intent_response_key": "chitchat/ask_weather",
-                            },
-                        ],
-                    },
+                        {
+                            "id": 12,
+                            "confidence": 0.03813415765762329,
+                            "intent_response_key": "chitchat/ask_weather",
+                        },
+                    ],
                 },
             },
-        ),
-        SessionStarted(),
-        ActionExecuted(action_name="action_listen"),
-        AgentUttered(),
-    ],
-)
+        },
+    ),
+    SessionStarted(),
+    ActionExecuted(action_name="action_listen"),
+    AgentUttered(),
+    EndToEndUserUtterance(),
+    WronglyClassifiedUserUtterance(
+        event=UserUttered(), eval_store=EvaluationStore(intent_targets=["test"])
+    ),
+    WronglyPredictedAction(
+        action_name_prediction="test",
+        action_name_target="demo",
+        action_text_target="example",
+    ),
+    WarningPredictedAction(action_name_prediction="test"),
+]
+
+
+@pytest.mark.parametrize("event", tested_events)
 def test_event_fingerprint_consistency_across_runs(event: Event):
     f1 = event.fingerprint()
-    event2 = Event.from_parameters(event.as_dict())
+
+    event2 = copy.copy(event)
     f2 = event2.fingerprint()
+
     assert f1 == f2
+
+
+@pytest.mark.parametrize("event_class", rasa.shared.utils.common.all_subclasses(Event))
+def test_event_subclasses_are_tested(event_class: Type[Event]):
+    subclasses = [event.__class__ for event in tested_events]
+    assert event_class in subclasses
 
 
 @pytest.mark.parametrize(
