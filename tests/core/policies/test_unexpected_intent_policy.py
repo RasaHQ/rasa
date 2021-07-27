@@ -1055,6 +1055,36 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             ],
             True,
         ),
+        (
+            [
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello"),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="happy to make it work"),
+                    ActionExecuted("utter_goodbye"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+            ],
+            True,
+        ),
+        (
+            [
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello"),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(
+                        text="happy to make it work", intent={"name": "goodbye"}
+                    ),
+                    ActionExecuted(action_text="Great!"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+            ],
+            True,
+        ),
     ],
 )
 def test_train_with_e2e_data(
