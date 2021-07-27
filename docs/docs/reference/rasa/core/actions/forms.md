@@ -23,6 +23,14 @@ Creates a `FormAction`.
 - `form_name` - Name of the form.
 - `action_endpoint` - Endpoint to execute custom actions.
 
+#### name
+
+```python
+ | name() -> Text
+```
+
+Return the form name.
+
 #### required\_slots
 
 ```python

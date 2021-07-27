@@ -5,7 +5,7 @@ title: rasa.utils.train_utils
 #### normalize
 
 ```python
-normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray
+normalize(values: np.ndarray, ranking_length: int = 0) -> np.ndarray
 ```
 
 Normalizes an array of positive numbers over the top `ranking_length` values.
