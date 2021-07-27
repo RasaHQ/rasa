@@ -422,11 +422,17 @@ async def test_nlg_conditional_response_variations_condition_logging(
         """
     )
     t = TemplatedNaturalLanguageGenerator(domain.responses)
-    tracker = DialogueStateTracker(sender_id="test", slots=[])
+    slot_A = TextSlot(name="test_A", initial_value="A", influence_conversation=False)
+    slot_B = TextSlot(name="test_B", initial_value="B", influence_conversation=False)
+    tracker = DialogueStateTracker(sender_id="test", slots=[slot_A, slot_B])
 
     with caplog.at_level(logging.DEBUG):
         await t.generate("utter_action", tracker=tracker, output_channel="")
 
+    assert any(
+        "Selecting response variation with conditions:" in message
+        for message in caplog.messages
+    )
     assert any(
         "[condition 1] type: slot | name: test_A | value: A" in message
         for message in caplog.messages
