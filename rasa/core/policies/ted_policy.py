@@ -548,8 +548,9 @@ class TEDPolicy(Policy):
 
         return model_data
 
+    @staticmethod
     def _get_trackers_for_training(
-        self, trackers: List[TrackerWithCachedStates]
+        trackers: List[TrackerWithCachedStates],
     ) -> List[TrackerWithCachedStates]:
         """Filters out the list of trackers which should not be used for training.
 
