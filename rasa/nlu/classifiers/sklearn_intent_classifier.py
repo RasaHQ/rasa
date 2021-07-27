@@ -251,8 +251,8 @@ class SklearnIntentClassifier(IntentClassifier):
         """Loads trained component (see parent class for full docstring)."""
         from sklearn.preprocessing import LabelEncoder
 
-        classifier_file = os.path.join(model_dir, meta.get("classifier"))
-        encoder_file = os.path.join(model_dir, meta.get("encoder"))
+        classifier_file = os.path.join(model_dir, meta["classifier"])
+        encoder_file = os.path.join(model_dir, meta["encoder"])
 
         if os.path.exists(classifier_file):
             classifier = io_utils.json_unpickle(classifier_file)

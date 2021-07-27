@@ -292,7 +292,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> "LexicalSyntacticFeaturizer":
         """Loads trained component (see parent class for full docstring)."""
-        file_name = meta.get("file")
+        file_name = meta["file"]
 
         feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
         feature_to_idx_dict = io_utils.json_unpickle(feature_to_idx_file)
