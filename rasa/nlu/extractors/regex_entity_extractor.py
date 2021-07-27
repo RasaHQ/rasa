@@ -119,7 +119,7 @@ class RegexEntityExtractor(EntityExtractor):
         **kwargs: Any,
     ) -> "RegexEntityExtractor":
         """Loads trained component (see parent class for full docstring)."""
-        file_name = meta.get("file")
+        file_name = meta["file"]
         regex_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(regex_file):

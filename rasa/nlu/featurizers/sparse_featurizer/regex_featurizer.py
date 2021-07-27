@@ -248,7 +248,7 @@ class RegexFeaturizer(SparseFeaturizer):
                 finetuning.
             **kwargs: Any other arguments.
         """
-        file_name = meta.get("file")
+        file_name = meta["file"]
 
         patterns_file_name = Path(model_dir) / (file_name + ".patterns.pkl")
 
