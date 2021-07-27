@@ -410,7 +410,7 @@ async def test_nlg_conditional_response_variations_condition_logging(
         version: "2.0"
         responses:
            utter_action:
-             - text: "example with channel"
+             - text: "example"
                condition:
                 - type: slot
                   name: test_A
