@@ -102,7 +102,7 @@ class SpacyNLP(Component):
                 f"More informaton can be found on {DOCS_URL_COMPONENTS}#spacynlp"
             )
 
-        return cls.name + "-" + spacy_model_name
+        return f"{cls.name}-{spacy_model_name}"
 
     def provide_context(self) -> Dict[Text, Any]:
         """Creates a context dictionary from spaCy nlp object."""
@@ -266,7 +266,7 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        nlp = cls.load_model(meta.get("model"))
+        nlp = cls.load_model(meta["model"])
         cls.ensure_proper_language_model(nlp)
         return cls(meta, nlp)
 
