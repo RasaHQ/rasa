@@ -489,7 +489,7 @@ jobs:
 
       - name: Create GitHub Issue 📬
         id: create-issue
-        if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
+        # if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
         uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
         with:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
