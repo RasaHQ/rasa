@@ -63,9 +63,9 @@ class MitieNLP(Component):
         cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
     ) -> Optional[Text]:
 
-        mitie_file = component_meta.get("model", None)
+        mitie_file = component_meta.get("model")
         if mitie_file is not None:
-            return cls.name + "-" + str(os.path.abspath(mitie_file))
+            return f"{cls.name}-{os.path.abspath(mitie_file)}"
         else:
             return None
 

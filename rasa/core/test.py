@@ -278,8 +278,8 @@ class EvaluationStore:
             )
         )
 
-        aligned_entity_targets = []
-        aligned_entity_predictions = []
+        aligned_entity_targets: List[Optional[Text]] = []
+        aligned_entity_predictions: List[Optional[Text]] = []
 
         for text in texts:
             # sort the entities of this sentence to compare them directly

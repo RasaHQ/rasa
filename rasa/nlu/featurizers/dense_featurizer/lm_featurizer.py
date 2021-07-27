@@ -168,7 +168,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
         Returns: key of the cache for future retrievals.
         """
-        weights = component_meta.get("model_weights") or {}
+        weights = component_meta.get("model_weights", {})
 
         return (
             f"{cls.name}-{component_meta.get('model_name')}-"

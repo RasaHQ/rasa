@@ -145,20 +145,14 @@ class KeywordIntentClassifier(IntentClassifier):
         **kwargs: Any,
     ) -> "KeywordIntentClassifier":
         """Loads trained component (see parent class for full docstring)."""
-        if meta.get("file"):
-            file_name = meta.get("file")
-            keyword_file = os.path.join(model_dir, file_name)
-            if os.path.exists(keyword_file):
-                intent_keyword_map = rasa.shared.utils.io.read_json_file(keyword_file)
-            else:
-                rasa.shared.utils.io.raise_warning(
-                    f"Failed to load key word file for `IntentKeywordClassifier`, "
-                    f"maybe {keyword_file} does not exist?"
-                )
-                intent_keyword_map = None
-            return cls(meta, intent_keyword_map)
+        file_name = meta["file"]
+        keyword_file = os.path.join(model_dir, file_name)
+        if os.path.exists(keyword_file):
+            intent_keyword_map = rasa.shared.utils.io.read_json_file(keyword_file)
         else:
-            raise Exception(
-                f"Failed to load keyword intent classifier model. "
-                f"Path {os.path.abspath(meta.get('file'))} doesn't exist."
+            rasa.shared.utils.io.raise_warning(
+                f"Failed to load key word file for `IntentKeywordClassifier`, "
+                f"maybe {keyword_file} does not exist?"
             )
+            intent_keyword_map = None
+        return cls(meta, intent_keyword_map)

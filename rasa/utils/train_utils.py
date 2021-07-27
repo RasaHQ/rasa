@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     from tensorflow.keras.callbacks import Callback
 
 
-def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
+def normalize(values: np.ndarray, ranking_length: int = 0) -> np.ndarray:
     """Normalizes an array of positive numbers over the top `ranking_length` values.
 
     Other values will be set to 0.
