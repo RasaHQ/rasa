@@ -75,26 +75,12 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         )
 
         if conditional_channel:
-            formatted_response_conditions = self._format_response_conditions(
-                conditional_channel[0].get(RESPONSE_CONDITION)
-            )
-            logger.debug(
-                "Selecting response variations with conditions:"
-                f"{formatted_response_conditions}"
-            )
             return conditional_channel
 
         if default_channel:
             return default_channel
 
         if conditional_no_channel:
-            formatted_response_conditions = self._format_response_conditions(
-                conditional_no_channel[0].get(RESPONSE_CONDITION)
-            )
-            logger.debug(
-                "Selecting response variations with conditions:"
-                f"{formatted_response_conditions}"
-            )
             return conditional_no_channel
 
         return default_no_channel
@@ -116,7 +102,17 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             )
 
             if suitable_responses:
-                return np.random.choice(suitable_responses)
+                selected_response = np.random.choice(suitable_responses)
+                condition = selected_response.get(RESPONSE_CONDITION)
+                if condition:
+                    formatted_response_conditions = self._format_response_conditions(
+                        condition
+                    )
+                    logger.debug(
+                        "Selecting response variation with conditions:"
+                        f"{formatted_response_conditions}"
+                    )
+                return selected_response
             else:
                 return None
         else:
@@ -193,7 +189,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         return response_vars
 
     @staticmethod
-    def _format_response_conditions(response_conditions: List[Dict]) -> Text:
+    def _format_response_conditions(response_conditions: List[Dict[Text, Any]]) -> Text:
         formatted_response_conditions = [""]
         for index, condition in enumerate(response_conditions):
             constraints = []
