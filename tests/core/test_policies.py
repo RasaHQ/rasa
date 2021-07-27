@@ -31,7 +31,8 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.shared.core.trackers import DialogueStateTracker
-from tests.core.utilities import get_tracker, read_dialogue_file
+from tests.conftest import TEST_DEFAULT_DIALOGUE
+from tests.core.utilities import get_tracker, tracker_from_dialogue
 
 
 async def train_trackers(
@@ -229,11 +230,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
     def test_memorise_with_nlu(
         self, trained_policy: MemoizationPolicy, default_domain: Domain
     ):
-        filename = "data/test_dialogues/default.json"
-        dialogue = read_dialogue_file(filename)
-
-        tracker = DialogueStateTracker(dialogue.name, default_domain.slots)
-        tracker.recreate_from_dialogue(dialogue)
+        tracker = tracker_from_dialogue(TEST_DEFAULT_DIALOGUE, default_domain)
         states = trained_policy._prediction_states(tracker, default_domain)
 
         recalled = trained_policy.recall(states, tracker, default_domain)

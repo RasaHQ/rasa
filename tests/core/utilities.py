@@ -1,14 +1,9 @@
 import itertools
-
 import contextlib
+import os
 import typing
 from typing import List, Optional, Text, Any, Dict
 
-import jsonpickle
-import os
-
-import rasa.shared.utils.io
-import rasa.utils.io
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, Event
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -18,18 +13,10 @@ if typing.TYPE_CHECKING:
     from rasa.shared.core.conversation import Dialogue
 
 
-def tracker_from_dialogue_file(
-    filename: Text, domain: Optional[Domain] = None
-) -> DialogueStateTracker:
-    dialogue = read_dialogue_file(filename)
-
+def tracker_from_dialogue(dialogue: "Dialogue", domain: Domain) -> DialogueStateTracker:
     tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)
     return tracker
-
-
-def read_dialogue_file(filename: Text) -> "Dialogue":
-    return jsonpickle.loads(rasa.shared.utils.io.read_file(filename))
 
 
 @contextlib.contextmanager

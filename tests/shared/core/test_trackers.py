@@ -58,13 +58,9 @@ from rasa.core.tracker_store import (
 from rasa.core.tracker_store import TrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from tests.core.conftest import MockedMongoTrackerStore
-from tests.conftest import (
-    EXAMPLE_DOMAINS,
-    TEST_DIALOGUES,
-)
+from tests.conftest import TEST_DIALOGUES, TEST_MOODBOT_DIALOGUE, EXAMPLE_DOMAINS
 from tests.core.utilities import (
-    tracker_from_dialogue_file,
-    read_dialogue_file,
+    tracker_from_dialogue,
     user_uttered,
     get_tracker,
 )
@@ -99,13 +95,14 @@ def stores_to_be_tested_ids():
     return ["redis-tracker", "in-memory-tracker", "SQL-tracker", "mongo-tracker"]
 
 
-def test_tracker_duplicate():
-    filename = "data/test_dialogues/moodbot.json"
-    dialogue = read_dialogue_file(filename)
-    tracker = DialogueStateTracker(dialogue.name, test_domain.slots)
-    tracker.recreate_from_dialogue(dialogue)
+def test_tracker_duplicate(moodbot_domain: Domain):
+    tracker = tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
     num_actions = len(
-        [event for event in dialogue.events if isinstance(event, ActionExecuted)]
+        [
+            event
+            for event in TEST_MOODBOT_DIALOGUE.events
+            if isinstance(event, ActionExecuted)
+        ]
     )
 
     # There is always one duplicated tracker more than we have actions,
@@ -144,18 +141,16 @@ def test_tracker_store_storage_and_retrieval(store: TrackerStore):
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
 @pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, EXAMPLE_DOMAINS))
 def test_tracker_store(store, pair):
-    filename, domainpath = pair
+    dialogue, domainpath = pair
     domain = Domain.load(domainpath)
-    tracker = tracker_from_dialogue_file(filename, domain)
+    tracker = tracker_from_dialogue(dialogue, domain)
     store.save(tracker)
     restored = store.retrieve(tracker.sender_id)
     assert restored == tracker
 
 
 async def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
-    tracker = tracker_from_dialogue_file(
-        "data/test_dialogues/moodbot.json", moodbot_domain
-    )
+    tracker = tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
     p = tmp_path / "export.yml"
     tracker.export_stories_to_file(str(p))
     trackers = await training.load_data(
