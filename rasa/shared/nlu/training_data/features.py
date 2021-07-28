@@ -29,6 +29,11 @@ class Features:
         self.type = feature_type
         self.origin = origin
         self.attribute = attribute
+        if not self.is_dense() and not self.is_sparse():
+            raise ValueError(
+                "Features must either be a numpy array for dense "
+                "features or a scipy sparse matrix for sparse features."
+            )
 
     def is_sparse(self) -> bool:
         """Checks if features are sparse or not.
@@ -44,7 +49,7 @@ class Features:
         Returns:
             True, if features are dense, false otherwise.
         """
-        return not self.is_sparse()
+        return isinstance(self.features, np.ndarray)
 
     def combine_with_features(self, additional_features: Optional["Features"]) -> None:
         """Combine the incoming features with this instance's features.
@@ -98,7 +103,7 @@ class Features:
         Returns:
             Tuple of type, attribute, features, and origin properties.
         """
-        return (self.type, self.attribute, self.features, self.origin)
+        return self.type, self.attribute, self.features, self.origin
 
     def __eq__(self, other: Any) -> bool:
         """Tests if the `self` `Feature` equals to the `other`.
@@ -121,7 +126,7 @@ class Features:
 
     def fingerprint(self) -> Text:
         """Calculate a stable string fingerprint for the features."""
-        if isinstance(self.features, np.ndarray):
+        if self.is_dense():
             f_as_text = self.features.tostring()
         else:
             f_as_text = rasa.shared.nlu.training_data.util.sparse_matrix_to_string(
