@@ -920,7 +920,7 @@ class RasaSequenceLayer(RasaCustomLayer):
                     self._tf_layers[self.SPARSE_TO_DENSE_FOR_TOKEN_IDS](f)
                 )
 
-        return None
+        return 0
 
     def _create_mlm_tensors(
         self,
