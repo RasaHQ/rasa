@@ -217,26 +217,6 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
             self._append_current_state()
 
-    def fingerprint(self) -> Text:
-        """Returns a unique hash for the tracker which is stable across python runs.
-
-        Returns:
-            fingerprint of the tracker
-        """
-        data = {"sender_id": self.sender_id}
-
-        if self.domain:
-            data.update({"domain": self.domain})
-
-        if self.slots:
-            data.update(self.slots)
-
-        if self.events:
-            for event in list(self.events):
-                data.update(event.as_dict())
-
-        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
-
 
 # define types
 TrackerLookupDict = Dict[Text, List[TrackerWithCachedStates]]
@@ -263,8 +243,8 @@ class TrainingDataGenerator:
         The different story parts can end and start with checkpoints
         and this generator will match start and end checkpoints to
         connect complete stories. Afterwards, duplicate stories will be
-        removed and the data is augmented (if augmentation is enabled)."""
-
+        removed and the data is augmented (if augmentation is enabled).
+        """
         self.story_graph = story_graph.with_cycles_removed()
         if debug_plots:
             self.story_graph.visualize("story_blocks_connections.html")
