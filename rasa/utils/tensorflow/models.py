@@ -829,7 +829,7 @@ class TransformerRasaModel(RasaModel):
 
         Note that, if no explicit sequence length information is present in the batch,
         this function assumes the respective sequence-level features are all empty.
-        This behaviour useful in case we deal with empty sequences only (e.g.
+        This behaviour is useful in case we deal with empty sequences only (e.g.
         DIET without transformer layers and no need for sequential output).
 
         Remember, the number of real tokens for an example is the same as the length

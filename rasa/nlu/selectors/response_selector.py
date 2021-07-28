@@ -634,7 +634,7 @@ class ResponseSelector(DIETClassifier):
         return model
 
     def _uses_sequence_features_for_text(self) -> bool:
-        """Whether we make use of sequence features for the TEXT attribute.
+        """Checks whether we make use of sequence features for the `TEXT` attribute.
 
         Note that, just like the DIETClassifier, DIET2BOW can make use of sentence
         features even if the number of transformer layers is set to 0 because it creates
