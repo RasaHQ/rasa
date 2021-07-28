@@ -16,12 +16,10 @@ import rasa.shared.nlu.training_data.loading
 import rasa.shared.utils.io
 import rasa.utils.io
 import rasa.model
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
-from rasa.nlu.components import ComponentBuilder, Component
+from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.model import Interpreter, Trainer
@@ -33,7 +31,7 @@ from rasa.nlu.test import (
     merge_labels,
     remove_empty_intent_examples,
     remove_empty_response_examples,
-    get_entity_extractors,
+    get_active_entity_extractors,
     drop_intents_below_freq,
     cross_validate,
     run_evaluation,
@@ -55,11 +53,9 @@ from rasa.nlu.test import (
     align_entity_predictions,
     determine_intersection,
     determine_token_labels,
-    is_entity_extractor_present,
     remove_entities_of_extractors,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.constants import (
@@ -78,7 +74,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.model_testing import compare_nlu_models
-from rasa.utils.tensorflow.constants import EPOCHS, ENTITY_RECOGNITION
+from rasa.utils.tensorflow.constants import EPOCHS
 
 # https://github.com/pytest-dev/pytest-asyncio/issues/68
 # this event_loop is used by pytest-asyncio, and redefining it
@@ -710,43 +706,24 @@ def test_response_evaluation_report(tmp_path: Path):
 
 
 @pytest.mark.parametrize(
-    "components, expected_extractors",
+    "entity_results, expected_extractors",
     [
-        ([DIETClassifier({ENTITY_RECOGNITION: False})], set()),
-        ([DIETClassifier({ENTITY_RECOGNITION: True})], {"DIETClassifier"}),
-        ([CRFEntityExtractor()], {"CRFEntityExtractor"}),
+        ([], set()),
+        ([EN_entity_result], {"EntityExtractorA", "EntityExtractorB"}),
         (
-            [SpacyEntityExtractor(), CRFEntityExtractor()],
-            {"SpacyEntityExtractor", "CRFEntityExtractor"},
+            [EN_entity_result, EN_entity_result],
+            {"EntityExtractorA", "EntityExtractorB"},
         ),
-        ([ResponseSelector()], set()),
     ],
 )
-def test_get_entity_extractors(
-    components: List[Component], expected_extractors: Set[Text]
+def test_get_active_entity_extractors(
+    entity_results: List[EntityEvaluationResult], expected_extractors: Set[Text]
 ):
-    mock_interpreter = Interpreter(components, None)
-    extractors = get_entity_extractors(mock_interpreter)
-
+    extractors = get_active_entity_extractors(entity_results)
     assert extractors == expected_extractors
 
 
 def test_entity_evaluation_report(tmp_path: Path):
-    class EntityExtractorA(EntityExtractor):
-
-        provides = ["entities"]
-
-        def __init__(self, component_config=None) -> None:
-
-            super().__init__(component_config)
-
-    class EntityExtractorB(EntityExtractor):
-
-        provides = ["entities"]
-
-        def __init__(self, component_config=None) -> None:
-
-            super().__init__(component_config)
 
     path = tmp_path / "evaluation"
     path.mkdir()
@@ -756,14 +733,8 @@ def test_entity_evaluation_report(tmp_path: Path):
     report_filename_b = os.path.join(report_folder, "EntityExtractorB_report.json")
 
     rasa.shared.utils.io.create_directory(report_folder)
-    mock_interpreter = Interpreter(
-        [
-            EntityExtractorA({"provides": ["entities"]}),
-            EntityExtractorB({"provides": ["entities"]}),
-        ],
-        None,
-    )
-    extractors = get_entity_extractors(mock_interpreter)
+
+    extractors = get_active_entity_extractors([EN_entity_result])
     result = evaluate_entities(
         [EN_entity_result],
         extractors,
@@ -1196,15 +1167,6 @@ def test_replacing_fallback_intent():
         and prediction.confidence == expected_confidence
         for prediction in intent_evaluations
     )
-
-
-@pytest.mark.parametrize(
-    "components, expected_result",
-    [([CRFEntityExtractor()], True), ([WhitespaceTokenizer()], False)],
-)
-def test_is_entity_extractor_present(components, expected_result):
-    interpreter = Interpreter(components, context=None)
-    assert is_entity_extractor_present(interpreter) == expected_result
 
 
 def test_remove_entities_of_extractors():

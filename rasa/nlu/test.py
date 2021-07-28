@@ -56,7 +56,6 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
 from rasa.nlu.classifiers import fallback_classifier
 from rasa.nlu.tokenizers.tokenizer import Token
-from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
 from rasa.shared.importers.importer import TrainingDataImporter
 
 if TYPE_CHECKING:
@@ -1261,10 +1260,6 @@ def get_eval_data(
         interpreter
     )
 
-    should_eval_entities = (
-        is_entity_extractor_present(interpreter) and len(test_data.entities) > 0
-    )
-
     for example in tqdm(test_data.nlu_examples):
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
         remove_entities_of_extractors(result, PRETRAINED_EXTRACTORS)
@@ -1312,48 +1307,31 @@ def get_eval_data(
                 )
             )
 
-        if should_eval_entities:
-            entity_results.append(
-                EntityEvaluationResult(
-                    example.get(ENTITIES, []),
-                    result.get(ENTITIES, []),
-                    result.get(TOKENS_NAMES[TEXT], []),
-                    result.get(TEXT, ""),
-                )
+        entity_results.append(
+            EntityEvaluationResult(
+                example.get(ENTITIES, []),
+                result.get(ENTITIES, []),
+                result.get(TOKENS_NAMES[TEXT], []),
+                result.get(TEXT, ""),
             )
+        )
+
+    if not get_active_entity_extractors(entity_results):
+        entity_results = []
 
     return intent_results, response_selection_results, entity_results
 
 
-def get_entity_extractors(interpreter: Interpreter) -> Set[Text]:
-    """Finds the names of entity extractors used by the interpreter.
-
-    Processors are removed since they do not detect the boundaries themselves.
-
-    Args:
-        interpreter: the interpreter
-
-    Returns: entity extractor names
-    """
-    from rasa.nlu.extractors.extractor import EntityExtractor
-    from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-
-    extractors = set()
-    for c in interpreter.pipeline:
-        if isinstance(c, EntityExtractor):
-            if isinstance(c, DIETClassifier):
-                if c.component_config[ENTITY_RECOGNITION]:
-                    extractors.add(c.name)
-            else:
-                extractors.add(c.name)
-
-    return extractors - ENTITY_PROCESSORS
-
-
-def is_entity_extractor_present(interpreter: Interpreter) -> bool:
-    """Checks whether entity extractor is present."""
-    extractors = get_entity_extractors(interpreter)
-    return len(extractors) > 0
+def get_active_entity_extractors(
+    entity_results: List[EntityEvaluationResult],
+) -> Set[Text]:
+    """Finds the names of entity extractors from the EntityEvaluationResults."""
+    extractors: Set[Text] = set()
+    for result in entity_results:
+        for prediction in result.entity_predictions:
+            if EXTRACTOR in prediction:
+                extractors.add(prediction[EXTRACTOR])
+    return extractors
 
 
 def is_intent_classifier_present(interpreter: Interpreter) -> bool:
@@ -1478,7 +1456,7 @@ async def run_evaluation(
 
     if any(entity_results):
         logger.info("Entity evaluation results:")
-        extractors = get_entity_extractors(interpreter)
+        extractors = get_active_entity_extractors(entity_results)
         result["entity_evaluation"] = evaluate_entities(
             entity_results,
             extractors,
@@ -1676,7 +1654,7 @@ def cross_validate(
         )
 
         if not extractors:
-            extractors = get_entity_extractors(interpreter)
+            extractors = get_active_entity_extractors(entity_test_results)
             entity_evaluation_possible = (
                 entity_evaluation_possible
                 or _contains_entity_labels(entity_test_results)
@@ -1951,7 +1929,7 @@ def _compute_entity_metrics(
     from rasa.model_testing import get_evaluation_metrics
 
     entity_metric_results: EntityMetrics = defaultdict(lambda: defaultdict(list))
-    extractors = get_entity_extractors(interpreter)
+    extractors = get_active_entity_extractors(entity_results)
 
     if not extractors:
         return entity_metric_results
