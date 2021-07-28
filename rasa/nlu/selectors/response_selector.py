@@ -428,9 +428,7 @@ class ResponseSelector(DIETClassifier):
                 "all retrieval intents."
             )
 
-        label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=self.label_attribute
-        )
+        label_id_index_mapping = self._create_label_id_to_index_mapping(training_data,)
 
         self.responses = training_data.responses
 

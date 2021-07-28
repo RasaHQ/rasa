@@ -391,13 +391,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return DIET
 
     # training data helpers:
-    @staticmethod
-    def _label_id_index_mapping(
-        training_data: TrainingData, attribute: Text
+    def _create_label_id_to_index_mapping(
+        self, training_data: TrainingData,
     ) -> Dict[Text, int]:
-        """Create label_id dictionary."""
+        """Create a label_id dictionary from the intent examples in the given data."""
         distinct_label_ids = {
-            example.get(attribute) for example in training_data.intent_examples
+            example.get(self.label_attribute)
+            for example in training_data.intent_examples
         } - {None}
         return {
             label_id: idx for idx, label_id in enumerate(sorted(distinct_label_ids))
@@ -937,9 +937,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
 
-        label_id_index_mapping = self._label_id_index_mapping(
-            training_data, attribute=self.label_attribute
-        )
+        label_id_index_mapping = self._create_label_id_to_index_mapping(training_data,)
 
         if not label_id_index_mapping:
             # no labels are present to train
