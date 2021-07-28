@@ -1268,7 +1268,7 @@ def get_eval_data(
 
     for example in tqdm(test_data.nlu_examples):
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
-
+        remove_entities_of_extractors(result, PRETRAINED_EXTRACTORS)
         if should_eval_intents:
             if fallback_classifier.is_fallback_classifier_prediction(result):
                 # Revert fallback prediction to not shadow
@@ -1409,6 +1409,17 @@ def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
     return pipeline
 
 
+def remove_entities_of_extractors(
+    result_dict: Dict[Text, Any], extractor_names: Set[Text]
+) -> None:
+    """Removes the entities annotated by the given extractor names."""
+    entities = result_dict.get(ENTITIES)
+    if not entities:
+        return
+    filtered_entities = [e for e in entities if e.get(EXTRACTOR) not in extractor_names]
+    result_dict[ENTITIES] = filtered_entities
+
+
 async def run_evaluation(
     data_path: Text,
     model_path: Text,
@@ -1442,7 +1453,6 @@ async def run_evaluation(
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
 
-    interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
     )
@@ -1643,7 +1653,6 @@ def cross_validate(
         rasa.shared.utils.io.create_directory(output)
 
     trainer = Trainer(nlu_config)
-    trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
 
     intent_train_metrics: IntentMetrics = defaultdict(list)
     intent_test_metrics: IntentMetrics = defaultdict(list)

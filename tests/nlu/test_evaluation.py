@@ -34,7 +34,6 @@ from rasa.nlu.test import (
     remove_empty_intent_examples,
     remove_empty_response_examples,
     get_entity_extractors,
-    remove_pretrained_extractors,
     drop_intents_below_freq,
     cross_validate,
     run_evaluation,
@@ -57,6 +56,7 @@ from rasa.nlu.test import (
     determine_intersection,
     determine_token_labels,
     is_entity_extractor_present,
+    remove_entities_of_extractors,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -68,6 +68,12 @@ from rasa.shared.nlu.constants import (
     INTENT_RANKING_KEY,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    ENTITIES,
+)
+from rasa.shared.nlu.constants import (
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_VALUE,
+    EXTRACTOR,
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -419,7 +425,6 @@ def test_run_cv_evaluation(
 
     # mock training
     trainer = Trainer(nlu_config)
-    trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
     mock = Mock(return_value=Interpreter(trainer.pipeline, None))
     monkeypatch.setattr(Trainer, "train", mock)
 
@@ -473,7 +478,6 @@ def test_run_cv_evaluation_with_response_selector(monkeypatch: MonkeyPatch):
 
     # mock training
     trainer = Trainer(nlu_config)
-    trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
     mock = Mock(return_value=Interpreter(trainer.pipeline, None))
     monkeypatch.setattr(Trainer, "train", mock)
 
@@ -913,24 +917,6 @@ def test_evaluate_entities_cv():
     }, "Wrong entity prediction alignment"
 
 
-def test_remove_pretrained_extractors(component_builder: ComponentBuilder):
-    _config = RasaNLUModelConfig(
-        {
-            "pipeline": [
-                {"name": "SpacyNLP", "model": "en_core_web_md"},
-                {"name": "SpacyEntityExtractor"},
-                {"name": "DucklingEntityExtractor"},
-            ]
-        }
-    )
-    trainer = Trainer(_config, component_builder)
-
-    target_components_names = ["SpacyNLP"]
-    filtered_pipeline = remove_pretrained_extractors(trainer.pipeline)
-    filtered_components_names = [c.name for c in filtered_pipeline]
-    assert filtered_components_names == target_components_names
-
-
 def test_label_replacement():
     original_labels = ["O", "location"]
     target_labels = ["no_entity", "location"]
@@ -1219,3 +1205,36 @@ def test_replacing_fallback_intent():
 def test_is_entity_extractor_present(components, expected_result):
     interpreter = Interpreter(components, context=None)
     assert is_entity_extractor_present(interpreter) == expected_result
+
+
+def test_remove_entities_of_extractors():
+    extractor = "TestExtractor"
+    extractor_2 = "DIET"
+    extractor_3 = "YetAnotherExtractor"
+    # shouldn't crash when there are no annotations
+    remove_entities_of_extractors({}, [extractor])
+
+    # add some entities
+    entities = [
+        {
+            ENTITY_ATTRIBUTE_TYPE: "time",
+            ENTITY_ATTRIBUTE_VALUE: "12:00",
+            EXTRACTOR: extractor,
+        },
+        {
+            ENTITY_ATTRIBUTE_TYPE: "location",
+            ENTITY_ATTRIBUTE_VALUE: "Berlin - Alexanderplatz",
+            EXTRACTOR: extractor_3,
+        },
+        {
+            ENTITY_ATTRIBUTE_TYPE: "name",
+            ENTITY_ATTRIBUTE_VALUE: "Joe",
+            EXTRACTOR: extractor_2,
+        },
+    ]
+    result_dict = {ENTITIES: entities}
+    remove_entities_of_extractors(result_dict, [extractor, extractor_3])
+
+    assert len(result_dict[ENTITIES]) == 1
+    remaining_entity = result_dict[ENTITIES][0]
+    assert remaining_entity[EXTRACTOR] == extractor_2
