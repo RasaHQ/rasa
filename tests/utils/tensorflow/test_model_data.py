@@ -12,6 +12,15 @@ from rasa.utils.tensorflow.constants import (
 )
 
 
+def test_str(model_data: RasaModelData):
+    model_data_str = str(model_data)
+    assert model_data_str
+    for key, val in model_data.data.items():
+        assert key in model_data_str
+        if len(val) > 1:
+            assert f"...] ({len(val)} elements)" in model_data_str
+
+
 def test_shuffle_session_data(model_data: RasaModelData):
     before = copy.copy(model_data)
 
