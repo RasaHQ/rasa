@@ -214,13 +214,15 @@ def build_entity(
 
 
 def sparse_matrix_to_string(m: scipy.sparse.spmatrix) -> Text:
-    """Turn sparse matrix into string.
+    """Turns a sparse matrix into a string.
 
-    taken from official scipy source to operate on full sparse matrix.
+    Will return a line "(i,j)  v" for each value in the matrix.
+
+    taken from official scipy source to operate on full sparse matrix to not have
+    to change the `maxprint` property in-place.
     https://github.com/scipy/scipy/blob/v1.7.0/scipy/sparse/base.py#L258
-    Normally you would have to 1) change the maxprint property in-place first,
-    2) use str(m_sparse), and 3) change maxprint back.
     """
+    # make sure sparse matrix is in COOrdinate format
     m_coo = m.tocoo()
     triples = zip(list(zip(m_coo.row, m_coo.col)), m_coo.data)
     return "\n".join([("  %s\t%s" % t) for t in triples])
