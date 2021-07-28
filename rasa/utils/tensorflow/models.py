@@ -46,6 +46,7 @@ import rasa.utils.train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.temp_keras_modules import TmpKerasModel
+from rasa.utils.tensorflow.exceptions import TFModelConfigException
 from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
@@ -840,10 +841,13 @@ class TransformerRasaModel(RasaModel):
            a tensor of shape (batch_size, ), always
 
         Raises:
-           a ValueError in case no SEQUENCE subkey can be found for the given key
+           a TFModelConfigException in case no SEQUENCE subkey can be found for the
+           given key
         """
         if SEQUENCE not in tf_batch_data[key]:
-            raise ValueError(f"Expected a sequence-level feature for {key}.")
+            raise TFModelConfigException(
+                f"Expected a sequence-level feature for {key}."
+            )
             # Note that eliminating this check would eliminate the need to set
             # dummy values in e.g. the ResponseSelector's batch_predict but then
             # we'd loose this check everywhere.
