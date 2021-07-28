@@ -324,7 +324,9 @@ class Event(ABC):
         Returns:
             fingerprint of the event
         """
-        return rasa.shared.utils.io.get_dictionary_fingerprint(self.as_dict())
+        data = self.as_dict()
+        del data["timestamp"]
+        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
 
     @classmethod
     def _from_parameters(cls, parameters: Dict[Text, Any]) -> Optional["Event"]:
@@ -1753,6 +1755,12 @@ class LegacyForm(ActiveLoop):
         d["event"] = ActiveLoop.type_name
         return d
 
+    def fingerprint(self) -> Text:
+        """Returns the hash of the event."""
+        d = super().as_dict()
+        del d["timestamp"]
+        return rasa.shared.utils.io.get_dictionary_fingerprint(d)
+
 
 class LoopInterrupted(SkipEventInMDStoryMixin):
     """Event added by FormPolicy and RulePolicy.
@@ -1852,6 +1860,12 @@ class LegacyFormValidation(LoopInterrupted):
         # event type.
         d["event"] = LoopInterrupted.type_name
         return d
+
+    def fingerprint(self) -> Text:
+        """Returns hash of the event."""
+        d = super().as_dict()
+        del d["timestamp"]
+        return rasa.shared.utils.io.get_dictionary_fingerprint(d)
 
 
 class ActionExecutionRejected(SkipEventInMDStoryMixin):

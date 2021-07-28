@@ -865,14 +865,13 @@ class DialogueStateTracker:
         Returns:
             fingerprint of the tracker
         """
-        data = {"sender_id": self.sender_id}
+        data: Dict[Text, Any] = {"sender_id": self.sender_id}
 
         if self.slots:
             data.update(self.slots)
 
         if self.events:
-            for event in list(self.events):
-                data.update(event.as_dict())
+            data.update({"events": list(self.events)})
 
         return rasa.shared.utils.io.get_dictionary_fingerprint(data)
 
