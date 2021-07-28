@@ -127,10 +127,6 @@ def test_core_models(
     )
 
 
-# backwards compatibility
-test = rasa.test
-
-
 def test_core(
     model: Optional[Text] = None,
     stories: Optional[Text] = None,

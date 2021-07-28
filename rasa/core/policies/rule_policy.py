@@ -907,20 +907,21 @@ class RulePolicy(MemoizationPolicy):
         ):
             return None, None
 
-        default_action_name = DEFAULT_ACTION_MAPPINGS.get(
-            tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        intent_name = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        if intent_name is None:
+            return None, None
+
+        default_action_name = DEFAULT_ACTION_MAPPINGS.get(intent_name)
+        if default_action_name is None:
+            return None, None
+
+        logger.debug(f"Predicted default action '{default_action_name}'.")
+        return (
+            default_action_name,
+            # create prediction source that corresponds to one of
+            # default prediction sources in `_default_sources()`
+            DEFAULT_RULES + intent_name,
         )
-
-        if default_action_name:
-            logger.debug(f"Predicted default action '{default_action_name}'.")
-            return (
-                default_action_name,
-                # create prediction source that corresponds to one of
-                # default prediction sources in `_default_sources()`
-                DEFAULT_RULES + tracker.latest_message.intent.get(INTENT_NAME_KEY),
-            )
-
-        return None, None
 
     @staticmethod
     def _find_action_from_loop_happy_path(
@@ -928,16 +929,16 @@ class RulePolicy(MemoizationPolicy):
     ) -> Tuple[Optional[Text], Optional[Text]]:
 
         active_loop_name = tracker.active_loop_name
+        if active_loop_name is None:
+            return None, None
+
         active_loop_rejected = tracker.active_loop.get(LOOP_REJECTED)
         should_predict_loop = (
-            active_loop_name
-            and not active_loop_rejected
+            not active_loop_rejected
             and tracker.latest_action.get(ACTION_NAME) != active_loop_name
         )
         should_predict_listen = (
-            active_loop_name
-            and not active_loop_rejected
-            and tracker.latest_action_name == active_loop_name
+            not active_loop_rejected and tracker.latest_action_name == active_loop_name
         )
 
         if should_predict_loop:

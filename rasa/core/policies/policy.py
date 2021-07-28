@@ -343,7 +343,7 @@ class Policy:
         pass
 
     @classmethod
-    def _metadata_filename(cls) -> Optional[Text]:
+    def _metadata_filename(cls) -> Text:
         """Returns the filename of the persisted policy metadata.
 
         Policies using the default `persist()` and `load()` implementations must
