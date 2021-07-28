@@ -54,7 +54,6 @@ from rasa.model import get_model
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer, TrainingData
-from rasa.nlu.components import Component
 from rasa.nlu.classifiers import fallback_classifier
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.utils.tensorflow.constants import ENTITY_RECOGNITION
@@ -1391,22 +1390,6 @@ def get_available_response_selector_types(
     ]
 
     return response_selector_types
-
-
-def remove_pretrained_extractors(pipeline: List[Component]) -> List[Component]:
-    """Remove pre-trained extractors from the pipeline.
-
-    Remove pre-trained extractors so that entities from pre-trained extractors
-    are not predicted upon parsing.
-
-    Args:
-        pipeline: the pipeline
-
-    Returns:
-        Updated pipeline
-    """
-    pipeline = [c for c in pipeline if c.name not in PRETRAINED_EXTRACTORS]
-    return pipeline
 
 
 def remove_entities_of_extractors(
