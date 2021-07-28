@@ -16,7 +16,8 @@ import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_POLICIES
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer, copy_state
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -182,21 +183,10 @@ class MemoizationPolicy(Policy):
             for t in training_trackers
             if not hasattr(t, "is_augmented") or not t.is_augmented
         ]
-        states = self.featurizer.extract_states_from_trackers_for_training(
+        inputs, outputs = self.featurizer.unfeaturized_trackers_for_training(
             training_trackers, domain, omit_unset_slots=False,
         )
-        inputs = states[:-1] + [
-            self.featurizer._get_partial_state(states[-1], sub_state=USER)
-        ]  # FIXME: this is different from before
-        outputs = [
-            [
-                sub_state
-                for key, sub_state in state[PREVIOUS_ACTION]
-                if key in [ACTION_NAME, ACTION_TEXT]
-            ]
-            for state in states[1:]
-        ]
-        self.lookup = self._create_lookup_from_states(inputs, outputs,)
+        self.lookup = self._create_lookup_from_states(inputs, outputs)
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
         return self.persist()
 

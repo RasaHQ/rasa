@@ -722,13 +722,13 @@ class RulePolicy(MemoizationPolicy):
         story_trackers: List[TrackerWithCachedStates],
         domain: Domain,
     ) -> None:
+
         (
             rule_trackers_as_states,
             rule_trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(
-            rule_trackers, domain, omit_unset_slots=True
+        ) = self.featurizer.unfeaturized_trackers_for_training(
+            rule_trackers, domain, omit_unset_slots=True,
         )
-
         rules_lookup = self._create_lookup_from_states(
             rule_trackers_as_states, rule_trackers_as_actions
         )
@@ -737,7 +737,9 @@ class RulePolicy(MemoizationPolicy):
         (
             story_trackers_as_states,
             story_trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(story_trackers, domain)
+        ) = self.featurizer.unfeaturized_trackers_for_training(
+            story_trackers, domain, omit_unset_slots=False,
+        )
 
         if self._check_for_contradictions:
             (

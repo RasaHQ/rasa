@@ -48,6 +48,23 @@ class Message:
             self.output_properties = set()
         self.output_properties.add(TEXT)
 
+    def __str__(self):
+        space = " " * 4
+        features = "\n".join(f"{space}{str(f)}" for f in self.features)
+        data = "\n".join(f"{space}{key}: {value}" for key, value in self.data.items())
+        space = " " * 2
+        return (
+            f"{self.__class__.__name__}(\n"
+            f"{space}data = {{\n"
+            f"{data}\n"
+            f"{space}}},\n"
+            f"{space}output_properties = {self.output_properties},\n"
+            f"{space}time = {self.time},\n"
+            f"{space}features = [\n"
+            f"{features}\n"
+            f"{space}]\n"
+        )
+
     def add_features(self, features: Optional["Features"]) -> None:
         if features is not None:
             self.features.append(features)

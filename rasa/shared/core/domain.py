@@ -590,15 +590,14 @@ class Domain:
 
         # includes all action names (custom, utterance, default actions and forms)
         # and action texts from end-to-end bot utterances
-        self.action_names_or_texts = (
-            self._combine_user_with_default_actions(self.user_actions)
-            + [
-                form_name
-                for form_name in self.form_names
-                if form_name not in self._custom_actions
-            ]
-            + self.action_texts
-        )
+        self.action_names_without_texts = self._combine_user_with_default_actions(
+            self.user_actions
+        ) + [
+            form_name
+            for form_name in self.form_names
+            if form_name not in self._custom_actions
+        ]
+        self.action_names_or_texts = self.action_names_without_texts + self.action_texts
 
         self._user_slots = copy.copy(slots)
         self.slots = slots
