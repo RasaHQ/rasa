@@ -25,7 +25,7 @@ from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import INTENT, ACTION_NAME, FEATURE_TYPE_SENTENCE
-from tests.conftest import TEST_MOODBOT_DIALOGUE
+from tests.dialogues import TEST_MOODBOT_DIALOGUE
 from tests.core.utilities import tracker_from_dialogue
 
 
