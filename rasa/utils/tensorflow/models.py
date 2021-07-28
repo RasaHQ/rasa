@@ -885,11 +885,11 @@ class TransformerRasaModel(RasaModel):
         # All the values in the attribute_data dict should be lists of tensors, each
         # tensor of the shape (batch_dim, ...). So we take the first non-empty list we
         # encounter and infer the batch size from its first tensor.
-        for key, data in attribute_data.items():
+        for data in attribute_data.values():
             if data:
                 return tf.shape(data[0])[0]
 
-        return 0
+        return None
 
     def _calculate_entity_loss(
         self,
