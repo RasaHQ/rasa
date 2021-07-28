@@ -31,7 +31,7 @@ from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.shared.core.trackers import DialogueStateTracker
-from tests.conftest import TEST_DEFAULT_DIALOGUE
+from tests.dialogues import TEST_DEFAULT_DIALOGUE
 from tests.core.utilities import get_tracker, tracker_from_dialogue
 
 

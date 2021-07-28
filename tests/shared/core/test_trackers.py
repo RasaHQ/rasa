@@ -58,7 +58,11 @@ from rasa.core.tracker_store import (
 from rasa.core.tracker_store import TrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from tests.core.conftest import MockedMongoTrackerStore
-from tests.conftest import TEST_DIALOGUES, TEST_MOODBOT_DIALOGUE, EXAMPLE_DOMAINS
+from tests.dialogues import (
+    TEST_DIALOGUES,
+    TEST_MOODBOT_DIALOGUE,
+    TEST_DOMAINS_FOR_DIALOGUES,
+)
 from tests.core.utilities import (
     tracker_from_dialogue,
     user_uttered,
@@ -139,7 +143,7 @@ def test_tracker_store_storage_and_retrieval(store: TrackerStore):
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
-@pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, EXAMPLE_DOMAINS))
+@pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, TEST_DOMAINS_FOR_DIALOGUES))
 def test_tracker_store(store, pair):
     dialogue, domainpath = pair
     domain = Domain.load(domainpath)
