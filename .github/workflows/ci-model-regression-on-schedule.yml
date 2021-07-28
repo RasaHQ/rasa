@@ -444,6 +444,7 @@ jobs:
 
           OUTPUT="${OUTPUT//$'\n'/'%0A'}"
           OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          OUTPUT="$(echo $OUTPUT | sed 's|`|\\`|g')"
           echo "::set-output name=report_description::${OUTPUT}"
 
           IS_DROPPED=false
