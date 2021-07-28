@@ -39,7 +39,6 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 from rasa.shared.importers.importer import TrainingDataImporter, E2EImporter
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 import tests.utilities
 
 
