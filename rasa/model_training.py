@@ -51,10 +51,6 @@ class TrainingResult(NamedTuple):
     code: int = 0
 
 
-# backwards compatibility
-train = rasa.train
-
-
 async def train_async(
     domain: Union[Domain, Text],
     config: Text,
