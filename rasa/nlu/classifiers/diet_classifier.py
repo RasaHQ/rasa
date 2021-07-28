@@ -583,22 +583,22 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             Tuple[Text, Text], List[Union[np.ndarray, scipy.sparse.spmatrix]]
         ] = dict()
         for msg in messages:
-            type_level_to_feature = self._extract_features_from_message(
+            sparse_type_to_feature = self._extract_features_from_message(
                 message=msg, attribute=attribute, featurizers=featurizers,
             )
-            for (feat_type, feat_lvl), feat_mat in type_level_to_feature.items():
-                if feat_lvl not in [SEQUENCE, SENTENCE]:
-                    raise ValueError(f"Unknown type {feat_lvl}")
-                if (type is None) or (type == feat_lvl):
-                    collected_features.setdefault((feat_type, feat_lvl), []).append(
-                        feat_mat
-                    )
+            for (feat_is_sparse, feat_type), feat_mat in sparse_type_to_feature.items():
+                if feat_type not in [SEQUENCE, SENTENCE]:
+                    raise ValueError(f"Unknown type {feat_type}")
+                if (type is None) or (type == feat_type):
+                    collected_features.setdefault(
+                        (feat_is_sparse, feat_type), []
+                    ).append(feat_mat)
 
         # finally wrap the lists of feature_matrices into FeatureArrays
         # and collect the resulting arrays in one list per type:
         sequence_features = []
         sentence_features = []
-        for level, collection in [
+        for type, collection in [
             (SEQUENCE, sequence_features),
             (SENTENCE, sentence_features),
         ]:
@@ -606,7 +606,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 # Note: the for loops make the order explicit, which would
                 # otherwise (i.e. iteration over collected_features) depend on
                 # insertion order inside _extract_features
-                list_of_matrices = collected_features.get((type, level), None)
+                list_of_matrices = collected_features.get((type, type), None)
                 if list_of_matrices:
                     collection.append(
                         FeatureArray(np.array(list_of_matrices), number_of_dimensions=3)
