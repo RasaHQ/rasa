@@ -762,7 +762,7 @@ tested_events = [
 def test_event_fingerprint_consistency_across_runs(event: Event):
     f1 = event.fingerprint()
 
-    event2 = copy.copy(event)
+    event2 = copy.deepcopy(event)
     f2 = event2.fingerprint()
 
     assert f1 == f2
@@ -779,6 +779,7 @@ def test_event_subclasses_are_tested(event_class: Type[Event]):
 )
 def test_event_fingerprint_uniqueness(event: Event):
     f1 = event.fingerprint()
-    event.timestamp = 1
+    event.type_name = "test"
     f2 = event.fingerprint()
+
     assert f1 != f2
