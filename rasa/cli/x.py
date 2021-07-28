@@ -493,28 +493,14 @@ def run_locally(args: argparse.Namespace) -> None:
 
     # noinspection PyBroadException
     try:
-        try:
-            local.main(
-                args,
-                project_path,
-                args.data,
-                token=rasa_x_token,
-                config_path=config_path,
-                domain_path=domain_path,
-            )
-        except TypeError as e:
-            if "domain_path" in str(e):
-                # backwards compatibility with Rasa X versions < 0.35.0
-                # fixes regression https://github.com/RasaHQ/rasa/issues/7592
-                local.main(
-                    args,
-                    project_path,
-                    args.data,
-                    token=rasa_x_token,
-                    config_path=config_path,
-                )
-            else:
-                raise
+        local.main(
+            args,
+            project_path,
+            args.data,
+            token=rasa_x_token,
+            config_path=config_path,
+            domain_path=domain_path,
+        )
     except RasaXTermsError:
         # User didn't accept the Rasa X terms.
         pass
