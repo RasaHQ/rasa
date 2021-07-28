@@ -775,32 +775,7 @@ def test_event_subclasses_are_tested(event_class: Type[Event]):
 
 
 @pytest.mark.parametrize(
-    "event",
-    [
-        UserUttered(),
-        EntitiesAdded(entities=[]),
-        DefinePrevUserUtteredFeaturization(True),
-        BotUttered(),
-        SlotSet(key="test"),
-        Restarted(),
-        UserUtteranceReverted(),
-        AllSlotsReset(),
-        ReminderScheduled(intent="test", trigger_date_time=datetime.today()),
-        ReminderCancelled(),
-        ActionReverted(),
-        StoryExported(),
-        FollowupAction(name="test"),
-        ConversationPaused(),
-        ConversationResumed(),
-        ActionExecuted(),
-        AgentUttered(),
-        ActiveLoop(name="test"),
-        ActionExecutionRejected(action_name="test"),
-        LegacyForm(name="test"),
-        LoopInterrupted(False),
-        LegacyFormValidation(True),
-        SessionStarted(),
-    ],
+    "event", tested_events,
 )
 def test_event_fingerprint_uniqueness(event: Event):
     f1 = event.fingerprint()

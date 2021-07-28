@@ -1471,7 +1471,7 @@ def test_domain_invalid_yml_in_folder():
 
 
 def test_domain_fingerprint_consistency_across_runs():
-    file = """
+    domain_yaml = """
          version: "2.0"
          intents:
          - greet
@@ -1493,8 +1493,8 @@ def test_domain_fingerprint_consistency_across_runs():
          actions:
          - action_test
     """
-    domain1 = Domain.from_yaml(file)
-    domain2 = Domain.from_yaml(file)
+    domain1 = Domain.from_yaml(domain_yaml)
+    domain2 = Domain.from_yaml(domain_yaml)
 
     f1 = domain1.fingerprint()
     f2 = domain2.fingerprint()

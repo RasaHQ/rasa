@@ -226,7 +226,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         data = {"sender_id": self.sender_id}
 
         if self.domain:
-            data.update(self.domain.as_dict())
+            data.update({"domain": self.domain})
 
         if self.slots:
             data.update(self.slots)
