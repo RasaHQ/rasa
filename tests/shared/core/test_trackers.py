@@ -1429,3 +1429,47 @@ def test_autofill_slots_for_policy_entities():
 
     for actual, expected in zip(tracker.events, expected_events):
         assert actual == expected
+
+
+def test_tracker_fingerprinting_consistency():
+    slot = TextSlot(name="name", influence_conversation=True)
+    slot.value = "example"
+    tr1 = DialogueStateTracker("test_sender_id", slots=[slot])
+    tr2 = DialogueStateTracker("test_sender_id", slots=[slot])
+    f1 = tr1.fingerprint()
+    f2 = tr2.fingerprint()
+    assert f1 == f2
+
+
+def test_tracker_unique_fingerprint(domain: Domain):
+    slot = TextSlot(name="name", influence_conversation=True)
+    slot.value = "example"
+    tr = DialogueStateTracker("test_sender_id", slots=[slot])
+    f1 = tr.fingerprint()
+
+    event1 = UserUttered(
+        text="hello",
+        parse_data={
+            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
+            "entities": [
+                {"entity": "city", "value": "London"},
+                {"entity": "count", "value": 1},
+            ],
+            "text": "hi",
+            "message_id": "3f4c04602a4947098c574b107d3ccc59",
+            "metadata": {},
+            "intent_ranking": [
+                {"id": 2, "name": "greet", "confidence": 0.9604260921478271},
+                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748},
+                {"id": 0, "name": "deny", "confidence": 0.011255578137934208},
+            ],
+        },
+    )
+    tr.update(event1)
+    f2 = tr.fingerprint()
+    assert f1 != f2
+
+    event2 = ActionExecuted(action_name="action_listen")
+    tr.update(event2)
+    f3 = tr.fingerprint()
+    assert f2 != f3
