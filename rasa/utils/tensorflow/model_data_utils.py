@@ -24,6 +24,116 @@ if typing.TYPE_CHECKING:
 TAG_ID_ORIGIN = "tag_id_origin"
 
 
+def extract_attribute_features_from_message(
+    message: Message, attribute: Text, featurizers: Optional[List[Text]] = None,
+) -> Dict[Tuple[Text, Text], Union[scipy.sparse.spmatrix, np.ndarray]]:
+    """Extracts and combines features from the given messages.
+
+    Args:
+        message: any message
+        attribute: attribute for which features should be collected
+        featurizers: the list of featurizers to consider
+    Returns:
+        a dictionary mapping keys that take the form
+        `([True|False],[SEQUENCE|SENTENCE])' to a sparse or dense matrix
+        where True or False indicates that the matrix is sparse or dense, respectively
+    """
+    (sparse_sequence_features, sparse_sentence_features,) = message.get_sparse_features(
+        attribute, featurizers
+    )
+    dense_sequence_features, dense_sentence_features = message.get_dense_features(
+        attribute, featurizers
+    )
+
+    if dense_sequence_features is not None and sparse_sequence_features is not None:
+        if (
+            dense_sequence_features.features.shape[0]
+            != sparse_sequence_features.features.shape[0]
+        ):
+            raise ValueError(
+                f"Sequence dimensions for sparse and dense sequence features "
+                f"don't coincide in '{message.get(TEXT)}'"
+                f"for attribute '{attribute}'."
+            )
+    if dense_sentence_features is not None and sparse_sentence_features is not None:
+        if (
+            dense_sentence_features.features.shape[0]
+            != sparse_sentence_features.features.shape[0]
+        ):
+            raise ValueError(
+                f"Sequence dimensions for sparse and dense sentence features "
+                f"don't coincide in '{message.get(TEXT)}'"
+                f"for attribute '{attribute}'."
+            )
+
+    out = {}
+    if sparse_sentence_features is not None:
+        out[(True, SENTENCE)] = sparse_sentence_features.features
+    if sparse_sequence_features is not None:
+        out[(True, SEQUENCE)] = sparse_sequence_features.features
+    if dense_sentence_features is not None:
+        out[(False, SENTENCE)] = dense_sentence_features.features
+    if dense_sequence_features is not None:
+        out[(False, SEQUENCE)] = dense_sequence_features.features
+
+    return out
+
+
+def extract_attribute_features_from_all_messages(
+    messages: List[Message],
+    attribute: Text,
+    type: Optional[Text] = None,
+    featurizers: Optional[List[Text]] = None,
+) -> Tuple[List[FeatureArray], List[FeatureArray]]:
+    """Collects and combines the attribute related features from all messages.
+
+    Args:
+        messages: list of messages to extract features from
+        attribute: the only attribute which will be considered
+        type: if not None, the other type (sentence/sequence) will be ignored
+        featurizers: the featurizers to be considered
+    Returns:
+        Sequence level features and sentence level features. Each feature contains
+        FeatureArrays with sparse features first.
+    """
+    if (type is not None) and (type not in [SENTENCE, SEQUENCE]):
+        raise ValueError(f"Unknown type {type}")
+    # for each label_example, collect sparse and dense feature (matrices) in lists
+    collected_features: Dict[
+        Tuple[Text, Text], List[Union[np.ndarray, scipy.sparse.spmatrix]]
+    ] = dict()
+    for msg in messages:
+        sparse_type_to_feature = extract_attribute_features_from_message(
+            message=msg, attribute=attribute, featurizers=featurizers,
+        )
+        for (feat_is_sparse, feat_type), feat_mat in sparse_type_to_feature.items():
+            if feat_type not in [SEQUENCE, SENTENCE]:
+                raise ValueError(f"Unknown type {feat_type}")
+            if (type is None) or (type == feat_type):
+                collected_features.setdefault((feat_is_sparse, feat_type), []).append(
+                    feat_mat
+                )
+
+    # finally wrap the lists of feature_matrices into FeatureArrays
+    # and collect the resulting arrays in one list per type:
+    sequence_features = []
+    sentence_features = []
+    for type, collection in [
+        (SEQUENCE, sequence_features),
+        (SENTENCE, sentence_features),
+    ]:
+        for is_sparse in [True, False]:
+            # Note: the for loops make the order explicit, which would
+            # otherwise (i.e. iteration over collected_features) depend on
+            # insertion order inside _extract_features
+            list_of_matrices = collected_features.get((is_sparse, type), None)
+            if list_of_matrices:
+                collection.append(
+                    FeatureArray(np.array(list_of_matrices), number_of_dimensions=3)
+                )
+    return sequence_features, sentence_features
+
+
 def featurize_training_examples(
     training_examples: List[Message],
     attributes: List[Text],
