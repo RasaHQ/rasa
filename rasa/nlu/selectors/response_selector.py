@@ -642,6 +642,9 @@ class ResponseSelector(DIETClassifier):
         sequence that is obtained by concatenating sequence and sentence features.
         Hence, it only makes use of sequence features if and only if the number of
         transformer layers is > 0.
+
+        Remember that self.use_text_as_label determines whether DIET2DIET or DIET2BOW
+        is used.
         """
         return (
             self.component_config[NUM_TRANSFORMER_LAYERS] > 0
