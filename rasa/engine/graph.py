@@ -2,10 +2,12 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import ChainMap
 from dataclasses import dataclass, field
+import logging
 from typing import Any, Callable, Dict, List, Optional, Text, Type
 
-from rasa.engine.runner.dask import logger
 import rasa.shared.utils.common
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
