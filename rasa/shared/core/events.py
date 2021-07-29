@@ -1527,6 +1527,12 @@ class ActionExecuted(Event):
         """Returns unique hash for event."""
         return int(self.fingerprint(), 16)
 
+    def fingerprint(self) -> Text:
+        """Creates unique hash for event."""
+        return rasa.shared.utils.io.get_dictionary_fingerprint(
+            {self.type_name: list(self.__members__())}
+        )
+
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
         if not isinstance(other, ActionExecuted):
