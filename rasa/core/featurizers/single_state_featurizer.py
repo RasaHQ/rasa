@@ -458,12 +458,52 @@ class SingleStateFeaturizer:
 
         if special_attribute and special_attribute not in extracted_features:
             extracted_features[special_attribute] = [
-                self._create_multihot_vector_feature(
+                self.__create_sparse_sentence_feature_via_multihot_encoding(
                     sub_state=sub_state, attribute=special_attribute
                 )
             ]
 
-    def _prepare_multihot_vector_features_for_attribute(
+    def __create_sparse_sentence_feature_via_multihot_encoding(
+        self, sub_state: SubState, attribute: Text,
+    ) -> Features:
+        """Creates a multi-hot encoding like feature for the given attribute.
+
+        Args:
+          sub_state:
+          attribute:
+        Returns:
+          a sparse sentence feature
+        """
+        # TODO: this could become a Featurizer graph component but might not be
+        # worth to include this in lookup (?)
+        if attribute not in sub_state:
+            raise ValueError(
+                f"Expected {attribute} to be attribute of given substate {sub_state}."
+            )
+
+        encoding: Dict[Text, int] = self._prepare_multihot_encoding_of_attribute(
+            sub_state, attribute
+        )
+
+        # convert to a sparse matrix
+        dim = len(self._item2index_mappings[attribute])
+        row = np.zeros(dim, dtype=int)
+        col = np.zeros(dim, dtype=int)
+        data = np.zeros(dim, dtype=float)
+        for feature_name, value in encoding.items():
+            if feature_name in self.item2index_mapping:
+                col.append(self.item2index_mappings[feature_name])
+                data.append(value)
+        features = scipy.sparse.coo_matrix((data, (row, col)))
+
+        return Features(
+            features,
+            FEATURE_TYPE_SENTENCE,
+            self.attribute,
+            origin=self.__class__.__name__,
+        )
+
+    def _prepare_multihot_encoding_of_attribute(
         self, sub_state: SubState, attribute: Text
     ) -> Dict[Text, int]:
         # FIXME: the code below is not type-safe, but fixing it
@@ -486,43 +526,3 @@ class SingleStateFeaturizer:
                 f"Given attribute '{attribute}' is not supported. "
                 f"It must be one of '{self._item2index_mappings.keys()}'."
             )
-
-    def _create_multihot_vector_feature(
-        self, sub_state: SubState, attribute: Text,
-    ) -> Features:
-        """Creates a multi-hot encoding like feature for the given attribute.
-
-        Args:
-          sub_state:
-          attribute:
-        Returns:
-          a sparse sentence feature
-        """
-        # TODO: this could become a Featurizer graph component but might not be
-        # worth to include this in lookup (?)
-        if attribute not in sub_state:
-            raise ValueError(
-                f"Expected {attribute} to be attribute of given substate {sub_state}."
-            )
-
-        encoding: Dict[
-            Text, int
-        ] = self._prepare_multihot_vector_features_for_attribute(sub_state, attribute)
-
-        # convert to a sparse matrix
-        dim = len(self._item2index_mappings[attribute])
-        row = np.zeros(dim, dtype=int)
-        col = np.zeros(dim, dtype=int)
-        data = np.zeros(dim, dtype=float)
-        for feature_name, value in encoding.items():
-            if feature_name in self.item2index_mapping:
-                col.append(self.item2index_mappings[feature_name])
-                data.append(value)
-        features = scipy.sparse.coo_matrix((data, (row, col)))
-
-        return Features(
-            features,
-            FEATURE_TYPE_SENTENCE,
-            self.attribute,
-            origin=self.__class__.__name__,
-        )
