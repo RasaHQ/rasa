@@ -737,7 +737,7 @@ reauth = ["pyu2f (>=0.1.5)"]
 
 [[package]]
 name = "google-auth-oauthlib"
-version = "0.4.4"
+version = "0.4.5"
 description = "Google Authentication Library"
 category = "main"
 optional = false
@@ -3549,8 +3549,8 @@ google-auth = [
     {file = "google_auth-1.34.0-py2.py3-none-any.whl", hash = "sha256:bd6aa5916970a823e76ffb3d5c3ad3f0bedafca0a7fa53bc15149ab21cb71e05"},
 ]
 google-auth-oauthlib = [
-    {file = "google-auth-oauthlib-0.4.4.tar.gz", hash = "sha256:09832c6e75032f93818edf1affe4746121d640c625a5bef9b5c96af676e98eee"},
-    {file = "google_auth_oauthlib-0.4.4-py2.py3-none-any.whl", hash = "sha256:0e92aacacfb94978de3b7972cf4b0f204c3cd206f74ddd0dc0b31e91164e6317"},
+    {file = "google-auth-oauthlib-0.4.5.tar.gz", hash = "sha256:4ab58e6c3dc6ccf112f921fcced40e5426fba266768986ea502228488276eaba"},
+    {file = "google_auth_oauthlib-0.4.5-py2.py3-none-any.whl", hash = "sha256:b5a1ce7c617d247ccb2dfbba9d4bfc734b41096803d854a2c52592ae80150a67"},
 ]
 google-cloud-core = [
     {file = "google-cloud-core-1.7.2.tar.gz", hash = "sha256:b1030aadcbb2aeb4ee51475426351af83c1072456b918fb8fdb80666c4bb63b5"},
