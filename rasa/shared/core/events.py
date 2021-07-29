@@ -482,7 +482,7 @@ class UserUttered(Event):
 
     def __hash__(self) -> int:
         """Returns unique hash of object."""
-        return hash(json.dumps(self.as_sub_state()))
+        return int(self.fingerprint(), 16)
 
     @property
     def intent_name(self) -> Optional[Text]:
@@ -687,7 +687,7 @@ class DefinePrevUserUtteredFeaturization(SkipEventInMDStoryMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(self.use_text_for_featurization)
+        return int(self.fingerprint(), 16)
 
     @classmethod
     def _from_parameters(
@@ -758,7 +758,7 @@ class EntitiesAdded(SkipEventInMDStoryMixin):
 
     def __hash__(self) -> int:
         """Returns the hash value of the event."""
-        return hash(json.dumps(self.entities))
+        return int(self.fingerprint(), 16)
 
     def __eq__(self, other: Any) -> bool:
         """Compares this event with another event."""
@@ -841,7 +841,7 @@ class BotUttered(SkipEventInMDStoryMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(self.__members())
+        return int(self.fingerprint(), 16)
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
@@ -943,7 +943,7 @@ class SlotSet(Event):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash((self.key, jsonpickle.encode(self.value)))
+        return int(self.fingerprint(), 16)
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
@@ -1006,7 +1006,7 @@ class Restarted(AlwaysEqualEventMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(32143124312)
+        return int(self.fingerprint(), 16)
 
     def as_story_string(self) -> Text:
         """Returns text representation of event."""
@@ -1030,7 +1030,7 @@ class UserUtteranceReverted(AlwaysEqualEventMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(32143124315)
+        return int(self.fingerprint(), 16)
 
     def as_story_string(self) -> Text:
         """Returns text representation of event."""
@@ -1054,7 +1054,7 @@ class AllSlotsReset(AlwaysEqualEventMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(32143124316)
+        return int(self.fingerprint(), 16)
 
     def as_story_string(self) -> Text:
         """Returns text representation of event."""
@@ -1107,15 +1107,7 @@ class ReminderScheduled(Event):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(
-            (
-                self.intent,
-                self.entities,
-                self.trigger_date_time.isoformat(),
-                self.kill_on_user_message,
-                self.name,
-            )
-        )
+        return int(self.fingerprint(), 16)
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
@@ -1212,7 +1204,7 @@ class ReminderCancelled(Event):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash((self.name, self.intent, str(self.entities)))
+        return int(self.fingerprint(), 16)
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
@@ -1300,7 +1292,7 @@ class ActionReverted(AlwaysEqualEventMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(32143124318)
+        return int(self.fingerprint(), 16)
 
     def as_story_string(self) -> Text:
         """Returns text representation of event."""
@@ -1335,7 +1327,7 @@ class StoryExported(Event):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(32143124319)
+        return int(self.fingerprint(), 16)
 
     @classmethod
     def _from_story_string(cls, parameters: Dict[Text, Any]) -> Optional[List[Event]]:
@@ -1387,7 +1379,7 @@ class FollowupAction(Event):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(self.action_name)
+        return int(self.fingerprint(), 16)
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
@@ -1438,7 +1430,7 @@ class ConversationPaused(AlwaysEqualEventMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(32143124313)
+        return int(self.fingerprint(), 16)
 
     def as_story_string(self) -> Text:
         """Returns text representation of event."""
@@ -1460,7 +1452,7 @@ class ConversationResumed(AlwaysEqualEventMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(32143124314)
+        return int(self.fingerprint(), 16)
 
     def as_story_string(self) -> Text:
         """Returns text representation of event."""
@@ -1533,7 +1525,7 @@ class ActionExecuted(Event):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(self.__members__())
+        return int(self.fingerprint(), 16)
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
@@ -1626,7 +1618,7 @@ class AgentUttered(SkipEventInMDStoryMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash((self.text, jsonpickle.encode(self.data)))
+        return int(self.fingerprint(), 16)
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
@@ -1690,7 +1682,7 @@ class ActiveLoop(Event):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(self.name)
+        return int(self.fingerprint(), 16)
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
@@ -1787,7 +1779,7 @@ class LoopInterrupted(SkipEventInMDStoryMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(self.is_interrupted)
+        return int(self.fingerprint(), 16)
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
@@ -1899,7 +1891,7 @@ class ActionExecutionRejected(SkipEventInMDStoryMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(self.action_name)
+        return int(self.fingerprint(), 16)
 
     def __eq__(self, other: Any) -> bool:
         """Compares object with other object."""
@@ -1942,7 +1934,7 @@ class SessionStarted(AlwaysEqualEventMixin):
 
     def __hash__(self) -> int:
         """Returns unique hash for event."""
-        return hash(32143124320)
+        return int(self.fingerprint(), 16)
 
     def as_story_string(self) -> None:
         """Skips representing event in stories."""
