@@ -30,14 +30,14 @@ class AddInputs(GraphComponent):
         return i1 + i2
 
 
-class SubstractByX(GraphComponent):
+class SubtractByX(GraphComponent):
     default_config = {"x": 0}
 
     def __init__(self, x: int) -> None:
         self._x = x
 
     @classmethod
-    def create(cls, config: Dict, execution_context: ExecutionContext) -> SubstractByX:
+    def create(cls, config: Dict, execution_context: ExecutionContext) -> SubtractByX:
         return cls(config["x"])
 
     def supported_languages(self) -> List[Text]:
@@ -116,7 +116,7 @@ def test_multi_node_graph_run(eager: bool):
         ),
         "subtract_2": SchemaNode(
             needs={"i": "add"},
-            uses=SubstractByX,
+            uses=SubtractByX,
             fn="subtract_x",
             constructor_name="create",
             config={"x": 2},
@@ -147,7 +147,7 @@ def test_target_override(eager: bool):
         ),
         "subtract_2": SchemaNode(
             needs={"i": "add"},
-            uses=SubstractByX,
+            uses=SubtractByX,
             fn="subtract_x",
             constructor_name="create",
             config={"x": 3},
@@ -170,7 +170,7 @@ def test_default_config(x: Optional[int], output: int):
     graph_schema: GraphSchema = {
         "subtract": SchemaNode(
             needs={"i": "input"},
-            uses=SubstractByX,
+            uses=SubtractByX,
             fn="subtract_x",
             constructor_name="create",
             config={"x": x} if x else {},
@@ -292,7 +292,7 @@ def test_loop():
     graph_schema: GraphSchema = {
         "subtract_a": SchemaNode(
             needs={"i": "subtract_b"},
-            uses=SubstractByX,
+            uses=SubtractByX,
             fn="subtract_x",
             constructor_name="create",
             config={},
@@ -300,7 +300,7 @@ def test_loop():
         ),
         "subtract_b": SchemaNode(
             needs={"i": "subtract_a"},
-            uses=SubstractByX,
+            uses=SubtractByX,
             fn="subtract_x",
             constructor_name="create",
             config={},

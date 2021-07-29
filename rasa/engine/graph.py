@@ -39,13 +39,13 @@ class GraphComponent(ABC):
     def create(
         cls, config: Dict, execution_context: ExecutionContext
     ) -> GraphComponent:
-        """Creates a new graph component.
+        """Creates a new `GraphComponent`.
 
         Args:
-            config: This config overrides the `default_config`
+            config: This config overrides the `default_config`.
             execution_context: Information about the current graph run.
 
-        Returns: An instantiated GraphComponent
+        Returns: An instantiated `GraphComponent`.
         """
         ...
 
@@ -53,15 +53,13 @@ class GraphComponent(ABC):
     def load(cls, config: Dict, execution_context: ExecutionContext) -> GraphComponent:
         """The load method is for creating a component using persisted data.
 
-        Args:
-            config: This config overrides the `default_config`
-            execution_context: Information about the current graph run.
+        If not overridden this method merely calls `create`.
 
         Args:
-            config: This config overrides the `default_config`
+            config: This config overrides the `default_config`.
             execution_context: Information about the current graph run.
 
-        Returns: An instantiated, loaded GraphComponent
+        Returns: An instantiated, loaded `GraphComponent`.
         """
         return cls.create(config, execution_context)
 
@@ -82,7 +80,7 @@ class ExecutionContext:
 
     graph_schema: GraphSchema = field(repr=False)
     model_id: Text
-    diagnostic_data: bool = False
+    should_add_diagnostic_data: bool = False
     is_finetuning: bool = False
 
 
@@ -151,20 +149,31 @@ class GraphNode:
         )
         self._component: GraphComponent = getattr(  # type: ignore[no-redef]
             self._component_class, self._constructor_name
-        )(self._component_config, self._execution_context, **kwargs)
+        )(
+            config=self._component_config,
+            execution_context=self._execution_context,
+            **kwargs,
+        )
 
     def parent_node_names(self) -> List[Text]:
         """The names of the parent nodes of this node."""
         return list(self._inputs.values())
 
-    def __call__(self, *inputs_from_previous_nodes: List[Any]) -> Dict[Text, Any]:
-        """This method is called when the node executes in the graph."""
+    def __call__(self, *inputs_from_previous_nodes: Dict[Text, Any]) -> Dict[Text, Any]:
+        """Calls the `GraphComponent` run method when the node executes in the graph.
+
+        Args:
+            *inputs_from_previous_nodes: The output of all parent nodes. Each is a
+                dictionary with a single item mapping the node's name to its output.
+
+        Returns: A dictionary with a single item mapping the node's name to the output.
+        """
         received_inputs = dict(ChainMap(*inputs_from_previous_nodes))
         kwargs = {}
         for input, input_node in self._inputs.items():
             kwargs[input] = received_inputs[input_node]
 
-        if not self._component:
+        if not self._eager:
             constructor_kwargs = rasa.shared.utils.common.minimal_kwargs(
                 kwargs, self._constructor_fn
             )
@@ -174,7 +183,7 @@ class GraphNode:
         logger.debug(
             f"Node {self._node_name} running "
             f"{self._component_class.__name__}.{self._fn_name} "
-            f"with kwargs: {run_kwargs}"
+            f"with kwargs: {run_kwargs}."
         )
         return {self._node_name: self._fn(self._component, **run_kwargs)}
 
@@ -185,7 +194,7 @@ class GraphNode:
         schema_node: SchemaNode,
         execution_context: ExecutionContext,
     ) -> GraphNode:
-        """Creates a `GraphNode` from a `SchemaNode`"""
+        """Creates a `GraphNode` from a `SchemaNode`."""
         return cls(
             node_name=node_name,
             component_class=schema_node.uses,

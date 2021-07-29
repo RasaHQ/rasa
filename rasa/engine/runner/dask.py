@@ -12,8 +12,7 @@ from rasa.engine.graph import (
     GraphNode,
     GraphSchema,
 )
-from rasa.engine.runner import GraphRunner
-
+from rasa.engine.runner.interface import GraphRunner
 
 logger = logging.getLogger(__name__)
 
@@ -62,16 +61,28 @@ class DaskGraphRunner(GraphRunner):
             for node_name, schema_node in graph_schema.items()
         }
 
+    @staticmethod
+    def _instantiated_graph_to_dask_graph(
+        instantiated_graph: Dict[Text, GraphNode]
+    ) -> Dict[Text, Any]:
+        """Builds a dask graph from the instantiated graph.
+
+        For more information about dask graphs
+        see: https://docs.dask.org/en/latest/spec.html
+        """
+        run_graph = {
+            node_name: (graph_node, *graph_node.parent_node_names())
+            for node_name, graph_node in instantiated_graph.items()
+        }
+        return run_graph
+
     def run(
         self,
         inputs: Optional[Dict[Text, Any]] = None,
         targets: Optional[List[Text]] = None,
     ) -> Dict[Text, Any]:
         """Runs the graph (see parent class for full docstring)."""
-        run_graph = {
-            node_name: (graph_node, *graph_node.parent_node_names())
-            for node_name, graph_node in self._instantiated_graph.items()
-        }
+        run_graph = self._instantiated_graph_to_dask_graph(self._instantiated_graph)
 
         if inputs:
             self._add_inputs_to_graph(inputs, run_graph)
@@ -84,7 +95,6 @@ class DaskGraphRunner(GraphRunner):
         )
 
         try:
-            # TODO: set dask scheduler via config?
             dask_result = dask.get(run_graph, run_targets)
             return dict(ChainMap(*dask_result))
         except RuntimeError as e:
@@ -95,6 +105,8 @@ class DaskGraphRunner(GraphRunner):
         for input_name, input_value in inputs.items():
             if input_value in graph.keys():
                 raise GraphRunError(
-                    f'Input value "{input_value}" clashes with a node name.'
+                    f"Input value '{input_value}' clashes with a node name. Make sure "
+                    f"that none of the input names passed to the `run` method are the "
+                    f"same as node names in the graph schema."
                 )
             graph[input_name] = {input_name: input_value}
