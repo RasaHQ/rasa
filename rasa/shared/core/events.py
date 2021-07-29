@@ -1757,7 +1757,10 @@ class LegacyForm(ActiveLoop):
 
     def fingerprint(self) -> Text:
         """Returns the hash of the event."""
-        d = super().as_dict()
+        d = self.as_dict()
+        # Revert event name to legacy subclass name to avoid different event types
+        # having the same fingerprint.
+        d["event"] = self.type_name
         del d["timestamp"]
         return rasa.shared.utils.io.get_dictionary_fingerprint(d)
 
@@ -1863,7 +1866,10 @@ class LegacyFormValidation(LoopInterrupted):
 
     def fingerprint(self) -> Text:
         """Returns hash of the event."""
-        d = super().as_dict()
+        d = self.as_dict()
+        # Revert event name to legacy subclass name to avoid different event types
+        # having the same fingerprint.
+        d["event"] = self.type_name
         del d["timestamp"]
         return rasa.shared.utils.io.get_dictionary_fingerprint(d)
 
