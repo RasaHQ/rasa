@@ -548,9 +548,24 @@ class TEDPolicy(Policy):
 
         return model_data
 
+    @staticmethod
+    def _get_trackers_for_training(
+        trackers: List[TrackerWithCachedStates],
+    ) -> List[TrackerWithCachedStates]:
+        """Filters out the list of trackers which should not be used for training.
+
+        Args:
+            trackers: All trackers available for training.
+
+        Returns:
+            Trackers which should be used for training.
+        """
+        # By default, we train on all available trackers.
+        return trackers
+
     def _prepare_for_training(
         self,
-        training_trackers: List[TrackerWithCachedStates],
+        trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -558,7 +573,7 @@ class TEDPolicy(Policy):
         """Prepares data to be fed into the model.
 
         Args:
-            training_trackers: List of training trackers to be featurized.
+            trackers: List of training trackers to be featurized.
             domain: Domain of the assistant.
             interpreter: NLU interpreter to be used for featurizing states.
             **kwargs: Any other arguments.
@@ -566,6 +581,7 @@ class TEDPolicy(Policy):
         Returns:
             Featurized data to be fed to the model and corresponding label ids.
         """
+        training_trackers = self._get_trackers_for_training(trackers)
         # dealing with training data
         tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
             training_trackers,
