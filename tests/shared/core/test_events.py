@@ -759,7 +759,7 @@ tested_events = [
 
 
 @pytest.mark.parametrize("event", tested_events)
-def test_event_fingerprint_consistency_across_runs(event: Event):
+def test_event_fingerprint_consistency(event: Event):
     f1 = event.fingerprint()
 
     event2 = copy.deepcopy(event)

@@ -57,6 +57,9 @@ from rasa.core.tracker_store import (
 )
 from rasa.core.tracker_store import TrackerStore
 from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 from tests.core.conftest import MockedMongoTrackerStore
 from tests.dialogues import (
     TEST_DIALOGUES,
@@ -1473,3 +1476,47 @@ def test_tracker_unique_fingerprint(domain: Domain):
     tr.update(event2)
     f3 = tr.fingerprint()
     assert f2 != f3
+
+
+def test_tracker_fingerprint_story_reading(domain: Domain):
+    story_yaml = """
+    stories:
+    - story: test story
+      steps:
+      - intent: greet
+      - action: utter_greet
+    """
+    reader = YAMLStoryReader(domain)
+    story_steps = reader.read_from_string(story_yaml)
+    events = []
+    for step in story_steps:
+        evts = step.events
+        if isinstance(evts, list):
+            events += evts
+        else:
+            events.append(evts)
+
+    slot1 = TextSlot(name="name", influence_conversation=True)
+    slot1.value = "example"
+
+    tracker1 = DialogueStateTracker.from_events("sender_id", events, [slot1])
+    f1 = tracker1.fingerprint()
+
+    time.sleep(0.1)
+
+    reader2 = YAMLStoryReader(domain)
+    story_steps2 = reader2.read_from_string(story_yaml)
+    events2 = []
+    for step in story_steps2:
+        evts = step.events
+        if isinstance(evts, list):
+            events2 += evts
+        else:
+            events2.append(evts)
+    slot2 = TextSlot(name="name", influence_conversation=True)
+    slot2.value = "example"
+
+    tracker2 = DialogueStateTracker.from_events("sender_id", events2, [slot2])
+    f2 = tracker2.fingerprint()
+
+    assert f1 == f2
