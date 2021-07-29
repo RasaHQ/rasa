@@ -6,8 +6,10 @@ from typing import Any, Text, Dict, List, Optional
 from rasa.architecture_prototype.graph_utils import minimal_graph_schema
 
 from rasa.architecture_prototype.interfaces import (
-    DaskGraph, GraphNodeComponent,
-    GraphSchema, TrainingCacheInterface,
+    DaskGraph,
+    GraphNodeComponent,
+    GraphSchema,
+    TrainingCacheInterface,
 )
 from rasa.shared.constants import DEFAULT_DATA_PATH
 import rasa.shared.utils.common
@@ -23,6 +25,7 @@ class FingerprintComponent(GraphNodeComponent):
     This is when we use the fingerprints stored in the `TrainingCache` to determine
     which parts of a graph need to be re-calculated on a subsequent run.
     """
+
     def __call__(self, *args: Any) -> Dict[Text, Any]:
         """We compare the fingerprints of the node inputs with the cache."""
         fingerprint_statuses = dict(ChainMap(*args))
@@ -87,6 +90,7 @@ class FingerprintComponent(GraphNodeComponent):
 
 class FingerprintStatus:
     """Stores the result of the fingerprinting run for a specific node."""
+
     def __init__(
         self,
         nodename: Text,
@@ -111,6 +115,7 @@ class FingerprintStatus:
 
 class TrainingCache(TrainingCacheInterface):
     """Stores the fingerprints and output values for a graph run."""
+
     def __init__(self) -> None:
         self._fingerprints = {}
         self._outputs = {}
@@ -170,6 +175,7 @@ def dask_graph_to_fingerprint_graph(dask_graph: DaskGraph) -> DaskGraph:
 
 class CachedComponent:
     """If a component can be cached it is replaced with this."""
+
     def __init__(self, *args, cached_value: Any, **kwargs):
         self._cached_value = cached_value
 

@@ -1,3 +1,4 @@
+from os import stat_result
 import jsonpickle
 import logging
 import copy
@@ -211,15 +212,11 @@ class TrackerFeaturizer:
         outputs = []
         for state_sequence in list_of_state_sequences:
             inputs.append(state_sequence[:-1])
-            outputs.append(
-                [
-                    (
-                        state[PREVIOUS_ACTION].get(ACTION_NAME, None)
-                        or state[PREVIOUS_ACTION].get(ACTION_TEXT, None)
-                    )
-                    for state in state_sequence[1:]
-                ]
+            last_action = state_sequence[-1][PREVIOUS_ACTION]
+            last_action_name_or_text = (
+                last_action.get(ACTION_NAME, None) or last_action[ACTION_TEXT]
             )
+            outputs.append([last_action_name_or_text])
         return inputs, outputs
 
     def featurize_trackers_for_training(
@@ -355,13 +352,14 @@ class TrackerFeaturizer:
         """
         states = tracker.past_states(
             domain,
-            omit_unset_slots=self.omit_unset_slots,
+            omit_unset_slots=False,
             ignore_rule_only_turns=ignore_rule_only_turns,
             rule_only_data=rule_only_data,
         )
         states = self.slice_state_history(states, self.max_history)
         # FIXME/TODO: why does this happen after slicing?
-        return self._prepare_for_prediction(states, use_text_for_last_user_input)
+        self._prepare_for_prediction(states, use_text_for_last_user_input)
+        return states
 
     def featurize_trackers_for_prediction(
         self,

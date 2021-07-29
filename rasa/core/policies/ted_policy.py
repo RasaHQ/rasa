@@ -17,10 +17,7 @@ import rasa.core.actions.action
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.shared.core.domain import Domain
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    TrackerFeaturizer,
-)
+from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
@@ -1051,28 +1048,24 @@ class TED(TransformerRasaModel):
         Args:
             name: attribute name
         """
-        # create encoding layers only for the features which should be encoded;
-        if name not in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE:
-            return
-        # check that there are SENTENCE features for the attribute name in data
-        if (
+        should_be_encoded = (
+            name in SENTENCE_FEATURES_TO_ENCODE + LABEL_FEATURES_TO_ENCODE
+        )
+        exceptions = (
             name in SENTENCE_FEATURES_TO_ENCODE
             and FEATURE_TYPE_SENTENCE not in self.data_signature[name]
-        ):
-            return
-        #  same for label_data
-        if (
+        ) or (
             name in LABEL_FEATURES_TO_ENCODE
             and FEATURE_TYPE_SENTENCE not in self.label_signature[name]
-        ):
-            return
-
-        self._prepare_ffnn_layer(
-            f"{name}",
-            [self.config[ENCODING_DIMENSION]],
-            self.config[DROP_RATE_DIALOGUE],
-            prefix="encoding_layer",
         )
+
+        if should_be_encoded and not exceptions:
+            self._prepare_ffnn_layer(
+                f"{name}",
+                [self.config[ENCODING_DIMENSION]],
+                self.config[DROP_RATE_DIALOGUE],
+                prefix="encoding_layer",
+            )
 
     # ---GRAPH BUILDING HELPERS---
 
@@ -1105,17 +1098,12 @@ class TED(TransformerRasaModel):
                 )
                 all_labels_encoded[key] = attribute_features
 
-        if (
-            all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None
-            and all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_NAME}") is not None
-        ):
-            x = all_labels_encoded.pop(
-                f"{LABEL_KEY}_{ACTION_TEXT}"
-            ) + all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
-        elif all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None:
-            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}")
-        else:
-            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
+        all_label_encoded_tensors = []
+        for action_attribute in [ACTION_TEXT, ACTION_NAME]:
+            tensor = all_labels_encoded.get(f"{LABEL_KEY}_{action_attribute}")
+            if tensor is not None:
+                all_label_encoded_tensors.append(tensor)
+        x = tf.math.add_n(all_label_encoded_tensors)
 
         # additional sequence axis is artifact of our RasaModelData creation
         # TODO check whether this should be solved in data creation

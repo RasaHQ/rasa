@@ -124,10 +124,13 @@ class MemoizationPolicy(Policy):
         if not trackers_as_states:
             return lookup
 
-        assert len(trackers_as_actions[0]) == 1, (
-            f"The second dimension of trackers_as_action should be 1, "
-            f"instead of {len(trackers_as_actions[0])}"
-        )
+        try:
+            assert len(trackers_as_actions[0]) == 1, (
+                f"The second dimension of trackers_as_action should be 1, "
+                f"instead of {len(trackers_as_actions[0])}"
+            )
+        except:
+            breakpoint()
 
         ambiguous_feature_keys = set()
 

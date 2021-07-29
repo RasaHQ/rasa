@@ -27,7 +27,9 @@ def test_model_fingerprinting(tmp_path: Path):
         if hasattr(fingerprint, "should_run"):
             assert not fingerprint.should_run
 
-    train_graph_schema["train_core_CountVectorsFeaturizer_3"]["config"]["some value"] = 42
+    train_graph_schema["train_core_CountVectorsFeaturizer_3"]["config"][
+        "some value"
+    ] = 42
     dask_graph, targets = graph.convert_to_dask_graph(
         train_graph_schema, cache=cache, model_persistor=persistor
     )

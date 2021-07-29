@@ -235,13 +235,13 @@ class Policy(metaclass=PolicyMetaclass):
         Returns:
             A list of states.
         """
-        return self.featurizer.extract_states_from_trackers_for_prediction(
-            [tracker],
+        return self.featurizer.extract_states_from_tracker_for_prediction(
+            tracker,
             domain,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
             rule_only_data=self._rule_only_data,
-        )[0]
+        )
 
     def _featurize_for_prediction(
         self,

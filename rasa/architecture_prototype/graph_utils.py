@@ -61,7 +61,9 @@ def _all_dependencies_schema(
 def run_dask_graph(
     dask_graph: DaskGraph, target_names: Union[Text, List[Text]],
 ) -> Dict[Text, Any]:
-    return dict(ChainMap(*dask.threaded.get(dask_graph, target_names)))
+    return dict(
+        ChainMap(*dask.get(dask_graph, target_names))
+    )  # FIXME: switch back to threaded
 
 
 def visualise_dask_graph(dask_graph: DaskGraph, filename: Text,) -> None:

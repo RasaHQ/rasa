@@ -1,5 +1,6 @@
 import logging
 import copy
+from re import sub
 from rasa.utils.tensorflow.constants import SENTENCE
 import numpy as np
 import scipy.sparse
@@ -105,10 +106,8 @@ def lookup_featurized_message_for_substate(
     # fallback to on-the-fly computation of features?
     if e2e_features:
         featurized_message = e2e_features[key]
-        print(f"found {str(featurized_message)}")
     else:
         featurized_message = Message(data=sub_state)
-        print(f"could not find... {featurized_message}")
         # = unfeaturized message, TODO: needed for Memoization (?)
     return featurized_message
 
@@ -235,19 +234,21 @@ class SingleStateFeaturizer:
                     sub_state, e2e_features
                 )
                 attributes2features = self._extract_features_from_featurized_message(
-                    featurized_message, None  # i.e. all # FIXME: text / name ?
+                    featurized_message, None,  # i.e. all # FIXME: text / name ?
                 )
-                self._special_handling_of_attribute(
-                    sub_state=sub_state,
-                    extracted_features=attributes2features,
-                    special_attribute=ACTION_NAME,
-                )
+
+                if ACTION_NAME in sub_state:
+                    self._special_handling_of_attribute(
+                        sub_state=sub_state,
+                        extracted_features=attributes2features,
+                        special_attribute=ACTION_NAME,
+                    )
                 features_input.update(attributes2features)
 
                 # action targets are extracted from action sub_state
                 if targets_include_actions:
                     features_target_action = domain.index_for_action(
-                        sub_state[ACTION_NAME] or sub_state[ACTION_TEXT]
+                        sub_state.get(ACTION_NAME, None) or sub_state[ACTION_TEXT]
                     )
 
             # (2) user
@@ -259,23 +260,13 @@ class SingleStateFeaturizer:
                     sub_state, e2e_features
                 )
 
-                if remove_user_text_if_intent:
-                    # NOTE: needs to happen before next step because the
-                    # `_special_handling_of_attribute`  will trigger the creation of
-                    # a multi-hot feature just like it would have in the previous
-                    # version where we removed the TEXT (if INTENT was present) during
-                    #  ... TODO: lookup what this was before
-                    # (which is now: `extract_states_from_trackers_for_training`)
-
+                if remove_user_text_if_intent and INTENT in sub_state:
                     # TODO: just add an include/exclude parameters to the "extract"
                     # functions instead of this workaround...
-                    if INTENT in featurized_message.data:
-                        attributes = set(featurized_message.data.keys()).difference(
-                            TEXT
-                        )
-                        featurized_message = copy_featurized_message(
-                            featurized_message, attributes
-                        )
+                    attributes = set(featurized_message.data.keys()).difference(TEXT)
+                    featurized_message = copy_featurized_message(
+                        featurized_message, attributes
+                    )
 
                 attributes2features = self._extract_features_from_featurized_message(
                     featurized_message=featurized_message,
@@ -285,17 +276,19 @@ class SingleStateFeaturizer:
                         if attribute != ENTITIES
                     ),
                 )
-                self._special_handling_of_attribute(
-                    sub_state=sub_state,
-                    extracted_features=attributes2features,
-                    special_attribute=INTENT,
-                )
-                if sub_state.get(ENTITIES):
-                    attributes2features[
-                        ENTITIES
-                    ] = self._create_multihot_vector_features(
+
+                if INTENT in sub_state:
+                    self._special_handling_of_attribute(
+                        sub_state=sub_state,
+                        extracted_features=attributes2features,
+                        special_attribute=INTENT,
+                    )
+
+                if ENTITIES in sub_state:
+                    multihot_feats_for_entities = self._create_multihot_vector_features(
                         sub_state, ENTITIES, sparse=True
                     )
+                    attributes2features[ENTITIES] = multihot_feats_for_entities
                 features_input.update(attributes2features)
 
                 # entity targets are extracted from user sub_state
@@ -343,16 +336,20 @@ class SingleStateFeaturizer:
             for action in actions:
                 # NOTE: this is tricky and only works iff the sub_state looks exactly
                 # like this during lookup table computation
-                action_as_substate = {attribute: action}
-                featurized_message = lookup_featurized_message_for_substate(
-                    sub_state=action_as_substate, e2e_features=e2e_features,
+                dummy_state = {PREVIOUS_ACTION: {attribute: action}}
+                state_encoding = self.encode_state(
+                    state=dummy_state,
+                    domain=domain,
+                    bilou_tagging=False,
+                    e2e_features=e2e_features,
+                    targets_include_actions=False,
+                    targets_include_entities=False,
+                    remove_user_text_if_intent=False,
                 )
-                features_for_action = self._extract_features_from_featurized_message(
-                    featurized_message, [attribute]
-                )
+                features_for_action = state_encoding["input"]
                 if not features_for_action:
                     raise RuntimeError(
-                        f"Could not lookup features for {action_as_substate}."
+                        f"Could not lookup features for state {dummy_state}."
                     )
                 features.append(features_for_action)
         return features
@@ -377,7 +374,6 @@ class SingleStateFeaturizer:
             all_features = featurized_message.get_sparse_features(
                 attribute
             ) + featurized_message.get_dense_features(attribute)
-
             for features in all_features:
                 if features is not None:
                     output.setdefault(attribute, []).append(features)
@@ -458,7 +454,7 @@ class SingleStateFeaturizer:
                     if feat.is_sparse and feat.type == SENTENCE
                 ]
 
-            extracted_features[special_attribute]
+            extracted_features[special_attribute] = sparse_sentence_features
 
         if special_attribute and special_attribute not in extracted_features:
             extracted_features[special_attribute] = [
