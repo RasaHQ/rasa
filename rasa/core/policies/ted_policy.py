@@ -1006,7 +1006,9 @@ class TEDPolicy(Policy):
         model_utilities = cls._load_model_utilities(model_path)
 
         model_utilities["meta"] = cls._update_loaded_params(model_utilities["meta"])
-        model_utilities["meta"][EPOCHS] = epoch_override
+
+        if should_finetune:
+            model_utilities["meta"][EPOCHS] = epoch_override
 
         (
             model_data_example,

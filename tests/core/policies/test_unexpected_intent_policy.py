@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, List, Dict, Text
+from typing import Optional, List, Dict, Text, Type
 import tensorflow as tf
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     IntentMaxHistoryTrackerFeaturizer,
 )
-from rasa.core.policies.ted_policy import PREDICTION_FEATURES
+from rasa.core.policies.ted_policy import PREDICTION_FEATURES, TEDPolicy
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME, ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
@@ -52,6 +52,10 @@ from tests.core.policies.test_ted_policy import TestTEDPolicy
 
 
 class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
+    @staticmethod
+    def _policy_class_to_test() -> Type[TEDPolicy]:
+        return UnexpecTEDIntentPolicy
+
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> UnexpecTEDIntentPolicy:
