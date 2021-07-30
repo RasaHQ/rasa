@@ -256,7 +256,7 @@ async def test_only_getting_e2e_conversation_tests_if_e2e_enabled(tmp_path: Path
 
     expected = StoryGraph(story_steps)
 
-    actual = await selector.get_conversation_tests()
+    actual = selector.get_conversation_tests()
 
     assert expected.as_story_string() == actual.as_story_string()
 

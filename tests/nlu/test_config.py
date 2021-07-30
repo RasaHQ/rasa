@@ -164,7 +164,7 @@ async def test_train_docker_and_docs_configs(
 ):
     monkeypatch.setattr(autoconfig, "_dump_config", Mock())
     importer = RasaFileImporter(config_file=config_file)
-    imported_config = await importer.get_config()
+    imported_config = importer.get_config()
 
     loaded_config = config.load(imported_config)
 

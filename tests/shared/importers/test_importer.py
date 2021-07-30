@@ -61,21 +61,21 @@ async def test_combined_file_importer_with_single_importer(project: Text):
     importer = RasaFileImporter(config_path, domain_path, [default_data_path])
     combined = CombinedDataImporter([importer])
 
-    assert await importer.get_config() == combined.get_config()
+    assert importer.get_config() == combined.get_config()
     actual_domain = combined.get_domain()
-    expected_domain = await importer.get_domain()
+    expected_domain = importer.get_domain()
     assert hash(actual_domain) == hash(expected_domain)
 
     actual_training_data = combined.get_nlu_data()
-    expected_training_data = await importer.get_nlu_data()
+    expected_training_data = importer.get_nlu_data()
     assert hash(actual_training_data) == hash(expected_training_data)
 
-    expected_stories = await importer.get_stories()
+    expected_stories = importer.get_stories()
     actual_stories = combined.get_stories()
 
     assert actual_stories.as_story_string() == expected_stories.as_story_string()
 
-    expected_tests = await importer.get_conversation_tests()
+    expected_tests = importer.get_conversation_tests()
     actual_tests = combined.get_conversation_tests()
 
     assert actual_tests.as_story_string() == expected_tests.as_story_string()
@@ -148,19 +148,19 @@ async def test_nlu_only(project: Text):
     assert isinstance(actual, NluDataImporter)
     assert isinstance(actual._importer, ResponsesSyncImporter)
 
-    stories = await actual.get_stories()
+    stories = actual.get_stories()
     assert stories.is_empty()
 
-    conversation_tests = await actual.get_stories()
+    conversation_tests = actual.get_stories()
     assert conversation_tests.is_empty()
 
-    domain = await actual.get_domain()
+    domain = actual.get_domain()
     assert domain.is_empty()
 
-    config = await actual.get_config()
+    config = actual.get_config()
     assert config
 
-    nlu_data = await actual.get_nlu_data()
+    nlu_data = actual.get_nlu_data()
     assert not nlu_data.is_empty()
 
 
@@ -315,7 +315,7 @@ async def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
     # Patch to return our test stories
     default_importer.importer.get_stories = mocked_stories
 
-    domain = await default_importer.get_domain()
+    domain = default_importer.get_domain()
 
     assert all(
         action_name in domain.action_names_or_texts
