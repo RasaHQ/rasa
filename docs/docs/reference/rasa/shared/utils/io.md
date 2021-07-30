@@ -75,7 +75,7 @@ If the path points to a file, returns an empty list.
 #### deep\_container\_fingerprint
 
 ```python
-deep_container_fingerprint(obj: Union[List[Any], Dict[Any, Any]], encoding: Text = DEFAULT_ENCODING) -> Text
+deep_container_fingerprint(obj: Union[List[Any], Dict[Any, Any], Any], encoding: Text = DEFAULT_ENCODING) -> Text
 ```
 
 Calculate a hash which is stable, independent of a containers key order.

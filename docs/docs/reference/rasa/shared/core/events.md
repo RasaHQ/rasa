@@ -112,6 +112,18 @@ Returns the event as story string.
 
   textual representation of the event or None.
 
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Returns a unique hash for the event which is stable across python runs.
+
+**Returns**:
+
+  fingerprint of the event
+
 #### resolve\_by\_type
 
 ```python
@@ -1334,6 +1346,14 @@ legacy events which were stored with the old type name `form`.
 
 Returns serialized event.
 
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Returns the hash of the event.
+
 ## LoopInterrupted Objects
 
 ```python
@@ -1429,6 +1449,14 @@ See parent class docstring.
 ```
 
 Returns serialized event.
+
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Returns hash of the event.
 
 ## ActionExecutionRejected Objects
 

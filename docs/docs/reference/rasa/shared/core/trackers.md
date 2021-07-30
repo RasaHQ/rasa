@@ -465,6 +465,18 @@ Get the name of the previously executed action or text of e2e action.
 
 Returns: name of the previously executed action or text of e2e action
 
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Returns a unique hash for the tracker which is stable across python runs.
+
+**Returns**:
+
+  fingerprint of the tracker
+
 #### get\_active\_loop\_name
 
 ```python

@@ -91,6 +91,8 @@ Modify the state of the tracker according to an ``Event``.
 class TrainingDataGenerator()
 ```
 
+Generates trackers from training data.
+
 #### \_\_init\_\_
 
 ```python

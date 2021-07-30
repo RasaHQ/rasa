@@ -120,11 +120,38 @@ Indicates if the slot&#x27;s value has been set.
 
 Returns a slots class by its type name.
 
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Returns a unique hash for the slot which is stable across python runs.
+
+**Returns**:
+
+  fingerprint of the slot
+
 ## FloatSlot Objects
 
 ```python
 class FloatSlot(Slot)
 ```
+
+A slot storing a float value.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(name: Text, initial_value: Optional[float] = None, value_reset_delay: Optional[int] = None, auto_fill: bool = True, max_value: float = 1.0, min_value: float = 0.0, influence_conversation: bool = True) -> None
+```
+
+Creates a FloatSlot.
+
+**Raises**:
+
+  InvalidSlotConfigError, if the min-max range is invalid.
+  UserWarning, if initial_value is outside the min-max range.
 
 #### persistence\_info
 
