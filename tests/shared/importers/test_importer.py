@@ -309,7 +309,7 @@ async def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
         ]
     )
 
-    async def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
+    def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
         return stories
 
     # Patch to return our test stories
