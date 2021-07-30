@@ -871,7 +871,7 @@ class DialogueStateTracker:
             data.update(self.slots)
 
         if self.events:
-            data.update({"events": list(self.events)})
+            data["events"] = list(self.events)
 
         return rasa.shared.utils.io.get_dictionary_fingerprint(data)
 
