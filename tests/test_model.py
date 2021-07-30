@@ -1,4 +1,3 @@
-import asyncio
 import os
 import tempfile
 import time
@@ -582,7 +581,7 @@ async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
 
     mocked_importer = Mock()
 
-    async def get_domain() -> Domain:
+    def get_domain() -> Domain:
         return new_domain
 
     mocked_importer.get_domain = get_domain
@@ -607,7 +606,7 @@ async def test_update_with_new_domain_preserves_domain(
 
     mocked_importer = Mock()
 
-    async def get_domain() -> Domain:
+    def get_domain() -> Domain:
         return Domain.load(domain_with_categorical_slot_path)
 
     mocked_importer.get_domain = get_domain
