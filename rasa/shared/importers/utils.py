@@ -19,7 +19,7 @@ def story_graph_from_paths(
     use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
 ) -> StoryGraph:
-
+    """Returns the StoryGraph from paths."""
     from rasa.shared.core.training_data import loading
 
     story_steps = loading.load_data_from_files(
