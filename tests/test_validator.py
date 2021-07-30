@@ -243,9 +243,7 @@ def test_verify_there_is_example_repetition_in_intents(nlu_data_path: Text):
     assert not validator.verify_example_repetition_in_intents(False)
 
 
-def test_verify_logging_message_for_repetition_in_intents(
-    caplog, nlu_data_path: Text
-):
+def test_verify_logging_message_for_repetition_in_intents(caplog, nlu_data_path: Text):
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
     importer = RasaFileImporter(
@@ -287,9 +285,7 @@ def test_verify_there_is_not_example_repetition_in_intents():
     assert validator.verify_example_repetition_in_intents(False)
 
 
-def test_verify_actions_in_stories_not_in_domain(
-    tmp_path: Path, domain_path: Text
-):
+def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Text):
     story_file_name = tmp_path / "stories.yml"
     story_file_name.write_text(
         """
