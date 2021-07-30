@@ -30,6 +30,7 @@ from rasa.core.channels.channel import (
     OutputChannel,
 )
 from rasa.exceptions import ActionLimitReached
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -57,6 +58,7 @@ from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
@@ -1305,3 +1307,24 @@ def test_predict_next_action_raises_limit_reached_exception(domain: Domain):
 
     with pytest.raises(ActionLimitReached):
         processor.predict_next_action(tracker)
+
+
+async def test_processor_logs_text_tokens_in_tracker(
+    default_processor: MessageProcessor,
+):
+    tk = WhitespaceTokenizer()
+    text_tokens = tk.tokenize(Message(data={"text": "Hello there"}), attribute="text")
+    message = UserMessage(
+        "Hello there",
+        parse_data={"intent": None, "entities": [], "text_tokens": text_tokens},
+    )
+    tracker = await default_processor.log_message(message)
+    event = tracker.get_last_event_for(event_type=UserUttered)
+    event_tokens = event.as_dict().get("parse_data").get("text_tokens")
+
+    assert event_tokens[0][0] == 0
+    assert event_tokens[0][1] == 5
+    assert event_tokens[0][2] == "Hello"
+    assert event_tokens[1][0] == 6
+    assert event_tokens[1][1] == 11
+    assert event_tokens[1][2] == "there"

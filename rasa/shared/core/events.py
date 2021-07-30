@@ -458,6 +458,10 @@ class UserUttered(Event):
         }
 
         if parse_data:
+            if "text_tokens" in parse_data:
+                self.parse_data["text_tokens"] = [
+                    (t.start, t.end, t.text) for t in parse_data.pop("text_tokens")
+                ]
             self.parse_data.update(**parse_data)
 
     @staticmethod
