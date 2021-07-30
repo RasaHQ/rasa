@@ -36,7 +36,7 @@ def _setup_trackers_for_testing(
 
 
 async def test_find_no_conflicts(domain_path: Text, stories_path: Text):
-    trackers, domain = await _setup_trackers_for_testing(domain_path, stories_path)
+    trackers, domain = _setup_trackers_for_testing(domain_path, stories_path)
 
     # Create a list of `StoryConflict` objects
     conflicts = find_story_conflicts(trackers, domain, 5)
@@ -45,7 +45,7 @@ async def test_find_no_conflicts(domain_path: Text, stories_path: Text):
 
 
 async def test_find_conflicts_in_short_history():
-    trackers, domain = await _setup_trackers_for_testing(
+    trackers, domain = _setup_trackers_for_testing(
         "data/test_domains/default.yml",
         "data/test_yaml_stories/stories_conflicting_1.yml",
     )
@@ -60,7 +60,7 @@ async def test_find_conflicts_in_short_history():
 
 
 async def test_check_conflict_description():
-    trackers, domain = await _setup_trackers_for_testing(
+    trackers, domain = _setup_trackers_for_testing(
         "data/test_domains/default.yml",
         "data/test_yaml_stories/stories_conflicting_1.yml",
     )
@@ -73,7 +73,7 @@ async def test_check_conflict_description():
 
 
 async def test_find_conflicts_checkpoints():
-    trackers, domain = await _setup_trackers_for_testing(
+    trackers, domain = _setup_trackers_for_testing(
         "data/test_domains/default.yml",
         "data/test_yaml_stories/stories_conflicting_2.yml",
     )
@@ -86,7 +86,7 @@ async def test_find_conflicts_checkpoints():
 
 
 async def test_find_conflicts_or():
-    trackers, domain = await _setup_trackers_for_testing(
+    trackers, domain = _setup_trackers_for_testing(
         "data/test_domains/default.yml",
         "data/test_yaml_stories/stories_conflicting_3.yml",
     )
@@ -99,7 +99,7 @@ async def test_find_conflicts_or():
 
 
 async def test_find_conflicts_slots_that_break():
-    trackers, domain = await _setup_trackers_for_testing(
+    trackers, domain = _setup_trackers_for_testing(
         "data/test_domains/default.yml",
         "data/test_yaml_stories/stories_conflicting_4.yml",
     )
@@ -112,7 +112,7 @@ async def test_find_conflicts_slots_that_break():
 
 
 async def test_find_conflicts_slots_that_dont_break():
-    trackers, domain = await _setup_trackers_for_testing(
+    trackers, domain = _setup_trackers_for_testing(
         "data/test_domains/default.yml",
         "data/test_yaml_stories/stories_conflicting_5.yml",
     )
@@ -124,7 +124,7 @@ async def test_find_conflicts_slots_that_dont_break():
 
 
 async def test_find_conflicts_multiple_stories():
-    trackers, domain = await _setup_trackers_for_testing(
+    trackers, domain = _setup_trackers_for_testing(
         "data/test_domains/default.yml",
         "data/test_yaml_stories/stories_conflicting_6.yml",
     )
@@ -137,7 +137,7 @@ async def test_find_conflicts_multiple_stories():
 
 
 async def test_find_unlearnable_actions():
-    trackers, domain = await _setup_trackers_for_testing(
+    trackers, domain = _setup_trackers_for_testing(
         "data/test_domains/default.yml",
         "data/test_yaml_stories/stories_unexpected_intent_unlearnable.yml",
     )

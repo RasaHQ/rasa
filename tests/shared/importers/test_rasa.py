@@ -22,20 +22,20 @@ async def test_rasa_file_importer(project: Text):
 
     importer = RasaFileImporter(config_path, domain_path, [default_data_path])
 
-    domain = await importer.get_domain()
+    domain = importer.get_domain()
     assert len(domain.intents) == 7 + len(DEFAULT_INTENTS)
     assert domain.slots == [AnySlot(SESSION_START_METADATA_SLOT)]
     assert domain.entities == []
     assert len(domain.action_names_or_texts) == 18
     assert len(domain.responses) == 6
 
-    stories = await importer.get_stories()
+    stories = importer.get_stories()
     assert len(stories.story_steps) == 5
 
-    test_stories = await importer.get_conversation_tests()
+    test_stories = importer.get_conversation_tests()
     assert len(test_stories.story_steps) == 0
 
-    nlu_data = await importer.get_nlu_data("en")
+    nlu_data = importer.get_nlu_data("en")
     assert len(nlu_data.intents) == 7
     assert len(nlu_data.intent_examples) == 69
 
@@ -45,13 +45,13 @@ async def test_read_conversation_tests(project: Text):
         training_data_paths=[str(Path(project) / DEFAULT_CONVERSATION_TEST_PATH)]
     )
 
-    test_stories = await importer.get_conversation_tests()
+    test_stories = importer.get_conversation_tests()
     assert len(test_stories.story_steps) == 7
 
 
 async def test_rasa_file_importer_with_invalid_config():
     importer = RasaFileImporter(config_file="invalid path")
-    actual = await importer.get_config()
+    actual = importer.get_config()
 
     assert actual == {}
 
