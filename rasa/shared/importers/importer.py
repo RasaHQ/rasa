@@ -75,7 +75,6 @@ class TrainingDataImporter:
         Returns:
             Loaded NLU `TrainingData`.
         """
-
         raise NotImplementedError()
 
     @staticmethod
@@ -200,6 +199,7 @@ class NluDataImporter(TrainingDataImporter):
     """Importer that skips any Core-related file reading."""
 
     def __init__(self, actual_importer: TrainingDataImporter):
+        """Initializes the NLUDataImporter."""
         self._importer = actual_importer
 
     def get_domain(self) -> Domain:
@@ -299,6 +299,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
     """
 
     def __init__(self, importer: TrainingDataImporter):
+        """Initializes the ResponsesSyncImporter."""
         self._importer = importer
 
     def get_config(self) -> Dict:
@@ -308,7 +309,6 @@ class ResponsesSyncImporter(TrainingDataImporter):
     @rasa.shared.utils.common.cached_method
     def get_domain(self) -> Domain:
         """Merge existing domain with properties of retrieval intents in NLU data."""
-
         existing_domain = self._importer.get_domain()
         existing_nlu_data = self._importer.get_nlu_data()
 
@@ -434,6 +434,7 @@ class E2EImporter(TrainingDataImporter):
     """
 
     def __init__(self, importer: TrainingDataImporter) -> None:
+        """Initializes the E2EImporter."""
         self.importer = importer
 
     @rasa.shared.utils.common.cached_method
