@@ -199,9 +199,7 @@ async def test_import_nlu_training_data_from_e2e_stories(
     assert (importer_without_e2e.get_stories()).fingerprint() == (
         default_importer.get_stories()
     ).fingerprint()
-    assert (importer_without_e2e.get_config()) == (
-        default_importer.get_config()
-    )
+    assert (importer_without_e2e.get_config()) == (default_importer.get_config())
 
     # Check additional NLU training data from stories was added
     nlu_data = default_importer.get_nlu_data()

@@ -498,7 +498,7 @@ class E2EImporter(TrainingDataImporter):
         training_datasets = [
             _additional_training_data_from_default_actions(),
             self.importer.get_nlu_data(language),
-            self._additional_training_data_from_stories()
+            self._additional_training_data_from_stories(),
         ]
 
         return reduce(
