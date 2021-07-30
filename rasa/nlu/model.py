@@ -464,7 +464,7 @@ class Interpreter:
         data = self.default_output_attributes()
         data[TEXT] = text
 
-        message = Message(data=data, time=timestamp)
+        message = Message(data=data, time=timestamp, output_properties={"text_tokens"})
 
         for component in self.pipeline:
             component.process(message, **self.context)
