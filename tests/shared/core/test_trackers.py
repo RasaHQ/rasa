@@ -1479,44 +1479,36 @@ def test_tracker_unique_fingerprint(domain: Domain):
 
 
 def test_tracker_fingerprint_story_reading(domain: Domain):
-    story_yaml = """
-    stories:
-    - story: test story
-      steps:
-      - intent: greet
-      - action: utter_greet
-    """
-    reader = YAMLStoryReader(domain)
-    story_steps = reader.read_from_string(story_yaml)
-    events = []
-    for step in story_steps:
-        evts = step.events
-        if isinstance(evts, list):
-            events += evts
-        else:
-            events.append(evts)
+    def build_tracker(domain: Domain) -> DialogueStateTracker:
+        story_yaml = """
+            stories:
+            - story: test story
+              steps:
+              - intent: greet
+              - action: utter_greet
+            """
+        reader = YAMLStoryReader(domain)
+        story_steps = reader.read_from_string(story_yaml)
+        events = []
+        for step in story_steps:
+            evts = step.events
+            if isinstance(evts, list):
+                events += evts
+            else:
+                events.append(evts)
 
-    slot1 = TextSlot(name="name", influence_conversation=True)
-    slot1.value = "example"
+        slot = TextSlot(name="name", influence_conversation=True)
+        slot.value = "example"
 
-    tracker1 = DialogueStateTracker.from_events("sender_id", events, [slot1])
+        tracker = DialogueStateTracker.from_events("sender_id", events, [slot])
+        return tracker
+
+    tracker1 = build_tracker(domain)
     f1 = tracker1.fingerprint()
 
     time.sleep(0.1)
 
-    reader2 = YAMLStoryReader(domain)
-    story_steps2 = reader2.read_from_string(story_yaml)
-    events2 = []
-    for step in story_steps2:
-        evts = step.events
-        if isinstance(evts, list):
-            events2 += evts
-        else:
-            events2.append(evts)
-    slot2 = TextSlot(name="name", influence_conversation=True)
-    slot2.value = "example"
-
-    tracker2 = DialogueStateTracker.from_events("sender_id", events2, [slot2])
+    tracker2 = build_tracker(domain)
     f2 = tracker2.fingerprint()
 
     assert f1 == f2
