@@ -23,6 +23,7 @@ from rasa.core.featurizers.tracker_featurizers import (
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
+from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import UNLIKELY_INTENT_POLICY_PRIORITY, DIALOGUE
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
@@ -396,6 +397,37 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         # to select a specific threshold according to the `tolerance`
         # value specified in the configuration.
         self.label_quantiles = self._compute_label_quantiles(label_id_scores)
+
+    @staticmethod
+    def _get_trackers_for_training(
+        trackers: List[TrackerWithCachedStates],
+    ) -> List[TrackerWithCachedStates]:
+        """Filters out the list of trackers which should not be used for training.
+
+        `UnexpecTEDIntentPolicy` cannot be trained on trackers with:
+        1. `UserUttered` events with no intent.
+        2. `ActionExecuted` events with no action_name.
+
+        Trackers with such events are filtered out.
+
+        Args:
+            trackers: All trackers available for training.
+
+        Returns:
+            Trackers which should be used for training.
+        """
+        trackers_for_training = []
+        for tracker in trackers:
+            tracker_compatible = True
+            for event in tracker.applied_events():
+                if (isinstance(event, UserUttered) and event.intent_name is None) or (
+                    isinstance(event, ActionExecuted) and event.action_name is None
+                ):
+                    tracker_compatible = False
+                    break
+            if tracker_compatible:
+                trackers_for_training.append(tracker)
+        return trackers_for_training
 
     def run_training(
         self, model_data: RasaModelData, label_ids: Optional[np.ndarray] = None
