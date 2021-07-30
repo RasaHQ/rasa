@@ -1,4 +1,5 @@
 import logging
+from rasa.core import featurizers
 import shutil
 from pathlib import Path
 from collections import defaultdict
@@ -33,7 +34,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.core.policies.policy import Policy, PolicyPrediction
+from rasa.core.policies.policy import Policy, PolicyPrediction, PolicyUsingFeaturizer
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
@@ -128,7 +129,7 @@ PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIAL
 SAVE_MODEL_FILE_NAME = "ted_policy"
 
 
-class TEDPolicy(Policy):
+class TEDPolicy(PolicyUsingFeaturizer):
     """Transformer Embedding Dialogue (TED) Policy is described in
     https://arxiv.org/abs/1910.00486.
     This policy has a pre-defined architecture, which comprises the
@@ -299,14 +300,6 @@ class TEDPolicy(Policy):
         SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     }
 
-    @staticmethod
-    def _standard_featurizer(
-        persistor: ComponentPersistorInterface, max_history: Optional[int] = None
-    ) -> TrackerFeaturizer:
-        return TrackerFeaturizer(
-            SingleStateFeaturizer(), max_history=max_history, persistor=persistor
-        )
-
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
@@ -325,12 +318,10 @@ class TEDPolicy(Policy):
             self.defaults[SPLIT_ENTITIES_BY_COMMA],
         )
 
-        if not featurizer:
-            featurizer = self._standard_featurizer(persistor, max_history)
-
         super().__init__(
             featurizer,
-            priority,
+            max_history=max_history,
+            priority=priority,
             should_finetune=should_finetune,
             persistor=persistor,
             **kwargs,
@@ -371,8 +362,9 @@ class TEDPolicy(Policy):
         self, domain: Domain, e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
-        state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_actions(domain, e2e_features)
+        encoded_all_labels = self.tracker_featurizer.state_featurizer.encode_all_actions(
+            e2e_features
+        )
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
@@ -515,13 +507,22 @@ class TEDPolicy(Policy):
             return
 
         training_trackers = [t for t in training_trackers if not t.is_rule_tracker]
-        # dealing with training data
-        tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
+
+        self.tracker_featurizer.setup(
+            domain=domain, bilou_tagging=self.config[BILOU_FLAG],
+        )
+        (
+            tracker_state_features,
+            label_ids,
+            entity_tags,
+            _,
+        ) = self.tracker_featurizer.featurize_trackers_for_training(
             training_trackers,
-            domain,
-            bilou_tagging=self.config[BILOU_FLAG],
             e2e_features=e2e_features,
-            **kwargs,
+            targets_include_actions=True,
+            targets_include_entities=True,
+            targets_include_intents=False,
+            max_training_examples=kwargs.get("max_training_examples", None),
         )
 
         self._label_data, encoded_all_labels = self._create_label_data(
@@ -540,7 +541,9 @@ class TEDPolicy(Policy):
             return
 
         if self.config[ENTITY_RECOGNITION]:
-            self._entity_tag_specs = self.featurizer.state_featurizer.entity_tag_specs
+            self._entity_tag_specs = (
+                self.tracker_featurizer.state_featurizer.entity_tag_specs
+            )
 
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
@@ -552,7 +555,7 @@ class TEDPolicy(Policy):
             self.model = TED(
                 model_data.get_signature(),
                 self.config,
-                isinstance(self.featurizer, TrackerFeaturizer),
+                isinstance(self.tracker_featurizer, TrackerFeaturizer),
                 self._label_data,
                 self._entity_tag_specs,
             )
@@ -601,11 +604,18 @@ class TEDPolicy(Policy):
         # and second - an optional one (see conditions below),
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
-        tracker_state_features = self._featurize_for_prediction(
-            tracker,
-            domain,
+        if not self.tracker_featurizer.is_setup():
+            self.tracker_featurizer.setup(
+                domain=domain,
+                e2e_features=e2e_features,
+                bilou_tagging=self.config[BILOU_FLAG],
+            )
+        tracker_state_features = self.tracker_featurizer.featurize_trackers_for_prediction(
+            [tracker],
             e2e_features=e2e_features,
             use_text_for_last_user_input=self.only_e2e,
+            ignore_rule_only_turns=self.ignore_rule_only_turns_during_prediction,
+            rule_only_data=self._rule_only_data,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -613,11 +623,12 @@ class TEDPolicy(Policy):
             and TEXT in self.fake_features
             and not self.only_e2e
         ):
-            tracker_state_features += self._featurize_for_prediction(
-                tracker,
-                domain,
+            tracker_state_features += self.tracker_featurizer.featurize_trackers_for_prediction(
+                [tracker],
                 e2e_features=e2e_features,
                 use_text_for_last_user_input=True,
+                ignore_rule_only_turns=self.ignore_rule_only_turns_during_prediction,
+                rule_only_data=self._rule_only_data,
             )
         return tracker_state_features
 
@@ -782,7 +793,7 @@ class TEDPolicy(Policy):
 
         tf_model_file = self._persistor.file_for("tf_model")
 
-        self.featurizer.persist()
+        self.tracker_featurizer.persist()
 
         if self.config[CHECKPOINT_MODEL]:
             checkpoint_directory = self._persistor.directory_for("checkpoints")

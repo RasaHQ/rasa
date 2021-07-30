@@ -15,7 +15,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     Event,
 )
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
+from rasa.core.featurizers.tracker_featurizers import TrackerStateExtractor
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.policy import SupportedData, PolicyPrediction
 from rasa.shared.core.trackers import (
@@ -108,7 +108,7 @@ class RulePolicy(MemoizationPolicy):
 
     def __init__(
         self,
-        featurizer: Optional[TrackerFeaturizer] = None,
+        state_extractor: Optional[TrackerStateExtractor] = None,
         priority: int = RULE_POLICY_PRIORITY,
         lookup: Optional[Dict] = None,
         core_fallback_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD,
@@ -121,8 +121,8 @@ class RulePolicy(MemoizationPolicy):
         """Create a `RulePolicy` object.
 
         Args:
-            featurizer: `Featurizer` which is used to convert conversation states to
-                features.
+            state_extractor: `TrackerStateExtractor` which is used to extract the
+                states from the trackers
             priority: Priority of the policy which is used if multiple policies predict
                 actions with the same confidence.
             lookup: Lookup table which is used to pick matching rules for a conversation
@@ -148,7 +148,7 @@ class RulePolicy(MemoizationPolicy):
 
         # max history is set to `None` in order to capture any lengths of rule stories
         super().__init__(
-            featurizer=featurizer,
+            state_extractor=state_extractor,
             priority=priority,
             max_history=None,
             lookup=lookup,
@@ -726,8 +726,8 @@ class RulePolicy(MemoizationPolicy):
         (
             rule_trackers_as_states,
             rule_trackers_as_actions,
-        ) = self.featurizer.unfeaturized_trackers_for_training(
-            rule_trackers, domain, omit_unset_slots=True,
+        ) = self.state_extractor.extract_states_and_actions_for_training(
+            rule_trackers, domain, omit_unset_slots=True, max_training_examples=None,
         )
         rules_lookup = self._create_lookup_from_states(
             rule_trackers_as_states, rule_trackers_as_actions
@@ -737,8 +737,8 @@ class RulePolicy(MemoizationPolicy):
         (
             story_trackers_as_states,
             story_trackers_as_actions,
-        ) = self.featurizer.unfeaturized_trackers_for_training(
-            story_trackers, domain, omit_unset_slots=False,
+        ) = self.state_extractor.extract_states_and_actions_for_training(
+            story_trackers, domain, omit_unset_slots=False, max_training_examples=None,
         )
 
         if self._check_for_contradictions:
@@ -981,7 +981,13 @@ class RulePolicy(MemoizationPolicy):
             # the text or the intent
             return None, None, False
 
-        states = self._prediction_states(tracker, domain, use_text_for_last_user_input)
+        states = self.state_extractor.extract_states_from_tracker_for_prediction(
+            tracker=tracker,
+            domain=domain,
+            use_text_for_last_user_input=use_text_for_last_user_input,
+            ignore_rule_only_turns=False,
+            rule_only_data=None,
+        )
 
         current_states = self.format_tracker_states(states)
         logger.debug(f"Current tracker state:{current_states}")

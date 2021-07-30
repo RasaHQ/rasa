@@ -1,16 +1,17 @@
 from os import stat_result
+from rasa.nlu.constants import EXTRACTOR
 import jsonpickle
 import logging
 import copy
 
 from tqdm import tqdm
-from typing import Tuple, List, Optional, Dict, Text, Any
+from typing import Callable, Tuple, List, Optional, Dict, Text, Any
 import numpy as np
 
 from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain, SubState
-from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted, Event
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     is_prev_action_listen_in_state,
@@ -22,9 +23,10 @@ import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 
-FEATURIZER_FILE = "featurizer.json"
-
 logger = logging.getLogger(__name__)
+
+EXTRACTOR_FILE = "extractor.json"
+FEATURIZER_FILE = "featurizer.json"
 
 
 def copy_state(
@@ -57,28 +59,43 @@ class InvalidStory(RasaException):
         return self.message
 
 
-class TrackerFeaturizer:
-    """ ...
+class TrackerStateExtractor:
+    """
     """
 
     def __init__(
         self,
-        state_featurizer: Optional[SingleStateFeaturizer] = None,
+        event_filter: Optional[Callable[[Event], bool]] = None,
         max_history: Optional[int] = None,
         remove_duplicates: bool = True,
         persistor: Optional[ComponentPersistorInterface] = None,
-        bilout_tagging: bool = False,
     ) -> None:
         """Initialize the tracker featurizer.
 
         Args:
+            event_filter: Must return true for ever `ActionExecuted` event that we
+              want to ignore (i.e. the corresponding state will be skipped)
             state_featurizer: The state featurizer used to encode the states.
+            max_history: if set to None, the complete history is taken into account;
+              otherwise only the last `max_history`+1 states will be extracted (note
+              that the +1 represents the target, hence your policy will use the last
+              `max_history` many states as input)
+            remove_duplicates: set to `True` if you want to ignore event sequences
+               which are identical (i.e. no state sequences will be created from these
+               event sequences)
         """
-        self.state_featurizer = state_featurizer
         self._persistor = persistor
         self.max_history = max_history
         self.remove_duplicates = remove_duplicates
-        self.bilou_tagging = False
+        self.event_filter = event_filter
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(event_filter={repr(self.event_filter)}, "
+            f"max_history={self.max_history}, "
+            f"remove_duplicates={self.remove_duplicates}, "
+            f"persistor={repr(self._persistor)})"
+        )
 
     @staticmethod
     def slice_state_history(
@@ -116,10 +133,14 @@ class TrackerFeaturizer:
             if state.get(USER, {}).get(INTENT) and state.get(USER, {}).get(TEXT):
                 del state[USER][TEXT]
 
+    def skip_event(self, event: Event) -> bool:
+        return (self.event_filter is not None) and self.event_filter(event)
+
     def extract_states_from_trackers_for_training(
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
+        max_training_examples: Optional[int] = None,
         omit_unset_slots: bool = False,
     ) -> List[List[State]]:
         """Transforms list of trackers to lists of states.
@@ -142,9 +163,8 @@ class TrackerFeaturizer:
             hashed_examples = set()
 
         logger.debug(
-            "Creating states and action examples from "
-            "collected trackers (by {}({}))..."
-            "".format(type(self).__name__, type(self.state_featurizer).__name__)
+            f"Creating states and action examples from "
+            f"collected trackers (by {self})..."
         )
         pbar = tqdm(
             trackers,
@@ -162,32 +182,39 @@ class TrackerFeaturizer:
 
             num_action_executed_events = 0
             for current_event in tracker.applied_events():
-                if not isinstance(current_event, ActionExecuted):
-                    continue
-                num_action_executed_events += 1
 
-                # use only actions which can be predicted at a stories start
-                # TODO: There must be a better way to filter the past_states output
-                # (cf. `_mark_first_action_in_story_steps_as_unpredictable` in
-                # `core/generator`)
-                if current_event.unpredictable:
-                    continue
+                if isinstance(current_event, ActionExecuted):
 
-                sliced_states = self.slice_state_history(
-                    states[: (num_action_executed_events + 1)],
-                    self.max_history
-                    if (self.max_history is None)
-                    else (self.max_history + 1),
-                )
-                if self.remove_duplicates:
-                    # only continue with tracker_states that created a
-                    # hashed_featurization we haven't observed
-                    hashed = self._hash_example(sliced_states)
-                    if hashed not in hashed_examples:
-                        hashed_examples.add(hashed)
+                    num_action_executed_events += 1
+
+                    # use only actions which can be predicted at a stories start
+                    # TODO: There must be a better way to filter the past_states output
+                    # (cf. `_mark_first_action_in_story_steps_as_unpredictable` in
+                    # `core/generator`)
+                    if current_event.unpredictable or self.skip_event(current_event):
+                        continue
+
+                    sliced_states = self.slice_state_history(
+                        states[: (num_action_executed_events + 1)],
+                        self.max_history
+                        if (self.max_history is None)
+                        else (self.max_history + 1),
+                    )
+                    if self.remove_duplicates:
+                        # only continue with tracker_states that created a
+                        # hashed_featurization we haven't observed
+                        hashed = self._hash_example(sliced_states)
+                        if hashed not in hashed_examples:
+                            hashed_examples.add(hashed)
+                            list_of_state_sequences.append(sliced_states)
+                    else:
                         list_of_state_sequences.append(sliced_states)
-                else:
-                    list_of_state_sequences.append(sliced_states)
+
+                    if (
+                        max_training_examples is not None
+                        and len(list_of_state_sequences) >= max_training_examples
+                    ):
+                        break
 
         # NOTE: the remove text if intent part needs to be moved to encode_state in
         # the single state featurizer because we work with the parsed message here
@@ -196,17 +223,21 @@ class TrackerFeaturizer:
 
         return list_of_state_sequences
 
-    def unfeaturized_trackers_for_training(
+    def extract_states_and_actions_for_training(
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
         omit_unset_slots: bool,
+        max_training_examples: Optional[int] = None,
     ) -> Tuple[List[List[State]], List[List[Text]]]:
         """Creates unfeaturized training data for e.g. rule/memoization policy.
 
         """
         list_of_state_sequences = self.extract_states_from_trackers_for_training(
-            trackers, domain, omit_unset_slots=omit_unset_slots,
+            trackers,
+            domain,
+            omit_unset_slots=omit_unset_slots,
+            max_training_examples=max_training_examples,
         )
         inputs = []
         outputs = []
@@ -218,114 +249,6 @@ class TrackerFeaturizer:
             )
             outputs.append([last_action_name_or_text])
         return inputs, outputs
-
-    def featurize_trackers_for_training(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain,
-        bilou_tagging: bool = False,
-        e2e_features: Optional[Dict[Text, Message]] = None,
-        targets_include_actions: bool = True,
-        targets_include_entities: bool = True,
-    ) -> Tuple[
-        List[List[Dict[Text, List[Features]]]],
-        np.ndarray,
-        List[List[Dict[Text, List[Features]]]],
-    ]:
-        """Creates training data that contains `Features` from the NLU pipeline.
-
-        Args:
-            trackers: list of training trackers
-            domain: the domain
-            bilou_tagging: indicates whether BILOU tagging should be used or not
-
-        Returns:
-            - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
-              ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
-              turns in all training trackers
-            - the label ids (e.g. action ids) for every dialogue turn in all training
-              trackers
-            - A dictionary of entity type (ENTITY_TAGS) to a list of features
-              containing entity tag ids for text user inputs otherwise empty dict
-              for all dialogue turns in all training trackers
-        """
-        if self.state_featurizer is None:
-            raise ValueError(
-                f"Instance variable 'state_featurizer' is not set. "
-                f"During initialization set 'state_featurizer' to an instance of "
-                f"'{SingleStateFeaturizer.__class__.__name__}' class "
-                f"to get numerical features for trackers."
-            )
-
-        self.state_featurizer.setup(domain, bilou_tagging)
-
-        list_of_state_sequences: List[
-            List[State]
-        ] = self.extract_states_from_trackers_for_training(trackers, domain)
-
-        inputs = []
-        entities = []
-        actions = []
-        for state_sequence in list_of_state_sequences:
-            inputs.append([])
-            entities.append([])
-            actions_for_state_sequence = np.zeros(len(state_sequence) - 1)
-            for idx, state in enumerate(state_sequence):
-                state_encoding = self.state_featurizer.encode_state(
-                    state,
-                    domain,
-                    self.bilou_tagging,
-                    e2e_features,
-                    targets_include_actions=targets_include_actions,
-                    targets_include_entities=targets_include_entities,
-                )
-                if idx < len(state_sequence) - 1:
-                    inputs[-1].append(state_encoding["input"])
-                if idx > 0:
-                    if targets_include_entities:
-                        entities[-1].append(state_encoding["target_entity"])
-                    if targets_include_actions:
-                        actions_for_state_sequence[idx - 1] = state_encoding[
-                            "target_action"
-                        ]
-            if targets_include_actions:
-                actions.append(np.array(actions_for_state_sequence))
-        actions = np.array(actions)
-
-        return (inputs, actions, entities)
-
-    def _prepare_for_prediction(
-        self, states: List[State], use_text_for_last_user_input: bool
-    ) -> None:
-        """Prepares a sequence of states that was extracted for prediction.
-
-        """
-        last_state = states[-1]
-
-        # (1) only update the state of the real user utterance
-        if not is_prev_action_listen_in_state(last_state):
-            return
-
-        # (2) keep either intent+entities or text only for the *last state*
-        #     depending on the given flag
-        if use_text_for_last_user_input:
-            # remove intent features to only use text
-            if last_state.get(USER, {}).get(INTENT):
-                del last_state[USER][INTENT]
-            # don't add entities if text is used for featurization
-            if last_state.get(USER, {}).get(ENTITIES):
-                del last_state[USER][ENTITIES]
-        else:
-            # remove text features to only use intent
-            if last_state.get(USER, {}).get(TEXT):
-                del last_state[USER][TEXT]
-
-        # (3) for all other states, *always* remove the text if an intent is present
-
-        # FIXME: if those messages passed through NLU pipeline before the policy
-        # prediction pipeline, then we'll always have intents here? (unless it's for
-        # an e2e policy)
-        self._remove_user_text_if_intent(states)
 
     def extract_states_from_tracker_for_prediction(
         self,
@@ -358,13 +281,224 @@ class TrackerFeaturizer:
         )
         states = self.slice_state_history(states, self.max_history)
         # FIXME/TODO: why does this happen after slicing?
-        self._prepare_for_prediction(states, use_text_for_last_user_input)
+        self._cleanup_states_for_prediction(states, use_text_for_last_user_input)
         return states
+
+    def _cleanup_states_for_prediction(
+        self, states: List[State], use_text_for_last_user_input: bool
+    ) -> None:
+        """Prepares a sequence of states that was extracted for prediction.
+
+        """
+        last_state = states[-1]
+
+        # (1) only update the state of the real user utterance
+        if not is_prev_action_listen_in_state(last_state):
+            return
+
+        # (2) keep either intent+entities or text only for the *last state*
+        #     depending on the given flag
+        if use_text_for_last_user_input:
+            # remove intent features to only use text
+            if last_state.get(USER, {}).get(INTENT):
+                del last_state[USER][INTENT]
+            # don't add entities if text is used for featurization
+            if last_state.get(USER, {}).get(ENTITIES):
+                del last_state[USER][ENTITIES]
+        else:
+            # remove text features to only use intent
+            if last_state.get(USER, {}).get(TEXT):
+                del last_state[USER][TEXT]
+
+        # (3) for all other states, *always* remove the text if an intent is present
+
+        # FIXME: if those messages passed through NLU pipeline before the policy
+        # prediction pipeline, then we'll always have intents here? (unless it's for
+        # an e2e policy)
+        self._remove_user_text_if_intent(states)
+
+    def persist(self) -> None:
+        """Persist the tracker featurizer to the given path.
+
+        Args:
+            path: The path to persist the tracker featurizer to.
+        """
+        featurizer_file = self._persistor.file_for(FEATURIZER_FILE)
+        # noinspection PyTypeChecker
+        rasa.shared.utils.io.write_text_file(
+            str(jsonpickle.encode(self)), featurizer_file
+        )
+
+    @staticmethod
+    def load(
+        persistor: ComponentPersistorInterface, resource_name: Text
+    ) -> Optional["TrackerFeaturizer"]:
+        """Load the featurizer from file.
+
+        Args:
+            path: The path to load the tracker featurizer from.
+
+        Returns:
+            The loaded tracker featurizer.
+        """
+        featurizer_file = persistor.get_resource(resource_name, FEATURIZER_FILE)
+        return jsonpickle.decode(rasa.shared.utils.io.read_file(featurizer_file))
+
+
+class TrackerFeaturizer:
+    """
+    """
+
+    def __init__(
+        self,
+        event_filter: Optional[Callable[[Event], bool]] = None,
+        max_history: Optional[int] = None,
+        remove_duplicates: bool = True,
+        persistor: Optional[ComponentPersistorInterface] = None,
+    ) -> None:
+        """Initialize the tracker featurizer.
+
+        Args:
+            event_filter: Must return true for ever `ActionExecuted` event that we
+              want to ignore (i.e. the corresponding state will be skipped)
+            state_featurizer: The state featurizer used to encode the states.
+            max_history: if set to None, the complete history is taken into account;
+              otherwise only the last `max_history`+1 states will be extracted (note
+              that the +1 represents the target, hence your policy will use the last
+              `max_history` many states as input)
+            remove_duplicates: set to `True` if you want to ignore event sequences
+               which are identical (i.e. no state sequences will be created from these
+               event sequences)
+        """
+        self.tracker_state_extractor = TrackerStateExtractor(
+            event_filter=event_filter,
+            max_history=max_history,
+            remove_duplicates=remove_duplicates,
+            persistor=persistor,
+        )
+        self._persistor = persistor
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}"
+            f"(state_extractor={repr(self.tracker_state_extractor)}, "
+            f"state_featurizer={repr(self.state_featurizer)})"
+        )
+
+    def is_setup(self) -> bool:
+        return self._is_setup
+
+    def setup(self, domain: Domain, bilou_tagging: bool,) -> None:
+        """This lazy setup is needed because the policies only know e.g. the domain
+        once a policies `train()` is called but that happens after we instantiated
+        the tracker featurizer (which we could change as well...).
+        """
+        self.state_featurizer = SingleStateFeaturizer(
+            domain=domain, bilou_tagging=bilou_tagging
+        )
+        self.domain = domain
+        self._is_setup = True
+
+    def raise_error_if_not_setup(self):
+        if not self._is_setup:
+            raise RuntimeError(
+                f"Expected this {self.__class__.__name__} instance to be setup for "
+                f"a specific domain and bilou_tagging mode. You can achieve this by "
+                f"calling `setup()` before attempting any featurization."
+            )
+
+    def featurize_trackers_for_training(
+        self,
+        trackers: List[DialogueStateTracker],
+        e2e_features: Optional[Dict[Text, Message]] = None,
+        omit_unset_slots: bool = False,
+        targets_include_actions: bool = True,
+        targets_include_entities: bool = True,
+        targets_include_intents: bool = True,
+        max_training_examples: Optional[int] = None,
+    ) -> Tuple[
+        List[List[Dict[Text, List[Features]]]],
+        np.ndarray,
+        List[List[Dict[Text, List[Features]]]],
+        np.ndarray,
+    ]:
+        """Creates training data that contains `Features` from the NLU pipeline.
+
+        Args:
+            trackers: list of training trackers
+            domain: the domain
+            bilou_tagging: indicates whether BILOU tagging should be used or not
+
+        Returns:
+            - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+              ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
+              turns in all training trackers
+            - the label ids (e.g. action ids) for every dialogue turn in all training
+              trackers
+            - A dictionary of entity type (ENTITY_TAGS) to a list of features
+              containing entity tag ids for text user inputs otherwise empty dict
+              for all dialogue turns in all training trackers
+        """
+        self.raise_error_if_not_setup()
+
+        list_of_state_sequences: List[
+            List[State]
+        ] = self.tracker_state_extractor.extract_states_from_trackers_for_training(
+            trackers,
+            domain=self.domain,
+            omit_unset_slots=omit_unset_slots,
+            max_training_examples=max_training_examples,
+        )
+
+        inputs = []
+        entities = []
+        actions = []
+        intents = []
+        for state_sequence in list_of_state_sequences:
+            inputs.append([])
+            entities.append([])
+            actions_for_state_sequence = np.zeros(len(state_sequence) - 1)
+            intents_for_state_sequence = np.zeros(len(state_sequence) - 1)
+            for idx, state in enumerate(state_sequence):
+                state_encoding = self.state_featurizer.encode_state(
+                    state,
+                    e2e_features,
+                    targets_include_actions=targets_include_actions,
+                    targets_include_entities=targets_include_entities,
+                    targets_include_intents=targets_include_intents,
+                )
+                if idx < len(state_sequence) - 1:
+                    inputs[-1].append(state_encoding["input"])
+                if idx > 0:
+                    if targets_include_entities:
+                        entities[-1].append(state_encoding["target_entity"])
+                    for (flag, array, key) in [
+                        (
+                            targets_include_actions,
+                            actions_for_state_sequence,
+                            "target_action",
+                        ),
+                        (
+                            targets_include_intents,
+                            intents_for_state_sequence,
+                            "target_intent",
+                        ),
+                    ]:
+                        if flag:
+                            array[idx - 1] = state_encoding[key]
+            for (flag, array, collection) in [
+                (targets_include_actions, actions_for_state_sequence, actions),
+                (targets_include_intents, intents_for_state_sequence, intents),
+            ]:
+                if flag:
+                    collection.append(np.array(array))
+        actions = np.array(actions)
+
+        return (inputs, actions, entities, intents)
 
     def featurize_trackers_for_prediction(
         self,
         trackers: List[DialogueStateTracker],
-        domain: Domain,
         e2e_features: Dict[Text, Message],
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
@@ -391,9 +525,9 @@ class TrackerFeaturizer:
         """
         output = []
         for tracker in trackers:
-            states = self.extract_states_from_tracker_for_prediction(
+            states = self.tracker_state_extractor.extract_states_from_tracker_for_prediction(
                 tracker,
-                domain,
+                self.domain,
                 use_text_for_last_user_input,
                 ignore_rule_only_turns,
                 rule_only_data,
@@ -401,7 +535,7 @@ class TrackerFeaturizer:
             list_of_state_encodings = [
                 self.state_featurizer.encode_state(
                     state,
-                    domain,
+                    self.domain,
                     self.bilou_tagging,
                     e2e_features,
                     targets_include_actions=False,
@@ -422,9 +556,9 @@ class TrackerFeaturizer:
         """
         featurizer_file = self._persistor.file_for(FEATURIZER_FILE)
 
-        # entity tags are persisted in TED policy, they are not needed for prediction
-        if self.state_featurizer is not None:
-            self.state_featurizer.entity_tag_specs = None
+        # # entity tags are persisted in TED policy, they are not needed for prediction # FIXME: ?
+        # if self.state_featurizer is not None:
+        #     self.state_featurizer.entity_tag_specs = None
 
         # noinspection PyTypeChecker
         rasa.shared.utils.io.write_text_file(

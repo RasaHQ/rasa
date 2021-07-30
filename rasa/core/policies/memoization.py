@@ -1,3 +1,4 @@
+from os import remove
 from attr import attributes
 from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT
 from rasa.shared.core.constants import PREVIOUS_ACTION
@@ -17,7 +18,11 @@ from rasa.shared.constants import DOCS_URL_POLICIES
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.shared.core.constants import PREVIOUS_ACTION, ACTIVE_LOOP, USER, SLOTS
-from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer, copy_state
+from rasa.core.featurizers.tracker_featurizers import (
+    TrackerFeaturizer,
+    TrackerStateExtractor,
+    copy_state,
+)
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -56,19 +61,9 @@ class MemoizationPolicy(Policy):
 
     USE_NLU_CONFIDENCE_AS_SCORE = False
 
-    @staticmethod
-    def _standard_featurizer(
-        persistor: ComponentPersistorInterface, max_history: Optional[int] = None,
-    ) -> TrackerFeaturizer:
-        # Memoization policy always uses TrackerFeaturizer
-        # without state_featurizer
-        return TrackerFeaturizer(
-            state_featurizer=None, max_history=max_history, persistor=persistor
-        )
-
     def __init__(
         self,
-        featurizer: Optional[TrackerFeaturizer] = None,
+        state_extractor: Optional[TrackerStateExtractor] = None,
         priority: int = MEMOIZATION_POLICY_PRIORITY,
         max_history: Optional[int] = MAX_HISTORY_NOT_SET,
         lookup: Optional[Dict] = None,
@@ -78,7 +73,7 @@ class MemoizationPolicy(Policy):
         """Initialize the policy.
 
         Args:
-            featurizer: tracker featurizer
+            state_extractor: tracker state_extractor
             priority: the priority of the policy
             max_history: maximum history to take into account when featurizing trackers
             lookup: a dictionary that stores featurized tracker states and
@@ -96,12 +91,17 @@ class MemoizationPolicy(Policy):
                 docs=DOCS_URL_POLICIES,
             )
 
-        if not featurizer:
-            featurizer = self._standard_featurizer(persistor, max_history)
+        super().__init__(priority, persistor=persistor, **kwargs)
 
-        super().__init__(featurizer, priority, persistor=persistor, **kwargs)
+        if not state_extractor:
+            self.state_extractor = TrackerStateExtractor(
+                persistor=persistor,
+                max_history=max_history,
+                remove_duplicates=True,
+                event_filter=None,
+            )
 
-        self.max_history = self.featurizer.max_history
+        self.max_history = max_history
         self.lookup = lookup if lookup is not None else {}
 
     def _create_lookup_from_states(
@@ -186,8 +186,14 @@ class MemoizationPolicy(Policy):
             for t in training_trackers
             if not hasattr(t, "is_augmented") or not t.is_augmented
         ]
-        inputs, outputs = self.featurizer.unfeaturized_trackers_for_training(
-            training_trackers, domain, omit_unset_slots=False,
+        (
+            inputs,
+            outputs,
+        ) = self.state_extractor.extract_states_and_actions_for_training(
+            training_trackers,
+            domain=domain,
+            omit_unset_slots=False,
+            max_training_examples=kwargs.get("max_training_examples", False),
         )
         self.lookup = self._create_lookup_from_states(inputs, outputs)
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
@@ -241,7 +247,13 @@ class MemoizationPolicy(Policy):
         """
         result = self._default_predictions(domain)
 
-        states = self._prediction_states(tracker, domain)
+        states = self.state_extractor.extract_states_from_tracker_for_prediction(
+            tracker,
+            domain,
+            use_text_for_last_user_input=False,
+            ignore_rule_only_turns=False,
+            rule_only_data=None,
+        )
         logger.debug(f"Current tracker state:{self.format_tracker_states(states)}")
         predicted_action_name = self.recall(states, tracker, domain)
         if predicted_action_name is not None:

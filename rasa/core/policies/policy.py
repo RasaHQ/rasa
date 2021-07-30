@@ -107,40 +107,18 @@ class Policy(metaclass=PolicyMetaclass):
         """
         return SupportedData.ML_DATA
 
-    @staticmethod
-    def _standard_featurizer(
-        persistor: ComponentPersistorInterface,
-    ) -> TrackerFeaturizer:
-        return TrackerFeaturizer(SingleStateFeaturizer(), persistor=persistor)
-
-    @classmethod
-    def _create_featurizer(
-        cls, persistor, featurizer: Optional[TrackerFeaturizer] = None
-    ) -> TrackerFeaturizer:
-        if featurizer:
-            return copy.deepcopy(featurizer)
-        else:
-            return cls._standard_featurizer(persistor)
-
     def __init__(
         self,
-        featurizer: Optional[TrackerFeaturizer] = None,
         priority: int = DEFAULT_POLICY_PRIORITY,
         should_finetune: bool = False,
         persistor: Optional[ComponentPersistorInterface] = None,
         **kwargs: Any,
     ) -> None:
         """Constructs a new Policy object."""
-        self.__featurizer = self._create_featurizer(persistor, featurizer)
         self.priority = priority
         self.finetune_mode = should_finetune
         self._rule_only_data = {}
         self._persistor = persistor
-
-    @property
-    def featurizer(self) -> TrackerFeaturizer:
-        """Returns the policy's featurizer."""
-        return self.__featurizer
 
     def set_shared_policy_states(self, **kwargs: Any) -> None:
         """Sets policy's shared states for correct featurization."""
@@ -164,118 +142,6 @@ class Policy(metaclass=PolicyMetaclass):
         }
         logger.debug(f"Parameters ignored by `model.fit(...)`: {ignored_params}")
         return params
-
-    def _featurize_for_training(
-        self,
-        training_trackers: List[DialogueStateTracker],
-        domain: Domain,
-        bilou_tagging: bool = False,
-        e2e_features: Optional[Dict[Text, Message]] = None,
-        **kwargs: Any,
-    ) -> Tuple[
-        List[List[Dict[Text, List["Features"]]]],
-        np.ndarray,
-        List[List[Dict[Text, List["Features"]]]],
-    ]:
-        """Transform training trackers into a vector representation.
-
-        The trackers, consisting of multiple turns, will be transformed
-        into a float vector which can be used by a ML model.
-
-        Args:
-            training_trackers:
-                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
-            bilou_tagging: indicates whether BILOU tagging should be used or not
-
-        Returns:
-            - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
-              ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
-              all training trackers
-            - the label ids (e.g. action ids) for every dialogue turn in all training
-              trackers
-            - A dictionary of entity type (ENTITY_TAGS) to a list of features
-              containing entity tag ids for text user inputs otherwise empty dict
-              for all dialogue turns in all training trackers
-        """
-        (
-            state_features,
-            label_ids,
-            entity_tags,
-        ) = self.featurizer.featurize_trackers_for_training(
-            training_trackers, domain, bilou_tagging, e2e_features
-        )
-
-        max_training_samples = kwargs.get("max_training_samples")
-        if max_training_samples is not None:
-            logger.debug(
-                "Limit training data to {} training samples."
-                "".format(max_training_samples)
-            )
-            state_features = state_features[:max_training_samples]
-            label_ids = label_ids[:max_training_samples]
-            entity_tags = entity_tags[:max_training_samples]
-
-        return state_features, label_ids, entity_tags
-
-    def _prediction_states(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        use_text_for_last_user_input: bool = False,
-    ) -> List[State]:
-        """Transforms tracker to states for prediction.
-
-        Args:
-            tracker: The tracker to be featurized.
-            domain: The Domain.
-            use_text_for_last_user_input: Indicates whether to use text or intent label
-                for featurizing last user input.
-
-        Returns:
-            A list of states.
-        """
-        return self.featurizer.extract_states_from_tracker_for_prediction(
-            tracker,
-            domain,
-            use_text_for_last_user_input=use_text_for_last_user_input,
-            ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_data=self._rule_only_data,
-        )
-
-    def _featurize_for_prediction(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        e2e_features: Dict[Text, Message],
-        use_text_for_last_user_input: bool = False,
-    ) -> List[List[Dict[Text, List["Features"]]]]:
-        """Transforms training tracker into a vector representation.
-
-        The trackers, consisting of multiple turns, will be transformed
-        into a float vector which can be used by a ML model.
-
-        Args:
-            tracker: The tracker to be featurized.
-            domain: The Domain.
-            use_text_for_last_user_input: Indicates whether to use text or intent label
-                for featurizing last user input.
-
-        Returns:
-            A list (corresponds to the list of trackers)
-            of lists (corresponds to all dialogue turns)
-            of dictionaries of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
-            ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
-            turns in all trackers.
-        """
-        return self.featurizer.featurize_trackers_for_prediction(
-            [tracker],
-            domain,
-            e2e_features=e2e_features,
-            use_text_for_last_user_input=use_text_for_last_user_input,
-            ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_data=self._rule_only_data,
-        )
 
     def train(
         self,
@@ -355,13 +221,156 @@ class Policy(metaclass=PolicyMetaclass):
         Args:
             path: Path to persist policy to.
         """
-        # not all policies have a featurizer
-        if self.featurizer is not None:
-            self.featurizer.persist()
-
         file = self._persistor.file_for(self._metadata_filename())
         rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
         return self._persistor.resource_name()
+
+    @classmethod
+    def load(
+        cls,
+        persistor: Optional[ComponentPersistorInterface],
+        resource_name: Text,
+        **kwargs: Any,
+    ) -> "Policy":
+        """Loads a policy from path.
+
+        Args:
+            path: Path to load policy from.
+
+        Returns:
+            An instance of `Policy`.
+        """
+        metadata_file = persistor.get_resource(resource_name, cls._metadata_filename())
+
+        if Path(metadata_file).is_file():
+            data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
+            data.update(kwargs)
+
+            constructor_args = rasa.shared.utils.common.arguments_of(cls)
+            if "kwargs" not in constructor_args:
+                if set(data.keys()).issubset(set(constructor_args)):
+                    rasa.shared.utils.io.raise_deprecation_warning(
+                        f"`{cls.__name__}.__init__` does not accept `**kwargs` "
+                        f"This is required for contextual information e.g. the flag "
+                        f"`should_finetune`.",
+                        warn_until_version="3.0.0",
+                    )
+                else:
+                    raise UnsupportedDialogueModelError(
+                        f"`{cls.__name__}.__init__` does not accept `**kwargs`. "
+                        f"Attempting to pass {data} to the policy. "
+                        f"This argument should be added to all policies by "
+                        f"Rasa Open Source 3.0.0."
+                    )
+
+            return cls(persistor=persistor, **data)
+
+        logger.info(
+            f"Couldn't load metadata for policy '{cls.__name__}'. "
+            f"File '{metadata_file}' doesn't exist."
+        )
+        return cls(persistor=persistor)
+
+    def _default_predictions(self, domain: Domain) -> List[float]:
+        """Creates a list of zeros.
+
+        Args:
+            domain: the :class:`rasa.shared.core.domain.Domain`
+        Returns:
+            the list of the length of the number of actions
+        """
+        return [0.0] * domain.num_actions
+
+    @staticmethod
+    def format_tracker_states(states: List[Dict]) -> Text:
+        """Format tracker states to human readable format on debug log.
+
+
+        TODO: why is this *here* ?
+
+        Args:
+            states: list of tracker states dicts
+
+        Returns:
+            the string of the states with user intents and actions
+        """
+        # empty string to insert line break before first state
+        formatted_states = [""]
+        if states:
+            for index, state in enumerate(states):
+                state_messages = []
+                if state:
+                    if USER in state:
+                        if TEXT in state[USER]:
+                            state_messages.append(
+                                f"user text: {str(state[USER][TEXT])}"
+                            )
+                        if INTENT in state[USER]:
+                            state_messages.append(
+                                f"user intent: {str(state[USER][INTENT])}"
+                            )
+                        if ENTITIES in state[USER]:
+                            state_messages.append(
+                                f"user entities: {str(state[USER][ENTITIES])}"
+                            )
+                    if PREVIOUS_ACTION in state:
+                        if ACTION_NAME in state[PREVIOUS_ACTION]:
+                            state_messages.append(
+                                f"previous action name: {str(state[PREVIOUS_ACTION][ACTION_NAME])}"
+                            )
+                        if ACTION_TEXT in state[PREVIOUS_ACTION]:
+                            state_messages.append(
+                                f"previous action text: {str(state[PREVIOUS_ACTION][ACTION_TEXT])}"
+                            )
+                    if ACTIVE_LOOP in state:
+                        state_messages.append(f"active loop: {str(state[ACTIVE_LOOP])}")
+                    if SLOTS in state:
+                        state_messages.append(f"slots: {str(state[SLOTS])}")
+                    state_message_formatted = " | ".join(state_messages)
+                    state_formatted = f"[state {str(index)}] {state_message_formatted}"
+                    formatted_states.append(state_formatted)
+
+        return "\n".join(formatted_states)
+
+
+class PolicyUsingFeaturizer(Policy):
+    def __init__(
+        self,
+        tracker_featurizer: Optional[TrackerFeaturizer] = None,
+        max_history: int = 5,  # FIXME: constant
+        priority: int = DEFAULT_POLICY_PRIORITY,
+        should_finetune: bool = False,
+        persistor: Optional[ComponentPersistorInterface] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            priority=priority,
+            should_finetune=should_finetune,
+            persistor=persistor,
+            **kwargs,
+        )
+        self.max_history = max_history
+        self.tracker_featurizer = (
+            tracker_featurizer or self._default_tracker_featurizer()
+        )
+        # TODO: assert max history of loaded tracker featurizer is right?
+
+    def _default_tracker_featurizer(self):
+        return TrackerFeaturizer(
+            max_history=self.max_history, persistor=self._persistor
+        )
+
+    def persist(self) -> Text:
+        """Persists the policy to storage.
+
+        Args:
+            path: Path to persist policy to.
+        """
+        self.featurizer.persist()
+        return super().persist()
+
+    def ignore_rule_only_turns_during_prediction(self):
+        return self.supported_data() == SupportedData.ML_DATA
 
     @classmethod
     def load(
@@ -413,64 +422,6 @@ class Policy(metaclass=PolicyMetaclass):
             f"File '{metadata_file}' doesn't exist."
         )
         return cls(persistor=persistor)
-
-    def _default_predictions(self, domain: Domain) -> List[float]:
-        """Creates a list of zeros.
-
-        Args:
-            domain: the :class:`rasa.shared.core.domain.Domain`
-        Returns:
-            the list of the length of the number of actions
-        """
-        return [0.0] * domain.num_actions
-
-    @staticmethod
-    def format_tracker_states(states: List[Dict]) -> Text:
-        """Format tracker states to human readable format on debug log.
-
-        Args:
-            states: list of tracker states dicts
-
-        Returns:
-            the string of the states with user intents and actions
-        """
-        # empty string to insert line break before first state
-        formatted_states = [""]
-        if states:
-            for index, state in enumerate(states):
-                state_messages = []
-                if state:
-                    if USER in state:
-                        if TEXT in state[USER]:
-                            state_messages.append(
-                                f"user text: {str(state[USER][TEXT])}"
-                            )
-                        if INTENT in state[USER]:
-                            state_messages.append(
-                                f"user intent: {str(state[USER][INTENT])}"
-                            )
-                        if ENTITIES in state[USER]:
-                            state_messages.append(
-                                f"user entities: {str(state[USER][ENTITIES])}"
-                            )
-                    if PREVIOUS_ACTION in state:
-                        if ACTION_NAME in state[PREVIOUS_ACTION]:
-                            state_messages.append(
-                                f"previous action name: {str(state[PREVIOUS_ACTION][ACTION_NAME])}"
-                            )
-                        if ACTION_TEXT in state[PREVIOUS_ACTION]:
-                            state_messages.append(
-                                f"previous action text: {str(state[PREVIOUS_ACTION][ACTION_TEXT])}"
-                            )
-                    if ACTIVE_LOOP in state:
-                        state_messages.append(f"active loop: {str(state[ACTIVE_LOOP])}")
-                    if SLOTS in state:
-                        state_messages.append(f"slots: {str(state[SLOTS])}")
-                    state_message_formatted = " | ".join(state_messages)
-                    state_formatted = f"[state {str(index)}] {state_message_formatted}"
-                    formatted_states.append(state_formatted)
-
-        return "\n".join(formatted_states)
 
 
 class PolicyPrediction:
