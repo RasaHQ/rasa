@@ -148,6 +148,7 @@ def configure_app(
 def serve_application(
     model_path: Optional[Text] = None,
     channel: Optional[Text] = None,
+    interface: Optional[Text] = constants.DEFAULT_SERVER_INTERFACE,
     port: int = constants.DEFAULT_SERVER_PORT,
     credentials: Optional[Text] = None,
     cors: Optional[Union[Text, List[Text]]] = None,
@@ -193,7 +194,7 @@ def serve_application(
 
     logger.info(
         f"Starting Rasa server on "
-        f"{constants.DEFAULT_SERVER_FORMAT.format(protocol, port)}"
+        f"{constants.DEFAULT_SERVER_FORMAT.format(protocol, interface, port)}"
     )
 
     app.register_listener(
@@ -219,7 +220,7 @@ def serve_application(
 
     rasa.utils.common.update_sanic_log_level(log_file)
     app.run(
-        host="0.0.0.0",
+        host=interface,
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
