@@ -51,10 +51,6 @@ class TrainingResult(NamedTuple):
     code: int = 0
 
 
-# backwards compatibility
-train = rasa.train
-
-
 async def train_async(
     domain: Union[Domain, Text],
     config: Text,
@@ -218,11 +214,10 @@ async def _train_async_internal(
     new_fingerprint = await model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
 
-    fingerprint_comparison = model.should_retrain(
-        new_fingerprint, old_model, train_path, force_training=force_training
-    )
-
     if dry_run:
+        fingerprint_comparison = model.should_retrain(
+            new_fingerprint, old_model, train_path, force_training=force_training
+        )
         code, texts = dry_run_result(fingerprint_comparison)
         for text in texts:
             print_warning(text) if code > 0 else print_success(text)
@@ -483,7 +478,7 @@ async def train_core_async(
             "No stories given. Please provide stories in order to "
             "train a Rasa Core model using the '--stories' argument."
         )
-        return
+        return None
 
     return await _train_core_with_validated_data(
         file_importer,
@@ -571,7 +566,7 @@ async def _train_core_with_validated_data(
                 model_prefix="core-",
             )
 
-        return _train_path
+    return _train_path
 
 
 async def _core_model_for_finetuning(
@@ -678,7 +673,7 @@ async def train_nlu_async(
             "No NLU data given. Please provide NLU data in order to train "
             "a Rasa NLU model using the '--nlu' argument."
         )
-        return
+        return None
 
     # training NLU only hence the training files still have to be selected
     file_importer = TrainingDataImporter.load_nlu_importer_from_config(
@@ -692,7 +687,7 @@ async def train_nlu_async(
             f"Please verify the data format. "
             f"The NLU model training will be skipped now."
         )
-        return
+        return None
 
     return await _train_nlu_with_validated_data(
         file_importer,
@@ -781,7 +776,7 @@ async def _train_nlu_with_validated_data(
                 model_prefix="nlu-",
             )
 
-        return _train_path
+    return _train_path
 
 
 async def _nlu_model_for_finetuning(
@@ -813,11 +808,11 @@ async def _nlu_model_for_finetuning(
             )
 
         config = await file_importer.get_config()
-        model_to_finetune = Interpreter.load(
+        loaded_model_to_finetune = Interpreter.load(
             old_nlu,
             new_config=config,
             finetuning_epoch_fraction=finetuning_epoch_fraction,
         )
-        if not model_to_finetune:
+        if not loaded_model_to_finetune:
             return None
-    return model_to_finetune
+    return loaded_model_to_finetune

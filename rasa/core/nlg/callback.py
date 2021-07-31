@@ -77,7 +77,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
             method="post", json=body, timeout=DEFAULT_REQUEST_TIMEOUT
         )
 
-        if self.validate_response(response):
+        if isinstance(response, dict) and self.validate_response(response):
             return response
         else:
             raise RasaException("NLG web endpoint returned an invalid response.")

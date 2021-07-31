@@ -33,6 +33,7 @@ from sanic_jwt import Initialize, exceptions
 
 import rasa
 import rasa.core.utils
+from rasa.nlu.emulators.emulator import Emulator
 import rasa.utils.common
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -78,9 +79,12 @@ from rasa.utils.endpoints import EndpointConfig
 if TYPE_CHECKING:
     from ssl import SSLContext  # noqa: F401
     from rasa.core.processor import MessageProcessor
-    from mypy_extensions import VarArg, KwArg
+    from mypy_extensions import Arg, VarArg, KwArg
 
-    SanicView = Callable[[Request, VarArg(), KwArg()], response.BaseHTTPResponse]
+    SanicView = Callable[
+        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
+        response.BaseHTTPResponse,
+    ]
 
 
 logger = logging.getLogger(__name__)
@@ -165,10 +169,10 @@ def ensure_loaded_agent(
     return decorator
 
 
-def ensure_conversation_exists() -> "SanicView":
+def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
     """Wraps a request handler ensuring the conversation exists."""
 
-    def decorator(f: "SanicView") -> HTTPResponse:
+    def decorator(f: "SanicView") -> "SanicView":
         @wraps(f)
         def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
@@ -440,10 +444,11 @@ def create_ssl_context(
         return None
 
 
-def _create_emulator(mode: Optional[Text]) -> NoEmulator:
+def _create_emulator(mode: Optional[Text]) -> Emulator:
     """Create emulator for specified mode.
-    If no emulator is specified, we will use the Rasa NLU format."""
 
+    If no emulator is specified, we will use the Rasa NLU format.
+    """
     if mode is None:
         return NoEmulator()
     elif mode.lower() == "wit":
