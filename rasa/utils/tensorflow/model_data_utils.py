@@ -26,7 +26,8 @@ TAG_ID_ORIGIN = "tag_id_origin"
 
 def extract_attribute_features_from_message(
     message: Message, attribute: Text, featurizers: Optional[List[Text]] = None,
-) -> Dict[Tuple[Text, Text], Union[scipy.sparse.spmatrix, np.ndarray]]:
+) -> Dict[Tuple[bool, Text], Union[scipy.sparse.spmatrix, np.ndarray]]:
+
     """Extracts and combines features from the given messages.
 
     Args:
@@ -100,7 +101,8 @@ def extract_attribute_features_from_all_messages(
         raise ValueError(f"Unknown type {type}")
     # for each label_example, collect sparse and dense feature (matrices) in lists
     collected_features: Dict[
-        Tuple[Text, Text], List[Union[np.ndarray, scipy.sparse.spmatrix]]
+        Tuple[bool, Text], List[Union[np.ndarray, scipy.sparse.spmatrix]]
+
     ] = dict()
     for msg in messages:
         sparse_type_to_feature = extract_attribute_features_from_message(

@@ -520,7 +520,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Creates a rasa data model that represents the specified labels.
 
         First, this method extracts **one** training example for each label.
-        If all of these training examples contain at least one feature, then this
+        If all of these training examples contain at least one feature type (`SENTENCE` / `SEQUENCE`), then this
         method just extracts these. Otherwise, it computes one-hot encodings
         which serve as sentence level features.
 
@@ -574,7 +574,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             if sequence_features and not sentence_features and needs_sentence_features:
                 rasa.shared.io.utils.raise_warning(
                     f"Expected sentence level features but only received "
-                    f"sequence level features for {self.label_attribute}. "
+                    f"sequence level features for `{self.label_attribute}` attribute. "
                     f"Falling back to using default one-hot embedding vectors. "
                 )
             sequence_features = None
@@ -604,7 +604,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Collect one example message for each label.
 
         Args:
-          messages: the messages which
+          messages: the messages from which examples need to be extracted.
 
         Returns:
           a sorted array containing the indices from the given `label_id_dict`
@@ -653,7 +653,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         training.
 
         Args:
-          label_ids: an int array respresenting label IDs
+          label_ids: an int array representing label IDs
 
         Returns:
           The `SENTENCE`-level features.
@@ -673,7 +673,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         training: bool = True,
         label_id_dict: Optional[Dict[Text, int]] = None,
     ) -> RasaModelData:
-        """Creates RasaModelData from the given messages.
+        """Creates training data to be fed to the model from the given messages.
 
         Args:
           messages: The messages to be turned into a RasaModelData
@@ -700,7 +700,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         # Add features for text labels/entities
-        # (Note that label/entities will only be included if training is False)
+        # (Note that label/entities will only be included if training is True)
         features, sparse_feature_sizes = self._collect_features(
             messages=messages, training=training
         )
@@ -747,7 +747,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     def _collect_features(
         self, messages: List[Message], training: bool = True,
-    ) -> Tuple[List[Dict[Text, List[Features]]], Dict[Text, Dict[Text, int]]]:
+    ) -> Tuple[List[Dict[Text, List[Features]]], Dict[Text, Dict[Text, List[int]]]]:
         """Collects all features from the given messages for `model_data` creation.
 
         Args:
@@ -874,7 +874,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if label_id_dict is None:
             raise ValueError("Expected some label id mapping.")
         if self._label_data is None:
-            raise ValueError("Expected a RasaDataModel containing label data ")
+            raise ValueError("Expected label data of type `RasaModelData` but `self._label_data` is None ")
 
         label_ids = []
         for example in messages:

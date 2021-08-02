@@ -828,9 +828,7 @@ class RasaSequenceLayer(RasaCustomLayer):
         if transformer_layers > 0:
             if SEQUENCE not in attribute_signature:
                 raise TFLayerConfigException(
-                    "The attribute signature must contain some sequence feature"
-                    "signatures since the transformer layers expects sequential input"
-                    "but none were found."
+                    f"No signature found for {SEQUENCE} attribute. `attribute_signature` must contain it since the transformer layers expect sequential input."
                 )
         # else: note that if transformer_layers is 0 it doesn't matter whether
         # there are sequence features for the given attribute, because the result
