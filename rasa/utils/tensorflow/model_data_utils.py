@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
 TAG_ID_ORIGIN = "tag_id_origin"
 
 
-def extract_attribute_features_from_message(
+def combine_attribute_features_from_message(
     message: Message, attribute: Text, featurizers: Optional[List[Text]] = None,
 ) -> Dict[Tuple[bool, Text], Union[scipy.sparse.spmatrix, np.ndarray]]:
     """Extracts and combines features from the given messages.
@@ -42,41 +42,37 @@ def extract_attribute_features_from_message(
 
     Raises:
         `ValueError`s in case the extracted sentence features or the extracted
-        sequence features do not align in terms of their last dimension, respectively
+        sequence features do not align in terms of their first dimension, respectively
     """
-    (sparse_sequence_features, sparse_sentence_features,) = message.get_sparse_features(
+    sparse_sequence_features, sparse_sentence_features = message.get_sparse_features(
         attribute, featurizers
     )
     dense_sequence_features, dense_sentence_features = message.get_dense_features(
         attribute, featurizers
     )
 
-    if (
-        dense_sequence_features is not None
-        and sparse_sequence_features is not None
-        and (
-            dense_sequence_features.features.shape[0]
-            != sparse_sequence_features.features.shape[0]
-        )
-    ):
-        raise ValueError(
-            f"Sequence dimensions for sparse and dense sequence features "
-            f"don't coincide in '{message.get(TEXT)}'"
-            f"for attribute '{attribute}'."
-        )
-    if (
-        dense_sentence_features is not None
-        and sparse_sentence_features is not None
-        and (
-            dense_sentence_features.features.shape[0]
-            != sparse_sentence_features.features.shape[0]
-        )
-    ):
-        raise ValueError(
-            f"Sequence dimensions for sparse and dense sentence features "
-            f"don't coincide in '{message.get(TEXT)}'"
-            f"for attribute '{attribute}'."
-        )
+    for dense_features, sparse_features, type in [
+        (dense_sequence_features, sparse_sequence_features, SEQUENCE),
+        (dense_sentence_features, sparse_sentence_features, SENTENCE,),
+    ]:
+        if dense_features is not None and sparse_features is not None:
+            if type == SEQUENCE and (
+                dense_features.features.shape[0] != sparse_features.features.shape[0]
+            ):
+                raise ValueError(
+                    f"Sequence dimensions for sparse and dense {type} features "
+                    f"don't coincide in '{message.get(TEXT)}'"
+                    f"for attribute '{attribute}'."
+                )
+            if type == SENTENCE and (
+                dense_features.features.shape[0] != 1
+                or sparse_features.features.shape[0] != 1
+            ):
+                raise ValueError(
+                    f"Sequence dimensions for sparse and dense {type} features "
+                    f"aren't all 1 in '{message.get(TEXT)}'"
+                    f"for attribute '{attribute}'."
+                )
 
     out = {}
     if sparse_sentence_features is not None:
@@ -91,13 +87,19 @@ def extract_attribute_features_from_message(
     return out
 
 
-def extract_attribute_features_from_all_messages(
+def combine_attribute_features_from_all_messages(
     messages: List[Message],
     attribute: Text,
     type: Optional[Text] = None,
     featurizers: Optional[List[Text]] = None,
 ) -> Tuple[List[FeatureArray], List[FeatureArray]]:
     """Collects and combines the attribute related features from all messages.
+
+    Note that thist function does not check whether the last dimensions of the
+    collected messages are consistent. We only check whether the same combinations
+    of feature types and sparseness are present in each message. Moreover,
+    `extract_and_combine_attribute_features_from_message` will check whether the
+    features in a *single* message align.
 
     Args:
         messages: list of messages to extract features from
@@ -112,9 +114,11 @@ def extract_attribute_features_from_all_messages(
         FeatureArrays with sparse features first.
 
     Raises:
-       a `ValueError` in case `type` is not either `'sequence'`, `'sentence'` or None,
-       or in case the types of the features extracted from the given messages have a
-       type that is neither `'sequence'` nor `'sentence'`
+       a `ValueError` in each of the following cases: (1) given `type` is not either
+        `'sequence'`, `'sentence'` or None (2)  types of the features extracted
+       from the given messages have a type that is neither `'sequence'` nor `'sentence'`
+       (3) the messages do not consistently contain the same kinds of features wrt.
+       sparseness and feature type
     """
     if (type is not None) and (type not in [SENTENCE, SEQUENCE]):
         raise ValueError(
@@ -124,20 +128,28 @@ def extract_attribute_features_from_all_messages(
     collected_features: Dict[
         Tuple[bool, Text], List[Union[np.ndarray, scipy.sparse.spmatrix]]
     ] = dict()
-    for msg in messages:
-        is_sparse_and_type_to_feature = extract_attribute_features_from_message(
+    expected_combinations = set()  # will be set using first message
+    for msg_idx, msg in enumerate(messages):
+        is_sparse_and_type_to_feature = combine_attribute_features_from_message(
             message=msg, attribute=attribute, featurizers=featurizers,
         )
+        if msg_idx == 0:
+            expected_combinations = set(is_sparse_and_type_to_feature.keys())
+        if set(is_sparse_and_type_to_feature.keys()) != expected_combinations:
+            raise ValueError(
+                f"Expected all messages to contain the same kind of features, i.e. "
+                f"with the same combinations of sparseness and type. "
+                f"Expected {expected_combinations} (where True/False=sparse/dense) "
+                f"but extracted {is_sparse_and_type_to_feature} from "
+                f"Message {msg} with index {msg_idx}."
+            )
         for (
             (feat_is_sparse, feat_type),
             feat_mat,
         ) in is_sparse_and_type_to_feature.items():
-            if feat_type not in [SEQUENCE, SENTENCE]:
-                raise ValueError(
-                    f"Expected types of extracted features to be {SENTENCE} or "
-                    f"{SEQUENCE} but found {feat_type}."
-                )
             if (type is None) or (type == feat_type):
+                # Note that the check above ensures that we set the default only
+                # for the first message.
                 collected_features.setdefault((feat_is_sparse, feat_type), []).append(
                     feat_mat
                 )

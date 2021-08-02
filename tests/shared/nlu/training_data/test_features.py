@@ -6,6 +6,25 @@ from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE
 
 
+def test_repr():
+    assert repr(
+        Features(
+            features=np.zeros((2, 2)),
+            feature_type=FEATURE_TYPE_SEQUENCE,
+            attribute="",
+            origin="",
+        )
+    )
+    assert repr(
+        Features(
+            features=scipy.sparse.eye(2, 2),
+            feature_type=FEATURE_TYPE_SEQUENCE,
+            attribute="",
+            origin=["origin1", "origin2"],
+        )
+    )
+
+
 def test_combine_with_existing_dense_features():
     existing_features = Features(
         np.array([[1, 0, 2, 3], [2, 0, 0, 1]]), FEATURE_TYPE_SEQUENCE, TEXT, "test"

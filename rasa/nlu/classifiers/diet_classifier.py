@@ -560,7 +560,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             (
                 sequence_features,
                 sentence_features,
-            ) = model_data_utils.extract_attribute_features_from_all_messages(
+            ) = model_data_utils.combine_attribute_features_from_all_messages(
                 messages=label_examples,
                 attribute=self.label_attribute,
                 featurizers=self.component_config[FEATURIZERS],
