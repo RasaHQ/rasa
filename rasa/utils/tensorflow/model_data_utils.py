@@ -108,20 +108,31 @@ def extract_attribute_features_from_all_messages(
     Returns:
         Sequence level features and sentence level features. Each feature contains
         FeatureArrays with sparse features first.
+    Raises:
+       a `ValueError` in case `type` is not either `'sequence'`, `'sentence'` or None,
+       or in case the types of the features extracted from the given messages have a
+       type that is neither `'sequence'` nor `'sentence'`
     """
     if (type is not None) and (type not in [SENTENCE, SEQUENCE]):
-        raise ValueError(f"Unknown type {type}")
+        raise ValueError(
+            f"Expected type to be None, {SENTENCE} or {SEQUENCE} but found {type}."
+        )
     # for each label_example, collect sparse and dense feature (matrices) in lists
     collected_features: Dict[
         Tuple[bool, Text], List[Union[np.ndarray, scipy.sparse.spmatrix]]
     ] = dict()
     for msg in messages:
-        sparse_type_to_feature = extract_attribute_features_from_message(
+        is_sparse_and_type_to_feature = extract_attribute_features_from_message(
             message=msg, attribute=attribute, featurizers=featurizers,
         )
-        for (feat_is_sparse, feat_type), feat_mat in sparse_type_to_feature.items():
+        for (
+            (feat_is_sparse, feat_type),
+            feat_mat,
+        ) in is_sparse_and_type_to_feature.items():
             if feat_type not in [SEQUENCE, SENTENCE]:
-                raise ValueError(f"Unknown type {feat_type}")
+                raise ValueError(
+                    f"Expected types of extracted features to be {SENTENCE} or {SEQUENCE} but found {feat_type}."
+                )
             if (type is None) or (type == feat_type):
                 collected_features.setdefault((feat_is_sparse, feat_type), []).append(
                     feat_mat
@@ -180,7 +191,9 @@ def featurize_training_examples(
        a `ValueError` in case `type` is not either `'sequence'`, `'sentence'` or None
     """
     if (type is not None) and (type not in [SEQUENCE, SENTENCE]):
-        raise ValueError(f"Unknown type {type}")
+        raise ValueError(
+            f"Expected type to be None, {SENTENCE} or {SEQUENCE} but found {type}."
+        )
     output = []
 
     for example in training_examples:
@@ -239,7 +252,9 @@ def _collect_sparse_feature_sizes(
        a `ValueError` in case `type` is not either `'sequence'`, `'sentence'` or None
     """
     if (type is not None) and (type not in [SEQUENCE, SENTENCE]):
-        raise ValueError(f"Unknown type {type}")
+        raise ValueError(
+            f"Expected type to be None, {SENTENCE} or {SEQUENCE} but found {type}."
+        )
     sparse_feature_sizes = {}
     sparse_attributes = []
     for attribute, features in featurized_example.items():
