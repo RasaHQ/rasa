@@ -572,7 +572,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if not sentence_features and (not sequence_features or needs_sentence_features):
 
             if sequence_features and not sentence_features and needs_sentence_features:
-                rasa.shared.io.utils.raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Expected sentence level features but only received "
                     f"sequence level features for `{self.label_attribute}` attribute. "
                     f"Falling back to using default one-hot embedding vectors. "
@@ -844,7 +844,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         needs_sentence = self._needs_sentence_features_for_labels()
         if sentence_missing and (needs_sentence or sequence_missing):
             if (not sequence_missing) and sentence_missing and needs_sentence:
-                rasa.shared.io.utils.raise_warning(
+                rasa.shared.utils.io.raise_warning(
                     f"Expected sentence level features but only received "
                     f"sequence level features for {self.label_attribute}. "
                     f"Falling back to using default one-hot embedding vectors. "
