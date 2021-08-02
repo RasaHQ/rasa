@@ -27,18 +27,19 @@ TAG_ID_ORIGIN = "tag_id_origin"
 def extract_attribute_features_from_message(
     message: Message, attribute: Text, featurizers: Optional[List[Text]] = None,
 ) -> Dict[Tuple[bool, Text], Union[scipy.sparse.spmatrix, np.ndarray]]:
-
     """Extracts and combines features from the given messages.
 
     Args:
         message: any message
         attribute: attribute for which features should be collected
         featurizers: the list of featurizers to consider
+
     Returns:
         a dictionary mapping keys that take the form
         `([True|False],[SEQUENCE|SENTENCE])' to a sparse or dense matrix
         where `True` or `False` indicates that the matrix is sparse or dense,
         respectively
+
     Raises:
         `ValueError`s in case the extracted sentence features or the extracted
         sequence features do not align in terms of their last dimension, respectively
@@ -105,9 +106,11 @@ def extract_attribute_features_from_all_messages(
           feature will be considered. If set to `None`, then sequence and sentence
           type features will be considered.
         featurizers: the featurizers to be considered
+
     Returns:
         Sequence level features and sentence level features. Each feature contains
         FeatureArrays with sparse features first.
+
     Raises:
        a `ValueError` in case `type` is not either `'sequence'`, `'sentence'` or None,
        or in case the types of the features extracted from the given messages have a
@@ -131,7 +134,8 @@ def extract_attribute_features_from_all_messages(
         ) in is_sparse_and_type_to_feature.items():
             if feat_type not in [SEQUENCE, SENTENCE]:
                 raise ValueError(
-                    f"Expected types of extracted features to be {SENTENCE} or {SEQUENCE} but found {feat_type}."
+                    f"Expected types of extracted features to be {SENTENCE} or "
+                    f"{SEQUENCE} but found {feat_type}."
                 )
             if (type is None) or (type == feat_type):
                 collected_features.setdefault((feat_is_sparse, feat_type), []).append(

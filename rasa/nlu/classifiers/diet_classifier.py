@@ -877,7 +877,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             raise ValueError("Expected some label id mapping.")
         if self._label_data is None:
             raise ValueError(
-                "Expected label data of type `RasaModelData` but `self._label_data` is None "
+                "Expected label data of type `RasaModelData` but `self._label_data` "
+                " is None "
             )
 
         label_ids = []
@@ -902,6 +903,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         Args:
           training_data: The complete training data.
+
         Returns:
           the training data required to train this component
         """
