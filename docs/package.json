@@ -33,7 +33,7 @@
     "@docusaurus/plugin-ideal-image": "2.0.0-alpha.63",
     "@docusaurus/plugin-sitemap": "2.0.0-alpha.63",
     "@docusaurus/theme-search-algolia": "2.0.0-alpha.63",
-    "@fortawesome/fontawesome-svg-core": "^1.2.30",
+    "@fortawesome/fontawesome-svg-core": "^1.2.35",
     "@fortawesome/free-solid-svg-icons": "^5.15.3",
     "@fortawesome/react-fontawesome": "^0.1.13",
     "@lunelson/sass-calc": "^1.2.0",
