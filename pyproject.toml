@@ -125,7 +125,7 @@ pyTelegramBotAPI = "^3.7.3"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
-pytest-sanic = "^1.6.1"
+pytest-sanic = "^1.7.1"
 pytest-asyncio = "^0.14.0"
 pytest-xdist = "^2.2.1"
 pytest = "^6.2.2"
