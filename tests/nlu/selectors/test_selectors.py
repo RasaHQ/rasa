@@ -68,6 +68,7 @@ from tests.nlu.classifiers.test_diet_classifier import as_pipeline
             {"name": "CountVectorsFeaturizer"},
             {
                 "name": "ResponseSelector",
+                EPOCHS: 1,
                 USE_TEXT_AS_LABEL: True,
                 NUM_TRANSFORMER_LAYERS: 0,
             },
