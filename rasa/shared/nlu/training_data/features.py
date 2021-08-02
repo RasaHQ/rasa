@@ -27,7 +27,7 @@ class Features:
         self.origin = origin
         self.attribute = attribute
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         return (
             f"{self.__class__.__name__}( "
             f"features={self.features}, "
