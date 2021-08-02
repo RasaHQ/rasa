@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Find and cancel old builds of this branch
-        uses: styfle/cancel-workflow-action@0.6.0
+        uses: styfle/cancel-workflow-action@a40b8845c0683271d9f53dfcb887a7e181d3918b
         with:
           access_token: "${{ secrets.GITHUB_TOKEN }}"
 
