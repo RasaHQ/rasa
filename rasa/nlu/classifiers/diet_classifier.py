@@ -783,7 +783,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             not feats[TEXT] for feats in features
         ):
             rasa.shared.utils.io.raise_warning(
-                "Expected sentence level features for TEXT. "
+                "Expected sequence level features for TEXT. "
                 "Falling back to empty input sequences."
             )
 
