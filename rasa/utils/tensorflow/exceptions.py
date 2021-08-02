@@ -5,5 +5,5 @@ class TFLayerConfigException(RasaException):
     """Raised when wrong parameters are passed to tensorflow layers."""
 
 
-class TFModelConfigException(RasaException):
+class RasaModelConfigException(RasaException):
     """Raised when wrong parameters are passed to `RasaModel`s."""

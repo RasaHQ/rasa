@@ -44,7 +44,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.model import Metadata
-from rasa.utils.tensorflow.exceptions import TFModelConfigException
+from rasa.utils.tensorflow.exceptions import RasaModelConfigException
 from rasa.utils.tensorflow.constants import (
     LABEL,
     IDS,
@@ -296,7 +296,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config[MASKED_LM]
             and self.component_config[NUM_TRANSFORMER_LAYERS] == 0
         ):
-            raise TFModelConfigException(
+            raise RasaModelConfigException(
                 f"If number of transformer layers is 0, "
                 f"'{MASKED_LM}' option should be 'False'."
             )
@@ -314,7 +314,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 ].values()
             )
             if not identical_hidden_layer_sizes:
-                raise TFModelConfigException(
+                raise RasaModelConfigException(
                     f"If hidden layer weights are shared, "
                     f"{HIDDEN_LAYERS_SIZES} must coincide."
                 )
@@ -495,7 +495,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             if (0 < num_text_sentence_features != num_label_sentence_features > 0) or (
                 0 < num_text_sequence_features != num_label_sequence_features > 0
             ):
-                raise TFModelConfigException(
+                raise RasaModelConfigException(
                     "If embeddings are shared text features and label features "
                     "must coincide. Check the output dimensions of previous components."
                 )
@@ -874,7 +874,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if label_id_dict is None:
             raise ValueError("Expected some label id mapping.")
         if self._label_data is None:
-            raise ValueError("Expected label data of type `RasaModelData` but `self._label_data` is None ")
+            raise ValueError(
+                "Expected label data of type `RasaModelData` but `self._label_data` is None "
+            )
 
         label_ids = []
         for example in messages:
@@ -1427,7 +1429,7 @@ class DIET(TransformerRasaModel):
                     )
 
                 if different_sentence_signatures or different_sequence_signatures:
-                    raise TFModelConfigException(
+                    raise RasaModelConfigException(
                         "If hidden layer weights are shared, data signatures "
                         "for text_features and label_features must coincide."
                     )
@@ -1918,7 +1920,7 @@ class DIET(TransformerRasaModel):
     ) -> Dict[Text, tf.Tensor]:
 
         if self.all_labels_embed is None:
-            raise TFModelConfigException(
+            raise RasaModelConfigException(
                 "The model was not prepared for prediction. "
                 "Call `prepare_for_predict` first."
             )

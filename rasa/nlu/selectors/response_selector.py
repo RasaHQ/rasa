@@ -19,7 +19,7 @@ from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.models import RasaModel
-from rasa.utils.tensorflow.exceptions import TFModelConfigException
+from rasa.utils.tensorflow.exceptions import RasaModelConfigException
 
 from rasa.nlu.classifiers.diet_classifier import (
     DIETClassifier,
@@ -726,7 +726,7 @@ class DIET2DIET(DIET):
             and self.data_signature[TEXT][SENTENCE]
             != self.data_signature[LABEL][SENTENCE]
         ):
-            raise TFModelConfigException(
+            raise RasaModelConfigException(
                 "If hidden layer weights are shared, data signatures "
                 "for text_features and label_features must coincide."
             )
@@ -777,7 +777,7 @@ class DIET2DIET(DIET):
         ]:
             if self.config.get(NUM_TRANSFORMER_LAYERS) == 0:
                 if SENTENCE not in self.data_signature[attribute]:
-                    raise TFModelConfigException(
+                    raise RasaModelConfigException(
                         "Expected sentence-level features since the number "
                         "of transformer layers is set to 0 (and hence, sequence "
                         "features alone will not be used)."
