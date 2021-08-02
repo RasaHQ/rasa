@@ -32,9 +32,8 @@ class GraphRunner(ABC):
         """Runs the instantiated graph with the given inputs and targets.
 
         Args:
-            inputs: Input nodes to be added to the graph.
-                These can be referenced by name
-                in the "needs" key of a node in the schema.
+            inputs: Input nodes to be added to the graph. These can be referenced by
+                name in the "needs" key of a node in the schema.
             targets: Nodes who's output is needed and must always run.
 
         Returns: A mapping of target node name to output value.
