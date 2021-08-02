@@ -39,6 +39,9 @@ def extract_attribute_features_from_message(
         `([True|False],[SEQUENCE|SENTENCE])' to a sparse or dense matrix
         where `True` or `False` indicates that the matrix is sparse or dense,
         respectively
+    Raises:
+        `ValueError`s in case the extracted sentence features or the extracted
+        sequence features do not align in terms of their last dimension, respectively
     """
     (sparse_sequence_features, sparse_sentence_features,) = message.get_sparse_features(
         attribute, featurizers
