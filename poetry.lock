@@ -1204,7 +1204,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "moto"
-version = "2.0.11"
+version = "2.2.0"
 description = "A library that allows your python tests to easily mock out the boto library"
 category = "dev"
 optional = false
@@ -1221,27 +1221,26 @@ python-dateutil = ">=2.1,<3.0.0"
 pytz = "*"
 requests = ">=2.5"
 responses = ">=0.9.0"
-six = ">1.9"
 werkzeug = "*"
 xmltodict = "*"
 
 [package.extras]
-all = ["PyYAML (>=5.1)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "python-jose[cryptography] (>=3.1.0,<3.3.0)", "decorator (<=4.4.2)", "sshpubkeys (==3.1.0)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "sshpubkeys (>=3.1.0)"]
-apigateway = ["ecdsa (<0.15)", "python-jose[cryptography] (>=3.1.0,<3.3.0)", "python-jose[cryptography] (>=3.1.0,<4.0.0)"]
+all = ["PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "sshpubkeys (>=3.1.0)"]
+apigateway = ["python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)"]
 awslambda = ["docker (>=2.5.1)"]
 batch = ["docker (>=2.5.1)"]
-cloudformation = ["docker (>=2.5.1)", "PyYAML (>=5.1)", "cfn-lint (>=0.4.0)", "decorator (<=4.4.2)"]
-cognitoidp = ["ecdsa (<0.15)", "python-jose[cryptography] (>=3.1.0,<3.3.0)", "python-jose[cryptography] (>=3.1.0,<4.0.0)"]
+cloudformation = ["docker (>=2.5.1)", "PyYAML (>=5.1)", "cfn-lint (>=0.4.0)"]
+cognitoidp = ["python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)"]
 dynamodb2 = ["docker (>=2.5.1)"]
 dynamodbstreams = ["docker (>=2.5.1)"]
-ec2 = ["docker (>=2.5.1)", "sshpubkeys (==3.1.0)", "sshpubkeys (>=3.1.0)"]
+ec2 = ["docker (>=2.5.1)", "sshpubkeys (>=3.1.0)"]
 iotdata = ["jsondiff (>=1.1.2)"]
 s3 = ["PyYAML (>=5.1)"]
-server = ["PyYAML (>=5.1)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "flask", "flask-cors", "python-jose[cryptography] (>=3.1.0,<3.3.0)", "decorator (<=4.4.2)", "sshpubkeys (==3.1.0)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "sshpubkeys (>=3.1.0)"]
+server = ["PyYAML (>=5.1)", "python-jose[cryptography] (>=3.1.0,<4.0.0)", "ecdsa (<0.15)", "docker (>=2.5.1)", "jsondiff (>=1.1.2)", "aws-xray-sdk (>=0.93,!=0.96)", "idna (>=2.5,<3)", "cfn-lint (>=0.4.0)", "sshpubkeys (>=3.1.0)", "flask", "flask-cors"]
 ses = ["docker (>=2.5.1)"]
 sns = ["docker (>=2.5.1)"]
 sqs = ["docker (>=2.5.1)"]
-ssm = ["docker (>=2.5.1)", "PyYAML (>=5.1)", "cfn-lint (>=0.4.0)", "decorator (<=4.4.2)"]
+ssm = ["docker (>=2.5.1)", "PyYAML (>=5.1)"]
 xray = ["aws-xray-sdk (>=0.93,!=0.96)"]
 
 [[package]]
@@ -3093,7 +3092,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.9"
-content-hash = "cd5061ac13ab79b5963cbed71a77d90faef45528003b4ad27e22f16e832fb359"
+content-hash = "209392b503a06fad9992371ec4211fff4df02556773fb525b5df2bc81e0d1240"
 
 [metadata.files]
 absl-py = [
@@ -3914,8 +3913,8 @@ more-itertools = [
     {file = "more_itertools-8.8.0-py3-none-any.whl", hash = "sha256:2cf89ec599962f2ddc4d568a05defc40e0a587fbc10d5989713638864c36be4d"},
 ]
 moto = [
-    {file = "moto-2.0.11-py2.py3-none-any.whl", hash = "sha256:765d01bfa85807a5a180ae5b993b293c3cf56dd9c694d2834a30e9016b74a933"},
-    {file = "moto-2.0.11.tar.gz", hash = "sha256:569049a42bc63b6c4702fda0fee952e4d0088cd7f4989aa8eaaae0b222f7a2a1"},
+    {file = "moto-2.2.0-py2.py3-none-any.whl", hash = "sha256:01cae56a272a5bf952335df854a8e616f7e6dbb135f88d5f00b979be61bfb448"},
+    {file = "moto-2.2.0.tar.gz", hash = "sha256:54824ad7fb5040d60558f7f34e0cb32e2de1d97612c03a1f9accfe3d5b94d2a6"},
 ]
 msrest = [
     {file = "msrest-0.6.21-py2.py3-none-any.whl", hash = "sha256:c840511c845330e96886011a236440fafc2c9aff7b2df9c0a92041ee2dee3782"},
@@ -4194,9 +4193,13 @@ protobuf = [
     {file = "protobuf-3.17.3-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:2ae692bb6d1992afb6b74348e7bb648a75bb0d3565a3f5eea5bec8f62bd06d87"},
     {file = "protobuf-3.17.3-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:99938f2a2d7ca6563c0ade0c5ca8982264c484fdecf418bd68e880a7ab5730b1"},
     {file = "protobuf-3.17.3-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:6902a1e4b7a319ec611a7345ff81b6b004b36b0d2196ce7a748b3493da3d226d"},
+    {file = "protobuf-3.17.3-cp38-cp38-win32.whl", hash = "sha256:59e5cf6b737c3a376932fbfb869043415f7c16a0cf176ab30a5bbc419cd709c1"},
+    {file = "protobuf-3.17.3-cp38-cp38-win_amd64.whl", hash = "sha256:ebcb546f10069b56dc2e3da35e003a02076aaa377caf8530fe9789570984a8d2"},
     {file = "protobuf-3.17.3-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:4ffbd23640bb7403574f7aff8368e2aeb2ec9a5c6306580be48ac59a6bac8bde"},
     {file = "protobuf-3.17.3-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:26010f693b675ff5a1d0e1bdb17689b8b716a18709113288fead438703d45539"},
     {file = "protobuf-3.17.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.whl", hash = "sha256:e76d9686e088fece2450dbc7ee905f9be904e427341d289acbe9ad00b78ebd47"},
+    {file = "protobuf-3.17.3-cp39-cp39-win32.whl", hash = "sha256:a38bac25f51c93e4be4092c88b2568b9f407c27217d3dd23c7a57fa522a17554"},
+    {file = "protobuf-3.17.3-cp39-cp39-win_amd64.whl", hash = "sha256:85d6303e4adade2827e43c2b54114d9a6ea547b671cb63fafd5011dc47d0e13d"},
     {file = "protobuf-3.17.3-py2.py3-none-any.whl", hash = "sha256:2bfb815216a9cd9faec52b16fd2bfa68437a44b67c56bee59bc3926522ecb04e"},
     {file = "protobuf-3.17.3.tar.gz", hash = "sha256:72804ea5eaa9c22a090d2803813e280fb273b62d5ae497aaf3553d141c4fdd7b"},
 ]
