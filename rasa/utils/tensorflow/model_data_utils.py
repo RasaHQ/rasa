@@ -37,7 +37,8 @@ def extract_attribute_features_from_message(
     Returns:
         a dictionary mapping keys that take the form
         `([True|False],[SEQUENCE|SENTENCE])' to a sparse or dense matrix
-        where True or False indicates that the matrix is sparse or dense, respectively
+        where `True` or `False` indicates that the matrix is sparse or dense,
+        respectively
     """
     (sparse_sequence_features, sparse_sentence_features,) = message.get_sparse_features(
         attribute, featurizers
@@ -46,26 +47,32 @@ def extract_attribute_features_from_message(
         attribute, featurizers
     )
 
-    if dense_sequence_features is not None and sparse_sequence_features is not None:
-        if (
+    if (
+        dense_sequence_features is not None
+        and sparse_sequence_features is not None
+        and (
             dense_sequence_features.features.shape[0]
             != sparse_sequence_features.features.shape[0]
-        ):
-            raise ValueError(
-                f"Sequence dimensions for sparse and dense sequence features "
-                f"don't coincide in '{message.get(TEXT)}'"
-                f"for attribute '{attribute}'."
-            )
-    if dense_sentence_features is not None and sparse_sentence_features is not None:
-        if (
+        )
+    ):
+        raise ValueError(
+            f"Sequence dimensions for sparse and dense sequence features "
+            f"don't coincide in '{message.get(TEXT)}'"
+            f"for attribute '{attribute}'."
+        )
+    if (
+        dense_sentence_features is not None
+        and sparse_sentence_features is not None
+        and (
             dense_sentence_features.features.shape[0]
             != sparse_sentence_features.features.shape[0]
-        ):
-            raise ValueError(
-                f"Sequence dimensions for sparse and dense sentence features "
-                f"don't coincide in '{message.get(TEXT)}'"
-                f"for attribute '{attribute}'."
-            )
+        )
+    ):
+        raise ValueError(
+            f"Sequence dimensions for sparse and dense sentence features "
+            f"don't coincide in '{message.get(TEXT)}'"
+            f"for attribute '{attribute}'."
+        )
 
     out = {}
     if sparse_sentence_features is not None:
@@ -91,7 +98,9 @@ def extract_attribute_features_from_all_messages(
     Args:
         messages: list of messages to extract features from
         attribute: the only attribute which will be considered
-        type: if not None, the other type (sentence/sequence) will be ignored
+        type: If set to `'sequence'` or `'sentence'`, then only the chosen type of
+          feature will be considered. If set to `None`, then sequence and sentence
+          type features will be considered.
         featurizers: the featurizers to be considered
     Returns:
         Sequence level features and sentence level features. Each feature contains
@@ -102,7 +111,6 @@ def extract_attribute_features_from_all_messages(
     # for each label_example, collect sparse and dense feature (matrices) in lists
     collected_features: Dict[
         Tuple[bool, Text], List[Union[np.ndarray, scipy.sparse.spmatrix]]
-
     ] = dict()
     for msg in messages:
         sparse_type_to_feature = extract_attribute_features_from_message(
@@ -146,10 +154,10 @@ def featurize_training_examples(
 ) -> Tuple[List[Dict[Text, List["Features"]]], Dict[Text, Dict[Text, List[int]]]]:
     """Converts training data into a list of attribute to features.
 
-    Possible attributes are, for example, INTENT, RESPONSE, TEXT, ACTION_TEXT,
-    ACTION_NAME or ENTITIES.
+    Possible attributes are, for example, `INTENT`, `RESPONSE`, `TEXT`, `ACTION_TEXT`,
+    `ACTION_NAME` or `ENTITIES`.
     Also returns sparse feature sizes for each attribute. It could look like this:
-    {TEXT: {FEATURE_TYPE_SEQUENCE: [16, 32], FEATURE_TYPE_SENTENCE: [16, 32]}}.
+    `{TEXT: {FEATURE_TYPE_SEQUENCE: [16, 32], FEATURE_TYPE_SENTENCE: [16, 32]}}`.
 
     Args:
         training_examples: the list of training examples
@@ -157,12 +165,16 @@ def featurize_training_examples(
         entity_tag_specs: the entity specs
         featurizers: the featurizers to consider
         bilou_tagging: indicates whether BILOU tagging should be used or not
-        type: feature type to consider; if set to None all types
-          (i.e. sequence and sentence) will be considered
+        type: If set to `'sequence'` or `'sentence'`, then only the chosen type of
+          feature will be considered. If set to `None`, then sequence and sentence
+          type features will be considered.
 
     Returns:
         A list of attribute to features.
         A dictionary of attribute to feature sizes.
+
+    Raises:
+       a `ValueError` in case `type` is not either `'sequence'`, `'sentence'` or None
     """
     if (type is not None) and (type not in [SEQUENCE, SENTENCE]):
         raise ValueError(f"Unknown type {type}")
@@ -208,7 +220,7 @@ def _collect_sparse_feature_sizes(
     """Collects sparse feature sizes for all attributes that have sparse features.
 
     Returns sparse feature sizes for each attribute. It could look like this:
-    {TEXT: {FEATURE_TYPE_SEQUENCE: [16, 32], FEATURE_TYPE_SENTENCE: [16, 32]}}.
+    `{TEXT: {FEATURE_TYPE_SEQUENCE: [16, 32], FEATURE_TYPE_SENTENCE: [16, 32]}}`.
 
     Args:
         featurized_example: a featurized example
@@ -219,6 +231,9 @@ def _collect_sparse_feature_sizes(
 
     Returns:
         A dictionary of attribute to feature sizes.
+
+    Raises:
+       a `ValueError` in case `type` is not either `'sequence'`, `'sentence'` or None
     """
     if (type is not None) and (type not in [SEQUENCE, SENTENCE]):
         raise ValueError(f"Unknown type {type}")

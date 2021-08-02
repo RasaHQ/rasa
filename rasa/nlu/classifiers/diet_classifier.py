@@ -394,7 +394,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _create_label_id_to_index_mapping(
         self, training_data: TrainingData,
     ) -> Dict[Text, int]:
-        """Create a label_id dictionary from the intent examples in the given data."""
+        """Create a label id dictionary from the intent examples in the given data."""
         distinct_label_ids = {
             example.get(self.label_attribute)
             for example in training_data.intent_examples
@@ -462,9 +462,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return tag_id_dict
 
     def _uses_sequence_features_for_text(self) -> bool:
-        """Whether we need sequence features for the TEXT attribute.
+        """Whether we need sequence features for the `TEXT` attribute.
 
-        Note that, for prediction of some label attribute, the DIETClassifier
+        Note that, for prediction of some label attribute, the `DIETClassifier`
         can make use of sequence features even if the number of
         transformer layers is 0 because for that it creates a BOW representation
         by simply summing over sequence+sentence features.
@@ -478,7 +478,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
     def _needs_sentence_features_for_labels(self) -> bool:
         """Whether we expect/require sentence level features for the label attribute.
 
-        For the DIETClassifier, we don't because DIET uses a BOW representation for
+        For the `DIETClassifier`, we don't because `DIET` uses a BOW representation for
         it's final prediction which is obtained by simply summing over
         sequence+sentence features.
         """
@@ -520,15 +520,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Creates a rasa data model that represents the specified labels.
 
         First, this method extracts **one** training example for each label.
-        If all of these training examples contain at least one feature type (`SENTENCE` / `SEQUENCE`), then this
-        method just extracts these. Otherwise, it computes one-hot encodings
-        which serve as sentence level features.
+        If all of these training examples contain at least one feature type
+        (`SENTENCE` / `SEQUENCE`), then this method just extracts these. Otherwise,
+        it computes one-hot encodings which serve as sentence level features.
 
         Note that, if and only if sequence level features have been extracted, a
-        SEQUENCE_LENGTH key will be added under the LABEL key.
+        `SEQUENCE_LENGTH` key will be added under the `LABEL` key.
 
-        Moreover, FeatureArrays containing the corresponding label ids will be added
-        with subkey ID.
+        Moreover, `FeatureArrays` containing the corresponding label ids will be added
+        with subkey `ID`.
 
         Args:
             training_data: a training data object holding messages
@@ -540,7 +540,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             list with one `FeatureArray` per label
 
         Raises:
-            a ValueError if some label is not supported by any training example
+            a `ValueError` if some label is not supported by any training example
         """
         label_indices, label_examples = self._collect_one_example_per_label(
             messages=training_data.intent_examples, label_id_dict=label_id_dict
@@ -642,18 +642,18 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         return sorted_labelidx, sorted_messages
 
     def _use_default_label_features(self, label_ids: np.ndarray) -> List[FeatureArray]:
-        """Grabs the pre-computed sentence level default features for the LABEL key.
+        """Grabs the pre-computed default features for the `LABEL` key.
 
         In case that no features had been present during training for
         the label key, these sentence level default features are the one-hot
         features that have been computed via `_compute_default_label_features`.
 
         Otherwise, this function will return some precomputed features
-        that have been present for the LABEL key in training data during
+        that have been present for the `LABEL` key in training data during
         training.
 
         Args:
-          label_ids: an int array representing label IDs
+          label_ids: an int array representing label ids
 
         Returns:
           The `SENTENCE`-level features.
@@ -676,14 +676,14 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Creates training data to be fed to the model from the given messages.
 
         Args:
-          messages: The messages to be turned into a RasaModelData
-          training: whether we're in training mode and should add label data
+          messages: The messages from which we want to extract the training data.
+          training: Whether we're in training mode and should add label data
           label_id_dict: A mapping from labels to label ids that is
             only required for label data creation (i.e. if `training` is set to `True`)
 
         Returns:
-           RasaModelData that contains features for labels if and only if
-           `training` had been set to True
+           training data that contains features for labels if and only if
+           `training` had been set to `True`
         """
         if training:
             # only use those training examples that have the label_attribute set
@@ -751,10 +751,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Collects all features from the given messages for `model_data` creation.
 
         Args:
-          messages: The messages to be turned into a RasaModelData
-          training: whether we're in training mode and should add label data
-          label_id_dict: A mapping from labels to label ids that is
-            only required for label data creation (i.e. if `training` is set to `True`)
+          messages: The messages from which we want to extract features.
+          training: Whether we're in training mode and hence should add label data.
 
         Returns:
           a tuple containing a list of feature dictionaries (i.e. mappings from
@@ -821,13 +819,13 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Fills in default label features for the label attribute if necessary.
 
         Here, "required" means that no features are present for the label attribute
-        in the given model_data.
-        Note that if there is no label_attribute set, then nothing will be changed.
+        in the given `model_data`.
+        Note that if there is no `label_attribute` set, then nothing will be changed.
 
         Args:
           label_ids: list of label ids (indices) that contains entries for just as
             many records as the `model_data`
-          model_data: the `RasaModelData` which possibly does not contain sequence
+          model_data: data which possibly does not contain sequence
             or sentence features for the label attribute
         """
         if self.label_attribute is None:
@@ -862,7 +860,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         messages: List[Message],
         label_id_dict: Dict[Text, int],
     ) -> List[int]:
-        """Adds label id features to the given model_data.
+        """Adds label id features to the given `model_data`.
 
         Only add those if there is a label attribute. Otherwise, nothing changes.
 
@@ -897,6 +895,11 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Prepares data for training.
 
         Performs sanity checks on training data, extracts encodings for labels.
+
+        Args:
+          training_data: The complete training data.
+        Returns:
+          the training data required to train this component
         """
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
@@ -1344,7 +1347,7 @@ class DIET(TransformerRasaModel):
         entity_tag_specs: Optional[List[EntityTagSpec]],
         config: Dict[Text, Any],
     ) -> None:
-        """Instantiate DIET.
+        """Instantiate `DIET`.
 
         Args:
           data_signature: the model's signature
