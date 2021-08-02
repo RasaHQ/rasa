@@ -1,106 +1,21 @@
 from __future__ import annotations
-from typing import Dict, List, Optional, Text
+from typing import Optional
 
 import pytest
 
 from rasa.engine.graph import (
     ExecutionContext,
-    GraphComponent,
     GraphSchema,
     SchemaNode,
 )
 from rasa.engine.exceptions import GraphRunError
 from rasa.engine.runner.dask import DaskGraphRunner
-
-
-class AddInputs(GraphComponent):
-    default_config = {}
-
-    @classmethod
-    def create(cls, config: Dict, execution_context: ExecutionContext) -> AddInputs:
-        return cls()
-
-    def supported_languages(self) -> List[Text]:
-        return ["en"]
-
-    def required_packages(self) -> List[Text]:
-        return []
-
-    def add(self, i1: int, i2: int) -> int:
-        return i1 + i2
-
-
-class SubtractByX(GraphComponent):
-    default_config = {"x": 0}
-
-    def __init__(self, x: int) -> None:
-        self._x = x
-
-    @classmethod
-    def create(cls, config: Dict, execution_context: ExecutionContext) -> SubtractByX:
-        return cls(config["x"])
-
-    def supported_languages(self) -> List[Text]:
-        return ["en"]
-
-    def required_packages(self) -> List[Text]:
-        return []
-
-    def subtract_x(self, i: int) -> int:
-        return i - self._x
-
-
-class ProvideX(GraphComponent):
-    default_config = {}
-
-    def __init__(self) -> None:
-        self.x = 1
-
-    @classmethod
-    def create(
-        cls, config: Dict, execution_context: ExecutionContext, x: Optional[int] = None
-    ) -> ProvideX:
-        instance = cls()
-        if x:
-            instance.x = x
-        return instance
-
-    @classmethod
-    def create_with_2(
-        cls, config: Dict, execution_context: ExecutionContext
-    ) -> ProvideX:
-        return cls.create(config, execution_context, 2)
-
-    def supported_languages(self) -> List[Text]:
-        return ["en"]
-
-    def required_packages(self) -> List[Text]:
-        return []
-
-    def provide(self) -> int:
-        return self.x
-
-
-class ExecutionContextAware(GraphComponent):
-    default_config = {}
-
-    def __init__(self, model_id: Text) -> None:
-        self.model_id = model_id
-
-    @classmethod
-    def create(
-        cls, config: Dict, execution_context: ExecutionContext
-    ) -> ExecutionContextAware:
-        return cls(execution_context.model_id)
-
-    def supported_languages(self) -> List[Text]:
-        return ["en"]
-
-    def required_packages(self) -> List[Text]:
-        return []
-
-    def get_model_id(self) -> Text:
-        return self.model_id
+from tests.engine.graph_components_test_classes import (
+    AddInputs,
+    ExecutionContextAware,
+    ProvideX,
+    SubtractByX,
+)
 
 
 @pytest.mark.parametrize("eager", [True, False])
@@ -226,6 +141,28 @@ def test_no_target():
     )
     results = runner.run()
     assert not results
+
+
+def test_unused_node():
+    graph_schema: GraphSchema = {
+        "provide": SchemaNode(
+            needs={},
+            uses=ProvideX,
+            fn="provide",
+            constructor_name="create",
+            config={},
+            is_target=True,
+        ),
+        "provide_2": SchemaNode(  # This will not execute
+            needs={}, uses=ProvideX, fn="provide", constructor_name="create", config={},
+        ),
+    }
+    runner = DaskGraphRunner(
+        graph_schema=graph_schema,
+        execution_context=ExecutionContext(graph_schema=graph_schema, model_id="1"),
+    )
+    results = runner.run()
+    assert results == {"provide": 1}
 
 
 def test_non_eager_can_use_inputs_for_constructor():

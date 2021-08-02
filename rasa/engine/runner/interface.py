@@ -6,7 +6,7 @@ from rasa.engine.graph import ExecutionContext, GraphSchema
 
 
 class GraphRunner(ABC):
-    """A GraphRunner is responsible for running a GraphSchema."""
+    """A `GraphRunner` is responsible for running a `GraphSchema`."""
 
     @classmethod
     @abstractmethod

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 import logging
 from typing import Any, Callable, Dict, List, Optional, Text, Type
 
+from rasa.engine.exceptions import GraphComponentException
 import rasa.shared.utils.common
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ class SchemaNode:
     eager: bool = False
     is_target: bool = False
     is_input: bool = False
-    resource_name: Optional[Text] = None  # TODO: type Resource
+    resource_name: Optional[Text] = None
 
 
 GraphSchema = Dict[Text, SchemaNode]
@@ -37,7 +38,7 @@ class GraphComponent(ABC):
     @classmethod
     @abstractmethod
     def create(
-        cls, config: Dict, execution_context: ExecutionContext
+        cls, config: Dict[Text, Any], execution_context: ExecutionContext
     ) -> GraphComponent:
         """Creates a new `GraphComponent`.
 
@@ -51,7 +52,7 @@ class GraphComponent(ABC):
 
     @classmethod
     def load(cls, config: Dict, execution_context: ExecutionContext) -> GraphComponent:
-        """The load method is for creating a component using persisted data.
+        """Creates a component using a persisted version of itself.
 
         If not overridden this method merely calls `create`.
 
@@ -63,15 +64,16 @@ class GraphComponent(ABC):
         """
         return cls.create(config, execution_context)
 
-    @abstractmethod
-    def supported_languages(self) -> List[Text]:
-        """Determines which languages this component can work with."""
-        ...
+    def supported_languages(self) -> Optional[List[Text]]:
+        """Determines which languages this component can work with.
 
-    @abstractmethod
+        Returns: A list of supported languages, or None to signify all are supported.
+        """
+        return None
+
     def required_packages(self) -> List[Text]:
         """Any extra python dependencies required for this component to run."""
-        ...
+        return []
 
 
 @dataclass
@@ -88,7 +90,7 @@ class GraphNode:
     """Instantiates and runs a `GraphComponent` within a graph.
 
     A `GraphNode` is a wrapper for a `GraphComponent` that allows it to be executed
-    In the context of a graph. It is responsible for instantiating the component at the
+    in the context of a graph. It is responsible for instantiating the component at the
     correct time, collecting the inputs from the parent nodes, running the run function
     of the component and passing the output onwards.
     """
@@ -111,7 +113,8 @@ class GraphNode:
             component_class: The class to be instantiated and run.
             constructor_name: The method used to instantiate the component.
             component_config: Config to be passed to the component.
-            fn_name: The function to be run when the node executes.
+            fn_name: The function on the instantiated `GraphComponent` to be run when
+                the node executes.
             inputs: A map from input name to parent node name that provides it.
             eager: Determines if the node is instantiated right away, or just before
                 being run.
@@ -147,13 +150,16 @@ class GraphNode:
             f"{self._component_class.__name__}.{self._constructor_name} "
             f"with config: {self._component_config}, and kwargs: {kwargs}."
         )
-        self._component: GraphComponent = getattr(  # type: ignore[no-redef]
-            self._component_class, self._constructor_name
-        )(
-            config=self._component_config,
-            execution_context=self._execution_context,
-            **kwargs,
-        )
+
+        constructor = getattr(self._component_class, self._constructor_name)
+        try:
+            self._component: GraphComponent = constructor(  # type: ignore[no-redef]
+                config=self._component_config,
+                execution_context=self._execution_context,
+                **kwargs,
+            )
+        except Exception as e:
+            raise GraphComponentException("Error initializing graph component.") from e
 
     def parent_node_names(self) -> List[Text]:
         """The names of the parent nodes of this node."""
@@ -170,8 +176,8 @@ class GraphNode:
         """
         received_inputs = dict(ChainMap(*inputs_from_previous_nodes))
         kwargs = {}
-        for input, input_node in self._inputs.items():
-            kwargs[input] = received_inputs[input_node]
+        for input_name, input_node in self._inputs.items():
+            kwargs[input_name] = received_inputs[input_node]
 
         if not self._eager:
             constructor_kwargs = rasa.shared.utils.common.minimal_kwargs(
@@ -185,7 +191,13 @@ class GraphNode:
             f"{self._component_class.__name__}.{self._fn_name} "
             f"with kwargs: {run_kwargs}."
         )
-        return {self._node_name: self._fn(self._component, **run_kwargs)}
+
+        try:
+            output = self._fn(self._component, **run_kwargs)
+        except Exception as e:
+            raise GraphComponentException("Error running graph component.") from e
+
+        return {self._node_name: output}
 
     @classmethod
     def from_schema_node(
