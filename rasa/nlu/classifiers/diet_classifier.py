@@ -610,6 +610,10 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
           a sorted array containing the indices from the given `label_id_dict`
           exactly and a list of messages where the i-th message is an example for
           the label whose index is given by the i-th entry in the array
+
+        Raises:
+          a `InvalidConfigException` if the given messages do not contain at least
+          one example per label
         """
         labelidx_message_tuples = []
         debug_unsupported_labels = set()
