@@ -95,10 +95,11 @@ class MemoizationPolicy(Policy):
 
         if not state_extractor:
             self.state_extractor = TrackerStateExtractor(
+                is_target=lambda event: isinstance(event, ActionExecuted),
+                hide_step=None,
                 persistor=persistor,
                 max_history=max_history,
                 remove_duplicates=True,
-                event_filter=None,
             )
 
         self.max_history = max_history

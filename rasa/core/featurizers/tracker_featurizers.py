@@ -1,17 +1,16 @@
-from os import stat_result
-from rasa.nlu.constants import EXTRACTOR
 import jsonpickle
 import logging
 import copy
+from numpy.lib.arraysetops import isin
 
 from tqdm import tqdm
-from typing import Callable, Tuple, List, Optional, Dict, Text, Any
+from typing import Callable, Tuple, List, Optional, Dict, Text, Any, Set
 import numpy as np
 
 from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.core.domain import State, Domain, SubState
-from rasa.shared.core.events import ActionExecuted, Event
+from rasa.shared.core.events import ActionExecuted, Event, UserUttered
 from rasa.shared.core.trackers import (
     DialogueStateTracker,
     is_prev_action_listen_in_state,
@@ -48,6 +47,92 @@ def copy_state(
     return partial_state
 
 
+def get_events_and_states(
+    tracker: DialogueStateTracker, domain: Domain, omit_unset_slots: bool
+):
+    """Extracts and aligns events and states from the given tracker.
+
+    The logic behind the computed alignment is based on the relation between
+    a trackers `past_states` and its `applied_events`:
+    (0)
+    (1) Every encounter of an `ActionExecuted` in the `applied_events`
+        triggers the creation of a
+    state, which captures the events up to *right before the event that
+    triggered its creation*.
+    Additionally, the creation of the last state event is triggered after
+    all events have been passed. Hence this last state includes information
+    of the very last applied_event.
+
+    Note that this function retrieves `past_states` from the tracker *without*
+    ignoring rule only turns!
+
+    References:
+        - tracker.generate_all_prior_trackers
+        - domain.states_for_tracker_history begin called *without skipping
+        rule turns* !
+
+    Returns:
+        a list of all applied events from the given tracker,
+        a list of all `past_states` of the tracker (without skipping any turns),
+        a list of tuples containing an state and a event where the event is the
+        last piece of information captured in the corresponding state
+    """
+    states = tracker.past_states(
+        domain,
+        omit_unset_slots=omit_unset_slots,
+        ignore_rule_only_turns=False,
+        rule_only_data=None,
+    )
+    applied_events = tracker.applied_events()
+
+    # Sanity Check: There are no "BotUttered" events or so - every "applied_event"
+    # is an ActionExecuted event
+    assert all(
+        isinstance(event, UserUttered) or isinstance(event, ActionExecuted)
+        for event in applied_events
+    )
+
+    # Sanity Check: We should have 1 more state than ActionExecuted events.
+    num_action_executed_events = sum(
+        1 for event in applied_events if isinstance(event, ActionExecuted)
+    )
+    assert num_action_executed_events + 1 == len(states)
+
+    # Sanity Check: After every UserUttered event there is an ActionExecuted event
+    for idx, event in enumerate(applied_events):
+        if idx < len(applied_events) - 1:
+            if isinstance(event, UserUttered):
+                assert isinstance(applied_events[idx + 1], ActionExecuted)
+
+    # Align States and the last Event that they *do* describe.
+    alignment: List[Tuple[Event, State]] = []
+    skipped_one_state = False
+    state_idx = -1
+    for trigger_event_idx, trigger_event in enumerate(applied_events + [None]):
+        # where we use `None`s as dummies to capture the last state as well
+        if isinstance(trigger_event, ActionExecuted) or trigger_event is None:
+            state_idx = state_idx + 1  # i.e. idx of state created by trigger_event
+            if trigger_event_idx < 1:
+                # State would describe nothing because nothing has happend before
+                # so we just pass...
+                skipped_one_state = True
+                continue
+            else:
+                # state[idx] includes knowledge about the previous event, so...
+                pair = (states[state_idx], applied_events[trigger_event_idx - 1])
+                alignment.append(pair)
+
+    # Sanity Check: We included the last state and event
+    assert alignment[-1][0] == states[-1]
+    assert alignment[-1][1] == applied_events[-1]
+
+    # Sanity Check: There should be one (state, event) tuple per state - except
+    # maybe the first state (which would be empty)
+    assert len(alignment) == len(states) - skipped_one_state
+
+    return applied_events, states, alignment
+
+
 class InvalidStory(RasaException):
     """Exception that can be raised if story cannot be featurized."""
 
@@ -65,7 +150,8 @@ class TrackerStateExtractor:
 
     def __init__(
         self,
-        event_filter: Optional[Callable[[Event], bool]] = None,
+        is_target: Optional[Callable[[Event], bool]] = None,
+        hide_step: Optional[Callable[[Event, State], bool]] = None,
         max_history: Optional[int] = None,
         remove_duplicates: bool = True,
         persistor: Optional[ComponentPersistorInterface] = None,
@@ -73,8 +159,8 @@ class TrackerStateExtractor:
         """Initialize the tracker featurizer.
 
         Args:
-            event_filter: Must return true for ever `ActionExecuted` event that we
-              want to ignore (i.e. the corresponding state will be skipped)
+            custom_is_target:
+            hide_step:
             state_featurizer: The state featurizer used to encode the states.
             max_history: if set to None, the complete history is taken into account;
               otherwise only the last `max_history`+1 states will be extracted (note
@@ -87,11 +173,14 @@ class TrackerStateExtractor:
         self._persistor = persistor
         self.max_history = max_history
         self.remove_duplicates = remove_duplicates
-        self.event_filter = event_filter
+        self.custom_is_target = is_target
+        self.hide_step = hide_step
 
     def __repr__(self):
         return (
-            f"{self.__class__.__name__}(event_filter={repr(self.event_filter)}, "
+            f"{self.__class__.__name__}("
+            f"is_target={repr(self.custom_is_target)}, "
+            f"hide_step={repr(self.hide_step)}, "
             f"max_history={self.max_history}, "
             f"remove_duplicates={self.remove_duplicates}, "
             f"persistor={repr(self._persistor)})"
@@ -133,8 +222,80 @@ class TrackerStateExtractor:
             if state.get(USER, {}).get(INTENT) and state.get(USER, {}).get(TEXT):
                 del state[USER][TEXT]
 
-    def skip_event(self, event: Event) -> bool:
-        return (self.event_filter is not None) and self.event_filter(event)
+    def is_target(self, event: Event) -> bool:
+        return (
+            isinstance(event, ActionExecuted)
+            if self.custom_is_target is None
+            else self.custom_is_target(event)
+        )
+
+    def _extract_states_from_tracker_for_training(
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        max_training_examples: Optional[int] = None,
+        omit_unset_slots: bool = False,
+        deduplication_pool: Optional[Set] = None,
+    ) -> List[List[State]]:
+        """Transform a tracker to a list of state sequences.
+
+        Args:
+            trackers: The trackers to transform
+            domain: The domain
+            omit_unset_slots: If `True` do not include the initial values of slots.
+            deduplication_pool: If some set is given, this will be used to store
+              hashes of state sequences to be able to avoid repeating any state
+              sequence. Hashes of new state sequences create by this method will
+              be added to the `deduplication_pool`.
+
+        Returns:
+            A list of state sequences.
+        """
+        result: List[List[State]] = []
+        if max_training_examples is not None and max_training_examples <= 0:
+            return result
+
+        _, _, states_with_lastest_event = get_events_and_states(
+            tracker=tracker, domain=domain, omit_unset_slots=omit_unset_slots
+        )
+
+        if self.hide_step:
+            states_with_lastest_event = [
+                (state, event)
+                for (state, event) in states_with_lastest_event
+                if not self.hide_step(event, state)
+            ]
+
+        states, events = list(zip(*states_with_lastest_event))
+
+        for idx, event in enumerate(events):
+
+            if idx > 0 and self.is_target(
+                event
+            ):  # TODO: is idx>0 ok as a replacement for not event.unpredictable (?)
+
+                sliced_states = self.slice_state_history(
+                    states[: (idx + 1)],  # i.e. include state belonging to event
+                    self.max_history
+                    if (self.max_history is None)
+                    else (self.max_history + 1),
+                )
+                if self.remove_duplicates:
+                    # only continue with tracker_states that created a
+                    # hashed_featurization we haven't observed
+                    hashed = self._hash_example(sliced_states)
+                    if hashed not in deduplication_pool:
+                        deduplication_pool.add(hashed)
+                        result.append(sliced_states)
+                else:
+                    result.append(sliced_states)
+
+                if (
+                    max_training_examples is not None
+                    and len(result) >= max_training_examples
+                ):
+                    break
+        return result
 
     def extract_states_from_trackers_for_training(
         self,
@@ -143,9 +304,7 @@ class TrackerStateExtractor:
         max_training_examples: Optional[int] = None,
         omit_unset_slots: bool = False,
     ) -> List[List[State]]:
-        """Transforms list of trackers to lists of states.
-
-        Note that these states contain entity and action information.
+        """Transforms list of trackers to lists of state sequences.
 
         Args:
             trackers: The trackers to transform
@@ -153,14 +312,13 @@ class TrackerStateExtractor:
             omit_unset_slots: If `True` do not include the initial values of slots.
 
         Returns:
-            A tuple of list of states, list of actions and list of entity data.
+            A list of state sequences.
         """
         list_of_state_sequences: List[List[State]] = []
 
-        if self.remove_duplicates:
-            # from multiple states that create equal featurizations
-            # we only need to keep one.
-            hashed_examples = set()
+        # from multiple states that create equal featurizations
+        # we only keep one - if de-duplication is enabled
+        hashed_examples = set() if self.remove_duplicates else None
 
         logger.debug(
             f"Creating states and action examples from "
@@ -172,54 +330,23 @@ class TrackerStateExtractor:
             disable=rasa.shared.utils.io.is_logging_disabled(),
         )
         for tracker in pbar:
-
-            states = tracker.past_states(
-                domain,
+            list_of_state_sequences_from_tracker = self._extract_states_from_tracker_for_training(
+                tracker=tracker,
+                domain=domain,
+                max_training_examples=max_training_examples,
                 omit_unset_slots=omit_unset_slots,
-                ignore_rule_only_turns=False,
-                rule_only_data=None,
+                deduplication_pool=hashed_examples,
             )
+            list_of_state_sequences.extend(list_of_state_sequences_from_tracker)
 
-            num_action_executed_events = 0
-            for current_event in tracker.applied_events():
+            if max_training_examples is not None:
+                max_training_examples = max_training_examples - len(
+                    list_of_state_sequences
+                )
+                if max_training_examples <= 0:
+                    break
 
-                if isinstance(current_event, ActionExecuted):
-
-                    num_action_executed_events += 1
-
-                    # use only actions which can be predicted at a stories start
-                    # TODO: There must be a better way to filter the past_states output
-                    # (cf. `_mark_first_action_in_story_steps_as_unpredictable` in
-                    # `core/generator`)
-                    if current_event.unpredictable or self.skip_event(current_event):
-                        continue
-
-                    sliced_states = self.slice_state_history(
-                        states[: (num_action_executed_events + 1)],
-                        self.max_history
-                        if (self.max_history is None)
-                        else (self.max_history + 1),
-                    )
-                    if self.remove_duplicates:
-                        # only continue with tracker_states that created a
-                        # hashed_featurization we haven't observed
-                        hashed = self._hash_example(sliced_states)
-                        if hashed not in hashed_examples:
-                            hashed_examples.add(hashed)
-                            list_of_state_sequences.append(sliced_states)
-                    else:
-                        list_of_state_sequences.append(sliced_states)
-
-                    if (
-                        max_training_examples is not None
-                        and len(list_of_state_sequences) >= max_training_examples
-                    ):
-                        break
-
-        # NOTE: the remove text if intent part needs to be moved to encode_state in
-        # the single state featurizer because we work with the parsed message here
-        # that still has the TEXT features even though we remove something from the
-        # state here...
+        # NOTE: the remove text if intent part needs to be moved to encode_state
 
         return list_of_state_sequences
 
@@ -351,7 +478,8 @@ class TrackerFeaturizer:
 
     def __init__(
         self,
-        event_filter: Optional[Callable[[Event], bool]] = None,
+        is_target: Optional[Callable[[Event], bool]] = None,
+        hide_step: Optional[Callable[[Event, State], bool]] = None,
         max_history: Optional[int] = None,
         remove_duplicates: bool = True,
         persistor: Optional[ComponentPersistorInterface] = None,
@@ -359,9 +487,8 @@ class TrackerFeaturizer:
         """Initialize the tracker featurizer.
 
         Args:
-            event_filter: Must return true for ever `ActionExecuted` event that we
-              want to ignore (i.e. the corresponding state will be skipped)
-            state_featurizer: The state featurizer used to encode the states.
+            is_target: ...
+            hide_step: ...
             max_history: if set to None, the complete history is taken into account;
               otherwise only the last `max_history`+1 states will be extracted (note
               that the +1 represents the target, hence your policy will use the last
@@ -371,7 +498,8 @@ class TrackerFeaturizer:
                event sequences)
         """
         self.tracker_state_extractor = TrackerStateExtractor(
-            event_filter=event_filter,
+            is_target=is_target,
+            hide_step=hide_step,
             max_history=max_history,
             remove_duplicates=remove_duplicates,
             persistor=persistor,
