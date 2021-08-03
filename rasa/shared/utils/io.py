@@ -98,7 +98,6 @@ def raise_warning(
     warnings.formatwarning = original_formatter
 
 
-
 def write_text_file(
     content: Text,
     file_path: Union[Text, Path],
