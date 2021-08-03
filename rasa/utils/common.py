@@ -322,6 +322,30 @@ async def call_potential_coroutine(
     return coroutine_or_return_value
 
 
+def directory_size_in_mb(
+    path: Path, filenames_to_exclude: Optional[List[Text]] = None
+) -> float:
+    """Calculates the size of a directory.
+
+    Args:
+        path: The path to the directory.
+        filenames_to_exclude: Allows excluding certain files from the calculation.
+
+    Returns:
+        Directory size in MiB.
+    """
+    filenames_to_exclude = filenames_to_exclude or []
+    size = 0.0
+    for root, _dirs, files in os.walk(path):
+        for filename in files:
+            if filename in filenames_to_exclude:
+                continue
+            size += (Path(root) / filename).stat().st_size
+
+    # bytes to MiB
+    return size / 1_048_576
+
+
 def copy_directory(source: Path, destination: Path) -> None:
     """Copies the content of one directory into another.
 
