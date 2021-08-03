@@ -35,10 +35,10 @@ from tests.dialogues import TEST_DEFAULT_DIALOGUE
 from tests.core.utilities import get_tracker, tracker_from_dialogue
 
 
-async def train_trackers(
+def train_trackers(
     domain: Domain, stories_file: Text, augmentation_factor: int = 20
 ) -> List[TrackerWithCachedStates]:
-    return await training.load_data(
+    return training.load_data(
         stories_file, domain, augmentation_factor=augmentation_factor
     )
 

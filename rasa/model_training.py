@@ -209,7 +209,7 @@ async def _train_async_internal(
     stories = file_importer.get_stories()
     nlu_data = file_importer.get_nlu_data()
 
-    new_fingerprint = await model.model_fingerprint(file_importer)
+    new_fingerprint = model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
 
     if dry_run:
@@ -262,7 +262,7 @@ async def _train_async_internal(
 
         return TrainingResult(model=trained_model)
 
-    new_fingerprint = await model.model_fingerprint(file_importer)
+    new_fingerprint = model.model_fingerprint(file_importer)
     old_model = model.get_latest_model(output_path)
 
     if not force_training:
@@ -519,7 +519,7 @@ async def _train_core_with_validated_data(
             rasa.shared.utils.common.mark_as_experimental_feature(
                 "Incremental Training feature"
             )
-            model_to_finetune = await _core_model_for_finetuning(
+            model_to_finetune = _core_model_for_finetuning(
                 model_to_finetune,
                 file_importer=file_importer,
                 finetuning_epoch_fraction=finetuning_epoch_fraction,
@@ -552,7 +552,7 @@ async def _train_core_with_validated_data(
 
         if train_path is None:
             # Only Core was trained.
-            new_fingerprint = await model.model_fingerprint(file_importer)
+            new_fingerprint = model.model_fingerprint(file_importer)
             return model.package_model(
                 fingerprint=new_fingerprint,
                 output_directory=output,
@@ -564,7 +564,7 @@ async def _train_core_with_validated_data(
     return _train_path
 
 
-async def _core_model_for_finetuning(
+def _core_model_for_finetuning(
     model_to_finetune: Text,
     file_importer: TrainingDataImporter,
     finetuning_epoch_fraction: float = 1.0,
@@ -578,7 +578,7 @@ async def _core_model_for_finetuning(
     )
 
     with model.unpack_model(path_to_archive) as unpacked:
-        new_fingerprint = await model.model_fingerprint(file_importer)
+        new_fingerprint = model.model_fingerprint(file_importer)
         old_fingerprint = model.fingerprint_from_path(unpacked)
         if not model.can_finetune(old_fingerprint, new_fingerprint, core=True):
             rasa.shared.utils.cli.print_error_and_exit(
@@ -728,7 +728,7 @@ async def _train_nlu_with_validated_data(
             rasa.shared.utils.common.mark_as_experimental_feature(
                 "Incremental Training feature"
             )
-            model_to_finetune = await _nlu_model_for_finetuning(
+            model_to_finetune = _nlu_model_for_finetuning(
                 model_to_finetune,
                 file_importer,
                 finetuning_epoch_fraction,
@@ -761,7 +761,7 @@ async def _train_nlu_with_validated_data(
 
         if train_path is None:
             # Only NLU was trained
-            new_fingerprint = await model.model_fingerprint(file_importer)
+            new_fingerprint = model.model_fingerprint(file_importer)
 
             return model.package_model(
                 fingerprint=new_fingerprint,
@@ -790,7 +790,7 @@ async def _nlu_model_for_finetuning(
     )
     with model.unpack_model(path_to_archive) as unpacked:
         _, old_nlu = model.get_model_subdirectories(unpacked)
-        new_fingerprint = await model.model_fingerprint(file_importer)
+        new_fingerprint = model.model_fingerprint(file_importer)
         old_fingerprint = model.fingerprint_from_path(unpacked)
         if not model.can_finetune(
             old_fingerprint,

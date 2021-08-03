@@ -142,7 +142,7 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
     assert "report" in result.keys()
 
 
-async def _train_rule_based_agent(
+def _train_rule_based_agent(
     moodbot_domain: Domain,
     train_file_name: Path,
     monkeypatch: MonkeyPatch,
@@ -163,7 +163,7 @@ async def _train_rule_based_agent(
 
     deterministic_policy = RulePolicy(restrict_rules=False)
     agent = Agent(moodbot_domain, SimplePolicyEnsemble([deterministic_policy]))
-    training_data = await agent.load_data(str(train_file_name))
+    training_data = agent.load_data(str(train_file_name))
 
     # Make the trackers compatible with rules
     # so that they are picked up by the policy.

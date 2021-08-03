@@ -58,9 +58,9 @@ def test_slots_states_before_user_utterance(domain: Domain):
     assert trackers_as_states == expected_states
 
 
-async def test_create_train_data_no_history(domain: Domain, stories_path: Text):
+def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = await training.load_data(
+    training_trackers = training.load_data(
         stories_path, domain, augmentation_factor=0
     )
 
@@ -88,9 +88,9 @@ async def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     ]
 
 
-async def test_create_train_data_with_history(domain: Domain, stories_path: Text):
+def test_create_train_data_with_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
-    training_trackers = await training.load_data(
+    training_trackers = training.load_data(
         stories_path, domain, augmentation_factor=0
     )
     assert len(training_trackers) == 4
@@ -132,12 +132,12 @@ def check_for_too_many_entities_and_remove_them(state: State) -> State:
     return state
 
 
-async def test_create_train_data_unfeaturized_entities():
+def test_create_train_data_unfeaturized_entities():
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
     stories_file = "data/test_yaml_stories/stories_unfeaturized_entities.yml"
     domain = Domain.load(domain_file)
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = await training.load_data(
+    training_trackers = training.load_data(
         stories_file, domain, augmentation_factor=0
     )
 

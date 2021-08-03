@@ -231,16 +231,16 @@ def _project_files(
         str((Path(".") / "data/test_domains/default_with_mapping.yml").absolute()),
     ],
 )
-async def test_create_fingerprint_from_paths(project: Text, domain_path: Text):
+def test_create_fingerprint_from_paths(project: Text, domain_path: Text):
     project_files = _project_files(project, domain=domain_path)
 
-    assert await model_fingerprint(project_files)
+    assert model_fingerprint(project_files)
 
 
-async def test_fingerprinting_changed_response_text(project: Text):
+def test_fingerprinting_changed_response_text(project: Text):
     importer = _project_files(project)
 
-    old_fingerprint = await model_fingerprint(importer)
+    old_fingerprint = model_fingerprint(importer)
     old_domain = importer.get_domain()
 
     # Change NLG content but keep actions the same
@@ -250,7 +250,7 @@ async def test_fingerprinting_changed_response_text(project: Text):
 
     importer.get_domain = lambda: domain_with_changed_nlg
 
-    new_fingerprint = await model_fingerprint(importer)
+    new_fingerprint = model_fingerprint(importer)
 
     assert (
         old_fingerprint[FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY]
@@ -259,7 +259,7 @@ async def test_fingerprinting_changed_response_text(project: Text):
     assert old_fingerprint[FINGERPRINT_NLG_KEY] != new_fingerprint[FINGERPRINT_NLG_KEY]
 
 
-async def test_fingerprinting_changing_config_epochs(project: Text, tmp_path):
+def test_fingerprinting_changing_config_epochs(project: Text, tmp_path):
     config1 = {
         "language": "en",
         "pipeline": [
@@ -292,7 +292,7 @@ async def test_fingerprinting_changing_config_epochs(project: Text, tmp_path):
     config1_path = tmp_path / "config1.yml"
     rasa.shared.utils.io.write_yaml(config1, config1_path, True)
     importer = TrainingDataImporter.load_from_config(str(config1_path))
-    old_fingerprint = await model_fingerprint(importer)
+    old_fingerprint = model_fingerprint(importer)
 
     config2 = {
         "language": "en",
@@ -326,7 +326,7 @@ async def test_fingerprinting_changing_config_epochs(project: Text, tmp_path):
     config2_path = tmp_path / "config2.yml"
     rasa.shared.utils.io.write_yaml(config2, config2_path, True)
     importer = TrainingDataImporter.load_from_config(str(config2_path))
-    new_fingerprint = await model_fingerprint(importer)
+    new_fingerprint = model_fingerprint(importer)
 
     assert (
         old_fingerprint[FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY]
@@ -354,7 +354,7 @@ async def test_fingerprinting_changing_config_epochs(project: Text, tmp_path):
     config3_path = tmp_path / "config3.yml"
     rasa.shared.utils.io.write_yaml(config3, config3_path, True)
     importer = TrainingDataImporter.load_from_config(str(config3_path))
-    new_fingerprint = await model_fingerprint(importer)
+    new_fingerprint = model_fingerprint(importer)
 
     assert (
         old_fingerprint[FINGERPRINT_CONFIG_WITHOUT_EPOCHS_KEY]
@@ -377,10 +377,10 @@ async def test_fingerprinting_config_epochs_empty_pipeline_or_policies(
     model._get_fingerprint_of_config_without_epochs(config)
 
 
-async def test_fingerprinting_additional_action(project: Text):
+def test_fingerprinting_additional_action(project: Text):
     importer = _project_files(project)
 
-    old_fingerprint = await model_fingerprint(importer)
+    old_fingerprint = model_fingerprint(importer)
     old_domain = importer.get_domain()
 
     domain_with_new_action = old_domain.as_dict()
@@ -389,7 +389,7 @@ async def test_fingerprinting_additional_action(project: Text):
 
     importer.get_domain = lambda: domain_with_new_action
 
-    new_fingerprint = await model_fingerprint(importer)
+    new_fingerprint = model_fingerprint(importer)
 
     assert (
         old_fingerprint[FINGERPRINT_DOMAIN_WITHOUT_NLG_KEY]
@@ -399,14 +399,14 @@ async def test_fingerprinting_additional_action(project: Text):
 
 
 @pytest.mark.parametrize("use_fingerprint", [True, False])
-async def test_rasa_packaging(
+def test_rasa_packaging(
     trained_rasa_model: Text, project: Text, use_fingerprint: bool, tmp_path: Path
 ):
     unpacked_model_path = get_model(trained_rasa_model)
 
     os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
     if use_fingerprint:
-        fingerprint = await model_fingerprint(_project_files(project))
+        fingerprint = model_fingerprint(_project_files(project))
     else:
         fingerprint = None
 
@@ -513,7 +513,7 @@ stories:
         stack_config_path, domain_path, training_data_paths=[str(story_file)]
     )
 
-    new_fingerprint = await model.model_fingerprint(importer)
+    new_fingerprint = model.model_fingerprint(importer)
 
     result = model.should_retrain(new_fingerprint, trained_model, tmp_path)
 
@@ -621,7 +621,7 @@ async def test_update_with_new_domain_preserves_domain(
     "min_compatible_version, old_model_version, can_tune",
     [("2.1.0", "2.1.0", True), ("2.0.0", "2.1.0", True), ("2.1.0", "2.0.0", False),],
 )
-async def test_can_finetune_min_version(
+def test_can_finetune_min_version(
     project: Text,
     monkeypatch: MonkeyPatch,
     old_model_version: Text,
@@ -634,8 +634,8 @@ async def test_can_finetune_min_version(
         rasa.constants, "MINIMUM_COMPATIBLE_VERSION", min_compatible_version
     )
     monkeypatch.setattr(rasa, "__version__", old_model_version)
-    old_fingerprint = await model_fingerprint(importer)
-    new_fingerprint = await model_fingerprint(importer)
+    old_fingerprint = model_fingerprint(importer)
+    new_fingerprint = model_fingerprint(importer)
 
     with mock.patch("rasa.model.MINIMUM_COMPATIBLE_VERSION", min_compatible_version):
         assert can_finetune(old_fingerprint, new_fingerprint) == can_tune

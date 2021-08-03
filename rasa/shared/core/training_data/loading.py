@@ -52,7 +52,7 @@ def _guess_reader(
     )
 
 
-async def load_data_from_resource(
+def load_data_from_resource(
     resource: Union[Text],
     domain: Domain,
     template_variables: Optional[Dict] = None,

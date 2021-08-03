@@ -27,19 +27,19 @@ from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
 from rasa.shared.core.training_data.structures import RuleStep
 
 
-async def test_persist_and_read_test_story_graph(tmp_path: Path, domain: Domain):
-    graph = await training.extract_story_graph("data/test_stories/stories.md", domain)
+def test_persist_and_read_test_story_graph(tmp_path: Path, domain: Domain):
+    graph = training.extract_story_graph("data/test_stories/stories.md", domain)
     out_path = tmp_path / "persisted_story.md"
     rasa.shared.utils.io.write_text_file(graph.as_story_string(), str(out_path))
 
-    recovered_trackers = await training.load_data(
+    recovered_trackers = training.load_data(
         str(out_path),
         domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
     )
-    existing_trackers = await training.load_data(
+    existing_trackers = training.load_data(
         "data/test_stories/stories.md",
         domain,
         use_story_concatenation=False,
@@ -56,19 +56,19 @@ async def test_persist_and_read_test_story_graph(tmp_path: Path, domain: Domain)
         existing_stories.discard(story_str)
 
 
-async def test_persist_and_read_test_story(tmp_path: Path, domain: Domain):
-    graph = await training.extract_story_graph("data/test_stories/stories.md", domain)
+def test_persist_and_read_test_story(tmp_path: Path, domain: Domain):
+    graph = training.extract_story_graph("data/test_stories/stories.md", domain)
     out_path = tmp_path / "persisted_story.md"
     rasa.shared.utils.io.write_text_file(graph.as_story_string(), out_path, append=True)
 
-    recovered_trackers = await training.load_data(
+    recovered_trackers = training.load_data(
         str(out_path),
         domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False,
     )
-    existing_trackers = await training.load_data(
+    existing_trackers = training.load_data(
         "data/test_stories/stories.md",
         domain,
         use_story_concatenation=False,

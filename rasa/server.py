@@ -1229,7 +1229,7 @@ def create_app(
                 HTTPStatus.CONFLICT, "Conflict", "Missing NLU model directory.",
             )
 
-        return await rasa.nlu.test.run_evaluation(
+        return rasa.nlu.test.run_evaluation(
             data_path, nlu_model, disable_plotting=True, report_as_dict=True
         )
 
