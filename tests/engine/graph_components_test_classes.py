@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Dict, Optional, Text, Any, List
 
 import rasa.shared.utils.io
@@ -177,3 +178,39 @@ class PersistableTestComponent(GraphComponent):
 
     def run_inference(self) -> Any:
         return self._eager_instantiated_value
+
+
+class CacheableText:
+    def __init__(self, text: Text) -> None:
+        self.text = text
+
+    def to_cache(self, directory: Path, model_storage: ModelStorage) -> None:
+        rasa.shared.utils.io.write_text_file(self.text, directory / "my_file.txt")
+
+    @classmethod
+    def from_cache(
+        cls, node_name: Text, directory: Path, model_storage: ModelStorage
+    ) -> CacheableText:
+        text = rasa.shared.utils.io.read_file(directory / "my_file.txt")
+        return cls(text=text)
+
+
+class CacheableComponent(GraphComponent):
+    default_config = {"prefix": "Hello "}
+
+    def __init__(self, prefix: Text):
+        self.prefix = prefix
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
+    ) -> CacheableComponent:
+        return cls(config["prefix"])
+
+    def run(self, suffix: Text):
+        return CacheableText(self.prefix + suffix)
