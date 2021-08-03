@@ -662,10 +662,8 @@ class TrackerFeaturizer:
             )
             list_of_state_encodings = [
                 self.state_featurizer.encode_state(
-                    state,
-                    self.domain,
-                    self.bilou_tagging,
-                    e2e_features,
+                    state=state,
+                    e2e_features=e2e_features,
                     targets_include_actions=False,
                     targets_include_entities=False,
                 )
