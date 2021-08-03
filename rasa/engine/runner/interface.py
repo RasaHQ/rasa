@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Text
 
 from rasa.engine.graph import ExecutionContext, GraphSchema
+from rasa.engine.storage.storage import ModelStorage
 
 
 class GraphRunner(ABC):
@@ -11,12 +12,17 @@ class GraphRunner(ABC):
     @classmethod
     @abstractmethod
     def create(
-        cls, graph_schema: GraphSchema, execution_context: ExecutionContext
+        cls,
+        graph_schema: GraphSchema,
+        model_storage: ModelStorage,
+        execution_context: ExecutionContext,
     ) -> GraphRunner:
         """Creates a new instance of a `GraphRunner`.
 
         Args:
             graph_schema: The graph schema that will be instantiated and run.
+            model_storage: Storage which graph components can use to persist and load
+                themselves.
             execution_context: Context that will be passed to every `GraphComponent`.
 
         Returns: Instantiated `GraphRunner`
