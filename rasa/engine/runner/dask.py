@@ -13,6 +13,7 @@ from rasa.engine.graph import (
     GraphSchema,
 )
 from rasa.engine.runner.interface import GraphRunner
+from rasa.engine.storage.storage import ModelStorage
 
 logger = logging.getLogger(__name__)
 
@@ -21,44 +22,55 @@ class DaskGraphRunner(GraphRunner):
     """Dask implementation of a `GraphRunner`."""
 
     def __init__(
-        self, graph_schema: GraphSchema, execution_context: ExecutionContext
+        self,
+        graph_schema: GraphSchema,
+        model_storage: ModelStorage,
+        execution_context: ExecutionContext,
     ) -> None:
         """Initializes a `DaskGraphRunner`.
 
         Args:
             graph_schema: The graph schema that will be run.
+            model_storage: Storage which graph components can use to persist and load
+                themselves.
             execution_context: Information about the current graph run to be passed to
                 each node.
         """
         self._targets: List[Text] = self._targets_from_schema(graph_schema)
         self._instantiated_graph: Dict[Text, GraphNode] = self._instantiate_graph(
-            graph_schema, execution_context
+            graph_schema, model_storage, execution_context
         )
         self._execution_context: ExecutionContext = execution_context
 
     @classmethod
     def create(
-        cls, graph_schema: GraphSchema, execution_context: ExecutionContext
+        cls,
+        graph_schema: GraphSchema,
+        model_storage: ModelStorage,
+        execution_context: ExecutionContext,
     ) -> DaskGraphRunner:
         """Creates the runner (see parent class for full docstring)."""
-        return cls(graph_schema, execution_context)
+        return cls(graph_schema, model_storage, execution_context)
 
     @staticmethod
     def _targets_from_schema(graph_schema: GraphSchema) -> List[Text]:
         return [
             node_name
-            for node_name, schema_node in graph_schema.items()
+            for node_name, schema_node in graph_schema.nodes.items()
             if schema_node.is_target
         ]
 
     def _instantiate_graph(
-        self, graph_schema: GraphSchema, execution_context: ExecutionContext
+        self,
+        graph_schema: GraphSchema,
+        model_storage: ModelStorage,
+        execution_context: ExecutionContext,
     ) -> Dict[Text, GraphNode]:
         return {
             node_name: GraphNode.from_schema_node(
-                node_name, schema_node, execution_context
+                node_name, schema_node, model_storage, execution_context
             )
-            for node_name, schema_node in graph_schema.items()
+            for node_name, schema_node in graph_schema.nodes.items()
         }
 
     @staticmethod

@@ -1,0 +1,71 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+import rasa.shared.utils.io
+from rasa.engine.exceptions import GraphSchemaException
+from rasa.engine.graph import SchemaNode, GraphSchema
+from tests.engine.graph_components_test_classes import PersistableTestComponent
+
+
+def test_serialize_graph_schema(tmp_path: Path):
+    graph_schema = GraphSchema(
+        {
+            "train": SchemaNode(
+                needs={},
+                uses=PersistableTestComponent,
+                fn="train",
+                constructor_name="create",
+                config={"some_config": 123455, "some more config": [{"nested": "hi"}]},
+            ),
+            "load": SchemaNode(
+                needs={"resource": "train"},
+                uses=PersistableTestComponent,
+                fn="run_inference",
+                constructor_name="load",
+                config={},
+                is_target=True,
+            ),
+        }
+    )
+
+    serialized = graph_schema.as_dict()
+
+    # Dump it to make sure it's actually serializable
+    file_path = tmp_path / "my_graph.yml"
+    rasa.shared.utils.io.write_yaml(serialized, file_path)
+
+    serialized_graph_schema_from_file = rasa.shared.utils.io.read_yaml_file(file_path)
+    graph_schema_from_file = GraphSchema.from_dict(serialized_graph_schema_from_file)
+
+    assert graph_schema_from_file == graph_schema
+
+
+def test_invalid_module_error_when_deserializing_schemas(tmp_path: Path):
+    graph_schema = GraphSchema(
+        {
+            "train": SchemaNode(
+                needs={},
+                uses=PersistableTestComponent,
+                fn="train",
+                constructor_name="create",
+                config={"some_config": 123455, "some more config": [{"nested": "hi"}]},
+            ),
+        }
+    )
+
+    serialized = graph_schema.as_dict()
+
+    # Pretend module is for some reason invalid
+    serialized["train"]["uses"] = "invalid.class"
+
+    # Dump it to make sure it's actually serializable
+    file_path = tmp_path / "my_graph.yml"
+    rasa.shared.utils.io.write_yaml(serialized, file_path)
+
+    serialized_graph_schema_from_file = rasa.shared.utils.io.read_yaml_file(file_path)
+
+    with pytest.raises(GraphSchemaException):
+        _ = GraphSchema.from_dict(serialized_graph_schema_from_file)
