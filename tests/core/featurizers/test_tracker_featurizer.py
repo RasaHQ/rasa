@@ -28,13 +28,11 @@ from tests.core.utilities import tracker_from_dialogue_file
 #     breakpoint()
 
 
-def test_get_events_and_states_aligns_correctly():
+def test_get_events_and_states_aligns_easy_example():
     domain_path = os.path.join("data", "test_moodbot", "domain.yml")
     moodbot_domain = Domain.load(domain_path)
 
-    # Note: A trackers applied_events returns only ActionExecuted and UserUttered
-    # events. Similarly, we need to use only those events to create a tracker
-    # from DialogueStateTracker.from_events.
+    # Note: We use only UserUttered and ActionExecuted events here.
     events = [
         ActionExecuted(action_name=ACTION_LISTEN_NAME),
         UserUttered(text="Hi talk to me", intent={INTENT_NAME_KEY: "greet"},),

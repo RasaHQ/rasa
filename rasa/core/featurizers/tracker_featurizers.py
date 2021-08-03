@@ -54,11 +54,9 @@ def get_events_and_states(
 
     The logic behind the computed alignment is based on the relation between
     a trackers `past_states` and its `applied_events`:
-    (0)
-    (1) Every encounter of an `ActionExecuted` in the `applied_events`
-        triggers the creation of a
-    state, which captures the events up to *right before the event that
-    triggered its creation*.
+    Every encounter of an `ActionExecuted` in the `applied_events`
+    triggers the creation of a state, which captures the events up to
+    *right before the event that triggered its creation*.
     Additionally, the creation of the last state event is triggered after
     all events have been passed. Hence this last state includes information
     of the very last applied_event.
@@ -85,18 +83,22 @@ def get_events_and_states(
     )
     applied_events = tracker.applied_events()
 
-    # Sanity Check: There are no "BotUttered" events or so - every "applied_event"
-    # is an ActionExecuted event
-    assert all(
-        isinstance(event, UserUttered) or isinstance(event, ActionExecuted)
-        for event in applied_events
-    )
-
     # Sanity Check: We should have 1 more state than ActionExecuted events.
     num_action_executed_events = sum(
         1 for event in applied_events if isinstance(event, ActionExecuted)
     )
     assert num_action_executed_events + 1 == len(states)
+
+    # FIXME: For the IntentMaxHistoryFeaturizer logic, we would need an
+    # ActionExecuted event after every UserUttered event so that the UserUttered
+    # event is returned as the last event included in the state that is created
+    # when we reach that ActionExectued event.
+    # Then, we could use that event to filter out which states should be our targets
+    # for UnexpecTEDIntentPolicy.
+    # If that is not the case then we'd need to parse the events prior to
+    # applied_events[trigger_event_idx - 1] up to the
+    # applied_events[<trigger_event_idx before it was updated> - 1]
+    # and grab the right event from there...
 
     # Sanity Check: After every UserUttered event there is an ActionExecuted event
     for idx, event in enumerate(applied_events):
