@@ -39,7 +39,7 @@ def default_importer(project: Text) -> TrainingDataImporter:
     )
 
 
-async def test_use_of_interface():
+def test_use_of_interface():
     importer = TrainingDataImporter()
 
     functions_to_test = [
@@ -53,7 +53,7 @@ async def test_use_of_interface():
             f()
 
 
-async def test_combined_file_importer_with_single_importer(project: Text):
+def test_combined_file_importer_with_single_importer(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
@@ -138,7 +138,7 @@ def test_load_from_config(tmpdir: Path):
     assert isinstance(importer.importer._importer._importers[0], MultiProjectImporter)
 
 
-async def test_nlu_only(project: Text):
+def test_nlu_only(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
     actual = TrainingDataImporter.load_nlu_importer_from_config(
@@ -164,7 +164,7 @@ async def test_nlu_only(project: Text):
     assert not nlu_data.is_empty()
 
 
-async def test_import_nlu_training_data_from_e2e_stories(
+def test_import_nlu_training_data_from_e2e_stories(
     default_importer: TrainingDataImporter,
 ):
     # The `E2EImporter` correctly wraps the underlying `CombinedDataImporter`
@@ -220,7 +220,7 @@ async def test_import_nlu_training_data_from_e2e_stories(
     assert all(m in nlu_data.training_examples for m in expected_additional_messages)
 
 
-async def test_different_story_order_doesnt_change_nlu_training_data(
+def test_different_story_order_doesnt_change_nlu_training_data(
     default_importer: E2EImporter,
 ):
     stories = [
@@ -261,7 +261,7 @@ async def test_different_story_order_doesnt_change_nlu_training_data(
     assert hash(training_data) == hash(training_data2)
 
 
-async def test_import_nlu_training_data_with_default_actions(
+def test_import_nlu_training_data_with_default_actions(
     default_importer: TrainingDataImporter,
 ):
     assert isinstance(default_importer, E2EImporter)
