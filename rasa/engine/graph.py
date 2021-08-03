@@ -1,12 +1,20 @@
 from __future__ import annotations
+
+import dataclasses
+import typing
 from abc import ABC, abstractmethod
 from collections import ChainMap
 from dataclasses import dataclass, field
 import logging
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type
+from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple
 
-from rasa.engine.exceptions import GraphComponentException
+from rasa.engine.exceptions import GraphComponentException, GraphSchemaException
 import rasa.shared.utils.common
+from rasa.engine.storage.resource import Resource
+
+if typing.TYPE_CHECKING:
+    from rasa.engine.storage.storage import ModelStorage
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +31,64 @@ class SchemaNode:
     eager: bool = False
     is_target: bool = False
     is_input: bool = False
-    resource_name: Optional[Text] = None
+    resource: Optional[Resource] = None
 
 
-GraphSchema = Dict[Text, SchemaNode]
+@dataclass
+class GraphSchema:
+    """Represents a graph for training a model or making predictions."""
+
+    nodes: Dict[Text, SchemaNode]
+
+    def as_dict(self) -> Dict[Text, Any]:
+        """Returns graph schema in a serializable format.
+
+        Returns:
+            The graph schema in a format which can be dumped as JSON or other formats.
+        """
+        serializable_graph_schema = {}
+        for node_name, node in self.nodes.items():
+            serializable = dataclasses.asdict(node)
+
+            # Classes are not JSON serializable (surprise)
+            serializable["uses"] = f"{node.uses.__module__}.{node.uses.__name__}"
+
+            serializable_graph_schema[node_name] = serializable
+
+        return serializable_graph_schema
+
+    @classmethod
+    def from_dict(cls, serialized_graph_schema: Dict[Text, Any]) -> GraphSchema:
+        """Loads a graph schema which has been serialized using `schema.as_dict()`.
+
+        Args:
+            serialized_graph_schema: A serialized graph schema.
+
+        Returns:
+            A properly loaded schema.
+
+        Raises:
+            GraphSchemaException: In case the component class for a node couldn't be
+                found.
+        """
+        nodes = {}
+        for node_name, serialized_node in serialized_graph_schema.items():
+            try:
+                serialized_node[
+                    "uses"
+                ] = rasa.shared.utils.common.class_from_module_path(
+                    serialized_node["uses"]
+                )
+            except ImportError as e:
+                raise GraphSchemaException(
+                    "Error deserializing graph schema. Can't "
+                    "find class for graph component type "
+                    f"'{serialized_node['uses']}'."
+                ) from e
+
+            nodes[node_name] = SchemaNode(**serialized_node)
+
+        return GraphSchema(nodes)
 
 
 class GraphComponent(ABC):
@@ -38,12 +100,20 @@ class GraphComponent(ABC):
     @classmethod
     @abstractmethod
     def create(
-        cls, config: Dict[Text, Any], execution_context: ExecutionContext
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ) -> GraphComponent:
         """Creates a new `GraphComponent`.
 
         Args:
             config: This config overrides the `default_config`.
+            model_storage: Storage which graph components can use to persist and load
+                themselves.
+            resource: Resource locator for this component which can be used to persist
+                and load itself from the `model_storage`.
             execution_context: Information about the current graph run.
 
         Returns: An instantiated `GraphComponent`.
@@ -52,7 +122,12 @@ class GraphComponent(ABC):
 
     @classmethod
     def load(
-        cls, config: Dict[Dict, Any], execution_context: ExecutionContext
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
     ) -> GraphComponent:
         """Creates a component using a persisted version of itself.
 
@@ -60,11 +135,17 @@ class GraphComponent(ABC):
 
         Args:
             config: This config overrides the `default_config`.
+            model_storage: Storage which graph components can use to persist and load
+                themselves.
+            resource: Resource locator for this component which can be used to persist
+                and load itself from the `model_storage`.
             execution_context: Information about the current graph run.
+            kwargs: Output values from previous nodes might be passed in as `kwargs`.
 
-        Returns: An instantiated, loaded `GraphComponent`.
+        Returns:
+            An instantiated, loaded `GraphComponent`.
         """
-        return cls.create(config, execution_context)
+        return cls.create(config, model_storage, resource, execution_context)
 
     def supported_languages(self) -> Optional[List[Text]]:
         """Determines which languages this component can work with.
@@ -106,6 +187,8 @@ class GraphNode:
         fn_name: Text,
         inputs: Dict[Text, Text],
         eager: bool,
+        model_storage: ModelStorage,
+        resource: Optional[Resource],
         execution_context: ExecutionContext,
     ) -> None:
         """Initializes `GraphNode`.
@@ -120,6 +203,10 @@ class GraphNode:
             inputs: A map from input name to parent node name that provides it.
             eager: Determines if the node is instantiated right away, or just before
                 being run.
+            model_storage: Storage which graph components can use to persist and load
+                themselves.
+            resource: If given the `GraphComponent` will be loaded from the
+                `model_storage` using the given resource.
             execution_context: Information about the current graph run.
         """
         self._node_name: Text = node_name
@@ -136,6 +223,10 @@ class GraphNode:
         self._fn: Callable = getattr(self._component_class, self._fn_name)
         self._inputs: Dict[Text, Text] = inputs
         self._eager: bool = eager
+
+        self._model_storage = model_storage
+        self._existing_resource = resource
+
         self._execution_context: ExecutionContext = execution_context
 
         self._component: Optional[GraphComponent] = None
@@ -157,6 +248,8 @@ class GraphNode:
         try:
             self._component: GraphComponent = constructor(  # type: ignore[no-redef]
                 config=self._component_config,
+                model_storage=self._model_storage,
+                resource=self._get_resource(kwargs),
                 execution_context=self._execution_context,
                 **kwargs,
             )
@@ -164,6 +257,21 @@ class GraphNode:
             raise GraphComponentException(
                 f"Error initializing graph component for node {self._node_name}."
             ) from e
+
+    def _get_resource(self, kwargs: Dict[Text, Any]) -> Resource:
+        if "resource" in kwargs:
+            # A parent node provides resource during training. The component wrapped
+            # by this `GraphNode` will load itself from this resource.
+            return kwargs.pop("resource")
+
+        if self._existing_resource:
+            # The component should be loaded from a trained resource during inference.
+            # E.g. a classifier might train and persist itself during training and will
+            # then load itself from this resource during inference.
+            return self._existing_resource
+
+        # The component gets a chance to persist itself
+        return Resource(self._node_name)
 
     def parent_node_names(self) -> List[Text]:
         """The names of the parent nodes of this node."""
@@ -218,6 +326,7 @@ class GraphNode:
         cls,
         node_name: Text,
         schema_node: SchemaNode,
+        model_storage: ModelStorage,
         execution_context: ExecutionContext,
     ) -> GraphNode:
         """Creates a `GraphNode` from a `SchemaNode`."""
@@ -229,5 +338,7 @@ class GraphNode:
             fn_name=schema_node.fn,
             inputs=schema_node.needs,
             eager=schema_node.eager,
+            model_storage=model_storage,
             execution_context=execution_context,
+            resource=schema_node.resource,
         )

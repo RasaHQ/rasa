@@ -4,3 +4,7 @@ class GraphRunError(Exception):
 
 class GraphComponentException(Exception):
     """Exception class for errors originating within a `GraphComponent`."""
+
+
+class GraphSchemaException(Exception):
+    """Represents errors when dealing with `GraphSchema`s."""
