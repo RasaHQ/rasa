@@ -779,9 +779,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 else FEATURE_TYPE_SENTENCE
             ),
         )
-        if not self._uses_sequence_features_for_text() and all(
+        if self._uses_sequence_features_for_text() and all(
             not feats[TEXT] for feats in features
         ):
+            # Note: this check assumes that if we have any features, there are
+            # always sequence features (i.e. we do not expect sentence features
+            # without sequence features)
             rasa.shared.utils.io.raise_warning(
                 "Expected sequence level features for TEXT. "
                 "Falling back to empty input sequences."
