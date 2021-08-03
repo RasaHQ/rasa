@@ -56,15 +56,15 @@ def model_server(
     return loop.run_until_complete(sanic_client(app))
 
 
-async def test_training_data_is_reproducible():
+def test_training_data_is_reproducible():
     training_data_file = "data/test_moodbot/data/stories.yml"
     agent = Agent(
         "data/test_moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
     )
 
-    training_data = await agent.load_data(training_data_file)
+    training_data = agent.load_data(training_data_file)
     # make another copy of training data
-    same_training_data = await agent.load_data(training_data_file)
+    same_training_data = agent.load_data(training_data_file)
 
     # test if both datasets are identical (including in the same order)
     for i, x in enumerate(training_data):

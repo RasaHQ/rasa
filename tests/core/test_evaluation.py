@@ -59,7 +59,7 @@ async def test_evaluation_file_creation(
 async def test_end_to_end_evaluation_script(
     default_agent: Agent, end_to_end_story_path: Text
 ):
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         end_to_end_story_path, default_agent, use_conversation_test_files=True
     )
     completed_trackers = generator.generate_story_trackers()
@@ -99,7 +99,7 @@ async def test_end_to_end_evaluation_script(
 async def test_end_to_end_evaluation_script_unknown_entity(
     default_agent: Agent, e2e_story_file_unknown_entity_path: Text
 ):
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         e2e_story_file_unknown_entity_path,
         default_agent,
         use_conversation_test_files=True,
@@ -117,7 +117,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(
 
 @pytest.mark.timeout(300, func_only=True)
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         "data/test_evaluations/test_form_end_to_end_stories.yml",
         form_bot_agent,
         use_conversation_test_files=True,
@@ -159,10 +159,10 @@ async def test_end_to_evaluation_trips_circuit_breaker(
         domain="data/test_domains/default.yml",
         policies=[MemoizationPolicy(max_history=11)],
     )
-    training_data = await agent.load_data(e2e_story_file_trips_circuit_breaker_path)
+    training_data = agent.load_data(e2e_story_file_trips_circuit_breaker_path)
     agent.train(training_data)
 
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         e2e_story_file_trips_circuit_breaker_path,
         agent,
         use_conversation_test_files=True,
@@ -270,7 +270,7 @@ def test_event_has_proper_implementation(
     ],
 )
 async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         test_file, response_selector_agent, use_conversation_test_files=True,
     )
     test_stories = generator.generate_story_trackers()

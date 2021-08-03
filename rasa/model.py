@@ -329,8 +329,7 @@ def project_fingerprint() -> Optional[Text]:
         return None
 
 
-# TODO(alwx): doesn't need to be async
-async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
+def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
     """Create a model fingerprint from its used configuration and training data.
 
     Args:

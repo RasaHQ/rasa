@@ -33,8 +33,8 @@ def rule_steps_without_stories(domain: Domain) -> List[StoryStep]:
     return loading.load_data_from_files([yaml_file], domain)
 
 
-async def test_can_read_test_story_with_slots(domain: Domain):
-    trackers = await training.load_data(
+def test_can_read_test_story_with_slots(domain: Domain):
+    trackers = training.load_data(
         "data/test_yaml_stories/simple_story_with_only_end.yml",
         domain,
         use_story_concatenation=False,
@@ -138,8 +138,8 @@ async def test_default_slot_value_if_unfeaturized_slot():
     assert not warnings
 
 
-async def test_can_read_test_story_with_entities_slot_autofill(domain: Domain):
-    trackers = await training.load_data(
+def test_can_read_test_story_with_entities_slot_autofill(domain: Domain):
+    trackers = training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities.yml",
         domain,
         use_story_concatenation=False,
@@ -175,8 +175,8 @@ async def test_can_read_test_story_with_entities_slot_autofill(domain: Domain):
     assert trackers[1].events[-1] == ActionExecuted("action_listen")
 
 
-async def test_can_read_test_story_with_entities_without_value(domain: Domain):
-    trackers = await training.load_data(
+def test_can_read_test_story_with_entities_without_value(domain: Domain):
+    trackers = training.load_data(
         "data/test_yaml_stories/story_with_or_and_entities_with_no_value.yml",
         domain,
         use_story_concatenation=False,
@@ -211,11 +211,11 @@ async def test_is_yaml_file(file: Text, is_yaml_file: bool):
     assert YAMLStoryReader.is_stories_file(file) == is_yaml_file
 
 
-async def test_yaml_intent_with_leading_slash_warning(domain: Domain):
+def test_yaml_intent_with_leading_slash_warning(domain: Domain):
     yaml_file = "data/test_wrong_yaml_stories/intent_with_leading_slash.yml"
 
     with pytest.warns(UserWarning) as record:
-        tracker = await training.load_data(
+        tracker = training.load_data(
             yaml_file,
             domain,
             use_story_concatenation=False,
@@ -229,10 +229,10 @@ async def test_yaml_intent_with_leading_slash_warning(domain: Domain):
     assert tracker[0].latest_message == UserUttered(intent={"name": "simple"})
 
 
-async def test_yaml_slot_without_value_is_parsed(domain: Domain):
+def test_yaml_slot_without_value_is_parsed(domain: Domain):
     yaml_file = "data/test_yaml_stories/story_with_slot_was_set.yml"
 
-    tracker = await training.load_data(
+    tracker = training.load_data(
         yaml_file,
         domain,
         use_story_concatenation=False,
@@ -243,11 +243,11 @@ async def test_yaml_slot_without_value_is_parsed(domain: Domain):
     assert tracker[0].events[-2] == SlotSet(key="name", value=DEFAULT_VALUE_TEXT_SLOTS)
 
 
-async def test_yaml_wrong_yaml_format_warning(domain: Domain):
+def test_yaml_wrong_yaml_format_warning(domain: Domain):
     yaml_file = "data/test_wrong_yaml_stories/wrong_yaml.yml"
 
     with pytest.raises(YamlSyntaxException):
-        _ = await training.load_data(
+        _ = training.load_data(
             yaml_file,
             domain,
             use_story_concatenation=False,
@@ -383,9 +383,9 @@ async def test_no_warning_if_intent_in_domain(domain: Domain):
     assert not len(record)
 
 
-async def test_parsing_of_e2e_stories(domain: Domain):
+def test_parsing_of_e2e_stories(domain: Domain):
     yaml_file = "data/test_yaml_stories/stories_hybrid_e2e.yml"
-    tracker = await training.load_data(
+    tracker = training.load_data(
         yaml_file,
         domain,
         use_story_concatenation=False,
