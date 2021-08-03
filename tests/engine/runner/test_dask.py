@@ -153,7 +153,7 @@ def test_unused_node():
             config={},
             is_target=True,
         ),
-        "provide_2": SchemaNode(  # This will not execute
+        "provide_2": SchemaNode(  # This will not output
             needs={}, uses=ProvideX, fn="provide", constructor_name="create", config={},
         ),
     }

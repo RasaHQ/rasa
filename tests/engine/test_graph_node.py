@@ -105,7 +105,7 @@ def test_eager_and_not_eager(eager: bool):
 
     node()
 
-    assert create_mock.called
+    assert create_mock.call_count == 1
     assert run_mock.called
 
 

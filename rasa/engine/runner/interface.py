@@ -13,13 +13,13 @@ class GraphRunner(ABC):
     def create(
         cls, graph_schema: GraphSchema, execution_context: ExecutionContext
     ) -> GraphRunner:
-        """Creates a new instance of a GraphRunner.
+        """Creates a new instance of a `GraphRunner`.
 
         Args:
             graph_schema: The graph schema that will be instantiated and run.
             execution_context: Context that will be passed to every `GraphComponent`.
 
-        Returns: Instantiated GraphRunner
+        Returns: Instantiated `GraphRunner`
         """
         ...
 
@@ -34,7 +34,7 @@ class GraphRunner(ABC):
         Args:
             inputs: Input nodes to be added to the graph. These can be referenced by
                 name in the "needs" key of a node in the schema.
-            targets: Nodes who's output is needed and must always run.
+            targets: Nodes whose output is needed and must always run.
 
         Returns: A mapping of target node name to output value.
         """

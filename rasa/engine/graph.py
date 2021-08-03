@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections import ChainMap
 from dataclasses import dataclass, field
 import logging
-from typing import Any, Callable, Dict, List, Optional, Text, Type
+from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Type
 
 from rasa.engine.exceptions import GraphComponentException
 import rasa.shared.utils.common
@@ -51,7 +51,9 @@ class GraphComponent(ABC):
         ...
 
     @classmethod
-    def load(cls, config: Dict, execution_context: ExecutionContext) -> GraphComponent:
+    def load(
+        cls, config: Dict[Dict, Any], execution_context: ExecutionContext
+    ) -> GraphComponent:
         """Creates a component using a persisted version of itself.
 
         If not overridden this method merely calls `create`.
@@ -67,7 +69,7 @@ class GraphComponent(ABC):
     def supported_languages(self) -> Optional[List[Text]]:
         """Determines which languages this component can work with.
 
-        Returns: A list of supported languages, or None to signify all are supported.
+        Returns: A list of supported languages, or `None` to signify all are supported.
         """
         return None
 
@@ -159,11 +161,19 @@ class GraphNode:
                 **kwargs,
             )
         except Exception as e:
-            raise GraphComponentException("Error initializing graph component.") from e
+            raise GraphComponentException(
+                f"Error initializing graph component for node {self._node_name}."
+            ) from e
 
     def parent_node_names(self) -> List[Text]:
         """The names of the parent nodes of this node."""
         return list(self._inputs.values())
+
+    @staticmethod
+    def _collapse_inputs_from_previous_nodes(
+        inputs_from_previous_nodes: Tuple[Dict[Text, Any]]
+    ) -> Dict[Text, Any]:
+        return dict(ChainMap(*inputs_from_previous_nodes))
 
     def __call__(self, *inputs_from_previous_nodes: Dict[Text, Any]) -> Dict[Text, Any]:
         """Calls the `GraphComponent` run method when the node executes in the graph.
@@ -174,7 +184,9 @@ class GraphNode:
 
         Returns: A dictionary with a single item mapping the node's name to the output.
         """
-        received_inputs = dict(ChainMap(*inputs_from_previous_nodes))
+        received_inputs = self._collapse_inputs_from_previous_nodes(
+            inputs_from_previous_nodes
+        )
         kwargs = {}
         for input_name, input_node in self._inputs.items():
             kwargs[input_name] = received_inputs[input_node]
@@ -195,7 +207,9 @@ class GraphNode:
         try:
             output = self._fn(self._component, **run_kwargs)
         except Exception as e:
-            raise GraphComponentException("Error running graph component.") from e
+            raise GraphComponentException(
+                f"Error running graph component for node {self._node_name}."
+            ) from e
 
         return {self._node_name: output}
 
