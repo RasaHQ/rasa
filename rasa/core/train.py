@@ -108,17 +108,15 @@ async def train_comparison_models(
                 )
 
                 with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
-                    _, new_fingerprint = await asyncio.gather(
-                        train(
-                            domain,
-                            file_importer,
-                            train_path,
-                            policy_config=policy_config,
-                            exclusion_percentage=percentage,
-                            additional_arguments=additional_arguments,
-                        ),
-                        model.model_fingerprint(file_importer),
+                    await train(
+                        domain,
+                        file_importer,
+                        train_path,
+                        policy_config=policy_config,
+                        exclusion_percentage=percentage,
+                        additional_arguments=additional_arguments,
                     )
+                    new_fingerprint = model.model_fingerprint(file_importer)
 
                     output_dir = os.path.join(output_path, "run_" + str(r + 1))
                     model_name = config_name + PERCENTAGE_KEY + str(percentage)
