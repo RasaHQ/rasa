@@ -5,6 +5,7 @@ from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import GraphNodeHook
 from rasa.engine.storage.storage import ModelStorage
 import rasa.shared.utils.io
+from rasa.engine.training import fingerprinting
 
 logger = logging.getLogger(__name__)
 
@@ -29,17 +30,10 @@ class TrainingHook(GraphNodeHook):
         received_inputs: Dict[Text, Any],
     ) -> Dict:
         """Calculates the run fingerprint for use in `on_after_node`."""
-        fingerprint_data = {
-            "node_name": node_name,
-            "config": config,
-            "inputs": received_inputs,
-        }
-        fingerprint_key = rasa.shared.utils.io.deep_container_fingerprint(
-            fingerprint_data
-        )
-
-        logger.debug(
-            f"Calculated fingerprint_key: {fingerprint_key} for data {fingerprint_data}"
+        fingerprint_key = fingerprinting.calculate_fingerprint_key(
+            node_name=node_name,
+            config=config,
+            inputs=received_inputs,
         )
 
         return {"fingerprint_key": fingerprint_key}

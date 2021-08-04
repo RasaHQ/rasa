@@ -174,9 +174,10 @@ class GraphNodeHook(ABC):
         Args:
             node_name: The name of the node being run.
             config: The node's config.
-            received_inputs: The inputs received by the node.
+            received_inputs: Mapping from parameter name to input value.
 
-        Returns: Data that is then passed to `on_after_node`
+        Returns:
+            Data that is then passed to `on_after_node`
 
         """
         ...
@@ -341,19 +342,21 @@ class GraphNode:
             inputs_from_previous_nodes
         )
 
-        input_hook_outputs = self._run_before_hooks(received_inputs)
-
         kwargs = {}
         for input_name, input_node in self._inputs.items():
             kwargs[input_name] = received_inputs[input_node]
 
+        input_hook_outputs = self._run_before_hooks(kwargs)
+
+        constructor_kwargs = {}
         if not self._eager:
             constructor_kwargs = rasa.shared.utils.common.minimal_kwargs(
                 kwargs, self._constructor_fn
             )
             self._load_component(constructor_kwargs)
 
-        run_kwargs = rasa.shared.utils.common.minimal_kwargs(kwargs, self._fn)
+        # TODO: clearer/safer way?
+        run_kwargs = {k: v for k, v in kwargs.items() if k not in constructor_kwargs}
         logger.debug(
             f"Node {self._node_name} running "
             f"{self._component_class.__name__}.{self._fn_name} "
