@@ -48,6 +48,9 @@ then
     EXISTING_VERSION=$NEW_VERSION
 fi
 
+# install yarn dependency in the temp directory
+cd $TMP_DOCS_FOLDER/docs && yarn install && cd - || exit 1
+
 if [ ! -z "$EXISTING_VERSION" ]
 then
     echo "Updating docs for existing version $EXISTING_VERSION..."
