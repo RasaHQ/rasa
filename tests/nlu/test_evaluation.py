@@ -352,9 +352,7 @@ def test_drop_intents_below_freq():
 @pytest.mark.timeout(
     300, func_only=True
 )  # these can take a longer time than the default timeout
-def test_run_evaluation(
-    unpacked_trained_moodbot_path: Text, nlu_as_json_path: Text
-):
+def test_run_evaluation(unpacked_trained_moodbot_path: Text, nlu_as_json_path: Text):
     result = run_evaluation(
         nlu_as_json_path,
         os.path.join(unpacked_trained_moodbot_path, "nlu"),

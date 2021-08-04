@@ -98,9 +98,7 @@ def test_read_story_file_with_cycles(stories_file: Text, domain: Domain):
 )
 def test_generate_training_data_with_cycles(stories_file: Text, domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
-    training_trackers = training.load_data(
-        stories_file, domain, augmentation_factor=0,
-    )
+    training_trackers = training.load_data(stories_file, domain, augmentation_factor=0,)
 
     _, label_ids, _ = featurizer.featurize_trackers(
         training_trackers, domain, interpreter=RegexInterpreter()
@@ -145,9 +143,7 @@ def test_generate_training_data_with_unused_checkpoints(
 def test_generate_training_data_original_and_augmented_trackers(
     stories_file: Text, domain: Domain
 ):
-    training_trackers = training.load_data(
-        stories_file, domain, augmentation_factor=3,
-    )
+    training_trackers = training.load_data(stories_file, domain, augmentation_factor=3,)
     # there are three original stories
     # augmentation factor of 3 indicates max of 3*10 augmented stories generated
     # maximum number of stories should be augmented+original = 33
@@ -204,9 +200,7 @@ def test_load_multi_file_training_data(stories_resources: List, domain: Domain):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
-    trackers = training.load_data(
-        stories_resources[0], domain, augmentation_factor=0
-    )
+    trackers = training.load_data(stories_resources[0], domain, augmentation_factor=0)
     trackers = sorted(trackers, key=lambda t: t.sender_id)
 
     (tr_as_sts, tr_as_acts) = featurizer.training_states_and_labels(trackers, domain)
@@ -264,9 +258,7 @@ def test_load_multi_file_training_data(stories_resources: List, domain: Domain):
     assert np.all(label_ids == label_ids_mul)
 
 
-def test_load_training_data_reader_not_found_throws(
-    tmp_path: Path, domain: Domain
-):
+def test_load_training_data_reader_not_found_throws(tmp_path: Path, domain: Domain):
     (tmp_path / "file").touch()
 
     with pytest.raises(Exception):
