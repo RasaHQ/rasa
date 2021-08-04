@@ -159,6 +159,47 @@ class GraphComponent(ABC):
         return []
 
 
+class GraphNodeHook(ABC):
+    """Holds functionality to be run before and after a `GraphNode`."""
+
+    @abstractmethod
+    def on_before_node(
+        self,
+        node_name: Text,
+        config: Dict[Text, Any],
+        received_inputs: Dict[Text, Any],
+    ) -> Dict:
+        """Runs before the `GraphNode` executes.
+
+        Args:
+            node_name: The name of the node being run.
+            config: The node's config.
+            received_inputs: The inputs received by the node.
+
+        Returns: Data that is then passed to `on_after_node`
+
+        """
+        ...
+
+    @abstractmethod
+    def on_after_node(
+        self,
+        node_name: Text,
+        config: Dict[Text, Any],
+        output: Any,
+        input_hook_data: Dict,
+    ) -> None:
+        """Runs after the `GraphNode` as executed.
+
+        Args:
+            node_name: The name of the node that has run.
+            config: The node's config.
+            output: The output of the node.
+            input_hook_data: Data returned from `on_before_node`.
+        """
+        ...
+
+
 @dataclass
 class ExecutionContext:
     """Holds information about a single graph run."""
@@ -190,6 +231,7 @@ class GraphNode:
         model_storage: ModelStorage,
         resource: Optional[Resource],
         execution_context: ExecutionContext,
+        hooks: Optional[List[GraphNodeHook]] = None,
     ) -> None:
         """Initializes `GraphNode`.
 
@@ -208,6 +250,7 @@ class GraphNode:
             resource: If given the `GraphComponent` will be loaded from the
                 `model_storage` using the given resource.
             execution_context: Information about the current graph run.
+            hooks: These are called before and after execution.
         """
         self._node_name: Text = node_name
         self._component_class: Type[GraphComponent] = component_class
@@ -228,6 +271,8 @@ class GraphNode:
         self._existing_resource = resource
 
         self._execution_context: ExecutionContext = execution_context
+
+        self._hooks: List[GraphNodeHook] = hooks if hooks else []
 
         self._component: Optional[GraphComponent] = None
         if self._eager:
@@ -295,6 +340,9 @@ class GraphNode:
         received_inputs = self._collapse_inputs_from_previous_nodes(
             inputs_from_previous_nodes
         )
+
+        input_hook_outputs = self._run_before_hooks(received_inputs)
+
         kwargs = {}
         for input_name, input_node in self._inputs.items():
             kwargs[input_name] = received_inputs[input_node]
@@ -319,7 +367,39 @@ class GraphNode:
                 f"Error running graph component for node {self._node_name}."
             ) from e
 
+        self._run_after_hooks(input_hook_outputs, output)
+
         return {self._node_name: output}
+
+    def _run_after_hooks(self, input_hook_outputs: List[Dict], output: Any) -> None:
+        for hook, hook_data in zip(self._hooks, input_hook_outputs):
+            try:
+                hook.on_after_node(
+                    node_name=self._node_name,
+                    config=self._component_config,
+                    output=output,
+                    input_hook_data=hook_data,
+                )
+            except Exception as e:
+                raise GraphComponentException(
+                    f"Error running after hook for node {self._node_name}."
+                ) from e
+
+    def _run_before_hooks(self, received_inputs: Dict[Text, Any]) -> List[Dict]:
+        input_hook_outputs = []
+        for hook in self._hooks:
+            try:
+                hook_output = hook.on_before_node(
+                    node_name=self._node_name,
+                    config=self._component_config,
+                    received_inputs=received_inputs,
+                )
+                input_hook_outputs.append(hook_output)
+            except Exception as e:
+                raise GraphComponentException(
+                    f"Error running before hook for node {self._node_name}."
+                ) from e
+        return input_hook_outputs
 
     @classmethod
     def from_schema_node(
