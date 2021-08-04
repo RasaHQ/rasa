@@ -339,7 +339,6 @@ def directory_size_in_mb(
     for root, _dirs, files in os.walk(path):
         for filename in files:
             if filename in filenames_to_exclude:
-                # Exclude database from sum
                 continue
             size += (Path(root) / filename).stat().st_size
 

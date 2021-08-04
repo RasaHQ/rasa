@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import abc
-import dataclasses
 import logging
 import os
 import shutil
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Text, Any, Optional, Tuple, Type, List
+from typing import Text, Any, Optional, Tuple, List
 
 from packaging import version
 from sqlalchemy.engine import URL
@@ -87,16 +86,20 @@ class TrainingCache(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def get_cached_result(self, output_fingerprint_key: Text) -> Optional[CachedResult]:
+    def get_cached_result(
+        self, output_fingerprint_key: Text, node_name: Text, model_storage: ModelStorage
+    ) -> Optional[Cacheable]:
         """Returns a potentially cached output result.
 
         Args:
             output_fingerprint_key: The fingerprint key of the output serves as lookup
                 key for a potentially cached version of this output.
+            node_name: The name of the graph node which wants to use this cached result.
+            model_storage: The current model storage (e.g. used when restoring
+                `Resource` objects so that they can fill the model storage with data).
 
         Returns:
-            `None` if no matching result was found or object containing path to
-            directory with the cached content and the class of the persisted data.
+            `None` if no matching result was found or restored `Cacheable`.
         """
         ...
 
@@ -129,23 +132,12 @@ class Cacheable(Protocol):
             node_name: The name of the graph node which wants to use this cached result.
             directory: Directory containing the persisted `Cacheable`.
             model_storage: The current model storage (e.g. used when restoring
-                `Resource` objects so that they can fill the model storage with data.
+                `Resource` objects so that they can fill the model storage with data).
 
         Returns:
             Instantiated `Cacheable`.
         """
         ...
-
-
-@dataclasses.dataclass
-class CachedResult:
-    """Stores data about a cached result entry."""
-
-    # Directory containing the persisted cached object
-    cache_directory: Path
-
-    # Class which knows how to restore content from `cache_directory`
-    cached_type: Type[Cacheable]
 
 
 class LocalTrainingCache:
@@ -392,7 +384,9 @@ class LocalTrainingCache:
 
             return None
 
-    def get_cached_result(self, output_fingerprint_key: Text) -> Optional[CachedResult]:
+    def get_cached_result(
+        self, output_fingerprint_key: Text, node_name: Text, model_storage: ModelStorage
+    ) -> Optional[Cacheable]:
         """Returns a potentially cached output (see parent class for full docstring)."""
         result_location, result_type = self._get_cached_result(output_fingerprint_key)
 
@@ -407,7 +401,9 @@ class LocalTrainingCache:
             )
             return None
 
-        return self._load_from_cache(result_location, result_type)
+        return self._load_from_cache(
+            result_location, result_type, node_name, model_storage
+        )
 
     def _get_cached_result(
         self, output_fingerprint_key: Text
@@ -429,16 +425,26 @@ class LocalTrainingCache:
 
     @staticmethod
     def _load_from_cache(
-        path_to_cached: Path, result_type: Text
-    ) -> Optional[CachedResult]:
+        path_to_cached: Path,
+        result_type: Text,
+        node_name: Text,
+        model_storage: ModelStorage,
+    ) -> Optional[Cacheable]:
         try:
             module = rasa.shared.utils.common.class_from_module_path(result_type)
-            assert isinstance(module, Cacheable)
 
-            return CachedResult(path_to_cached, module)
+            if not isinstance(module, Cacheable):
+                logger.warning(
+                    "Failed to restore a non cacheable module from cache. "
+                    "Please implement the 'Cacheable' interface for module "
+                    f"'{result_type}'."
+                )
+                return None
+
+            return module.from_cache(node_name, path_to_cached, model_storage)
         except Exception as e:
             logger.warning(
-                f"Failed to find module for cached output of type "
-                f"'{result_type}'. Error:\n{e}"
+                f"Failed to restore cached output of type '{result_type}' from "
+                f"cache. Error:\n{e}"
             )
             return None

@@ -1,4 +1,4 @@
-from rasa.engine.caching import Cacheable, TrainingCache
+from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.hooks import TrainingHook
@@ -42,14 +42,10 @@ def test_training_hook_saves_to_cache(
     output_fingerprint_key = temp_cache.get_cached_output_fingerprint(fingerprint_key)
     assert output_fingerprint_key
 
-    cached_result = temp_cache.get_cached_result(output_fingerprint_key)
-    assert cached_result
-
-    cached_type = cached_result.cached_type
-    assert issubclass(cached_type, Cacheable)
-    assert issubclass(cached_type, CacheableText)
-    cached_output: CacheableText = cached_type.from_cache(
-        "hello", cached_result.cache_directory, default_model_storage
+    cached_result = temp_cache.get_cached_result(
+        output_fingerprint_key=output_fingerprint_key,
+        model_storage=default_model_storage,
+        node_name="hello",
     )
-
-    assert cached_output.text == "Hello Joe"
+    assert isinstance(cached_result, CacheableText)
+    assert cached_result.text == "Hello Joe"

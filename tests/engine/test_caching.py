@@ -3,7 +3,8 @@ import logging
 import shutil
 import uuid
 from pathlib import Path
-from typing import Dict, Text
+from typing import Dict, Text, Optional, Any
+from unittest.mock import Mock
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -11,6 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from sqlalchemy.exc import OperationalError
 
 import rasa.shared.utils.io
+import rasa.shared.utils.common
 from rasa.engine.caching import (
     LocalTrainingCache,
     CACHE_LOCATION_ENV,
@@ -21,6 +23,7 @@ from rasa.engine.caching import (
 )
 import tests.conftest
 from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 
 
@@ -35,6 +38,7 @@ class TestCacheableOutput:
 
     value: Dict
     size_in_mb: int = 0
+    cache_dir: Optional[Path] = dataclasses.field(default=None, compare=False)
 
     def to_cache(self, directory: Path, model_storage: ModelStorage) -> None:
         rasa.shared.utils.io.dump_obj_as_json_to_file(
@@ -49,35 +53,35 @@ class TestCacheableOutput:
     def from_cache(
         cls, node_name: Text, directory: Path, model_storage: ModelStorage
     ) -> "TestCacheableOutput":
+
         value = rasa.shared.utils.io.read_json_file(directory / "cached.json")
 
-        return cls(value)
+        return cls(value, cache_dir=directory)
 
 
-def test_cache_output(tmp_path: Path, temp_cache: TrainingCache):
-    model_storage = LocalModelStorage(tmp_path)
-
+def test_cache_output(temp_cache: TrainingCache, default_model_storage: ModelStorage):
     fingerprint_key = uuid.uuid4().hex
     output = TestCacheableOutput({"something to cache": "dasdaasda"})
     output_fingerprint = uuid.uuid4().hex
 
-    temp_cache.cache_output(fingerprint_key, output, output_fingerprint, model_storage)
+    temp_cache.cache_output(
+        fingerprint_key, output, output_fingerprint, default_model_storage
+    )
 
     assert (
         temp_cache.get_cached_output_fingerprint(fingerprint_key) == output_fingerprint
     )
 
-    cached = temp_cache.get_cached_result(output_fingerprint)
-
-    assert cached.cached_type == TestCacheableOutput
     assert (
-        cached.cached_type.from_cache("xy", cached.cache_directory, model_storage)
+        temp_cache.get_cached_result(
+            output_fingerprint, "some_node", default_model_storage
+        )
         == output
     )
 
 
 def test_get_cached_result_with_miss(
-    tmp_path: Path, temp_cache: TrainingCache, default_model_storage: ModelStorage
+    temp_cache: TrainingCache, default_model_storage: ModelStorage
 ):
     # Cache something
     temp_cache.cache_output(
@@ -87,7 +91,12 @@ def test_get_cached_result_with_miss(
         default_model_storage,
     )
 
-    assert temp_cache.get_cached_result(uuid.uuid4().hex) is None
+    assert (
+        temp_cache.get_cached_result(
+            uuid.uuid4().hex, "some node", default_model_storage
+        )
+        is None
+    )
     assert temp_cache.get_cached_output_fingerprint(uuid.uuid4().hex) is None
 
 
@@ -110,7 +119,10 @@ def test_get_cached_result_when_result_no_longer_available(
         if path.is_dir():
             shutil.rmtree(path)
 
-    assert cache.get_cached_result(output_fingerprint) is None
+    assert (
+        cache.get_cached_result(output_fingerprint, "some_node", default_model_storage)
+        is None
+    )
 
 
 def test_cache_creates_location_if_missing(tmp_path: Path, monkeypatch: MonkeyPatch):
@@ -124,7 +136,7 @@ def test_cache_creates_location_if_missing(tmp_path: Path, monkeypatch: MonkeyPa
 
 
 def test_caching_something_which_is_not_cacheable(
-    tmp_path: Path, temp_cache: TrainingCache, default_model_storage: ModelStorage
+    temp_cache: TrainingCache, default_model_storage: ModelStorage
 ):
     # Cache something
     fingerprint_key = uuid.uuid4().hex
@@ -140,7 +152,12 @@ def test_caching_something_which_is_not_cacheable(
     )
 
     # But it's not stored to disk
-    assert temp_cache.get_cached_result(output_fingerprint_key) is None
+    assert (
+        temp_cache.get_cached_result(
+            output_fingerprint_key, "some_node", default_model_storage
+        )
+        is None
+    )
 
 
 def test_caching_cacheable_fails(
@@ -167,7 +184,40 @@ def test_caching_cacheable_fails(
         temp_cache.get_cached_output_fingerprint(fingerprint_key) == output_fingerprint
     )
 
-    assert temp_cache.get_cached_result(output_fingerprint) is None
+    assert (
+        temp_cache.get_cached_result(
+            output_fingerprint, "some_node", default_model_storage
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "cached_module", [Mock(side_effect=ValueError()), Mock(return_value=Dict)]
+)
+def test_restore_cached_output_with_invalid_module(
+    temp_cache: TrainingCache,
+    default_model_storage: ModelStorage,
+    monkeypatch: MonkeyPatch,
+    cached_module: Any,
+):
+    output = TestCacheableOutput({"something to cache": "dasdaasda"})
+    output_fingerprint = uuid.uuid4().hex
+
+    temp_cache.cache_output(
+        uuid.uuid4().hex, output, output_fingerprint, default_model_storage
+    )
+
+    monkeypatch.setattr(
+        rasa.shared.utils.common, "class_from_module_path", cached_module,
+    )
+
+    assert (
+        temp_cache.get_cached_result(
+            output_fingerprint, "some_node", default_model_storage
+        )
+        is None
+    )
 
 
 def test_removing_no_longer_compatible_cache_entries(
@@ -215,26 +265,34 @@ def test_removing_no_longer_compatible_cache_entries(
         cache_run_by_future_rasa.get_cached_output_fingerprint(fingerprint_key2) is None
     )
 
-    assert cache_run_by_future_rasa.get_cached_result(output_fingerprint1) is None
-    assert cache_run_by_future_rasa.get_cached_result(output_fingerprint2) is None
+    assert (
+        cache_run_by_future_rasa.get_cached_result(
+            output_fingerprint1, "some_node", default_model_storage
+        )
+        is None
+    )
+    assert (
+        cache_run_by_future_rasa.get_cached_result(
+            output_fingerprint2, "some_node", default_model_storage
+        )
+        is None
+    )
 
     # Entry 3 wasn't deleted from cache as it's still compatible
     assert (
         cache_run_by_future_rasa.get_cached_output_fingerprint(fingerprint_key3)
         == output_fingerprint3
     )
-    cached_output = cache_run_by_future_rasa.get_cached_result(output_fingerprint3)
-    assert (
-        cached_output.cached_type.from_cache(
-            "some node", cached_output.cache_directory, default_model_storage
-        )
-        == output3
+    restored = cache_run_by_future_rasa.get_cached_result(
+        output_fingerprint3, "some_node", default_model_storage
     )
+    assert isinstance(restored, TestCacheableOutput)
+    assert restored == output3
 
     # Cached output of no longer compatible stuff was deleted from disk
     assert set(tmp_path.glob("*")) == {
         tmp_path / DEFAULT_CACHE_NAME,
-        cached_output.cache_directory,
+        restored.cache_dir,
     }
 
 
@@ -262,7 +320,10 @@ def test_skip_caching_if_cache_size_is_zero(
 
     assert cache.get_cached_output_fingerprint(fingerprint_key1) is None
 
-    assert cache.get_cached_result(output_fingerprint1) is None
+    assert (
+        cache.get_cached_result(output_fingerprint1, "some_node", default_model_storage)
+        is None
+    )
 
 
 def test_skip_caching_if_result_exceeds_max_size(
@@ -285,7 +346,10 @@ def test_skip_caching_if_result_exceeds_max_size(
 
     assert cache.get_cached_output_fingerprint(fingerprint_key1) == output_fingerprint1
 
-    assert cache.get_cached_result(output_fingerprint1) is None
+    assert (
+        cache.get_cached_result(output_fingerprint1, "some_node", default_model_storage)
+        is None
+    )
 
 
 def test_delete_using_lru_if_cache_exceeds_size(
@@ -324,7 +388,9 @@ def test_delete_using_lru_if_cache_exceeds_size(
 
     # Assert both are there
     for output_fingerprint in [output_fingerprint1, output_fingerprint2]:
-        assert cache.get_cached_result(output_fingerprint).cache_directory
+        assert cache.get_cached_result(
+            output_fingerprint, "some_node", default_model_storage
+        )
 
     # Checkout the first item as this updates `last_used` and hence affects LRU
     cache.get_cached_output_fingerprint(fingerprint_key1)
@@ -339,11 +405,16 @@ def test_delete_using_lru_if_cache_exceeds_size(
 
     # Assert cached result 1 and 3 are there
     for output_fingerprint in [output_fingerprint1, output_fingerprint4]:
-        assert cache.get_cached_result(output_fingerprint).cache_directory
+        assert cache.get_cached_result(
+            output_fingerprint, "some_node", default_model_storage
+        )
 
     # Cached result 2 and 3 were deleted
     assert cache.get_cached_output_fingerprint(fingerprint_key2) is None
-    assert cache.get_cached_result(output_fingerprint3) is None
+    assert (
+        cache.get_cached_result(output_fingerprint3, "some_node", default_model_storage)
+        is None
+    )
 
 
 def test_cache_exceeds_size_but_not_in_database(
@@ -375,7 +446,9 @@ def test_cache_exceeds_size_but_not_in_database(
     )
 
     assert cache.get_cached_output_fingerprint(fingerprint_key) == output_fingerprint
-    assert cache.get_cached_result(output_fingerprint).cache_directory
+    assert cache.get_cached_result(
+        output_fingerprint, "some_node", default_model_storage
+    )
 
 
 def test_clean_up_of_cached_result_if_database_fails(
@@ -401,3 +474,42 @@ def test_clean_up_of_cached_result_if_database_fails(
         )
 
     assert list(tmp_path.glob("*")) == [tmp_path / database_name]
+
+
+def test_resource_with_model_storage(
+    default_model_storage: ModelStorage, tmp_path: Path, temp_cache: TrainingCache
+):
+    node_name = "some node"
+    resource = Resource(node_name)
+    test_filename = "persisted_model.json"
+    test_content = {"epochs": 500}
+
+    with default_model_storage.write_to(resource) as temporary_directory:
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            temporary_directory / test_filename, test_content
+        )
+
+    test_fingerprint_key = uuid.uuid4().hex
+    test_output_fingerprint_key = uuid.uuid4().hex
+    temp_cache.cache_output(
+        test_fingerprint_key,
+        resource,
+        test_output_fingerprint_key,
+        default_model_storage,
+    )
+
+    new_model_storage_location = tmp_path / "new_model_storage"
+    new_model_storage_location.mkdir()
+    new_model_storage = LocalModelStorage(new_model_storage_location)
+    restored_resource = temp_cache.get_cached_result(
+        test_output_fingerprint_key, node_name, new_model_storage
+    )
+
+    assert isinstance(restored_resource, Resource)
+    assert restored_resource == restored_resource
+
+    with new_model_storage.read_from(restored_resource) as temporary_directory:
+        cached_content = rasa.shared.utils.io.read_json_file(
+            temporary_directory / test_filename
+        )
+        assert cached_content == test_content

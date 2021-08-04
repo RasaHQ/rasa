@@ -195,7 +195,7 @@ class GraphNodeHook(ABC):
             node_name: The name of the node that has run.
             config: The node's config.
             output: The output of the node.
-            input_hook_data: Data returned rom `on_before_node`.
+            input_hook_data: Data returned from `on_before_node`.
         """
         ...
 
