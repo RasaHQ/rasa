@@ -43,6 +43,14 @@ class EndpointConfig()
 
 Configuration for an external HTTP endpoint.
 
+#### session
+
+```python
+ | session() -> aiohttp.ClientSession
+```
+
+Creates and returns a configured aiohttp client session.
+
 #### request
 
 ```python
