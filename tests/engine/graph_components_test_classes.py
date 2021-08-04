@@ -23,8 +23,8 @@ class AddInputs(GraphComponent):
     ) -> AddInputs:
         return cls()
 
-    def add(self, i1: int, i2: int) -> int:
-        return i1 + i2
+    def add(self, i1: Any, i2: Any) -> int:
+        return int(i1) + int(i2)
 
 
 class SubtractByX(GraphComponent):
@@ -44,8 +44,33 @@ class SubtractByX(GraphComponent):
     ) -> SubtractByX:
         return cls(config["x"])
 
-    def subtract_x(self, i: int) -> int:
-        return i - self._x
+    def subtract_x(self, i: Any) -> int:
+        return int(i) - self._x
+
+
+class AssertComponent(GraphComponent):
+    default_config = {}
+
+    def __init__(self, value_to_assert: Any) -> None:
+        self._value_to_assert = value_to_assert
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
+    ) -> AssertComponent:
+        return cls(config["value_to_assert"])
+
+    def mockable_method(self):
+        ...
+
+    def run_assert(self, i: Any) -> None:
+        self.mockable_method()
+        assert i == self._value_to_assert
 
 
 class ProvideX(GraphComponent):
@@ -84,6 +109,26 @@ class ProvideX(GraphComponent):
 
     def provide(self) -> int:
         return self.x
+
+
+class FileReader(GraphComponent):
+    default_config = {}
+
+    def __init__(self, file_path: Path) -> None:
+        self._file_path = file_path
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> FileReader:
+        return cls(Path(config["file_path"]))
+
+    def read(self) -> Text:
+        return self._file_path.read_text()
 
 
 class ExecutionContextAware(GraphComponent):
@@ -168,7 +213,7 @@ class PersistableTestComponent(GraphComponent):
             sub_dir.mkdir()
 
             rasa.shared.utils.io.dump_obj_as_json_to_file(
-                sub_dir / "test.json", self._config["test_value_for_sub_directory"]
+                sub_dir / "test.json", self._config.get("test_value_for_sub_directory")
             )
 
         return self._resource

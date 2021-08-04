@@ -31,9 +31,7 @@ class TrainingHook(GraphNodeHook):
     ) -> Dict:
         """Calculates the run fingerprint for use in `on_after_node`."""
         fingerprint_key = fingerprinting.calculate_fingerprint_key(
-            node_name=node_name,
-            config=config,
-            inputs=received_inputs,
+            node_name=node_name, config=config, inputs=received_inputs,
         )
 
         return {"fingerprint_key": fingerprint_key}
@@ -46,20 +44,13 @@ class TrainingHook(GraphNodeHook):
         input_hook_data: Dict,
     ) -> None:
         """Stores the fingerprints and caches the output of the node."""
-        output_fingerprint_data = {
-            "node_name": node_name,
-            "config": config,
-            "inputs": output,
-        }
-        output_fingerprint = rasa.shared.utils.io.deep_container_fingerprint(
-            output_fingerprint_data
-        )
+        output_fingerprint = rasa.shared.utils.io.deep_container_fingerprint(output)
         fingerprint_key = input_hook_data["fingerprint_key"]
 
         logger.debug(
             f"Caching {output} for fingerprint_key: {fingerprint_key} "
             f"and output_fingerprint: {output_fingerprint} calculated with data "
-            f"{output_fingerprint_data}"
+            f"{output}."
         )
 
         self._cache.cache_output(
