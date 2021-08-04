@@ -1,0 +1,214 @@
+---
+id: training-data-importers
+sidebar_label: Importers
+title: Training Data Importers
+description: Change the way Rasa imports training data by replacing the default importer or writing your own importer.
+abstract: Rasa Open Source has built-in logic to collect and load training data written in Rasa format, but
+  you can also customize how your training data gets imported using custom training data importers.
+---
+
+Using the [`--data` command line argument](command-line-interface.mdx) you can specify where Rasa should look
+for training data on your disk. Rasa then loads any potential training files and uses
+them to train your assistant.
+
+If needed, you can also customize how Rasa imports training data.
+Potential use cases for this might be:
+
+* using a custom parser to load training data in other formats
+
+* using different approaches to collect training data (e.g. loading them from different resources)
+
+You can [write a custom importer](#writing-a-custom-importer) and instruct Rasa to use it by adding the section
+`importers` to your configuration file and specifying the importer with its
+full class path:
+
+```yaml-rasa {2-4} title="config.yml"
+importers:
+- name: "module.CustomImporter"
+  parameter1: "value"
+  parameter2: "value2"
+- name: "RasaFileImporter"
+```
+
+The `name` key is used to determine which importer should be loaded. Any extra
+parameters are passed as constructor arguments to the loaded importer.
+
+:::tip
+You can specify multiple importers. Rasa will automatically merge their results.
+
+:::
+
+## RasaFileImporter (default)
+
+By default Rasa uses the importer `RasaFileImporter`. If you want to use it on its
+own, you don't have to specify anything in your configuration file.
+If you want to use it together with other importers, add it to your
+configuration file:
+
+```yaml-rasa {5} title="config.yml"
+importers:
+- name: "module.CustomImporter"
+  parameter1: "value"
+  parameter2: "value2"
+- name: "RasaFileImporter"
+```
+
+## MultiProjectImporter (experimental)
+
+:::caution
+This feature is currently experimental and might change or be removed in the future.
+Share your feedback on it in the [forum](https://forum.rasa.com) to help
+us making this feature ready for production.
+
+:::
+
+With this importer you can train a model by combining multiple
+reusable Rasa projects.
+You might, for example, handle chitchat with one project and greet your users with
+another. These projects can be developed in isolation, and then combined when you train
+your assistant.
+
+For example, consider the following directory structure:
+
+```bash
+.
+├── config.yml
+└── projects
+    ├── GreetBot
+    │   ├── data
+    │   │   ├── nlu.yml
+    │   │   └── stories.yml
+    │   └── domain.yml
+    └── ChitchatBot
+        ├── config.yml
+        ├── data
+        │   ├── nlu.yml
+        │   └── stories.yml
+        └── domain.yml
+```
+
+Here the contextual AI assistant imports the `ChitchatBot` project which in turn
+imports the `GreetBot` project. Project imports are defined in the configuration files of
+each project.
+
+To instruct Rasa to use the `MultiProjectImporter` module, you need add it to the `importers` list in your root `config.yml`.
+
+```yaml-rasa title="./config.yml"
+importers:
+- name: MultiProjectImporter
+```
+
+Then, in the same file, specify which projects you want to import by adding them to the `imports` list.
+
+```yaml-rasa title="./config.yml"
+imports:
+- projects/ChitchatBot
+```
+
+The configuration file of the `ChitchatBot` needs to reference `GreetBot`:
+
+```yaml-rasa title="./ChitchatBot/config.yml"
+imports:
+- ../GreetBot
+```
+
+Since the `GreetBot` project does not specify further project to import, it doesn't need a `config.yml`.
+
+Rasa uses paths relative from the configuration file to import projects.
+These can be anywhere on your filesystem where file access is permitted.
+
+During the training process Rasa will import all required training files, combine
+them, and train a unified AI assistant. The training data is merged at
+runtime, so no additional training data files are created.
+
+:::caution Policies and NLU Pipelines
+Rasa will use the policy and NLU pipeline configuration of the root project
+directory during training. **Policy and NLU configurations of imported projects
+will be ignored.**
+
+:::
+
+:::caution watch out for merging
+Equal intents, entities, slots, responses, actions and forms will be merged,
+e.g. if two projects have training data for an intent `greet`,
+their training data will be combined.
+
+:::
+
+## Writing a Custom Importer
+
+If you are writing a custom importer, this importer has to implement the interface of
+[`TrainingDataImporter`](reference/rasa/shared/importers/importer.md#trainingdataimporter-objects):
+
+```python
+from typing import Optional, Text, Dict, List, Union
+
+import rasa
+from rasa.shared.core.domain import Domain
+from rasa.shared.nlu.interpreter import RegexInterpreter
+from rasa.shared.core.training_data.structures import StoryGraph
+from rasa.shared.importers.importer import TrainingDataImporter
+from rasa.shared.nlu.training_data.training_data import TrainingData
+
+
+class MyImporter(TrainingDataImporter):
+    """Example implementation of a custom importer component."""
+
+    def __init__(
+        self,
+        config_file: Optional[Text] = None,
+        domain_path: Optional[Text] = None,
+        training_data_paths: Optional[Union[List[Text], Text]] = None,
+        **kwargs: Dict
+    ):
+        """Constructor of your custom file importer.
+
+        Args:
+            config_file: Path to configuration file from command line arguments.
+            domain_path: Path to domain file from command line arguments.
+            training_data_paths: Path to training files from command line arguments.
+            **kwargs: Extra parameters passed through configuration in configuration file.
+        """
+
+        pass
+
+    async def get_domain(self) -> Domain:
+        path_to_domain_file = self._custom_get_domain_file()
+        return Domain.load(path_to_domain_file)
+
+    def _custom_get_domain_file(self) -> Text:
+        pass
+
+    async def get_stories(
+        self,
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
+        template_variables: Optional[Dict] = None,
+        use_e2e: bool = False,
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
+        from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+            YAMLStoryReader,
+        )
+
+        path_to_stories = self._custom_get_story_file()
+        return YAMLStoryReader.read_from_file(path_to_stories, await self.get_domain())
+
+    def _custom_get_story_file(self) -> Text:
+        pass
+
+    async def get_config(self) -> Dict:
+        path_to_config = self._custom_get_config_file()
+        return rasa.utils.io.read_config_file(path_to_config)
+
+    def _custom_get_config_file(self) -> Text:
+        pass
+
+    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+        from rasa.shared.nlu.training_data import loading
+
+        path_to_nlu_file = self._custom_get_nlu_file()
+        return loading.load_data(path_to_nlu_file)
+
+    def _custom_get_nlu_file(self) -> Text:
+        pass
+```
