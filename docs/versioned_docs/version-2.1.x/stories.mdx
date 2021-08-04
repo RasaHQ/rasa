@@ -1,0 +1,187 @@
+---
+id: stories
+sidebar_label: Stories
+title: Stories
+description: Stories are used to teach Rasa real conversation designs to learn from providing the basis for a scalable machine learning dialogue management.
+abstract: Stories are a type of training data used to train your assistant's dialogue management
+  model. Stories can be used to train models that are able to generalize to unseen conversation paths.
+---
+## Format
+
+A story is a representation of a conversation between a user and an AI assistant,
+converted into a specific format where user inputs are expressed as intents
+(and entities when necessary), while the assistant's responses and actions are expressed as action names.
+
+Here's an example of a dialogue in the Rasa story format:
+
+```yaml-rasa
+stories:
+- story: collect restaurant booking info  # name of the story - just for debugging
+  steps:
+  - intent: greet                         # user message with no entities
+  - action: utter_ask_howcanhelp
+  - intent: inform                        # user message with no entities
+    entities:
+    - location: "rome"
+    - price: "cheap"
+  - action: utter_on_it                  # action that the bot should execute
+  - action: utter_ask_cuisine
+  - intent: inform
+    entities:
+    - cuisine: "spanish"
+  - action: utter_ask_num_people
+```
+
+### User Messages
+
+While writing stories, you do not have to deal with the specific contents of
+the messages that the users send. Instead, you can take advantage of the output
+from the NLU pipeline, which lets you use just the combination of an intent and
+entities to refer to all the possible messages the users can send to mean the
+same thing.
+
+It is important to include the entities here as well because the policies learn
+to predict the next action based on a *combination* of both the intent and
+entities (you can, however, change this behavior using the
+[use_entities](./domain.mdx#ignoring-entities-for-certain-intents) attribute).
+
+### Actions
+
+All actions executed by the bot, including [responses](./responses.mdx) are listed
+in stories under the `action` key.
+
+You can use a response from your domain as an action by listing it as one
+in a story. Similarly, you can indicate that a story should call a custom action by including
+the name of the custom action from the `actions` list in your domain.
+
+
+### Events
+
+During training, Rasa Open Source does not call the action server. This means
+that your assistant's dialogue management model doesn't know which events a custom
+action will return.
+
+Because of this, events such as setting a slot or activating/deactivating a form have to be
+explicitly written out as part of the stories. For more info, see the documentation on
+[Events](https://rasa.com/docs/action-server/events).
+
+#### Slot Events
+
+Slot events are written under `slot_was_set` in a story. If this slot is set
+inside a custom action, add the `slot_was_set` event immediately following the
+custom action call. If your custom action resets a slot value to `None`, the
+corresponding event for that would look like this:
+
+```yaml-rasa {6-7}
+stories:
+- story: set slot to none
+  steps:
+    # ... other story steps
+    - action: my_custom_action
+    - slot_was_set:
+      - my_slot: null
+```
+
+#### Form Events
+
+There are three kinds of events that need to be kept in mind while dealing with
+forms in stories.
+
+* A form action event (e.g. `- action: restaurant_form`) is used in the beginning when first starting a form, and also while resuming the form action when the form is already active.
+
+* A form activation event (e.g. `- active_loop: restaurant_form`) is used right after the first form action event.
+
+* A form deactivation event (e.g. `- active_loop: null`), which is used to deactivate the form.
+
+:::note writing form stories
+In order to get around the pitfall of forgetting to add events, the recommended
+way to write these stories is to use [interactive learning](./writing-stories.mdx#using-interactive-learning).
+
+:::
+
+## Checkpoints and OR statements
+
+Checkpoints and OR statements should be used with caution, if at all.
+There is usually a better way to achieve what you want by using [Rules](./rules.mdx) or
+the [ResponseSelector](./components.mdx#responseselector).
+
+### Checkpoints
+
+You can use checkpoints to modularize and simplify your training
+data. Checkpoints can be useful, but **do not overuse them**. Using
+lots of checkpoints can quickly make your example stories hard to
+understand, and will slow down training.
+
+Here is an example of stories that
+contain checkpoints:
+
+```yaml-rasa
+stories:
+- story: beginning of flow
+  steps:
+  - intent: greet
+  - action: action_ask_user_question
+  - checkpoint: check_asked_question
+
+- story: handle user affirm
+  steps:
+  - checkpoint: check_asked_question
+  - intent: affirm
+  - action: action_handle_affirmation
+  - checkpoint: check_flow_finished
+
+- story: handle user deny
+  steps:
+  - checkpoint: check_asked_question
+  - intent: deny
+  - action: action_handle_denial
+  - checkpoint: check_flow_finished
+
+- story: finish flow
+  steps:
+  - checkpoint: check_flow_finished
+  - intent: goodbye
+  - action: utter_goodbye
+```
+
+:::note
+Unlike regular stories, checkpoints are not restricted to starting with
+user input. As long as the checkpoint is inserted at the right points
+in the main stories, the first event can be a custom action or a response
+as well.
+
+:::
+
+### Or Statements
+
+Another way to write shorter stories, or to handle multiple intents
+the same way, is to use an `or` statement. For example, if you ask
+the user to confirm something, and you want to treat the `affirm`
+and `thankyou` intents in the same way. The story below will be
+converted into two stories at training time:
+
+```yaml-rasa
+stories:
+- story:
+  steps:
+  # ... previous steps
+  - action: utter_ask_confirm
+  - or:
+    - intent: affirm
+    - intent: thankyou
+  - action: action_handle_affirmation
+```
+
+`or` statements can be useful, but if you are using a
+lot of them, it is probably better to restructure your domain and/or intents.
+Overusing OR statements will slow down training.
+
+## Test Conversation Format
+
+The test conversation format is a format that combines both NLU data and stories
+into a single file for evaluation. Read more about this format in [Testing Your Assistant](./testing-your-assistant.mdx).
+
+:::caution testing only
+This format is only used for testing and cannot be used for training.
+
+:::

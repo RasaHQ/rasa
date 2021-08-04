@@ -1,0 +1,319 @@
+---
+id: nlu-training-data
+sidebar_label: NLU Training Data
+title: NLU Training Data
+description: Read more about how to format training data with Rasa NLU for open source natural language processing.
+abstract: NLU training data stores structured information about user messages.
+---
+
+The goal of NLU (Natural Language Understanding) is to extract structured information from user messages. This usually includes the user's [intent](glossary.mdx#intent) and any 
+[entities](glossary.mdx#entity) their message contains. You can
+add extra information such as [regular expressions](#regular-expressions) and [lookup tables](#lookup-tables) to your
+training data to help the model identify intents and entities correctly. 
+
+
+## Training Examples
+
+NLU training data consists of example user utterances categorized by
+intent. 
+To make it easier to use your intents, give them names that relate to what the user wants to accomplish with that intent, keep them in lowercase, and avoid spaces and special characters. 
+
+:::note
+The `/` symbol is reserved as a delimiter to separate [retrieval intents](glossary.mdx#retrieval-intent) from response text identifiers. Make sure not
+to use it in the name of your intents.
+
+:::
+
+
+## Entities
+
+[Entities](glossary.mdx#entity) are structured pieces of information inside a user message. 
+For entity extraction to work, you need to either specify training data to train an ML model or you need to define [regular expressions](#regular-expressions-for-entity-extraction) to extract entities using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) based on a character pattern.
+
+When deciding which entities you need to extract, think about what information your assistant needs for its user goals. The user might provide additional pieces of information that you don't need for any user goal; you don't need to extract these as entities.
+
+See the [training data format](./training-data-format.mdx) for details on how to annotate entities in your training data.
+
+## Synonyms
+
+Synonyms map extracted entities to a value other than the literal text extracted. 
+You can use synonyms when there are multiple ways users refer to the same
+thing. Think of the end goal of extracting an entity, and figure out from there which values should be considered equivalent. 
+
+Let's say you had an entity `account` that you use to look up the user's balance. One of the possible account types is "credit". Your users also refer to their "credit" account as "credit
+account" and "credit card account".
+
+In this case, you could define "credit card account" and "credit account" as
+synonyms to "credit":
+
+```yaml-rasa
+nlu:
+- synonym: credit
+  examples: |
+    - credit card account
+    - credit account
+```
+
+Then, if either of these phrases is extracted as an entity, it will be
+mapped to the value `credit`.
+
+:::note Provide Training Examples
+Synonym mapping only happens **after** entities have been extracted.
+That means that your training examples should include the synonym examples
+(`credit card account` and `credit account`) so that the model will learn to
+recognize these as entities and replace them with `credit`.
+:::
+
+See the [training data format](./training-data-format.mdx) for details on how to include synonyms in your training data.
+
+## Regular Expressions
+
+You can use regular expressions to improve intent classification and
+entity extraction in combination with the [`RegexFeaturizer`](components.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components.mdx#regexentityextractor) components in the pipeline.
+
+
+### Regular Expressions for Intent Classification
+
+You can use regular expressions to improve intent classification by including the `RegexFeaturizer` component in your pipeline. When using the `RegexFeaturizer`, a regex does not act as a rule for classifying an intent. It only provides a feature that the intent classifier will use
+to learn patterns for intent classification.
+Currently, all intent classifiers make use of available regex features.
+
+The name of a regex in this case is a human readable description. It can help you remember what a regex is used for, and it is the title of the corresponding pattern feature. It does not have to match any intent or entity name. A regex for a "help" request might look like this:
+
+```yaml-rasa
+nlu:
+- regex: help
+  examples: |
+    - \bhelp\b
+```
+
+The intent being matched could be `greet`,`help_me`, `assistance` or anything else.
+
+Try to create your regular expressions in a way that they match as few
+words as possible. E.g. using `\bhelp\b` instead of `help.*`, as the
+later one might match the whole message whereas the first one only
+matches a single word.
+
+:::note Provide Training Examples
+The `RegexFeaturizer` provides features to the intent classifier, but it doesn't predict the intent directly. Include enough examples containing the regular expression so that the intent classifier can learn to use the regular expression feature.
+:::
+
+### Regular Expressions for Entity Extraction
+
+If your entity has a deterministic structure, you can use regular expressions in one of two ways:
+
+#### Regular Expressions as Features
+
+You can use regular expressions to create features for the [`RegexFeaturizer`](components.mdx#regexfeaturizer) component in you NLU pipeline.
+
+When using a regular expression with the  `RegexFeaturizer`, the
+name of the regular expression does not matter.
+When using the `RegexFeaturizer`, a regular expression provides a feature
+that helps the model learn an association between intents/entities and inputs
+that fit the regular expression. 
+
+:::note Provide Training Examples
+The `RegexFeaturizer` provides features to the entity extractor, but it doesn't predict the entity directly. Include enough examples containing the regular expression so that the entity extractor can learn ot use the regular expression feature.
+
+:::
+
+Regex features for entity extraction
+are currently only supported by the `CRFEntityExtractor` and `DIETClassifier` components. Other entity extractors, like
+`MitieEntityExtractor` or `SpacyEntityExtractor`, won't use the generated
+features and their presence will not improve entity recognition for
+these extractors.
+
+#### Regular Expressions for Rule-based Entity Extraction
+
+You can use regular expressions for rule-based entity extraction using the [`RegexEntityExtractor`](components.mdx#regexentityextractor) component in your NLU pipeline.
+
+When using the `RegexEntityExtractor`, the name of the regular expression should
+match the name of the entity you want to extract.
+For example, you could extract account numbers of 10-12 digits by including this regular expression and at least two annotated examples in your training data:
+
+```yaml-rasa
+nlu:
+- regex: account_number
+  examples: |
+    - \d{10,12}
+- intent: inform
+  examples: |
+    - my account number is [1234567891](account_number)
+    - This is my account number [1234567891](account_number)
+```
+
+Whenever a user message contains a sequence of 10-12 digits, it will be extracted as an `account_number` entity. `RegexEntityExtractor` doesn't require training examples to learn to extract the entity, but you do need at least two annotated examples of the entity so that the NLU model can register it as an entity at training time.
+
+
+## Lookup Tables
+
+Lookup tables are lists of words used to generate
+case-insensitive regular expression patterns. They can be used in the same ways as [regular expressions](#regular-expressions) are used, in combination with the [`RegexFeaturizer`](components.mdx#regexfeaturizer) and [`RegexEntityExtractor`](components.mdx#regexentityextractor) components in the pipeline.
+
+You can use lookup tables to help extract entities which have a known set of possible values. Keep your lookup tables as specific as possible. For example, to extract country names, you could add a lookup table of all countries in the world:
+
+```yaml-rasa
+nlu:
+- lookup: country
+  examples: |
+    - Afghanistan
+    - Albania
+    - ...
+    - Zambia
+    - Zimbabwe
+```
+
+When using lookup tables with `RegexFeaturizer`, provide enough examples for the intent or entity you want to match so that the model can learn to use the generated regular expression as a feature. When using lookup tables with `RegexEntityExtractor`, provide at least two annotated examples of the entity so that the NLU model can register it as an entity at training time.
+
+
+## Entities Roles and Groups
+
+:::caution
+This feature is experimental.
+We introduce experimental features to get feedback from our community, so we encourage you to try it out!
+However, the functionality might be changed or removed in the future.
+If you have feedback (positive or negative) please share it with us on the [Rasa Forum](https://forum.rasa.com).
+
+:::
+
+Annotating words as custom entities allows you to define certain concepts in your training data.
+For example, you can identify cities by annotating them:
+
+```
+I want to fly from [Berlin]{"entity": "city"} to [San Francisco]{"entity": "city"} .
+```
+
+However, sometimes you want to add more details to your entities.
+
+For example, to build an assistant that should book a flight, the assistant needs to know which of the two cities in the example above is the departure city and which is the
+destination city.
+`Berlin` and `San Francisco` are both cities, but they play different **roles** in the message.
+To distinguish between the different roles, you can assign a role label in addition to the entity label.
+
+```
+- I want to fly from [Berlin]{"entity": "city", "role": "departure"} to [San Francisco]{"entity": "city", "role": "destination"}.
+```
+
+You can also group different entities by specifying a **group** label next to the entity label.
+The group label can, for example, be used to define different orders.
+In the following example, the group label specifies which toppings go with which pizza and
+what size each pizza should be.
+
+```
+Give me a [small]{"entity": "size", "group": "1"} pizza with [mushrooms]{"entity": "topping", "group": "1"} and
+a [large]{"entity": "size", "group": "2"} [pepperoni]{"entity": "topping", "group": "2"}
+```
+
+See the [Training Data Format](training-data-format.mdx#entities) for details on how to define entities with roles and groups in your training data.
+
+The entity object returned by the extractor will include the detected role/group label.
+
+```json
+{
+  "text": "Book a flight from Berlin to SF",
+  "intent": "book_flight",
+  "entities": [
+    {
+      "start": 19,
+      "end": 25,
+      "value": "Berlin",
+      "entity": "city",
+      "role": "departure",
+      "extractor": "DIETClassifier",
+    },
+    {
+      "start": 29,
+      "end": 31,
+      "value": "San Francisco",
+      "entity": "city",
+      "role": "destination",
+      "extractor": "DIETClassifier",
+    }
+  ]
+}
+```
+
+:::note
+Entity roles and groups are currently only supported by the [DIETClassifier](./components.mdx#dietclassifier) and [CRFEntityExtractor](./components.mdx#crfentityextractor).
+
+:::
+
+In order to properly train your model with entities that have roles and groups, make sure to include enough training 
+examples for every combination of entity and role or group label.
+To enable the model to generalize, make sure to have some variation in your training examples.
+For example, you should  include examples like `fly TO y FROM x`, not only `fly FROM x TO y`.
+
+To fill slots from entities with a specific role/group, you need to either define a custom slot mappings using
+[forms](forms.mdx) or use [custom actions](custom-actions.mdx) to extract the corresponding entity directly from the tracker.
+
+### Entity Roles and Groups influencing dialogue predictions
+
+If you want to influence the dialogue predictions by roles or groups, you need to modify your stories to contain
+the desired role or group label. You also need to list the corresponding roles and groups of an entity in your
+[domain file](./domain.mdx#entities).
+
+Let's assume you want to output a different sentence depending on what the user's location is. E.g.
+if the user just arrived from London, you might want to ask how the trip to London was. But if the user is on the way
+to Madrid, you might want to wish the user a good stay. You can achieve this with the
+following two stories:
+
+```yaml-rasa
+stories:
+- story: The user just arrived from another city.
+  steps:
+    - intent: greet
+    - action: utter_greet
+    - intent: inform_location
+      entities:
+        - city: London
+          role: from
+    - action: utter_ask_about_trip
+
+- story: The user is going to another city.
+  steps:
+    - intent: greet
+    - action: utter_greet
+    - intent: inform_location
+      entities:
+        - city: Madrid
+          role: to
+    - action: utter_wish_pleasant_stay
+```
+
+## BILOU Entity Tagging
+
+The [DIETClassifier](./components.mdx#dietclassifier) and [CRFEntityExtractor](./components.mdx#crfentityextractor)
+have the option `BILOU_flag`, which refers to a tagging schema that can be
+used by the machine learning model when processing entities.
+`BILOU` is short for Beginning, Inside, Last, Outside, and Unit-length.
+
+For example, the training example
+
+```
+[Alex]{"entity": "person"} is going with [Marty A. Rick]{"entity": "person"} to [Los Angeles]{"entity": "location"}.
+```
+
+is first split into a list of tokens. Then the machine learning model applies the tagging schema
+as shown below depending on the value of the option `BILOU_flag`:
+
+| token   | `BILOU_flag = true`  | `BILOU_flag = false`  |
+|---------|----------------------|-----------------------|
+| alex    | U-person             | person                |
+| is      | O                    | O                     |
+| going   | O                    | O                     |
+| with    | O                    | O                     |
+| marty   | B-person             | person                |
+| a       | I-person             | person                |
+| rick    | L-person             | person                |
+| to      | O                    | O                     |
+| los     | B-location           | location              |
+| angeles | L-location           | location              |
+
+The BILOU tagging schema is richer compared to the normal tagging schema. It may help to improve the
+performance of the machine learning model when predicting entities.
+
+:::note inconsistent BILOU tags
+When the option `BILOU_flag` is set to `True`, the model may predict inconsistent BILOU tags, e.g.
+`B-person I-location L-person`. Rasa Open Source uses some heuristics to clean up the inconsistent BILOU tags.
+For example, `B-person I-location L-person` would be changed into `B-person I-person L-person`.
+:::

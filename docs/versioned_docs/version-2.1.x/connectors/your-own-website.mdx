@@ -1,0 +1,133 @@
+---
+id: your-own-website
+sidebar_label: Your Own Website
+title: Your Own Website
+description: Deploy and Run a Rasa Chat Bot on a Website
+---
+
+If you just want an easy way for users to test your bot, the best option
+is usually the chat interface that ships with Rasa X, where you can [invite users
+to test your bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#share-your-bot).
+
+If you already have an existing website and want to add a Rasa assistant to it,
+you can use [Chatroom](https://github.com/scalableminds/chatroom), a widget which you can incorporate into your existing webpage by adding a HTML snippet.
+Alternatively, you can also build your own chat widget.
+
+## REST Channels
+
+The `RestInput` and `CallbackInput` channels can be used for custom integrations.
+They provide a URL where you can post messages and either receive response messages
+directly, or asynchronously via a webhook.
+
+### RestInput
+
+The REST channel will provide you with a REST endpoint where you can post
+user messages and receive the assistant's messages in response.
+
+Add the REST channel to your credentials.yml:
+
+```yaml-rasa
+rest:
+  # you don't need to provide anything here - this channel doesn't
+  # require any credentials
+```
+
+Restart your Rasa X or Rasa Open Source server
+to make the REST channel available to receive messages. You can then send messages to 
+`http://<host>:<port>/webhooks/rest/webhook`, replacing
+the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
+
+#### Request and Response Format
+
+After making the `rest` input channel available, you can `POST` messages to
+`http://<host>:<port>/webhooks/rest/webhook`, with the following format:
+
+```json
+{
+  "sender": "test_user",  // sender ID of the user sending the message
+  "message": "Hi there!",
+}
+```
+
+The response from Rasa Open Source will be a JSON body of bot responses, for example:
+
+```json
+[
+  {"text": "Hey Rasa!"}, {"image": "http://example.com/image.jpg"}
+]
+```
+
+### CallbackInput
+
+The Callback channel behaves very much like the REST channel,
+but instead of directly returning the bot messages to the HTTP
+request that sends the message, it will call a URL you can specify
+to send bot messages.
+
+To use the callback channel, add the credentials to your `credentials.yml`:
+
+```yaml-rasa
+callback:
+  # URL to which Core will send the bot responses
+  url: "http://localhost:5034/bot"
+```
+
+Restart your Rasa X or Rasa Open Source server
+to make the new channel endpoint available to receive messages. 
+You can then send messages to `http://<host>:<port>/webhooks/callback/webhook`, replacing
+the host and port with the appropriate values from your running Rasa X or Rasa Open Source server.
+
+#### Request and Response Format
+
+After making the `callback` input available, you can `POST` messages to
+`http://<host>:<port>/webhooks/callback/webhook` with the following format:
+
+```json
+{
+  "sender": "test_user",  // sender ID of the user sending the message
+  "message": "Hi there!",
+}
+```
+
+If successful, the response will be `success`. Once Rasa Open Source is ready to send a
+message to the user, it will call the `url` specified in your `credentials.yml` with a `POST`
+request containing a JSON body of the bot's responses:
+
+```json
+[
+  {"text": "Hey Rasa!"}, {"image": "http://example.com/image.jpg"}
+]
+```
+
+
+## Websocket Channel
+
+The SocketIO channel uses websockets and is real-time. To use the SocketIO channel, 
+add the credentials to your `credentials.yml`:
+
+```yaml-rasa
+socketio:
+  user_message_evt: user_uttered
+  bot_message_evt: bot_uttered
+  session_persistence: true/false
+```
+
+The first two configuration values define the event names used by Rasa Open Source
+when sending or receiving messages over socket.io.
+
+Restart your Rasa X or Rasa Open Source server
+to make the new channel endpoint available to receive messages. 
+You can then send messages to `http://<host>:<port>/socketio`, replacing
+the host and port with the appropriate values from your running Rasa X or Rasa Open Source server. 
+
+:::note session persistence
+By default, the SocketIO channel uses the socket id as `sender_id`, which causes
+the session to restart at every page reload. `session_persistence` can be
+set to `true` to avoid that. In that case, the frontend is responsible
+for generating a session id and sending it to the Rasa Core server by
+emitting the event `session_request` with `{session_id: [session_id]}`
+immediately after the `connect` event.
+
+The example [Webchat](https://github.com/botfront/rasa-webchat)
+implements this session creation mechanism (version >= 0.5.0).
+:::

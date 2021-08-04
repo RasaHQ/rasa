@@ -1,0 +1,151 @@
+---
+id: default-actions
+sidebar_label: Default Actions
+title: Default Actions
+abstract: Default actions are actions that are built into the dialogue manager by default. Most of these are automatically predicted based on certain conversation situations. You may want to customize these to personalize your assistant.
+---
+
+Each of these actions have a default behavior, described in the sections below.
+In order to overwrite this default behavior, write a [custom action](./custom-actions.mdx)
+whose `name()` method returns the same name as the default action:
+
+  ```python
+  class ActionRestart(Action):
+
+    def name(self) -> Text:
+        return "action_restart"
+
+    async def run(
+        self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
+
+        # custom behavior
+
+        return [...]
+  ```
+
+Add this action to the actions section of your domain file so your assistant knows
+to use the custom definition instead of the default one:
+
+  ```yaml-rasa
+  actions:
+    - action_restart
+  ```
+
+## action_listen
+This action is predicted to signal that the assistant should do nothing and wait
+for the next user input.
+
+## action_restart
+This action resets the whole conversation history, including any slots that were
+set during it.
+
+It can be triggered by the user in a conversation by sending a
+"/restart" message, if the [RulePolicy](./rules.mdx) is included in the model configuration.
+If you define an `utter_restart` response in your domain, this will be sent to the user as well.
+
+## action_session_start
+
+This action starts a new conversation session, and is executed in the following
+situations:
+  * at the beginning of each new conversation
+  * after a user was inactive for a period defined by the `session_expiration_time` parameter in the domain's
+[session configuration](./domain.mdx#session-configuration)
+  * when a user sends a "/session_start" message during a conversation
+
+The action will reset the conversation tracker, but by default will not clear any slots that were set.
+
+### Customization
+
+The default behavior of the session start action is to take all existing slots and to
+carry them over into the next session. Let's say you do not want to carry over all
+slots, but only a user's name and their phone number. To do that, you'd override the
+`action_session_start` with a custom action that might look like this:
+
+```python
+from typing import Any, Text, Dict, List, Type
+from rasa_sdk import Action, Tracker
+from rasa_sdk.events import SlotSet, SessionStarted, ActionExecuted, EventType
+
+
+class ActionSessionStart(Action):
+    def name(self) -> Text:
+        return "action_session_start"
+
+    @staticmethod
+    def fetch_slots(tracker: Tracker) -> List[EventType]:
+        """Collect slots that contain the user's name and phone number."""
+
+        slots = []
+        for key in ("name", "phone_number"):
+            value = tracker.get_slot(key)
+            if value is not None:
+                slots.append(SlotSet(key=key, value=value))
+        return slots
+
+    async def run(
+      self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
+
+        # the session should begin with a `session_started` event
+        events = [SessionStarted()]
+
+        # any slots that should be carried over should come after the
+        # `session_started` event
+        events.extend(self.fetch_slots(tracker))
+
+        # an `action_listen` should be added at the end as a user message follows
+        events.append(ActionExecuted("action_listen"))
+
+        return events
+```
+
+## action_default_fallback
+
+This action undoes the last user-bot interaction and sends the `utter_default` response if it is defined.
+It is triggered by low action prediction confidence, if you have this [fallback mechanism](./fallback-handoff.mdx) enabled.
+
+## action_deactivate_loop
+
+This action deactivates the active loop and resets the requested slot. This is used when
+[handling unhappy paths in forms](./forms.mdx#writing-stories--rules-for-unhappy-form-paths).
+
+## action_revert_fallback_events
+
+:::caution Deprecated!
+The `action_revert_fallback_events` action is deprecated since the 2.0 release.
+The [`action_two_stage_fallback`](./default-actions.mdx#action_two_stage_fallback) action
+now handles all [two-stage fallback behavior](./fallback-handoff.mdx)
+:::
+
+## action_two_stage_fallback
+
+This is a fallback loop that can be used to handle low NLU confidence. Read more about
+[handling low NLU confidence](./fallback-handoff.mdx#nlu-fallback).
+
+## action_default_ask_affirmation
+
+This action is used by the `action_two_stage_fallback` loop. It asks the user to confirm
+the intent of their message. This action can be customized to be more personalized
+to your specific use case.
+
+## action_default_ask_rephrase
+
+This action is used by the `action_two_stage_fallback` loop if the user denies the
+intent `action_default_ask_affirmation` displays. It asks the user to rephrase
+their message.
+
+## action_back
+
+This action undoes the last user-bot interaction. It can be triggered by the user
+by sending a "/back" message to the assistant if the [RulePolicy](./policies.mdx#rule-policy) is configured.
+                                                                                                                                                                                                                                                                        |
+## Form Action
+
+By default Rasa Open Source uses `FormAction` for processing any
+[form logic](forms.mdx). You can override this default action with a custom action by
+adding a custom action with the form's name to the domain.
+Overriding the default action for forms should **only** be used during the process of
+migrating from Rasa Open Source 1 to 2. In this case you can override the default
+action to instruct Rasa Open Source to use the deprecated `FormAction` which is part of
+the Rasa SDK.

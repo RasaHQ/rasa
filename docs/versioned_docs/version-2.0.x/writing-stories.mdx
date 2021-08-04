@@ -1,0 +1,571 @@
+---
+id: writing-stories
+sidebar_label: Writing Conversation Data
+title: Writing Conversation Data
+abstract: Conversation data includes the stories and rules that make up
+  the training data for your Rasa assistant's dialogue management
+  model. Well-written conversation data allows your assistant to reliably
+  follow conversation paths you've laid out and generalize to
+  unexpected paths.
+---
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+## Designing Stories
+
+When designing stories, there are two groups of conversational interactions that need
+to be accounted for: happy and unhappy paths. Happy paths describe when the user is
+following the conversation flow as you'd expect and always providing the necessary
+information when prompted. However, users will often deviate from happy
+paths with questions, chit chat, or other asks. We call these unhappy path.
+
+It's important for your bot to handle unhappy paths gracefully, but it's also impossible
+to predict what path a given user might take.
+Often, developers will try to account for every possible diverging path when designing
+unhappy paths. Planning for every possible state in a state machine (many of which will never be reached)
+requires a lot of extra work and increases training time significantly.
+
+Instead, we recommend taking a [conversation-driven development](./conversation-driven-development.mdx)
+approach when designing unhappy paths.
+Conversation-Driven Development promotes sharing your bot as early as possible with test users and
+collecting real conversation data that tells you exactly how users diverge from the
+happy paths. From this data, you can create stories to accomplish what the user is
+requesting and start to think about ways to guide them back into a happy path.
+
+
+## When to Write Stories vs. Rules
+
+[Rules](./rules.mdx) are a type of training data used by the dialogue manager for
+handling pieces of conversations that should always follow the same path.
+
+Rules can be useful when implementing:
+
+* [One-turn interactions](./chitchat-faqs.mdx): Some messages do not require any context to answer them.
+  Rules are an easy way to map intents to responses, specifying fixed answers to these messages.
+
+* [Fallback behavior](./fallback-handoff.mdx):
+  In combination with the [FallbackClassifier](./components.mdx#fallbackclassifier),
+  you can write rules to respond to low-confidence user messages with a certain fallback behavior.
+
+* [Forms](./forms.mdx): Both activating and submitting a form will often follow a fixed path.
+  You can also write rules to handle [unexpected input](./unexpected-input.mdx) during a form.
+
+Because rules do not generalize to unseen conversations, you should reserve them for
+single-turn conversation snippets, and use stories to train on multi-turn
+conversations.
+
+An example of a rule where the bot returns a fixed response "utter_greet" to a user
+message with intent "greet" would be:
+
+```yaml-rasa
+rules:
+- rule: Greeting Rule
+  steps:
+  - intent: greet
+  - action: utter_greet
+```
+
+For multiple-turn interactions, you should define a story, for example:
+
+```yaml-rasa
+stories:
+ - story: Greeting and ask user how they're doing
+   steps:
+   - intent: greet
+   - action: utter_greet
+   - action: utter_ask_how_doing
+   - intent: doing_great
+   - action: utter_happy
+```
+
+
+
+
+## Managing the Conversation Flow
+
+Here are some tips for managing the conversation flow in your stories:
+
+### When to Use Slots to Influence Conversations
+
+Slots act as your bot’s memory. When you define a slot, you can define whether a
+[slot](domain.mdx#slots) should influence the conversation or not.
+Slots with the property `influence_conversation` set to `false` can only store
+information. Slots with the property `influence_conversation` set to `true` can affect
+the dialogue flow based on the information stored in it.
+
+Slots which influence the conversation need to be added to your stories or rules. This also
+applies for the case if the slot was set by a [custom action](./actions.mdx).
+For example, you can use a boolean slot set by a custom action to control the dialogue
+flow based on its value using the following stories:
+
+```yaml-rasa
+stories:
+- story: Welcome message, premium user
+  steps:
+   - intent: greet
+   - action: action_check_profile
+   - slot_was_set:
+     - premium_account: true
+   - action: utter_welcome_premium
+
+- story: Welcome message, basic user
+  steps:
+   - intent: greet
+   - action: action_check_profile
+   - slot_was_set:
+     - premium_account: false
+   - action: utter_welcome_basic
+   - action: utter_ask_upgrade
+```
+
+In cases where you don't want a slot to affect the conversation flow, you should
+set the slot's property `influence_conversation` to `false`. You do not need to
+include `slot_was_set` events for slots in your stories which do not influence the
+conversation.
+
+### Implementing Branching Logic
+
+When writing stories, sometimes the next action will depend on a value returned in one of your custom
+actions. In these cases, it's important to find the right balance between returning slots and
+using custom action code directly to affect what your bot does next.
+
+In cases where a value is used only to determine the bot's response, consider embedding the
+decision logic inside a custom action as opposed to using a featurized slot in your
+stories. This can help reduce overall complexity and make your stories easier to manage.
+
+For example, you can convert these stories:
+
+```yaml-rasa
+stories:
+- story: It's raining now
+  steps:
+  - intent: check_for_rain
+  - action: action_check_for_rain
+  - slot_was_set:
+    - raining: true
+  - action: utter_is_raining
+  - action: utter_bring_umbrella
+
+- story: It isn't raining now
+  steps:
+  - intent: check_for_rain
+  - action: action_check_for_rain
+  - slot_was_set:
+    - raining: false
+  - action: utter_not_raining
+  - action: utter_no_umbrella_needed
+```
+
+into a single story:
+
+```yaml-rasa
+stories:
+- story: check for rain
+  steps:
+  - intent: check_for_rain
+  - action: action_check_for_rain
+```
+
+with the custom action code:
+
+```python
+def run(self, dispatcher, tracker, domain):
+	is_raining = check_rain()
+	if is_raining:
+		dispatcher.utter_message(template="utter_is_raining")
+		dispatcher.utter_message(template="utter_bring_umbrella")
+	else:
+		dispatcher.utter_message(template="utter_not_raining")
+		dispatcher.utter_message(template="utter_no_umbrella_needed")
+	return []
+```
+
+In cases where the value is used to influence the action flow going forward,
+return a featurized slot to determine the stories. For example, if you want to collect
+information about new users, but not returning ones, your stories might look like this:
+
+```yaml-rasa
+stories:
+- story: greet new user
+  steps:
+  - intent: greet
+  - action: check_user_status
+  - slot_was_set:
+    - new_user: true
+  - action: utter_greet
+  - action: new_user_form
+  - active_loop: new_user_form
+  - active_loop: null
+
+- story: greet returning user
+  steps:
+  - intent: greet
+  - action: check_user_status
+  - slot_was_set:
+    - new_user: false
+  - action: utter_greet
+  - action: utter_how_can_help
+```
+
+
+### Using OR statements and Checkpoints
+
+[OR statements](./stories.mdx#or-statements) and [checkpoints](./stories.mdx#checkpoints)
+can be useful for reducing the number of stories you have to write. However, they should
+be used with caution. Overusing OR statements or checkpoints will slow down training,
+and creating too many checkpoints can make your stories hard to understand.
+
+#### OR statements
+
+In stories where different intents are handled by your bot in the same way,
+you can use OR statements as an alternative to creating a new story.
+
+For example, you can merge these two stories:
+
+```yaml-rasa
+stories:
+- story: newsletter signup
+  steps:
+  - intent: signup_newsletter
+  - action: utter_ask_confirm_signup
+  - intent: affirm
+  - action: action_signup_newsletter
+
+- story: newsletter signup, confirm via thanks
+  steps:
+  - intent: signup_newsletter
+  - action: utter_ask_confirm_signup
+  - intent: thanks
+  - action: action_signup_newsletter
+```
+
+into a single story with an OR statement:
+
+```yaml-rasa {6-8}
+stories:
+- story: newsletter signup with OR
+  steps:
+  - intent: signup_newsletter
+  - action: utter_ask_confirm_signup
+  - or:
+    - intent: affirm
+    - intent: thanks
+  - action: action_signup_newsletter
+```
+
+At training time, this story will be split into the two original stories.
+
+:::caution consider restructuring data
+If you notice that you are using OR statements frequently
+in your stories, consider restructuring your intents to reduce their granularity and
+more broadly capture user messages.
+:::
+
+#### Checkpoints
+
+Checkpoints are useful for modularizing your stories into separate blocks that are
+repeated often. For example, if you want your bot to ask for user feedback at the end of
+each conversation flow, you can use a checkpoint to avoid having to include the feedback
+interaction at the end of each story:
+
+```yaml-rasa
+stories:
+- story: beginning of conversation
+  steps:
+  - intent: greet
+  - action: utter_greet
+  - intent: goodbye
+  - action: utter_goodbye
+  - checkpoint: ask_feedback
+
+- story: user provides feedback
+  steps:
+  - checkpoint: ask_feedback
+  - action: utter_ask_feedback
+  - intent: inform
+  - action: utter_thank_you
+  - action: utter_anything_else
+
+- story: user doesn't have feedback
+  steps:
+  - checkpoint: ask_feedback
+  - action: utter_ask_feedback
+  - intent: deny
+  - action: utter_no_problem
+  - action: utter_anything_else
+```
+
+:::warning do not overuse
+Checkpoints are meant to make it easier to re-use certain sections of conversation in lots
+of different stories. We highly discourage using checkpoints inside existing checkpoints,
+as this increases training time significantly and makes your stories difficult to understand.
+:::
+
+### Creating Logical Breaks in Stories
+
+When designing conversation flows, it is often tempting to create long story
+examples that capture a complete conversational interaction from start to finish.
+In many cases, this will increase the number of training stories required
+to account for branching paths. Instead, consider separating your
+longer stories into smaller conversational blocks that handle sub-tasks.
+
+A happy path story for handling a lost credit card might look like:
+
+```yaml-rasa
+stories:
+- story: Customer loses a credit card, reviews transactions, and gets a new card
+  steps:
+  - intent: card_lost
+  - action: check_transactions
+  - slot_was_set:
+    - reviewed_transactions: ["starbucks"]
+  - action: utter_ask_fraudulent_transactions
+  - intent: inform
+  - action: action_update_transactions
+  - intent: affirm
+  - action: utter_confirm_transaction_dispute
+  - action: utter_replace_card
+  - action: mailing_address_form
+  - active_loop: mailing_address
+  - active_loop: null
+  - action: utter_sent_replacement
+  - action: utter_anything_else
+  - intent: affirm
+  - action: utter_help
+```
+
+Handling a lost credit card involves a series of sub-tasks, namely
+checking spending history for fraudulent transactions, confirming a mailing
+address for a replacement card, and then following up with the user
+with any additional requests. In this conversation arc, there are
+several places where the bot prompts for user input, creating
+branching paths that need to be accounted for.
+
+For example, when prompted with "utter_ask_fraudulent_transactions",
+the user might respond with a "deny" intent if none are applicable.
+The user might also choose to respond with a "deny" intent when asked
+if there's anything else the bot can help them with.
+
+We can separate out this long story into several smaller stories as:
+
+```yaml-rasa
+stories:
+- story: Customer loses a credit card
+  steps:
+  - intent: card_lost
+  - action: utter_card_locked
+  - action: spending_history_form
+  - active_loop: spending_history_form
+  - active_loop: null
+  - slot_was_set:
+    - reviewed_transactions: ["starbucks"]
+  - action: utter_ask_fraudulent_transactions
+
+- story: Customer reviews transactions and gets a new card
+  steps:
+  - action: utter_ask_fraudulent_transactions
+  - intent: inform
+  - action: action_update_transactions
+  - slot_was_set:
+    - reviewed_transactions: ["target", "starbucks"]
+  - intent: affirm
+  - action: utter_confirm_transaction_dispute
+  - action: utter_replace_card
+  - action: mailing_address_form
+  - active_loop: mailing_address
+  - active_loop: null
+  - action: utter_sent_replacement
+  - action: utter_anything_else
+
+- story: Customer has something else they need help with
+  steps:
+  - action: utter_anything_else
+  - intent: affirm
+  - action: utter_help
+```
+
+## Handling Context Switching
+
+Often, users will not respond with the information you ask of them and instead deviate
+from the happy path with unrelated questions. Using
+[CDD](./conversation-driven-development.mdx) to understand
+what unhappy paths your users are taking, you can create stories for handling context
+switching.
+
+
+### Using Rules for Context Switching
+
+In some cases, such as single-turn interjections, you can handle context-switching
+using [rules](./rules.mdx) instead of through [stories](./stories.mdx).
+
+Consider this conversation scenario:
+
+<Chat caption="A single-turn interjection">
+<ChatUserText>Hi, I want to pay my credit card bill</ChatUserText>
+<ChatBotText>Can do! Which of these credit accounts do you want to make a payment towards?</ChatBotText>
+<ChatBotText><p>- Credit Account A</p>
+<p>- Credit Account B</p></ChatBotText>
+<ChatUserText>Credit account B</ChatUserText>
+<ChatBotText>How much do you want to pay?</ChatBotText>
+<ChatUserText>What's my account balance?</ChatUserText>
+<ChatBotText>Your current account balance is $1532.00</ChatBotText>
+<ChatBotText>How much do you want to pay?</ChatBotText>
+<ChatUserText>I want to pay the minimum balance</ChatUserText>
+</Chat>
+
+In this example, the user is in the middle of paying their credit card bill, asks for
+their account balance, and is then guided back into the credit card payment form.
+Because asking for the account balance should always get the same response regardless of context,
+you can create a rule that will automatically be triggered inside of an existing flow:
+
+```yaml-rasa
+rules:
+- rule: Check my account balance
+  steps:
+  - intent: check_account_balance
+  - action: action_get_account_balance
+```
+
+
+By default, the form will continue to stay active and re-prompt for the necessary
+information, without having to create an additional training story.
+
+### Using Stories for Context Switching
+
+You'll need to write additional stories for handling context switching when the
+user's interjection requires multiple conversation turns. If you have two distinct
+conversational flows and want the user to be able to switch between the flows, you will
+need to create stories that specify how the switching will occur and how the context
+is maintained.
+
+For example, if you want to switch context upon a user ask and then return to the
+original flow after that ask is complete:
+
+<Chat caption="A contextual interjection">
+<ChatUserText>Hi, I want to pay my credit card bill</ChatUserText>
+<ChatBotText>Can do! Which of these credit accounts do you want to make a payment towards?</ChatBotText>
+<ChatBotText><p>- Credit Account A</p>
+<p>- Credit Account B</p></ChatBotText>
+<ChatUserText>Credit account B</ChatUserText>
+<ChatBotText>How much do you want to pay?</ChatBotText>
+<ChatUserText>Actually, I want to make a transfer</ChatUserText>
+<ChatBotText>No problem!</ChatBotText>
+<ChatBotText>Who would you like to transfer money to?</ChatBotText>
+<ChatUserText>I want to send $500 to Katy Parrow</ChatUserText>
+<ChatBotText>Successfully transferred $500 to Katy Parrow.</ChatBotText>
+<ChatBotText>Would you like to pay your credit card bill now?</ChatBotText>
+</Chat>
+
+You will need to create a story that describes this context-switching interaction:
+
+```yaml-rasa
+stories:
+- story: Context switch from credit card payment to money transfer
+  steps:
+  - intent: pay_credit_card
+  - action: credit_card_payment_form
+  - active_loop: credit_card_payment_form
+  - intent: transfer_money                         # - user requests a money transfer
+  - active_loop: null                              # - deactivate the credit card form
+  - action: transfer_money_form                    # - switch to the money transfer form
+  - active_loop: transfer_money_form
+  - active_loop: null
+  - action: utter_continue_credit_card_payment     # - once the money transfer is completed,
+                                                   #   ask the user to return to the
+                                                   #   credit card payment form
+```
+
+## Managing Conversation Data Files
+
+You can provide training data to Rasa Open Source as
+a single file or as a directory containing multiple files.
+When writing stories and rules, it's usually a good idea to create separate
+files based on the types of conversations being represented.
+
+For example, you might create a file `chitchat.yml` for handling chitchat,
+and a `faqs.yml` file for FAQs.
+Refer to our [rasa-demo bot](https://github.com/RasaHQ/rasa-demo)
+for examples of story file management in complex assistants.
+
+
+## Using Interactive Learning
+
+Interactive learning makes it easy to write stories by talking to your bot and providing feedback.
+This is a powerful way to explore what your bot can do, and the easiest way to fix any mistakes
+it makes. One advantage of machine learning-based dialogue is that when
+your bot doesn't know how to do something yet, you can just teach it!
+
+In Rasa Open Source, you can run interactive learning in the command line with
+[`rasa interactive`](./command-line-interface.mdx#rasa-interactive).
+[Rasa X](http://rasa.com/docs/rasa-x) provides a UI for interactive learning,
+and you can use any user conversation as a starting point.
+See [Talk to Your Bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#talk-to-your-bot)
+in the Rasa X docs.
+
+### Command-line Interactive Learning
+
+The CLI command `rasa interactive` will start interactive learning on the command line.
+If your bot has custom actions, make sure to also 
+[run your action server](https://rasa.com/docs/action-server/running-action-server) in a separate terminal window.
+
+In interactive mode, you will be asked to confirm every intent and action prediction
+before the bot proceeds. Here's an example:
+
+```text
+? Next user input:  hello
+
+? Is the NLU classification for 'hello' with intent 'hello' correct?  Yes
+
+------
+Chat History
+
+ #    Bot                        You
+────────────────────────────────────────────
+ 1    action_listen
+────────────────────────────────────────────
+ 2                                    hello
+                         intent: hello 1.00
+------
+
+? The bot wants to run 'utter_greet', correct?  (Y/n)
+
+```
+
+You'll be able to see the conversation history and slot values at each step of the conversation.
+
+If you type ||y|| to approve a prediction, the bot will continue. If you type ||n||, you will
+be given the chance to correct the prediction before continuing: 
+
+```text
+? What is the next action of the bot?  (Use arrow keys)
+ » <create new action>
+   1.00 utter_greet
+   0.00 ...
+   0.00 action_back
+   0.00 action_deactivate_loop
+   0.00 action_default_ask_affirmation
+   0.00 action_default_ask_rephrase
+   0.00 action_default_fallback
+   0.00 action_listen
+   0.00 action_restart
+   0.00 action_revert_fallback_events
+   0.00 action_session_start
+   0.00 action_two_stage_fallback
+   0.00 utter_cheer_up
+   0.00 utter_did_that_help
+   0.00 utter_goodbye
+   0.00 utter_happy
+   0.00 utter_iamabot
+```
+
+At any point, you can use ||Ctrl-C|| to access the menu, allowing you to create more stories and export the 
+data from the stories you've created so far. 
+
+```text
+? Do you want to stop?  (Use arrow keys)
+ » Continue
+   Undo Last
+   Fork
+   Start Fresh
+   Export & Quit
+```
+
