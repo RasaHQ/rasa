@@ -1,0 +1,209 @@
+---
+id: glossary
+sidebar_label: Rasa Glossary
+title: Rasa Glossary
+description: Glossary for all Rasa-related terms
+---
+
+## [Action](./actions.mdx)
+
+  A single step that a bot takes in a conversation (e.g. calling an API or sending a response back to the user).
+  
+## [Action Server](https://rasa.com/docs/action-server/)
+
+  The server that runs custom action code, separate from Rasa Open Source. Rasa maintains the Rasa SDK in Python for implementing custom actions, although it's also possible to write custom actions in other languages. 
+  
+## Annotation
+
+  Adding labels to messages and conversations so that they can be used to train a model.
+  
+## [Business Logic](./business-logic.mdx)
+
+  Conditions that need to be fulfilled due to business requirements. For example: requiring a first and last name, an address, and a password before an account can be created. In a Rasa assistant, business logic is implemented using rule-based actions like [forms](./forms.mdx).
+
+## [Chitchat](./chitchat-faqs.mdx)
+
+  A conversation pattern where the user says something that isn't directly related to their goal.
+  This can include things like greetings, asking how you are etc.
+  Read about handling [Chitchat and FAQs](./chitchat-faqs.mdx) to learn how to implement this with Rasa Open Source.
+
+## CMS
+
+  A way to store bot responses externally instead of including them directly in the domain. Content Management Systems decouple response text from training data. For more information, see [NLG Servers](./nlg.mdx).
+  
+## [Conversation-Driven Development (CDD)](./conversation-driven-development.mdx)
+
+  The process of using user messages and conversation data to influence the design of an assistant and train the model, combined with engineering best practices. There are 6 steps that make up CDD: Share, Review, Annotate, Fix, Track, and Test.
+  
+## [Conversation Tests](./testing-your-assistant.mdx)
+
+  Modified story format that includes the full text of the user message in addition to the intent label. Test conversations are saved to a test set file (conversation_tests.md), which is used to evaluate the model’s predictions across an entire conversation.
+
+## [Component](./components.mdx)
+
+  An element in the an assistant's [NLU pipeline](./tuning-your-model.mdx#how-to-choose-a-pipeline) in the [Model Configuration](./model-configuration.mdx).
+
+  Incoming messages are processed by a sequence of components called a pipeline. A component can perform tasks ranging from entity extraction to intent classification to pre-processing.
+
+## [Custom Action](./actions.mdx#custom-actions)
+
+  An action written by a bot developer that can run arbitrary code, mainly to interact with external systems and APIs.
+
+## [Default Action](./actions.mdx#default-actions)
+
+  A built-in action that comes with predefined functionality.
+
+## [DIET](./components.mdx#dietclassifier)
+
+Dual Intent and Entity Transformer. The default NLU architecture used by Rasa Open Source, which performs both intent classification and entity extraction.
+
+## [Domain](./domain.mdx)
+
+  Defines the inputs and outputs of an assistant.
+
+  It includes a list of all the intents, entities, slots, actions, and forms that the assistant knows about.
+
+## [Entity](./training-data-format.mdx#entities)
+
+  Keywords that can be extracted from a user message. For example: a telephone number, a person's name, a location, the name of a product
+
+## [Event](https://rasa.com/docs/action-server/events)
+
+  Something that happens in a conversation. For instance, a `UserUttered` event represents a user entering a message, and an `ActionExecuted` event represents the assistant executing an action. All conversations in Rasa are represented as a sequence of events.
+
+## FAQs
+
+  Frequently asked questions (FAQs) are common questions that your users ask. In the context of building an assistant,
+  this typically means the user sends a message and the assistant send a response without needing to consider the context of the conversation.
+  Read about handling [Chitchat and FAQs](./chitchat-faqs.mdx) to learn how to implement this with Rasa Open Source.
+
+## [Form](./forms.mdx)
+
+  A type of custom action that asks the user for multiple pieces of information.
+
+  For example, if you need a city, a cuisine, and a price range to recommend a restaurant, you can create a restaurant form to collect the information. You can describe [business logic](#business-logic) inside a form, like offering the customer a different set of menu options if they mention a food allergy.
+
+## Happy / Unhappy Paths
+
+  Terms used to describe whether the user’s input is expected or unexpected. If your assistant asks a user for some information and the user provides it, we call that a happy path. Unhappy paths are all possible edge cases. For example, the user refusing to give the requested input, changing the topic of conversation, or correcting something they said earlier.
+
+## [Intent](./nlu-training-data.mdx)
+
+  In a given user message, the thing that a user is trying to convey or accomplish (e,g., greeting, specifying a location).
+
+## [Interactive Learning](./writing-stories.mdx#using-interactive-learning)
+
+  In Rasa X or the Rasa CLI, a training mode where the developer corrects and validates the assistant’s predictions at every step of the conversation. The conversation can be saved to the story format and added to the assistant’s training data.
+  
+## [Knowledge Base / Knowledge Graph](https://rasa.com/docs/action-server/knowledge-bases)
+
+  A queryable database that represents complex relationships and hierarchies between objects. Knowledge Base Actions allow Rasa Open Source to fetch information from a knowledge base and use it in responses.
+
+## [Level 3 Assistant](https://blog.rasa.com/5-levels-of-conversational-ai-2020-update/)
+
+  An assistant that can handle conversations more complex than simple back-and-forth exchanges. Level 3 assistants are capable of using the context of previous conversation turns to choose the appropriate next action.
+
+## [Messaging Channels](./messaging-and-voice-channels.mdx)
+
+  Connectors that integrate Rasa Open Source with external messaging platforms, where end-users can send and receive messages. Rasa Open Source includes built-in messaging channels like Slack, Facebook Messenger, and web chat, as well as the ability to create custom connectors.
+
+## [Minimum Viable Assistant](./conversation-driven-development.mdx#cdd-in-early-stages-of-development)
+
+  A basic assistant that can handle the most important happy path stories.
+
+## [NLG](./nlg.mdx)
+
+  Natural Language Generation (NLG) is the process of generating natural language messages to send to a user.
+
+  Rasa uses a simple template-based approach for NLG. Data-driven approaches (such as neural NLG) can be implemented by creating a custom NLG component.
+  
+## [NLU](./nlu-training-data.mdx)
+
+  Natural Language Understanding (NLU) deals with parsing and understanding human language into a structured format.  
+
+## [NLU Inbox](https://rasa.com/docs/rasa-x/user-guide/annotate-nlu-examples)
+
+  The area within Rasa X where new user messages are collected for review and annotation. Only messages not already represented in the training data will appear in the NLU Inbox.
+
+## [Pipeline](./tuning-your-model.mdx)
+
+  The list of NLU components (see [NLU Component](#nlu-component)) that defines a Rasa assistant’s NLU system. A user message is processed by each component one by one, before returning the final structured output.
+
+## [Policy](./policies.mdx)
+
+  Rasa Open Source components that predict the dialogue system’s next actionPolicies make decisions about how the conversation flow should proceed. A typical configuration includes multiple policies, and the policy with the highest confidence decides the next action to be taken in the conversation.
+
+## Rasa Core
+
+  (Outdated - Rasa Core and Rasa NLU were merged into one package in 1.x. The functionality of Core is now referred to as dialogue management)
+  
+  The dialogue engine that decides what to do next in a conversation based on the context. Part of the Rasa Open Source library.
+
+## Rasa NLU
+
+  (Outdated - Rasa Core and Rasa NLU were merged into one package in 1.x. The functionality of Rasa NLU is now referred to as NLU)
+  
+  Rasa NLU is the part of Rasa Open Source that performs Natural Language Understanding ([NLU](#nlu)), including intent classification and entity extraction.
+
+## [NLU Component](./components.mdx)
+
+  An element in the Rasa NLU pipeline (see [Pipeline](#pipeline)) that processes incoming messages. Components perform tasks ranging from entity extraction to intent classification to pre-processing.
+  
+## [Rasa X](https://rasa.com/docs/rasa-x/)
+
+  A tool for [conversation-driven development](./conversation-driven-development.mdx). Rasa X helps teams share and test an assistant built with Rasa Open Source, annotate user messages, and view conversations.
+  
+## [Retrieval Intent](./chitchat-faqs.mdx)
+
+  A special type of intent that can be divided into smaller sub-intents. For example, an FAQ retrieval intent has sub-intents that represent each individual question the assistant knows how to answer.
+  
+## [REST Channel](./connectors/your-own-website.mdx)
+
+  A messaging channel used to build custom connectors. Includes an input channel, where user  messages can be posted to Rasa Open Source, and the ability to specify a callback URL, where the bot’s response actions will be sent.
+
+## [Response / Template / Utterance](./responses.mdx)
+
+  A message that an assistant sends to a user. This can include text, buttons, images, and other content.
+
+## [Rules](./rules.mdx)
+
+  Special training data to specify rule-like behavior, where a specific condition always predicts a specific next action. Examples include
+  answering FAQs, filling [Forms](./forms.mdx), or handling
+  [Fallbacks](./fallback-handoff.mdx#fallbacks).
+
+## [Share Your Bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant)
+  Rasa X feature that generates a link to a chat UI for test users. **Share your bot** allows test users to talk to an assistant while it’s still in development. 
+
+## [Slot](./domain.mdx#slots)
+
+  A key-value store that Rasa uses to track information over the course of a conversation.
+
+## [Story](./stories.mdx)
+
+  Training data format for the dialogue model, consisting of a conversation between a user and a bot. The user's messages are represented as annotated intents and entities, and the bot’s responses are represented as a sequence of actions. 
+  
+## [Talk to Your Bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant#talk-to-your-bot)
+
+  Chat interface within Rasa X that allows bot developers to talk to, test, and correct their assistant. Can be enabled in strict Interactive Learning mode, which requires each prediction to be confirmed before the conversation can proceed.
+
+## [TED Policy](./policies.mdx#ted-policy)
+
+  Transformer Embedding Dialogue Policy. TED is the default machine learning-based dialogue policy used by Rasa Open Source. TED complements rule-based policies by handling previously unseen situations, where no rule exists to determine the next action. 
+  
+## [Template / Response / Utterance](./responses.mdx)
+
+  A message template used to respond to a user. Can include text, buttons, images, and other attachments.
+
+## [Tracker](./tracker-stores.mdx)
+
+  Rasa Open Source component that maintains the state of the dialogue, which is represented as a JSON object listing the events from the current session.
+
+## User Goal
+
+  The overall goal that a user wants to achieve, e.g. looking up the answer to a question, booking an appointment, or purchasing an insurance policy.
+
+  Some tools refer to the user goal as the “intent,” but in Rasa terminology, an intent is associated with each individual user message.
+
+## Word embedding / Word vector
+
+  A vector of floating point numbers that represent the meaning of a word. Words that have similar meanings tend to have similar vectors. Word embeddings are often used as an input to machine learning algorithms.
