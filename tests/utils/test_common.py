@@ -6,6 +6,7 @@ import pytest
 
 import rasa.utils.common
 from rasa.utils.common import RepeatedLogFilter
+import tests.conftest
 
 
 def test_repeated_log_filter():
@@ -49,6 +50,31 @@ async def test_call_maybe_coroutine_with_sync() -> Any:
     actual = await rasa.utils.common.call_potential_coroutine(my_function())
 
     assert actual == expected
+
+
+def test_dir_size_empty(tmp_path: Path):
+    assert rasa.utils.common.directory_size_in_mb(tmp_path) == 0
+
+
+def test_dir_size_with_single_file(tmp_path: Path):
+    tests.conftest.create_test_file_with_size(tmp_path, 5)
+    assert rasa.utils.common.directory_size_in_mb(tmp_path) == pytest.approx(5)
+
+
+def test_dir_size_with_multiple_files(tmp_path: Path):
+    tests.conftest.create_test_file_with_size(tmp_path, 2)
+    tests.conftest.create_test_file_with_size(tmp_path, 3)
+    assert rasa.utils.common.directory_size_in_mb(tmp_path) == pytest.approx(5)
+
+
+def test_dir_size_with_sub_directory(tmp_path: Path):
+    subdir = tmp_path / "sub"
+    subdir.mkdir()
+
+    tests.conftest.create_test_file_with_size(tmp_path, 2)
+    tests.conftest.create_test_file_with_size(subdir, 3)
+
+    assert rasa.utils.common.directory_size_in_mb(tmp_path) == pytest.approx(5)
 
 
 @pytest.mark.parametrize("create_destination", [True, False])

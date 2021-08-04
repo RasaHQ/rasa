@@ -683,3 +683,9 @@ def pytest_collection_modifyitems(items: List[Function]) -> None:
     for item in items:
         marker = _get_marker_for_ci_matrix(item)
         item.add_marker(marker)
+
+
+def create_test_file_with_size(directory: Path, size_in_mb: float) -> None:
+    with open(directory / f"{uuid.uuid4().hex}", mode="wb") as f:
+        f.seek(int(1024 * 1024 * size_in_mb))
+        f.write(b"\0")
