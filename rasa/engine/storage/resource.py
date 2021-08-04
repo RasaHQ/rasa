@@ -21,41 +21,41 @@ class Resource:
 
     @classmethod
     def from_cache(
-        cls, resource_name: Text, cache_directory: Path, model_storage: ModelStorage,
+        cls, node_name: Text, directory: Path, model_storage: ModelStorage
     ) -> Resource:
         """Loads a `Resource` from the cache.
 
         This automatically loads the persisted resource into the given `ModelStorage`.
 
         Args:
-            resource_name: The name of the `Resource`.
-            cache_directory: The directory with the cached `Resource`.
+            node_name: The node name of the `Resource`.
+            directory: The directory with the cached `Resource`.
             model_storage: The `ModelStorage` which the cached `Resource` will be added
                 to so that the `Resource` is accessible for other graph nodes.
 
         Returns:
             The ready-to-use and accessible `Resource`.
         """
-        logger.debug(f"Loading resource '{resource_name}' from cache.")
+        logger.debug(f"Loading resource '{node_name}' from cache.")
 
-        resource = Resource(resource_name)
+        resource = Resource(node_name)
         with model_storage.write_to(resource) as resource_directory:
-            rasa.utils.common.copy_directory(cache_directory, resource_directory)
+            rasa.utils.common.copy_directory(directory, resource_directory)
 
-        logger.debug(f"Successfully initialized resource '{resource_name}' from cache.")
+        logger.debug(f"Successfully initialized resource '{node_name}' from cache.")
 
         return resource
 
-    def to_cache(self, cache_directory: Path, model_storage: ModelStorage) -> None:
+    def to_cache(self, directory: Path, model_storage: ModelStorage) -> None:
         """Persists the `Resource` to the cache.
 
         Args:
-            cache_directory: The directory which receives the persisted `Resource`.
+            directory: The directory which receives the persisted `Resource`.
             model_storage: The model storage which currently contains the persisted
                 `Resource`.
         """
         with model_storage.read_from(self) as resource_directory:
-            rasa.utils.common.copy_directory(resource_directory, cache_directory)
+            rasa.utils.common.copy_directory(resource_directory, directory)
 
     def fingerprint(self) -> Text:
         """Provides fingerprint for `Resource`.
