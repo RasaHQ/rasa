@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Text
 
-from rasa.engine.graph import ExecutionContext, GraphSchema
+from rasa.engine.graph import ExecutionContext, GraphNodeHook, GraphSchema
 from rasa.engine.storage.storage import ModelStorage
 
 
@@ -16,6 +16,7 @@ class GraphRunner(ABC):
         graph_schema: GraphSchema,
         model_storage: ModelStorage,
         execution_context: ExecutionContext,
+        hooks: Optional[List[GraphNodeHook]] = None,
     ) -> GraphRunner:
         """Creates a new instance of a `GraphRunner`.
 
@@ -24,6 +25,7 @@ class GraphRunner(ABC):
             model_storage: Storage which graph components can use to persist and load
                 themselves.
             execution_context: Context that will be passed to every `GraphComponent`.
+            hooks: These are called before and after the execution of each node.
 
         Returns: Instantiated `GraphRunner`
         """

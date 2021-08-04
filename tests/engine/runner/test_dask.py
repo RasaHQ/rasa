@@ -322,7 +322,7 @@ def test_input_value_is_node_name(default_model_storage: ModelStorage):
 
 def test_loading_from_previous_node(default_model_storage: ModelStorage):
     test_value_for_sub_directory = {"test": "test value sub dir"}
-    test_value = {"test dir": "test value sub dir"}
+    test_value = {"test dir": "test value dir"}
 
     graph_schema = GraphSchema(
         {

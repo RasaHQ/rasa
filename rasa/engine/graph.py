@@ -206,7 +206,7 @@ class ExecutionContext:
     """Holds information about a single graph run."""
 
     graph_schema: GraphSchema = field(repr=False)
-    model_id: Text
+    model_id: Optional[Text] = None
     should_add_diagnostic_data: bool = False
     is_finetuning: bool = False
 
@@ -353,7 +353,7 @@ class GraphNode:
             constructor_kwargs = rasa.shared.utils.common.minimal_kwargs(
                 kwargs, self._constructor_fn
             )
-            self._load_component(constructor_kwargs)
+            self._load_component(constructor_kwargs.copy())
 
         # TODO: clearer/safer way?
         run_kwargs = {k: v for k, v in kwargs.items() if k not in constructor_kwargs}
@@ -411,6 +411,7 @@ class GraphNode:
         schema_node: SchemaNode,
         model_storage: ModelStorage,
         execution_context: ExecutionContext,
+        hooks: Optional[List[GraphNodeHook]] = None,
     ) -> GraphNode:
         """Creates a `GraphNode` from a `SchemaNode`."""
         return cls(
@@ -424,4 +425,5 @@ class GraphNode:
             model_storage=model_storage,
             execution_context=execution_context,
             resource=schema_node.resource,
+            hooks=hooks
         )
