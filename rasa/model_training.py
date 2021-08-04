@@ -774,7 +774,7 @@ async def _train_nlu_with_validated_data(
     return _train_path
 
 
-async def _nlu_model_for_finetuning(
+def _nlu_model_for_finetuning(
     model_to_finetune: Text,
     file_importer: TrainingDataImporter,
     finetuning_epoch_fraction: float = 1.0,

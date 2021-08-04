@@ -60,9 +60,7 @@ def test_slots_states_before_user_utterance(domain: Domain):
 
 def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = training.load_data(
-        stories_path, domain, augmentation_factor=0
-    )
+    training_trackers = training.load_data(stories_path, domain, augmentation_factor=0)
 
     assert len(training_trackers) == 4
     (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)
@@ -90,9 +88,7 @@ def test_create_train_data_no_history(domain: Domain, stories_path: Text):
 
 def test_create_train_data_with_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
-    training_trackers = training.load_data(
-        stories_path, domain, augmentation_factor=0
-    )
+    training_trackers = training.load_data(stories_path, domain, augmentation_factor=0)
     assert len(training_trackers) == 4
     (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)
 
@@ -137,9 +133,7 @@ def test_create_train_data_unfeaturized_entities():
     stories_file = "data/test_yaml_stories/stories_unfeaturized_entities.yml"
     domain = Domain.load(domain_file)
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = training.load_data(
-        stories_file, domain, augmentation_factor=0
-    )
+    training_trackers = training.load_data(stories_file, domain, augmentation_factor=0)
 
     assert len(training_trackers) == 2
     (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)

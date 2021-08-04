@@ -82,7 +82,7 @@ class PolicyTestCollection:
         return DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
 
     @pytest.fixture(scope="class")
-    async def trained_policy(
+    def trained_policy(
         self,
         featurizer: Optional[TrackerFeaturizer],
         priority: int,
@@ -90,7 +90,7 @@ class PolicyTestCollection:
         default_domain: Domain,
     ) -> Policy:
         policy = self.create_policy(featurizer, priority)
-        training_trackers = await train_trackers(
+        training_trackers = train_trackers(
             default_domain, stories_path, augmentation_factor=20
         )
         policy.train(training_trackers, default_domain, RegexInterpreter())
@@ -109,7 +109,7 @@ class PolicyTestCollection:
         assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
     @pytest.mark.parametrize("should_finetune", [False, True])
-    async def test_persist_and_load(
+    def test_persist_and_load(
         self,
         trained_policy: Policy,
         default_domain: Domain,
@@ -123,9 +123,7 @@ class PolicyTestCollection:
         )
         assert loaded.finetune_mode == should_finetune
 
-        trackers = await train_trackers(
-            default_domain, stories_path, augmentation_factor=20
-        )
+        trackers = train_trackers(default_domain, stories_path, augmentation_factor=20)
 
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
@@ -185,15 +183,13 @@ class TestMemoizationPolicy(PolicyTestCollection):
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.state_featurizer is None
 
-    async def test_memorise(
+    def test_memorise(
         self,
         trained_policy: MemoizationPolicy,
         default_domain: Domain,
         stories_path: Text,
     ):
-        trackers = await train_trackers(
-            default_domain, stories_path, augmentation_factor=20
-        )
+        trackers = train_trackers(default_domain, stories_path, augmentation_factor=20)
         trained_policy.train(trackers, default_domain, RegexInterpreter())
         lookup_with_augmentation = trained_policy.lookup
 
@@ -217,7 +213,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         assert trained_policy._recall_states(random_states) is None
 
         # compare augmentation for augmentation_factor of 0 and 20:
-        trackers_no_augmentation = await train_trackers(
+        trackers_no_augmentation = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
         trained_policy.train(
@@ -261,7 +257,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
                 ActionExecuted(ACTION_LISTEN_NAME),
             ],
         )
-        original_train_data = await train_trackers(
+        original_train_data = train_trackers(
             default_domain, stories_path, augmentation_factor=20
         )
         loaded_policy.train(
