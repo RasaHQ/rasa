@@ -859,6 +859,22 @@ class DialogueStateTracker:
             ACTION_TEXT
         )
 
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the tracker which is stable across python runs.
+
+        Returns:
+            fingerprint of the tracker
+        """
+        data: Dict[Text, Any] = {"sender_id": self.sender_id}
+
+        if self.slots:
+            data.update(self.slots)
+
+        if self.events:
+            data["events"] = list(self.events)
+
+        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
+
 
 def get_active_loop_name(
     state: State,
