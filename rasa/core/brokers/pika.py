@@ -170,8 +170,8 @@ class PikaEventBroker(EventBroker):
         # `password`.
         if self.host.startswith("amqp"):
 
-            host_ob = urlparse(self.host)
-            url = f"{host_ob.scheme}://{self.username}:{self.password}@{host_ob.netloc}:{self.port}"
+            parsed_host = urlparse(self.host)
+            url = f"{parsed_host.scheme}://{self.username}:{self.password}@{parsed_host.netloc}:{self.port}"
 
         ssl_options = _create_rabbitmq_ssl_options(self.host)
         logger.info("Connecting to RabbitMQ ...")
