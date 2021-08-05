@@ -68,9 +68,10 @@ class AssertComponent(GraphComponent):
     def mockable_method(self):
         ...
 
-    def run_assert(self, i: Any) -> None:
+    def run_assert(self, i: Any) -> CacheableText:
         self.mockable_method()
         assert i == self._value_to_assert
+        return CacheableText("")
 
 
 class ProvideX(GraphComponent):

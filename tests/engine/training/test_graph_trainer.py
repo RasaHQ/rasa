@@ -163,6 +163,11 @@ def test_graph_trainer_fingerprints_caches(
 
     mock.assert_called_once()
 
+    print("******* SECOND RUN!!!!!")
+
+    new_mock = Mock()
+    monkeypatch.setattr(AssertComponent, "mockable_method", new_mock)
+
     new_tmp_path = tmp_path_factory.mktemp("new_model_storage_path")
     new_model_storage = LocalModelStorage.create(new_tmp_path)
 
@@ -172,17 +177,40 @@ def test_graph_trainer_fingerprints_caches(
         graph_runner_class=DaskGraphRunner,
     )
 
-    print("******* SECOND RUN!!!!!")
-
     new_output_filename = new_tmp_path / "model.tar.gz"
     new_graph_trainer.train(
         train_schema=train_schema,
         predict_schema=GraphSchema({}),
         domain_path=domain_path,
         output_filename=new_output_filename,
-        assert_fingerprint_status=True,
     )
     assert new_output_filename.is_file()
 
-    mock.assert_called_once()
+    new_mock.assert_not_called()
 
+    print("******* Third RUN!!!!!")
+
+    third_mock = Mock()
+    monkeypatch.setattr(AssertComponent, "mockable_method", third_mock)
+
+    third_tmp_path = tmp_path_factory.mktemp("third_model_storage_path")
+    third_model_storage = LocalModelStorage.create(third_tmp_path)
+
+    third_graph_trainer = GraphTrainer(
+        model_storage=third_model_storage,
+        cache=temp_cache,
+        graph_runner_class=DaskGraphRunner,
+    )
+
+    train_schema.nodes["add"].config["new"] = "thing"
+
+    third_output_filename = third_tmp_path / "model.tar.gz"
+    third_graph_trainer.train(
+        train_schema=train_schema,
+        predict_schema=GraphSchema({}),
+        domain_path=domain_path,
+        output_filename=third_output_filename,
+    )
+    assert third_output_filename.is_file()
+
+    third_mock.assert_called_once()
