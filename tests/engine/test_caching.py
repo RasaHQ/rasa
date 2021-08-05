@@ -3,7 +3,7 @@ import logging
 import shutil
 import uuid
 from pathlib import Path
-from typing import Dict, Text, Optional, Any
+from typing import Callable, Dict, Text, Optional, Any
 from unittest.mock import Mock
 
 import pytest
@@ -25,12 +25,6 @@ import tests.conftest
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-
-
-@pytest.fixture()
-def temp_cache(tmp_path: Path, monkeypatch: MonkeyPatch) -> LocalTrainingCache:
-    monkeypatch.setenv(CACHE_LOCATION_ENV, str(tmp_path))
-    return LocalTrainingCache()
 
 
 @dataclasses.dataclass
