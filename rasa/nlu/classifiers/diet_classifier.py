@@ -786,8 +786,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # always sequence features (i.e. we do not expect sentence features
             # without sequence features)
             rasa.shared.utils.io.raise_warning(
-                f"Expected sequence level features for `{TEXT}` attribute but not found. "
-                "Falling back to empty input sequences."
+                f"Expected sequence level features for `{TEXT}` attribute "
+                f"but not found. Falling back to empty input sequences."
             )
 
         # (2) add feature for the labels and entities if in training mode
@@ -1583,15 +1583,12 @@ class DIET(TransformerRasaModel):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        # Edge Case: In some cases, the model_data preparation will have
-        # skipped sequence-level features because they are not needed for
-        # the concrete architecture.
-        self.tf_label_data[LABEL].setdefault(SEQUENCE, [])
-
-        sequence_feature_lengths = self._get_sequence_feature_lengths(
+        sequence_feature_lengths = self._get_sequence_feature_lengths_or_zeros(
             self.tf_label_data, LABEL
         )
 
+        # Note that `tf_label_data` is a nested defaultdict and hence the subkeys
+        # will default to empty lists if there are no `SEQUENCE` or `SENTENCE` subkeys.
         x = self._create_bow(
             self.tf_label_data[LABEL][SEQUENCE],
             self.tf_label_data[LABEL][SENTENCE],
@@ -1669,12 +1666,9 @@ class DIET(TransformerRasaModel):
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        # Edge Case: In some cases, the model_data preparation will have
-        # skipped sequence-level features because they are not needed for
-        # the concrete architecture.
-        tf_batch_data[TEXT].setdefault(SEQUENCE, [])
-
-        sequence_feature_lengths = self._get_sequence_feature_lengths(
+        # compute the sequence lengths of the `SEQUENCE` features, if they are
+        # present, and a sequence of just 0s otherwise
+        sequence_feature_lengths = self._get_sequence_feature_lengths_or_zeros(
             tf_batch_data, TEXT
         )
 
@@ -1698,7 +1692,7 @@ class DIET(TransformerRasaModel):
 
         # Lengths of sequences in case of sentence-level features are always 1, but they
         # can effectively be 0 if sentence-level features aren't present.
-        sentence_feature_lengths = self._get_sentence_feature_lengths(
+        sentence_feature_lengths = self._get_sentence_feature_lengths_or_zeros(
             tf_batch_data, TEXT
         )
 
@@ -1743,16 +1737,13 @@ class DIET(TransformerRasaModel):
             text_transformed, combined_sequence_sentence_feature_lengths_text
         )
 
-        # Edge Case: In some cases, the model_data preparation will have
-        # skipped sequence-level features because they are not needed for
-        # the concrete architecture.
-        tf_batch_data[LABEL].setdefault(SEQUENCE, [])
-
-        sequence_feature_lengths_label = self._get_sequence_feature_lengths(
+        sequence_feature_lengths_label = self._get_sequence_feature_lengths_or_zeros(
             tf_batch_data, LABEL
         )
 
         label_ids = tf_batch_data[LABEL_KEY][LABEL_SUB_KEY][0]
+        # Note that `tf_batch_data` is a nested defaultdict and hence the subkeys
+        # will default to empty lists if there are no `SEQUENCE` or `SENTENCE` subkeys.
         label = self._create_bow(
             tf_batch_data[LABEL][SEQUENCE],
             tf_batch_data[LABEL][SENTENCE],
@@ -1845,18 +1836,15 @@ class DIET(TransformerRasaModel):
             batch_in, self.predict_data_signature
         )
 
-        # Edge Case: In some cases, the model_data preparation will have
-        # skipped sequence-level features because they are not needed for
-        # the concrete architecture.
-        tf_batch_data[TEXT].setdefault(SEQUENCE, [])
-
-        sequence_feature_lengths = self._get_sequence_feature_lengths(
+        sequence_feature_lengths = self._get_sequence_feature_lengths_or_zeros(
             tf_batch_data, TEXT
         )
-        sentence_feature_lengths = self._get_sentence_feature_lengths(
+        sentence_feature_lengths = self._get_sentence_feature_lengths_or_zeros(
             tf_batch_data, TEXT,
         )
 
+        # Note that `tf_batch_data` is a nested defaultdict and hence the subkeys
+        # will default to empty lists if there are no `SEQUENCE` or `SENTENCE` subkeys.
         text_transformed, _, _, _, _, attention_weights = self._tf_layers[
             f"sequence_layer.{self.text_name}"
         ](

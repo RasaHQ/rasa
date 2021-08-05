@@ -797,19 +797,13 @@ class DIET2DIET(DIET):
     def _create_all_labels(self) -> Tuple[tf.Tensor, tf.Tensor]:
         all_label_ids = self.tf_label_data[LABEL_KEY][LABEL_SUB_KEY][0]
 
-        # Edge Case: In some cases, the label_data preparation will have
-        # skipped sequence-level features because they are not needed for
-        # the architecture.
-        self.tf_label_data[LABEL].setdefault(SEQUENCE, [])
-
-        # Note that the following function does not mind if no SEQUENCE_LENGTH
-        # subkey is present. The SEQUENCE key is enough to indicate that LABEL
-        # has (empty) sequence-level features.
-        sequence_feature_lengths = self._get_sequence_feature_lengths(
+        sequence_feature_lengths = self._get_sequence_feature_lengths_or_zeros(
             self.tf_label_data, LABEL
         )
 
         # Combine all feature types into one and embed using a transformer.
+        # Note that `tf_label_data` is a nested defaultdict and hence the subkeys
+        # will default to empty lists if there are no `SEQUENCE` or `SENTENCE` subkeys.
         label_transformed, _, _, _, _, _ = self._tf_layers[
             f"sequence_layer.{self.label_name}"
         ](
@@ -827,7 +821,7 @@ class DIET2DIET(DIET):
         # - by the presence or absence of sentence-level features (reflected in the
         #   effective sequence length of these features being 1 or 0.
         # We need to combine the two lengths to correctly get the last position.
-        sentence_feature_lengths = self._get_sentence_feature_lengths(
+        sentence_feature_lengths = self._get_sentence_feature_lengths_or_zeros(
             self.tf_label_data, LABEL,
         )
         sentence_label = self._last_token(
@@ -851,20 +845,12 @@ class DIET2DIET(DIET):
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
 
-        # Edge Case: In some cases, the model_data preparation will have
-        # skipped sequence-level features because they are not needed for
-        # the architecture.
-        tf_batch_data[TEXT].setdefault(SEQUENCE, [])
-        tf_batch_data[LABEL].setdefault(SEQUENCE, [])
-        # Note that the following _get_sequence_feature_lengths calls do
-        # not mind if no SEQUENCE_LENGTH subkey is present.
-        # The SEQUENCE key is enough to indicate that the
-        # respective key has (empty) sequence-level features.
-
-        sequence_feature_lengths_text = self._get_sequence_feature_lengths(
+        sequence_feature_lengths_text = self._get_sequence_feature_lengths_or_zeros(
             tf_batch_data, TEXT
         )
 
+        # Note that `tf_batch_data` is a nested defaultdict and hence the subkeys
+        # will default to empty lists if there are no `SEQUENCE` or `SENTENCE` subkeys.
         (
             text_transformed,
             text_in,
@@ -882,7 +868,7 @@ class DIET2DIET(DIET):
         )
 
         # Process all features for labels.
-        sequence_feature_lengths_label = self._get_sequence_feature_lengths(
+        sequence_feature_lengths_label = self._get_sequence_feature_lengths_or_zeros(
             tf_batch_data, LABEL
         )
         label_transformed, _, _, _, _, _ = self._tf_layers[
@@ -914,7 +900,7 @@ class DIET2DIET(DIET):
         # Get sentence feature vector for label classification. The vector is extracted
         # from the last position with real features. To determine this position, we
         # combine the sequence lengths of sequence- and sentence-level features.
-        sentence_feature_lengths_text = self._get_sentence_feature_lengths(
+        sentence_feature_lengths_text = self._get_sentence_feature_lengths_or_zeros(
             tf_batch_data, TEXT
         )
         sentence_vector_text = self._last_token(
@@ -923,7 +909,7 @@ class DIET2DIET(DIET):
         )
 
         # Extract sentence vector for the label attribute in the same way.
-        sentence_feature_lengths_label = self._get_sentence_feature_lengths(
+        sentence_feature_lengths_label = self._get_sentence_feature_lengths_or_zeros(
             tf_batch_data, LABEL
         )
         sentence_vector_label = self._last_token(
@@ -956,18 +942,12 @@ class DIET2DIET(DIET):
             batch_in, self.predict_data_signature
         )
 
-        # Edge Case: In some cases, the model_data preparation will have
-        # skipped sequence-level features because they are not needed for
-        # the architecture.
-        tf_batch_data[TEXT].setdefault(SEQUENCE, [])
-        # Note that the following _get_sequence_feature_lengths call does
-        # not mind if no SEQUENCE_LENGTH subkey is present.
-        # The SEQUENCE key is enough to indicate that the
-        # respective key has (empty) sequence-level features.
-
-        sequence_feature_lengths = self._get_sequence_feature_lengths(
+        sequence_feature_lengths = self._get_sequence_feature_lengths_or_zeros(
             tf_batch_data, TEXT
         )
+
+        # Note that `tf_batch_data` is a nested defaultdict and hence the subkeys
+        # will default to empty lists if there are no `SEQUENCE` or `SENTENCE` subkeys.
         text_transformed, _, _, _, _, attention_weights = self._tf_layers[
             f"sequence_layer.{self.text_name}"
         ](
