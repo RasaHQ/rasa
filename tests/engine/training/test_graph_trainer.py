@@ -140,33 +140,28 @@ def test_graph_trainer_fingerprints_caches(
         }
     )
 
-    mock = Mock()
-    monkeypatch.setattr(AssertComponent, "mockable_method", mock)
-
-    mock.assert_not_called()
+    assert_component_mock = spy_on_component(AssertComponent, "run_assert")
 
     train_with_schema(train_schema, temp_cache)
 
     # The first train should call the component
-    mock.assert_called_once()
+    assert_component_mock.assert_called_once()
 
-    second_mock = Mock()
-    monkeypatch.setattr(AssertComponent, "mockable_method", second_mock)
+    second_assert_component_mock = spy_on_component(AssertComponent, "run_assert")
 
     train_with_schema(train_schema, temp_cache)
 
     # Nothing has changed so this time the component will be cached, not called.
-    second_mock.assert_not_called()
+    second_assert_component_mock.assert_not_called()
 
-    third_mock = Mock()
-    monkeypatch.setattr(AssertComponent, "mockable_method", third_mock)
+    third_assert_component_mock = spy_on_component(AssertComponent, "run_assert")
 
     train_schema.nodes["add"].config["something"] = "new"
 
     train_with_schema(train_schema, temp_cache)
 
     # As we changed the config of "add", all its descendants will run.
-    third_mock.assert_called_once()
+    third_assert_component_mock.assert_called_once()
 
 
 @pytest.fixture
