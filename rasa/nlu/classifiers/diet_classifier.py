@@ -703,7 +703,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_key=self.label_key, label_sub_key=self.label_sub_key,
         )
 
-        # Add features for text labels/entities
+        # Add features for text, labels/entities
         # (Note that label/entities will only be included if training is True)
         features, sparse_feature_sizes = self._collect_features(
             messages=messages, training=training
@@ -727,7 +727,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             label_ids = self._add_label_id_features(model_data, messages, label_id_dict)
             # in case there are no features for labels at this point, use the
             # default label features (cf. `_use_default_label_features`)
-            self._fallback_to_default_label_fatures_if_necessary(
+            self._fallback_to_default_label_features_if_necessary(
                 label_ids=label_ids, model_data=model_data
             )
 
@@ -786,7 +786,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             # always sequence features (i.e. we do not expect sentence features
             # without sequence features)
             rasa.shared.utils.io.raise_warning(
-                "Expected sequence level features for TEXT. "
+                f"Expected sequence level features for `{TEXT}` attribute but not found. "
                 "Falling back to empty input sequences."
             )
 
@@ -820,7 +820,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return features, sparse_feature_sizes
 
-    def _fallback_to_default_label_fatures_if_necessary(
+    def _fallback_to_default_label_features_if_necessary(
         self, label_ids: List[int], model_data: RasaModelData,
     ) -> None:
         """Fills in default label features for the label attribute if necessary.
@@ -839,7 +839,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             return
 
         # If *no* label features have been found before, then we load the default
-        # label features that should've been computed by an `_create_label_data`.
+        # label features that should've been computed in `_create_label_data`.
         sentence_missing = model_data.does_feature_not_exist(
             self.label_attribute, SENTENCE
         )
@@ -881,7 +881,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self._label_data is None:
             raise ValueError(
                 "Expected label data of type `RasaModelData` but `self._label_data` "
-                " is None "
+                " is `None`."
             )
 
         label_ids = []
