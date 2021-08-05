@@ -12,6 +12,33 @@ how you can migrate from one version to another.
 
 ## Rasa 2.7 to 2.8
 
+:::caution
+This release **breaks backward compatibility of machine learning models**.
+It is not possible to load models trained with previous versions of Rasa Open Source. Please re-train
+your assistant before using this version.
+
+:::
+
+### Deprecations
+
+#### Tracker Featurizers
+
+`training_states_actions_and_entities` method of `TrackerFeaturizer`, `FullDialogueTrackerFeaturizer` and
+`MaxHistoryTrackerFeaturizer` classes is deprecated and will be removed in Rasa Open Source 3.0 .
+If you had a custom tracker featurizer which relied on this method from any of the above classes, please use
+`training_states_labels_and_entities` instead.
+
+`training_states_actions` method of `TrackerFeaturizer`, `FullDialogueTrackerFeaturizer` and
+`MaxHistoryTrackerFeaturizer` classes is deprecated and will be removed in Rasa Open Source 3.0 .
+If you had a custom tracker featurizer which relied on this method from any of the above classes, please use
+`training_states_labels` instead.
+
+#### State Featurizer
+
+`encode_all_actions` method of `SingleStateFeaturizer` class is deprecated and will be removed in Rasa Open Source 3.0 .
+It is recommended to use the method `encode_all_labels` instead.
+
+
 ### Incremental Training
 
 Users don't need to specify an additional buffer size for sparse featurizers anymore during incremental training.
@@ -391,10 +418,10 @@ some additional changes will need to be made as described in their respective se
 With the introduction of [rules](./rules.mdx) and the [RulePolicy](./policies.mdx#rule-policy),
 the following policies are deprecated:
 
-- [Mapping Policy](./policies.mdx#mapping-policy)
-- [Fallback Policy](./policies.mdx#fallback-policy)
-- [Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy)
-- [Form Policy](./policies.mdx#form-policy)
+- `Mapping Policy`
+- `Fallback Policy`
+- `Two-Stage-Fallback Policy`
+- `Form Policy`
 
 
 To migrate the policies automatically, you can run the following command:
@@ -415,7 +442,7 @@ You can also migrate the individual policies manually, if you don't want to use 
 
 #### Manually migrating from the Mapping Policy
 
-If you previously used the [Mapping Policy](./policies.mdx#mapping-policy), you
+If you previously used the `Mapping Policy`, you
 can follow the documentation on [FAQs](./chitchat-faqs.mdx) to convert your mapped
 intents to rules. Suppose you previously mapped an intent `ask_is_bot` as follows:
 
@@ -453,7 +480,7 @@ policies:
 
 #### Manually migrating from the Fallback Policy
 
-If you previously used the [Fallback Policy](./policies.mdx#fallback-policy), the following model
+If you previously used the `Fallback Policy`, the following model
 configuration would translate as follows given a previous configuration like this:
 
 ```yaml-rasa title="config.yml"
@@ -498,7 +525,7 @@ information.
 #### Manually migrating from the Two-Stage-Fallback Policy
 
 If you previously used the
-[Two-Stage-Fallback Policy](./policies.mdx#two-stage-fallback-policy), with a configuration
+`Two-Stage-Fallback Policy`, with a configuration
 like this for example:
 
 ```yaml-rasa title="config.yml"
@@ -870,7 +897,7 @@ response_selector_output.get("default")
 
 ### Unfeaturized Slots
 
-[Slots](domain.mdx#slots) of type [unfeaturized](domain.mdx#unfeaturized-slot) are
+[Slots](domain.mdx#slots) of type `unfeaturized` are
 deprecated and will be removed in version 3.0. To ignore slot values during
 a conversation, set the `influence_conversation` property of the slot to `false`.
 

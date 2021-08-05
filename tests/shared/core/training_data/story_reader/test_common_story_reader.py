@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 from rasa.core import training
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEACTIVATE_LOOP_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, SessionStarted, SlotSet
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -116,7 +115,7 @@ async def test_generate_training_data_with_cycles(stories_file: Text, domain: Do
     # if new default actions are added the keys of the actions will be changed
 
     all_label_ids = [id for ids in label_ids for id in ids]
-    assert Counter(all_label_ids) == {0: 6, 12: num_tens, 14: 1, 1: 2, 13: 3}
+    assert Counter(all_label_ids) == {0: 6, 14: 3, 13: num_tens, 1: 2, 15: 1}
 
 
 @pytest.mark.parametrize(
@@ -210,7 +209,7 @@ async def test_load_multi_file_training_data(stories_resources: List, domain: Do
     )
     trackers = sorted(trackers, key=lambda t: t.sender_id)
 
-    (tr_as_sts, tr_as_acts) = featurizer.training_states_and_actions(trackers, domain)
+    (tr_as_sts, tr_as_acts) = featurizer.training_states_and_labels(trackers, domain)
     hashed = []
     for sts, acts in zip(tr_as_sts, tr_as_acts):
         hashed.append(json.dumps(sts + acts, sort_keys=True))
@@ -226,7 +225,7 @@ async def test_load_multi_file_training_data(stories_resources: List, domain: Do
     )
     trackers_mul = sorted(trackers_mul, key=lambda t: t.sender_id)
 
-    (tr_as_sts_mul, tr_as_acts_mul) = featurizer.training_states_and_actions(
+    (tr_as_sts_mul, tr_as_acts_mul) = featurizer.training_states_and_labels(
         trackers_mul, domain
     )
     hashed_mul = []
@@ -276,45 +275,6 @@ async def test_load_training_data_reader_not_found_throws(
 
 def test_session_started_event_is_not_serialised():
     assert SessionStarted().as_story_string() is None
-
-
-@pytest.mark.parametrize(
-    "story_payload, file_suffix",
-    [
-        (
-            """## my story
-* greet
-  - action_deactivate_form""",
-            ".md",
-        ),
-        (
-            """stories:
-- story: my story
-  steps:
-  - intent: greet
-  - action: action_deactivate_form""",
-            ".yml",
-        ),
-    ],
-)
-async def test_action_deactivate_form_is_mapped_to_new_form(
-    story_payload: Text, file_suffix: Text, domain: Domain, tmp_path: Path
-):
-    stories_file = tmp_path / f"stories{file_suffix}"
-    stories_file.write_text(story_payload)
-    with pytest.warns(FutureWarning):
-        training_trackers = await training.load_data(
-            str(stories_file), domain, augmentation_factor=3
-        )
-
-    expected_events = [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered(None, intent={"name": "greet", "confidence": 1.0}),
-        ActionExecuted(ACTION_DEACTIVATE_LOOP_NAME),
-        ActionExecuted(ACTION_LISTEN_NAME),
-    ]
-
-    assert list(training_trackers[0].events) == expected_events
 
 
 @pytest.mark.parametrize(

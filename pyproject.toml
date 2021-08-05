@@ -4,12 +4,12 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 88
-target-version = [ "py36", "py37", "py38",]
+target-version = [ "py37", "py38",]
 exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "2.7.1"
+version = "2.8.0"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -63,7 +63,7 @@ name = "Miscellaneous internal changes"
 showcontent = false
 
 [tool.poetry.dependencies]
-python = ">=3.6,<3.9"
+python = ">=3.7,<3.9"
 boto3 = "^1.12"
 requests = "^2.23"
 matplotlib = ">=3.1,<3.4"
@@ -90,15 +90,15 @@ colorhash = "~1.0.2"
 jsonschema = "~3.2"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2022.0"
-rasa-sdk = "^2.7.0"
+rasa-sdk = "^2.8.0"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
-sanic = ">=19.12.2,<21.0.0"
+sanic = ">=19.12.2,<20.12.0"
 sanic-cors = "^0.10.0b1"
 sanic-jwt = ">=1.3.2,<2.0"
 cloudpickle = ">=1.2,<1.7"
 aiohttp = ">=3.6,<3.8,!=3.7.4.post0"
-questionary = ">=1.5.1,<1.10.0"
+questionary = ">=1.5.1,<1.11.0"
 prompt-toolkit = "^2.0"
 python-socketio = ">=4.4,<6"
 python-engineio = ">=4,<6,!=5.0.0"
@@ -119,7 +119,7 @@ ujson = ">=1.35,<5.0"
 oauth2client = "4.1.3"
 regex = ">=2020.6,<2021.8"
 joblib = ">=0.15.1,<1.1.0"
-sentry-sdk = ">=0.17.0,<1.3.0"
+sentry-sdk = ">=0.17.0,<1.4.0"
 aio-pika = "^6.7.1"
 pyTelegramBotAPI = "^3.7.3"
 
@@ -156,6 +156,7 @@ types-requests = "^2.25.0"
 types-setuptools = "^57.0.0"
 memory-profiler = "^0.58.0"
 psutil = "^5.8.0"
+mypy-extensions = "^0.4.3"
 
 [tool.poetry.extras]
 spacy = [ "spacy",]

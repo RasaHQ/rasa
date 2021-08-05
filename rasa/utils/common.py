@@ -14,6 +14,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    ContextManager,
 )
 
 import rasa.utils.io
@@ -26,10 +27,10 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class TempDirectoryPath(str):
-    """Represents a path to an temporary directory. When used as a context
-    manager, it erases the contents of the directory on exit.
+class TempDirectoryPath(str, ContextManager):
+    """Represents a path to an temporary directory.
 
+    When used as a context manager, it erases the contents of the directory on exit.
     """
 
     def __enter__(self) -> "TempDirectoryPath":
@@ -40,7 +41,7 @@ class TempDirectoryPath(str):
         _exc: Optional[Type[BaseException]],
         _value: Optional[Exception],
         _tb: Optional[TracebackType],
-    ) -> bool:
+    ) -> None:
         if os.path.exists(self):
             shutil.rmtree(self)
 
@@ -296,11 +297,7 @@ def run_in_loop(
     result = loop.run_until_complete(f)
 
     # Let's also finish all running tasks:
-    # fallback for python 3.6, which doesn't have asyncio.all_tasks
-    try:
-        pending = asyncio.all_tasks(loop)
-    except AttributeError:
-        pending = asyncio.Task.all_tasks()
+    pending = asyncio.all_tasks(loop)
     loop.run_until_complete(asyncio.gather(*pending))
 
     return result
