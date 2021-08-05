@@ -3,7 +3,8 @@ from typing import Text
 import uuid
 
 from rasa.engine.caching import TrainingCache
-from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema
+from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema, SchemaNode
+from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training import fingerprinting
 from rasa.engine.training.components import (
@@ -33,6 +34,58 @@ def test_cached_component_returns_value_from_cache(default_model_storage: ModelS
 
     returned_output = node()["cached"]
     assert returned_output.text == "Cache me!!"
+
+
+def test_cached_component_replace_schema_node():
+    schema_node = SchemaNode(
+        needs={"i1": "first_input", "i2": "second_input"},
+        uses=FingerprintComponent,
+        fn="add",
+        constructor_name="load",
+        config={"a": 1},
+        eager=False,
+        is_input=False,
+        resource=Resource("hello")
+    )
+
+    CachedComponent.replace_schema_node(schema_node, 2)
+
+    assert schema_node == SchemaNode(
+        needs={"i1": "first_input", "i2": "second_input"},
+        uses=CachedComponent,
+        fn="get_cached_output",
+        constructor_name="create",
+        config={"output": 2},
+        eager=False,
+        is_input=False,
+        resource=Resource("hello")
+    )
+
+
+def test_fingerprint_component_replace_schema_node(temp_cache: TrainingCache):
+    schema_node = SchemaNode(
+        needs={"i1": "first_input", "i2": "second_input"},
+        uses=CachedComponent,
+        fn="add",
+        constructor_name="load",
+        config={"a": 1},
+        eager=False,
+        is_input=False,
+        resource=Resource("hello")
+    )
+
+    FingerprintComponent.replace_schema_node(schema_node, temp_cache, "some_node_name")
+
+    assert schema_node == SchemaNode(
+        needs={"i1": "first_input", "i2": "second_input"},
+        uses=FingerprintComponent,
+        fn="run",
+        constructor_name="create",
+        config={"a": 1, "cache": temp_cache, "node_name": "some_node_name"},
+        eager=True,
+        is_input=False,
+        resource=Resource("hello")
+    )
 
 
 @dataclasses.dataclass

@@ -95,7 +95,6 @@ class GraphSchema:
     def target_names(self) -> List[Text]:
         return [node_name for node_name, node in self.nodes.items() if node.is_target]
 
-    # TODO: JUZL: Test this
     def minimal_graph_schema(self,) -> GraphSchema:
         dependencies = self._all_dependencies_schema(self.target_names())
 

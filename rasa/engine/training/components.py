@@ -40,7 +40,7 @@ class CachedComponent(GraphComponent):
         """Returns the cached output."""
         return self._output
 
-    # TODO: JUZL: test this
+    # TODO: JUZL: should we change the node name?
     @staticmethod
     def replace_schema_node(node: SchemaNode, output):
         node.uses = CachedComponent
@@ -98,7 +98,6 @@ class FingerprintComponent(GraphComponent):
             output_fingerprint=output_fingerprint
         )
 
-    # TODO: JUZL: test this
     @staticmethod
     def replace_schema_node(node: SchemaNode, cache: TrainingCache, node_name: Text):
         node.uses = FingerprintComponent
