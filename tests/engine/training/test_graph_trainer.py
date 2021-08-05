@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Optional, Text, Type
+from typing import Callable, Dict, Optional, Text, Type
 from unittest.mock import Mock
 
 from _pytest.monkeypatch import MonkeyPatch
@@ -33,8 +33,7 @@ def test_graph_trainer(
         graph_runner_class=DaskGraphRunner,
     )
 
-    test_value_for_sub_directory = {"test": "test value sub dir"}
-    test_value = {"test dir": "test value dir"}
+    test_value = "test_value"
 
     train_schema = GraphSchema(
         {
@@ -45,7 +44,6 @@ def test_graph_trainer(
                 constructor_name="create",
                 config={
                     "test_value": test_value,
-                    "test_value_for_sub_directory": test_value_for_sub_directory,
                 },
                 is_target=True,
             ),
@@ -73,25 +71,22 @@ def test_graph_trainer(
     )
 
     output_filename = tmp_path / "model.tar.gz"
-    graph_runner = graph_trainer.train(
+    predict_graph_runner = graph_trainer.train(
         train_schema=train_schema,
         predict_schema=predict_schema,
         domain_path=domain_path,
         output_filename=output_filename,
     )
-    assert isinstance(graph_runner, DaskGraphRunner)
+    assert isinstance(predict_graph_runner, DaskGraphRunner)
     assert output_filename.is_file()
-    assert graph_runner.run() == {"load": test_value}
-
-    # TODO: test unpacking from model package? (Or wait till graph_loader)
+    assert predict_graph_runner.run() == {"load": test_value}
 
 
-def test_graph_trainer_fingerprints_caches(
+def test_graph_trainer_fingerprints_and_caches(
     temp_cache: TrainingCache,
     tmp_path: Path,
     train_with_schema: Callable,
-    spy_on_component: Callable,
-    monkeypatch: MonkeyPatch,
+    spy_on_all_components: Callable,
 ):
 
     input_file = tmp_path / "input_file.txt"
@@ -104,7 +99,7 @@ def test_graph_trainer_fingerprints_caches(
                 uses=FileReader,
                 fn="read",
                 constructor_name="create",
-                config={"file_path": str(input_file),},
+                config={"file_path": str(input_file)},
                 is_input=True,
             ),
             "train": SchemaNode(
@@ -112,7 +107,7 @@ def test_graph_trainer_fingerprints_caches(
                 uses=PersistableTestComponent,
                 fn="train",
                 constructor_name="create",
-                config={"test_value": "4",},
+                config={"test_value": "4"},
                 is_target=True,
             ),
             "process": SchemaNode(
@@ -120,7 +115,7 @@ def test_graph_trainer_fingerprints_caches(
                 uses=PersistableTestComponent,
                 fn="run_inference",
                 constructor_name="load",
-                config={},
+                config={"wrap_output_in_cacheable": True},
             ),
             "add": SchemaNode(
                 needs={"i1": "read_file", "i2": "process"},
@@ -140,28 +135,44 @@ def test_graph_trainer_fingerprints_caches(
         }
     )
 
-    assert_component_mock = spy_on_component(AssertComponent, "run_assert")
-
+    # The first train should call all the components
+    mocks = spy_on_all_components(train_schema)
     train_with_schema(train_schema, temp_cache)
+    assert node_call_counts(mocks) == {
+        "read_file": 1,
+        "train": 1,
+        "process": 1,
+        "add": 1,
+        "assert_node": 1,
+    }
 
-    # The first train should call the component
-    assert_component_mock.assert_called_once()
-
-    second_assert_component_mock = spy_on_component(AssertComponent, "run_assert")
-
+    # Nothing has changed so this time so no components will run
+    # (just input nodes during fingerprint run).
+    mocks = spy_on_all_components(train_schema)
     train_with_schema(train_schema, temp_cache)
-
-    # Nothing has changed so this time the component will be cached, not called.
-    second_assert_component_mock.assert_not_called()
-
-    third_assert_component_mock = spy_on_component(AssertComponent, "run_assert")
-
-    train_schema.nodes["add"].config["something"] = "new"
-
-    train_with_schema(train_schema, temp_cache)
+    assert node_call_counts(mocks) == {
+        "read_file": 1,  # Inputs nodes are always called during the fingerprint run.
+        "train": 0,
+        "process": 0,
+        "add": 0,
+        "assert_node": 0,
+    }
 
     # As we changed the config of "add", all its descendants will run.
-    third_assert_component_mock.assert_called_once()
+    train_schema.nodes["add"].config["something"] = "new"
+    mocks = spy_on_all_components(train_schema)
+    train_with_schema(train_schema, temp_cache)
+    assert node_call_counts(mocks) == {
+        "read_file": 1,  # Inputs nodes are always called during the fingerprint run.
+        "train": 0,
+        "process": 0,
+        "add": 1,
+        "assert_node": 1,
+    }
+
+
+def node_call_counts(mocks: Dict[Text, Mock]) -> Dict[Text, int]:
+    return {node_name: mocks[node_name].call_count for node_name, mock in mocks.items()}
 
 
 @pytest.fixture
@@ -212,5 +223,16 @@ def spy_on_component(monkeypatch: MonkeyPatch) -> Callable:
         mock = Mock(wraps=getattr(component_class, fn_name))
         monkeypatch.setattr(component_class, fn_name, mock)
         return mock
+
+    return inner
+
+
+@pytest.fixture()
+def spy_on_all_components(spy_on_component) -> Callable:
+    def inner(schema: GraphSchema) -> Dict[Text, Mock]:
+        return {
+            node_name: spy_on_component(schema_node.uses, schema_node.fn)
+            for node_name, schema_node in schema.nodes.items()
+        }
 
     return inner

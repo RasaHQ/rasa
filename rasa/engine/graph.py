@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 class SchemaNode:
     """Represents one node in the schema."""
 
+    # TODO: JUZL: add name?
+
     needs: Dict[Text, Text]
     uses: Type[GraphComponent]
     constructor_name: Text
@@ -89,6 +91,31 @@ class GraphSchema:
             nodes[node_name] = SchemaNode(**serialized_node)
 
         return GraphSchema(nodes)
+
+    def target_names(self) -> List[Text]:
+        return [node_name for node_name, node in self.nodes.items() if node.is_target]
+
+    # TODO: JUZL: Test this
+    def minimal_graph_schema(self,) -> GraphSchema:
+        dependencies = self._all_dependencies_schema(self.target_names())
+
+        return GraphSchema(
+            {
+                node_name: node
+                for node_name, node in self.nodes.items()
+                if node_name in dependencies
+            }
+        )
+
+    def _all_dependencies_schema(self, targets: List[Text]) -> List[Text]:
+        required = []
+        for target in targets:
+            required.append(target)
+            target_dependencies = self.nodes[target].needs.values()
+            for dependency in target_dependencies:
+                required += self._all_dependencies_schema([dependency])
+
+        return required
 
 
 class GraphComponent(ABC):
@@ -425,5 +452,5 @@ class GraphNode:
             model_storage=model_storage,
             execution_context=execution_context,
             resource=schema_node.resource,
-            hooks=hooks
+            hooks=hooks,
         )

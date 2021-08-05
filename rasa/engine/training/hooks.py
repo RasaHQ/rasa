@@ -36,7 +36,7 @@ class TrainingHook(GraphNodeHook):
 
         return {"fingerprint_key": fingerprint_key}
 
-    # TODO: don't cache from CachedComponent
+    # TODO: JUZL: don't cache from CachedComponent
     def on_after_node(
         self,
         node_name: Text,

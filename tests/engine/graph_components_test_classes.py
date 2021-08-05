@@ -128,8 +128,8 @@ class FileReader(GraphComponent):
     ) -> FileReader:
         return cls(Path(config["file_path"]))
 
-    def read(self) -> Text:
-        return self._file_path.read_text()
+    def read(self) -> CacheableText:
+        return CacheableText(self._file_path.read_text())
 
 
 class ExecutionContextAware(GraphComponent):
@@ -166,6 +166,7 @@ class PersistableTestComponent(GraphComponent):
         self._model_storage = model_storage
         self._resource = resource
         self._config = config
+        self._wrap_cacheable = self._config.get("wrap_output_in_cacheable", False)
         self._eager_instantiated_value = eager_instantiated_value
 
     @classmethod
@@ -220,9 +221,13 @@ class PersistableTestComponent(GraphComponent):
         return self._resource
 
     def run_train_process(self) -> Any:
+        if self._wrap_cacheable:
+            return CacheableText(self._eager_instantiated_value)
         return self._eager_instantiated_value
 
     def run_inference(self) -> Any:
+        if self._wrap_cacheable:
+            return CacheableText(self._eager_instantiated_value)
         return self._eager_instantiated_value
 
 
@@ -239,6 +244,12 @@ class CacheableText:
     ) -> CacheableText:
         text = rasa.shared.utils.io.read_file(directory / "my_file.txt")
         return cls(text=text)
+
+    def __repr__(self):
+        return self.text
+
+    def __int__(self):
+        return int(self.text)
 
 
 class CacheableComponent(GraphComponent):

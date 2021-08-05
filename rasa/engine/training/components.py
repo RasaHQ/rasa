@@ -4,7 +4,7 @@ import dataclasses
 import uuid
 
 from rasa.engine.caching import Cacheable, TrainingCache
-from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.graph import ExecutionContext, GraphComponent, SchemaNode
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training import fingerprinting
@@ -39,6 +39,14 @@ class CachedComponent(GraphComponent):
     def get_cached_output(self) -> Cacheable:
         """Returns the cached output."""
         return self._output
+
+    # TODO: JUZL: test this
+    @staticmethod
+    def replace_schema_node(node: SchemaNode, output):
+        node.uses = CachedComponent
+        node.config = {"output": output}
+        node.fn = "get_cached_output"
+        node.constructor_name = "create"
 
 
 @dataclasses.dataclass
@@ -88,4 +96,17 @@ class FingerprintComponent(GraphComponent):
         return FingerprintStatus(
             is_hit=output_fingerprint is not None,
             output_fingerprint=output_fingerprint
+        )
+
+    # TODO: JUZL: test this
+    @staticmethod
+    def replace_schema_node(node: SchemaNode, cache: TrainingCache, node_name: Text):
+        node.uses = FingerprintComponent
+        # TODO: We do this because otherwise FingerprintComponent does not see
+        # TODO: the constructor args that come from parent nodes.
+        node.eager = True
+        node.constructor_name = "create"
+        node.fn = "run"
+        node.config.update(
+            {"cache": cache, "node_name": node_name}
         )
