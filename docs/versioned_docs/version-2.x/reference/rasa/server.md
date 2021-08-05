@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.server
+sidebar_label: server
 title: rasa.server
 ---
 
@@ -30,18 +30,52 @@ event_verbosity_parameter(request: Request, default_verbosity: EventVerbosity) -
 
 Create `EventVerbosity` object using request params if present.
 
-#### get\_tracker
+#### get\_test\_stories
 
 ```python
-async get_tracker(processor: "MessageProcessor", conversation_id: Text) -> DialogueStateTracker
+get_test_stories(processor: "MessageProcessor", conversation_id: Text, until_time: Optional[float], fetch_all_sessions: bool = False) -> Text
 ```
 
-Get tracker object from `MessageProcessor`.
+Retrieves test stories from `processor` for all conversation sessions for
+`conversation_id`.
+
+**Arguments**:
+
+- `processor` - An instance of `MessageProcessor`.
+- `conversation_id` - Conversation ID to fetch stories for.
+- `until_time` - Timestamp up to which to include events.
+- `fetch_all_sessions` - Whether to fetch stories for all conversation sessions.
+  If `False`, only the last conversation session is retrieved.
+  
+
+**Returns**:
+
+  The stories for `conversation_id` in test format.
+
+#### update\_conversation\_with\_events
+
+```python
+async update_conversation_with_events(conversation_id: Text, processor: "MessageProcessor", domain: Domain, events: List[Event]) -> DialogueStateTracker
+```
+
+Fetches or creates a tracker for `conversation_id` and appends `events` to it.
+
+**Arguments**:
+
+- `conversation_id` - The ID of the conversation to update the tracker for.
+- `processor` - An instance of `MessageProcessor`.
+- `domain` - The domain associated with the current `Agent`.
+- `events` - The events to append to the tracker.
+  
+
+**Returns**:
+
+  The tracker for `conversation_id` with the updated events.
 
 #### validate\_request\_body
 
 ```python
-validate_request_body(request: Request, error_message: Text)
+validate_request_body(request: Request, error_message: Text) -> None
 ```
 
 Check if `request` has a body.
@@ -49,7 +83,7 @@ Check if `request` has a body.
 #### authenticate
 
 ```python
-async authenticate(request: Request)
+async authenticate(_: Request) -> NoReturn
 ```
 
 Callback for authentication failed.

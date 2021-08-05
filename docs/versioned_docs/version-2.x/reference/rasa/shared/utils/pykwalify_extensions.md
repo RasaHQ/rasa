@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.utils.pykwalify_extensions
+sidebar_label: pykwalify_extensions
 title: rasa.shared.utils.pykwalify_extensions
 ---
 

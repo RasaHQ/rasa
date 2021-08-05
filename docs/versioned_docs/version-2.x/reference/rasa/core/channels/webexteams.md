@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.webexteams
+sidebar_label: webexteams
 title: rasa.core.channels.webexteams
 ---
 

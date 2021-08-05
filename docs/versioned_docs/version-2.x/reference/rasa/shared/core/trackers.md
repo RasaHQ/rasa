@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.trackers
+sidebar_label: trackers
 title: rasa.shared.core.trackers
 ---
 
@@ -223,6 +223,10 @@ The resulting array is representing the trackers before each action.
 
 Returns all actions that should be applied - w/o reverted events.
 
+**Returns**:
+
+  The events applied to the tracker.
+
 #### replay\_events
 
 ```python
@@ -281,6 +285,22 @@ of this tracker exactly.
 ```
 
 Modify the state of the tracker according to an ``Event``.
+
+#### update\_with\_events
+
+```python
+ | update_with_events(new_events: List[Event], domain: Optional[Domain], override_timestamp: bool = True) -> None
+```
+
+Adds multiple events to the tracker.
+
+**Arguments**:
+
+- `new_events` - Events to apply.
+- `domain` - The current model&#x27;s domain.
+- `override_timestamp` - If `True` refresh all timestamps of the events. As the
+  events are usually created at some earlier point, this makes sure that
+  all new events come after any current tracker events.
 
 #### as\_story
 
@@ -423,4 +443,21 @@ Check if action_listen is the previous executed action.
 **Returns**:
 
   boolean value indicating whether action_listen is previous action
+
+#### get\_trackers\_for\_conversation\_sessions
+
+```python
+get_trackers_for_conversation_sessions(tracker: DialogueStateTracker) -> List[DialogueStateTracker]
+```
+
+Generate trackers for `tracker` that are split by conversation sessions.
+
+**Arguments**:
+
+- `tracker` - Instance of `DialogueStateTracker` to split.
+  
+
+**Returns**:
+
+  The trackers split by conversation sessions.
 

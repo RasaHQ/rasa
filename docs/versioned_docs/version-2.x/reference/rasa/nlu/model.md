@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.model
+sidebar_label: model
 title: rasa.nlu.model
 ---
 

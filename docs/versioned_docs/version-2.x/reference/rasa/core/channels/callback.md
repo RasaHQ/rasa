@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.callback
+sidebar_label: callback
 title: rasa.core.channels.callback
 ---
 

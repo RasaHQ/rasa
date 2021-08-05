@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.twilio
+sidebar_label: twilio
 title: rasa.core.channels.twilio
 ---
 

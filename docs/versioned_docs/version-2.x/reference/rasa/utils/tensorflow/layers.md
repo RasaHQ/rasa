@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.utils.tensorflow.layers
+sidebar_label: layers
 title: rasa.utils.tensorflow.layers
 ---
 

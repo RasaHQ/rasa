@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.nlg.generator
+sidebar_label: generator
 title: rasa.core.nlg.generator
 ---
 

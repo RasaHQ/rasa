@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.exceptions
+sidebar_label: exceptions
 title: rasa.shared.exceptions
 ---
 
@@ -78,4 +78,12 @@ class FileIOException(RasaException)
 ```
 
 Raised if there is an error while doing file IO.
+
+## InvalidConfigException Objects
+
+```python
+class InvalidConfigException(ValueError,  RasaException)
+```
+
+Raised if an invalid configuration is encountered.
 

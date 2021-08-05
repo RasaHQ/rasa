@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.cli.utils
+sidebar_label: utils
 title: rasa.cli.utils
 ---
 

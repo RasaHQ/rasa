@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.utils.tensorflow.environment
+sidebar_label: environment
 title: rasa.utils.tensorflow.environment
 ---
 

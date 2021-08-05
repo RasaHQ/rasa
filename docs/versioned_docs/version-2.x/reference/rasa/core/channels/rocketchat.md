@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.rocketchat
+sidebar_label: rocketchat
 title: rasa.core.channels.rocketchat
 ---
 

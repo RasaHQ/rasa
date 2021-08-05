@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.registry
+sidebar_label: registry
 title: rasa.nlu.registry
 ---
 

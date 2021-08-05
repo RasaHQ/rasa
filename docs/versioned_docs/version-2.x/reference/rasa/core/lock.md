@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.lock
+sidebar_label: lock
 title: rasa.core.lock
 ---
 

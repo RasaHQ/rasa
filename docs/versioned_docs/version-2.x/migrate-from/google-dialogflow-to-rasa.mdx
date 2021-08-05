@@ -14,7 +14,7 @@ Navigate to your agent's settings by clicking the gear icon.
 
 import dialogflowExport1 from './dialogflow_export.png';
 
-<Image img={dialogflowExport1} width="240" caption="Selecting settings" alt="In DialogFlow, the gear icon that indicates settings sits next to the dropdown menu for choosing between projects." />
+<Image img={dialogflowExport1} width="240" caption="Selecting settings" alt="In Dialogflow, the gear icon that indicates settings sits next to the dropdown menu for choosing between projects." />
 
 
 Click on the 'Export and Import' tab and click on the 'Export as ZIP' button.
@@ -44,7 +44,7 @@ mv testagent data/
 
 ## Step 3: Train your NLU model
 
-To train a model using your dialogflow data, run:
+To train a model using your Dialogflow data, run:
 
 ```bash
 rasa train nlu
@@ -79,8 +79,9 @@ To send a request to the server, run:
 
 ```bash
 curl 'localhost:5005/model/parse?emulation_mode=dialogflow' -d '{"text": "hello"}'
-The `emulation_mode` parameter tells Rasa that you want your json
-response to have the same format as you would get from dialogflow.
+The `emulation_mode` parameter tells Rasa that you want your JSON response to have the same format as you would
+get from the Dialogflow `sessions.detectIntent` endpoint (the format is
+described [here](https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse)).
 You can also leave it out to get the result in the usual Rasa format.
 
 ## Terminology:

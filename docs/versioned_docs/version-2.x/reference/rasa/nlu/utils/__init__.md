@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.utils
+sidebar_label: utils
 title: rasa.nlu.utils
 ---
 

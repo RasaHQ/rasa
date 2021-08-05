@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.restore
+sidebar_label: restore
 title: rasa.core.restore
 ---
 

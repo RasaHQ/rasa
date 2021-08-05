@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.nlu.interpreter
+sidebar_label: interpreter
 title: rasa.shared.nlu.interpreter
 ---
 

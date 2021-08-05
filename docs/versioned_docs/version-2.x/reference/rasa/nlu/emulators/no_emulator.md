@@ -1,13 +1,15 @@
 ---
-sidebar_label: rasa.nlu.emulators.no_emulator
+sidebar_label: no_emulator
 title: rasa.nlu.emulators.no_emulator
 ---
 
 ## NoEmulator Objects
 
 ```python
-class NoEmulator()
+class NoEmulator(Emulator)
 ```
+
+Default emulator that is used when no emulator is specified.
 
 #### normalise\_response\_json
 

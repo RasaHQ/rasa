@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.agent
+sidebar_label: agent
 title: rasa.core.agent
 ---
 
@@ -27,7 +27,7 @@ getting the next action, and handling a channel.
 
 ```python
  | @classmethod
- | load(cls, model_path: Text, interpreter: Optional[NaturalLanguageInterpreter] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, path_to_model_archive: Optional[Text] = None) -> "Agent"
+ | load(cls, model_path: Union[Text, Path], interpreter: Optional[NaturalLanguageInterpreter] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, path_to_model_archive: Optional[Text] = None) -> "Agent"
 ```
 
 Load a persisted model from the passed path.
@@ -103,7 +103,7 @@ Handle a single message.
 #### log\_message
 
 ```python
- | async log_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> Optional[DialogueStateTracker]
+ | async log_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> DialogueStateTracker
 ```
 
 Append a message to a dialogue - does not predict actions.
@@ -111,7 +111,7 @@ Append a message to a dialogue - does not predict actions.
 #### execute\_action
 
 ```python
- | async execute_action(sender_id: Text, action: Text, output_channel: OutputChannel, policy: Text, confidence: float) -> Optional[DialogueStateTracker]
+ | async execute_action(sender_id: Text, action: Text, output_channel: OutputChannel, policy: Optional[Text], confidence: Optional[float]) -> Optional[DialogueStateTracker]
 ```
 
 Handle a single message.
@@ -195,6 +195,14 @@ Train the policies / policy ensemble using dialogue data from file.
 ```
 
 Persists this agent into a directory for later loading and usage.
+
+#### visualize
+
+```python
+ | async visualize(resource_name: Text, output_file: Text, max_history: Optional[int] = None, nlu_training_data: Optional[TrainingData] = None, should_merge_nodes: bool = True, fontsize: int = 12) -> None
+```
+
+Visualize the loaded training data from the resource.
 
 #### create\_processor
 

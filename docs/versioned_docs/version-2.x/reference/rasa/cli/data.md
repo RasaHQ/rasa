@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.cli.data
+sidebar_label: data
 title: rasa.cli.data
 ---
 

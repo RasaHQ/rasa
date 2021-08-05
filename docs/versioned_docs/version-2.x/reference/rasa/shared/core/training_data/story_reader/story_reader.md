@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.training_data.story_reader.story_reader
+sidebar_label: story_reader
 title: rasa.shared.core.training_data.story_reader.story_reader
 ---
 
@@ -55,7 +55,7 @@ Checks if the specified file is a test story file.
 
 ```python
  | @staticmethod
- | is_stories_file(filename: Text) -> bool
+ | is_stories_file(filename: Union[Text, Path]) -> bool
 ```
 
 Checks if the specified file is a story file.

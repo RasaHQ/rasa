@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.run
+sidebar_label: run
 title: rasa.core.run
 ---
 
@@ -37,4 +37,17 @@ Load an agent.
 
 Used to be scheduled on server start
 (hence the `app` and `loop` arguments).
+
+#### close\_resources
+
+```python
+async close_resources(app: Sanic, _: AbstractEventLoop) -> None
+```
+
+Gracefully closes resources when shutting down server.
+
+**Arguments**:
+
+- `app` - The Sanic application.
+- `_` - The current Sanic worker event loop.
 

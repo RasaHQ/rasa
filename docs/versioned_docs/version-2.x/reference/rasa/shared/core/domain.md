@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.domain
+sidebar_label: domain
 title: rasa.shared.core.domain
 ---
 
@@ -60,11 +60,31 @@ override is `True`, in which case they are taken from `domain`.
 
 List retrieval intents present in the domain.
 
+#### collect\_entity\_properties
+
+```python
+ | @classmethod
+ | collect_entity_properties(cls, domain_entities: List[Union[Text, Dict[Text, Any]]]) -> Tuple[List[Text], Dict[Text, List[Text]], Dict[Text, List[Text]]]
+```
+
+Get entity properties for a domain from what is provided by a domain file.
+
+**Arguments**:
+
+- `domain_entities` - The entities as provided by a domain file.
+  
+
+**Returns**:
+
+  A list of entity names.
+  A dictionary of entity names to roles.
+  A dictionary of entity names to groups.
+
 #### collect\_intent\_properties
 
 ```python
  | @classmethod
- | collect_intent_properties(cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text]) -> Dict[Text, Dict[Text, Union[bool, List]]]
+ | collect_intent_properties(cls, intents: List[Union[Text, Dict[Text, Any]]], entities: List[Text], roles: Dict[Text, List[Text]], groups: Dict[Text, List[Text]]) -> Dict[Text, Dict[Text, Union[bool, List]]]
 ```
 
 Get intent properties for a domain from what is provided by a domain file.
@@ -73,6 +93,8 @@ Get intent properties for a domain from what is provided by a domain file.
 
 - `intents` - The intents as provided by a domain file.
 - `entities` - All entities as provided by a domain file.
+- `roles` - The roles of entities as provided by a domain file.
+- `groups` - The groups of entities as provided by a domain file.
   
 
 **Returns**:
@@ -99,6 +121,26 @@ for more implementation.
 **Returns**:
 
   A deep copy of the current domain.
+
+#### \_\_hash\_\_
+
+```python
+ | __hash__() -> int
+```
+
+Returns a unique hash for the domain.
+
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Returns a unique hash for the domain which is stable across python runs.
+
+**Returns**:
+
+  fingerprint of the domain
 
 #### user\_actions\_and\_forms
 
@@ -146,6 +188,14 @@ Return only the templates which are defined for retrieval intents
 Check if the response template is for a retrieval intent.
 
 These templates have a `/` symbol in their name. Use that to filter them from the rest.
+
+#### setup\_slots
+
+```python
+ | setup_slots() -> None
+```
+
+Sets up the default slots and slot values for the domain.
 
 #### add\_categorical\_slot\_default\_value
 
@@ -198,6 +248,37 @@ Look up which action index corresponds to this action name.
 ```
 
 Returns all available slot state strings.
+
+#### entity\_states
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | entity_states() -> List[Text]
+```
+
+Returns all available entity state strings.
+
+#### concatenate\_entity\_labels
+
+```python
+ | @staticmethod
+ | concatenate_entity_labels(entity_labels: Dict[Text, List[Text]], entity: Optional[Text] = None) -> List[Text]
+```
+
+Concatenates the given entity labels with their corresponding sub-labels.
+
+If a specific entity label is given, only this entity label will be
+concatenated with its corresponding sub-labels.
+
+**Arguments**:
+
+- `entity_labels` - A map of an entity label to its sub-label list.
+- `entity` - If present, only this entity will be considered.
+  
+
+**Returns**:
+
+  A list of labels.
 
 #### input\_state\_map
 
@@ -261,6 +342,24 @@ Compare the domain spec of the current and the loaded domain.
 Throws exception if the loaded domain specification is different
 to the current domain are different.
 
+#### get\_responses\_with\_multilines
+
+```python
+ | @staticmethod
+ | get_responses_with_multilines(responses: Dict[Text, List[Dict[Text, Any]]]) -> Dict[Text, List[Dict[Text, Any]]]
+```
+
+Returns `responses` with preserved multilines in the `text` key.
+
+**Arguments**:
+
+- `responses` - Original `responses`.
+  
+
+**Returns**:
+
+  `responses` with preserved multilines in the `text` key.
+
 #### cleaned\_domain
 
 ```python
@@ -292,6 +391,25 @@ Write domain to a file.
 ```
 
 Write cleaned domain to a file.
+
+#### as\_yaml
+
+```python
+ | as_yaml(clean_before_dump: bool = False) -> Text
+```
+
+Dump the `Domain` object as a YAML string.
+This function preserves the orders of the keys in the domain.
+
+**Arguments**:
+
+- `clean_before_dump` - When set to `True`, this method returns
+  a version of the domain without internal
+  information. Defaults to `False`.
+
+**Returns**:
+
+  A string in YAML format representing the domain.
 
 #### intent\_config
 
@@ -376,4 +494,40 @@ or a list of them, where the first match will be picked
 **Returns**:
 
   The slot mapping or an empty dictionary in case no mapping was found.
+
+## SlotMapping Objects
+
+```python
+class SlotMapping(Enum)
+```
+
+Defines the available slot mappings.
+
+#### \_\_str\_\_
+
+```python
+ | __str__() -> Text
+```
+
+Returns a string representation of the object.
+
+#### validate
+
+```python
+ | @staticmethod
+ | validate(mapping: Dict[Text, Any], form_name: Text, slot_name: Text) -> None
+```
+
+Validates a slot mapping.
+
+**Arguments**:
+
+- `mapping` - The mapping which is validated.
+- `form_name` - The name of the form which uses this slot mapping.
+- `slot_name` - The name of the slot which is mapped by this mapping.
+  
+
+**Raises**:
+
+- `InvalidDomain` - In case the slot mapping is not valid.
 

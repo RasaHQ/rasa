@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.nlu.training_data.formats.dialogflow
+sidebar_label: dialogflow
 title: rasa.shared.nlu.training_data.formats.dialogflow
 ---
 

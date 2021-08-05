@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.importers.rasa
+sidebar_label: rasa
 title: rasa.shared.importers.rasa
 ---
 

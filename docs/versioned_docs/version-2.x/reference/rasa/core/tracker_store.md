@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.tracker_store
+sidebar_label: tracker_store
 title: rasa.core.tracker_store
 ---
 
@@ -14,7 +14,7 @@ Class to hold all of the TrackerStore classes
 #### \_\_init\_\_
 
 ```python
- | __init__(domain: Optional[Domain], event_broker: Optional[EventBroker] = None, retrieve_events_from_previous_conversation_sessions: bool = False) -> None
+ | __init__(domain: Optional[Domain], event_broker: Optional[EventBroker] = None, **kwargs: Dict[Text, Any], ,) -> None
 ```
 
 Create a TrackerStore.
@@ -24,10 +24,7 @@ Create a TrackerStore.
 - `domain` - The `Domain` to initialize the `DialogueStateTracker`.
 - `event_broker` - An event broker to publish any new events to another
   destination.
-- `retrieve_events_from_previous_conversation_sessions` - If `True`, `retrieve`
-  will return all events (even if they are from a previous conversation
-  session). This setting only applies to `TrackerStore`s which usually
-  would only return events for the latest session.
+- `kwargs` - Additional kwargs.
 
 #### create
 
@@ -94,7 +91,38 @@ Save method that will be overridden by specific tracker
  | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
 ```
 
-Retrieve method that will be overridden by specific tracker
+Retrieves tracker for the latest conversation session.
+
+This method will be overridden by the specific tracker store.
+
+**Arguments**:
+
+- `sender_id` - Conversation ID to fetch the tracker for.
+  
+
+**Returns**:
+
+  Tracker containing events from the latest conversation sessions.
+
+#### retrieve\_full\_tracker
+
+```python
+ | retrieve_full_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+```
+
+Retrieve method for fetching all tracker events across conversation sessions
+that may be overridden by specific tracker.
+
+The default implementation uses `self.retrieve()`.
+
+**Arguments**:
+
+- `conversation_id` - The conversation ID to retrieve the tracker for.
+  
+
+**Returns**:
+
+  The fetch tracker containing all events across session starts.
 
 #### stream\_events
 
@@ -153,21 +181,6 @@ Stores conversation history in memory
 
 Updates and saves the current conversation state
 
-#### retrieve
-
-```python
- | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
-```
-
-**Arguments**:
-
-- `sender_id` - the message owner ID
-  
-
-**Returns**:
-
-  DialogueStateTracker
-
 #### keys
 
 ```python
@@ -192,21 +205,6 @@ Stores conversation history in Redis
 
 Saves the current conversation state
 
-#### retrieve
-
-```python
- | retrieve(sender_id)
-```
-
-**Arguments**:
-
-- `sender_id` - the message owner ID
-  
-
-**Returns**:
-
-  DialogueStateTracker
-
 #### keys
 
 ```python
@@ -226,7 +224,7 @@ Stores conversation history in DynamoDB
 #### \_\_init\_\_
 
 ```python
- | __init__(domain: Domain, table_name: Text = "states", region: Text = "us-east-1", event_broker: Optional[EndpointConfig] = None)
+ | __init__(domain: Domain, table_name: Text = "states", region: Text = "us-east-1", event_broker: Optional[EndpointConfig] = None, **kwargs: Dict[Text, Any], ,) -> None
 ```
 
 Initialize `DynamoTrackerStore`.
@@ -239,6 +237,7 @@ Initialize `DynamoTrackerStore`.
 - `region` - The name of the region associated with the client.
   A client is associated with a single region.
 - `event_broker` - An event broker used to publish events.
+- `kwargs` - Additional kwargs.
 
 #### get\_or\_create\_table
 
@@ -263,14 +262,6 @@ Saves the current conversation state
 ```
 
 Serializes the tracker, returns object with decimal types
-
-#### retrieve
-
-```python
- | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
-```
-
-Create a tracker from all previously stored events.
 
 #### keys
 
@@ -307,21 +298,6 @@ Returns the current conversation
 ```
 
 Saves the current conversation state
-
-#### retrieve
-
-```python
- | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
-```
-
-**Arguments**:
-
-- `sender_id` - the message owner ID
-  
-
-**Returns**:
-
-  `DialogueStateTracker`
 
 #### keys
 
@@ -442,14 +418,6 @@ Provide a transactional scope around a series of operations.
 ```
 
 Returns sender_ids of the SQLTrackerStore
-
-#### retrieve
-
-```python
- | retrieve(sender_id: Text) -> Optional[DialogueStateTracker]
-```
-
-Create a tracker from all previously stored events.
 
 #### save
 

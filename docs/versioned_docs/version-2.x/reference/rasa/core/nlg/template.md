@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.nlg.template
+sidebar_label: template
 title: rasa.core.nlg.template
 ---
 

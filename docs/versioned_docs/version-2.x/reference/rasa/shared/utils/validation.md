@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.utils.validation
+sidebar_label: validation
 title: rasa.shared.utils.validation
 ---
 

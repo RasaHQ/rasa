@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.nlu.training_data.formats.readerwriter
+sidebar_label: readerwriter
 title: rasa.shared.nlu.training_data.formats.readerwriter
 ---
 
