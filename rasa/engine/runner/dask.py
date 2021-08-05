@@ -10,7 +10,8 @@ from rasa.engine.exceptions import GraphRunError
 from rasa.engine.graph import (
     ExecutionContext,
     GraphNode,
-    GraphNodeHook, GraphSchema,
+    GraphNodeHook,
+    GraphSchema,
 )
 from rasa.engine.runner.interface import GraphRunner
 from rasa.engine.storage.storage import ModelStorage
@@ -43,7 +44,6 @@ class DaskGraphRunner(GraphRunner):
             graph_schema, model_storage, execution_context, hooks
         )
         self._execution_context: ExecutionContext = execution_context
-
 
     @classmethod
     def create(

@@ -45,7 +45,7 @@ def test_cached_component_replace_schema_node():
         config={"a": 1},
         eager=False,
         is_input=False,
-        resource=Resource("hello")
+        resource=Resource("hello"),
     )
 
     CachedComponent.replace_schema_node(schema_node, 2)
@@ -58,7 +58,7 @@ def test_cached_component_replace_schema_node():
         config={"output": 2},
         eager=False,
         is_input=False,
-        resource=Resource("hello")
+        resource=Resource("hello"),
     )
 
 
@@ -71,7 +71,7 @@ def test_fingerprint_component_replace_schema_node(temp_cache: TrainingCache):
         config={"a": 1},
         eager=False,
         is_input=False,
-        resource=Resource("hello")
+        resource=Resource("hello"),
     )
 
     FingerprintComponent.replace_schema_node(schema_node, temp_cache, "some_node_name")
@@ -84,7 +84,7 @@ def test_fingerprint_component_replace_schema_node(temp_cache: TrainingCache):
         config={"a": 1, "cache": temp_cache, "node_name": "some_node_name"},
         eager=True,
         is_input=False,
-        resource=Resource("hello")
+        resource=Resource("hello"),
     )
 
 

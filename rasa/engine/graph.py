@@ -93,9 +93,11 @@ class GraphSchema:
         return GraphSchema(nodes)
 
     def target_names(self) -> List[Text]:
+        """Returns the names of all target nodes."""
         return [node_name for node_name, node in self.nodes.items() if node.is_target]
 
     def minimal_graph_schema(self,) -> GraphSchema:
+        """Returns a new schema where all nodes are a descendant of a target."""
         dependencies = self._all_dependencies_schema(self.target_names())
 
         return GraphSchema(

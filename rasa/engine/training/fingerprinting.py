@@ -9,13 +9,17 @@ logger = logging.getLogger(__name__)
 
 @runtime_checkable
 class Fingerprintable(Protocol):
+    """Interface that enforces training data can be fingerprinted."""
+
     def fingerprint(self) -> Text:
+        """Returns a unique stable fingerprint of the data."""
         ...
 
 
 def calculate_fingerprint_key(
     node_name: Text, config: Dict[Text, Any], inputs: Dict[Text, Fingerprintable]
-):
+) -> Text:
+    """Calculates a fingerprint key that uniquely represents a single graph node run."""
     fingerprint_data = {
         "node_name": node_name,
         "config": config,

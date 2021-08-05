@@ -19,11 +19,13 @@ def default_model_storage(tmp_path: Path) -> ModelStorage:
 def temp_cache(tmp_path: Path, local_cache_creator: Callable) -> LocalTrainingCache:
     return local_cache_creator(tmp_path)
 
+
 @pytest.fixture()
 def local_cache_creator(tmp_path: Path, monkeypatch: MonkeyPatch) -> Callable:
     def create_local_cache(path: Path):
         monkeypatch.setenv(CACHE_LOCATION_ENV, str(path))
         return LocalTrainingCache()
+
     return create_local_cache
 
 

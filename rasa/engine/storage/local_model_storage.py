@@ -143,7 +143,9 @@ class LocalModelStorage(ModelStorage):
                 self._storage_path, temporary_directory / MODEL_ARCHIVE_COMPONENTS_DIR
             )
 
-            model_metadata = self._create_model_metadata(domain, predict_schema, train_schema)
+            model_metadata = self._create_model_metadata(
+                domain, predict_schema, train_schema
+            )
             self._persist_metadata(model_metadata, temporary_directory)
 
             with tarfile.open(model_archive_path, "w:gz") as tar:

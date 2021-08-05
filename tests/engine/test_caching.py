@@ -3,7 +3,7 @@ import logging
 import shutil
 import uuid
 from pathlib import Path
-from typing import Callable, Dict, Text, Optional, Any
+from typing import Dict, Text, Optional, Any
 from unittest.mock import Mock
 
 import pytest

@@ -20,12 +20,22 @@ logger = logging.getLogger(__name__)
 
 
 class GraphTrainer:
+    """Trains a model using a graph schema."""
+
     def __init__(
         self,
         model_storage: ModelStorage,
         cache: TrainingCache,
         graph_runner_class: Type[GraphRunner],
     ) -> None:
+        """Initializes a `GraphTrainer`.
+
+        Args:
+            model_storage: Storage which graph components can use to persist and load.
+                Also used for packaging the trained model.
+            cache: Cache used to store fingerprints and outputs.
+            graph_runner_class: The class to instantiate the runner from.
+        """
         self._model_storage = model_storage
         self._cache = cache
         self._graph_runner_class = graph_runner_class
@@ -37,6 +47,18 @@ class GraphTrainer:
         domain_path: Path,
         output_filename: Path,
     ) -> GraphRunner:
+        """Trains and packages a model then returns the prediction graph runner.
+
+        Args:
+            train_schema: The train graph schema.
+            predict_schema: The predict graph schema.
+            domain_path: The path to the domain file.
+            output_filename: The location to save the packaged model.
+
+        Returns:
+            A graph runner loaded with the predict schema.
+
+        """
         logger.debug("Starting training.")
 
         pruned_training_schema = self._fingerprint_and_prune(train_schema)
