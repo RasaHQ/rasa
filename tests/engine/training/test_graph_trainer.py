@@ -1,13 +1,13 @@
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Optional, Text, Type
 from unittest.mock import Mock
 
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 import pytest
 
-from rasa.engine.caching import LocalTrainingCache, TrainingCache
-from rasa.engine.graph import GraphSchema, SchemaNode
+from rasa.engine.caching import TrainingCache
+from rasa.engine.graph import GraphComponent, GraphSchema, SchemaNode
 from rasa.engine.runner.dask import DaskGraphRunner
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -18,7 +18,6 @@ from tests.engine.graph_components_test_classes import (
     AssertComponent,
     FileReader,
     PersistableTestComponent,
-    SubtractByX,
 )
 
 
@@ -90,7 +89,8 @@ def test_graph_trainer(
 def test_graph_trainer_fingerprints_caches(
     temp_cache: TrainingCache,
     tmp_path: Path,
-    schema_trainer_helper: Callable,
+    train_with_schema: Callable,
+    spy_on_component: Callable,
     monkeypatch: MonkeyPatch,
 ):
 
@@ -145,7 +145,7 @@ def test_graph_trainer_fingerprints_caches(
 
     mock.assert_not_called()
 
-    schema_trainer_helper(train_schema, temp_cache)
+    train_with_schema(train_schema, temp_cache)
 
     # The first train should call the component
     mock.assert_called_once()
@@ -153,7 +153,7 @@ def test_graph_trainer_fingerprints_caches(
     second_mock = Mock()
     monkeypatch.setattr(AssertComponent, "mockable_method", second_mock)
 
-    schema_trainer_helper(train_schema, temp_cache)
+    train_with_schema(train_schema, temp_cache)
 
     # Nothing has changed so this time the component will be cached, not called.
     second_mock.assert_not_called()
@@ -163,14 +163,14 @@ def test_graph_trainer_fingerprints_caches(
 
     train_schema.nodes["add"].config["something"] = "new"
 
-    schema_trainer_helper(train_schema, temp_cache)
+    train_with_schema(train_schema, temp_cache)
 
     # As we changed the config of "add", all its descendants will run.
     third_mock.assert_called_once()
 
 
 @pytest.fixture
-def schema_trainer_helper(
+def train_with_schema(
     default_model_storage: ModelStorage,
     temp_cache: TrainingCache,
     tmp_path: Path,
@@ -178,7 +178,7 @@ def schema_trainer_helper(
     local_cache_creator: Callable,
     domain_path: Path,
 ):
-    def train_with_schema(
+    def inner(
         train_schema: GraphSchema,
         cache: Optional[TrainingCache] = None,
         model_storage: Optional[ModelStorage] = None,
@@ -208,4 +208,14 @@ def schema_trainer_helper(
         assert output_filename.is_file()
         return output_filename
 
-    return train_with_schema
+    return inner
+
+
+@pytest.fixture()
+def spy_on_component(monkeypatch: MonkeyPatch) -> Callable:
+    def inner(component_class: Type[GraphComponent], fn_name: Text) -> Mock:
+        mock = Mock(wraps=getattr(component_class, fn_name))
+        monkeypatch.setattr(component_class, fn_name, mock)
+        return mock
+
+    return inner
