@@ -19,8 +19,6 @@ import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 
-# backwards compatibility 1.0.x
-# noinspection PyUnresolvedReferences
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from sanic import Sanic
@@ -88,10 +86,8 @@ def dump_obj_as_yaml_to_file(
     )
 
 
-def list_routes(app: Sanic) -> Text:
-    """List all the routes of a sanic application.
-
-    Mainly used for debugging."""
+def list_routes(app: Sanic) -> Dict[Text, Text]:
+    """List all the routes of a sanic application. Mainly used for debugging."""
     from urllib.parse import unquote
 
     output = {}

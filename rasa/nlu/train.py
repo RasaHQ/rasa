@@ -58,7 +58,11 @@ async def load_data_from_endpoint(
 
         return training_data
     except Exception as e:
-        logger.warning(f"Could not retrieve training data from URL:\n{e}")
+        logger.warning(
+            f"Could not retrieve training data from URL. Using empty "
+            f"training data instead. Error details:\n{e}"
+        )
+        return TrainingData()
 
 
 def create_persistor(persistor: Optional[Text]) -> Optional["Persistor"]:

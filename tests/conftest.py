@@ -74,20 +74,6 @@ PATH_PYTEST_MARKER_MAPPINGS = {
 }
 
 
-TEST_DIALOGUES = [
-    "data/test_dialogues/default.json",
-    "data/test_dialogues/formbot.json",
-    "data/test_dialogues/moodbot.json",
-]
-
-EXAMPLE_DOMAINS = [
-    "data/test_domains/default_with_mapping.yml",
-    "data/test_domains/default_with_slots.yml",
-    "examples/formbot/domain.yml",
-    "data/test_moodbot/domain.yml",
-]
-
-
 @pytest.fixture(scope="session")
 def nlu_as_json_path() -> Text:
     return "data/examples/rasa/demo-rasa.json"
@@ -427,6 +413,11 @@ async def trained_e2e_model(
 def moodbot_domain() -> Domain:
     domain_path = os.path.join("data", "test_moodbot", "domain.yml")
     return Domain.load(domain_path)
+
+
+@pytest.fixture(scope="session")
+def moodbot_nlu_data_path() -> Path:
+    return Path(os.getcwd()) / "data" / "test_moodbot" / "data" / "nlu.yml"
 
 
 @pytest.fixture

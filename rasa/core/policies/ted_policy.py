@@ -198,8 +198,9 @@ class TEDPolicy(Policy):
         KEY_RELATIVE_ATTENTION: False,
         # If 'True' use value relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
-        # Max position for relative embeddings
-        MAX_RELATIVE_POSITION: None,
+        # Max position for relative embeddings. Only in effect if key- or value relative
+        # attention are turned on
+        MAX_RELATIVE_POSITION: 5,
         # Use a unidirectional or bidirectional encoder
         # for `text`, `action_text`, and `label_action_text`.
         UNIDIRECTIONAL_ENCODER: False,
@@ -462,7 +463,7 @@ class TEDPolicy(Policy):
         self, entity_tags: Optional[List[List[Dict[Text, List["Features"]]]]]
     ) -> Optional[Data]:
         if not self.config[ENTITY_RECOGNITION]:
-            return
+            return None
 
         # check that there are real entity tags
         if entity_tags and self._should_extract_entities(entity_tags):
@@ -475,6 +476,8 @@ class TEDPolicy(Policy):
             f"set '{ENTITY_RECOGNITION}' config parameter to 'False'."
         )
         self.config[ENTITY_RECOGNITION] = False
+
+        return None
 
     def _create_model_data(
         self,
@@ -837,11 +840,11 @@ class TEDPolicy(Policy):
             # entities belong only to the last user message
             # and only if user text was used for prediction,
             # a user message always comes after action listen
-            return
+            return None
 
         if not self.config[ENTITY_RECOGNITION]:
             # entity recognition is not turned on, no entities can be predicted
-            return
+            return None
 
         # The batch dimension of entity prediction is not the same as batch size,
         # rather it is the number of last (if max history featurizer else all)
@@ -857,7 +860,7 @@ class TEDPolicy(Policy):
 
         if ENTITY_ATTRIBUTE_TYPE not in predicted_tags:
             # no entities detected
-            return
+            return None
 
         # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities

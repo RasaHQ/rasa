@@ -166,8 +166,9 @@ class UnexpecTEDIntentPolicy(TEDPolicy):
         KEY_RELATIVE_ATTENTION: False,
         # If 'True' use value relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
-        # Max position for relative embeddings
-        MAX_RELATIVE_POSITION: None,
+        # Max position for relative embeddings. Only in effect if key- or value relative
+        # attention are turned on
+        MAX_RELATIVE_POSITION: 5,
         # Use a unidirectional or bidirectional encoder
         # for `text`, `action_text`, and `label_action_text`.
         UNIDIRECTIONAL_ENCODER: False,

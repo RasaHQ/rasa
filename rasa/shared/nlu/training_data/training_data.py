@@ -464,23 +464,11 @@ class TrainingData:
         ]
         return sorted(entity_examples, key=lambda e: e["entity"])
 
-    def sorted_intent_examples(self) -> List[Message]:
-        """Sorts the intent examples by the name of the intent and then response."""
-        rasa.shared.utils.io.raise_warning(
-            "`sorted_intent_examples` is deprecated and will be removed in Rasa "
-            "3.0.0.",
-            category=DeprecationWarning,
-        )
-        return sorted(
-            self.intent_examples,
-            key=lambda e: (e.get(INTENT), e.get(INTENT_RESPONSE_KEY)),
-        )
-
     def validate(self) -> None:
         """Ensures that the loaded training data is valid.
 
-        Checks that the data has a minimum of certain training examples."""
-
+        Checks that the data has a minimum of certain training examples.
+        """
         logger.debug("Validating training data...")
         if "" in self.intents:
             rasa.shared.utils.io.raise_warning(
