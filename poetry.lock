@@ -162,7 +162,7 @@ tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>
 
 [[package]]
 name = "azure-core"
-version = "1.16.0"
+version = "1.17.0"
 description = "Microsoft Azure Core Library for Python"
 category = "dev"
 optional = false
@@ -248,16 +248,19 @@ numpy = ">=1.15.0"
 
 [[package]]
 name = "boto3"
-version = "1.18.12"
+version = "1.18.15"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.6"
 
 [package.dependencies]
-botocore = ">=1.21.12,<1.22.0"
+botocore = ">=1.21.15,<1.22.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.5.0,<0.6.0"
+
+[package.extras]
+crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
@@ -3174,7 +3177,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.9"
-content-hash = "bb6e68ce4ef6e2f7a55d38f4c65ef4bc5a1d642b2046e6439843fdedb4ffcb13"
+content-hash = "5a97eda052614a732021af9d203317ca0f8320e1558ba1ce5e8174adf855bfe1"
 
 [metadata.files]
 absl-py = [
@@ -3265,8 +3268,8 @@ attrs = [
     {file = "attrs-21.2.0.tar.gz", hash = "sha256:ef6aaac3ca6cd92904cdd0d83f629a15f18053ec84e6432106f7a4d04ae4f5fb"},
 ]
 azure-core = [
-    {file = "azure-core-1.16.0.zip", hash = "sha256:b1c7d2e01846074f258c8b2e592239aef836a2b1c27d8d0e8491a2c7e2906ef4"},
-    {file = "azure_core-1.16.0-py2.py3-none-any.whl", hash = "sha256:83ef981ca4ad167c1df7b1ec5c4bda74999fcd21cacc048e83cf8ce51c61d5c2"},
+    {file = "azure-core-1.17.0.zip", hash = "sha256:25407390dde142d3e41ecf78bb18cedda9b7f7a0af558d082dec711c4a334f46"},
+    {file = "azure_core-1.17.0-py2.py3-none-any.whl", hash = "sha256:906e031a8241fe0794ec4137aca77a1aeab2ebde5cd6049c377d05cb6b87b691"},
 ]
 azure-storage-blob = [
     {file = "azure-storage-blob-12.8.1.zip", hash = "sha256:eb37b50ddfb6e558b29f6c8c03b0666514e55d6170bf4624e7261a3af93c6401"},
@@ -3300,12 +3303,12 @@ blis = [
     {file = "blis-0.7.4.tar.gz", hash = "sha256:7daa615a97d4f28db0f332b710bfe1900b15d0c25841c6d727965e4fd91e09cf"},
 ]
 boto3 = [
-    {file = "boto3-1.18.12-py3-none-any.whl", hash = "sha256:e5abbb2b5ebe5ad1157a3af8f28c5c944e9c6eff0dd3e778008894e018bc7e09"},
-    {file = "boto3-1.18.12.tar.gz", hash = "sha256:596fb9df00a816780db8620d9f62982eb783b3eb63a75947e172101d0785e6aa"},
+    {file = "boto3-1.18.15-py3-none-any.whl", hash = "sha256:dc44be94fa03245fd0cfff8a3fcc17d79283cfda9a39ae2e5cdedcd75749e089"},
+    {file = "boto3-1.18.15.tar.gz", hash = "sha256:48241d2ca6074dd35411e1e72a4ca8ae5043e8e4aba0a9975a94af66382995da"},
 ]
 botocore = [
-    {file = "botocore-1.21.12-py3-none-any.whl", hash = "sha256:7b205f96bf0e2e1017301339e4fba9fd6dfdf54680196eb43e60e60581d7d5cb"},
-    {file = "botocore-1.21.12.tar.gz", hash = "sha256:8710d03b9de3e3d94ed410f3e83809ca02050b091100d68c22ff7bf986f29fb6"},
+    {file = "botocore-1.21.15-py3-none-any.whl", hash = "sha256:5f9686f42fcc6df0eb3ca5804113135f06ae92a6010347665ca7670f1397bff1"},
+    {file = "botocore-1.21.15.tar.gz", hash = "sha256:90b50e321278223c794032ae1ded7dfebdc73c54cc3cbbf72648e4cfdf060529"},
 ]
 cachetools = [
     {file = "cachetools-4.2.2-py3-none-any.whl", hash = "sha256:2cc0b89715337ab6dbba85b5b50effe2b0c74e035d83ee8ed637cf52f12ae001"},
