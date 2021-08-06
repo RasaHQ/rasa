@@ -8,3 +8,7 @@ class GraphComponentException(Exception):
 
 class GraphSchemaException(Exception):
     """Represents errors when dealing with `GraphSchema`s."""
+
+
+class GraphSchemaValidationException(Exception):
+    """Indicates that the given graph schema is invalid."""

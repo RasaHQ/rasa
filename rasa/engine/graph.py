@@ -8,7 +8,12 @@ from dataclasses import dataclass, field
 import logging
 from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple
 
-from rasa.engine.exceptions import GraphComponentException, GraphSchemaException
+from typing_extensions import runtime_checkable, Protocol
+
+from rasa.engine.exceptions import (
+    GraphComponentException,
+    GraphSchemaException,
+)
 import rasa.shared.utils.common
 from rasa.engine.storage.resource import Resource
 
@@ -17,6 +22,15 @@ if typing.TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class Fingerprintable(Protocol):
+    """Protocol which each node output has to implement in the train graph."""
+
+    def fingerprint(self) -> Text:
+        """Returns a unique stable fingerprint for itself."""
+        ...
 
 
 @dataclass
@@ -147,14 +161,16 @@ class GraphComponent(ABC):
         """
         return cls.create(config, model_storage, resource, execution_context)
 
-    def supported_languages(self) -> Optional[List[Text]]:
+    @staticmethod
+    def supported_languages() -> Optional[List[Text]]:
         """Determines which languages this component can work with.
 
         Returns: A list of supported languages, or `None` to signify all are supported.
         """
         return None
 
-    def required_packages(self) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
         """Any extra python dependencies required for this component to run."""
         return []
 
