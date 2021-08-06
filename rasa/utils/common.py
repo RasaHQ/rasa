@@ -16,6 +16,7 @@ from typing import (
     TypeVar,
     Union,
     ContextManager,
+    Set,
 )
 
 import rasa.utils.io
@@ -375,3 +376,25 @@ def copy_directory(source: Path, destination: Path) -> None:
             shutil.copytree(item, destination / item.name)
         else:
             shutil.copy2(item, destination / item.name)
+
+
+def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
+    """Tries to import all package names and returns the packages where it failed.
+
+    Args:
+        package_names: The package names to import.
+
+    Returns:
+        Package names that could not be imported.
+    """
+
+    import importlib
+
+    failed_imports = set()
+    for package in package_names:
+        try:
+            importlib.import_module(package)
+        except ImportError:
+            failed_imports.add(package)
+
+    return failed_imports
