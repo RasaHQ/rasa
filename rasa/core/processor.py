@@ -52,6 +52,8 @@ from rasa.shared.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
 from rasa.utils.endpoints import EndpointConfig
 
+
+from memory_profiler import profile
 logger = logging.getLogger(__name__)
 
 MAX_NUMBER_OF_PREDICTIONS = int(os.environ.get("MAX_NUMBER_OF_PREDICTIONS", "10"))
@@ -82,6 +84,7 @@ class MessageProcessor:
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
 
+    @profile
     async def handle_message(
         self, message: UserMessage
     ) -> Optional[List[Dict[Text, Any]]]:
