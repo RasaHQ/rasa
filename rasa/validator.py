@@ -118,7 +118,7 @@ class Validator:
             event.intent["name"]
             for story in self.story_graph.story_steps
             for event in story.events
-            if type(event) == UserUttered
+            if type(event) == UserUttered and event.intent_name is not None
         }
 
         for story_intent in stories_intents:
