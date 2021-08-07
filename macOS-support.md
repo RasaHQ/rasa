@@ -1,16 +1,16 @@
-# Development Internals Support for macOS users
+# Development Internal Support for macOS users
 
 When trying to get virtual env and dependencies running, macOS users may
 
 experience some compiler problems.
 
-If that is your case, this guide is intended to help you get things working.
+If that is the case, this guide is intended to help you get things working.
 
 It was built based on common problems that were reported to the Rasa repository.
 
 It is possible that your problem is not listed here yet, but try reading the
 
-bellow because it might give you an insight.
+below because it might give you an insight.
 
 
 ## Problems with pyenv
@@ -75,7 +75,7 @@ it like this:
 
 The above should work just fine, but if life doesn't go easy on you, it's possible
 
-that an error like the one bellow showed up:
+that an error like the one below showed up:
 
 
 Error example 3
