@@ -159,6 +159,9 @@ To install dependencies and `rasa` itself in editable mode execute
 make install
 ```
 
+If you are a **macOS user** and you're having trouble, this [macOS support guide](macOS-support.md)
+might help you.
+
 ### Running and changing the documentation
 
 First of all, install all the required dependencies:
