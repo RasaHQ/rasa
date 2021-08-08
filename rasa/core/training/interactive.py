@@ -50,8 +50,7 @@ from rasa.shared.core.constants import (
 from rasa.core import run, utils
 import rasa.core.train
 from rasa.core.constants import (
-    DEFAULT_SERVER_FORMAT,
-    DEFAULT_SERVER_INTERFACE,
+    DEFAULT_INTERACTIVE_SERVER_URL,
     DEFAULT_SERVER_PORT,
 )
 from rasa.shared.core.domain import Domain
@@ -1454,8 +1453,8 @@ def _print_help(skip_visualization: bool) -> None:
     """Print some initial help message for the user."""
 
     if not skip_visualization:
-        visualization_url = DEFAULT_SERVER_FORMAT.format(
-            "http", DEFAULT_SERVER_INTERFACE, DEFAULT_SERVER_PORT + 1
+        visualization_url = DEFAULT_INTERACTIVE_SERVER_URL.format(
+            "http", DEFAULT_SERVER_PORT + 1
         )
         visualization_help = (
             f"Visualisation at {visualization_url}/visualization.html ."
@@ -1602,9 +1601,9 @@ def _serve_application(
 ) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
 
-    endpoint = EndpointConfig(url=DEFAULT_SERVER_FORMAT.format(
-        "http", DEFAULT_SERVER_INTERFACE, port
-    ))
+    endpoint = EndpointConfig(
+        url=DEFAULT_INTERACTIVE_SERVER_URL.format("http", port)
+    )
 
     async def run_interactive_io(running_app: Sanic) -> None:
         """Small wrapper to shut down the server once cmd io is done."""
