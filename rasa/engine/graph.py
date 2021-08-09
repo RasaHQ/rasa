@@ -23,8 +23,6 @@ logger = logging.getLogger(__name__)
 class SchemaNode:
     """Represents one node in the schema."""
 
-    # TODO: JUZL: add name?
-
     needs: Dict[Text, Text]
     uses: Type[GraphComponent]
     constructor_name: Text
