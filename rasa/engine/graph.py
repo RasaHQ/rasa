@@ -92,13 +92,14 @@ class GraphSchema:
 
         return GraphSchema(nodes)
 
+    @property
     def target_names(self) -> List[Text]:
         """Returns the names of all target nodes."""
         return [node_name for node_name, node in self.nodes.items() if node.is_target]
 
-    def minimal_graph_schema(self,) -> GraphSchema:
+    def minimal_graph_schema(self) -> GraphSchema:
         """Returns a new schema where all nodes are a descendant of a target."""
-        dependencies = self._all_dependencies_schema(self.target_names())
+        dependencies = self._all_dependencies_schema(self.target_names)
 
         return GraphSchema(
             {
@@ -307,11 +308,7 @@ class GraphNode:
         if self._eager:
             self._load_component()
 
-    def _load_component(
-        self, additional_kwargs: Optional[Dict[Text, Any]] = None
-    ) -> None:
-        kwargs = additional_kwargs if additional_kwargs else {}
-
+    def _load_component(self, **kwargs: Any) -> None:
         logger.debug(
             f"Node {self._node_name} loading "
             f"{self._component_class.__name__}.{self._constructor_name} "
@@ -376,15 +373,17 @@ class GraphNode:
 
         input_hook_outputs = self._run_before_hooks(kwargs)
 
-        constructor_kwargs = {}
         if not self._eager:
             constructor_kwargs = rasa.shared.utils.common.minimal_kwargs(
                 kwargs, self._constructor_fn
             )
-            self._load_component(constructor_kwargs.copy())
+            self._load_component(**constructor_kwargs)
+            run_kwargs = {
+                k: v for k, v in kwargs.items() if k not in constructor_kwargs
+            }
+        else:
+            run_kwargs = kwargs
 
-        # TODO: clearer/safer way?
-        run_kwargs = {k: v for k, v in kwargs.items() if k not in constructor_kwargs}
         logger.debug(
             f"Node {self._node_name} running "
             f"{self._component_class.__name__}.{self._fn_name} "

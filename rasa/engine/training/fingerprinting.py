@@ -19,7 +19,16 @@ class Fingerprintable(Protocol):
 def calculate_fingerprint_key(
     node_name: Text, config: Dict[Text, Any], inputs: Dict[Text, Fingerprintable]
 ) -> Text:
-    """Calculates a fingerprint key that uniquely represents a single graph node run."""
+    """Calculates a fingerprint key that uniquely represents a single node's execution.
+
+    Args:
+        node_name: The name of the node.
+        config: The component config.
+        inputs: The inputs as a mapping of parent node name to input value.
+
+    Returns:
+        The fingerprint key.
+    """
     fingerprint_data = {
         "node_name": node_name,
         "config": config,
@@ -29,7 +38,7 @@ def calculate_fingerprint_key(
     fingerprint_key = rasa.shared.utils.io.deep_container_fingerprint(fingerprint_data)
 
     logger.debug(
-        f"Calculated fingerprint_key: {fingerprint_key} for data {fingerprint_data}"
+        f"Calculated fingerprint_key '{fingerprint_key}' for data '{fingerprint_data}'."
     )
 
     return fingerprint_key

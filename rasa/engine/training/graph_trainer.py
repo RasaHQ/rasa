@@ -47,7 +47,7 @@ class GraphTrainer:
         domain_path: Path,
         output_filename: Path,
     ) -> GraphRunner:
-        """Trains and packages a model then returns the prediction graph runner.
+        """Trains and packages a model and returns the prediction graph runner.
 
         Args:
             train_schema: The train graph schema.
@@ -90,14 +90,29 @@ class GraphTrainer:
         )
 
     def _fingerprint_and_prune(self, train_schema: GraphSchema) -> GraphSchema:
+        """Runs the graph using fingerprints to determine which nodes need to re-run.
+
+        Nodes which have a matching fingerprint key in the cache can either be removed
+        entirely from the graph, or replaced with a cached value if their output is
+        needed by descendent nodes.
+
+        Args:
+            train_schema: The train graph schema that will be run in fingerprint mode.
+
+        Returns:
+            A new, potentially smaller and/or cached, graph schema.
+        """
         fingerprint_schema = self._create_fingerprint_schema(train_schema)
+
         fingerprint_graph_runner = self._graph_runner_class.create(
             graph_schema=fingerprint_schema,
             model_storage=self._model_storage,
             execution_context=ExecutionContext(graph_schema=fingerprint_schema),
         )
+
         logger.debug("Fingerprint run.")
         fingerprint_run_outputs = fingerprint_graph_runner.run()
+
         pruned_training_schema = self._prune_schema(
             train_schema, fingerprint_run_outputs
         )
@@ -106,6 +121,9 @@ class GraphTrainer:
     def _create_fingerprint_schema(self, train_schema: GraphSchema) -> GraphSchema:
         fingerprint_schema = copy.deepcopy(train_schema)
         for node_name, schema_node in fingerprint_schema.nodes.items():
+            # We make every node a target so that `graph_runner.run(...)` returns
+            # the output for each node. We need the output of each node
+            # to decide which nodes we can prune.
             schema_node.is_target = True
             if not schema_node.is_input:
                 FingerprintComponent.replace_schema_node(
@@ -118,8 +136,23 @@ class GraphTrainer:
         schema: GraphSchema,
         fingerprint_run_outputs: Dict[Text, Union[FingerprintStatus, Any]],
     ) -> GraphSchema:
+        """Uses the fingerprint statuses to prune the graph schema.
+
+        Walks the graph starting at each target node. If a node has a cache hit we
+        replace it with a `CachedComponent` and remove its input dependencies.
+        At the end, any node that is not an ancestor of a target node will be pruned
+        when we call `minimal_graph_schema()`.
+
+        Args:
+            schema: The graph to prune.
+            fingerprint_run_outputs: Node outputs from the fingerprint run as a mapping
+                from node name to output.
+
+        Returns:
+            The pruned schema.
+        """
         pruned_schema = copy.deepcopy(schema)
-        target_node_names = pruned_schema.target_names()
+        target_node_names = pruned_schema.target_names
 
         for target_node_name in target_node_names:
             self._walk_and_prune(
@@ -134,12 +167,32 @@ class GraphTrainer:
         current_node_name: Text,
         fingerprint_run_outputs: Dict[Text, Union[FingerprintStatus, Any]],
     ) -> None:
+        """Recursively walks backwards though a graph checking the status of each node.
+
+        If node has a fingerprint key hit then we check if there is a cached output.
+        If there is a cached output we will replace the node with a `CachedComponent`
+        and remove all its dependencies (`.needs`). If there is not a fingerprint key
+        hit, or there is no cached output, the node is left untouched and will executed
+        again next run unless it is no longer the ancestor of a target node.
+
+        Args:
+            schema: The graph we are currently walking.
+            current_node_name: The current node on the walk.
+            fingerprint_run_outputs: The fingerprint statuses of every node as a mapping
+                from node name to status.
+        """
         fingerprint_run_output = fingerprint_run_outputs[current_node_name]
         node = schema.nodes[current_node_name]
+
+        # If we have replaced this node with a `CachedComponent` we have already
+        # visited this node. A CachedComponent is updated to have no parent nodes, so
+        # we can end the walk here.
         if node.uses == CachedComponent:
             return
 
+        # If the output was a `FingerprintStatus` we must check the cache and status.
         if isinstance(fingerprint_run_output, FingerprintStatus):
+            # If there is a fingerprint key hit we can potentially use a cached output.
             if fingerprint_run_output.is_hit:
                 output_result = self._cache.get_cached_result(
                     output_fingerprint_key=fingerprint_run_output.output_fingerprint,
@@ -147,15 +200,23 @@ class GraphTrainer:
                     model_storage=self._model_storage,
                 )
                 if output_result:
+                    logger.debug(f"Updating {node} to use a `CachedComponent`.")
                     CachedComponent.replace_schema_node(node, output_result)
+                    # We remove all parent dependencies as the cached output value will
+                    # be used.
                     node.needs = {}
                 else:
+                    # If there is no cached output the node must be re-run if it ends
+                    # up as an ancestor of a target node.
                     fingerprint_run_output.is_hit = False
+
+        # Else the node was an input node and the output is the actual node's output.
         else:
-            # fingerprint_run_output is just the output in this case
-            # No need to run the node again.
+            # As fingerprint_run_output is just the node's output there is no need to
+            # execute the node again. We can just return it from a `CachedComponent`.
             CachedComponent.replace_schema_node(node, fingerprint_run_output)
             node.needs = {}
 
+        # Continue walking for every parent node.
         for parent_node_name in node.needs.values():
             self._walk_and_prune(schema, parent_node_name, fingerprint_run_outputs)

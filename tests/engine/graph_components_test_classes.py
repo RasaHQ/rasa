@@ -65,11 +65,7 @@ class AssertComponent(GraphComponent):
     ) -> AssertComponent:
         return cls(config["value_to_assert"])
 
-    def mockable_method(self):
-        ...
-
     def run_assert(self, i: Any) -> CacheableText:
-        self.mockable_method()
         assert i == self._value_to_assert
         return CacheableText("")
 
@@ -245,10 +241,10 @@ class CacheableText:
         text = rasa.shared.utils.io.read_file(directory / "my_file.txt")
         return cls(text=text)
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         return self.text
 
-    def __int__(self):
+    def __int__(self) -> int:
         return int(self.text)
 
 

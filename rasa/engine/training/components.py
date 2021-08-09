@@ -40,19 +40,32 @@ class CachedComponent(GraphComponent):
         """Returns the cached output."""
         return self._output
 
-    # TODO: JUZL: should we change the node name?
-    @staticmethod
-    def replace_schema_node(node: SchemaNode, output: Any) -> None:
-        """Updates a `SchemaNode` to use a `CachedComponent`."""
-        node.uses = CachedComponent
+    @classmethod
+    def replace_schema_node(cls, node: SchemaNode, output: Any) -> None:
+        """Updates a `SchemaNode` to use a `CachedComponent`.
+
+        This is for when we want to use the cached output value of a node from a
+        previous training in a subsequent training. We replace the class in the `uses`
+        of the node to a be a `CachedComponent` configured to return the cached value.
+
+        Args:
+            node: The node to update.
+            output: The cached output that the `CachedComponent` will return.
+        """
+        node.uses = cls
         node.config = {"output": output}
-        node.fn = "get_cached_output"
-        node.constructor_name = "create"
+        node.fn = cls.get_cached_output.__name__
+        node.constructor_name = cls.create.__name__
 
 
 @dataclasses.dataclass
 class FingerprintStatus:
-    """Holds the output of a `FingerprintComponent` and is used to prune the graph."""
+    """Holds the output of a `FingerprintComponent` and is used to prune the graph.
+
+    Attributes:
+        output_fingerprint: A fingerprint of the node's output value.
+        is_hit: `True` if node's fingerprint key exists in the cache, `False` otherwise.
+    """
 
     output_fingerprint: Optional[Text]
     is_hit: bool
@@ -71,18 +84,21 @@ class FingerprintComponent(GraphComponent):
     default_config = {}
 
     def __init__(
-        self, cache: TrainingCache, component_config: Dict[Text, Any], node_name: Text
+        self,
+        cache: TrainingCache,
+        config_of_replaced_component: Dict[Text, Any],
+        name_of_replaced_node: Text,
     ) -> None:
         """Initializes a `FingerprintComponent`.
 
         Args:
             cache: Training cache used to determine if the run is a hit or not.
-            component_config: Needed to generate the fingerprint key
-            node_name: Needed to generate the fingerprint key
+            config_of_replaced_component: Needed to generate the fingerprint key.
+            name_of_replaced_node: Needed to generate the fingerprint key.
         """
         self._cache = cache
-        self._component_config = component_config
-        self._node_name = node_name
+        self._config_of_replaced_component = config_of_replaced_component
+        self._name_of_replaced_node = name_of_replaced_node
 
     @classmethod
     def create(
@@ -95,10 +111,19 @@ class FingerprintComponent(GraphComponent):
         """Creates a `FingerprintComponent` (see parent class for full docstring)."""
         cache = config.pop("cache")
         node_name = config.pop("node_name")
-        return cls(cache=cache, component_config=config, node_name=node_name)
+        return cls(
+            cache=cache,
+            config_of_replaced_component=config,
+            name_of_replaced_node=node_name,
+        )
 
     def run(self, **kwargs: Any) -> FingerprintStatus:
         """Calculates the fingerprint key to determine if cached output can be used.
+
+        If the fingerprint key matches an entry in the cache it means that there has
+        been a previous node execution which matches the same node name, component
+        config and input values. This means that we can potentially prune this node
+        from the schema, or replace it with a cached value before the next graph run.
 
         Args:
             **kwargs: Inputs from all parent nodes.
@@ -108,7 +133,9 @@ class FingerprintComponent(GraphComponent):
             also the output fingerprint from the cache.
         """
         fingerprint_key = fingerprinting.calculate_fingerprint_key(
-            node_name=self._node_name, config=self._component_config, inputs=kwargs,
+            node_name=self._name_of_replaced_node,
+            config=self._config_of_replaced_component,
+            inputs=kwargs,
         )
 
         output_fingerprint = self._cache.get_cached_output_fingerprint(fingerprint_key)
@@ -117,15 +144,27 @@ class FingerprintComponent(GraphComponent):
             is_hit=output_fingerprint is not None, output_fingerprint=output_fingerprint
         )
 
-    @staticmethod
+    @classmethod
     def replace_schema_node(
-        node: SchemaNode, cache: TrainingCache, node_name: Text
+        cls, node: SchemaNode, cache: TrainingCache, node_name: Text
     ) -> None:
-        """Updates a `SchemaNode` to use a `FingerprintComponent`."""
-        node.uses = FingerprintComponent
-        # TODO: We do this because otherwise FingerprintComponent does not see
-        # TODO: the constructor args that come from parent nodes.
+        """Updates a `SchemaNode` to use a `FingerprintComponent`.
+
+        This is for when we want to do a fingerprint run. During the fingerprint run we
+        replace all non-input nodes with `FingerprintComponent`s so we can determine
+        whether they are able to be pruned or cached before the next graph run.
+
+        Args:
+            node: The node to update.
+            cache: The cache is needed to determine of there is cache hit for the
+                fingerprint key.
+            node_name: The node name is needed to generate the fingerprint key.
+        """
+        node.uses = cls
+        # We update the node to be "eager" so that `FingerprintComponent.run` sees
+        # ALL the inputs to the node. If it was not eager, we would miss any args used
+        # by the constructor.
         node.eager = True
-        node.constructor_name = "create"
-        node.fn = "run"
+        node.constructor_name = cls.create.__name__
+        node.fn = cls.run.__name__
         node.config.update({"cache": cache, "node_name": node_name})

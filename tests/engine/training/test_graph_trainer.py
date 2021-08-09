@@ -21,7 +21,7 @@ from tests.engine.graph_components_test_classes import (
 )
 
 
-def test_graph_trainer(
+def test_graph_trainer_returns_prediction_runner(
     default_model_storage: ModelStorage,
     temp_cache: TrainingCache,
     tmp_path: Path,
@@ -133,7 +133,7 @@ def test_graph_trainer_fingerprints_and_caches(
         }
     )
 
-    # The first train should call all the components
+    # The first train should call all the components and cache their outputs.
     mocks = spy_on_all_components(train_schema)
     train_with_schema(train_schema, temp_cache)
     assert node_call_counts(mocks) == {
