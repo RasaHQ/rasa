@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Type
 from unittest.mock import Mock
 import numpy as np
 import pytest
@@ -47,6 +47,7 @@ from rasa.utils.tensorflow.constants import (
     SENTENCE,
     IDS,
     EVAL_NUM_EPOCHS,
+    EPOCHS,
 )
 from rasa.shared.nlu.constants import ACTION_NAME
 from rasa.utils.tensorflow import model_data_utils
@@ -102,6 +103,10 @@ def test_diagnostics():
 
 
 class TestTEDPolicy(PolicyTestCollection):
+    @staticmethod
+    def _policy_class_to_test() -> Type[TEDPolicy]:
+        return TEDPolicy
+
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> TEDPolicy:
@@ -152,6 +157,33 @@ class TestTEDPolicy(PolicyTestCollection):
         )
         assert not checkpoint_dir.is_dir()
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
+
+    @pytest.mark.parametrize(
+        "should_finetune, epoch_override, expected_epoch_value",
+        [
+            (True, TEDPolicy.defaults[EPOCHS] + 1, TEDPolicy.defaults[EPOCHS] + 1),
+            (
+                False,
+                TEDPolicy.defaults[EPOCHS] + 1,
+                TEDPolicy.defaults[EPOCHS],
+            ),  # trained_policy uses default epochs during training
+        ],
+    )
+    def test_epoch_override_when_loaded(
+        self,
+        trained_policy: TEDPolicy,
+        should_finetune: bool,
+        epoch_override: int,
+        expected_epoch_value: int,
+        tmp_path: Path,
+    ):
+        # persist and load in appropriate mode
+        trained_policy.persist(tmp_path)
+        loaded_policy = self._policy_class_to_test().load(
+            tmp_path, should_finetune=should_finetune, epoch_override=epoch_override
+        )
+
+        assert loaded_policy.config[EPOCHS] == expected_epoch_value
 
     def test_train_fails_with_checkpoint_zero_eval_num_epochs(self, tmp_path: Path):
         checkpoint_dir = get_checkpoint_dir_path(tmp_path)

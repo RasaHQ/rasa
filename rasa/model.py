@@ -8,7 +8,16 @@ from subprocess import CalledProcessError, DEVNULL, check_output  # skipcq:BAN-B
 import tempfile
 import typing
 from pathlib import Path
-from typing import Any, Text, Tuple, Union, Optional, List, Dict, NamedTuple
+from typing import (
+    Any,
+    Text,
+    Tuple,
+    Union,
+    Optional,
+    List,
+    Dict,
+    NamedTuple,
+)
 
 from packaging import version
 
@@ -377,7 +386,8 @@ def _get_fingerprint_of_config(
     if not config:
         return ""
 
-    keys = include_keys or list(filter(lambda k: k not in exclude_keys, config.keys()))
+    exclude_keys = exclude_keys or []
+    keys = include_keys or [k for k in config.keys() if k not in exclude_keys]
 
     sub_config = {k: config[k] for k in keys if k in config}
 
@@ -621,7 +631,7 @@ async def update_model_with_new_domain(
 
 def get_model_for_finetuning(
     previous_model_file: Optional[Union[Path, Text]]
-) -> Optional[Text]:
+) -> Optional[Union[Path, Text]]:
     """Gets validated path for model to finetune.
 
     Args:

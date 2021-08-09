@@ -103,13 +103,14 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         # if don't have it cached, we use the domain to calculate the states
         # from the events
-        if self._states_for_hashing is None:
+        states_for_hashing = self._states_for_hashing
+        if states_for_hashing is None:
             states = super().past_states(domain, omit_unset_slots=omit_unset_slots)
-            self._states_for_hashing = deque(
-                self.freeze_current_state(s) for s in states
-            )
+            states_for_hashing = deque(self.freeze_current_state(s) for s in states)
 
-        return self._states_for_hashing
+        self._states_for_hashing = states_for_hashing
+
+        return states_for_hashing
 
     @staticmethod
     def _unfreeze_states(frozen_states: Deque[FrozenState]) -> List[State]:
@@ -218,12 +219,14 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
 
 # define types
-TrackerLookupDict = Dict[Optional[Text], List[TrackerWithCachedStates]]
+TrackerLookupDict = Dict[Text, List[TrackerWithCachedStates]]
 
 TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedStates]]
 
 
 class TrainingDataGenerator:
+    """Generates trackers from training data."""
+
     def __init__(
         self,
         story_graph: StoryGraph,
@@ -240,8 +243,8 @@ class TrainingDataGenerator:
         The different story parts can end and start with checkpoints
         and this generator will match start and end checkpoints to
         connect complete stories. Afterwards, duplicate stories will be
-        removed and the data is augmented (if augmentation is enabled)."""
-
+        removed and the data is augmented (if augmentation is enabled).
+        """
         self.story_graph = story_graph.with_cycles_removed()
         if debug_plots:
             self.story_graph.visualize("story_blocks_connections.html")
@@ -641,7 +644,10 @@ class TrainingDataGenerator:
                 # we concatenate the story block names of the blocks that
                 # contribute to the trackers events
                 if tracker.sender_id:
-                    if step.block_name not in tracker.sender_id.split(" > "):
+                    if (
+                        step.block_name
+                        and step.block_name not in tracker.sender_id.split(" > ")
+                    ):
                         new_sender = tracker.sender_id + " > " + step.block_name
                     else:
                         new_sender = tracker.sender_id
