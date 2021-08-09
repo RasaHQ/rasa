@@ -13,6 +13,9 @@ from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING,
 
 import rasa.utils.io as io_utils
 import rasa.core.actions.action
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 from rasa.shared.core.domain import Domain
@@ -318,39 +321,39 @@ class TEDPolicy2(Policy2):
             SingleStateFeaturizer(), max_history=max_history
         )
 
-    # TODO: Adapt this one (+ add `create`)
     def __init__(
         self,
-        featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = DEFAULT_POLICY_PRIORITY,
-        max_history: Optional[int] = None,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         model: Optional[RasaModel] = None,
         fake_features: Optional[Dict[Text, List["Features"]]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
-        should_finetune: bool = False,
-        **kwargs: Any,
     ) -> None:
         """Declares instance variables with default values."""
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
-            kwargs.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE),
+            config.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE),
             self.default_config.get(
                 SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
             ),
         )
 
+        featurizer = config.get("featurizer")
+        max_history = config.get("max_history")
+
         # TODO: check if the else statement can be removed.
         #  More context here -
         #  https://github.com/RasaHQ/rasa/issues/5786#issuecomment-840762751
         if not featurizer:
-            featurizer = self._standard_featurizer(max_history)
+            config["featurizer"] = self._standard_featurizer(max_history)
         else:
             if isinstance(featurizer, MaxHistoryTrackerFeaturizer) and max_history:
                 featurizer.max_history = max_history
 
-        super().__init__(
-            featurizer, priority, should_finetune=should_finetune, **kwargs
-        )
-        self._load_params(**kwargs)
+        super().__init__(config, model_storage, resource, execution_context)
+
+        self._load_params(**config)
 
         self.model = model
 
@@ -384,7 +387,7 @@ class TEDPolicy2(Policy2):
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
         self.config = rasa.utils.train_utils.override_defaults(
-            self.defaults, new_config
+            self.default_config, new_config
         )
 
         self._auto_update_configuration()
@@ -674,7 +677,6 @@ class TEDPolicy2(Policy2):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
     ) -> None:
         """Trains the policy on given training trackers.
 
@@ -696,7 +698,7 @@ class TEDPolicy2(Policy2):
             return
 
         model_data, label_ids = self._prepare_for_training(
-            training_trackers, domain, interpreter, **kwargs
+            training_trackers, domain, interpreter
         )
 
         if model_data.is_empty():
@@ -885,7 +887,7 @@ class TEDPolicy2(Policy2):
         return [EntitiesAdded(entities)]
 
     # TODO: Adapt this one
-    def persist(self, path: Union[Text, Path]) -> None:
+    def persist(self) -> None:
         """Persists the policy to a storage."""
         if self.model is None:
             logger.debug(
@@ -894,19 +896,19 @@ class TEDPolicy2(Policy2):
             )
             return
 
-        model_path = Path(path)
-        model_filename = self._metadata_filename()
-        tf_model_file = model_path / f"{model_filename}.tf_model"
+        with self._model_storage.write_to(self._resource) as model_path:
+            model_filename = self._metadata_filename()
+            tf_model_file = model_path / f"{model_filename}.tf_model"
 
-        rasa.shared.utils.io.create_directory_for_file(tf_model_file)
+            rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
-        self.featurizer.persist(path)
+            self.featurizer.persist(model_path)
 
-        if self.config[CHECKPOINT_MODEL]:
-            shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
-        self.model.save(str(tf_model_file))
+            if self.config[CHECKPOINT_MODEL]:
+                shutil.move(self.tmp_checkpoint_dir, model_path / "checkpoints")
+            self.model.save(str(tf_model_file))
 
-        self.persist_model_utilities(model_path)
+            self.persist_model_utilities(model_path)
 
     def persist_model_utilities(self, model_path: Path) -> None:
         """Persists model's utility attributes like model weights, etc.
@@ -1012,11 +1014,17 @@ class TEDPolicy2(Policy2):
     @classmethod
     def load(
         cls,
-        path: Union[Text, Path],
-        should_finetune: bool = False,
-        epoch_override: int = default_config[EPOCHS],
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "TEDPolicy":
+        #
+        # path: Union[Text, Path],
+        # should_finetune: bool = False,
+        # epoch_override: int = default_config[EPOCHS],
+        # **kwargs: Any,
+    ) -> "TEDPolicy2":
         """Loads a policy from the storage.
 
         Args:
@@ -1032,60 +1040,71 @@ class TEDPolicy2(Policy2):
         Raises:
             `PolicyModelNotFound` if the model is not found in the supplied `path`.
         """
-        model_path = Path(path)
+        with model_storage.read_from(resource) as model_path:
+            if not model_path.exists():
+                logger.warning(
+                    f"Failed to load {cls.__class__.__name__} model. Path "
+                    f"'{model_path.absolute()}' doesn't exist."
+                )
+                return cls(config, model_storage, resource, execution_context)
 
-        if not model_path.exists():
-            logger.warning(
-                f"Failed to load {cls.__class__.__name__} model. Path "
-                f"'{model_path.absolute()}' doesn't exist."
-            )
-            return cls()
+            featurizer = TrackerFeaturizer.load(model_path)
 
-        featurizer = TrackerFeaturizer.load(path)
+            if not (
+                model_path / f"{cls._metadata_filename()}.data_example.pkl"
+            ).is_file():
+                config["featurizer"] = featurizer
+                return cls(config, model_storage, resource, execution_context)
 
-        if not (model_path / f"{cls._metadata_filename()}.data_example.pkl").is_file():
-            return cls(featurizer=featurizer)
-
-        model_utilities = cls._load_model_utilities(model_path)
+            model_utilities = cls._load_model_utilities(model_path)
 
         model_utilities["meta"] = cls._update_loaded_params(model_utilities["meta"])
 
         if should_finetune:
             model_utilities["meta"][EPOCHS] = epoch_override
 
-        (
-            model_data_example,
-            predict_data_example,
-        ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
+            (
+                model_data_example,
+                predict_data_example,
+            ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
 
-        model = cls._load_tf_model(
-            model_utilities,
-            model_data_example,
-            predict_data_example,
-            featurizer,
-            should_finetune,
-        )
+            model = cls._load_tf_model(
+                model_utilities,
+                model_data_example,
+                predict_data_example,
+                featurizer,
+                execution_context.is_finetuning,
+            )
 
-        return cls._load_policy_with_model(
-            model, featurizer, model_utilities, should_finetune
-        )
+            config.update(model_utilities["meta"])
+
+            return cls._load_policy_with_model(
+                config,
+                model_storage,
+                resource,
+                execution_context,
+                model_utilities=model_utilities,
+                model=model,
+            )
 
     @classmethod
     def _load_policy_with_model(
         cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         model: "TED",
-        featurizer: TrackerFeaturizer,
         model_utilities: Dict[Text, Any],
-        should_finetune: bool,
-    ) -> "TEDPolicy":
+    ) -> "TEDPolicy2":
         return cls(
-            featurizer=featurizer,
-            priority=model_utilities["priority"],
+            config,
+            model_storage,
+            resource,
+            execution_context,
             model=model,
             fake_features=model_utilities["fake_features"],
             entity_tag_specs=model_utilities["entity_tag_specs"],
-            should_finetune=should_finetune,
-            **model_utilities["meta"],
         )
 
     @classmethod
@@ -2102,6 +2121,3 @@ class TED(TransformerRasaModel):
         _logits = self._tf_layers[f"embed.{name}.logits"](text_transformed)
 
         return self._tf_layers[f"crf.{name}"](_logits, text_sequence_lengths)
-
-
-# pytype: enable=key-error
