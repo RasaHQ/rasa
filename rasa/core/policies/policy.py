@@ -1,3 +1,4 @@
+import abc
 import copy
 import json
 import logging
@@ -16,6 +17,9 @@ from typing import (
     TYPE_CHECKING,
 )
 import numpy as np
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 
 from rasa.shared.core.events import Event
 
@@ -89,7 +93,7 @@ class SupportedData(Enum):
         return trackers
 
 
-class Policy2:
+class Policy2(GraphComponent):
     @staticmethod
     def supported_data() -> SupportedData:
         """The type of data supported by this policy.
@@ -117,16 +121,32 @@ class Policy2:
 
     def __init__(
         self,
-        featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = DEFAULT_POLICY_PRIORITY,
-        should_finetune: bool = False,
-        **kwargs: Any,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ) -> None:
         """Constructs a new Policy object."""
-        self.__featurizer = self._create_featurizer(featurizer)
-        self.priority = priority
-        self.finetune_mode = should_finetune
+        self.__featurizer = self._create_featurizer(config.get("featurizer"))
+        self.priority = config.get("priority", DEFAULT_POLICY_PRIORITY)
+        self.finetune_mode = execution_context.is_finetuning
+
         self._rule_only_data = {}
+
+        self._model_storage = model_storage
+        self._resource = resource
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
+    ) -> GraphComponent:
+        """Creates a new untrained policy (see parent class for full docstring)."""
+        return cls(config, model_storage, resource, execution_context)
 
     @property
     def featurizer(self) -> TrackerFeaturizer:
@@ -275,43 +295,6 @@ class Policy2:
             == SupportedData.ML_DATA,
         )
 
-    def train(
-        self,
-        training_trackers: List[TrackerWithCachedStates],
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
-    ) -> None:
-        """Trains the policy on given training trackers.
-
-        Args:
-            training_trackers:
-                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which can be used by the polices for featurization.
-        """
-        raise NotImplementedError("Policy must have the capacity to train.")
-
-    def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
-    ) -> "PolicyPrediction":
-        """Predicts the next action the bot should take after seeing the tracker.
-
-        Args:
-            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
-
-        Returns:
-             The policy's prediction (e.g. the probabilities for the actions).
-        """
-        raise NotImplementedError("Policy must have the capacity to predict.")
-
     def _prediction(
         self,
         probabilities: List[float],
@@ -357,49 +340,49 @@ class Policy2:
         """
         pass
 
-    def persist(self, path: Union[Text, Path]) -> None:
-        """Persists the policy to storage.
+    def persist(self) -> None:
+        """Persists the policy to storage."""
+        with self._model_storage.write_to(self._resource) as path:
+            # not all policies have a featurizer
+            if self.featurizer is not None:
+                self.featurizer.persist(path)
 
-        Args:
-            path: Path to persist policy to.
-        """
-        # not all policies have a featurizer
-        if self.featurizer is not None:
-            self.featurizer.persist(path)
+            file = Path(path) / self._metadata_filename()
 
-        file = Path(path) / self._metadata_filename()
-
-        rasa.shared.utils.io.create_directory_for_file(file)
-        rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
+            rasa.shared.utils.io.create_directory_for_file(file)
+            rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
 
     @classmethod
-    def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
-        """Loads a policy from path.
+    def load(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
+    ) -> "Policy2":
+        """Loads a trained policy (see parent class for full docstring)."""
+        config = {}
 
-        Args:
-            path: Path to load policy from.
+        with model_storage.read_from(resource) as path:
+            metadata_file = Path(path) / cls._metadata_filename()
 
-        Returns:
-            An instance of `Policy`.
-        """
-        metadata_file = Path(path) / cls._metadata_filename()
+            if metadata_file.is_file():
+                config = json.loads(rasa.shared.utils.io.read_file(metadata_file))
 
-        if metadata_file.is_file():
-            data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
+                if (Path(path) / FEATURIZER_FILE).is_file():
+                    featurizer = TrackerFeaturizer.load(path)
+                    config["featurizer"] = featurizer
 
-            if (Path(path) / FEATURIZER_FILE).is_file():
-                featurizer = TrackerFeaturizer.load(path)
-                data["featurizer"] = featurizer
+                config.update(kwargs)
 
-            data.update(kwargs)
+            else:
+                logger.info(
+                    f"Couldn't load metadata for policy '{cls.__name__}'. "
+                    f"File '{metadata_file}' doesn't exist."
+                )
 
-            return cls(**data)
-
-        logger.info(
-            f"Couldn't load metadata for policy '{cls.__name__}'. "
-            f"File '{metadata_file}' doesn't exist."
-        )
-        return cls()
+        return cls(config, model_storage, resource, execution_context)
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         """Creates a list of zeros.
