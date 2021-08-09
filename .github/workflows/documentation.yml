@@ -32,7 +32,7 @@ jobs:
         python-version: 3.7
 
     - name: Set up Node 12.x 🦙
-      uses: actions/setup-node@v2.3.0
+      uses: actions/setup-node@v2.4.0
       with:
         node-version: '12.x'
 
