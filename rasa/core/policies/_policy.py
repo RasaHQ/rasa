@@ -1,97 +1,51 @@
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt Policy2 from
+#          the regular `rasa.core.policies.policy` module. This module is a workaround
+#          to defer breaking changes due to the architecture revamp in 3.0.
 import copy
 import json
 import logging
-from enum import Enum
 from pathlib import Path
 from typing import (
+    Optional,
     Any,
     List,
-    Optional,
-    Text,
     Dict,
-    Callable,
-    Type,
-    Union,
+    Text,
     Tuple,
+    Union,
     TYPE_CHECKING,
+    Callable,
 )
+
 import numpy as np
-
-from rasa.shared.core.events import Event
-
-import rasa.shared.utils.common
-import rasa.utils.common
-import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain, State
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer,
     FEATURIZER_FILE,
 )
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.shared.core.trackers import DialogueStateTracker
+import rasa.shared.utils.common
+import rasa.shared.utils.io
+from rasa.shared.core.constants import USER, PREVIOUS_ACTION, ACTIVE_LOOP, SLOTS
+from rasa.shared.core.domain import Domain, State
+from rasa.shared.core.events import Event
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.shared.core.constants import (
-    USER,
-    SLOTS,
-    PREVIOUS_ACTION,
-    ACTIVE_LOOP,
-)
-from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
-
-# All code outside this module will continue to use the old `Policy` interface
-from rasa.core.policies._policy import Policy
+from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.constants import ENTITIES, TEXT, INTENT, ACTION_NAME, ACTION_TEXT
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
-
+    from rasa.core.policies.policy import SupportedData, PolicyPrediction
 
 logger = logging.getLogger(__name__)
 
 
-class SupportedData(Enum):
-    """Enumeration of a policy's supported training data type."""
-
-    # policy only supports ML-based training data ("stories")
-    ML_DATA = 1
-
-    # policy only supports rule-based data ("rules")
-    RULE_DATA = 2
-
-    # policy supports both ML-based and rule-based data ("stories" as well as "rules")
-    ML_AND_RULE_DATA = 3
-
+class Policy:
     @staticmethod
-    def trackers_for_policy(
-        policy: Union["Policy", Type["Policy"]],
-        trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]],
-    ) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]:
-        """Return trackers for a given policy.
-
-        Args:
-            policy: Policy or policy type to return trackers for.
-            trackers: Trackers to split.
-
-        Returns:
-            Trackers from ML-based training data and/or rule-based data.
-        """
-        supported_data = policy.supported_data()
-
-        if supported_data == SupportedData.RULE_DATA:
-            return [tracker for tracker in trackers if tracker.is_rule_tracker]
-
-        if supported_data == SupportedData.ML_DATA:
-            return [tracker for tracker in trackers if not tracker.is_rule_tracker]
-
-        # `supported_data` is `SupportedData.ML_AND_RULE_DATA`
-        return trackers
-
-
-class Policy2:
-    @staticmethod
-    def supported_data() -> SupportedData:
+    def supported_data() -> "SupportedData":
         """The type of data supported by this policy.
 
         By default, this is only ML-based training data. If policies support rule data,
@@ -100,6 +54,8 @@ class Policy2:
         Returns:
             The data type supported by this policy (ML-based training data).
         """
+        from rasa.core.policies.policy import SupportedData
+
         return SupportedData.ML_DATA
 
     @staticmethod
@@ -190,6 +146,8 @@ class Policy2:
               containing entity tag ids for text user inputs otherwise empty dict
               for all dialogue turns in all training trackers
         """
+        from rasa.core.policies.policy import SupportedData
+
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
             training_trackers,
             domain,
@@ -228,6 +186,8 @@ class Policy2:
         Returns:
             A list of states.
         """
+        from rasa.core.policies.policy import SupportedData
+
         return self.featurizer.prediction_states(
             [tracker],
             domain,
@@ -264,6 +224,8 @@ class Policy2:
             ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
             turns in all trackers.
         """
+        from rasa.core.policies.policy import SupportedData
+
         return self.featurizer.create_state_features(
             [tracker],
             domain,
@@ -322,6 +284,8 @@ class Policy2:
         diagnostic_data: Optional[Dict[Text, Any]] = None,
         action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> "PolicyPrediction":
+        from rasa.core.policies.policy import PolicyPrediction
+
         return PolicyPrediction(
             probabilities,
             self.__class__.__name__,
@@ -460,148 +424,3 @@ class Policy2:
                     formatted_states.append(state_formatted)
 
         return "\n".join(formatted_states)
-
-
-class PolicyPrediction:
-    """Stores information about the prediction of a `Policy`."""
-
-    def __init__(
-        self,
-        probabilities: List[float],
-        policy_name: Optional[Text],
-        policy_priority: int = 1,
-        events: Optional[List[Event]] = None,
-        optional_events: Optional[List[Event]] = None,
-        is_end_to_end_prediction: bool = False,
-        is_no_user_prediction: bool = False,
-        diagnostic_data: Optional[Dict[Text, Any]] = None,
-        hide_rule_turn: bool = False,
-        action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> None:
-        """Creates a `PolicyPrediction`.
-
-        Args:
-            probabilities: The probabilities for each action.
-            policy_name: Name of the policy which made the prediction.
-            policy_priority: The priority of the policy which made the prediction.
-            events: Events which the `Policy` needs to have applied to the tracker
-                after the prediction. These events are applied independent of whether
-                the policy wins against other policies or not. Be careful which events
-                you return as they can potentially influence the conversation flow.
-            optional_events: Events which the `Policy` needs to have applied to the
-                tracker after the prediction in case it wins. These events are only
-                applied in case the policy's prediction wins. Be careful which events
-                you return as they can potentially influence the conversation flow.
-            is_end_to_end_prediction: `True` if the prediction used the text of the
-                user message instead of the intent.
-            is_no_user_prediction: `True` if the prediction uses neither the text
-                of the user message nor the intent. This is for the example the case
-                for happy loop paths.
-            diagnostic_data: Intermediate results or other information that is not
-                necessary for Rasa to function, but intended for debugging and
-                fine-tuning purposes.
-            hide_rule_turn: `True` if the prediction was made by the rules which
-                do not appear in the stories
-            action_metadata: Specifies additional metadata that can be passed
-                by policies.
-        """
-        self.probabilities = probabilities
-        self.policy_name = policy_name
-        self.policy_priority = (policy_priority,)
-        self.events = events or []
-        self.optional_events = optional_events or []
-        self.is_end_to_end_prediction = is_end_to_end_prediction
-        self.is_no_user_prediction = is_no_user_prediction
-        self.diagnostic_data = diagnostic_data or {}
-        self.hide_rule_turn = hide_rule_turn
-        self.action_metadata = action_metadata
-
-    @staticmethod
-    def for_action_name(
-        domain: Domain,
-        action_name: Text,
-        policy_name: Optional[Text] = None,
-        confidence: float = 1.0,
-        action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> "PolicyPrediction":
-        """Create a prediction for a given action.
-
-        Args:
-            domain: The current model domain
-            action_name: The action which should be predicted.
-            policy_name: The policy which did the prediction.
-            confidence: The prediction confidence.
-            action_metadata: Additional metadata to be attached with the prediction.
-
-        Returns:
-            The prediction.
-        """
-        probabilities = confidence_scores_for(action_name, confidence, domain)
-
-        return PolicyPrediction(
-            probabilities, policy_name, action_metadata=action_metadata
-        )
-
-    def __eq__(self, other: Any) -> bool:
-        """Checks if the two objects are equal.
-
-        Args:
-            other: Any other object.
-
-        Returns:
-            `True` if other has the same type and the values are the same.
-        """
-        if not isinstance(other, PolicyPrediction):
-            return False
-
-        return (
-            self.probabilities == other.probabilities
-            and self.policy_name == other.policy_name
-            and self.policy_priority == other.policy_priority
-            and self.events == other.events
-            and self.optional_events == other.events
-            and self.is_end_to_end_prediction == other.is_end_to_end_prediction
-            and self.is_no_user_prediction == other.is_no_user_prediction
-            and self.hide_rule_turn == other.hide_rule_turn
-            and self.action_metadata == other.action_metadata
-            # We do not compare `diagnostic_data`, because it has no effect on the
-            # action prediction.
-        )
-
-    @property
-    def max_confidence_index(self) -> int:
-        """Gets the index of the action prediction with the highest confidence.
-
-        Returns:
-            The index of the action with the highest confidence.
-        """
-        return self.probabilities.index(self.max_confidence)
-
-    @property
-    def max_confidence(self) -> float:
-        """Gets the highest predicted probability.
-
-        Returns:
-            The highest predicted probability.
-        """
-        return max(self.probabilities, default=0.0)
-
-
-def confidence_scores_for(
-    action_name: Text, value: float, domain: Domain
-) -> List[float]:
-    """Returns confidence scores if a single action is predicted.
-
-    Args:
-        action_name: the name of the action for which the score should be set
-        value: the confidence for `action_name`
-        domain: the :class:`rasa.shared.core.domain.Domain`
-
-    Returns:
-        the list of the length of the number of actions
-    """
-    results = [0.0] * domain.num_actions
-    idx = domain.index_for_action(action_name)
-    results[idx] = value
-
-    return results
