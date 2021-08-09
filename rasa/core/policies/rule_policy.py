@@ -1,3 +1,4 @@
+import functools
 import logging
 from typing import Any, List, Dict, Text, Optional, Set, Tuple, TYPE_CHECKING
 
@@ -144,7 +145,7 @@ class RulePolicy(MemoizationPolicy):
         self._restrict_rules = restrict_rules
         self._check_for_contradictions = check_for_contradictions
 
-        self._rules_sources = None
+        self._rules_sources = defaultdict(list)
 
         # max history is set to `None` in order to capture any lengths of rule stories
         super().__init__(
@@ -192,7 +193,7 @@ class RulePolicy(MemoizationPolicy):
             new_states.insert(0, state)
 
         if not new_states:
-            return
+            return None
 
         # we sort keys to make sure that the same states
         # represented as dictionaries have the same json strings
@@ -420,7 +421,7 @@ class RulePolicy(MemoizationPolicy):
         for states in trackers_as_states:
             for state in states:
                 slots.update(set(state.get(SLOTS, {}).keys()))
-                active_loop = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
+                active_loop: Optional[Text] = state.get(ACTIVE_LOOP, {}).get(LOOP_NAME)
                 if active_loop:
                     loops.add(active_loop)
         return slots, loops
@@ -591,7 +592,7 @@ class RulePolicy(MemoizationPolicy):
         trackers: List[TrackerWithCachedStates],
         domain: Domain,
         collect_sources: bool,
-    ) -> Tuple[List[Text], Set[Text]]:
+    ) -> Tuple[List[Text], Set[Optional[Text]]]:
         if collect_sources:
             self._rules_sources = defaultdict(list)
 
@@ -664,7 +665,7 @@ class RulePolicy(MemoizationPolicy):
 
     def _find_contradicting_and_used_in_stories_rules(
         self, trackers: List[TrackerWithCachedStates], domain: Domain
-    ) -> Tuple[List[Text], Set[Text]]:
+    ) -> Tuple[List[Text], Set[Optional[Text]]]:
         return self._run_prediction_on_trackers(trackers, domain, collect_sources=False)
 
     def _analyze_rules(
@@ -729,7 +730,7 @@ class RulePolicy(MemoizationPolicy):
         (
             rule_trackers_as_states,
             rule_trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(
+        ) = self.featurizer.training_states_and_labels(
             rule_trackers, domain, omit_unset_slots=True
         )
 
@@ -741,7 +742,7 @@ class RulePolicy(MemoizationPolicy):
         (
             story_trackers_as_states,
             story_trackers_as_actions,
-        ) = self.featurizer.training_states_and_actions(story_trackers, domain)
+        ) = self.featurizer.training_states_and_labels(story_trackers, domain)
 
         if self._check_for_contradictions:
             (
@@ -832,6 +833,9 @@ class RulePolicy(MemoizationPolicy):
         return True
 
     @staticmethod
+    # This function is called a lot (e.g. for checking contradictions) so we cache
+    # its results.
+    @functools.lru_cache(maxsize=1000)
     def _rule_key_to_state(rule_key: Text) -> List[State]:
         return json.loads(rule_key)
 
@@ -903,20 +907,21 @@ class RulePolicy(MemoizationPolicy):
         ):
             return None, None
 
-        default_action_name = DEFAULT_ACTION_MAPPINGS.get(
-            tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        intent_name = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        if intent_name is None:
+            return None, None
+
+        default_action_name = DEFAULT_ACTION_MAPPINGS.get(intent_name)
+        if default_action_name is None:
+            return None, None
+
+        logger.debug(f"Predicted default action '{default_action_name}'.")
+        return (
+            default_action_name,
+            # create prediction source that corresponds to one of
+            # default prediction sources in `_default_sources()`
+            DEFAULT_RULES + intent_name,
         )
-
-        if default_action_name:
-            logger.debug(f"Predicted default action '{default_action_name}'.")
-            return (
-                default_action_name,
-                # create prediction source that corresponds to one of
-                # default prediction sources in `_default_sources()`
-                DEFAULT_RULES + tracker.latest_message.intent.get(INTENT_NAME_KEY),
-            )
-
-        return None, None
 
     @staticmethod
     def _find_action_from_loop_happy_path(
@@ -924,16 +929,16 @@ class RulePolicy(MemoizationPolicy):
     ) -> Tuple[Optional[Text], Optional[Text]]:
 
         active_loop_name = tracker.active_loop_name
+        if active_loop_name is None:
+            return None, None
+
         active_loop_rejected = tracker.active_loop.get(LOOP_REJECTED)
         should_predict_loop = (
-            active_loop_name
-            and not active_loop_rejected
+            not active_loop_rejected
             and tracker.latest_action.get(ACTION_NAME) != active_loop_name
         )
         should_predict_listen = (
-            active_loop_name
-            and not active_loop_rejected
-            and tracker.latest_action_name == active_loop_name
+            not active_loop_rejected and tracker.latest_action_name == active_loop_name
         )
 
         if should_predict_loop:
@@ -1076,7 +1081,7 @@ class RulePolicy(MemoizationPolicy):
 
     def _predict(
         self, tracker: DialogueStateTracker, domain: Domain
-    ) -> Tuple[PolicyPrediction, Text]:
+    ) -> Tuple[PolicyPrediction, Optional[Text]]:
         (
             rules_action_name_from_text,
             prediction_source_from_text,

@@ -249,7 +249,8 @@ class RedisLockStore(LockStore):
             self.key_prefix = key_prefix + ":" + DEFAULT_REDIS_LOCK_STORE_KEY_PREFIX
         else:
             logger.warning(
-                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. Using default '{self.key_prefix}' instead."
+                f"Omitting provided non-alphanumeric redis key prefix: '{key_prefix}'. "
+                f"Using default '{self.key_prefix}' instead."
             )
 
     def get_lock(self, conversation_id: Text) -> Optional[TicketLock]:
@@ -258,7 +259,10 @@ class RedisLockStore(LockStore):
         if serialised_lock:
             return TicketLock.from_dict(json.loads(serialised_lock))
 
+        return None
+
     def delete_lock(self, conversation_id: Text) -> None:
+        """Deletes lock for conversation ID."""
         deletion_successful = self.red.delete(self.key_prefix + conversation_id)
         self._log_deletion(conversation_id, deletion_successful)
 

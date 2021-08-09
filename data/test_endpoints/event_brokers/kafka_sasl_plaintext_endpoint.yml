@@ -6,3 +6,5 @@ event_broker:
   partition_by_sender: True
   sasl_username: username
   sasl_password: password
+  sasl_mechanism: PLAIN
+  convert_intent_id_to_string: True

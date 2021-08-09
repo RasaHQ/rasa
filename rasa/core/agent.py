@@ -4,7 +4,16 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+)
 import uuid
 
 import aiohttp
@@ -51,6 +60,8 @@ import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
+
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)
 
@@ -438,7 +449,8 @@ class Agent:
 
         if hasattr(self.nlg, "templates"):
             rasa.shared.utils.io.raise_deprecation_warning(
-                "Please use the `responses` attribute instead of the `templates` attribute to manage responses.",
+                "Please use the `responses` attribute instead of the `templates` "
+                "attribute to manage responses.",
                 docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
             )
             self.nlg.templates = domain.responses if domain else {}
@@ -678,7 +690,7 @@ class Agent:
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
         def has_max_history_featurizer(policy: Policy) -> bool:
-            return (
+            return bool(
                 policy.featurizer
                 and hasattr(policy.featurizer, "max_history")
                 and policy.featurizer.max_history is not None
@@ -699,9 +711,8 @@ class Agent:
         use_story_concatenation: bool = True,
         debug_plots: bool = False,
         exclusion_percentage: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
+    ) -> List["TrackerWithCachedStates"]:
         """Load training data from a resource."""
-
         max_history = self._max_history()
 
         if unique_last_num_states is None:
@@ -768,7 +779,6 @@ class Agent:
         Only removes files if the directory seems to contain a previously
         persisted model. Otherwise does nothing to avoid deleting
         `/` by accident."""
-
         if not os.path.exists(model_path):
             return
 

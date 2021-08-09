@@ -19,8 +19,6 @@ import rasa.shared.utils.io
 from rasa.constants import DEFAULT_SANIC_WORKERS, ENV_SANIC_WORKERS
 from rasa.shared.constants import DEFAULT_ENDPOINTS_PATH
 
-# backwards compatibility 1.0.x
-# noinspection PyUnresolvedReferences
 from rasa.core.lock_store import LockStore, RedisLockStore, InMemoryLockStore
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from sanic import Sanic
@@ -88,10 +86,8 @@ def dump_obj_as_yaml_to_file(
     )
 
 
-def list_routes(app: Sanic) -> Text:
-    """List all the routes of a sanic application.
-
-    Mainly used for debugging."""
+def list_routes(app: Sanic) -> Dict[Text, Text]:
+    """List all the routes of a sanic application. Mainly used for debugging."""
     from urllib.parse import unquote
 
     output = {}
@@ -324,6 +320,7 @@ def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) 
 
     logger.debug(
         f"Unable to assign desired number of Sanic workers ({env_value}) as "
-        f"no `RedisLockStore` or custom `LockStore` endpoint configuration has been found."
+        f"no `RedisLockStore` or custom `LockStore` endpoint "
+        f"configuration has been found."
     )
     return _log_and_get_default_number_of_workers()

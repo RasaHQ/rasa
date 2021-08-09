@@ -5,19 +5,24 @@ import uuid
 from collections import deque
 from pathlib import Path
 from typing import Any, Dict, List, Text, Tuple, Callable
+from tests.conftest import AsyncMock
 
-import mock
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from aioresponses import aioresponses
-from mock import Mock
+import unittest.mock
+from unittest.mock import Mock
 
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.actions import action
 from rasa.core.training import interactive
-from rasa.shared.constants import INTENT_MESSAGE_PREFIX, DEFAULT_SENDER_ID
-from rasa.shared.core.constants import ACTION_LISTEN_NAME
+from rasa.shared.constants import (
+    INTENT_MESSAGE_PREFIX,
+    DEFAULT_SENDER_ID,
+    DOCS_URL_POLICIES,
+)
+from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import BotUttered, ActionExecuted, UserUttered
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -597,7 +602,7 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
         - utter_greet
         - utter_goodbye
         forms:
-          {form_name}:
+          {form_name}: {{}}
         intents:
         - greet
         """
@@ -733,13 +738,93 @@ def test_retry_on_error_success(monkeypatch: MonkeyPatch):
     m.assert_called_once_with("export_path", 1, a=2)
 
 
+@pytest.mark.parametrize(
+    "action_name, question, is_marked_as_correct, sent_action_name",
+    [
+        (
+            ACTION_UNLIKELY_INTENT_NAME,
+            f"The bot wants to run 'action_unlikely_intent' "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
+            f"Check out UnexpecTEDIntentPolicy "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
+            f"to learn more. Is that correct?",
+            True,
+            ACTION_UNLIKELY_INTENT_NAME,
+        ),
+        (
+            ACTION_UNLIKELY_INTENT_NAME,
+            f"The bot wants to run 'action_unlikely_intent' "
+            f"to indicate that the last user message was unexpected "
+            f"at this point in the conversation. "
+            f"Check out UnexpecTEDIntentPolicy "
+            f"({DOCS_URL_POLICIES}#unexpected-intent-policy) "
+            f"to learn more. Is that correct?",
+            False,
+            ACTION_UNLIKELY_INTENT_NAME,
+        ),
+        (
+            "action_test",
+            "The bot wants to run 'action_test', correct?",
+            True,
+            "action_test",
+        ),
+        (
+            "action_test",
+            "The bot wants to run 'action_test', correct?",
+            False,
+            "action_another_one",
+        ),
+    ],
+)
+async def test_correct_question_for_action_name_was_asked(
+    monkeypatch: MonkeyPatch,
+    mock_endpoint: EndpointConfig,
+    action_name: Text,
+    question: Text,
+    is_marked_as_correct: bool,
+    sent_action_name: Text,
+):
+    conversation_id = "conversation_id"
+    policy = "policy"
+    tracker = DialogueStateTracker.from_events("some_sender", [])
+
+    monkeypatch.setattr(
+        interactive,
+        "retrieve_tracker",
+        AsyncMock(return_value=tracker.current_state()),
+    )
+    monkeypatch.setattr(
+        interactive, "_ask_questions", AsyncMock(return_value=is_marked_as_correct)
+    )
+    monkeypatch.setattr(
+        interactive,
+        "_request_action_from_user",
+        AsyncMock(return_value=("action_another_one", False,)),
+    )
+
+    mocked_send_action = AsyncMock()
+    monkeypatch.setattr(interactive, "send_action", mocked_send_action)
+
+    mocked_confirm = Mock(return_value=None)
+    monkeypatch.setattr(interactive.questionary, "confirm", mocked_confirm)
+
+    # validate the action and make sure that the correct question was asked
+    await interactive._validate_action(
+        action_name, policy, 1.0, [], mock_endpoint, conversation_id
+    )
+    mocked_confirm.assert_called_once_with(question)
+    args, kwargs = mocked_send_action.call_args_list[-1]
+    assert args[2] == sent_action_name
+
+
 def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(interactive.questionary, "confirm", QuestionaryConfirmMock(3))
 
     m = Mock(side_effect=PermissionError())
     with pytest.raises(PermissionError):
         interactive._retry_on_error(m, "export_path", 1, a=2)
-    c = mock.call("export_path", 1, a=2)
+    c = unittest.mock.call("export_path", 1, a=2)
     m.assert_has_calls([c, c, c])
 
 
@@ -752,7 +837,12 @@ def test_retry_on_error_three_retries(monkeypatch: MonkeyPatch):
         ("Well, hello there my friend!", 20, 20),
         ("我要去北京", 8, 4),
         (
-            "牙龈出血的症状对应得疾病可能有：肥大性龈炎、骨髓增生异常综合征、口腔疾病、小儿出血性疾病、边缘性龈炎、获得性维生素K依赖性凝血因子异常、小儿白血病、回归热、坏死性龈口炎、青春期功能失调性子宫出血、郎-奥韦综合征、急性淋巴细胞白血病、感染性血小板减少性紫癜、单纯性牙周炎、单核细胞白血病、δ-贮存池病、小儿特发性血小板减少性紫癜、老年人真性红细胞增多症、急性根尖牙周炎、慢性根尖牙周炎、创伤性口炎、青少年牙周炎、慢性牙周炎",
+            "牙龈出血的症状对应得疾病可能有：肥大性龈炎、骨髓增生异常综合征、"
+            "口腔疾病、小儿出血性疾病、边缘性龈炎、获得性维生素K依赖性凝血因子异常、"
+            "小儿白血病、回归热、坏死性龈口炎、青春期功能失调性子宫出血、郎-奥韦综合征、"
+            "急性淋巴细胞白血病、感染性血小板减少性紫癜、单纯性牙周炎、单核细胞白血病、"
+            "δ-贮存池病、小儿特发性血小板减少性紫癜、老年人真性红细胞增多症、"
+            "急性根尖牙周炎、慢性根尖牙周炎、创伤性口炎、青少年牙周炎、慢性牙周炎",
             119,
             60,
         ),

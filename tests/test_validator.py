@@ -349,10 +349,11 @@ async def test_verify_form_slots_invalid_domain(tmp_path: Path):
         version: "2.0"
         forms:
           name_form:
-             first_name:
-             - type: from_text
-             last_name:
-             - type: from_text
+            required_slots:
+              first_name:
+              - type: from_text
+              last_name:
+              - type: from_text
         slots:
              first_name:
                 type: text
@@ -367,8 +368,8 @@ async def test_verify_form_slots_invalid_domain(tmp_path: Path):
         assert validity is False
 
     assert (
-        w[0].message.args[0]
-        == "The form slot 'last_name' in form 'name_form' is not present in the domain slots."
+        w[0].message.args[0] == "The form slot 'last_name' in form 'name_form' "
+        "is not present in the domain slots."
         "Please add the correct slot or check for typos."
     )
 
@@ -463,10 +464,11 @@ async def test_valid_form_slots_in_domain(tmp_path: Path):
         version: "2.0"
         forms:
           name_form:
-             first_name:
-             - type: from_text
-             last_name:
-             - type: from_text
+            required_slots:
+              first_name:
+              - type: from_text
+              last_name:
+              - type: from_text
         slots:
              first_name:
                 type: text

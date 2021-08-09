@@ -199,7 +199,7 @@ def list_subdirectories(path: Text) -> List[Text]:
 
 
 def deep_container_fingerprint(
-    obj: Union[List[Any], Dict[Any, Any]], encoding: Text = DEFAULT_ENCODING
+    obj: Union[List[Any], Dict[Any, Any], Any], encoding: Text = DEFAULT_ENCODING
 ) -> Text:
     """Calculate a hash which is stable, independent of a containers key order.
 
@@ -216,8 +216,10 @@ def deep_container_fingerprint(
     """
     if isinstance(obj, dict):
         return get_dictionary_fingerprint(obj, encoding)
-    if isinstance(obj, list):
+    elif isinstance(obj, list):
         return get_list_fingerprint(obj, encoding)
+    elif hasattr(obj, "fingerprint") and callable(obj.fingerprint):
+        return obj.fingerprint()
     else:
         return get_text_hash(str(obj), encoding)
 
@@ -316,8 +318,10 @@ def replace_environment_variables() -> None:
         ]
         if not_expanded:
             raise RasaException(
-                f"Error when trying to expand the environment variables in '{value}'. "
-                f"Please make sure to also set these environment variables: '{not_expanded}'."
+                f"Error when trying to expand the "
+                f"environment variables in '{value}'. "
+                f"Please make sure to also set these "
+                f"environment variables: '{not_expanded}'."
             )
         return expanded_vars
 

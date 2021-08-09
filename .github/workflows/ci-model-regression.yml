@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Find and cancel old builds of this branch
-        uses: styfle/cancel-workflow-action@cd25b7a1b3d11542a4039dad19e1838ed87e1055 #0.9.0
+        uses: styfle/cancel-workflow-action@a40b8845c0683271d9f53dfcb887a7e181d3918b #0.9.0
         with:
           access_token: "${{ secrets.GITHUB_TOKEN }}"
           all_but_latest: true
@@ -281,7 +281,7 @@ jobs:
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
       - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: 3.8
@@ -293,7 +293,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v4
+        uses: Gr1N/setup-poetry@v7
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -501,7 +501,7 @@ jobs:
           echo "::set-output name=dataset_commit::$DATASET_COMMIT"
 
       - name: Set up Python 3.8 🐍
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           python-version: 3.8
@@ -513,7 +513,7 @@ jobs:
         shell: bash
 
       - name: Install poetry 🦄
-        uses: Gr1N/setup-poetry@v4
+        uses: Gr1N/setup-poetry@v7
         if: steps.set_dataset_config_vars.outputs.is_dataset_exists == 'true' && steps.set_dataset_config_vars.outputs.is_config_exists == 'true'
         with:
           poetry-version: ${{ env.POETRY_VERSION }}

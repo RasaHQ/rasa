@@ -24,6 +24,7 @@ from typing import (
 )
 
 import aiohttp
+import jsonschema
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
@@ -32,6 +33,7 @@ from sanic_jwt import Initialize, exceptions
 
 import rasa
 import rasa.core.utils
+from rasa.nlu.emulators.emulator import Emulator
 import rasa.utils.common
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -71,14 +73,18 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 import rasa.nlu.test
 from rasa.nlu.test import CVEvaluationResult
+from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from ssl import SSLContext  # noqa: F401
     from rasa.core.processor import MessageProcessor
-    from mypy_extensions import VarArg, KwArg
+    from mypy_extensions import Arg, VarArg, KwArg
 
-    SanicView = Callable[[Request, VarArg(), KwArg()], response.BaseHTTPResponse]
+    SanicView = Callable[
+        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
+        response.BaseHTTPResponse,
+    ]
 
 
 logger = logging.getLogger(__name__)
@@ -163,10 +169,10 @@ def ensure_loaded_agent(
     return decorator
 
 
-def ensure_conversation_exists() -> "SanicView":
+def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
     """Wraps a request handler ensuring the conversation exists."""
 
-    def decorator(f: "SanicView") -> HTTPResponse:
+    def decorator(f: "SanicView") -> "SanicView":
         @wraps(f)
         def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
@@ -377,6 +383,25 @@ def validate_request_body(request: Request, error_message: Text) -> None:
         raise ErrorResponse(HTTPStatus.BAD_REQUEST, "BadRequest", error_message)
 
 
+def validate_events_in_request_body(request: Request) -> None:
+    """Validates events format in request body."""
+    if not isinstance(request.json, list):
+        events = [request.json]
+    else:
+        events = request.json
+
+    try:
+        jsonschema.validate(events, EVENTS_SCHEMA)
+    except jsonschema.ValidationError as error:
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            f"Failed to validate the events format. "
+            f"For more information about the format visit the docs. Error: {error}",
+            help_url=_docs("/pages/http-api"),
+        ) from error
+
+
 async def authenticate(_: Request) -> NoReturn:
     """Callback for authentication failed."""
     raise exceptions.AuthenticationFailed(
@@ -419,10 +444,11 @@ def create_ssl_context(
         return None
 
 
-def _create_emulator(mode: Optional[Text]) -> NoEmulator:
+def _create_emulator(mode: Optional[Text]) -> Emulator:
     """Create emulator for specified mode.
-    If no emulator is specified, we will use the Rasa NLU format."""
 
+    If no emulator is specified, we will use the Rasa NLU format.
+    """
     if mode is None:
         return NoEmulator()
     elif mode.lower() == "wit":
@@ -737,12 +763,8 @@ def create_app(
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def append_events(request: Request, conversation_id: Text) -> HTTPResponse:
-        """Append a list of events to the state of a conversation"""
-        validate_request_body(
-            request,
-            "You must provide events in the request body in order to append them"
-            "to the state of a conversation.",
-        )
+        """Append a list of events to the state of a conversation."""
+        validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
@@ -803,11 +825,7 @@ def create_app(
     @ensure_loaded_agent(app)
     async def replace_events(request: Request, conversation_id: Text) -> HTTPResponse:
         """Use a list of events to set a conversations tracker to a state."""
-        validate_request_body(
-            request,
-            "You must provide events in the request body to set the sate of the "
-            "conversation tracker.",
-        )
+        validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
@@ -879,8 +897,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
-                    conversation_id
+                tracker = await (
+                    app.agent.create_processor().fetch_tracker_and_update_session(
+                        conversation_id
+                    )
                 )
 
                 output_channel = _get_output_channel(request, tracker)
@@ -930,8 +950,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
-                    conversation_id
+                tracker = await (
+                    app.agent.create_processor().fetch_tracker_and_update_session(
+                        conversation_id
+                    )
                 )
                 output_channel = _get_output_channel(request, tracker)
                 if intent_to_trigger not in app.agent.domain.intents:
@@ -1258,11 +1280,7 @@ def create_app(
     @ensure_loaded_agent(app, require_core_is_ready=True)
     async def tracker_predict(request: Request) -> HTTPResponse:
         """Given a list of events, predicts the next action."""
-        validate_request_body(
-            request,
-            "No events defined in request_body. Add events to request body in order to "
-            "predict the next action.",
-        )
+        validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         request_params = request.json

@@ -18,6 +18,15 @@
 
 <hr />
 
+💡 **Rasa Open Source 3.0 is coming up!** 💡
+
+[2.8](https://github.com/RasaHQ/rasa/milestone/39) will be the last minor in the 2.x series, as we need to pause releasing minors while we work on architectural changes in 3.0. You can still contribute new features and improvements which we plan to release together with 3.0. Read more
+about [our contributor guidelines](#how-to-contribute).
+
+We plan to ship alpha releases and release candidates over the next few months in order to get early feedback. Stay tuned!
+
+<hr />
+
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Open Source">
 
 Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contextual assistants on:
@@ -337,24 +346,22 @@ Releasing a new version is quite simple, as the packages are build and distribut
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
 2. In case of a minor release, create a new branch that corresponds to the new release, e.g. 
    ```bash
-    git checkout -b 2.4.x
+    git checkout -b 1.2.x
+    git push origin 1.2.x
     ```
 3. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for minors and micros)
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
-3. Run `make release`
-4. Create a PR against `main` or the release branch (e.g. `1.2.x`)
-5. Once your PR is merged, tag a new release (this SHOULD always happen on `main` or release branches), e.g. using
+4. Run `make release`
+5. Create a PR against the release branch (e.g. `1.2.x`)
+6. Once your PR is merged, tag a new release (this SHOULD always happen on the release branch), e.g. using
     ```bash
+    git checkout 1.2.x
+    git pull origin 1.2.x
     git tag 1.2.0 -m "next release"
     git push origin 1.2.0
     ```
     GitHub will build this tag and publish the build artifacts.
-6. **If this is a minor release**, a new release branch should be created pointing to the same commit as the tag to allow for future patch releases, e.g.
-    ```bash
-    git checkout -b 1.2.x
-    git push origin 1.2.x
-    ```
 7. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
 8. If no message appears in the channel then you can do the following checks:
     - Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa/actions) and make sure that the merged PR of the current release is completed successfully. To easily find your PR you can use the filters `event: push` and `branch: <version number>` (example on release 2.4 you can see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876))

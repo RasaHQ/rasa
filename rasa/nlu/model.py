@@ -41,8 +41,9 @@ class InvalidModelError(RasaException):
     """
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
-        super(InvalidModelError, self).__init__()
+        super(InvalidModelError, self).__init__(message)
 
     def __str__(self) -> Text:
         return self.message
@@ -56,8 +57,9 @@ class UnsupportedModelError(RasaException):
     """
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
-        super(UnsupportedModelError, self).__init__()
+        super(UnsupportedModelError, self).__init__(message)
 
     def __str__(self) -> Text:
         return self.message
@@ -298,7 +300,8 @@ class Interpreter:
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedModelError(
                 f"The model version is trained using Rasa Open Source {model_version} "
-                f"and is not compatible with your current installation ({rasa.__version__}). "
+                f"and is not compatible with your current installation "
+                f"({rasa.__version__}). "
                 f"This means that you either need to retrain your model "
                 f"or revert back to the Rasa version that trained the model "
                 f"to ensure that the versions match up again."
@@ -355,6 +358,7 @@ class Interpreter:
         new_config: Optional[Dict] = None,
         finetuning_epoch_fraction: float = 1.0,
     ) -> Metadata:
+        new_config = new_config or {}
         for old_component_config, new_component_config in zip(
             model_metadata.metadata["pipeline"], new_config["pipeline"]
         ):
@@ -504,7 +508,8 @@ class Interpreter:
             rasa.shared.utils.io.raise_warning(
                 f"Parsing of message: '{message_text}' lead to overlapping "
                 f"entities: {entity_1['value']} of type "
-                f"{entity_1['entity']} extracted by {entity_1['extractor']} overlaps with "
+                f"{entity_1['entity']} extracted by "
+                f"{entity_1['extractor']} overlaps with "
                 f"{entity_2['value']} of type {entity_2['entity']} extracted by "
                 f"{entity_2['extractor']}. This can lead to unintended filling of "
                 f"slots. Please refer to the documentation section on entity "

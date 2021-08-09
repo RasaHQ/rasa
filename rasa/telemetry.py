@@ -11,7 +11,7 @@ import platform
 import sys
 import textwrap
 import typing
-from typing import Any, Callable, Dict, List, Optional, Text
+from typing import Any, Callable, Dict, List, Optional, Text, Union
 import uuid
 
 import async_generator
@@ -72,6 +72,9 @@ CI_ENVIRONMENT_TELL = [
     "JENKINS_URL",
     "TEAMCITY_VERSION",
     "TRAVIS",
+    "CODEBUILD_BUILD_ARN",
+    "CODEBUILD_BUILD_ID",
+    "CODEBUILD_BATCH_BUILD_IDENTIFIER",
 ]
 
 # If updating or creating a new event, remember to update
@@ -846,7 +849,7 @@ def track_server_start(
 
     def project_fingerprint_from_model(
         _model_directory: Optional[Text],
-    ) -> Optional[Text]:
+    ) -> Optional[Union[Text, List[Text], int, float]]:
         """Get project fingerprint from an app's loaded model."""
         if _model_directory:
             try:

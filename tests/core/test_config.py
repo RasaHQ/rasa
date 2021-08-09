@@ -8,10 +8,10 @@ from rasa.core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
     DEFAULT_CORE_FALLBACK_THRESHOLD,
     DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+    DEFAULT_MAX_HISTORY,
 )
 from rasa.core.policies.ensemble import PolicyEnsemble
-from rasa.core.policies.fallback import FallbackPolicy
-from rasa.core.policies.form_policy import FormPolicy
+from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.shared.core.constants import (
     ACTION_DEFAULT_FALLBACK_NAME,
@@ -223,51 +223,36 @@ def test_ensemble_from_dict():
         assert p.max_history == 5
         assert p.priority == 3
 
-    def check_fallback(p):
-        assert p.fallback_action_name == "action_default_fallback"
-        assert p.nlu_threshold == 0.7
-        assert p.core_threshold == 0.7
-        assert p.priority == 2
-
-    def check_form(p):
+    def check_rule(p):
+        assert p.max_history == DEFAULT_MAX_HISTORY
         assert p.priority == 1
 
     ensemble_dict = {
         "policies": [
             {"max_history": 5, "priority": 3, "name": "MemoizationPolicy"},
-            {
-                "core_threshold": 0.7,
-                "priority": 2,
-                "name": "FallbackPolicy",
-                "nlu_threshold": 0.7,
-                "fallback_action_name": "action_default_fallback",
-            },
-            {"name": "FormPolicy", "priority": 1},
+            {"name": "RulePolicy", "priority": 1},
         ]
     }
     ensemble = PolicyEnsemble.from_dict(ensemble_dict)
 
     # Check if all policies are present
-    assert len(ensemble) == 3
-    # MemoizationPolicy is parent of FormPolicy
+    assert len(ensemble) == 2
+    # MemoizationPolicy is parent of RulePolicy
     assert any(
         [
-            isinstance(p, MemoizationPolicy) and not isinstance(p, FormPolicy)
+            isinstance(p, MemoizationPolicy) and not isinstance(p, RulePolicy)
             for p in ensemble
         ]
     )
-    assert any([isinstance(p, FallbackPolicy) for p in ensemble])
-    assert any([isinstance(p, FormPolicy) for p in ensemble])
+    assert any([isinstance(p, RulePolicy) for p in ensemble])
 
     # Verify policy configurations
     for policy in ensemble:
         if isinstance(policy, MemoizationPolicy):
-            if isinstance(policy, FormPolicy):
-                check_form(policy)
+            if isinstance(policy, RulePolicy):
+                check_rule(policy)
             else:
                 check_memoization(policy)
-        elif isinstance(policy, FallbackPolicy):
-            check_fallback(policy)
 
 
 TEST_MIGRATED_MAPPING_POLICIES = [
@@ -320,7 +305,8 @@ TEST_MIGRATED_MAPPING_POLICIES = [
             "domain_intents": ["greet", "leave"],
             "rules": [
                 {
-                    "rule": "Rule to map `greet` intent to `action_greet` (automatic conversion)",
+                    "rule": "Rule to map `greet` intent to"
+                    " `action_greet` (automatic conversion)",
                     "steps": [{"intent": "greet"}, {"action": "action_greet"}],
                 }
             ],

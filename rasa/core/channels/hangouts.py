@@ -14,15 +14,22 @@ from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
 logger = logging.getLogger(__name__)
 
 CHANNEL_NAME = "hangouts"
-CERT_URI = "https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com"
+CERT_URI = (
+    "https://www.googleapis.com/service_accounts/"
+    "v1/metadata/x509/chat@system.gserviceaccount.com"
+)
 
 
 class HangoutsOutput(OutputChannel):
+    """A Hangouts communication channel."""
+
     @classmethod
     def name(cls) -> Text:
+        """Return channel name."""
         return CHANNEL_NAME
 
     def __init__(self) -> None:
+        """Starts messages as empty dictionary."""
         self.messages = {}
 
     @staticmethod
@@ -56,7 +63,7 @@ class HangoutsOutput(OutputChannel):
                 logger.error(
                     "Buttons must be a list of dicts with 'title' and 'payload' as keys"
                 )
-                return
+                return None
 
             hangouts_buttons.append(
                 {
@@ -239,15 +246,16 @@ class HangoutsInput(InputChannel):
 
     @staticmethod
     def _extract_room(req: Request) -> Union[Text, None]:
-
         if req.json["space"]["type"] == "ROOM":
             return req.json["space"]["displayName"]
+
+        return None
 
     def _extract_input_channel(self) -> Text:
         return self.name()
 
     def _check_token(self, bot_token: Text) -> None:
-        # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: W505
+        # see https://developers.google.com/hangouts/chat/how-tos/bots-develop#verifying_bot_authenticity # noqa: E501, W505
         try:
             token = client.verify_id_token(
                 bot_token, self.project_id, cert_uri=CERT_URI
