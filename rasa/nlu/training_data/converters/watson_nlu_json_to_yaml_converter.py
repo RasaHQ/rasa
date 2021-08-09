@@ -25,9 +25,11 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
             `True` if the given file can be converted, `False` otherwise
         """
         js = self._read_from_json(source_path)
-        if js.get("metadata").get("api_version").get("major_version") == "v2":
-            return True
-        return False
+        try:
+            if js.get("metadata").get("api_version").get("major_version") == "v2":
+                return True
+        except:
+            return False
 
     async def convert_and_write(self, source_path: Path, output_path: Path) -> None:
         """Converts Watson NLU data into Rasa NLU Data Format.
