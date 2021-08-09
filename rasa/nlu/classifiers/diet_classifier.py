@@ -288,8 +288,20 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         )
 
         # sanity checks for architecture
+        self._check_has_a_goal()
         self._check_masked_lm()
         self._check_share_hidden_layers_sizes()
+
+    def _check_has_a_goal(self) -> None:
+        if (
+            not self.component_config[INTENT_CLASSIFICATION]
+            and not self.component_config[ENTITY_RECOGNITION]
+        ):
+            raise RasaModelConfigException(
+                f"Model is neither asked to perform entity recognition nor "
+                f"to predict any label. Switch on {ENTITY_RECOGNITION} or "
+                f"{INTENT_CLASSIFICATION} in your component config."
+            )
 
     def _check_masked_lm(self) -> None:
         if (
@@ -344,28 +356,24 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         super().__init__(component_config)
         self._check_and_autocorrect_component_config()
 
+        self.index_label_id_mapping = index_label_id_mapping or {}
+        self._entity_tag_specs = entity_tag_specs
+        self.model = model
+        self.finetune_mode = finetune_mode
+        self._sparse_feature_sizes = sparse_feature_sizes
+
+        # derive more settings from component config and defeaults:
+        self.split_entities_config = self.init_split_entities()
         self.label_attribute = (
             INTENT if self.component_config[INTENT_CLASSIFICATION] else None
         )
-
-        # transform numbers to labels
-        self.index_label_id_mapping = index_label_id_mapping or {}
-
-        self._entity_tag_specs = entity_tag_specs
-
-        self.model = model
-
         self.tmp_checkpoint_dir = None
         if self.component_config[CHECKPOINT_MODEL]:
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
+        # internal helper
         self._label_data: Optional[RasaModelData] = None
         self._data_example: Optional[Dict[Text, Dict[Text, List[FeatureArray]]]] = None
-
-        self.split_entities_config = self.init_split_entities()
-
-        self.finetune_mode = finetune_mode
-        self._sparse_feature_sizes = sparse_feature_sizes
 
         if not self.model and self.finetune_mode:
             raise rasa.shared.exceptions.InvalidParameterException(
@@ -388,6 +396,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
     @staticmethod
     def model_class() -> Type[RasaModel]:
+        """Returns the `DIET` model class."""
         return DIET
 
     # training data helpers:
@@ -461,7 +470,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return tag_id_dict
 
-    def _uses_sequence_features_for_text(self) -> bool:
+    def _uses_sequence_features_for_input_text(self) -> bool:
         """Whether we need sequence features for the `TEXT` attribute.
 
         Note that, for prediction of some label attribute, the `DIETClassifier`
@@ -469,18 +478,23 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         transformer layers is 0 because for that it creates a BOW representation
         by simply summing over sequence+sentence features.
         """
-        return (
-            self.component_config[NUM_TRANSFORMER_LAYERS] > 0
-            or self.component_config[ENTITY_RECOGNITION]
-            or self.label_attribute is not None
-        )
+        return True
+
+    def _needs_sentence_features_for_input_text(self) -> bool:
+        """Whether we need sentence features for the `TEXT` attribute.
+
+        For the `DIETClassifier`, we will need a sentence feature if and only if we
+        are predicting a label because this sentence feature is used as the
+        embedding of the "`__CLS__`" token.
+        """
+        return self.label_attribute is not None
 
     def _needs_sentence_features_for_labels(self) -> bool:
         """Whether we expect/require sentence level features for the label attribute.
 
         For the `DIETClassifier`, we don't because `DIET` uses a BOW representation for
         it's final prediction which is obtained by simply summing over
-        sequence+sentence features.
+        sequence+sentence features of the labels.
         """
         return False
 
@@ -543,7 +557,9 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             a `ValueError` if some label is not supported by any training example
         """
         label_indices, label_examples = self._collect_one_example_per_label(
-            messages=training_data.intent_examples, label_id_dict=label_id_dict
+            messages=training_data.intent_examples,
+            label_id_dict=label_id_dict,
+            label_attribute=self.label_attribute,
         )
 
         sequence_features, sentence_features = None, None
@@ -571,7 +587,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         needs_sentence_features = self._needs_sentence_features_for_labels()
         if not sentence_features and (not sequence_features or needs_sentence_features):
 
-            if sequence_features and not sentence_features and needs_sentence_features:
+            if not sequence_features and needs_sentence_features:
                 rasa.shared.utils.io.raise_warning(
                     f"Expected sentence level features but only received "
                     f"sequence level features for `{self.label_attribute}` attribute. "
@@ -598,13 +614,15 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return label_data
 
+    @staticmethod
     def _collect_one_example_per_label(
-        self, messages: List[Message], label_id_dict: Dict[Text, int],
+        messages: List[Message], label_id_dict: Dict[Text, int], label_attribute: Text,
     ) -> Tuple[np.ndarray, List[Message]]:
         """Collect one example message for each label.
 
         Args:
           messages: the messages from which examples need to be extracted.
+          label_attribute: the attribute used as label.
 
         Returns:
           a sorted array containing the indices from the given `label_id_dict`
@@ -622,7 +640,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
                 (
                     message
                     for message in messages
-                    if message.get(self.label_attribute) == label_name
+                    if message.get(label_attribute) == label_name
                 ),
                 None,
             )
@@ -726,7 +744,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if training and self.label_attribute is not None:
             label_ids = self._add_label_id_features(model_data, messages, label_id_dict)
             # in case there are no features for labels at this point, use the
-            # default label features (cf. `_use_default_label_features`)
+            # default label features (cf. `_create_label_data`)
             self._fallback_to_default_label_features_if_necessary(
                 label_ids=label_ids, model_data=model_data
             )
@@ -775,19 +793,24 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             bilou_tagging=self.component_config[BILOU_FLAG],
             type=(
                 None
-                if self._uses_sequence_features_for_text()
+                if self._uses_sequence_features_for_input_text()
                 else FEATURE_TYPE_SENTENCE
             ),
         )
-        if self._uses_sequence_features_for_text() and all(
-            not feats[TEXT] for feats in features
+
+        # NOTE: This check is a last santiy check but it doesn't solve every problem.
+        # We need the list of featurizers for this component and need to raise an
+        # error if LexicalSyntacticFeaturizer is included on it's own - or together
+        # with other featurizers. The latter is not checked by the following. Otherwise,
+        # we'll run into problems (especially if entity recognition is enabled).
+        if self._needs_sentence_features_for_input_text() and any(
+            all(f.type != FEATURE_TYPE_SENTENCE for f in feats[TEXT])
+            for feats in features
         ):
-            # Note: this check assumes that if we have any features, there are
-            # always sequence features (i.e. we do not expect sentence features
-            # without sequence features)
-            rasa.shared.utils.io.raise_warning(
-                f"Expected sequence level features for `{TEXT}` attribute "
-                f"but not found. Falling back to empty input sequences."
+            raise RasaModelConfigException(
+                f"Expected sentence level features for `{TEXT}` attribute "
+                f"but found None. Please add a featurizer that produces "
+                f"sentence-level features."
             )
 
         # (2) add feature for the labels and entities if in training mode
@@ -826,8 +849,12 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         """Fills in default label features for the label attribute if necessary.
 
         Here, "required" means that no features are present for the label attribute
-        in the given `model_data`.
-        Note that if there is no `label_attribute` set, then nothing will be changed.
+        in the given `model_data`. If there is no `label_attribute` set, then nothing
+        will be changed.
+
+        Observe that the logic here matches the logic used in `_create_label_data`
+        but instead of preparing the default label features (as in
+        `_create_label_data`), here we *use* these default label features.
 
         Args:
           label_ids: list of label ids (indices) that contains entries for just as

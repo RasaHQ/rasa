@@ -635,17 +635,17 @@ class ResponseSelector(DIETClassifier):
     def _uses_sequence_features_for_text(self) -> bool:
         """Checks whether we make use of sequence features for the `TEXT` attribute.
 
-        Note that, just like the DIETClassifier, DIET2BOW can make use of sentence
+        Note that, just like the `DIETClassifier`, `DIET2BOW` can make use of sentence
         features even if the number of transformer layers is set to 0 because it creates
         a BOW representation from sequence+sentence features.
 
-        In contrast to that, DIET2DIET classifier uses the last token from the
+        In contrast to that, `DIET2DIET` classifier uses the last token from the
         sequence that is obtained by concatenating sequence and sentence features.
         Hence, it only makes use of sequence features if and only if the number of
         transformer layers is > 0.
 
-        Remember that self.use_text_as_label determines whether DIET2DIET or DIET2BOW
-        is used.
+        Remember that if `self.use_text_as_label` is `True`, we use the `DIET2DIET`
+        model, and otherwise `DIET2BOW`.
         """
         return (
             self.component_config[NUM_TRANSFORMER_LAYERS] > 0
@@ -655,16 +655,30 @@ class ResponseSelector(DIETClassifier):
     def _needs_sentence_features_for_labels(self) -> bool:
         """Whether we expect/require sentence level features for the label attribute.
 
-        For the DIET2DIET, we do need sentence level features in case the number
+        For the `DIET2DIET`, we do need sentence level features in case the number
         of transformer layers is 0, because the last token from the sequence that is
         created by passing sequence+sentence features (concatenated) through the
         transformer is used for prediction. And if the number of transformer layers is
         0 then this last token is not meaningful.
+
+        Remember that if `self.use_text_as_label` is `True`, we use the `DIET2DIET`
+        model, and otherwise `DIET2BOW`.
         """
         return (
             self.use_text_as_label
             and self.component_config[NUM_TRANSFORMER_LAYERS] == 0
         )
+
+    def _needs_sentence_features_for_input_text(self) -> bool:
+        """Whether we need sentence features for the `TEXT` attribute.
+
+        For the `DIET2DIET`, we will need a sentence feature because this sentence
+        feature is used as the embedding of the "`__CLS__`" token.
+
+        Remember that if `self.use_text_as_label` is `True`, we use the `DIET2DIET`
+        model, and otherwise `DIET2BOW`.
+        """
+        return self.use_text_as_label
 
 
 class DIET2BOW(DIET):
