@@ -36,7 +36,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy, PolicyPrediction
+from rasa.core.policies.policy import PolicyPrediction, Policy2
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
@@ -112,6 +112,7 @@ from rasa.utils.tensorflow.constants import (
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils import io as shared_io_utils
+from rasa.core.policies._ted_policy import TEDPolicy
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -135,7 +136,7 @@ STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
 
 
-class TEDPolicy(Policy):
+class TEDPolicy2(Policy2):
     """Transformer Embedding Dialogue (TED) Policy.
 
     The model architecture is described in
