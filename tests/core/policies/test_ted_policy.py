@@ -12,8 +12,8 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
 )
-from rasa.core.policies.policy import Policy
-from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.policy import Policy2 as Policy
+from rasa.core.policies.ted_policy import TEDPolicy2 as TEDPolicy
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
