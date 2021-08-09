@@ -318,6 +318,7 @@ class TEDPolicy2(Policy2):
             SingleStateFeaturizer(), max_history=max_history
         )
 
+    # TODO: Adapt this one (+ add `create`)
     def __init__(
         self,
         featurizer: Optional[TrackerFeaturizer] = None,
@@ -667,6 +668,7 @@ class TEDPolicy2(Policy2):
             shuffle=False,  # we use custom shuffle inside data generator
         )
 
+    # TODO: Adapt default param
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
@@ -882,6 +884,7 @@ class TEDPolicy2(Policy2):
 
         return [EntitiesAdded(entities)]
 
+    # TODO: Adapt this one
     def persist(self, path: Union[Text, Path]) -> None:
         """Persists the policy to a storage."""
         if self.model is None:
@@ -1005,6 +1008,7 @@ class TEDPolicy2(Policy2):
             "entity_tag_specs": entity_tag_specs,
         }
 
+    # TODO: Adapt this one
     @classmethod
     def load(
         cls,
