@@ -103,6 +103,45 @@ class StoryStepBuilder:
                     updated_steps.append(copied)
             self.current_steps = updated_steps
 
+    def add_events(
+        self, events: List[Event], is_used_for_training: bool = True
+    ) -> None:
+        """Adds next story steps with the user's utterances.
+
+        Args:
+            events: Events.
+            is_used_for_training: Identifies if the user utterance is a part of
+              OR statement. This parameter is used only to simplify the conversation
+              from MD story files. Don't use it other ways, because it ends up
+              in a invalid story that cannot be user for real training.
+              Default value is `False`, which preserves the expected behavior
+              of the reader.
+        """
+        self.ensure_current_steps()
+
+        if len(events) == 1:
+            # If there is only one possible intent, we'll keep things simple
+            for t in self.current_steps:
+                t.add_event(events[0])
+        else:
+            # this simplifies conversion between formats, but breaks the logic
+            if not is_used_for_training:
+                for t in self.current_steps:
+                    t.add_events(events)
+                return
+
+            # If there are multiple different intents the
+            # user can use the express the same thing
+            # we need to copy the blocks and create one
+            # copy for each possible message
+            updated_steps = []
+            for t in self.current_steps:
+                for event in events:
+                    copied = t.create_copy(use_new_id=True)
+                    copied.add_event(event)
+                    updated_steps.append(copied)
+            self.current_steps = updated_steps
+
     def add_event_as_condition(self, event: Event) -> None:
         self.add_event(event, True)
 

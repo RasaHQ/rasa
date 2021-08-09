@@ -333,25 +333,53 @@ class YAMLStoryReader(StoryReader):
 
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
         utterances = []
+        events = []
 
-        for utterance in step.get(KEY_OR):
-            if KEY_USER_INTENT in utterance.keys():
-                utterance = self._parse_raw_user_utterance(utterance)
+        for item in step.get(KEY_OR):
+            if KEY_USER_INTENT in item.keys():
+                utterance = self._parse_raw_user_utterance(item)
                 if utterance:
                     utterances.append(utterance)
+            elif KEY_SLOT_NAME in item.keys():
+                # TODO(alwx): a bit too complex, simplify
+                if isinstance(item, dict):
+                    for key, value in item.items():
+                        parsed_events = self._parse_events(SlotSet.type_name, {key: value})
+                        events.extend(parsed_events)
+                elif isinstance(item, str):
+                    parsed_events = self._parse_events(SlotSet.type_name, {item: self._slot_default_value(item)})
+                    events.extend(parsed_events)
+                else:
+                    rasa.shared.utils.io.raise_warning(
+                        f"Issue found in '{self.source_name}':\n"
+                        f"Invalid slot: \n{item}\n"
+                        f"Items under the '{KEY_CHECKPOINT_SLOTS}' key must be "
+                        f"YAML dictionaries or Strings. The checkpoint will be skipped.",
+                        docs=self._get_docs_link(),
+                    )
+                    return
+                pass
             else:
                 rasa.shared.utils.io.raise_warning(
                     f"Issue found in '{self.source_name}': \n"
-                    f"`OR` statement can only have '{KEY_USER_INTENT}' "
+                    f"`OR` statement can have '{KEY_USER_INTENT}' or '{KEY_SLOT_NAME}'"
                     f"as a sub-element. This step will be skipped:\n"
-                    f"'{utterance}'\n",
+                    f"'{item}'\n",
                     docs=self._get_docs_link(),
                 )
                 return
 
-        self.current_step_builder.add_user_messages(
-            utterances, self._is_used_for_training
-        )
+        # TODO(alwx): might be possible to simplify
+
+        if utterances:
+            self.current_step_builder.add_user_messages(
+                utterances, self._is_used_for_training
+            )
+
+        if events:
+            self.current_step_builder.add_events(
+                events, self._is_used_for_training
+            )
 
     def _user_intent_from_step(
         self, step: Dict[Text, Any]
@@ -462,7 +490,6 @@ class YAMLStoryReader(StoryReader):
         return final_entities
 
     def _parse_slot(self, step: Dict[Text, Any]) -> None:
-
         for slot in step.get(KEY_CHECKPOINT_SLOTS, []):
             if isinstance(slot, dict):
                 for key, value in slot.items():
