@@ -157,7 +157,7 @@ class TEDPolicy2(Policy2):
     """
 
     # please make sure to update the docs when changing a default parameter
-    defaults = {
+    default_config = {
         # ## Architecture of the used neural network
         # Hidden layer sizes for layers before the embedding layers for user message
         # and labels.
@@ -333,7 +333,7 @@ class TEDPolicy2(Policy2):
         """Declares instance variables with default values."""
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
             kwargs.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE),
-            self.defaults.get(
+            self.default_config.get(
                 SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
             ),
         )
@@ -1014,7 +1014,7 @@ class TEDPolicy2(Policy2):
         cls,
         path: Union[Text, Path],
         should_finetune: bool = False,
-        epoch_override: int = defaults[EPOCHS],
+        epoch_override: int = default_config[EPOCHS],
         **kwargs: Any,
     ) -> "TEDPolicy":
         """Loads a policy from the storage.
@@ -1134,7 +1134,7 @@ class TEDPolicy2(Policy2):
 
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta = rasa.utils.train_utils.override_defaults(cls.defaults, meta)
+        meta = rasa.utils.train_utils.override_defaults(cls.default_config, meta)
         meta = rasa.utils.train_utils.update_confidence_type(meta)
         meta = rasa.utils.train_utils.update_similarity_type(meta)
         meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
