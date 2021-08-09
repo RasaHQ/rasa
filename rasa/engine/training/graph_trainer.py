@@ -200,7 +200,9 @@ class GraphTrainer:
                     model_storage=self._model_storage,
                 )
                 if output_result:
-                    logger.debug(f"Updating {node} to use a `CachedComponent`.")
+                    logger.debug(
+                        f"Updating {current_node_name} to use a `CachedComponent`."
+                    )
                     CachedComponent.replace_schema_node(node, output_result)
                     # We remove all parent dependencies as the cached output value will
                     # be used.
