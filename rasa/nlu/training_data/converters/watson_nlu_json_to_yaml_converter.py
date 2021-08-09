@@ -1,5 +1,6 @@
 import logging
 import json
+import os
 from typing import Any, Dict, List, Text
 from pathlib import Path
 from rasa.shared.nlu.constants import INTENT, ENTITIES, TEXT
@@ -24,12 +25,16 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
         Returns:
             `True` if the given file can be converted, `False` otherwise
         """
-        js = self._read_from_json(source_path)
-        try:
-            if js.get("metadata").get("api_version").get("major_version") == "v2":
-                return True
-        except:
-            return False
+
+        if os.path.isfile(source_path):
+            js = self._read_from_json(source_path)
+            return self._check_watson_file(js)
+        elif os.path.isdir(source_path):
+            for root, _, files in os.walk(source_path, followlinks=True):
+                for f in sorted(files):
+                    source_path = Path(os.path.join(root, f))
+                    js = self._read_from_json(source_path)
+                    return self._check_watson_file(js)
 
     async def convert_and_write(self, source_path: Path, output_path: Path) -> None:
         """Converts Watson NLU data into Rasa NLU Data Format.
@@ -142,3 +147,11 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
                         {"value": val.get("value"), "synonyms": val.get("synonyms"),}
                     )
         return entity_synonyms
+
+    @staticmethod
+    def _check_watson_file(js):
+        try:
+            if js.get("metadata").get("api_version").get("major_version") == "v2":
+                return True
+        except Exception:
+            return False

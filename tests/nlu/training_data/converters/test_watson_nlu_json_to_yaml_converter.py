@@ -25,7 +25,7 @@ def test_filter():
         assert True
 
 
-def test_filter():
+def test_not_filter():
     source = Path("data/examples/luis/demo-restaurants_v7.json")
     filter = WatsonTrainingDataConverter().filter(source)
     if not filter:
