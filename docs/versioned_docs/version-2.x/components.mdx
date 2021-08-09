@@ -139,7 +139,7 @@ word vectors in your pipeline.
 
 ### HFTransformersNLP
 
-:::version-change Deprecated in 2.1
+:::caution Deprecated in 2.1
 The `HFTransformersNLP` is deprecated and will be removed in 3.0. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
 now implements its behavior.
 :::
@@ -220,7 +220,7 @@ now implements its behavior.
       cache_dir: null
   ```
 
-  :::version-change-inline Changed in 2.1
+  :::caution Changed in 2.1
   Pre-trained weights have been renamed from `bert-base-uncased` to `rasa/LaBSE`.
   (TODO: not sure if it's the right comment here, or if we even need to document it)
   :::
@@ -415,7 +415,7 @@ now implements its behavior.
 
   ### ConveRTTokenizer
 
-:::version-change Deprecated in 2.1
+:::caution Deprecated in 2.1
 The `ConveRTTokenizer` is deprecated and will be removed in 3.0. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
 now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
 :::
@@ -479,7 +479,7 @@ now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be
 
   ### LanguageModelTokenizer
 
-:::version-change Deprecated in 2.1
+:::caution Deprecated in 2.1
 The `LanguageModelTokenizer` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
 now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
 :::
@@ -663,7 +663,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   `tokens`
 
-  :::version-change-inline Changed in 2.1
+  :::caution Changed in 2.1
   `ConveRTFeaturizer` no longer requires `ConveRTTokenizer`.
   :::
 
@@ -721,7 +721,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   `tokens`.
 
-  :::version-change-inline Changed in 2.1
+  :::caution Changed in 2.1
   `LanguageModelFeaturizer` no longer requires `ConveRTTokenizer`.
   :::
 
@@ -748,7 +748,7 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 * **Configuration**
 
-  :::version-change-inline Changed in 2.1
+  :::caution Changed in 2.1
   TODO: do we need to explain the config changes here?
   :::
 
@@ -1560,8 +1560,7 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | Requires `evaluate_on_number_of_examples > 0` and            |
 |                                 |                  | `evaluate_every_number_of_epochs > 0`                        |
 +---------------------------------+------------------+--------------------------------------------------------------+
-| split_entities_by_comma         | True             | New in 2.1 (TODO)                                            |
-|                                 |                  | Splits a list of extracted entities by comma to treat each   |
+| split_entities_by_comma         | True             | Splits a list of extracted entities by comma to treat each   |
 |                                 |                  | one of them as a single entity. Can either be `True`/`False` |
 |                                 |                  | globally, or set per entity type, such as:                   |
 |                                 |                  | ```                                                          |
@@ -1930,7 +1929,7 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         email: True
   ```
 
-  :::version-change-inline New in 2.1
+  :::info New in 2.1
   `split_entities_by_comma` was added.
   :::
 
