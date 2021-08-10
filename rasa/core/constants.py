@@ -48,3 +48,7 @@ REPORT_STORIES_FILE = "story_report.json"
 FAILED_STORIES_FILE = "failed_test_stories.yml"
 SUCCESSFUL_STORIES_FILE = "successful_test_stories.yml"
 STORIES_WITH_WARNINGS_FILE = "stories_with_warnings.yml"
+
+POLICY_PRIORITY = "priority"
+POLICY_FEATURIZER = "featurizer"
+POLICY_MAX_HISTORY = "max_history"
