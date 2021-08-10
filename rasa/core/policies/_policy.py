@@ -44,6 +44,8 @@ logger = logging.getLogger(__name__)
 
 
 class Policy:
+    """Common parent class for all dialogue policies."""
+
     @staticmethod
     def supported_data() -> "SupportedData":
         """The type of data supported by this policy.
@@ -251,6 +253,7 @@ class Policy:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
             interpreter: Interpreter which can be used by the polices for featurization.
+            **kwargs: Additional keyword arguments.
         """
         raise NotImplementedError("Policy must have the capacity to train.")
 
