@@ -125,9 +125,10 @@ class Policy2(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        featurizer: Optional[TrackerFeaturizer] = None,
     ) -> None:
         """Constructs a new Policy object."""
-        self.__featurizer = self._create_featurizer(config.get("featurizer"))
+        self.__featurizer = self._create_featurizer(featurizer)
         self.priority = config.get("priority", DEFAULT_POLICY_PRIORITY)
         self.finetune_mode = execution_context.is_finetuning
 
@@ -363,6 +364,7 @@ class Policy2(GraphComponent):
     ) -> "Policy2":
         """Loads a trained policy (see parent class for full docstring)."""
         config = {}
+        featurizer = None
 
         with model_storage.read_from(resource) as path:
             metadata_file = Path(path) / cls._metadata_filename()
@@ -372,7 +374,6 @@ class Policy2(GraphComponent):
 
                 if (Path(path) / FEATURIZER_FILE).is_file():
                     featurizer = TrackerFeaturizer.load(path)
-                    config["featurizer"] = featurizer
 
                 config.update(kwargs)
 
@@ -382,7 +383,13 @@ class Policy2(GraphComponent):
                     f"File '{metadata_file}' doesn't exist."
                 )
 
-        return cls(config, model_storage, resource, execution_context)
+            return cls(
+                config,
+                model_storage,
+                resource,
+                execution_context,
+                featurizer=featurizer,
+            )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         """Creates a list of zeros.

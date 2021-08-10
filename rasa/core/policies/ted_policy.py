@@ -328,6 +328,7 @@ class TEDPolicy2(Policy2):
         resource: Resource,
         execution_context: ExecutionContext,
         model: Optional[RasaModel] = None,
+        featurizer: Optional[TrackerFeaturizer] = None,
         fake_features: Optional[Dict[Text, List["Features"]]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
     ) -> None:
@@ -339,21 +340,23 @@ class TEDPolicy2(Policy2):
             ),
         )
 
-        featurizer = config.get("featurizer")
         max_history = config.get("max_history")
 
-        # TODO: check if the else statement can be removed.
+        if not featurizer:
+            # TODO: Handle featurizer instantiation from config
+            featurizer = self._standard_featurizer(max_history)
+
+        super().__init__(
+            config, model_storage, resource, execution_context, featurizer=featurizer
+        )
+
+        # TODO: check if this statement can be removed.
         #  More context here -
         #  https://github.com/RasaHQ/rasa/issues/5786#issuecomment-840762751
-        if not featurizer:
-            config["featurizer"] = self._standard_featurizer(max_history)
-        else:
-            if isinstance(featurizer, MaxHistoryTrackerFeaturizer) and max_history:
-                featurizer.max_history = max_history
+        if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer) and max_history:
+            self.featurizer.max_history = max_history
 
-        super().__init__(config, model_storage, resource, execution_context)
-
-        self._load_params(**config)
+        self._load_params(config)
 
         self.model = model
 
@@ -384,8 +387,8 @@ class TEDPolicy2(Policy2):
     def _metadata_filename(cls) -> Optional[Text]:
         return "ted_policy"
 
-    def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        new_config = rasa.utils.train_utils.check_core_deprecated_options(kwargs)
+    def _load_params(self, config: Dict[Text, Any]) -> None:
+        new_config = rasa.utils.train_utils.check_core_deprecated_options(config)
         self.config = rasa.utils.train_utils.override_defaults(
             self.default_config, new_config
         )
@@ -1040,52 +1043,62 @@ class TEDPolicy2(Policy2):
         Raises:
             `PolicyModelNotFound` if the model is not found in the supplied `path`.
         """
-        with model_storage.read_from(resource) as model_path:
-            if not model_path.exists():
-                logger.warning(
-                    f"Failed to load {cls.__class__.__name__} model. Path "
-                    f"'{model_path.absolute()}' doesn't exist."
+        try:
+            with model_storage.read_from(resource) as model_path:
+                featurizer = TrackerFeaturizer.load(model_path)
+
+                if not (
+                    model_path / f"{cls._metadata_filename()}.data_example.pkl"
+                ).is_file():
+                    return cls(
+                        config,
+                        model_storage,
+                        resource,
+                        execution_context,
+                        featurizer=featurizer,
+                    )
+
+                model_utilities = cls._load_model_utilities(model_path)
+
+                model_utilities["meta"] = cls._update_loaded_params(
+                    model_utilities["meta"]
                 )
-                return cls(config, model_storage, resource, execution_context)
+                if execution_context.is_finetuning and "epoch_override" in config:
+                    model_utilities["meta"][EPOCHS] = config.get("epoch_override")
 
-            featurizer = TrackerFeaturizer.load(model_path)
+                (
+                    model_data_example,
+                    predict_data_example,
+                ) = cls._construct_model_initialization_data(
+                    model_utilities["loaded_data"]
+                )
 
-            if not (
-                model_path / f"{cls._metadata_filename()}.data_example.pkl"
-            ).is_file():
-                config["featurizer"] = featurizer
-                return cls(config, model_storage, resource, execution_context)
+                model = cls._load_tf_model(
+                    model_utilities,
+                    model_data_example,
+                    predict_data_example,
+                    featurizer,
+                    execution_context.is_finetuning,
+                )
 
-            model_utilities = cls._load_model_utilities(model_path)
+                # TODO: Wrong way around
+                config.update(model_utilities["meta"])
 
-        model_utilities["meta"] = cls._update_loaded_params(model_utilities["meta"])
-
-        if should_finetune:
-            model_utilities["meta"][EPOCHS] = epoch_override
-
-            (
-                model_data_example,
-                predict_data_example,
-            ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
-
-            model = cls._load_tf_model(
-                model_utilities,
-                model_data_example,
-                predict_data_example,
-                featurizer,
-                execution_context.is_finetuning,
+                return cls._load_policy_with_model(
+                    config,
+                    model_storage,
+                    resource,
+                    execution_context,
+                    featurizer=featurizer,
+                    model_utilities=model_utilities,
+                    model=model,
+                )
+        except ValueError:
+            logger.warning(
+                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
+                f"'{resource.name}' doesn't exist."
             )
-
-            config.update(model_utilities["meta"])
-
-            return cls._load_policy_with_model(
-                config,
-                model_storage,
-                resource,
-                execution_context,
-                model_utilities=model_utilities,
-                model=model,
-            )
+            return cls(config, model_storage, resource, execution_context)
 
     @classmethod
     def _load_policy_with_model(
@@ -1094,6 +1107,7 @@ class TEDPolicy2(Policy2):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        featurizer: [TrackerFeaturizer],
         model: "TED",
         model_utilities: Dict[Text, Any],
     ) -> "TEDPolicy2":
@@ -1103,6 +1117,7 @@ class TEDPolicy2(Policy2):
             resource,
             execution_context,
             model=model,
+            featurizer=featurizer,
             fake_features=model_utilities["fake_features"],
             entity_tag_specs=model_utilities["entity_tag_specs"],
         )
