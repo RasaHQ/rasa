@@ -42,7 +42,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import PolicyPrediction, Policy2
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY, DIALOGUE
+from rasa.core.constants import DIALOGUE
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -124,6 +124,10 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+# This is a workaround around until we have all components migrated to `GraphComponent`.
+# (see the top of the file for more information).
+TEDPolicy = TEDPolicy
 
 E2E_CONFIDENCE_THRESHOLD = "e2e_confidence_threshold"
 LABEL_KEY = LABEL
