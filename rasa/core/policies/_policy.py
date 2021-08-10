@@ -2,6 +2,7 @@
 #          Please don't do any changes in this module and rather adapt Policy2 from
 #          the regular `rasa.core.policies.policy` module. This module is a workaround
 #          to defer breaking changes due to the architecture revamp in 3.0.
+# flake8: noqa
 import copy
 import json
 import logging
