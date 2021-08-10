@@ -20,17 +20,20 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 
 
+TypeAnnotation = Union[TypeVar, Text, Type]
+
+
 @dataclasses.dataclass
 class ParameterInfo:
     """Stores metadata about a function parameter."""
 
-    type_annotation: Union[TypeVar, Text, Type]
+    type_annotation: TypeAnnotation
     # `True` if we have a parameter like `**kwargs`
     is_variable_length_keyword_arg: bool
     has_default: bool
 
 
-KEYWORDS_EXPECTED_TYPES: Dict[Text, Union[TypeVar, Text, Type]] = {
+KEYWORDS_EXPECTED_TYPES: Dict[Text, TypeAnnotation] = {
     "resource": Resource,
     "execution_context": ExecutionContext,
     "model_storage": ModelStorage,
@@ -146,7 +149,7 @@ def _get_parameter_information(
 
 def _get_type_hints(
     node_name: Text, uses: Type[GraphComponent], fn: Callable
-) -> Dict[Text, Union[TypeVar, Text, Type]]:
+) -> Dict[Text, TypeAnnotation]:
     try:
         return typing.get_type_hints(fn)
     except NameError as e:
@@ -183,7 +186,7 @@ def _validate_run_fn(
     node_name: Text,
     node: SchemaNode,
     run_fn_params: Dict[Text, ParameterInfo],
-    run_fn_return_type: Union[TypeVar, Text, Type],
+    run_fn_return_type: TypeAnnotation,
     is_train_graph: bool,
 ) -> None:
     _validate_types_of_reserved_keywords(run_fn_params, node_name, node, node.fn)
@@ -329,7 +332,7 @@ def _validate_parent_return_type(
     node: SchemaNode,
     parent_name: Text,
     parent: SchemaNode,
-    required_type: Union[TypeVar, Text, Type],
+    required_type: TypeAnnotation,
 ) -> None:
     _, parent_return_type = _get_parameter_information(
         parent_name, parent.uses, parent.fn

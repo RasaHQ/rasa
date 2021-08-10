@@ -387,7 +387,6 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
     Returns:
         Package names that could not be imported.
     """
-
     import importlib
 
     failed_imports = set()
