@@ -108,6 +108,7 @@ import tensorflow as tf
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
+    from rasa.core.policies.ted_policy import TED
 
 logger = logging.getLogger(__name__)
 
