@@ -342,10 +342,14 @@ class YAMLStoryReader(StoryReader):
             elif KEY_CHECKPOINT_SLOTS in item.keys():
                 if isinstance(item, dict):
                     for key, value in item.items():
-                        parsed_events = self._parse_events(SlotSet.type_name, {key: value})
+                        parsed_events = self._parse_events(
+                            SlotSet.type_name, {key: value}
+                        )
                         events.extend(parsed_events)
                 elif isinstance(item, str):
-                    parsed_events = self._parse_events(SlotSet.type_name, {item: self._slot_default_value(item)})
+                    parsed_events = self._parse_events(
+                        SlotSet.type_name, {item: self._slot_default_value(item)}
+                    )
                     events.extend(parsed_events)
                 else:
                     rasa.shared.utils.io.raise_warning(
@@ -368,9 +372,7 @@ class YAMLStoryReader(StoryReader):
                 return
 
         if events:
-            self.current_step_builder.add_events(
-                events, self._is_used_for_training
-            )
+            self.current_step_builder.add_events(events, self._is_used_for_training)
 
     def _user_intent_from_step(
         self, step: Dict[Text, Any]

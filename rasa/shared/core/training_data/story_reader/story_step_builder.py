@@ -159,9 +159,7 @@ class StoryStepBuilder:
         ]
         return current_turns
 
-    def _generate_checkpoint_name_for_or_statement(
-        self, messages: List[Event]
-    ) -> str:
+    def _generate_checkpoint_name_for_or_statement(self, messages: List[Event]) -> str:
         """Generates a unique checkpoint name for an or statement.
 
         The name is based on the current story/rule name,
