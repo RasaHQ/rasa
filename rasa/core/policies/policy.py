@@ -1,3 +1,5 @@
+from __future__ import annotations
+import abc
 import copy
 import json
 import logging
@@ -32,7 +34,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     FEATURIZER_FILE,
 )
-from rasa.shared.exceptions import RasaException
+from rasa.shared.exceptions import RasaException, FileIOException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -54,6 +56,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# This is a workaround around until we have all components migrated to `GraphComponent`.
+# (see the top of the file for more information).
+Policy = Policy
+
 
 class SupportedData(Enum):
     """Enumeration of a policy's supported training data type."""
@@ -69,7 +75,7 @@ class SupportedData(Enum):
 
     @staticmethod
     def trackers_for_policy(
-        policy: Union["Policy", Type["Policy"]],
+        policy: Union[Policy, Type[Policy]],
         trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]],
     ) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]:
         """Return trackers for a given policy.
@@ -94,6 +100,8 @@ class SupportedData(Enum):
 
 
 class Policy2(GraphComponent):
+    """Common parent class for all dialogue policies."""
+
     @staticmethod
     def supported_data() -> SupportedData:
         """The type of data supported by this policy.
@@ -299,6 +307,33 @@ class Policy2(GraphComponent):
             == SupportedData.ML_DATA,
         )
 
+    @abc.abstractmethod
+    def train(self, **kwargs: Any,) -> Resource:
+        """Trains a policy.
+
+        Args:
+            **kwargs: Depending on the specified `needs` section and the resulting
+                graph structure the policy can use different input to train itself.
+
+        Returns:
+            A policy must return its resource locator so that potential children nodes
+            can load the policy from the resource.
+        """
+        raise NotImplementedError("Policy must have the capacity to train.")
+
+    @abc.abstractmethod
+    def predict_action_probabilities(self, **kwargs: Any,) -> PolicyPrediction:
+        """Predicts the next action the bot should take after seeing the tracker.
+
+        Args:
+            **kwargs: Depending on the specified `needs` section and the resulting
+                graph structure the policy can use different input to make predictions.
+
+        Returns:
+             The prediction.
+        """
+        raise NotImplementedError("Policy must have the capacity to predict.")
+
     def _prediction(
         self,
         probabilities: List[float],
@@ -308,7 +343,7 @@ class Policy2(GraphComponent):
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
         action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> "PolicyPrediction":
+    ) -> PolicyPrediction:
         return PolicyPrediction(
             probabilities,
             self.__class__.__name__,
@@ -369,10 +404,9 @@ class Policy2(GraphComponent):
         config = {}
         featurizer = None
 
-        with model_storage.read_from(resource) as path:
-            metadata_file = Path(path) / cls._metadata_filename()
-
-            if metadata_file.is_file():
+        try:
+            with model_storage.read_from(resource) as path:
+                metadata_file = Path(path) / cls._metadata_filename()
                 config = json.loads(rasa.shared.utils.io.read_file(metadata_file))
 
                 if (Path(path) / FEATURIZER_FILE).is_file():
@@ -380,19 +414,15 @@ class Policy2(GraphComponent):
 
                 config.update(kwargs)
 
-            else:
-                logger.info(
-                    f"Couldn't load metadata for policy '{cls.__name__}'. "
-                    f"File '{metadata_file}' doesn't exist."
-                )
-
-            return cls(
-                config,
-                model_storage,
-                resource,
-                execution_context,
-                featurizer=featurizer,
+        except (ValueError, FileNotFoundError, FileIOException):
+            logger.info(
+                f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
+                f"metadata couldn't be loaded."
             )
+
+        return cls(
+            config, model_storage, resource, execution_context, featurizer=featurizer,
+        )
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         """Creates a list of zeros.
@@ -516,7 +546,7 @@ class PolicyPrediction:
         policy_name: Optional[Text] = None,
         confidence: float = 1.0,
         action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> "PolicyPrediction":
+    ) -> PolicyPrediction:
         """Create a prediction for a given action.
 
         Args:
@@ -604,7 +634,7 @@ class InvalidPolicyConfig(RasaException):
     """Exception that can be raised when policy config is not valid."""
 
 
-# TODO: Or make this part of recipe?
+# TODO: Test the shit out of this
 def _featurizer_from_policy_config(
     policy_config: Dict[Text, Any]
 ) -> Optional[TrackerFeaturizer]:
