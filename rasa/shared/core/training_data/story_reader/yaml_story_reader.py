@@ -332,16 +332,14 @@ class YAMLStoryReader(StoryReader):
             )
 
     def _parse_or_statement(self, step: Dict[Text, Any]) -> None:
-        utterances = []
-        events = []
+        events: List = []
 
         for item in step.get(KEY_OR):
             if KEY_USER_INTENT in item.keys():
                 utterance = self._parse_raw_user_utterance(item)
                 if utterance:
-                    utterances.append(utterance)
-            elif KEY_SLOT_NAME in item.keys():
-                # TODO(alwx): a bit too complex, simplify
+                    events.append(utterance)
+            elif KEY_CHECKPOINT_SLOTS in item.keys():
                 if isinstance(item, dict):
                     for key, value in item.items():
                         parsed_events = self._parse_events(SlotSet.type_name, {key: value})
@@ -354,7 +352,7 @@ class YAMLStoryReader(StoryReader):
                         f"Issue found in '{self.source_name}':\n"
                         f"Invalid slot: \n{item}\n"
                         f"Items under the '{KEY_CHECKPOINT_SLOTS}' key must be "
-                        f"YAML dictionaries or Strings. The checkpoint will be skipped.",
+                        f"YAML dictionaries or Strings. This step will be skipped.",
                         docs=self._get_docs_link(),
                     )
                     return
@@ -368,13 +366,6 @@ class YAMLStoryReader(StoryReader):
                     docs=self._get_docs_link(),
                 )
                 return
-
-        # TODO(alwx): might be possible to simplify
-
-        if utterances:
-            self.current_step_builder.add_user_messages(
-                utterances, self._is_used_for_training
-            )
 
         if events:
             self.current_step_builder.add_events(
