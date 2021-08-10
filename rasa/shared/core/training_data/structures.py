@@ -31,6 +31,7 @@ from rasa.shared.core.events import (
     ActionExecuted,
     Event,
     SessionStarted,
+    SlotSet,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.exceptions import RasaCoreException
@@ -169,11 +170,16 @@ class StoryStep:
         return f"    - {story_step_element.as_story_string()}\n"
 
     @staticmethod
-    def _or_string(story_step_element: Sequence[Event], e2e: bool) -> Text:
+    def _or_string(story_step_element: Sequence[Event], e2e: bool) -> Optional[Text]:
         for event in story_step_element:
-            if not isinstance(event, UserUttered):
+            # OR statement can also contain `slot_was_set`, and
+            # we're going to ignore this events when representing
+            # the story as a string
+            if isinstance(event, SlotSet):
+                return None
+            elif not isinstance(event, UserUttered):
                 raise EventTypeError(
-                    "OR statement events must be of type `UserUttered`."
+                    "OR statement events must be of type `UserUttered` or `SlotSet`."
                 )
 
         # FIXME: https://github.com/python/mypy/issues/7853
@@ -214,7 +220,9 @@ class StoryStep:
                 # The story reader classes support reading stories in
                 # conversion mode.  When this mode is enabled, OR statements
                 # are represented as lists of events.
-                result += self._or_string(event, e2e)
+                or_string = self._or_string(event, e2e)
+                if or_string:
+                    result += or_string
             else:
                 raise Exception(f"Unexpected element in story step: {event}")
 

@@ -87,6 +87,37 @@ def test_as_story_string_or_statement():
     )
 
 
+def test_as_story_string_or_statement_with_slot_was_set():
+    import rasa.shared.utils.io
+
+    stories = """
+    stories:
+    - story: hello world
+      steps:
+      - or:
+        - slot_was_set:
+            - name: joe
+        - slot_was_set:
+            - name: bob
+      - action: some_action
+    """
+
+    reader = YAMLStoryReader(is_used_for_training=False)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+
+    steps = reader.read_from_parsed_yaml(yaml_content)
+
+    assert len(steps) == 1
+
+    assert (
+            steps[0].as_story_string()
+            == """
+## hello world
+    - some_action
+"""
+    )
+
+
 def test_cap_length():
     assert (
         rasa.shared.core.training_data.structures._cap_length("mystring", 6) == "mys..."
