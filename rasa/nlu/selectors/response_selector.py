@@ -146,8 +146,9 @@ class ResponseSelector(DIETClassifier):
         KEY_RELATIVE_ATTENTION: False,
         # If 'True' use key relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
-        # Max position for relative embeddings
-        MAX_RELATIVE_POSITION: None,
+        # Max position for relative embeddings. Only in effect if key- or value relative
+        # attention are turned on
+        MAX_RELATIVE_POSITION: 5,
         # Use a unidirectional or bidirectional encoder.
         UNIDIRECTIONAL_ENCODER: False,
         # ## Training parameters
@@ -630,8 +631,7 @@ class ResponseSelector(DIETClassifier):
         **kwargs: Any,
     ) -> "ResponseSelector":
         """Loads the trained model from the provided directory."""
-
-        model = super().load(
+        model: ResponseSelector = super().load(
             meta, model_dir, model_metadata, cached_component, **kwargs
         )
         if not meta.get("file"):
@@ -934,7 +934,7 @@ class DIET2DIET(DIET):
 
         _, scores = self._tf_layers[
             f"loss.{LABEL}"
-        ].similarity_confidence_from_embeddings(
+        ].get_similarities_and_confidences_from_embeddings(
             sentence_vector_embed[:, tf.newaxis, :],
             self.all_labels_embed[tf.newaxis, :, :],
         )

@@ -8,6 +8,34 @@ from rasa.shared.importers.autoconfig import TrainingType
 from pathlib import Path
 
 
+async def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
+    print()
+    story_file_name = tmp_path / "stories.yml"
+    with open(story_file_name, "w") as file:
+        file.write(
+            """
+            stories:
+            - story: path 1
+              steps:
+              - user: |
+                  hello assistant! Can you help me today?
+              - action: utter_greet
+            - story: path 2
+              steps:
+              - intent: greet
+              - action: utter_greet
+            """
+        )
+    importer = RasaFileImporter(
+        config_file="data/test_moodbot/config.yml",
+        domain_path="data/test_moodbot/domain.yml",
+        training_data_paths=[story_file_name, nlu_data_path],
+        training_type=TrainingType.NLU,
+    )
+    validator = await Validator.from_importer(importer)
+    assert validator.verify_nlu()
+
+
 async def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path: Text):
     importer = RasaFileImporter(
         domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path],
@@ -321,10 +349,11 @@ async def test_verify_form_slots_invalid_domain(tmp_path: Path):
         version: "2.0"
         forms:
           name_form:
-             first_name:
-             - type: from_text
-             last_name:
-             - type: from_text
+            required_slots:
+              first_name:
+              - type: from_text
+              last_name:
+              - type: from_text
         slots:
              first_name:
                 type: text
@@ -435,10 +464,11 @@ async def test_valid_form_slots_in_domain(tmp_path: Path):
         version: "2.0"
         forms:
           name_form:
-             first_name:
-             - type: from_text
-             last_name:
-             - type: from_text
+            required_slots:
+              first_name:
+              - type: from_text
+              last_name:
+              - type: from_text
         slots:
              first_name:
                 type: text

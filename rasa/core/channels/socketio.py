@@ -170,12 +170,13 @@ class SocketIOInput(InputChannel):
                 "Please use a different channel for external events in these "
                 "scenarios."
             )
-            return
+            return None
         return SocketIOOutput(self.sio, self.bot_message_evt)
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
+        """Defines a Sanic blueprint."""
         # Workaround so that socketio works with requests from other origins.
         # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
         sio = AsyncServer(async_mode="sanic", cors_allowed_origins=[])
@@ -191,9 +192,7 @@ class SocketIOInput(InputChannel):
             return response.json({"status": "ok"})
 
         @sio.on("connect", namespace=self.namespace)
-        async def connect(
-            sid: Text, environ: Dict, auth: Optional[Dict]
-        ) -> Optional[bool]:
+        async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> bool:
             if self.jwt_key:
                 jwt_payload = None
                 if auth and auth.get("token"):
@@ -203,10 +202,12 @@ class SocketIOInput(InputChannel):
 
                 if jwt_payload:
                     logger.debug(f"User {sid} connected to socketIO endpoint.")
+                    return True
                 else:
                     return False
             else:
                 logger.debug(f"User {sid} connected to socketIO endpoint.")
+                return True
 
         @sio.on("disconnect", namespace=self.namespace)
         async def disconnect(sid: Text) -> None:
