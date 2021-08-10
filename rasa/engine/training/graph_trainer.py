@@ -127,7 +127,7 @@ class GraphTrainer:
             schema_node.is_target = True
             if not schema_node.is_input:
                 FingerprintComponent.replace_schema_node(
-                    schema_node, self._cache, node_name
+                    schema_node, self._cache
                 )
         return fingerprint_schema
 

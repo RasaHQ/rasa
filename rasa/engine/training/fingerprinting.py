@@ -1,7 +1,8 @@
 import logging
-from typing import Any, Dict, Text
+from typing import Any, Dict, Text, Type
 from typing_extensions import Protocol, runtime_checkable
 
+import rasa.shared.utils.common
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -17,20 +18,25 @@ class Fingerprintable(Protocol):
 
 
 def calculate_fingerprint_key(
-    node_name: Text, config: Dict[Text, Any], inputs: Dict[Text, Fingerprintable]
+    graph_component_class: Type,
+    config: Dict[Text, Any],
+    inputs: Dict[Text, Fingerprintable],
 ) -> Text:
     """Calculates a fingerprint key that uniquely represents a single node's execution.
 
     Args:
-        node_name: The name of the node.
+        graph_component_class: The graph component class.
         config: The component config.
         inputs: The inputs as a mapping of parent node name to input value.
 
     Returns:
         The fingerprint key.
     """
+
     fingerprint_data = {
-        "node_name": node_name,
+        "node_name": rasa.shared.utils.common.module_path_from_class(
+            graph_component_class
+        ),
         "config": config,
         "inputs": inputs,
     }

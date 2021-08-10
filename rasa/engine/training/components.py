@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Dict, Optional, Text
+from typing import Any, Dict, Optional, Text, Type
 import dataclasses
 import uuid
 
@@ -87,18 +87,18 @@ class FingerprintComponent(GraphComponent):
         self,
         cache: TrainingCache,
         config_of_replaced_component: Dict[Text, Any],
-        name_of_replaced_node: Text,
+        class_of_replaced_component: Type,
     ) -> None:
         """Initializes a `FingerprintComponent`.
 
         Args:
             cache: Training cache used to determine if the run is a hit or not.
             config_of_replaced_component: Needed to generate the fingerprint key.
-            name_of_replaced_node: Needed to generate the fingerprint key.
+            class_of_replaced_component: Needed to generate the fingerprint key.
         """
         self._cache = cache
         self._config_of_replaced_component = config_of_replaced_component
-        self._name_of_replaced_node = name_of_replaced_node
+        self._class_of_replaced_component = class_of_replaced_component
 
     @classmethod
     def create(
@@ -110,11 +110,11 @@ class FingerprintComponent(GraphComponent):
     ) -> FingerprintComponent:
         """Creates a `FingerprintComponent` (see parent class for full docstring)."""
         cache = config.pop("cache")
-        node_name = config.pop("node_name")
+        class_of_replaced_component = config.pop("graph_component_class")
         return cls(
             cache=cache,
             config_of_replaced_component=config,
-            name_of_replaced_node=node_name,
+            class_of_replaced_component=class_of_replaced_component,
         )
 
     def run(self, **kwargs: Any) -> FingerprintStatus:
@@ -133,7 +133,7 @@ class FingerprintComponent(GraphComponent):
             also the output fingerprint from the cache.
         """
         fingerprint_key = fingerprinting.calculate_fingerprint_key(
-            node_name=self._name_of_replaced_node,
+            graph_component_class=self._class_of_replaced_component,
             config=self._config_of_replaced_component,
             inputs=kwargs,
         )
@@ -145,9 +145,7 @@ class FingerprintComponent(GraphComponent):
         )
 
     @classmethod
-    def replace_schema_node(
-        cls, node: SchemaNode, cache: TrainingCache, node_name: Text
-    ) -> None:
+    def replace_schema_node(cls, node: SchemaNode, cache: TrainingCache) -> None:
         """Updates a `SchemaNode` to use a `FingerprintComponent`.
 
         This is for when we want to do a fingerprint run. During the fingerprint run we
@@ -158,8 +156,8 @@ class FingerprintComponent(GraphComponent):
             node: The node to update.
             cache: The cache is needed to determine of there is cache hit for the
                 fingerprint key.
-            node_name: The node name is needed to generate the fingerprint key.
         """
+        graph_component_class = node.uses
         node.uses = cls
         # We update the node to be "eager" so that `FingerprintComponent.run` sees
         # ALL the inputs to the node. If it was not eager, we would miss any args used
@@ -167,4 +165,6 @@ class FingerprintComponent(GraphComponent):
         node.eager = True
         node.constructor_name = cls.create.__name__
         node.fn = cls.run.__name__
-        node.config.update({"cache": cache, "node_name": node_name})
+        node.config.update(
+            {"cache": cache, "graph_component_class": graph_component_class}
+        )

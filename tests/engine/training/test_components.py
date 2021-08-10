@@ -74,14 +74,14 @@ def test_fingerprint_component_replace_schema_node(temp_cache: TrainingCache):
         resource=Resource("hello"),
     )
 
-    FingerprintComponent.replace_schema_node(schema_node, temp_cache, "some_node_name")
+    FingerprintComponent.replace_schema_node(schema_node, temp_cache)
 
     assert schema_node == SchemaNode(
         needs={"i1": "first_input", "i2": "second_input"},
         uses=FingerprintComponent,
         fn="run",
         constructor_name="create",
-        config={"a": 1, "cache": temp_cache, "node_name": "some_node_name"},
+        config={"a": 1, "cache": temp_cache, "graph_component_class": CachedComponent},
         eager=True,
         is_input=False,
         resource=Resource("hello"),
@@ -107,7 +107,7 @@ def test_fingerprint_component_hit(
     # `FingerprintComponent`.
     component_config = {"x": 1}
     fingerprint_key = fingerprinting.calculate_fingerprint_key(
-        node_name="original_node",
+        graph_component_class=CachedComponent,
         config=component_config,
         inputs={
             "param_1": FingerprintableText("input_1"),
@@ -130,7 +130,7 @@ def test_fingerprint_component_hit(
         component_config={
             **component_config,
             "cache": temp_cache,
-            "node_name": "original_node",
+            "graph_component_class": CachedComponent,
         },
         fn_name="run",
         inputs={"param_1": "parent_node_1", "param_2": "parent_node_2"},
@@ -167,7 +167,7 @@ def test_fingerprint_component_miss(
         component_config={
             **component_config,
             "cache": temp_cache,
-            "node_name": "original_node",
+            "graph_component_class": CachedComponent,
         },
         fn_name="run",
         inputs={"param_1": "parent_node_1", "param_2": "parent_node_2"},

@@ -1,9 +1,10 @@
 import logging
-from typing import Any, Dict, Text
+from typing import Any, Dict, Text, Type
 
 from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import GraphNodeHook
 from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.training.components import CachedComponent
 import rasa.shared.utils.io
 from rasa.engine.training import fingerprinting
 
@@ -26,6 +27,7 @@ class TrainingHook(GraphNodeHook):
     def on_before_node(
         self,
         node_name: Text,
+        graph_component_class: Type,
         config: Dict[Text, Any],
         received_inputs: Dict[Text, Any],
     ) -> Dict:
@@ -33,7 +35,9 @@ class TrainingHook(GraphNodeHook):
         logger.debug(f"TrainingHook.on_before_node running for node {node_name}.")
 
         fingerprint_key = fingerprinting.calculate_fingerprint_key(
-            node_name=node_name, config=config, inputs=received_inputs,
+            graph_component_class=graph_component_class,
+            config=config,
+            inputs=received_inputs,
         )
 
         return {"fingerprint_key": fingerprint_key}
@@ -42,12 +46,17 @@ class TrainingHook(GraphNodeHook):
     def on_after_node(
         self,
         node_name: Text,
+        graph_component_class: Type,
         config: Dict[Text, Any],
         output: Any,
         input_hook_data: Dict,
     ) -> None:
         """Stores the fingerprints and caches the output of the node."""
         logger.debug(f"TrainingHook.on_after_node running for node {node_name}.")
+
+        # We should not re-cache the output of a CachedComponent.
+        if graph_component_class == CachedComponent:
+            return None
 
         output_fingerprint = rasa.shared.utils.io.deep_container_fingerprint(output)
         fingerprint_key = input_hook_data["fingerprint_key"]

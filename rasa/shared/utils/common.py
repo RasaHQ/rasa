@@ -65,6 +65,11 @@ def module_path_from_instance(inst: Any) -> Text:
     return inst.__module__ + "." + inst.__class__.__name__
 
 
+def module_path_from_class(clazz: Type) -> Text:
+    """Return the module path of an instance's class."""
+    return clazz.__module__ + "." + clazz.__name__
+
+
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     """Sorts a list of dictionaries by their first key."""
     return sorted(dicts, key=lambda d: list(d.keys())[0])
