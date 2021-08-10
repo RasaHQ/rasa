@@ -38,7 +38,7 @@ from rasa.shared.exceptions import RasaException, FileIOException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY, POLICY_PRIORITY
 from rasa.shared.core.constants import (
     USER,
     SLOTS,
@@ -140,7 +140,7 @@ class Policy2(GraphComponent):
             featurizer = _featurizer_from_policy_config(config)
         self.__featurizer = self._create_featurizer(featurizer)
 
-        self.priority = config.get("priority", DEFAULT_POLICY_PRIORITY)
+        self.priority = config.get(POLICY_PRIORITY, DEFAULT_POLICY_PRIORITY)
         self.finetune_mode = execution_context.is_finetuning
 
         self._rule_only_data = {}

@@ -6,6 +6,7 @@ import pytest
 import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
+from rasa.core.constants import POLICY_PRIORITY, POLICY_MAX_HISTORY
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
@@ -124,7 +125,7 @@ class TestTEDPolicy(PolicyTestCollection):
         execution_context: ExecutionContext,
     ) -> TEDPolicy:
         return TEDPolicy(
-            {"priority": priority},
+            {POLICY_PRIORITY: priority},
             featurizer=featurizer,
             model_storage=model_storage,
             resource=resource,
@@ -558,7 +559,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         execution_context: ExecutionContext,
     ) -> Policy:
         return TEDPolicy(
-            {"priority": priority, LOSS_TYPE: "margin"},
+            {POLICY_PRIORITY: priority, LOSS_TYPE: "margin"},
             featurizer=featurizer,
             model_storage=model_storage,
             resource=resource,
@@ -612,7 +613,7 @@ class TestTEDPolicyWithEval(TestTEDPolicy):
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
-            config={"priority": priority, SCALE_LOSS: False, EVAL_NUM_EXAMPLES: 4},
+            config={POLICY_PRIORITY: priority, SCALE_LOSS: False, EVAL_NUM_EXAMPLES: 4},
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -630,7 +631,7 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
-            config={RANKING_LENGTH: 0, "priority": priority},
+            config={RANKING_LENGTH: 0, POLICY_PRIORITY: priority},
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -674,7 +675,7 @@ class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
-            config={"priority": priority, MODEL_CONFIDENCE: LINEAR_NORM},
+            config={POLICY_PRIORITY: priority, MODEL_CONFIDENCE: LINEAR_NORM},
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -731,7 +732,7 @@ class TestTEDPolicyLowRankingLength(TestTEDPolicy):
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
-            config={"priority": priority, RANKING_LENGTH: 3},
+            config={POLICY_PRIORITY: priority, RANKING_LENGTH: 3},
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -752,7 +753,7 @@ class TestTEDPolicyHighRankingLength(TestTEDPolicy):
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
-            config={"priority": priority, RANKING_LENGTH: 11},
+            config={POLICY_PRIORITY: priority, RANKING_LENGTH: 11},
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -775,7 +776,7 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
         # since it is using MaxHistoryTrackerFeaturizer
         # if max_history is not specified
         return TEDPolicy(
-            config={"priority": priority},
+            config={POLICY_PRIORITY: priority},
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -815,7 +816,7 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
         # since it is using MaxHistoryTrackerFeaturizer
         # if max_history is specified
         return TEDPolicy(
-            config={"priority": priority, "max_history": self.max_history},
+            config={POLICY_PRIORITY: priority, POLICY_MAX_HISTORY: self.max_history},
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -856,7 +857,7 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
         return TEDPolicy(
             featurizer=featurizer,
             config={
-                "priority": priority,
+                POLICY_PRIORITY: priority,
                 KEY_RELATIVE_ATTENTION: True,
                 VALUE_RELATIVE_ATTENTION: True,
                 MAX_RELATIVE_POSITION: 5,
@@ -883,7 +884,7 @@ class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
         return TEDPolicy(
             featurizer=featurizer,
             config={
-                "priority": priority,
+                POLICY_PRIORITY: priority,
                 KEY_RELATIVE_ATTENTION: True,
                 VALUE_RELATIVE_ATTENTION: True,
                 MAX_RELATIVE_POSITION: 5,
