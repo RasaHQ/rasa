@@ -7,6 +7,9 @@ import sys
 import uuid
 
 from _pytest.python import Function
+from rasa.engine.graph import ExecutionContext, GraphSchema
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.storage import ModelStorage
 from sanic.request import Request
 
 from typing import Iterator, Callable, Generator
@@ -687,3 +690,13 @@ def create_test_file_with_size(directory: Path, size_in_mb: float) -> None:
     with open(directory / f"{uuid.uuid4().hex}", mode="wb") as f:
         f.seek(int(1024 * 1024 * size_in_mb))
         f.write(b"\0")
+
+
+@pytest.fixture()
+def default_model_storage(tmp_path: Path) -> ModelStorage:
+    return LocalModelStorage.create(tmp_path)
+
+
+@pytest.fixture()
+def default_execution_context(tmp_path: Path) -> ExecutionContext:
+    return ExecutionContext(graph_schema=GraphSchema({}), model_id=uuid.uuid4().hex,)

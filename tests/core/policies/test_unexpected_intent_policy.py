@@ -17,6 +17,9 @@ from rasa.core.featurizers.tracker_featurizers import (
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES, TEDPolicy
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME, ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -58,7 +61,12 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         return UnexpecTEDIntentPolicy
 
     def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
+        self,
+        featurizer: Optional[TrackerFeaturizer],
+        priority: int,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ) -> UnexpecTEDIntentPolicy:
         return UnexpecTEDIntentPolicy(featurizer=featurizer, priority=priority)
 
@@ -124,6 +132,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         default_domain: Domain,
         tmp_path: Path,
         caplog: LogCaptureFixture,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ):
         stories = tmp_path / "stories.yml"
         stories.write_text(
@@ -135,7 +146,13 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
               - action: utter_greet
             """
         )
-        policy = self.create_policy(featurizer=featurizer, priority=priority)
+        policy = self.create_policy(
+            featurizer=featurizer,
+            priority=priority,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+        )
         import tests.core.test_policies
 
         training_trackers = tests.core.test_policies.train_trackers(
