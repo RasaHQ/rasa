@@ -395,7 +395,7 @@ async def test_eval_data(
 
     assert len(intent_results) == 46
     assert len(response_selection_results) == 0
-    assert len(entity_results) == 46
+    assert len(entity_results) == 0
 
 
 @pytest.mark.timeout(
@@ -516,14 +516,10 @@ def test_run_cv_evaluation_with_response_selector(monkeypatch: MonkeyPatch):
         for intent_report in response_selection_results.evaluation["report"].values()
     )
 
-    assert len(entity_results.train["DIETClassifier"]["Accuracy"]) == n_folds
-    assert len(entity_results.train["DIETClassifier"]["Precision"]) == n_folds
-    assert len(entity_results.train["DIETClassifier"]["F1-score"]) == n_folds
-    assert len(entity_results.test["DIETClassifier"]["Accuracy"]) == n_folds
-    assert len(entity_results.test["DIETClassifier"]["Precision"]) == n_folds
-    assert len(entity_results.test["DIETClassifier"]["F1-score"]) == n_folds
-    for extractor_evaluation in entity_results.evaluation.values():
-        assert all(key in extractor_evaluation for key in ["errors", "report"])
+    # Due to mock training there won't be any results ever
+    assert len(entity_results.train) == 0
+    assert len(entity_results.test) == 0
+    assert len(entity_results.evaluation) == 0
 
 
 def test_response_selector_present():
@@ -912,11 +908,7 @@ async def test_nlu_comparison(
     # mock training
     monkeypatch.setattr(Interpreter, "load", Mock(spec=RasaNLUInterpreter))
     monkeypatch.setattr(sys.modules["rasa.nlu"], "train", AsyncMock())
-    monkeypatch.setattr(
-        sys.modules["rasa.nlu.test"],
-        "remove_pretrained_extractors",
-        Mock(return_value=None),
-    )
+
     monkeypatch.setattr(
         sys.modules["rasa.nlu.test"],
         "get_eval_data",
