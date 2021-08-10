@@ -32,6 +32,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     FEATURIZER_FILE,
 )
+from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -127,7 +128,10 @@ class Policy2(GraphComponent):
         featurizer: Optional[TrackerFeaturizer] = None,
     ) -> None:
         """Constructs a new Policy object."""
+        if featurizer is None:
+            featurizer = _featurizer_from_policy_config(config)
         self.__featurizer = self._create_featurizer(featurizer)
+
         self.priority = config.get("priority", DEFAULT_POLICY_PRIORITY)
         self.finetune_mode = execution_context.is_finetuning
 
@@ -594,3 +598,71 @@ def confidence_scores_for(
     results[idx] = value
 
     return results
+
+
+class InvalidPolicyConfig(RasaException):
+    """Exception that can be raised when policy config is not valid."""
+
+
+# TODO: Or make this part of recipe?
+def _featurizer_from_policy_config(
+    policy_config: Dict[Text, Any]
+) -> Optional[TrackerFeaturizer]:
+    if policy_config.get("featurizer"):
+        featurizer_func, featurizer_config = _get_featurizer_from_dict(policy_config)
+
+        if featurizer_config.get("state_featurizer"):
+            (
+                state_featurizer_func,
+                state_featurizer_config,
+            ) = _get_state_featurizer_from_dict(featurizer_config)
+
+            # override featurizer's state_featurizer
+            # with real state_featurizer class
+            featurizer_config["state_featurizer"] = state_featurizer_func(
+                **state_featurizer_config
+            )
+
+        # override policy's featurizer with real featurizer class
+        return featurizer_func(**featurizer_config)
+
+    return None
+
+
+def _get_featurizer_from_dict(policy: Dict[Text, Any]) -> Tuple[Any, Any]:
+    """Gets the featurizer initializer and its arguments from a policy config."""
+    from rasa.core import registry
+
+    # policy can have only 1 featurizer
+    if len(policy["featurizer"]) > 1:
+        raise InvalidPolicyConfig(
+            f"Every policy can only have 1 featurizer "
+            f"but '{policy.get('name')}' "
+            f"uses {len(policy['featurizer'])} featurizers."
+        )
+    featurizer_config = policy["featurizer"][0]
+    featurizer_name = featurizer_config.pop("name")
+    featurizer_func = registry.featurizer_from_module_path(featurizer_name)
+
+    return featurizer_func, featurizer_config
+
+
+def _get_state_featurizer_from_dict(
+    featurizer_config: Dict[Text, Any]
+) -> Tuple[Callable, Dict[Text, Any]]:
+    from rasa.core import registry
+
+    # featurizer can have only 1 state featurizer
+    if len(featurizer_config["state_featurizer"]) > 1:
+        raise InvalidPolicyConfig(
+            f"Every featurizer can only have 1 state "
+            f"featurizer but one of the featurizers uses "
+            f"{len(featurizer_config['state_featurizer'])}."
+        )
+    state_featurizer_config = featurizer_config["state_featurizer"][0]
+    state_featurizer_name = state_featurizer_config.pop("name")
+    state_featurizer_func = registry.state_featurizer_from_module_path(
+        state_featurizer_name
+    )
+
+    return state_featurizer_func, state_featurizer_config
