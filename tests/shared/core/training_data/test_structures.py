@@ -110,8 +110,8 @@ def test_as_story_string_or_statement_with_slot_was_set():
     assert len(steps) == 1
 
     assert (
-            steps[0].as_story_string()
-            == """
+        steps[0].as_story_string()
+        == """
 ## hello world
     - some_action
 """

@@ -596,9 +596,9 @@ def test_or_statement_with_slot_was_set():
     assert isinstance(or_statement[1], SlotSet)
 
     assert or_statement[0].key == "slot_was_set"
-    assert or_statement[0].value == [{'name': 'joe'}]
+    assert or_statement[0].value == [{"name": "joe"}]
     assert or_statement[1].key == "slot_was_set"
-    assert or_statement[1].value == [{'name': 'bob'}]
+    assert or_statement[1].value == [{"name": "bob"}]
 
 
 @pytest.mark.parametrize(
