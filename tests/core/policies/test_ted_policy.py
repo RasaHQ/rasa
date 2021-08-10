@@ -880,7 +880,6 @@ class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> Policy:
-        # TODO: seems like a duplicate of the test above??
         return TEDPolicy(
             featurizer=featurizer,
             config={
