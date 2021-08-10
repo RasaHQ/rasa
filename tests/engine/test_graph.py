@@ -5,6 +5,7 @@ from typing import Dict, Text
 
 import pytest
 
+from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
 from rasa.engine.exceptions import GraphSchemaException
 from rasa.engine.graph import SchemaNode, GraphSchema
@@ -28,6 +29,7 @@ def test_serialize_graph_schema(tmp_path: Path):
                 constructor_name="load",
                 config={},
                 is_target=True,
+                resource=Resource("test resource"),
             ),
         }
     )

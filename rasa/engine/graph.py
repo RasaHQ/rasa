@@ -83,6 +83,11 @@ class GraphSchema:
                 ] = rasa.shared.utils.common.class_from_module_path(
                     serialized_node["uses"]
                 )
+
+                resource = serialized_node["resource"]
+                if resource:
+                    serialized_node["resource"] = Resource(**resource)
+
             except ImportError as e:
                 raise GraphSchemaException(
                     "Error deserializing graph schema. Can't "
