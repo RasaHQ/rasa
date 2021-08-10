@@ -126,9 +126,7 @@ class GraphTrainer:
             # to decide which nodes we can prune.
             schema_node.is_target = True
             if not schema_node.is_input:
-                FingerprintComponent.replace_schema_node(
-                    schema_node, self._cache
-                )
+                FingerprintComponent.replace_schema_node(schema_node, self._cache)
         return fingerprint_schema
 
     def _prune_schema(

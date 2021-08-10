@@ -32,7 +32,6 @@ def calculate_fingerprint_key(
     Returns:
         The fingerprint key.
     """
-
     fingerprint_data = {
         "node_name": rasa.shared.utils.common.module_path_from_class(
             graph_component_class
