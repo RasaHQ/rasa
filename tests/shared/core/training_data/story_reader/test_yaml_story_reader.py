@@ -561,6 +561,46 @@ def test_or_statement_if_not_training_mode():
     assert or_statement[1].intent["name"] == "intent2"
 
 
+def test_or_statement_with_slot_was_set():
+    stories = """
+    stories:
+    - story: tell name bob or joe
+      steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: tell_name
+      - or:
+        - slot_was_set:
+            - name: joe
+        - slot_was_set:
+            - name: bob
+      - action: utter_generic_hi
+    """
+
+    reader = YAMLStoryReader(is_used_for_training=False)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+
+    steps = reader.read_from_parsed_yaml(yaml_content)
+
+    assert len(steps) == 1
+
+    assert len(steps[0].events) == 5  # 5 events in total
+    assert len(steps[0].start_checkpoints) == 1
+    assert steps[0].start_checkpoints[0].name == "STORY_START"
+    assert steps[0].end_checkpoints == []
+
+    or_statement = steps[0].events[3]
+
+    assert isinstance(or_statement, list)  # But first one is a list (OR)
+    assert isinstance(or_statement[0], SlotSet)
+    assert isinstance(or_statement[1], SlotSet)
+
+    assert or_statement[0].key == "slot_was_set"
+    assert or_statement[0].value == [{'name': 'joe'}]
+    assert or_statement[1].key == "slot_was_set"
+    assert or_statement[1].value == [{'name': 'bob'}]
+
+
 @pytest.mark.parametrize(
     "file,warning",
     [
