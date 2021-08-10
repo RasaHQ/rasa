@@ -1,4 +1,3 @@
-# TODO: Remove forward references
 from __future__ import annotations
 import logging
 import shutil
@@ -11,7 +10,7 @@ import rasa.shared.utils.io
 import rasa.utils.train_utils
 import tensorflow as tf
 import tensorflow_addons as tfa
-from typing import Any, List, Optional, Text, Dict, Tuple, Union, TYPE_CHECKING, Type
+from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
 import rasa.utils.io as io_utils
 import rasa.core.actions.action
@@ -40,7 +39,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import PolicyPrediction, Policy2
 from rasa.core.constants import DIALOGUE
 from rasa.shared.constants import DIAGNOSTIC_DATA
@@ -119,8 +118,7 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.utils import io as shared_io_utils
 from rasa.core.policies._ted_policy import TEDPolicy
 
-if TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.features import Features
+from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
@@ -335,7 +333,7 @@ class TEDPolicy2(Policy2):
         execution_context: ExecutionContext,
         model: Optional[RasaModel] = None,
         featurizer: Optional[TrackerFeaturizer] = None,
-        fake_features: Optional[Dict[Text, List["Features"]]] = None,
+        fake_features: Optional[Dict[Text, List[Features]]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
     ) -> None:
         """Declares instance variables with default values."""
@@ -346,12 +344,6 @@ class TEDPolicy2(Policy2):
             ),
         )
 
-        max_history = config.get("max_history")
-
-        if not featurizer:
-            # TODO: Handle featurizer instantiation from config
-            featurizer = self._standard_featurizer(max_history)
-
         super().__init__(
             config, model_storage, resource, execution_context, featurizer=featurizer
         )
@@ -359,6 +351,7 @@ class TEDPolicy2(Policy2):
         # TODO: check if this statement can be removed.
         #  More context here -
         #  https://github.com/RasaHQ/rasa/issues/5786#issuecomment-840762751
+        max_history = config.get("max_history")
         if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer) and max_history:
             self.featurizer.max_history = max_history
 
@@ -381,7 +374,7 @@ class TEDPolicy2(Policy2):
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
 
     @staticmethod
-    def model_class() -> Type["TED"]:
+    def model_class() -> Type[TED]:
         """Gets the class of the model architecture to be used by the policy.
 
         Returns:
@@ -414,7 +407,7 @@ class TEDPolicy2(Policy2):
 
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
-    ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
+    ) -> Tuple[RasaModelData, List[Dict[Text, List[Features]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_labels(domain, interpreter)
@@ -463,7 +456,7 @@ class TEDPolicy2(Policy2):
 
     @staticmethod
     def _should_extract_entities(
-        entity_tags: List[List[Dict[Text, List["Features"]]]]
+        entity_tags: List[List[Dict[Text, List[Features]]]]
     ) -> bool:
         for turns_tags in entity_tags:
             for turn_tags in turns_tags:
@@ -474,7 +467,7 @@ class TEDPolicy2(Policy2):
         return False
 
     def _create_data_for_entities(
-        self, entity_tags: Optional[List[List[Dict[Text, List["Features"]]]]]
+        self, entity_tags: Optional[List[List[Dict[Text, List[Features]]]]]
     ) -> Optional[Data]:
         if not self.config[ENTITY_RECOGNITION]:
             return None
@@ -495,10 +488,10 @@ class TEDPolicy2(Policy2):
 
     def _create_model_data(
         self,
-        tracker_state_features: List[List[Dict[Text, List["Features"]]]],
+        tracker_state_features: List[List[Dict[Text, List[Features]]]],
         label_ids: Optional[np.ndarray] = None,
-        entity_tags: Optional[List[List[Dict[Text, List["Features"]]]]] = None,
-        encoded_all_labels: Optional[List[Dict[Text, List["Features"]]]] = None,
+        entity_tags: Optional[List[List[Dict[Text, List[Features]]]]] = None,
+        encoded_all_labels: Optional[List[Dict[Text, List[Features]]]] = None,
     ) -> RasaModelData:
         """Combine all model related data into RasaModelData.
 
@@ -680,22 +673,15 @@ class TEDPolicy2(Policy2):
             shuffle=False,  # we use custom shuffle inside data generator
         )
 
-    # TODO: Adapt default param
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        # TODO: The default is a workaround until the end-to-end featurization is
+        # implemented for the graph.
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
     ) -> Resource:
-        """Trains the policy on given training trackers.
-
-        Args:
-            training_trackers: List of training trackers to be used
-                for training the model.
-            domain: Domain of the assistant.
-            interpreter: NLU Interpreter to be used for featurizing the states.
-            **kwargs: Any other argument.
-        """
+        """Trains the policy (see parent class for full docstring)."""
         if not training_trackers:
             shared_io_utils.raise_warning(
                 f"Skipping training of `{self.__class__.__name__}` "
@@ -731,7 +717,7 @@ class TEDPolicy2(Policy2):
         tracker: DialogueStateTracker,
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> List[List[Dict[Text, List["Features"]]]]:
+    ) -> List[List[Dict[Text, List[Features]]]]:
         # construct two examples in the batch to be fed to the model -
         # one by featurizing last user text
         # and second - an optional one (see conditions below),
@@ -797,20 +783,12 @@ class TEDPolicy2(Policy2):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        # TODO: The default is a workaround until the end-to-end featurization is
+        # implemented for the graph.
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> PolicyPrediction:
-        """Predicts the next action the bot should take after seeing the tracker.
-
-        Args:
-            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
-
-        Returns:
-             The policy's prediction (e.g. the probabilities for the actions).
-        """
+        """Predicts the next action (see parent class for full docstring)."""
         if self.model is None:
             return self._prediction(self._default_predictions(domain))
 
@@ -899,7 +877,6 @@ class TEDPolicy2(Policy2):
 
         return [EntitiesAdded(entities)]
 
-    # TODO: Adapt this one
     def persist(self) -> None:
         """Persists the policy to a storage."""
         if self.model is None:
@@ -1023,7 +1000,6 @@ class TEDPolicy2(Policy2):
             "entity_tag_specs": entity_tag_specs,
         }
 
-    # TODO: Adapt this one
     @classmethod
     def load(
         cls,
@@ -1032,27 +1008,8 @@ class TEDPolicy2(Policy2):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-        #
-        # path: Union[Text, Path],
-        # should_finetune: bool = False,
-        # epoch_override: int = default_config[EPOCHS],
-        # **kwargs: Any,
-    ) -> "TEDPolicy2":
-        """Loads a policy from the storage.
-
-        Args:
-            path: Path on disk where policy is persisted.
-            should_finetune: Whether to load the policy for finetuning.
-            epoch_override: Override the number of epochs in persisted
-                configuration for further finetuning.
-            **kwargs: Any other arguments
-
-        Returns:
-            Loaded policy
-
-        Raises:
-            `PolicyModelNotFound` if the model is not found in the supplied `path`.
-        """
+    ) -> TEDPolicy2:
+        """Loads a policy from the storage (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:
                 featurizer = TrackerFeaturizer.load(model_path)
@@ -1091,8 +1048,9 @@ class TEDPolicy2(Policy2):
                     execution_context.is_finetuning,
                 )
 
-                # TODO: Wrong way around
-                config.update(model_utilities["meta"])
+                # The runtime config can override existing config
+                model_utilities["meta"].update(config)
+                config = model_utilities["meta"]
 
                 return cls._load_policy_with_model(
                     config,
@@ -1118,9 +1076,9 @@ class TEDPolicy2(Policy2):
         resource: Resource,
         execution_context: ExecutionContext,
         featurizer: [TrackerFeaturizer],
-        model: "TED",
+        model: TED,
         model_utilities: Dict[Text, Any],
-    ) -> "TEDPolicy2":
+    ) -> TEDPolicy2:
         return cls(
             config,
             model_storage,
@@ -1140,7 +1098,7 @@ class TEDPolicy2(Policy2):
         predict_data_example: RasaModelData,
         featurizer: TrackerFeaturizer,
         should_finetune: bool,
-    ) -> "TED":
+    ) -> TED:
         model = cls.model_class().load(
             str(model_utilities["tf_model_file"]),
             model_data_example,
