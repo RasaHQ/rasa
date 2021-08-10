@@ -2,6 +2,7 @@
 #          Please don't do any changes in this module and rather adapt `TEDPolicy2` from
 #          the regular `rasa.core.policies.ted_policy` module. This module is a
 #          workaround to defer breaking changes due to the architecture revamp in 3.0.
+# flake8: noqa
 import logging
 import shutil
 from collections import defaultdict
