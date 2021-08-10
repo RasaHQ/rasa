@@ -1,3 +1,5 @@
+# TODO: Remove forward references
+from __future__ import annotations
 import logging
 import shutil
 from pathlib import Path
@@ -680,7 +682,7 @@ class TEDPolicy2(Policy2):
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
-    ) -> None:
+    ) -> Resource:
         """Trains the policy on given training trackers.
 
         Args:
@@ -698,7 +700,7 @@ class TEDPolicy2(Policy2):
                 f"file to avoid this warning.",
                 category=UserWarning,
             )
-            return
+            return self._resource
 
         model_data, label_ids = self._prepare_for_training(
             training_trackers, domain, interpreter
@@ -712,9 +714,13 @@ class TEDPolicy2(Policy2):
                 f"file to avoid this warning.",
                 category=UserWarning,
             )
-            return
+            return self._resource
 
         self.run_training(model_data, label_ids)
+
+        self.persist()
+
+        return self._resource
 
     def _featurize_tracker_for_e2e(
         self,
