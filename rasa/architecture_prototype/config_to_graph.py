@@ -291,7 +291,7 @@ def _core_config_to_train_graph_schema(
             "uses": StoryToTrainingDataConverter,
             "fn": "convert_for_training",
             "config": {},
-            "needs": {"story_graph": "load_stories"},
+            "needs": {"story_graph": "load_stories", "domain": "load_domain"},
             "persistor": False,
         }
         nlu_train_graph_schema, nlu_outs = _nlu_config_to_train_graph_schema(
@@ -355,14 +355,14 @@ def _core_config_to_predict_graph_schema(
                 "uses": StoryToTrainingDataConverter,
                 "fn": "convert_for_inference",
                 "config": {},
-                "needs": {"tracker": "add_parsed_nlu_message"},
+                "needs": {"tracker": "add_parsed_nlu_message",},
                 "persistor": False,
             },
             "create_e2e_lookup": {
                 "uses": MessageToE2EFeatureConverter,
                 "fn": "convert",
                 "config": {},
-                "needs": {"messages": nlu_e2e_out,},
+                "needs": {"messages": nlu_e2e_out},
                 "persistor": False,
             },
             **nlu_e2e_predict_graph_schema,

@@ -82,7 +82,7 @@ train_graph_schema = {
         "uses": StoryToTrainingDataConverter,
         "fn": "convert_for_training",
         "config": {},
-        "needs": {"story_graph": "load_stories"},
+        "needs": {"story_graph": "load_stories", "domain": "load_domain"},
         "persistor": False,
     },
     "process_core_WhitespaceTokenizer_0": {

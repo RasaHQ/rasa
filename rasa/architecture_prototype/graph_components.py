@@ -7,6 +7,7 @@ from typing import Optional, Text, Dict, List, Union
 from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
+from rasa.shared.core.constants import DEFAULT_ACTION_NAMES
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -106,10 +107,28 @@ class TrackerGenerator(GraphComponent):
 
 
 class StoryToTrainingDataConverter(GraphComponent):
-    def convert_for_training(self, story_graph: StoryGraph) -> TrainingData:
-        messages = []
+    def convert_for_training(
+        self, story_graph: StoryGraph, domain: Domain
+    ) -> TrainingData:
+        user_actions = [
+            ActionExecuted(user_action) for user_action in domain.user_actions
+        ]
+        end_to_end_actions = [
+            ActionExecuted(action_text=action_text)
+            for action_text in domain.action_texts
+        ]
+        default_actions = [
+            ActionExecuted(default_action) for default_action in DEFAULT_ACTION_NAMES
+        ]
+        user_events = []
         for step in story_graph.story_steps:
-            messages += self._convert_tracker_to_messages(step.events)
+            user_events += [
+                event for event in step.events if isinstance(event, UserUttered)
+            ]
+
+        messages = self._convert_tracker_to_messages(
+            user_actions + end_to_end_actions + default_actions + user_events
+        )
 
         # Workaround: add at least one end to end message to initialize
         # the `CountVectorizer` for e2e. Alternatives: Store information or simply config
@@ -148,6 +167,7 @@ class StoryToTrainingDataConverter(GraphComponent):
 
 class MessageToE2EFeatureConverter(GraphComponent):
     """Collects featurised messages for use by an e2e policy."""
+
     def convert(
         self, messages: Union[TrainingData, List[Message]]
     ) -> Dict[Text, Message]:
@@ -156,8 +176,8 @@ class MessageToE2EFeatureConverter(GraphComponent):
         additional_features = {}
         for message in messages:
             key = next(
-                k
-                for k in message.data.keys()
+                v
+                for k, v in message.data.items()
                 if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
             )
             additional_features[key] = message
