@@ -32,6 +32,7 @@ from rasa.nlu.test import (
     remove_empty_intent_examples,
     remove_empty_response_examples,
     get_active_entity_extractors,
+    are_intent_classifiers_active,
     drop_intents_below_freq,
     cross_validate,
     run_evaluation,
@@ -717,6 +718,32 @@ def test_get_active_entity_extractors(
 ):
     extractors = get_active_entity_extractors(entity_results)
     assert extractors == expected_extractors
+
+
+@pytest.mark.parametrize(
+    "intent_results, expected_result",
+    [
+        ([IntentEvaluationResult("intent1", "intent1", "test", 1.0)], True),
+        (
+            [
+                IntentEvaluationResult("intent1", "intent1", "test", 1.0),
+                IntentEvaluationResult("intent2", None, None, None),
+            ],
+            True,
+        ),
+        ([IntentEvaluationResult("intent1", "intent2", "test", 1.0)], True),
+        ([IntentEvaluationResult("intent1", None, "test", 1.0)], False),
+        ([IntentEvaluationResult("intent1", "", "test", 1.0)], False),
+        ([IntentEvaluationResult("intent1", "intent2", "test", None)], True),
+        ([IntentEvaluationResult("intent1", "intent2", "test", 0.0)], True),
+        ([IntentEvaluationResult("intent1", "intent2", None, None)], True),
+        ([IntentEvaluationResult("intent1", None, None, None)], False),
+    ],
+)
+def test_are_intent_classifiers_active(
+    intent_results: List[IntentEvaluationResult], expected_result: bool
+):
+    assert expected_result == are_intent_classifiers_active(intent_results)
 
 
 def test_entity_evaluation_report(tmp_path: Path):

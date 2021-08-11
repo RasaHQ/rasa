@@ -1250,9 +1250,7 @@ def get_eval_data(
         if e.get(INTENT_RESPONSE_KEY) is not None
     ]
     intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
-    should_eval_intents = (
-        is_intent_classifier_present(interpreter) and len(set(intent_labels)) >= 2
-    )
+    should_eval_intents = len(set(intent_labels)) >= 2
     should_eval_response_selection = (
         is_response_selector_present(interpreter) and len(set(response_labels)) >= 2
     )
@@ -1269,16 +1267,16 @@ def get_eval_data(
                 # the wrongly predicted intent
                 # during the test phase.
                 result = fallback_classifier.undo_fallback_prediction(result)
-            intent_prediction = result.get(INTENT, {}) or {}
-
-            intent_results.append(
-                IntentEvaluationResult(
-                    example.get(INTENT, ""),
-                    intent_prediction.get(INTENT_NAME_KEY),
-                    result.get(TEXT, {}),
-                    intent_prediction.get("confidence"),
+            intent_prediction = result.get(INTENT, {})
+            if intent_prediction:
+                intent_results.append(
+                    IntentEvaluationResult(
+                        example.get(INTENT, ""),
+                        intent_prediction.get(INTENT_NAME_KEY),
+                        result.get(TEXT),
+                        intent_prediction.get("confidence"),
+                    )
                 )
-            )
 
         if should_eval_response_selection:
 
@@ -1334,14 +1332,9 @@ def get_active_entity_extractors(
     return extractors
 
 
-def is_intent_classifier_present(interpreter: Interpreter) -> bool:
-    """Checks whether intent classifier is present."""
-    from rasa.nlu.classifiers.classifier import IntentClassifier
-
-    intent_classifiers = [
-        c.name for c in interpreter.pipeline if isinstance(c, IntentClassifier)
-    ]
-    return intent_classifiers != []
+def are_intent_classifiers_active(intent_results: List[IntentEvaluationResult]) -> bool:
+    """Checks IntentEvaluationResults for active intent classifiers."""
+    return any([ir.intent_prediction for ir in intent_results])
 
 
 def is_response_selector_present(interpreter: Interpreter) -> bool:
@@ -1607,7 +1600,6 @@ def cross_validate(
     import rasa.nlu.config
 
     if isinstance(nlu_config, (str, Dict)):
-        # nlu_config = rasa.nlu.config.load(nlu_config)
         nlu_config = rasa.nlu.config.load(nlu_config)
 
     if output:
@@ -1625,7 +1617,7 @@ def cross_validate(
     intent_test_results: List[IntentEvaluationResult] = []
     entity_test_results: List[EntityEvaluationResult] = []
     response_selection_test_results: List[ResponseSelectionEvaluationResult] = []
-    intent_classifier_present = False
+    intent_classifiers_active = False
     response_selector_present = False
     entity_evaluation_possible = False
     extractors: Set[Text] = set()
@@ -1660,14 +1652,14 @@ def cross_validate(
                 or _contains_entity_labels(entity_test_results)
             )
 
-        if is_intent_classifier_present(interpreter):
-            intent_classifier_present = True
+        if are_intent_classifiers_active(intent_test_results):
+            intent_classifiers_active = True
 
         if is_response_selector_present(interpreter):
             response_selector_present = True
 
     intent_evaluation = {}
-    if intent_classifier_present and intent_test_results:
+    if intent_classifiers_active and intent_test_results:
         logger.info("Accumulated test folds intent evaluation results:")
         intent_evaluation = evaluate_intents(
             intent_test_results,
