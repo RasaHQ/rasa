@@ -9,7 +9,7 @@ exclude = "((.eggs | .git | .pytest_cache | build | dist))"
 
 [tool.poetry]
 name = "rasa"
-version = "2.8.0"
+version = "2.8.2"
 description = "Open source machine learning framework to automate text- and voice-based conversations: NLU, dialogue management, connect to Slack, Facebook, and more - Create chatbots and voice assistants"
 authors = [ "Rasa Technologies GmbH <hi@rasa.com>",]
 maintainers = [ "Tom Bocklisch <tom@rasa.com>",]
@@ -90,7 +90,7 @@ colorhash = "~1.0.2"
 jsonschema = "~3.2"
 packaging = ">=20.0,<21.0"
 pytz = ">=2019.1,<2022.0"
-rasa-sdk = "^2.8.0"
+rasa-sdk = "^2.8.1"
 colorclass = "~2.2"
 terminaltables = "~3.1.0"
 sanic = ">=19.12.2,<20.12.0"
@@ -144,7 +144,7 @@ coveralls = "^3.0.1"
 towncrier = "^21.3.0"
 toml = "^0.10.0"
 pep440-version-utils = "^0.3.0"
-pydoc-markdown = "^3.10.3"
+pydoc-markdown = "^4.1.6"
 pytest-timeout = "^1.4.2"
 mypy = "^0.910"
 bandit = "^1.6.3"
@@ -177,7 +177,7 @@ version = "^0.4.4"
 markers = "sys_platform == 'win32'"
 
 [tool.poetry.dependencies.spacy]
-version = "^3.0"
+version = "^3.1"
 optional = true
 
 [tool.poetry.dependencies.tensorflow-text]
