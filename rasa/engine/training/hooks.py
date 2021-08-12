@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, Text, Type
 
 from rasa.engine.caching import TrainingCache
-from rasa.engine.graph import GraphNodeHook
+from rasa.engine.graph import ExecutionContext, GraphNodeHook
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import CachedComponent
 import rasa.shared.utils.io
@@ -27,13 +27,19 @@ class TrainingHook(GraphNodeHook):
     def on_before_node(
         self,
         node_name: Text,
-        graph_component_class: Type,
+        execution_context: ExecutionContext,
         config: Dict[Text, Any],
         received_inputs: Dict[Text, Any],
     ) -> Dict:
         """Calculates the run fingerprint for use in `on_after_node`."""
-        logger.debug(f"TrainingHook.on_before_node running for node {node_name}.")
+        logger.debug(
+            f"Hook '{self.__class__.__name__}.on_before_node' "
+            f"running for node {node_name}."
+        )
 
+        graph_component_class = self._get_graph_component_class(
+            execution_context, node_name
+        )
         fingerprint_key = fingerprinting.calculate_fingerprint_key(
             graph_component_class=graph_component_class,
             config=config,
@@ -42,19 +48,24 @@ class TrainingHook(GraphNodeHook):
 
         return {"fingerprint_key": fingerprint_key}
 
-    # TODO: JUZL: don't cache from CachedComponent
     def on_after_node(
         self,
         node_name: Text,
-        graph_component_class: Type,
+        execution_context: ExecutionContext,
         config: Dict[Text, Any],
         output: Any,
         input_hook_data: Dict,
     ) -> None:
         """Stores the fingerprints and caches the output of the node."""
-        logger.debug(f"TrainingHook.on_after_node running for node {node_name}.")
+        logger.debug(
+            f"Hook '{self.__class__.__name__}.on_after_node' "
+            f"running for node {node_name}."
+        )
 
         # We should not re-cache the output of a CachedComponent.
+        graph_component_class = self._get_graph_component_class(
+            execution_context, node_name
+        )
         if graph_component_class == CachedComponent:
             return None
 
@@ -73,3 +84,10 @@ class TrainingHook(GraphNodeHook):
             output_fingerprint=output_fingerprint,
             model_storage=self._model_storage,
         )
+
+    @staticmethod
+    def _get_graph_component_class(
+        execution_context: ExecutionContext, node_name: Text
+    ) -> Type:
+        graph_component_class = execution_context.graph_schema.nodes[node_name].uses
+        return graph_component_class

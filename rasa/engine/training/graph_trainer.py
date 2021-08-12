@@ -72,7 +72,7 @@ class GraphTrainer:
             hooks=hooks,
         )
 
-        logger.debug("Train run.")
+        logger.debug("Running the pruned train graph with real node execution.")
 
         graph_runner.run()
 
@@ -110,7 +110,7 @@ class GraphTrainer:
             execution_context=ExecutionContext(graph_schema=fingerprint_schema),
         )
 
-        logger.debug("Fingerprint run.")
+        logger.debug("Running the train graph in fingerprint mode.")
         fingerprint_run_outputs = fingerprint_graph_runner.run()
 
         pruned_training_schema = self._prune_schema(
@@ -125,6 +125,10 @@ class GraphTrainer:
             # the output for each node. We need the output of each node
             # to decide which nodes we can prune.
             schema_node.is_target = True
+
+            # We do not replace the input nodes as we need an up-to-date fingerprint of
+            # any input data to the graph. This means we can prune according to what
+            # has actually changed.
             if not schema_node.is_input:
                 FingerprintComponent.replace_schema_node(schema_node, self._cache)
         return fingerprint_schema
@@ -170,8 +174,8 @@ class GraphTrainer:
         If node has a fingerprint key hit then we check if there is a cached output.
         If there is a cached output we will replace the node with a `CachedComponent`
         and remove all its dependencies (`.needs`). If there is not a fingerprint key
-        hit, or there is no cached output, the node is left untouched and will executed
-        again next run unless it is no longer the ancestor of a target node.
+        hit, or there is no cached output, the node is left untouched and will be
+        executed again next run unless it is no longer the ancestor of a target node.
 
         Args:
             schema: The graph we are currently walking.

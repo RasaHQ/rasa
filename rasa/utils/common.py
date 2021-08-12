@@ -375,3 +375,8 @@ def copy_directory(source: Path, destination: Path) -> None:
             shutil.copytree(item, destination / item.name)
         else:
             shutil.copy2(item, destination / item.name)
+
+
+def module_path_from_class(clazz: Type) -> Text:
+    """Return the module path of an instance's class."""
+    return clazz.__module__ + "." + clazz.__name__

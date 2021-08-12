@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, Text, Type
 from typing_extensions import Protocol, runtime_checkable
 
-import rasa.shared.utils.common
+import rasa.utils.common
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -33,9 +33,7 @@ def calculate_fingerprint_key(
         The fingerprint key.
     """
     fingerprint_data = {
-        "node_name": rasa.shared.utils.common.module_path_from_class(
-            graph_component_class
-        ),
+        "node_name": rasa.utils.common.module_path_from_class(graph_component_class),
         "config": config,
         "inputs": inputs,
     }

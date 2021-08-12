@@ -81,7 +81,11 @@ def test_fingerprint_component_replace_schema_node(temp_cache: TrainingCache):
         uses=FingerprintComponent,
         fn="run",
         constructor_name="create",
-        config={"a": 1, "cache": temp_cache, "graph_component_class": CachedComponent},
+        config={
+            "config_of_replaced_component": {"a": 1},
+            "cache": temp_cache,
+            "graph_component_class": CachedComponent,
+        },
         eager=True,
         is_input=False,
         resource=Resource("hello"),
@@ -128,7 +132,7 @@ def test_fingerprint_component_hit(
         component_class=FingerprintComponent,
         constructor_name="create",
         component_config={
-            **component_config,
+            "config_of_replaced_component": component_config,
             "cache": temp_cache,
             "graph_component_class": CachedComponent,
         },
@@ -165,7 +169,7 @@ def test_fingerprint_component_miss(
         component_class=FingerprintComponent,
         constructor_name="create",
         component_config={
-            **component_config,
+            "config_of_replaced_component": component_config,
             "cache": temp_cache,
             "graph_component_class": CachedComponent,
         },

@@ -73,7 +73,7 @@ class FingerprintStatus:
     def fingerprint(self) -> Text:
         """Returns the internal fingerprint.
 
-        If there is no fingerprint return a random string that will never match.
+        If there is no fingerprint returns a random string that will never match.
         """
         return self.output_fingerprint or uuid.uuid4().hex
 
@@ -109,19 +109,17 @@ class FingerprintComponent(GraphComponent):
         execution_context: ExecutionContext,
     ) -> FingerprintComponent:
         """Creates a `FingerprintComponent` (see parent class for full docstring)."""
-        cache = config.pop("cache")
-        class_of_replaced_component = config.pop("graph_component_class")
         return cls(
-            cache=cache,
-            config_of_replaced_component=config,
-            class_of_replaced_component=class_of_replaced_component,
+            cache=config["cache"],
+            config_of_replaced_component=config["config_of_replaced_component"],
+            class_of_replaced_component=config["graph_component_class"],
         )
 
     def run(self, **kwargs: Any) -> FingerprintStatus:
         """Calculates the fingerprint key to determine if cached output can be used.
 
         If the fingerprint key matches an entry in the cache it means that there has
-        been a previous node execution which matches the same node name, component
+        been a previous node execution which matches the same component class, component
         config and input values. This means that we can potentially prune this node
         from the schema, or replace it with a cached value before the next graph run.
 
@@ -150,7 +148,9 @@ class FingerprintComponent(GraphComponent):
 
         This is for when we want to do a fingerprint run. During the fingerprint run we
         replace all non-input nodes with `FingerprintComponent`s so we can determine
-        whether they are able to be pruned or cached before the next graph run.
+        whether they are able to be pruned or cached before the next graph run without
+        running the actual components.
+
 
         Args:
             node: The node to update.
@@ -165,6 +165,8 @@ class FingerprintComponent(GraphComponent):
         node.eager = True
         node.constructor_name = cls.create.__name__
         node.fn = cls.run.__name__
-        node.config.update(
-            {"cache": cache, "graph_component_class": graph_component_class}
-        )
+        node.config = {
+            "config_of_replaced_component": node.config,
+            "cache": cache,
+            "graph_component_class": graph_component_class,
+        }

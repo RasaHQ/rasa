@@ -193,7 +193,7 @@ class GraphNodeHook(ABC):
     def on_before_node(
         self,
         node_name: Text,
-        graph_component_class: Type,
+        execution_context: ExecutionContext,
         config: Dict[Text, Any],
         received_inputs: Dict[Text, Any],
     ) -> Dict:
@@ -201,7 +201,7 @@ class GraphNodeHook(ABC):
 
         Args:
             node_name: The name of the node being run.
-            graph_component_class: The wrapped graph component's class.
+            execution_context: The execution context of the current graph run.
             config: The node's config.
             received_inputs: Mapping from parameter name to input value.
 
@@ -215,7 +215,7 @@ class GraphNodeHook(ABC):
     def on_after_node(
         self,
         node_name: Text,
-        graph_component_class: Type,
+        execution_context: ExecutionContext,
         config: Dict[Text, Any],
         output: Any,
         input_hook_data: Dict,
@@ -224,7 +224,7 @@ class GraphNodeHook(ABC):
 
         Args:
             node_name: The name of the node that has run.
-            graph_component_class: The wrapped graph component's class.
+            execution_context: The execution context of the current graph run.
             config: The node's config.
             output: The output of the node.
             input_hook_data: Data returned from `on_before_node`.
@@ -408,7 +408,7 @@ class GraphNode:
             try:
                 hook.on_after_node(
                     node_name=self._node_name,
-                    graph_component_class=self._component_class,
+                    execution_context=self._execution_context,
                     config=self._component_config,
                     output=output,
                     input_hook_data=hook_data,
@@ -424,7 +424,7 @@ class GraphNode:
             try:
                 hook_output = hook.on_before_node(
                     node_name=self._node_name,
-                    graph_component_class=self._component_class,
+                    execution_context=self._execution_context,
                     config=self._component_config,
                     received_inputs=received_inputs,
                 )
