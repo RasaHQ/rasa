@@ -1,5 +1,3 @@
-from typing import Text
-
 import rasa.nlu
 
 import pytest
@@ -74,10 +72,18 @@ def test_create_interpreter(parameters, trained_nlu_model):
     assert isinstance(interpreter, parameters["type"])
 
 
-async def test_interpreter_parses_text_tokens(trained_nlu_model: Text):
-    _, nlu_model_dir = get_model_subdirectories(get_model(trained_nlu_model))
-    interpreter = rasa.core.interpreter.create_interpreter(nlu_model_dir)
-    assert isinstance(interpreter, RasaNLUInterpreter)
-    # parsed_data = await interpreter.parse("Hello there")
-    # this assertion fails at the moment
-    # assert "text_tokens" in parsed_data.keys()
+async def test_interpreter_parses_text_tokens(
+    response_selector_interpreter: Interpreter,
+):
+    parsed_data = response_selector_interpreter.parse("Hello there")
+
+    assert "text_tokens" in parsed_data.keys()
+
+    tokens = parsed_data.get("text_tokens")
+
+    assert tokens[0].start == 0
+    assert tokens[0].end == 5
+    assert tokens[0].text == "Hello"
+    assert tokens[1].start == 6
+    assert tokens[1].end == 11
+    assert tokens[1].text == "there"
