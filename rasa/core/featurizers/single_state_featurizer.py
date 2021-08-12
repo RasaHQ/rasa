@@ -1,4 +1,5 @@
 import logging
+from re import sub
 import numpy as np
 import scipy.sparse
 from typing import List, Optional, Dict, Text, Set, Any
@@ -27,6 +28,7 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.tensorflow import model_data_utils
+from rasa.architecture_prototype.graph_components import E2ELookupTable
 
 logger = logging.getLogger(__name__)
 
@@ -174,21 +176,21 @@ class SingleStateFeaturizer:
             for feature in sparse_sequence_features
         ]
 
-    def _get_features_from_parsed_message(
-        self, parsed_message: Optional[Message], attributes: Set[Text]
+    def _get_features_from_lookup_table(
+        self, sub_state: SubState, attributes: Set[Text], e2e_features: E2ELookupTable,
     ) -> Dict[Text, List["Features"]]:
-        if parsed_message is None:
+        if not sub_state:
             return {}
+        output = e2e_features.lookup_features(sub_state, attributes=attributes)
 
-        output = defaultdict(list)
-        for attribute in attributes:
-            all_features = parsed_message.get_sparse_features(
-                attribute
-            ) + parsed_message.get_dense_features(attribute)
-
-            for features in all_features:
-                if features is not None:
-                    output[attribute].append(features)
+        # FIXME: the followign should not be necessary... but looks more closely like
+        # what was here before
+        for key in output:
+            sparse_features = [f for f in output[key] if f.is_sparse and f is not None]
+            dense_features = [
+                f for f in output[key] if not f.is_sparse and f is not None
+            ]
+            output[key] = sparse_features + dense_features
 
         # if features for INTENT or ACTION_NAME exist,
         # they are always sparse sequence features;
@@ -213,25 +215,16 @@ class SingleStateFeaturizer:
         )
 
     def _extract_state_features(
-        self,
-        sub_state: SubState,
-        sparse: bool = False,
-        e2e_features: Optional[Dict[Text, Message]] = None,
+        self, sub_state: SubState, e2e_features: E2ELookupTable, sparse: bool = False,
     ) -> Dict[Text, List["Features"]]:
-        key = next(
-            v
-            for k, v in sub_state.items()
-            if k in {ACTION_NAME, ACTION_TEXT, INTENT, TEXT}
-        )
-        # TODO: We need a fallback for unexpected user texts during prediction time
-        parsed_message = e2e_features[key]
 
         # remove entities from possible attributes
         attributes = set(
             attribute for attribute in sub_state.keys() if attribute != ENTITIES
         )
-
-        output = self._get_features_from_parsed_message(parsed_message, attributes)
+        output = self._get_features_from_lookup_table(
+            sub_state, attributes, e2e_features
+        )
 
         # check that name attributes have features
         name_attribute = self._get_name_attribute(attributes)
@@ -247,7 +240,7 @@ class SingleStateFeaturizer:
         return output
 
     def encode_state(
-        self, state: State, e2e_features: Optional[Dict[Text, Message]] = None,
+        self, state: State, e2e_features: E2ELookupTable,
     ) -> Dict[Text, List["Features"]]:
         """Encode the given state.
 
@@ -263,7 +256,7 @@ class SingleStateFeaturizer:
             if state_type == PREVIOUS_ACTION:
                 state_features.update(
                     self._extract_state_features(
-                        sub_state, sparse=True, e2e_features=e2e_features
+                        sub_state, e2e_features=e2e_features, sparse=True,
                     )
                 )
             # featurize user only if it is "real" user input,
@@ -271,7 +264,7 @@ class SingleStateFeaturizer:
             if state_type == USER and is_prev_action_listen_in_state(state):
                 state_features.update(
                     self._extract_state_features(
-                        sub_state, sparse=True, e2e_features=e2e_features
+                        sub_state, e2e_features=e2e_features, sparse=True,
                     )
                 )
                 if sub_state.get(ENTITIES):
@@ -287,7 +280,10 @@ class SingleStateFeaturizer:
         return state_features
 
     def encode_entities(
-        self, entity_data: Dict[Text, Any], bilou_tagging: bool = False,
+        self,
+        entity_data: Dict[Text, Any],
+        e2e_features: E2ELookupTable,
+        bilou_tagging: bool = False,
     ) -> Dict[Text, List["Features"]]:
         """Encode the given entity data.
 
@@ -312,9 +308,7 @@ class SingleStateFeaturizer:
             # we cannot build a classifier with fewer than 2 classes
             return {}
 
-        # TODO: determine why an interpreter is needed.
-        interpreter = RegexInterpreter()
-        message = interpreter.featurize_message(Message(entity_data))
+        message = e2e_features.lookup_message(user_text=entity_data[TEXT])
 
         if not message:
             return {}
@@ -331,7 +325,7 @@ class SingleStateFeaturizer:
         }
 
     def _encode_action(
-        self, action: Text, e2e_features: Optional[Dict[Text, Message]] = None,
+        self, action: Text, e2e_features: E2ELookupTable,
     ) -> Dict[Text, List["Features"]]:
         if action in self.action_texts:
             action_as_sub_state = {ACTION_TEXT: action}
@@ -343,7 +337,7 @@ class SingleStateFeaturizer:
         )
 
     def encode_all_actions(
-        self, domain: Domain, e2e_features: Optional[Dict[Text, Message]] = None,
+        self, domain: Domain, e2e_features: E2ELookupTable,
     ) -> List[Dict[Text, List["Features"]]]:
         """Encode all action from the domain.
 

@@ -48,6 +48,15 @@ class Message:
             self.output_properties = set()
         self.output_properties.add(TEXT)
 
+    def __repr__(self) -> Text:
+        return (
+            f"{self.__class__.__name__}("
+            f"data={self.data}, "  # kwargs are included here...
+            f"features={self.features}, "
+            f"time={self.time}, "
+            f"output_properties={self.output_properties})"
+        )
+
     def add_features(self, features: Optional["Features"]) -> None:
         if features is not None:
             self.features.append(features)

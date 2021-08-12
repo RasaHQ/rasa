@@ -3,6 +3,7 @@ import json
 import logging
 from enum import Enum
 from pathlib import Path
+from rasa.architecture_prototype.graph_components import E2ELookupTable
 from typing import (
     Any,
     List,
@@ -172,8 +173,8 @@ class Policy(metaclass=PolicyMetaclass):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
+        e2e_features: E2ELookupTable,
         bilou_tagging: bool = False,
-        e2e_features: Optional[Dict[Text, Message]] = None,
         **kwargs: Any,
     ) -> Tuple[
         List[List[Dict[Text, List["Features"]]]],
@@ -202,7 +203,7 @@ class Policy(metaclass=PolicyMetaclass):
               for all dialogue turns in all training trackers
         """
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
-            training_trackers, domain, bilou_tagging, e2e_features
+            training_trackers, domain, e2e_features, bilou_tagging=bilou_tagging,
         )
 
         max_training_samples = kwargs.get("max_training_samples")
@@ -292,10 +293,7 @@ class Policy(metaclass=PolicyMetaclass):
         raise NotImplementedError("Policy must have the capacity to train.")
 
     def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
     ) -> "PolicyPrediction":
         """Predicts the next action the bot should take after seeing the tracker.
 

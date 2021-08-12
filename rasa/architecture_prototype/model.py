@@ -129,7 +129,7 @@ class Model(ModelInterface):
 
     def get_domain(self) -> Domain:
         domain_graph = minimal_dask_graph(self._dask_graph, targets=["load_domain"])
-        return dask.threaded.get(domain_graph, "load_domain")["load_domain"]
+        return dask.get(domain_graph, "load_domain")["load_domain"]  # FIXME: threaded
 
     def persist(self, target: Text) -> None:
         self._persistor.create_model_package(target, self)

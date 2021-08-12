@@ -1,4 +1,5 @@
 import logging
+from rasa.architecture_prototype.graph_components import E2ELookupTable
 import shutil
 from pathlib import Path
 from collections import defaultdict
@@ -371,15 +372,11 @@ class TEDPolicy(Policy):
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
     def _create_label_data(
-        self,
-        domain: Domain,
-        e2e_features: Optional[Dict[Text, Message]] = None,
+        self, domain: Domain, e2e_features: E2ELookupTable,
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_actions(
-            domain, e2e_features
-        )
+        encoded_all_labels = state_featurizer.encode_all_actions(domain, e2e_features)
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
@@ -400,6 +397,8 @@ class TEDPolicy(Policy):
             LABEL_SUB_KEY,
             [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
         )
+
+        # breakpoint()
 
         return label_data, encoded_all_labels
 
@@ -508,7 +507,7 @@ class TEDPolicy(Policy):
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
-        e2e_features: Dict[Text, Message],
+        e2e_features: E2ELookupTable,
         domain: Domain,
         **kwargs: Any,
     ) -> Text:
@@ -552,6 +551,8 @@ class TEDPolicy(Policy):
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
 
+        # breakpoint()
+
         if not self.finetune_mode:
             # This means the model wasn't loaded from a
             # previously trained model and hence needs
@@ -564,7 +565,8 @@ class TEDPolicy(Policy):
                 self._entity_tag_specs,
             )
             self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE])
+                optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]),
+                run_eagerly=True,
             )
 
         (
@@ -601,7 +603,7 @@ class TEDPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        e2e_features: Dict[Text, Message],
+        e2e_features: E2ELookupTable,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         # construct two examples in the batch to be fed to the model -
         # one by featurizing last user text
@@ -674,7 +676,7 @@ class TEDPolicy(Policy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        e2e_features: Dict[Text, Message],
+        e2e_features: E2ELookupTable,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -727,7 +729,7 @@ class TEDPolicy(Policy):
         self,
         prediction_output: Dict[Text, tf.Tensor],
         is_e2e_prediction: bool,
-        e2e_features: Dict[Text, Message],
+        e2e_features: E2ELookupTable,
         tracker: DialogueStateTracker,
     ) -> Optional[List[Event]]:
         if tracker.latest_action_name != ACTION_LISTEN_NAME or not is_e2e_prediction:
@@ -762,7 +764,7 @@ class TEDPolicy(Policy):
         # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities
         text = tracker.latest_message.text
-        parsed_message = e2e_features[text]
+        parsed_message = e2e_features.lookup_message(user_text=text)
         tokens = parsed_message.get(TOKENS_NAMES[TEXT])
         entities = EntityExtractor.convert_predictions_into_entities(
             text,
@@ -1111,18 +1113,11 @@ class TED(TransformerRasaModel):
                 )
                 all_labels_encoded[key] = attribute_features
 
-        if (
-            all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None
-            and all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_NAME}") is not None
-        ):
-            x = all_labels_encoded.pop(
-                f"{LABEL_KEY}_{ACTION_TEXT}"
-            ) + all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
-        elif all_labels_encoded.get(f"{LABEL_KEY}_{ACTION_TEXT}") is not None:
-            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}")
-        else:
-            x = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
-
+        tensor_action_text = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_TEXT}")
+        tensor_action_name = all_labels_encoded.pop(f"{LABEL_KEY}_{ACTION_NAME}")
+        x = tf.add_n(
+            [t for t in [tensor_action_text, tensor_action_name] if t is not None]
+        )
         # additional sequence axis is artifact of our RasaModelData creation
         # TODO check whether this should be solved in data creation
         x = tf.squeeze(x, axis=1)
@@ -1342,6 +1337,7 @@ class TED(TransformerRasaModel):
         text_sequence_lengths = tf.zeros((0,))
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
+
             # sequence_lengths contain `0` for "fake" features, while
             # tf_batch_data[attribute] contain only "real" features
             sequence_lengths = tf_batch_data[attribute][SEQUENCE_LENGTH][0]
@@ -1370,6 +1366,8 @@ class TED(TransformerRasaModel):
                 masked_lm_loss=self.config[MASKED_LM],
                 sequence_ids=False,
             )
+
+            # breakpoint()
 
             if attribute == TEXT:
                 text_transformer_output = attribute_features
@@ -1409,13 +1407,16 @@ class TED(TransformerRasaModel):
                 attribute_features, self._training
             )
 
-        # attribute features have shape
-        # (combined batch dimension and dialogue length x 1 x units)
-        # convert them back to their original shape of
-        # batch size x dialogue length x units
-        attribute_features = self._convert_to_original_shape(
-            attribute_features, tf_batch_data, attribute
-        )
+        try:
+            # attribute features have shape
+            # (combined batch dimension and dialogue length x 1 x units)
+            # convert them back to their original shape of
+            # batch size x dialogue length x units
+            attribute_features = self._convert_to_original_shape(
+                attribute_features, tf_batch_data, attribute
+            )
+        except:
+            breakpoint()
 
         return attribute_features, text_transformer_output, text_sequence_lengths
 
@@ -1704,6 +1705,8 @@ class TED(TransformerRasaModel):
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
         self._compute_dialogue_indices(tf_batch_data)
+
+        # breakpoint()
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
 

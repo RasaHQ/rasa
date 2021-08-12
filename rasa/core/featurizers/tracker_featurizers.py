@@ -1,3 +1,4 @@
+from rasa.architecture_prototype.graph_components import E2ELookupTable
 import jsonpickle
 import logging
 
@@ -82,13 +83,11 @@ class TrackerFeaturizer:
         )
 
     def _featurize_states(
-        self,
-        trackers_as_states: List[List[State]],
-        e2e_features: Optional[Dict[Text, Message]] = None,
+        self, trackers_as_states: List[List[State]], e2e_features: E2ELookupTable,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         return [
             [
-                self.state_featurizer.encode_state(state, e2e_features)
+                self.state_featurizer.encode_state(state, e2e_features=e2e_features)
                 for state in tracker_states
             ]
             for tracker_states in trackers_as_states
@@ -112,13 +111,14 @@ class TrackerFeaturizer:
     def _create_entity_tags(
         self,
         trackers_as_entities: List[List[Dict[Text, Any]]],
+        e2e_features: E2ELookupTable,
         bilou_tagging: bool = False,
     ) -> List[List[Dict[Text, List["Features"]]]]:
 
         return [
             [
                 self.state_featurizer.encode_entities(
-                    entity_data, bilou_tagging
+                    entity_data, bilou_tagging=bilou_tagging, e2e_features=e2e_features,
                 )
                 for entity_data in trackers_entities
             ]
@@ -192,8 +192,8 @@ class TrackerFeaturizer:
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
+        e2e_features: E2ELookupTable,
         bilou_tagging: bool = False,
-        e2e_features: Optional[Dict[Text, Message]] = None,
     ) -> Tuple[
         List[List[Dict[Text, List["Features"]]]],
         np.ndarray,
@@ -237,7 +237,9 @@ class TrackerFeaturizer:
         )
         label_ids = self._convert_labels_to_ids(trackers_as_actions, domain)
         entity_tags = self._create_entity_tags(
-            trackers_as_entities, bilou_tagging
+            trackers_as_entities,
+            bilou_tagging=bilou_tagging,
+            e2e_features=e2e_features,
         )
 
         return tracker_state_features, label_ids, entity_tags
@@ -297,7 +299,7 @@ class TrackerFeaturizer:
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
-        e2e_features: Dict[Text, Message],
+        e2e_features: E2ELookupTable,
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,
@@ -328,9 +330,7 @@ class TrackerFeaturizer:
             ignore_rule_only_turns,
             rule_only_data,
         )
-        return self._featurize_states(
-            trackers_as_states, e2e_features=e2e_features
-        )
+        return self._featurize_states(trackers_as_states, e2e_features=e2e_features)
 
     def persist(self) -> None:
         """Persist the tracker featurizer to the given path.

@@ -27,5 +27,18 @@ policies:
   - name: RulePolicy
 """
 
+e2e_feat_config = """
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: RegexFeaturizer
+  - name: LexicalSyntacticFeaturizer
+  - name: CountVectorsFeaturizer
+  - name: CountVectorsFeaturizer
+    analyzer: "char_wb"
+    min_ngram: 1
+    max_ngram: 4
+  - name: DIETClassifier
+"""
+
 
 project = "examples/moodbot"
