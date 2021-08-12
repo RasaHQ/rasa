@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 import rasa.utils.common
-from rasa.utils.common import RepeatedLogFilter
+from rasa.utils.common import RepeatedLogFilter, find_unavailable_packages
 import tests.conftest
 
 
@@ -115,3 +115,10 @@ def test_copy_directory_with_non_empty_destination(tmp_path: Path):
 
     with pytest.raises(ValueError):
         rasa.utils.common.copy_directory(tmp_path, destination)
+
+
+def test_find_unavailable_packages():
+    unavailable = find_unavailable_packages(
+        ["my_made_up_package_name", "io", "foo_bar", "foo_bar"]
+    )
+    assert unavailable == {"my_made_up_package_name", "foo_bar"}
