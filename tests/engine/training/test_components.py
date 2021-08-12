@@ -96,7 +96,7 @@ def test_fingerprint_component_replace_schema_node(temp_cache: TrainingCache):
 class FingerprintableText:
     text: Text
 
-    def fingerprint(self):
+    def fingerprint(self) -> Text:
         return self.text
 
 

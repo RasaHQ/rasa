@@ -24,15 +24,6 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@runtime_checkable
-class Fingerprintable(Protocol):
-    """Protocol which each node output has to implement in the train graph."""
-
-    def fingerprint(self) -> Text:
-        """Returns a unique stable fingerprint for itself."""
-        ...
-
-
 @dataclass
 class SchemaNode:
     """Represents one node in the schema."""
@@ -424,7 +415,7 @@ class GraphNode:
             try:
                 logger.debug(
                     f"Hook '{hook.__class__.__name__}.on_after_node' "
-                    f"running for node {self._node_name}."
+                    f"running for node '{self._node_name}'."
                 )
                 hook.on_after_node(
                     node_name=self._node_name,
@@ -444,7 +435,7 @@ class GraphNode:
             try:
                 logger.debug(
                     f"Hook '{hook.__class__.__name__}.on_before_node' "
-                    f"running for node {self._node_name}."
+                    f"running for node '{self._node_name}'."
                 )
                 hook_output = hook.on_before_node(
                     node_name=self._node_name,

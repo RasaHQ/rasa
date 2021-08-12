@@ -21,8 +21,8 @@ def temp_cache(tmp_path: Path, local_cache_creator: Callable) -> LocalTrainingCa
 
 
 @pytest.fixture()
-def local_cache_creator(tmp_path: Path, monkeypatch: MonkeyPatch) -> Callable:
-    def create_local_cache(path: Path):
+def local_cache_creator(monkeypatch: MonkeyPatch) -> Callable:
+    def create_local_cache(path: Path) -> LocalTrainingCache:
         monkeypatch.setenv(CACHE_LOCATION_ENV, str(path))
         return LocalTrainingCache()
 
