@@ -124,6 +124,7 @@ aio-pika = "^6.7.1"
 pyTelegramBotAPI = "^3.7.3"
 dask = "2021.7.2"
 typing-extensions = "^3.7.4"
+typing-utils = "^0.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.10.0"
