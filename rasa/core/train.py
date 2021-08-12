@@ -20,7 +20,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-async def train(
+def train(
     domain_file: Union[Domain, Text],
     training_resource: Union[Text, "TrainingDataImporter"],
     output_path: Text,
@@ -107,7 +107,7 @@ async def train_comparison_models(
                 )
 
                 with TempDirectoryPath(tempfile.mkdtemp()) as train_path:
-                    await train(
+                    train(
                         domain,
                         file_importer,
                         train_path,

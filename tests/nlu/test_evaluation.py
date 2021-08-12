@@ -364,7 +364,7 @@ def test_run_evaluation(unpacked_trained_moodbot_path: Text, nlu_as_json_path: T
     assert result.get("intent_evaluation")
 
 
-async def test_eval_data(
+def test_eval_data(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     project: Text,

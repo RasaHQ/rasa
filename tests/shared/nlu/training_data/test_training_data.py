@@ -720,7 +720,7 @@ def test_custom_attributes(tmp_path):
     assert example.get("sentiment") == 0.8
 
 
-async def test_without_additional_e2e_examples(tmp_path: Path):
+def test_without_additional_e2e_examples(tmp_path: Path):
     domain_path = tmp_path / "domain.yml"
     domain_path.write_text(Domain.empty().as_yaml())
 
