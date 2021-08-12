@@ -1,3 +1,4 @@
+from collections import Callable
 from pathlib import Path
 
 from _pytest.monkeypatch import MonkeyPatch
@@ -15,9 +16,17 @@ def default_model_storage(tmp_path: Path) -> ModelStorage:
 
 
 @pytest.fixture()
-def temp_cache(tmp_path: Path, monkeypatch: MonkeyPatch) -> LocalTrainingCache:
-    monkeypatch.setenv(CACHE_LOCATION_ENV, str(tmp_path))
-    return LocalTrainingCache()
+def temp_cache(tmp_path: Path, local_cache_creator: Callable) -> LocalTrainingCache:
+    return local_cache_creator(tmp_path)
+
+
+@pytest.fixture()
+def local_cache_creator(monkeypatch: MonkeyPatch) -> Callable:
+    def create_local_cache(path: Path) -> LocalTrainingCache:
+        monkeypatch.setenv(CACHE_LOCATION_ENV, str(path))
+        return LocalTrainingCache()
+
+    return create_local_cache
 
 
 @pytest.fixture()

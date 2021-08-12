@@ -286,7 +286,7 @@ class LocalTrainingCache:
                 result_location=cache_dir,
                 result_type=output_type,
             )
-            session.add(cache_entry)
+            session.merge(cache_entry)
 
     def _is_disabled(self) -> bool:
         return self._max_cache_size == 0.0

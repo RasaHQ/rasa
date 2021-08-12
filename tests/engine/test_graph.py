@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Dict, Text
 
 import pytest
 
@@ -69,3 +70,37 @@ def test_invalid_module_error_when_deserializing_schemas(tmp_path: Path):
 
     with pytest.raises(GraphSchemaException):
         _ = GraphSchema.from_dict(serialized_graph_schema_from_file)
+
+
+def test_minimal_graph_schema():
+    def test_schema_node(needs: Dict[Text, Text], target: bool = False) -> SchemaNode:
+        return SchemaNode(
+            needs=needs,
+            uses=None,
+            fn="",
+            constructor_name="",
+            config={},
+            is_target=target,
+        )
+
+    assert GraphSchema(
+        {
+            "1": test_schema_node({"i": "3"}, True),
+            "2": test_schema_node({"i": "3"}),
+            "3": test_schema_node({"i": "4"}),
+            "4": test_schema_node({}),
+            "5": test_schema_node({"i": "6"}),
+            "6": test_schema_node({}),
+            "7": test_schema_node({}),
+            "8": test_schema_node({"i": "9"}, True),
+            "9": test_schema_node({}),
+        }
+    ).minimal_graph_schema() == GraphSchema(
+        {
+            "1": test_schema_node({"i": "3"}, True),
+            "3": test_schema_node({"i": "4"}),
+            "4": test_schema_node({}),
+            "8": test_schema_node({"i": "9"}, True),
+            "9": test_schema_node({}),
+        }
+    )

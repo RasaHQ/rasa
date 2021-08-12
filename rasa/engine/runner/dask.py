@@ -10,6 +10,7 @@ from rasa.engine.exceptions import GraphRunError
 from rasa.engine.graph import (
     ExecutionContext,
     GraphNode,
+    GraphNodeHook,
     GraphSchema,
 )
 from rasa.engine.runner.interface import GraphRunner
@@ -26,6 +27,7 @@ class DaskGraphRunner(GraphRunner):
         graph_schema: GraphSchema,
         model_storage: ModelStorage,
         execution_context: ExecutionContext,
+        hooks: Optional[List[GraphNodeHook]] = None,
     ) -> None:
         """Initializes a `DaskGraphRunner`.
 
@@ -35,10 +37,11 @@ class DaskGraphRunner(GraphRunner):
                 themselves.
             execution_context: Information about the current graph run to be passed to
                 each node.
+            hooks: These are called before and after the execution of each node.
         """
         self._targets: List[Text] = self._targets_from_schema(graph_schema)
         self._instantiated_graph: Dict[Text, GraphNode] = self._instantiate_graph(
-            graph_schema, model_storage, execution_context
+            graph_schema, model_storage, execution_context, hooks
         )
         self._execution_context: ExecutionContext = execution_context
 
@@ -48,9 +51,10 @@ class DaskGraphRunner(GraphRunner):
         graph_schema: GraphSchema,
         model_storage: ModelStorage,
         execution_context: ExecutionContext,
+        hooks: Optional[List[GraphNodeHook]] = None,
     ) -> DaskGraphRunner:
         """Creates the runner (see parent class for full docstring)."""
-        return cls(graph_schema, model_storage, execution_context)
+        return cls(graph_schema, model_storage, execution_context, hooks)
 
     @staticmethod
     def _targets_from_schema(graph_schema: GraphSchema) -> List[Text]:
@@ -65,10 +69,11 @@ class DaskGraphRunner(GraphRunner):
         graph_schema: GraphSchema,
         model_storage: ModelStorage,
         execution_context: ExecutionContext,
+        hooks: Optional[List[GraphNodeHook]] = None,
     ) -> Dict[Text, GraphNode]:
         return {
             node_name: GraphNode.from_schema_node(
-                node_name, schema_node, model_storage, execution_context
+                node_name, schema_node, model_storage, execution_context, hooks
             )
             for node_name, schema_node in graph_schema.nodes.items()
         }
