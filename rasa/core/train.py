@@ -31,6 +31,7 @@ def train(
     additional_arguments: Optional[Dict] = None,
     model_to_finetune: Optional["Agent"] = None,
 ) -> "Agent":
+    """Trains the model."""
     from rasa.core import config, utils
     from rasa.core.utils import AvailableEndpoints
     from rasa.core.agent import Agent
