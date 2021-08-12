@@ -236,7 +236,7 @@ def test_writing_to_resource_during_training(default_model_storage: ModelStorage
     node_name = "some_name"
 
     test_value_for_sub_directory = {"test": "test value sub dir"}
-    test_value = {"test dir": "test value sub dir"}
+    test_value = {"test dir": "test value dir"}
 
     node = GraphNode(
         node_name=node_name,

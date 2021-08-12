@@ -1,9 +1,11 @@
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Text, Type
 
 import pytest
 
+from rasa.core.agent import Agent
+from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 import rasa.utils.common
 from rasa.utils.common import RepeatedLogFilter, find_unavailable_packages
 import tests.conftest
@@ -122,3 +124,15 @@ def test_find_unavailable_packages():
         ["my_made_up_package_name", "io", "foo_bar", "foo_bar"]
     )
     assert unavailable == {"my_made_up_package_name", "foo_bar"}
+
+
+@pytest.mark.parametrize(
+    "clazz,module_path",
+    [
+        (Path, "pathlib.Path"),
+        (Agent, "rasa.core.agent.Agent"),
+        (DIETClassifier, "rasa.nlu.classifiers.diet_classifier.DIETClassifier"),
+    ],
+)
+def test_module_path_from_class(clazz: Type, module_path: Text):
+    assert rasa.utils.common.module_path_from_class(clazz) == module_path

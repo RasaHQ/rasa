@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 import logging
 from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple
 
-from typing_extensions import runtime_checkable, Protocol
 
 from rasa.engine.exceptions import (
     GraphComponentException,
@@ -22,15 +21,6 @@ if typing.TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-
-@runtime_checkable
-class Fingerprintable(Protocol):
-    """Protocol which each node output has to implement in the train graph."""
-
-    def fingerprint(self) -> Text:
-        """Returns a unique stable fingerprint for itself."""
-        ...
 
 
 @dataclass
@@ -103,6 +93,33 @@ class GraphSchema:
             nodes[node_name] = SchemaNode(**serialized_node)
 
         return GraphSchema(nodes)
+
+    @property
+    def target_names(self) -> List[Text]:
+        """Returns the names of all target nodes."""
+        return [node_name for node_name, node in self.nodes.items() if node.is_target]
+
+    def minimal_graph_schema(self) -> GraphSchema:
+        """Returns a new schema where all nodes are a descendant of a target."""
+        dependencies = self._all_dependencies_schema(self.target_names)
+
+        return GraphSchema(
+            {
+                node_name: node
+                for node_name, node in self.nodes.items()
+                if node_name in dependencies
+            }
+        )
+
+    def _all_dependencies_schema(self, targets: List[Text]) -> List[Text]:
+        required = []
+        for target in targets:
+            required.append(target)
+            target_dependencies = self.nodes[target].needs.values()
+            for dependency in target_dependencies:
+                required += self._all_dependencies_schema([dependency])
+
+        return required
 
 
 class GraphComponent(ABC):
@@ -182,6 +199,7 @@ class GraphNodeHook(ABC):
     def on_before_node(
         self,
         node_name: Text,
+        execution_context: ExecutionContext,
         config: Dict[Text, Any],
         received_inputs: Dict[Text, Any],
     ) -> Dict:
@@ -189,10 +207,12 @@ class GraphNodeHook(ABC):
 
         Args:
             node_name: The name of the node being run.
+            execution_context: The execution context of the current graph run.
             config: The node's config.
-            received_inputs: The inputs received by the node.
+            received_inputs: Mapping from parameter name to input value.
 
-        Returns: Data that is then passed to `on_after_node`
+        Returns:
+            Data that is then passed to `on_after_node`
 
         """
         ...
@@ -201,6 +221,7 @@ class GraphNodeHook(ABC):
     def on_after_node(
         self,
         node_name: Text,
+        execution_context: ExecutionContext,
         config: Dict[Text, Any],
         output: Any,
         input_hook_data: Dict,
@@ -209,6 +230,7 @@ class GraphNodeHook(ABC):
 
         Args:
             node_name: The name of the node that has run.
+            execution_context: The execution context of the current graph run.
             config: The node's config.
             output: The output of the node.
             input_hook_data: Data returned from `on_before_node`.
@@ -221,7 +243,7 @@ class ExecutionContext:
     """Holds information about a single graph run."""
 
     graph_schema: GraphSchema = field(repr=False)
-    model_id: Text
+    model_id: Optional[Text] = None
     should_add_diagnostic_data: bool = False
     is_finetuning: bool = False
 
@@ -294,11 +316,7 @@ class GraphNode:
         if self._eager:
             self._load_component()
 
-    def _load_component(
-        self, additional_kwargs: Optional[Dict[Text, Any]] = None
-    ) -> None:
-        kwargs = additional_kwargs if additional_kwargs else {}
-
+    def _load_component(self, **kwargs: Any) -> None:
         logger.debug(
             f"Node {self._node_name} loading "
             f"{self._component_class.__name__}.{self._constructor_name} "
@@ -357,19 +375,23 @@ class GraphNode:
             inputs_from_previous_nodes
         )
 
-        input_hook_outputs = self._run_before_hooks(received_inputs)
-
         kwargs = {}
         for input_name, input_node in self._inputs.items():
             kwargs[input_name] = received_inputs[input_node]
+
+        input_hook_outputs = self._run_before_hooks(kwargs)
 
         if not self._eager:
             constructor_kwargs = rasa.shared.utils.common.minimal_kwargs(
                 kwargs, self._constructor_fn
             )
-            self._load_component(constructor_kwargs)
+            self._load_component(**constructor_kwargs)
+            run_kwargs = {
+                k: v for k, v in kwargs.items() if k not in constructor_kwargs
+            }
+        else:
+            run_kwargs = kwargs
 
-        run_kwargs = rasa.shared.utils.common.minimal_kwargs(kwargs, self._fn)
         logger.debug(
             f"Node {self._node_name} running "
             f"{self._component_class.__name__}.{self._fn_name} "
@@ -390,8 +412,13 @@ class GraphNode:
     def _run_after_hooks(self, input_hook_outputs: List[Dict], output: Any) -> None:
         for hook, hook_data in zip(self._hooks, input_hook_outputs):
             try:
+                logger.debug(
+                    f"Hook '{hook.__class__.__name__}.on_after_node' "
+                    f"running for node '{self._node_name}'."
+                )
                 hook.on_after_node(
                     node_name=self._node_name,
+                    execution_context=self._execution_context,
                     config=self._component_config,
                     output=output,
                     input_hook_data=hook_data,
@@ -405,8 +432,13 @@ class GraphNode:
         input_hook_outputs = []
         for hook in self._hooks:
             try:
+                logger.debug(
+                    f"Hook '{hook.__class__.__name__}.on_before_node' "
+                    f"running for node '{self._node_name}'."
+                )
                 hook_output = hook.on_before_node(
                     node_name=self._node_name,
+                    execution_context=self._execution_context,
                     config=self._component_config,
                     received_inputs=received_inputs,
                 )
@@ -424,6 +456,7 @@ class GraphNode:
         schema_node: SchemaNode,
         model_storage: ModelStorage,
         execution_context: ExecutionContext,
+        hooks: Optional[List[GraphNodeHook]] = None,
     ) -> GraphNode:
         """Creates a `GraphNode` from a `SchemaNode`."""
         return cls(
@@ -437,4 +470,5 @@ class GraphNode:
             model_storage=model_storage,
             execution_context=execution_context,
             resource=schema_node.resource,
+            hooks=hooks,
         )

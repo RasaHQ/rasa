@@ -397,3 +397,8 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
             failed_imports.add(package)
 
     return failed_imports
+
+
+def module_path_from_class(clazz: Type) -> Text:
+    """Return the module path of an instance's class."""
+    return clazz.__module__ + "." + clazz.__name__

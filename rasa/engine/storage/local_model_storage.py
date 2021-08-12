@@ -132,7 +132,7 @@ class LocalModelStorage(ModelStorage):
         train_schema: GraphSchema,
         predict_schema: GraphSchema,
         domain: Domain,
-    ) -> None:
+    ) -> ModelMetadata:
         """Creates model package (see parent class for full docstring)."""
         logger.debug(f"Start to created model package for path '{model_archive_path}'.")
 
@@ -143,30 +143,34 @@ class LocalModelStorage(ModelStorage):
                 self._storage_path, temporary_directory / MODEL_ARCHIVE_COMPONENTS_DIR
             )
 
-            self._persist_metadata(
-                domain, train_schema, predict_schema, temporary_directory
+            model_metadata = self._create_model_metadata(
+                domain, predict_schema, train_schema
             )
+            self._persist_metadata(model_metadata, temporary_directory)
 
             with tarfile.open(model_archive_path, "w:gz") as tar:
                 tar.add(temporary_directory, arcname="")
 
         logger.debug(f"Model package created in path '{model_archive_path}'.")
 
+        return model_metadata
+
     @staticmethod
-    def _persist_metadata(
-        domain: Domain,
-        train_schema: GraphSchema,
-        predict_schema: GraphSchema,
-        temporary_directory: Path,
-    ) -> None:
-        metadata = ModelMetadata(
+    def _persist_metadata(metadata: ModelMetadata, temporary_directory: Path,) -> None:
+
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
+            temporary_directory / MODEL_ARCHIVE_METADATA_FILE, metadata.as_dict()
+        )
+
+    @staticmethod
+    def _create_model_metadata(
+        domain: Domain, predict_schema: GraphSchema, train_schema: GraphSchema
+    ) -> ModelMetadata:
+        return ModelMetadata(
             trained_at=datetime.utcnow(),
             rasa_open_source_version=rasa.__version__,
             model_id=uuid.uuid4().hex,
             domain=domain,
             train_schema=train_schema,
             predict_schema=predict_schema,
-        )
-        rasa.shared.utils.io.dump_obj_as_json_to_file(
-            temporary_directory / MODEL_ARCHIVE_METADATA_FILE, metadata.as_dict()
         )

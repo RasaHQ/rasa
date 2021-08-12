@@ -27,12 +27,6 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 
 
-@pytest.fixture()
-def temp_cache(tmp_path: Path, monkeypatch: MonkeyPatch) -> LocalTrainingCache:
-    monkeypatch.setenv(CACHE_LOCATION_ENV, str(tmp_path))
-    return LocalTrainingCache()
-
-
 @dataclasses.dataclass
 class TestCacheableOutput:
 
@@ -157,6 +151,35 @@ def test_caching_something_which_is_not_cacheable(
             output_fingerprint_key, "some_node", default_model_storage
         )
         is None
+    )
+
+
+@pytest.mark.parametrize(
+    "initial_output_fingerprint, second_output_fingerprint",
+    [("same same same", "same same same"), ("first output", "second output")],
+)
+def test_cache_again(
+    temp_cache: TrainingCache,
+    default_model_storage: ModelStorage,
+    initial_output_fingerprint: Text,
+    second_output_fingerprint: Text,
+):
+    # Cache something
+    fingerprint_key = uuid.uuid4().hex
+    temp_cache.cache_output(
+        fingerprint_key, None, initial_output_fingerprint, default_model_storage
+    )
+
+    # Pretend we are caching the same fingerprint again
+    # Note that it can't happen that we cache a `Cacheable` result twice as we would
+    # have replaced the component with a `CachedComponent` otherwise
+    temp_cache.cache_output(
+        fingerprint_key, None, second_output_fingerprint, default_model_storage
+    )
+
+    assert (
+        temp_cache.get_cached_output_fingerprint(fingerprint_key)
+        == second_output_fingerprint
     )
 
 

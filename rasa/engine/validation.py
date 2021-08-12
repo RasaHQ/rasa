@@ -5,6 +5,7 @@ from typing import Optional, Callable, Text, Tuple, Dict, Type, Any, Set, Union,
 
 import dataclasses
 
+from rasa.engine.training.fingerprinting import Fingerprintable
 import rasa.utils.common
 import typing_utils
 
@@ -13,7 +14,6 @@ from rasa.engine.graph import (
     GraphSchema,
     GraphComponent,
     SchemaNode,
-    Fingerprintable,
     ExecutionContext,
 )
 from rasa.engine.storage.resource import Resource

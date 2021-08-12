@@ -1,8 +1,9 @@
 from rasa.engine.caching import TrainingCache
-from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema
+from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.training import fingerprinting
+from rasa.engine.training.components import CachedComponent
 from rasa.engine.training.hooks import TrainingHook
-import rasa.shared.utils.io
 from tests.engine.graph_components_test_classes import (
     CacheableComponent,
     CacheableText,
@@ -14,6 +15,22 @@ def test_training_hook_saves_to_cache(
     temp_cache: TrainingCache,
     default_training_hook: TrainingHook,
 ):
+    # We need an execution context so the hook can determine the class of the graph
+    # component
+    execution_context = ExecutionContext(
+        GraphSchema(
+            {
+                "hello": SchemaNode(
+                    needs={},
+                    constructor_name="create",
+                    fn="run",
+                    config={},
+                    uses=CacheableComponent,
+                )
+            }
+        ),
+        "1",
+    )
     node = GraphNode(
         node_name="hello",
         component_class=CacheableComponent,
@@ -24,19 +41,17 @@ def test_training_hook_saves_to_cache(
         eager=False,
         model_storage=default_model_storage,
         resource=None,
-        execution_context=ExecutionContext(GraphSchema({}), "1"),
+        execution_context=execution_context,
         hooks=[default_training_hook],
     )
 
     node({"input_node": "Joe"})
 
     # This is the same key that the hook will generate
-    fingerprint_key = rasa.shared.utils.io.deep_container_fingerprint(
-        {
-            "node_name": "hello",
-            "config": {"prefix": "Hello "},
-            "inputs": {"input_node": "Joe"},
-        }
+    fingerprint_key = fingerprinting.calculate_fingerprint_key(
+        graph_component_class=CacheableComponent,
+        config={"prefix": "Hello "},
+        inputs={"suffix": "Joe"},
     )
 
     output_fingerprint_key = temp_cache.get_cached_output_fingerprint(fingerprint_key)
@@ -49,3 +64,51 @@ def test_training_hook_saves_to_cache(
     )
     assert isinstance(cached_result, CacheableText)
     assert cached_result.text == "Hello Joe"
+
+
+def test_training_hook_does_not_cache_cached_component(
+    default_model_storage: ModelStorage,
+    temp_cache: TrainingCache,
+    default_training_hook: TrainingHook,
+):
+    # We need an execution context so the hook can determine the class of the graph
+    # component
+    execution_context = ExecutionContext(
+        GraphSchema(
+            {
+                "hello": SchemaNode(
+                    needs={},
+                    constructor_name="create",
+                    fn="run",
+                    config={},
+                    uses=CachedComponent,
+                )
+            }
+        ),
+        "1",
+    )
+    node = GraphNode(
+        node_name="hello",
+        component_class=CachedComponent,
+        constructor_name="create",
+        component_config={"output": CacheableText("hi")},
+        fn_name="get_cached_output",
+        inputs={},
+        eager=False,
+        model_storage=default_model_storage,
+        resource=None,
+        execution_context=execution_context,
+        hooks=[default_training_hook],
+    )
+
+    node({"input_node": "Joe"})
+
+    # This is the same key that the hook will generate
+    fingerprint_key = fingerprinting.calculate_fingerprint_key(
+        graph_component_class=CachedComponent,
+        config={"output": CacheableText("hi")},
+        inputs={},
+    )
+
+    # The hook should not cache the output of a CachedComponent
+    assert not temp_cache.get_cached_output_fingerprint(fingerprint_key)

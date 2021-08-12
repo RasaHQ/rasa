@@ -82,7 +82,7 @@ class ModelStorage(abc.ABC):
         train_schema: GraphSchema,
         predict_schema: GraphSchema,
         domain: Domain,
-    ) -> None:
+    ) -> ModelMetadata:
         """Creates a model archive containing all data to load and run the model.
 
         Args:
@@ -90,6 +90,9 @@ class ModelStorage(abc.ABC):
             train_schema: The schema which was used to train the graph model.
             predict_schema: The schema for running predictions with the trained model.
             domain: The `Domain` which was used to train the model.
+
+        Returns:
+            The model metadata.
         """
         ...
 
