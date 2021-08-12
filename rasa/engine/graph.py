@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 import logging
 from typing import Any, Callable, Dict, List, Optional, Text, Type, Tuple
 
-from typing_extensions import runtime_checkable, Protocol
 
 from rasa.engine.exceptions import (
     GraphComponentException,
