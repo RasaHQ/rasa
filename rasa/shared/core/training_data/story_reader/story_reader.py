@@ -101,8 +101,6 @@ class StoryReader:
         return parsed_events
 
     def _add_event(self, event_name: Text, parameters: Dict[Text, Any]) -> None:
-        # add 'name' only if event is not a SlotSet,
-        # because there might be a slot with slot_key='name'
         parsed_events = self._parse_events(event_name, parameters)
 
         if self.current_step_builder is None:

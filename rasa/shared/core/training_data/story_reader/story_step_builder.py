@@ -93,7 +93,7 @@ class StoryStepBuilder:
         self.ensure_current_steps()
 
         if len(events) == 1:
-            # If there is only one possible intent, we'll keep things simple
+            # If there is only one possible event, we'll keep things simple
             for t in self.current_steps:
                 t.add_event(events[0])
         else:
@@ -103,7 +103,7 @@ class StoryStepBuilder:
                     t.add_events(events)
                 return
 
-            # If there are multiple different intents the
+            # If there are multiple different events the
             # user can use the express the same thing
             # we need to copy the blocks and create one
             # copy for each possible message
