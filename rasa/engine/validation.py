@@ -121,7 +121,7 @@ def _validate_required_packages(node: SchemaNode, node_name: Text) -> None:
 
 def _get_parameter_information(
     node_name: Text, uses: Type[GraphComponent], method_name: Text
-) -> Tuple[Dict[Text, ParameterInfo], Optional[Type]]:
+) -> Tuple[Dict[Text, ParameterInfo], TypeAnnotation]:
     fn = _get_fn(node_name, uses, method_name)
 
     type_hints = _get_type_hints(node_name, uses, fn)
