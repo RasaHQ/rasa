@@ -232,7 +232,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         recalled = trained_policy.recall(states, tracker, default_domain)
         assert recalled is not None
 
-    async def test_finetune_after_load(
+    def test_finetune_after_load(
         self,
         trained_policy: MemoizationPolicy,
         default_domain: Domain,

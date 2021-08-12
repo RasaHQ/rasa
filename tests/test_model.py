@@ -50,7 +50,7 @@ from rasa.model import (
     FingerprintComparisonResult,
 )
 from rasa.exceptions import ModelNotFound
-from rasa.model_training import train_core_async
+from rasa.model_training import train_core
 
 
 def test_get_latest_model(tmp_path: Path):
@@ -363,7 +363,7 @@ def test_fingerprinting_changing_config_epochs(project: Text, tmp_path):
 
 
 @pytest.mark.parametrize("empty_key", ["pipeline", "policies"])
-async def test_fingerprinting_config_epochs_empty_pipeline_or_policies(
+def test_fingerprinting_config_epochs_empty_pipeline_or_policies(
     project: Text, tmp_path: Path, empty_key: Text,
 ):
     config = {
@@ -491,7 +491,7 @@ def test_should_retrain(
     assert retrain.should_retrain_nlu() == fingerprint["retrain_nlu"]
 
 
-async def test_should_not_retrain_core(
+def test_should_not_retrain_core(
     domain_path: Text, tmp_path: Path, stack_config_path: Text
 ):
     # Don't use `stories_path` as checkpoints currently break fingerprinting
@@ -505,7 +505,7 @@ stories:
   - action: utter_greet
     """
     )
-    trained_model = await train_core_async(
+    trained_model = train_core(
         domain_path, stack_config_path, str(story_file), str(tmp_path)
     )
 
@@ -574,7 +574,7 @@ def test_fingerprint_comparison_result(
     assert comparison_result.should_retrain_nlu() == retrain_nlu
 
 
-async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
+def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
     _ = model.unpack_model(trained_rasa_model, tmpdir)
 
     new_domain = Domain.empty()
@@ -593,7 +593,7 @@ async def test_update_with_new_domain(trained_rasa_model: Text, tmpdir: Path):
     assert actual.is_empty()
 
 
-async def test_update_with_new_domain_preserves_domain(
+def test_update_with_new_domain_preserves_domain(
     tmpdir: Path, domain_with_categorical_slot_path
 ):
     domain = Domain.load(domain_with_categorical_slot_path)

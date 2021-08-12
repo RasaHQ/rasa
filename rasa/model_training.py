@@ -251,7 +251,7 @@ async def _train_async_internal(
         rasa.shared.utils.cli.print_warning(
             "No NLU data present. Just a Rasa Core model will be trained."
         )
-        trained_model = await _train_core_with_validated_data(
+        trained_model = _train_core_with_validated_data(
             file_importer,
             output=output_path,
             fixed_model_name=fixed_model_name,
@@ -276,7 +276,7 @@ async def _train_async_internal(
         fingerprint_comparison = FingerprintComparisonResult(force_training=True)
 
     if not old_model or fingerprint_comparison.is_training_required():
-        async with telemetry.track_model_training(
+        with telemetry.track_model_training(
             file_importer, model_type="rasa",
         ):
             await _do_training(
@@ -343,7 +343,7 @@ async def _do_training(
         )
 
     if fingerprint_comparison_result.should_retrain_core():
-        await _train_core_with_validated_data(
+        _train_core_with_validated_data(
             file_importer,
             output=output_path,
             train_path=train_path,
@@ -390,32 +390,6 @@ def _interpreter_from_previous_model(
 
 
 def train_core(
-    domain: Union[Domain, Text],
-    config: Text,
-    stories: Text,
-    output: Text,
-    train_path: Optional[Text] = None,
-    fixed_model_name: Optional[Text] = None,
-    additional_arguments: Optional[Dict] = None,
-    model_to_finetune: Optional[Text] = None,
-    finetuning_epoch_fraction: float = 1.0,
-) -> Optional[Text]:
-    return rasa.utils.common.run_in_loop(
-        train_core_async(
-            domain=domain,
-            config=config,
-            stories=stories,
-            output=output,
-            train_path=train_path,
-            fixed_model_name=fixed_model_name,
-            additional_arguments=additional_arguments,
-            model_to_finetune=model_to_finetune,
-            finetuning_epoch_fraction=finetuning_epoch_fraction,
-        )
-    )
-
-
-async def train_core_async(
     domain: Union[Domain, Text],
     config: Text,
     stories: Text,
@@ -476,7 +450,7 @@ async def train_core_async(
         )
         return None
 
-    return await _train_core_with_validated_data(
+    return _train_core_with_validated_data(
         file_importer,
         output=output,
         train_path=train_path,
@@ -487,7 +461,7 @@ async def train_core_async(
     )
 
 
-async def _train_core_with_validated_data(
+def _train_core_with_validated_data(
     file_importer: TrainingDataImporter,
     output: Text,
     train_path: Optional[Text] = None,
@@ -532,12 +506,12 @@ async def _train_core_with_validated_data(
                     f"model within the directory '{output}'."
                 )
 
-        async with telemetry.track_model_training(
+        with telemetry.track_model_training(
             file_importer,
             model_type="core",
             is_finetuning=model_to_finetune is not None,
         ):
-            await rasa.core.train.train(
+            rasa.core.train.train(
                 domain_file=domain,
                 training_resource=file_importer,
                 output_path=os.path.join(_train_path, DEFAULT_CORE_SUBDIRECTORY_NAME),
@@ -741,7 +715,7 @@ async def _train_nlu_with_validated_data(
                     f"model within the directory '{output}'."
                 )
 
-        async with telemetry.track_model_training(
+        with telemetry.track_model_training(
             file_importer,
             model_type="nlu",
             is_finetuning=model_to_finetune is not None,

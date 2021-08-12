@@ -282,7 +282,7 @@ def test_import_nlu_training_data_with_default_actions(
     )
 
 
-async def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
+def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
     additional_actions = ["Hi Joey.", "it's sunny outside."]
     stories = StoryGraph(
         [

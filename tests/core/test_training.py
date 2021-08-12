@@ -52,12 +52,12 @@ async def test_story_visualization_with_merging(domain: Domain):
     assert 20 < len(generated_graph.edges()) < 33
 
 
-async def test_training_script_without_max_history_set(
+def test_training_script_without_max_history_set(
     tmp_path: Path, domain_path: Text, stories_path: Text
 ):
     tmpdir = str(tmp_path)
 
-    await train(
+    train(
         domain_path,
         stories_path,
         tmpdir,
@@ -75,12 +75,12 @@ async def test_training_script_without_max_history_set(
                 assert policy.featurizer.max_history is None
 
 
-async def test_training_script_with_max_history_set(
+def test_training_script_with_max_history_set(
     tmp_path: Path, domain_path: Text, stories_path: Text
 ):
     tmpdir = str(tmp_path)
 
-    await train(
+    train(
         domain_path,
         stories_path,
         tmpdir,
@@ -97,8 +97,8 @@ async def test_training_script_with_max_history_set(
             assert policy.featurizer.max_history == expected_history
 
 
-async def test_training_script_with_restart_stories(tmp_path: Path, domain_path: Text):
-    await train(
+def test_training_script_with_restart_stories(tmp_path: Path, domain_path: Text):
+    train(
         domain_path,
         "data/test_yaml_stories/stories_restart.yml",
         str(tmp_path),
@@ -120,10 +120,7 @@ async def test_random_seed(
         ]
     }
 
-    # policy_train = Mock()
-    # monkeypatch.setattr(TED, "fit", policy_train)
-
-    agent_1 = await train(
+    agent_1 = train(
         domain_path,
         stories_path,
         str(tmp_path),
@@ -132,7 +129,7 @@ async def test_random_seed(
         additional_arguments={},
     )
 
-    agent_2 = await train(
+    agent_2 = train(
         domain_path,
         stories_path,
         str(tmp_path),
@@ -149,7 +146,7 @@ async def test_random_seed(
     assert probs_1["confidence"] == probs_2["confidence"]
 
 
-async def test_trained_interpreter_passed_to_policies(
+def test_trained_interpreter_passed_to_policies(
     tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
     policies_config = {
@@ -161,7 +158,7 @@ async def test_trained_interpreter_passed_to_policies(
 
     interpreter = Mock(spec=RasaNLUInterpreter)
 
-    await train(
+    train(
         domain_path,
         stories_path,
         str(tmp_path),

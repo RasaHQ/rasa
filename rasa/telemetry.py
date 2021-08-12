@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from datetime import datetime
 from functools import wraps
 import hashlib
@@ -715,10 +716,10 @@ def initialize_error_reporting() -> None:
             scope.set_context("Environment", default_context)
 
 
-@async_generator.asynccontextmanager
-async def track_model_training(
+@contextlib.contextmanager
+def track_model_training(
     training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False
-) -> typing.AsyncGenerator[None, None]:
+) -> typing.Generator[None, None, None]:
     """Track a model training started.
 
     WARNING: since this is a generator, it can't use the ensure telemetry
