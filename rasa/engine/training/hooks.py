@@ -32,11 +32,6 @@ class TrainingHook(GraphNodeHook):
         received_inputs: Dict[Text, Any],
     ) -> Dict:
         """Calculates the run fingerprint for use in `on_after_node`."""
-        logger.debug(
-            f"Hook '{self.__class__.__name__}.on_before_node' "
-            f"running for node {node_name}."
-        )
-
         graph_component_class = self._get_graph_component_class(
             execution_context, node_name
         )
@@ -57,11 +52,6 @@ class TrainingHook(GraphNodeHook):
         input_hook_data: Dict,
     ) -> None:
         """Stores the fingerprints and caches the output of the node."""
-        logger.debug(
-            f"Hook '{self.__class__.__name__}.on_after_node' "
-            f"running for node {node_name}."
-        )
-
         # We should not re-cache the output of a CachedComponent.
         graph_component_class = self._get_graph_component_class(
             execution_context, node_name

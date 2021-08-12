@@ -422,6 +422,10 @@ class GraphNode:
     def _run_after_hooks(self, input_hook_outputs: List[Dict], output: Any) -> None:
         for hook, hook_data in zip(self._hooks, input_hook_outputs):
             try:
+                logger.debug(
+                    f"Hook '{hook.__class__.__name__}.on_after_node' "
+                    f"running for node {self._node_name}."
+                )
                 hook.on_after_node(
                     node_name=self._node_name,
                     execution_context=self._execution_context,
@@ -438,6 +442,10 @@ class GraphNode:
         input_hook_outputs = []
         for hook in self._hooks:
             try:
+                logger.debug(
+                    f"Hook '{hook.__class__.__name__}.on_before_node' "
+                    f"running for node {self._node_name}."
+                )
                 hook_output = hook.on_before_node(
                     node_name=self._node_name,
                     execution_context=self._execution_context,
