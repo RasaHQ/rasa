@@ -14,8 +14,6 @@ import textwrap
 import typing
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 import uuid
-
-import async_generator
 import requests
 from terminaltables import SingleTable
 
