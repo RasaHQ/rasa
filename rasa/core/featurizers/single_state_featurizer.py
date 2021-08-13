@@ -226,8 +226,8 @@ class SingleStateFeaturizer:
         # Why does this look so messy?
         # Becaues if we (had) several sequence/sentence features then
         # get_dense_features / get_sparse_features combine them....
-        # TODO: rework this.... work with attribute_feature_dict directly
-        # TODO: why is the vocab size / feature dimensions *larger* than in v1 branch?
+        # TODO: rework this.... work with attribute_feature_dict directly.
+        # NOTE: feature dimensions match v1 :)
         attribute_feature_dict = self._get_features_from_lookup_table(
             sub_state, attributes, e2e_features
         )
@@ -258,7 +258,7 @@ class SingleStateFeaturizer:
             )
 
         # if ACTION_NAME in sub_state or ACTION_TEXT in sub_state:
-        #    print({key : [str(feat) for feat in val] for key, val in output.items()})
+        #   print({key : [str(feat) for feat in val] for key, val in output.items()})
 
         return output
 
