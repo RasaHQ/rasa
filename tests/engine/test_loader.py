@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 from _pytest.tmpdir import TempPathFactory
+import freezegun
 
 import rasa
 from rasa.engine.caching import TrainingCache
@@ -64,15 +65,17 @@ def test_loader_loads_graph_runner(
         }
     )
 
-    before_train_time = datetime.utcnow()
-
     output_filename = tmp_path / "model.tar.gz"
-    predict_graph_runner = graph_trainer.train(
-        train_schema=train_schema,
-        predict_schema=predict_schema,
-        domain_path=domain_path,
-        output_filename=output_filename,
-    )
+
+    trained_at = datetime.utcnow()
+    with freezegun.freeze_time(trained_at):
+        predict_graph_runner = graph_trainer.train(
+            train_schema=train_schema,
+            predict_schema=predict_schema,
+            domain_path=domain_path,
+            output_filename=output_filename,
+        )
+
     assert isinstance(predict_graph_runner, DaskGraphRunner)
     assert output_filename.is_file()
     assert predict_graph_runner.run() == {"load": test_value}
@@ -93,4 +96,4 @@ def test_loader_loads_graph_runner(
     assert model_metadata.model_id
     assert model_metadata.domain.as_dict() == Domain.from_path(domain_path).as_dict()
     assert model_metadata.rasa_open_source_version == rasa.__version__
-    assert before_train_time < model_metadata.trained_at < datetime.utcnow()
+    assert model_metadata.trained_at == trained_at
