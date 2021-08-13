@@ -81,6 +81,11 @@ class PolicyTestCollection:
     def execution_context(self) -> ExecutionContext:
         return ExecutionContext(GraphSchema({}), uuid.uuid4().hex)
 
+    def _config(
+        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+    ) -> Dict[Text, Any]:
+        raise NotImplementedError
+
     def create_policy(
         self,
         featurizer: Optional[TrackerFeaturizer],
@@ -147,7 +152,10 @@ class PolicyTestCollection:
 
         if isinstance(trained_policy, GraphComponent):
             loaded = trained_policy.__class__.load(
-                {}, model_storage, resource, execution_context
+                self._config(trained_policy.priority),
+                model_storage,
+                resource,
+                execution_context,
             )
         else:
             # TODO: Drop after all policies are migrated to `GraphComponent`
@@ -172,7 +180,7 @@ class PolicyTestCollection:
     ):
         if isinstance(trained_policy, GraphComponent):
             loaded = trained_policy.__class__.load(
-                {},
+                self._config(trained_policy.priority),
                 model_storage,
                 resource,
                 dataclasses.replace(execution_context, is_finetuning=should_finetune),
@@ -220,13 +228,20 @@ class PolicyTestCollection:
     ):
         resource = Resource(uuid.uuid4().hex)
         empty_policy = self.create_policy(
-            None, None, default_model_storage, resource, execution_context
+            DEFAULT_POLICY_PRIORITY,
+            None,
+            default_model_storage,
+            resource,
+            execution_context,
         )
         empty_policy.train([], default_domain, RegexInterpreter())
 
         if isinstance(empty_policy, GraphComponent):
             loaded = empty_policy.__class__.load(
-                {}, default_model_storage, resource, execution_context
+                self._config(DEFAULT_POLICY_PRIORITY),
+                default_model_storage,
+                resource,
+                execution_context,
             )
         else:
             # TODO: Drop after all policies are migrated to `GraphComponent`

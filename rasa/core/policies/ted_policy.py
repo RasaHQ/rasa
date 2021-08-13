@@ -14,6 +14,7 @@ from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
 import rasa.utils.io as io_utils
 import rasa.core.actions.action
+from rasa.constants import EPOCH_OVERRIDE
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -337,15 +338,12 @@ class TEDPolicy2(Policy2):
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
     ) -> None:
         """Declares instance variables with default values."""
-        self.split_entities_config = rasa.utils.train_utils.init_split_entities(
-            config.get(SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE),
-            self.default_config.get(
-                SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
-            ),
-        )
-
         super().__init__(
             config, model_storage, resource, execution_context, featurizer=featurizer
+        )
+
+        self.split_entities_config = rasa.utils.train_utils.init_split_entities(
+            config[SPLIT_ENTITIES_BY_COMMA], SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
 
         # TODO: check if this statement can be removed.
@@ -910,7 +908,6 @@ class TEDPolicy2(Policy2):
         io_utils.json_pickle(
             model_path / f"{model_filename}.priority.pkl", self.priority
         )
-        io_utils.pickle_dump(model_path / f"{model_filename}.meta.pkl", self.config)
         io_utils.pickle_dump(
             model_path / f"{model_filename}.data_example.pkl", self.data_example,
         )
@@ -969,7 +966,6 @@ class TEDPolicy2(Policy2):
             model_path / f"{cls._metadata_filename()}.fake_features.pkl"
         )
         label_data = RasaModelData(data=label_data)
-        meta = io_utils.pickle_load(model_path / f"{cls._metadata_filename()}.meta.pkl")
         priority = io_utils.json_unpickle(
             model_path / f"{cls._metadata_filename()}.priority.pkl"
         )
@@ -995,7 +991,6 @@ class TEDPolicy2(Policy2):
             "loaded_data": loaded_data,
             "fake_features": fake_features,
             "label_data": label_data,
-            "meta": meta,
             "priority": priority,
             "entity_tag_specs": entity_tag_specs,
         }
@@ -1027,11 +1022,9 @@ class TEDPolicy2(Policy2):
 
                 model_utilities = cls._load_model_utilities(model_path)
 
-                model_utilities["meta"] = cls._update_loaded_params(
-                    model_utilities["meta"]
-                )
-                if execution_context.is_finetuning and "epoch_override" in config:
-                    model_utilities["meta"][EPOCHS] = config.get("epoch_override")
+                config = cls._update_loaded_params(config)
+                if execution_context.is_finetuning and EPOCH_OVERRIDE in config:
+                    config[EPOCHS] = config.get(EPOCH_OVERRIDE)
 
                 (
                     model_data_example,
@@ -1041,16 +1034,13 @@ class TEDPolicy2(Policy2):
                 )
 
                 model = cls._load_tf_model(
+                    config,
                     model_utilities,
                     model_data_example,
                     predict_data_example,
                     featurizer,
                     execution_context.is_finetuning,
                 )
-
-                # The runtime config can override existing config
-                model_utilities["meta"].update(config)
-                config = model_utilities["meta"]
 
                 return cls._load_policy_with_model(
                     config,
@@ -1093,6 +1083,7 @@ class TEDPolicy2(Policy2):
     @classmethod
     def _load_tf_model(
         cls,
+        config: Dict[Text, Any],
         model_utilities: Dict[Text, Any],
         model_data_example: RasaModelData,
         predict_data_example: RasaModelData,
@@ -1104,7 +1095,7 @@ class TEDPolicy2(Policy2):
             model_data_example,
             predict_data_example,
             data_signature=model_data_example.get_signature(),
-            config=model_utilities["meta"],
+            config=config,
             max_history_featurizer_is_used=isinstance(
                 featurizer, MaxHistoryTrackerFeaturizer
             ),
@@ -1136,7 +1127,6 @@ class TEDPolicy2(Policy2):
 
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta = rasa.utils.train_utils.override_defaults(cls.default_config, meta)
         meta = rasa.utils.train_utils.update_confidence_type(meta)
         meta = rasa.utils.train_utils.update_similarity_type(meta)
         meta = rasa.utils.train_utils.update_deprecated_loss_type(meta)
