@@ -170,23 +170,24 @@ class StoryStep:
         return f"    - {story_step_element.as_story_string()}\n"
 
     @staticmethod
+    def _event_to_story_string(event: Event, e2e: bool) -> Optional[Text]:
+        if isinstance(event, UserUttered):
+            return event.as_story_string(e2e=e2e)
+        return event.as_story_string()
+
+    @staticmethod
     def _or_string(story_step_element: Sequence[Event], e2e: bool) -> Optional[Text]:
         for event in story_step_element:
             # OR statement can also contain `slot_was_set`, and
             # we're going to ignore this events when representing
             # the story as a string
-            if isinstance(event, SlotSet):
-                return None
-            elif not isinstance(event, UserUttered):
+            if not isinstance(event, UserUttered) and not isinstance(event, SlotSet):
                 raise EventTypeError(
                     "OR statement events must be of type `UserUttered` or `SlotSet`."
                 )
 
-        # FIXME: https://github.com/python/mypy/issues/7853
-        story_step_element = cast(Sequence[UserUttered], story_step_element)
-
         result = " OR ".join(
-            [element.as_story_string(e2e) for element in story_step_element]
+            [StoryStep._event_to_story_string(element, e2e) for element in story_step_element]
         )
         return f"* {result}\n"
 
