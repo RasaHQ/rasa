@@ -10,6 +10,14 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.x to 3.0
+
+### Training data
+
+`TrainingDataImporter` and all its implementations are updated to contain only synchronous methods.
+If you have a custom data importer or rely on some functions provided by `TrainingDataImporter`, you need
+to update your implementation and function calls.
+
 ## Rasa 2.7 to 2.8
 
 :::caution
