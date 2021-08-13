@@ -495,7 +495,7 @@ def test_run_cv_evaluation_with_response_selector(monkeypatch: MonkeyPatch):
     assert len(intent_results.test["Accuracy"]) == n_folds
     assert len(intent_results.test["Precision"]) == n_folds
     assert len(intent_results.test["F1-score"]) == n_folds
-    assert all(key in intent_results.evaluation for key in ["errors", "report"])
+    assert intent_results.evaluation == {}
     assert any(
         isinstance(intent_report, dict)
         and intent_report.get("confused_with") is not None
