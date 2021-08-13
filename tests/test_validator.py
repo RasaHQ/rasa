@@ -9,7 +9,6 @@ from pathlib import Path
 
 
 def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
-    print()
     story_file_name = tmp_path / "stories.yml"
     with open(story_file_name, "w") as file:
         file.write(

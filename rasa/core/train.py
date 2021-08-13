@@ -73,7 +73,7 @@ def train(
     return agent
 
 
-async def train_comparison_models(
+def train_comparison_models(
     story_file: Text,
     domain: Text,
     output_path: Text = "",
@@ -137,12 +137,12 @@ def get_no_of_stories(story_file: Text, domain: Text) -> int:
     return len(stories)
 
 
-async def do_compare_training(
+def do_compare_training(
     args: argparse.Namespace,
     story_file: Text,
     additional_arguments: Optional[Dict] = None,
 ) -> None:
-    await train_comparison_models(
+    train_comparison_models(
         story_file=story_file,
         domain=args.domain,
         output_path=args.out,

@@ -18,7 +18,7 @@ how you can migrate from one version to another.
 If you have a custom data importer or rely on some functions provided by `TrainingDataImporter`, you need
 to update your implementation and function calls.
 
-For example, this is how the data loading should look like in Rasa 3.0:
+For example, this is how data loading should look like in Rasa 3.0:
 
 ```python
 from typing import Text
@@ -39,7 +39,7 @@ Since any custom importer implements `TrainingDataImporter`, you should update y
 importer to contain only sync methods as well:
 
 ```python
-from typing import Dict, Text
+from typing import Dict
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
@@ -50,18 +50,10 @@ class MyImporter(TrainingDataImporter):
 
     # this function was async before
     def get_domain(self) -> Domain:
-        path_to_domain_file = self._custom_get_domain_file()
-        return Domain.load(path_to_domain_file)
-
-    def _custom_get_domain_file(self) -> Text:
         pass
 
     # this function was also async before
     def get_config(self) -> Dict:
-        path_to_config = self._custom_get_config_file()
-        return rasa.utils.io.read_config_file(path_to_config)
-
-    def _custom_get_config_file(self) -> Text:
         pass
 
     # ...
