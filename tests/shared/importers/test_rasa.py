@@ -40,7 +40,7 @@ def test_rasa_file_importer(project: Text):
     assert len(nlu_data.intent_examples) == 69
 
 
-async def test_read_conversation_tests(project: Text):
+def test_read_conversation_tests(project: Text):
     importer = RasaFileImporter(
         training_data_paths=[str(Path(project) / DEFAULT_CONVERSATION_TEST_PATH)]
     )
@@ -49,14 +49,14 @@ async def test_read_conversation_tests(project: Text):
     assert len(test_stories.story_steps) == 7
 
 
-async def test_rasa_file_importer_with_invalid_config():
+def test_rasa_file_importer_with_invalid_config():
     importer = RasaFileImporter(config_file="invalid path")
     actual = importer.get_config()
 
     assert actual == {}
 
 
-async def test_rasa_file_importer_with_invalid_domain(tmp_path: Path):
+def test_rasa_file_importer_with_invalid_domain(tmp_path: Path):
     config_file = tmp_path / "config.yml"
     config_file.write_text("")
     importer = TrainingDataImporter.load_from_dict({}, str(config_file), None, [])

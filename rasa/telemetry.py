@@ -733,7 +733,7 @@ def track_model_training(
     if not initialize_telemetry():
         # telemetry reporting is disabled. we won't do any reporting
         yield  # runs the training
-        return  # closes the async context
+        return
 
     config = training_data.get_config()
     stories = training_data.get_stories()
