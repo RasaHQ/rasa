@@ -444,7 +444,7 @@ class E2ELookupTable:
         Raises:
           `ValueError` if there is no message associated with the given user text
         """
-        key = self.build_key(attribute=TEXT, value=user_text)
+        key = self._build_key({TEXT: user_text})
         message = self._table.get(key)
         if message is None:
             raise ValueError(f"Expected a message with key {key} in lookup table.")

@@ -1,10 +1,7 @@
 from typing import Text
 import numpy as np
-
-from rasa.core.agent import Agent
-from rasa.shared.core.constants import ENTITY_LABEL_SEPARATOR
+import re
 import scipy.sparse
-
 import pytest
 
 from rasa.shared.nlu.training_data.message import Message
@@ -12,7 +9,9 @@ from rasa.architecture_prototype.graph_components import (
     E2ELookupTable,
     StoryToTrainingDataConverter,
 )
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.core.domain import Domain, State
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
@@ -28,7 +27,7 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     ENTITY_TAGS,
 )
-from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
+from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ENTITY_LABEL_SEPARATOR
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.core.slots import Slot
 from rasa.shared.nlu.training_data.features import Features
@@ -207,52 +206,51 @@ def test_single_state_featurizer_creates_encoded_all_actions():
     )
 
 
-"""
-@pytest.mark.timeout(
-    300, func_only=True
-)  # these can take a longer time than the default timeout
-def test_single_state_featurizer_with_entity_roles_and_groups(
-    #unpacked_trained_spacybot_path: Text, # TODO: this doesn't work anymore
-):
+def test_single_state_featurizer_with_entity_roles_and_groups():
 
-    #from rasa.core.agent import Agent
-    #interpreter = Agent.load(unpacked_trained_spacybot_path).interpreter
-    # so le'ts replace it with...
+    domain = Domain(
+        intents=[],
+        entities=["city", f"city{ENTITY_LABEL_SEPARATOR}to"],
+        slots=[],
+        responses={},
+        forms={},
+        action_names=[],
+    )
+    f = SingleStateFeaturizer()
+    f.prepare_for_training(domain)
 
+    text = "I am flying from London to Paris"
+    entity_data = {
+        TEXT: text,
+        ENTITIES: [
+            {
+                ENTITY_ATTRIBUTE_TYPE: "city",
+                ENTITY_ATTRIBUTE_VALUE: "London",
+                ENTITY_ATTRIBUTE_START: 17,
+                ENTITY_ATTRIBUTE_END: 23,
+            },
+            {
+                ENTITY_ATTRIBUTE_TYPE: f"city{ENTITY_LABEL_SEPARATOR}to",
+                ENTITY_ATTRIBUTE_VALUE: "Paris",
+                ENTITY_ATTRIBUTE_START: 27,
+                ENTITY_ATTRIBUTE_END: 32,
+            },
+        ],
+    }
 
-    # TODO roles and groups are not supported in e2e yet
-    # domain = Domain(
-    #     intents=[],
-    #     entities=["city", f"city{ENTITY_LABEL_SEPARATOR}to"],
-    #     slots=[],
-    #     responses={},
-    #     forms={},
-    #     action_names=[],
-    # )
-    #f = SingleStateFeaturizer()
-    #f.prepare_for_training(domain)
+    # TODO: train and featurize....
+    #
+    # message = Message(data = {
+    #     TEXT: "I am flying from London to Paris",
+    #     TOKENS_NAMES[TEXT]: [Token(text=match.group(), start=match.start()) for match in re.finditer(r"\S+", text)],
+    #     ENTITY_TAGS : [],
+    # }, features = {
+    #     ENTITY_TAGS :  [[[0], [0], [0], [0], [1], [0], [2]]]
+    # })
 
-    # entity_data = {
-    #         TEXT: "I am flying from London to Paris",
-    #         ENTITIES: [
-    #             {
-    #                 ENTITY_ATTRIBUTE_TYPE: "city",
-    #                 ENTITY_ATTRIBUTE_VALUE: "London",
-    #                 ENTITY_ATTRIBUTE_START: 17,
-    #                 ENTITY_ATTRIBUTE_END: 23,
-    #             },
-    #             {
-    #                 ENTITY_ATTRIBUTE_TYPE: f"city{ENTITY_LABEL_SEPARATOR}to",
-    #                 ENTITY_ATTRIBUTE_VALUE: "Paris",
-    #                 ENTITY_ATTRIBUTE_START: 27,
-    #                 ENTITY_ATTRIBUTE_END: 32,
-    #             },
-    #         ],
-    #     }
-
-    # lookup_table = build_lookup_table_from_state(entity_data)
-    # for message in lookup_table.values():
-    #     interpreter.featurize_message(message)
+    # lookup_table = E2ELookupTable()
+    # StoryToTrainingDataConverter.add_sub_states_from_domain(domain, lookup_table=lookup_table)
+    # lookup_table.add(message)
 
     # encoded = f.encode_entities(
     #     entity_data = entity_data,
@@ -264,6 +262,7 @@ def test_single_state_featurizer_with_entity_roles_and_groups(
     # )
 
 
+"""
 @pytest.mark.timeout(
     300, func_only=True
 )  # these can take a longer time than the default timeout

@@ -254,7 +254,7 @@ def test_lookup_features():
     features = table.lookup_features(sub_state, attributes=[YET_ANOTHER])
     assert YET_ANOTHER not in features
 
-    with pytest.raises(RuntimeError, match="Unknown key"):
+    with pytest.raises(ValueError, match="Unknown key"):
         table.lookup_features({TEXT: "A-unknwon"})
 
 
@@ -284,3 +284,26 @@ def test_lookup_features_if_lookup_table_is_broken():
     }
     features = not_broken_but_strange_table.lookup_features({TEXT: "A", INTENT: "B"})
     assert TEXT in features and len(features[TEXT]) == 1
+
+
+def test_lookup_message():
+
+    OTHER = "other"
+    messages = [
+        Message(data={TEXT: "A"}, features=[dummy_features(1, TEXT)]),
+        Message(data={TEXT: "B"}),
+        Message(data={TEXT: "B", OTHER: "C"}, features=[dummy_features(2, OTHER)]),
+        Message(data={INTENT: "B"}),
+        Message(data={ACTION_TEXT: "B"}),
+        Message(data={ACTION_NAME: "B"}),
+    ]
+
+    table = E2ELookupTable(handle_collisions=True)
+    table.add_all(messages)
+
+    message = table.lookup_message(user_text="A")
+    assert message
+    message = table.lookup_message(user_text="B")
+    assert OTHER in message.data.keys()
+    with pytest.raises(ValueError, match=f"Expected a message with key \('{TEXT}"):
+        table.lookup_message(user_text="not included")
