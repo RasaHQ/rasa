@@ -41,7 +41,7 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import PolicyPrediction, Policy2
-from rasa.core.constants import DIALOGUE
+from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -351,7 +351,7 @@ class TEDPolicy2(Policy2):
         # TODO: check if this statement can be removed.
         #  More context here -
         #  https://github.com/RasaHQ/rasa/issues/5786#issuecomment-840762751
-        max_history = config.get("max_history")
+        max_history = config.get(POLICY_MAX_HISTORY)
         if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer) and max_history:
             self.featurizer.max_history = max_history
 

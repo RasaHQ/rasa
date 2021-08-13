@@ -102,6 +102,8 @@ class SupportedData(Enum):
 class Policy2(GraphComponent):
     """Common parent class for all dialogue policies."""
 
+    default_config = {}
+
     @staticmethod
     def supported_data() -> SupportedData:
         """The type of data supported by this policy.
@@ -634,10 +636,11 @@ class InvalidPolicyConfig(RasaException):
     """Exception that can be raised when policy config is not valid."""
 
 
-# TODO: Test the shit out of this
 def _featurizer_from_policy_config(
     policy_config: Dict[Text, Any]
 ) -> Optional[TrackerFeaturizer]:
+    policy_config = copy.deepcopy(policy_config)
+
     if policy_config.get("featurizer"):
         featurizer_func, featurizer_config = _get_featurizer_from_dict(policy_config)
 
@@ -652,6 +655,9 @@ def _featurizer_from_policy_config(
             featurizer_config["state_featurizer"] = state_featurizer_func(
                 **state_featurizer_config
             )
+        else:
+            # Removes empty state featurizer things from the config
+            featurizer_config.pop("state_featurizer", None)
 
         # override policy's featurizer with real featurizer class
         return featurizer_func(**featurizer_config)
@@ -659,7 +665,9 @@ def _featurizer_from_policy_config(
     return None
 
 
-def _get_featurizer_from_dict(policy: Dict[Text, Any]) -> Tuple[Any, Any]:
+def _get_featurizer_from_dict(
+    policy: Dict[Text, Any]
+) -> Tuple[Callable[..., TrackerFeaturizer], Dict[Text, Any]]:
     """Gets the featurizer initializer and its arguments from a policy config."""
     from rasa.core import registry
 
@@ -679,7 +687,7 @@ def _get_featurizer_from_dict(policy: Dict[Text, Any]) -> Tuple[Any, Any]:
 
 def _get_state_featurizer_from_dict(
     featurizer_config: Dict[Text, Any]
-) -> Tuple[Callable, Dict[Text, Any]]:
+) -> Tuple[Callable[..., SingleStateFeaturizer], Dict[Text, Any]]:
     from rasa.core import registry
 
     # featurizer can have only 1 state featurizer

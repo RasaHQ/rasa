@@ -1,11 +1,12 @@
 import uuid
 from pathlib import Path
-from typing import Type, List, Text, Optional
+from typing import Type, List, Text, Optional, Dict, Any
 
 import dataclasses
 import numpy as np
 import pytest
 from _pytest.tmpdir import TempPathFactory
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY, POLICY_MAX_HISTORY
 from rasa.engine.graph import ExecutionContext, GraphSchema, GraphComponent
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
@@ -27,13 +28,17 @@ from rasa.shared.core.events import (
     EntitiesAdded,
     SlotSet,
 )
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
+)
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
+    IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from rasa.core.policies.policy import SupportedData, Policy
+from rasa.core.policies.policy import SupportedData, Policy, InvalidPolicyConfig
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
@@ -83,6 +88,7 @@ class PolicyTestCollection:
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         raise NotImplementedError
 
@@ -239,6 +245,115 @@ class PolicyTestCollection:
         index = scores.index(max(scores))
         return domain.action_names_or_texts[index]
 
+    @pytest.mark.parametrize(
+        "featurizer_config, tracker_featurizer, state_featurizer",
+        [
+            (None, MaxHistoryTrackerFeaturizer(), SingleStateFeaturizer),
+            ([], MaxHistoryTrackerFeaturizer(), SingleStateFeaturizer),
+            (
+                [
+                    {
+                        "name": "MaxHistoryTrackerFeaturizer",
+                        "max_history": 12,
+                        "state_featurizer": [],
+                    }
+                ],
+                MaxHistoryTrackerFeaturizer(max_history=12),
+                type(None),
+            ),
+            (
+                [{"name": "MaxHistoryTrackerFeaturizer", "max_history": 12}],
+                MaxHistoryTrackerFeaturizer(max_history=12),
+                type(None),
+            ),
+            (
+                [
+                    {
+                        "name": "IntentMaxHistoryTrackerFeaturizer",
+                        "max_history": 12,
+                        "state_featurizer": [
+                            {"name": "IntentTokenizerSingleStateFeaturizer"}
+                        ],
+                    }
+                ],
+                IntentMaxHistoryTrackerFeaturizer(max_history=12),
+                IntentTokenizerSingleStateFeaturizer,
+            ),
+        ],
+    )
+    def test_different_featurizer_configs(
+        self,
+        featurizer_config: Optional[Dict[Text, Any]],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        tracker_featurizer: MaxHistoryTrackerFeaturizer,
+        state_featurizer: Type[SingleStateFeaturizer],
+    ):
+        policy = self.create_policy(
+            None,
+            priority=1,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+            config={"featurizer": featurizer_config},
+        )
+
+        if not isinstance(policy, GraphComponent):
+            # TODO: Drop this after all policies have been migration to graph components
+            return
+
+        featurizer = policy.featurizer
+        assert isinstance(featurizer, tracker_featurizer.__class__)
+
+        expected_max_history = self._config(DEFAULT_POLICY_PRIORITY).get(
+            POLICY_MAX_HISTORY, tracker_featurizer.max_history
+        )
+        assert featurizer.max_history == expected_max_history
+
+        assert isinstance(featurizer.state_featurizer, state_featurizer)
+
+    @pytest.mark.parametrize(
+        "featurizer_config",
+        [
+            [
+                {"name": "MaxHistoryTrackerFeaturizer", "max_history": 12},
+                {"name": "MaxHistoryTrackerFeaturizer", "max_history": 12},
+            ],
+            [
+                {
+                    "name": "IntentMaxHistoryTrackerFeaturizer",
+                    "max_history": 12,
+                    "state_featurizer": [
+                        {"name": "IntentTokenizerSingleStateFeaturizer"},
+                        {"name": "IntentTokenizerSingleStateFeaturizer"},
+                    ],
+                }
+            ],
+        ],
+    )
+    def test_different_invalid_featurizer_configs(
+        self,
+        trained_policy: Policy,
+        featurizer_config: Optional[Dict[Text, Any]],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ):
+        if not isinstance(trained_policy, GraphComponent):
+            # TODO: Drop this after all policies have been migration to graph components
+            return
+
+        with pytest.raises(InvalidPolicyConfig):
+            self.create_policy(
+                None,
+                priority=1,
+                model_storage=model_storage,
+                resource=resource,
+                execution_context=execution_context,
+                config={"featurizer": featurizer_config},
+            )
+
 
 class TestMemoizationPolicy(PolicyTestCollection):
     def create_policy(
@@ -248,6 +363,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         max_history = None
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
@@ -421,6 +537,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         max_history = None
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
