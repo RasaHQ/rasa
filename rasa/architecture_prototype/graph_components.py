@@ -149,7 +149,7 @@ class StoryToTrainingDataConverter(GraphComponent):
         all_events = (
             event for step in story_graph.story_steps for event in step.events
         )
-        self._convert_events(events=all_events, lookup_table=lookup_table)
+        self.add_sub_states_from_events(events=all_events, lookup_table=lookup_table)
 
         # make sure that there is at least one user substate with a TEXT to ensure
         # `CountVectorizer` is trained...
@@ -240,7 +240,7 @@ class StoryToTrainingDataConverter(GraphComponent):
         # type and hence just iterating over the events is quicker than "applying"
         # events first and then iterating over results (again).
         lookup_table = E2ELookupTable(handle_collisions=True)
-        self._convert_events(tracker.events, lookup_table)
+        self.add_sub_states_from_events(tracker.events, lookup_table)
         return list(lookup_table.values())
 
 

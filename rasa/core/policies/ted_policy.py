@@ -398,8 +398,6 @@ class TEDPolicy(Policy):
             [FeatureArray(np.expand_dims(label_ids, -1), number_of_dimensions=2)],
         )
 
-        # breakpoint()
-
         return label_data, encoded_all_labels
 
     @staticmethod
@@ -551,8 +549,6 @@ class TEDPolicy(Policy):
         # keep one example for persisting and loading
         self.data_example = model_data.first_data_example()
 
-        # breakpoint()
-
         if not self.finetune_mode:
             # This means the model wasn't loaded from a
             # previously trained model and hence needs
@@ -566,7 +562,6 @@ class TEDPolicy(Policy):
             )
             self.model.compile(
                 optimizer=tf.keras.optimizers.Adam(self.config[LEARNING_RATE]),
-                run_eagerly=True,
             )
 
         (
@@ -1367,8 +1362,6 @@ class TED(TransformerRasaModel):
                 sequence_ids=False,
             )
 
-            # breakpoint()
-
             if attribute == TEXT:
                 text_transformer_output = attribute_features
                 text_sequence_lengths = sequence_lengths
@@ -1407,16 +1400,13 @@ class TED(TransformerRasaModel):
                 attribute_features, self._training
             )
 
-        try:
-            # attribute features have shape
-            # (combined batch dimension and dialogue length x 1 x units)
-            # convert them back to their original shape of
-            # batch size x dialogue length x units
-            attribute_features = self._convert_to_original_shape(
-                attribute_features, tf_batch_data, attribute
-            )
-        except:
-            breakpoint()
+        # attribute features have shape
+        # (combined batch dimension and dialogue length x 1 x units)
+        # convert them back to their original shape of
+        # batch size x dialogue length x units
+        attribute_features = self._convert_to_original_shape(
+            attribute_features, tf_batch_data, attribute
+        )
 
         return attribute_features, text_transformer_output, text_sequence_lengths
 
@@ -1705,8 +1695,6 @@ class TED(TransformerRasaModel):
         """
         tf_batch_data = self.batch_to_model_data_format(batch_in, self.data_signature)
         self._compute_dialogue_indices(tf_batch_data)
-
-        # breakpoint()
 
         all_label_ids, all_labels_embed = self._create_all_labels_embed()
 

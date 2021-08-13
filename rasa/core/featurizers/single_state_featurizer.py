@@ -222,9 +222,29 @@ class SingleStateFeaturizer:
         attributes = set(
             attribute for attribute in sub_state.keys() if attribute != ENTITIES
         )
-        output = self._get_features_from_lookup_table(
+
+        # Why does this look so messy?
+        # Becaues if we (had) several sequence/sentence features then
+        # get_dense_features / get_sparse_features combine them....
+        # TODO: rework this.... work with attribute_feature_dict directly
+        # TODO: why is the vocab size / feature dimensions *larger* than in v1 branch?
+        attribute_feature_dict = self._get_features_from_lookup_table(
             sub_state, attributes, e2e_features
         )
+        all_features = [
+            feat for feat_list in attribute_feature_dict.values() for feat in feat_list
+        ]
+        parsed_message = Message(data={}, features=all_features)
+
+        output = defaultdict(list)
+        for attribute in attributes:
+            all_features = parsed_message.get_sparse_features(
+                attribute
+            ) + parsed_message.get_dense_features(attribute)
+
+            for features in all_features:
+                if features is not None:
+                    output[attribute].append(features)
 
         # check that name attributes have features
         name_attribute = self._get_name_attribute(attributes)
@@ -236,6 +256,9 @@ class SingleStateFeaturizer:
             output[name_attribute] = self._create_features(
                 sub_state, name_attribute, sparse
             )
+
+        # if ACTION_NAME in sub_state or ACTION_TEXT in sub_state:
+        #    print({key : [str(feat) for feat in val] for key, val in output.items()})
 
         return output
 
