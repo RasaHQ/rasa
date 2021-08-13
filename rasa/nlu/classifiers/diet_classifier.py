@@ -1,5 +1,6 @@
 import copy
 import logging
+import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -877,7 +878,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             self.component_config[TENSORBOARD_LOG_LEVEL],
             self.tmp_checkpoint_dir,
         )
-
+        start = time.time()
         self.model.fit(
             data_generator,
             epochs=self.component_config[EPOCHS],
@@ -887,6 +888,8 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             verbose=False,
             shuffle=False,  # we use custom shuffle inside data generator
         )
+        end = time.time()
+        logger.error(f"fit:{end-start}")
 
     # process helpers
     def _predict(
