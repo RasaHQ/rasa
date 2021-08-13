@@ -181,11 +181,15 @@ class TestTEDPolicy(PolicyTestCollection):
     @pytest.mark.parametrize(
         "should_finetune, epoch_override, expected_epoch_value",
         [
-            (True, TEDPolicy.defaults[EPOCHS] + 1, TEDPolicy.defaults[EPOCHS] + 1),
+            (
+                True,
+                TEDPolicy.default_config[EPOCHS] + 1,
+                TEDPolicy.default_config[EPOCHS] + 1,
+            ),
             (
                 False,
-                TEDPolicy.defaults[EPOCHS] + 1,
-                TEDPolicy.defaults[EPOCHS],
+                TEDPolicy.default_config[EPOCHS] + 1,
+                TEDPolicy.default_config[EPOCHS],
             ),  # trained_policy uses default epochs during training
         ],
     )
@@ -195,12 +199,16 @@ class TestTEDPolicy(PolicyTestCollection):
         should_finetune: bool,
         epoch_override: int,
         expected_epoch_value: int,
-        tmp_path: Path,
+        resource: Resource,
+        model_storage: ModelStorage,
+        execution_context: ExecutionContext,
     ):
-        # persist and load in appropriate mode
-        trained_policy.persist(tmp_path)
-        loaded_policy = self._policy_class_to_test().load(
-            tmp_path, should_finetune=should_finetune, epoch_override=epoch_override
+        execution_context.is_finetuning = should_finetune
+        loaded_policy = trained_policy.__class__.load(
+            {"epoch_override": epoch_override},
+            model_storage,
+            resource,
+            execution_context,
         )
 
         assert loaded_policy.config[EPOCHS] == expected_epoch_value
