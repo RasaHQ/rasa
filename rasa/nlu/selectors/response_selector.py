@@ -632,7 +632,7 @@ class ResponseSelector(DIETClassifier):
 
         return model
 
-    def _uses_sequence_features_for_text(self) -> bool:
+    def _uses_sequence_features_for_input_text(self) -> bool:
         """Checks whether we make use of sequence features for the `TEXT` attribute.
 
         Note that, just like the `DIETClassifier`, `DIET2BOW` can make use of sentence
