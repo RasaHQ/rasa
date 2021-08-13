@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, List, Type
+from typing import Optional, List, Type, Dict, Text, Any
 from unittest.mock import Mock
 import numpy as np
 import pytest
@@ -123,9 +123,10 @@ class TestTEDPolicy(PolicyTestCollection):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> TEDPolicy:
         return TEDPolicy(
-            {POLICY_PRIORITY: priority},
+            {POLICY_PRIORITY: priority, **(config or {})},
             featurizer=featurizer,
             model_storage=model_storage,
             resource=resource,
@@ -565,9 +566,10 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         return TEDPolicy(
-            {POLICY_PRIORITY: priority, LOSS_TYPE: "margin"},
+            {POLICY_PRIORITY: priority, LOSS_TYPE: "margin", **(config or {})},
             featurizer=featurizer,
             model_storage=model_storage,
             resource=resource,
@@ -618,10 +620,16 @@ class TestTEDPolicyWithEval(TestTEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
-            config={POLICY_PRIORITY: priority, SCALE_LOSS: False, EVAL_NUM_EXAMPLES: 4},
+            config={
+                POLICY_PRIORITY: priority,
+                SCALE_LOSS: False,
+                EVAL_NUM_EXAMPLES: 4,
+                **(config or {}),
+            },
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -636,10 +644,11 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
-            config={RANKING_LENGTH: 0, POLICY_PRIORITY: priority},
+            config={RANKING_LENGTH: 0, POLICY_PRIORITY: priority, **(config or {})},
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -680,10 +689,15 @@ class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
-            config={POLICY_PRIORITY: priority, MODEL_CONFIDENCE: LINEAR_NORM},
+            config={
+                POLICY_PRIORITY: priority,
+                MODEL_CONFIDENCE: LINEAR_NORM,
+                **(config or {}),
+            },
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -737,10 +751,11 @@ class TestTEDPolicyLowRankingLength(TestTEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
-            config={POLICY_PRIORITY: priority, RANKING_LENGTH: 3},
+            config={POLICY_PRIORITY: priority, RANKING_LENGTH: 3, **(config or {})},
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -758,10 +773,11 @@ class TestTEDPolicyHighRankingLength(TestTEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
-            config={POLICY_PRIORITY: priority, RANKING_LENGTH: 11},
+            config={POLICY_PRIORITY: priority, RANKING_LENGTH: 11, **(config or {})},
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -779,12 +795,13 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         # use standard featurizer from TEDPolicy,
         # since it is using MaxHistoryTrackerFeaturizer
         # if max_history is not specified
         return TEDPolicy(
-            config={POLICY_PRIORITY: priority},
+            config={POLICY_PRIORITY: priority, **(config or {})},
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -819,12 +836,17 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         # use standard featurizer from TEDPolicy,
         # since it is using MaxHistoryTrackerFeaturizer
         # if max_history is specified
         return TEDPolicy(
-            config={POLICY_PRIORITY: priority, POLICY_MAX_HISTORY: self.max_history},
+            config={
+                POLICY_PRIORITY: priority,
+                POLICY_MAX_HISTORY: self.max_history,
+                **(config or {}),
+            },
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -861,6 +883,7 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
@@ -869,6 +892,7 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
                 KEY_RELATIVE_ATTENTION: True,
                 VALUE_RELATIVE_ATTENTION: True,
                 MAX_RELATIVE_POSITION: 5,
+                **(config or {}),
             },
             model_storage=model_storage,
             resource=resource,
@@ -887,6 +911,7 @@ class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         return TEDPolicy(
             featurizer=featurizer,
@@ -895,6 +920,7 @@ class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
                 KEY_RELATIVE_ATTENTION: True,
                 VALUE_RELATIVE_ATTENTION: True,
                 MAX_RELATIVE_POSITION: 5,
+                **(config or {}),
             },
             model_storage=model_storage,
             resource=resource,

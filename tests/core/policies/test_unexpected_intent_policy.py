@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, List, Dict, Text, Type
+from typing import Optional, List, Dict, Text, Type, Any
 import tensorflow as tf
 import numpy as np
 import pytest
@@ -68,8 +68,11 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> UnexpecTEDIntentPolicy:
-        return UnexpecTEDIntentPolicy(featurizer=featurizer, priority=priority)
+        return UnexpecTEDIntentPolicy(
+            featurizer=featurizer, priority=priority, config=config or {}
+        )
 
     @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:
