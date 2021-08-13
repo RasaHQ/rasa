@@ -587,7 +587,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         needs_sentence_features = self._needs_sentence_features_for_labels()
         if not sentence_features and (not sequence_features or needs_sentence_features):
 
-            if not sequence_features and needs_sentence_features:
+            if sequence_features and needs_sentence_features:
                 rasa.shared.utils.io.raise_warning(
                     f"Expected sentence level features but only received "
                     f"sequence level features for `{self.label_attribute}` attribute. "
