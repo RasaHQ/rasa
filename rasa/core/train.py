@@ -142,6 +142,7 @@ def do_compare_training(
     story_file: Text,
     additional_arguments: Optional[Dict] = None,
 ) -> None:
+    """Train multiple models for comparison of policies and dumps the result."""
     train_comparison_models(
         story_file=story_file,
         domain=args.domain,
