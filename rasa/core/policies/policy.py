@@ -56,8 +56,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-# (see the top of the file for more information).
+# TODO: This is a workaround around until we have all components migrated to
+# `GraphComponent`.
 Policy = Policy
 
 
