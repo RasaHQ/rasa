@@ -140,7 +140,7 @@ class Cacheable(Protocol):
         ...
 
 
-class LocalTrainingCache:
+class LocalTrainingCache(TrainingCache):
     """Caches training results on local disk (see parent class for full docstring)."""
 
     Base: DeclarativeMeta = declarative_base()
