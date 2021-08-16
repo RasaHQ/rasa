@@ -41,7 +41,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.policies.policy import PolicyPrediction, Policy2
+from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
 from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
@@ -144,7 +144,7 @@ STATE_LEVEL_FEATURES = [ENTITIES, SLOTS, ACTIVE_LOOP]
 PREDICTION_FEATURES = STATE_LEVEL_FEATURES + SENTENCE_FEATURES_TO_ENCODE + [DIALOGUE]
 
 
-class TEDPolicy2(Policy2):
+class TEDPolicyGraphComponent(PolicyGraphComponent):
     """Transformer Embedding Dialogue (TED) Policy.
 
     The model architecture is described in
@@ -1003,7 +1003,7 @@ class TEDPolicy2(Policy2):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> TEDPolicy2:
+    ) -> TEDPolicyGraphComponent:
         """Loads a policy from the storage (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:
@@ -1068,7 +1068,7 @@ class TEDPolicy2(Policy2):
         featurizer: [TrackerFeaturizer],
         model: TED,
         model_utilities: Dict[Text, Any],
-    ) -> TEDPolicy2:
+    ) -> TEDPolicyGraphComponent:
         return cls(
             config,
             model_storage,
