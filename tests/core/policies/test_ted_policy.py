@@ -14,8 +14,8 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
 )
-from rasa.core.policies.policy import Policy2 as Policy
-from rasa.core.policies.ted_policy import TEDPolicy2 as TEDPolicy
+from rasa.core.policies.policy import PolicyGraphComponent as Policy
+from rasa.core.policies.ted_policy import TEDPolicyGraphComponent as TEDPolicy
 from rasa.core.policies.ted_policy import TEDPolicy as Rasa2TEDPolicy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource

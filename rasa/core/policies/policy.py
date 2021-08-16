@@ -99,7 +99,7 @@ class SupportedData(Enum):
         return trackers
 
 
-class Policy2(GraphComponent):
+class PolicyGraphComponent(GraphComponent):
     """Common parent class for all dialogue policies."""
 
     default_config = {}
@@ -401,7 +401,7 @@ class Policy2(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "Policy2":
+    ) -> "PolicyGraphComponent":
         """Loads a trained policy (see parent class for full docstring)."""
         config = {}
         featurizer = None
