@@ -198,8 +198,9 @@ class TEDPolicy(Policy):
         KEY_RELATIVE_ATTENTION: False,
         # If 'True' use value relative embeddings in attention
         VALUE_RELATIVE_ATTENTION: False,
-        # Max position for relative embeddings
-        MAX_RELATIVE_POSITION: None,
+        # Max position for relative embeddings. Only in effect if key- or value relative
+        # attention are turned on
+        MAX_RELATIVE_POSITION: 5,
         # Use a unidirectional or bidirectional encoder
         # for `text`, `action_text`, and `label_action_text`.
         UNIDIRECTIONAL_ENCODER: False,
@@ -550,9 +551,24 @@ class TEDPolicy(Policy):
 
         return model_data
 
+    @staticmethod
+    def _get_trackers_for_training(
+        trackers: List[TrackerWithCachedStates],
+    ) -> List[TrackerWithCachedStates]:
+        """Filters out the list of trackers which should not be used for training.
+
+        Args:
+            trackers: All trackers available for training.
+
+        Returns:
+            Trackers which should be used for training.
+        """
+        # By default, we train on all available trackers.
+        return trackers
+
     def _prepare_for_training(
         self,
-        training_trackers: List[TrackerWithCachedStates],
+        trackers: List[TrackerWithCachedStates],
         domain: Domain,
         interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
@@ -560,7 +576,7 @@ class TEDPolicy(Policy):
         """Prepares data to be fed into the model.
 
         Args:
-            training_trackers: List of training trackers to be featurized.
+            trackers: List of training trackers to be featurized.
             domain: Domain of the assistant.
             interpreter: NLU interpreter to be used for featurizing states.
             **kwargs: Any other arguments.
@@ -568,6 +584,7 @@ class TEDPolicy(Policy):
         Returns:
             Featurized data to be fed to the model and corresponding label ids.
         """
+        training_trackers = self._get_trackers_for_training(trackers)
         # dealing with training data
         tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
             training_trackers,
@@ -1006,7 +1023,9 @@ class TEDPolicy(Policy):
         model_utilities = cls._load_model_utilities(model_path)
 
         model_utilities["meta"] = cls._update_loaded_params(model_utilities["meta"])
-        model_utilities["meta"][EPOCHS] = epoch_override
+
+        if should_finetune:
+            model_utilities["meta"][EPOCHS] = epoch_override
 
         (
             model_data_example,

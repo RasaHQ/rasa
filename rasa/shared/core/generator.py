@@ -225,6 +225,8 @@ TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedState
 
 
 class TrainingDataGenerator:
+    """Generates trackers from training data."""
+
     def __init__(
         self,
         story_graph: StoryGraph,
@@ -241,8 +243,8 @@ class TrainingDataGenerator:
         The different story parts can end and start with checkpoints
         and this generator will match start and end checkpoints to
         connect complete stories. Afterwards, duplicate stories will be
-        removed and the data is augmented (if augmentation is enabled)."""
-
+        removed and the data is augmented (if augmentation is enabled).
+        """
         self.story_graph = story_graph.with_cycles_removed()
         if debug_plots:
             self.story_graph.visualize("story_blocks_connections.html")
@@ -642,7 +644,10 @@ class TrainingDataGenerator:
                 # we concatenate the story block names of the blocks that
                 # contribute to the trackers events
                 if tracker.sender_id:
-                    if step.block_name not in tracker.sender_id.split(" > "):
+                    if (
+                        step.block_name
+                        and step.block_name not in tracker.sender_id.split(" > ")
+                    ):
                         new_sender = tracker.sender_id + " > " + step.block_name
                     else:
                         new_sender = tracker.sender_id
