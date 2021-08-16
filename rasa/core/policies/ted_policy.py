@@ -124,8 +124,8 @@ from rasa.shared.nlu.training_data.features import Features
 
 logger = logging.getLogger(__name__)
 
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-# (see the top of the file for more information).
+# TODO: This is a workaround around until we have all components migrated to
+# `GraphComponent`.
 TEDPolicy = TEDPolicy
 
 E2E_CONFIDENCE_THRESHOLD = "e2e_confidence_threshold"
