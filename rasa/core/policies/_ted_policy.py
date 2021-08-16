@@ -1,5 +1,5 @@
 # WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
-#          Please don't do any changes in this module and rather adapt `TEDPolicy2` from
+#          Please don't do any changes in this module and rather adapt `TEDPolicyGraphComponent` from
 #          the regular `rasa.core.policies.ted_policy` module. This module is a
 #          workaround to defer breaking changes due to the architecture revamp in 3.0.
 # flake8: noqa
