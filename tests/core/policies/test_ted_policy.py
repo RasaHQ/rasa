@@ -92,7 +92,7 @@ def test_diagnostics(
     policy = TEDPolicy(
         TEDPolicy.default_config.copy(),
         default_model_storage,
-        Resource(""),
+        Resource("TEDPolicy"),
         default_execution_context,
     )
     GREET_RULE = DialogueStateTracker.from_events(
