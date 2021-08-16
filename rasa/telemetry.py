@@ -590,8 +590,7 @@ def filter_errors(
 def before_send(
     event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
 ) -> Optional[Dict[Text, Any]]:
-    """
-
+    """Strips the sensitive data and filters errors before sending to sentry.
     Args:
         event: event to be logged to sentry
         _unused_hint: some hinting information sent alongside of the event
