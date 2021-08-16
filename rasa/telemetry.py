@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from datetime import datetime
 from functools import wraps
 import hashlib
@@ -13,8 +14,6 @@ import textwrap
 import typing
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 import uuid
-
-import async_generator
 import requests
 from terminaltables import SingleTable
 
@@ -677,10 +676,10 @@ def initialize_error_reporting() -> None:
             scope.set_context("Environment", default_context)
 
 
-@async_generator.asynccontextmanager
-async def track_model_training(
+@contextlib.contextmanager
+def track_model_training(
     training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False
-) -> typing.AsyncGenerator[None, None]:
+) -> typing.Generator[None, None, None]:
     """Track a model training started.
 
     WARNING: since this is a generator, it can't use the ensure telemetry
@@ -696,12 +695,12 @@ async def track_model_training(
     if not initialize_telemetry():
         # telemetry reporting is disabled. we won't do any reporting
         yield  # runs the training
-        return  # closes the async context
+        return
 
-    config = await training_data.get_config()
-    stories = await training_data.get_stories()
-    nlu_data = await training_data.get_nlu_data()
-    domain = await training_data.get_domain()
+    config = training_data.get_config()
+    stories = training_data.get_stories()
+    nlu_data = training_data.get_nlu_data()
+    domain = training_data.get_domain()
     count_conditional_responses = domain.count_conditional_response_variations()
 
     training_id = uuid.uuid4().hex

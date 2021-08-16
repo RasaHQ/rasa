@@ -142,7 +142,7 @@ async def test_testing_valid_with_non_e2e_core_model(core_agent: Agent):
     assert "report" in result.keys()
 
 
-async def _train_rule_based_agent(
+def _train_rule_based_agent(
     moodbot_domain: Domain,
     train_file_name: Path,
     monkeypatch: MonkeyPatch,
@@ -163,7 +163,7 @@ async def _train_rule_based_agent(
 
     deterministic_policy = RulePolicy(restrict_rules=False)
     agent = Agent(moodbot_domain, SimplePolicyEnsemble([deterministic_policy]))
-    training_data = await agent.load_data(str(train_file_name))
+    training_data = agent.load_data(str(train_file_name))
 
     # Make the trackers compatible with rules
     # so that they are picked up by the policy.
@@ -204,7 +204,7 @@ async def test_action_unlikely_intent_warning(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = await _train_rule_based_agent(
+    agent = _train_rule_based_agent(
         moodbot_domain, file_name, monkeypatch, ignore_action_unlikely_intent=True
     )
 
@@ -254,7 +254,7 @@ async def test_action_unlikely_intent_correctly_predicted(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = await _train_rule_based_agent(
+    agent = _train_rule_based_agent(
         moodbot_domain, file_name, monkeypatch, ignore_action_unlikely_intent=False
     )
 
@@ -317,7 +317,7 @@ async def test_wrong_action_after_action_unlikely_intent(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = await _train_rule_based_agent(
+    agent = _train_rule_based_agent(
         moodbot_domain, train_file_name, monkeypatch, ignore_action_unlikely_intent=True
     )
 
@@ -387,7 +387,7 @@ async def test_action_unlikely_intent_not_found(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = await _train_rule_based_agent(
+    agent = _train_rule_based_agent(
         moodbot_domain,
         train_file_name,
         monkeypatch,
@@ -456,7 +456,7 @@ async def test_action_unlikely_intent_warning_and_story_error(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = await _train_rule_based_agent(
+    agent = _train_rule_based_agent(
         moodbot_domain, train_file_name, monkeypatch, ignore_action_unlikely_intent=True
     )
 
@@ -505,7 +505,7 @@ async def test_fail_on_prediction_errors(
     # We train on the above story so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = await _train_rule_based_agent(
+    agent = _train_rule_based_agent(
         moodbot_domain, file_name, monkeypatch, ignore_action_unlikely_intent=False
     )
 
@@ -603,7 +603,7 @@ async def test_multiple_warnings_sorted_on_severity(
     # We train on the stories as it is so that RulePolicy can memorize
     # it and we don't have to worry about other actions being
     # predicted correctly.
-    agent = await _train_rule_based_agent(
+    agent = _train_rule_based_agent(
         moodbot_domain,
         Path(test_story_path),
         monkeypatch,
