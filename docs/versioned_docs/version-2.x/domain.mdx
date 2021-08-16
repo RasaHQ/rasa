@@ -74,10 +74,6 @@ The `entities` section lists all entities that can be
 extracted by any [entity extractor](./components.mdx) in your
 NLU pipeline.
 
-:::caution Changed in 2.1
-If you are using the feature [Entity Roles and Groups](./nlu-training-data.mdx#entities-roles-and-groups) you also
-need to list the roles and groups of an entity in this section.
-
 For example:
 
 ```yaml-rasa
@@ -86,6 +82,15 @@ entities:
    - time             # entity extracted by DucklingEntityExtractor
    - membership_type  # custom entity extracted by DIETClassifier
    - priority         # custom entity extracted by DIETClassifier
+```
+
+If you are using the feature [Entity Roles and Groups](./nlu-training-data.mdx#entities-roles-and-groups) you also
+need to list the roles and groups of an entity in this section.
+
+For example:
+
+```yaml-rasa
+entities:
    - city:            # custom entity extracted by DIETClassifier
        roles:
        - from
@@ -100,6 +105,8 @@ entities:
        - 2
 ```
 
+:::caution Changed in 2.1
+Entity Roles and Groups now need to be specified in the domain.
 :::
 
 ## Slots
