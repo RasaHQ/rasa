@@ -81,9 +81,7 @@ async def test_interpreter_parses_text_tokens(
 
     tokens = parsed_data.get("text_tokens")
 
-    assert tokens[0].start == 0
-    assert tokens[0].end == 5
-    assert tokens[0].text == "Hello"
-    assert tokens[1].start == 6
-    assert tokens[1].end == 11
-    assert tokens[1].text == "there"
+    assert tokens[0][0] == 0
+    assert tokens[0][1] == 5
+    assert tokens[1][0] == 6
+    assert tokens[1][1] == 11

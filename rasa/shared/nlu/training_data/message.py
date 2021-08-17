@@ -4,6 +4,7 @@ import typing
 import copy
 
 import rasa.shared.utils.io
+from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -27,8 +28,12 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
 
+TEXT_TOKENS = TOKENS_NAMES.get(rasa.shared.nlu.constants.TEXT)
+
 
 class Message:
+    """Holds NLU training data."""
+
     def __init__(
         self,
         data: Optional[Dict[Text, Any]] = None,
@@ -37,6 +42,7 @@ class Message:
         features: Optional[List["Features"]] = None,
         **kwargs: Any,
     ) -> None:
+        """Builds an instance of Message."""
         self.time = time
         self.data = data.copy() if data else {}
         self.features = features if features else []
@@ -95,12 +101,15 @@ class Message:
         return d
 
     def as_dict(self, only_output_properties: bool = False) -> Dict:
+        """Gets dict representation of message."""
         if only_output_properties:
-            d = {
-                key: value
-                for key, value in self.data.items()
-                if key in self.output_properties
-            }
+            d = {}
+            for key, value in self.data.items():
+                if key in self.output_properties:
+                    if key == TEXT_TOKENS:
+                        d[TEXT_TOKENS] = [(t.start, t.end) for t in value]
+                    else:
+                        d[key] = value
         else:
             d = self.data
 

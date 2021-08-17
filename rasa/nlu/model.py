@@ -6,6 +6,7 @@ import os
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
+from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.shared.utils.common
@@ -467,7 +468,10 @@ class Interpreter:
         data = self.default_output_attributes()
         data[TEXT] = text
 
-        message = Message(data=data, time=timestamp, output_properties={"text_tokens"})
+        output_properties = {TOKENS_NAMES.get(rasa.shared.nlu.constants.TEXT)}
+        message = Message(
+            data=data, time=timestamp, output_properties=output_properties
+        )
 
         for component in self.pipeline:
             component.process(message, **self.context)
