@@ -16,6 +16,20 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.2] - 2021-08-04
+### Bugfixes
+- [#9203](https://github.com/rasahq/rasa/issues/9203): Fixes a bug which caused training of `UnexpecTEDIntentPolicy` to crash when end-to-end training stories were included in the training data.
+
+  Stories with end-to-end training data will now be skipped for the training of `UnexpecTEDIntentPolicy`.
+
+### Improved Documentation
+- [#8024](https://github.com/rasahq/rasa/issues/8024): Removing the experimental feature warning for the `story validation` tool from the rasa docs. 
+  The behaviour of the feature remains unchanged.
+- [#8791](https://github.com/rasahq/rasa/issues/8791): Removing the experimental feature warning for `entity roles and groups` from the rasa docs, 
+  and from the code where it previously appeared as a print statement. 
+  The behaviour of the feature remains otherwise unchanged.
+
+
 ## [2.8.1] - 2021-07-22
 ### Improvements
 - [#9085](https://github.com/rasahq/rasa/issues/9085): Add support for `cafile` parameter in `endpoints.yaml`.
