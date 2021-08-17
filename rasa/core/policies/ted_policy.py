@@ -1018,49 +1018,8 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         """Loads a policy from the storage (see parent class for full docstring)."""
         try:
             with model_storage.read_from(resource) as model_path:
-                featurizer = TrackerFeaturizer.load(model_path)
-
-                if not (
-                    model_path / f"{cls._metadata_filename()}.data_example.pkl"
-                ).is_file():
-                    return cls(
-                        config,
-                        model_storage,
-                        resource,
-                        execution_context,
-                        featurizer=featurizer,
-                    )
-
-                model_utilities = cls._load_model_utilities(model_path)
-
-                config = cls._update_loaded_params(config)
-                if execution_context.is_finetuning and EPOCH_OVERRIDE in config:
-                    config[EPOCHS] = config.get(EPOCH_OVERRIDE)
-
-                (
-                    model_data_example,
-                    predict_data_example,
-                ) = cls._construct_model_initialization_data(
-                    model_utilities["loaded_data"]
-                )
-
-                model = cls._load_tf_model(
-                    config,
-                    model_utilities,
-                    model_data_example,
-                    predict_data_example,
-                    featurizer,
-                    execution_context.is_finetuning,
-                )
-
-                return cls._load_policy_with_model(
-                    config,
-                    model_storage,
-                    resource,
-                    execution_context,
-                    featurizer=featurizer,
-                    model_utilities=model_utilities,
-                    model=model,
+                return cls._load(
+                    model_path, config, model_storage, resource, execution_context
                 )
         except ValueError:
             logger.warning(
@@ -1068,6 +1027,56 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
                 f"'{resource.name}' doesn't exist."
             )
             return cls(config, model_storage, resource, execution_context)
+
+    @classmethod
+    def _load(
+        cls,
+        model_path: Path,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> TEDPolicyGraphComponent:
+        featurizer = TrackerFeaturizer.load(model_path)
+
+        if not (model_path / f"{cls._metadata_filename()}.data_example.pkl").is_file():
+            return cls(
+                config,
+                model_storage,
+                resource,
+                execution_context,
+                featurizer=featurizer,
+            )
+
+        model_utilities = cls._load_model_utilities(model_path)
+
+        config = cls._update_loaded_params(config)
+        if execution_context.is_finetuning and EPOCH_OVERRIDE in config:
+            config[EPOCHS] = config.get(EPOCH_OVERRIDE)
+
+        (
+            model_data_example,
+            predict_data_example,
+        ) = cls._construct_model_initialization_data(model_utilities["loaded_data"])
+
+        model = cls._load_tf_model(
+            config,
+            model_utilities,
+            model_data_example,
+            predict_data_example,
+            featurizer,
+            execution_context.is_finetuning,
+        )
+
+        return cls._load_policy_with_model(
+            config,
+            model_storage,
+            resource,
+            execution_context,
+            featurizer=featurizer,
+            model_utilities=model_utilities,
+            model=model,
+        )
 
     @classmethod
     def _load_policy_with_model(
