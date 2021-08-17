@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, List, Dict, Text
+from typing import Optional, List, Dict, Text, Type
 import tensorflow as tf
 import numpy as np
 import pytest
@@ -14,7 +14,8 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     IntentMaxHistoryTrackerFeaturizer,
 )
-from rasa.core.policies.ted_policy import PREDICTION_FEATURES
+from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.core.policies.ted_policy import PREDICTION_FEATURES, TEDPolicy
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
 from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME, ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
@@ -52,6 +53,10 @@ from tests.core.policies.test_ted_policy import TestTEDPolicy
 
 
 class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
+    @staticmethod
+    def _policy_class_to_test() -> Type[TEDPolicy]:
+        return UnexpecTEDIntentPolicy
+
     def create_policy(
         self, featurizer: Optional[TrackerFeaturizer], priority: int
     ) -> UnexpecTEDIntentPolicy:
@@ -112,7 +117,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             0
         ].units == len(default_domain.intents)
 
-    async def test_training_with_no_intent(
+    def test_training_with_no_intent(
         self,
         featurizer: Optional[TrackerFeaturizer],
         priority: int,
@@ -133,20 +138,20 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         policy = self.create_policy(featurizer=featurizer, priority=priority)
         import tests.core.test_policies
 
-        training_trackers = await tests.core.test_policies.train_trackers(
+        training_trackers = tests.core.test_policies.train_trackers(
             default_domain, str(stories), augmentation_factor=20
         )
 
         with pytest.warns(UserWarning):
             policy.train(training_trackers, default_domain, RegexInterpreter())
 
-    async def test_prepared_data_for_threshold_prediction(
+    def test_prepared_data_for_threshold_prediction(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         stories_path: Path,
     ):
-        training_trackers = await train_trackers(
+        training_trackers = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
         interpreter = RegexInterpreter()
@@ -283,13 +288,13 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         for label_id, tolerance_thresholds in thresholds.items():
             assert expected_thresholds[label_id] == tolerance_thresholds
 
-    async def test_post_training_threshold_computation(
+    def test_post_training_threshold_computation(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         stories_path: Path,
     ):
-        training_trackers = await train_trackers(
+        training_trackers = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
         interpreter = RegexInterpreter()
@@ -816,3 +821,288 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             test_individual_label_metadata(
                 label_metadata, label_thresholds, similarities, label_index
             )
+
+    @pytest.mark.parametrize(
+        "tracker_events_for_training, expected_trackers_with_events",
+        [
+            # Filter because of no intent and action name
+            (
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello"),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="happy to make it work"),
+                        ActionExecuted(action_text="Great!"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+            ),
+            # Filter because of no action name
+            (
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello"),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted(action_text="Great!"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+            ),
+            # Filter because of no intent
+            (
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello"),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="happy to make it work"),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+            ),
+            # No filter needed
+            (
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted("utter_goodbye"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+            ),
+            # Filter to return empty list of trackers
+            (
+                [
+                    [
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(text="hello", intent={"name": "greet"}),
+                        ActionExecuted("utter_greet"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                        UserUttered(
+                            text="happy to make it work", intent={"name": "goodbye"}
+                        ),
+                        ActionExecuted(action_text="Great!"),
+                        ActionExecuted(ACTION_LISTEN_NAME),
+                    ],
+                ],
+                [],
+            ),
+        ],
+    )
+    def test_filter_training_trackers(
+        self,
+        tracker_events_for_training: List[List[Event]],
+        expected_trackers_with_events: List[List[Event]],
+        domain: Domain,
+    ):
+        trackers_for_training = [
+            TrackerWithCachedStates.from_events(
+                sender_id=f"{tracker_index}", evts=events, domain=domain
+            )
+            for tracker_index, events in enumerate(tracker_events_for_training)
+        ]
+
+        filtered_trackers = UnexpecTEDIntentPolicy._get_trackers_for_training(
+            trackers_for_training
+        )
+        assert len(filtered_trackers) == len(expected_trackers_with_events)
+        for collected_tracker, expected_tracker_events in zip(
+            filtered_trackers, expected_trackers_with_events
+        ):
+            collected_tracker_events = list(collected_tracker.events)
+            assert collected_tracker_events == expected_tracker_events
+
+
+@pytest.mark.parametrize(
+    "tracker_events, skip_training",
+    [
+        (
+            [
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello", intent={"name": "greet"}),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(
+                        text="happy to make it work", intent={"name": "goodbye"}
+                    ),
+                    ActionExecuted("utter_goodbye"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello"),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="happy to make it work"),
+                    ActionExecuted(action_text="Great!"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+            ],
+            False,
+        ),
+        (
+            [
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello"),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="happy to make it work"),
+                    ActionExecuted(action_text="Great!"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+            ],
+            True,
+        ),
+        (
+            [
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello"),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="happy to make it work"),
+                    ActionExecuted("utter_goodbye"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+            ],
+            True,
+        ),
+        (
+            [
+                [
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(text="hello"),
+                    ActionExecuted("utter_greet"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                    UserUttered(
+                        text="happy to make it work", intent={"name": "goodbye"}
+                    ),
+                    ActionExecuted(action_text="Great!"),
+                    ActionExecuted(ACTION_LISTEN_NAME),
+                ],
+            ],
+            True,
+        ),
+    ],
+)
+def test_train_with_e2e_data(
+    tracker_events: List[List[Event]], skip_training: bool, domain: Domain,
+):
+    policy = UnexpecTEDIntentPolicy(
+        featurizer=IntentMaxHistoryTrackerFeaturizer(
+            IntentTokenizerSingleStateFeaturizer()
+        )
+    )
+    trackers_for_training = [
+        TrackerWithCachedStates.from_events(
+            sender_id=f"{tracker_index}", evts=events, domain=domain
+        )
+        for tracker_index, events in enumerate(tracker_events)
+    ]
+    if skip_training:
+        with pytest.warns(UserWarning):
+            policy.train(trackers_for_training, domain, interpreter=RegexInterpreter())
+    else:
+        policy.train(trackers_for_training, domain, interpreter=RegexInterpreter())

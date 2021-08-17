@@ -1338,7 +1338,7 @@ def remove_entities_of_extractors(
     result_dict[ENTITIES] = filtered_entities
 
 
-async def run_evaluation(
+def run_evaluation(
     data_path: Text,
     model_path: Text,
     output_directory: Optional[Text] = None,
@@ -1374,7 +1374,7 @@ async def run_evaluation(
     test_data_importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
     )
-    test_data = await test_data_importer.get_nlu_data()
+    test_data = test_data_importer.get_nlu_data()
 
     result: Dict[Text, Optional[Dict]] = {
         "intent_evaluation": None,
@@ -1813,7 +1813,7 @@ async def compare_nlu(
                 model_path = os.path.join(get_model(model_path), "nlu")
 
                 output_path = os.path.join(model_output_path, f"{model_name}_report")
-                result = await run_evaluation(
+                result = run_evaluation(
                     test_path, model_path, output_directory=output_path, errors=True
                 )
 
