@@ -172,7 +172,7 @@ def test_cache_again(
 
     # Pretend we are caching the same fingerprint again
     # Note that it can't happen that we cache a `Cacheable` result twice as we would
-    # have replaced the component with a `CachedComponent` otherwise
+    # have replaced the component with a `PrecomputedValueProvider` otherwise
     temp_cache.cache_output(
         fingerprint_key, None, second_output_fingerprint, default_model_storage
     )

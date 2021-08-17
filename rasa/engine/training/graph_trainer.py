@@ -8,7 +8,7 @@ from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.runner.interface import GraphRunner
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training.components import (
-    CachedComponent,
+    PrecomputedValueProvider,
     FingerprintComponent,
     FingerprintStatus,
 )
@@ -141,7 +141,7 @@ class GraphTrainer:
         """Uses the fingerprint statuses to prune the graph schema.
 
         Walks the graph starting at each target node. If a node has a cache hit we
-        replace it with a `CachedComponent` and remove its input dependencies.
+        replace it with a `PrecomputedValueProvider` and remove its input dependencies.
         At the end, any node that is not an ancestor of a target node will be pruned
         when we call `minimal_graph_schema()`.
 
@@ -172,10 +172,11 @@ class GraphTrainer:
         """Recursively walks backwards though a graph checking the status of each node.
 
         If node has a fingerprint key hit then we check if there is a cached output.
-        If there is a cached output we will replace the node with a `CachedComponent`
-        and remove all its dependencies (`.needs`). If there is not a fingerprint key
-        hit, or there is no cached output, the node is left untouched and will be
-        executed again next run unless it is no longer the ancestor of a target node.
+        If there is a cached output we will replace the node with a
+        `PrecomputedValueProvider` and remove all its dependencies (`.needs`). If
+        there is not a fingerprint key hit, or there is no cached output, the node is
+        left untouched and will be executed again next run unless it is no longer the
+        ancestor of a target node.
 
         Args:
             schema: The graph we are currently walking.
@@ -186,10 +187,11 @@ class GraphTrainer:
         fingerprint_run_output = fingerprint_run_outputs[current_node_name]
         node = schema.nodes[current_node_name]
 
-        # If we have replaced this node with a `CachedComponent` we have already
-        # visited this node. A CachedComponent is updated to have no parent nodes, so
+        # If we have replaced this node with a `PrecomputedValueProvider` we have
+        # already visited this node. A `PrecomputedValueProvider` is updated to have
+        # no parent nodes, so
         # we can end the walk here.
-        if node.uses == CachedComponent:
+        if node.uses == PrecomputedValueProvider:
             return
 
         # If the output was a `FingerprintStatus` we must check the cache and status.
@@ -203,9 +205,10 @@ class GraphTrainer:
                 )
                 if output_result:
                     logger.debug(
-                        f"Updating {current_node_name} to use a `CachedComponent`."
+                        f"Updating {current_node_name} to use a "
+                        f"`{PrecomputedValueProvider.__name__}`."
                     )
-                    CachedComponent.replace_schema_node(node, output_result)
+                    PrecomputedValueProvider.replace_schema_node(node, output_result)
                     # We remove all parent dependencies as the cached output value will
                     # be used.
                     node.needs = {}
@@ -217,8 +220,9 @@ class GraphTrainer:
         # Else the node was an input node and the output is the actual node's output.
         else:
             # As fingerprint_run_output is just the node's output there is no need to
-            # execute the node again. We can just return it from a `CachedComponent`.
-            CachedComponent.replace_schema_node(node, fingerprint_run_output)
+            # execute the node again. We can just return it from a
+            # `PrecomputedValueProvider`.
+            PrecomputedValueProvider.replace_schema_node(node, fingerprint_run_output)
             node.needs = {}
 
         # Continue walking for every parent node.
