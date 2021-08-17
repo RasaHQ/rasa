@@ -167,7 +167,8 @@ class GraphComponent(ABC):
         If not overridden this method merely calls `create`.
 
         Args:
-            config: This config overrides the `default_config`.
+            config: The config for this graph component. This is the default config of
+                the component merged with config specified by the user.
             model_storage: Storage which graph components can use to persist and load
                 themselves.
             resource: Resource locator for this component which can be used to persist
