@@ -3,83 +3,62 @@ sidebar_label: model_data_utils
 title: rasa.utils.tensorflow.model_data_utils
 ---
 
-#### surface\_attributes
+#### featurize\_training\_examples
 
 ```python
-surface_attributes(tracker_state_features: List[List[Dict[Text, List["Features"]]]]) -> Dict[Text, List[List[List["Features"]]]]
+featurize_training_examples(training_examples: List[Message], attributes: List[Text], entity_tag_specs: Optional[List["EntityTagSpec"]] = None, featurizers: Optional[List[Text]] = None, bilou_tagging: bool = False) -> List[Dict[Text, List["Features"]]]
 ```
 
-Restructure the input.
+Converts training data into a list of attribute to features.
+
+Possible attributes are, for example, INTENT, RESPONSE, TEXT, ACTION_TEXT,
+ACTION_NAME or ENTITIES.
 
 **Arguments**:
 
-- `tracker_state_features` - a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
-  ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for all
-  dialogue turns in all training trackers
+- `training_examples` - the list of training examples
+- `attributes` - the attributes to consider
+- `entity_tag_specs` - the entity specs
+- `featurizers` - the featurizers to consider
+- `bilou_tagging` - indicates whether BILOU tagging should be used or not
   
 
 **Returns**:
 
-  A dictionary of attributes to a list of features for all dialogue turns
-  and all training trackers.
-
-#### create\_zero\_features
-
-```python
-create_zero_features(tracker_features: List[List[List["Features"]]]) -> List["Features"]
-```
-
-Computes default feature values for an attribute;
-
-**Arguments**:
-
-- `tracker_features` - list containing all feature values encountered
-  in the dataset for an attribute;
+  A list of attribute to features.
 
 #### convert\_to\_data\_format
 
 ```python
-convert_to_data_format(tracker_state_features: Union[
+convert_to_data_format(features: Union[
         List[List[Dict[Text, List["Features"]]]], List[Dict[Text, List["Features"]]]
-    ], zero_state_features: Optional[Dict[Text, List["Features"]]] = None) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]
+    ], fake_features: Optional[Dict[Text, List["Features"]]] = None, consider_dialogue_dimension: bool = True, featurizers: Optional[List[Text]] = None) -> Tuple[Data, Optional[Dict[Text, List["Features"]]]]
 ```
 
 Converts the input into &quot;Data&quot; format.
 
+&quot;features&quot; can, for example, be a dictionary of attributes (INTENT,
+TEXT, ACTION_NAME, ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for
+all dialogue turns in all training trackers.
+For NLU training it would just be a dictionary of attributes (either INTENT or
+RESPONSE, TEXT, and potentially ENTITIES) to a list of features for all training
+examples.
+
+The &quot;Data&quot; format corresponds to Dict[Text, Dict[Text, List[FeatureArray]]]. It&#x27;s
+a dictionary of attributes (e.g. TEXT) to a dictionary of secondary attributes
+(e.g. SEQUENCE or SENTENCE) to the list of actual features.
+
 **Arguments**:
 
-- `tracker_state_features` - a dictionary of attributes (INTENT, TEXT, ACTION_NAME,
-  ACTION_TEXT, ENTITIES, SLOTS, FORM) to a list of features for all
-  dialogue turns in all training trackers
-- `zero_state_features` - Contains default feature values for attributes
+- `features` - a dictionary of attributes to a list of features for all
+  examples in the training data
+- `fake_features` - Contains default feature values for attributes
+- `consider_dialogue_dimension` - If set to false the dialogue dimension will be
+  removed from the resulting sequence features.
+- `featurizers` - the featurizers to consider
   
 
 **Returns**:
 
-  Input in &quot;Data&quot; format and zero state features
-
-#### map\_tracker\_features
-
-```python
-map_tracker_features(tracker_features: List[List[List["Features"]]], zero_features: List["Features"]) -> Tuple[
-    List[np.ndarray],
-    Dict[Text, List[List["Features"]]],
-    Dict[Text, List[List["Features"]]],
-]
-```
-
-Create masks for all attributes of the given features and split the features
-into sparse and dense features.
-
-**Arguments**:
-
-- `tracker_features` - all features
-- `zero_features` - list of zero features
-  
-
-**Returns**:
-
-  - a list of attribute masks
-  - a map of attribute to dense features
-  - a map of attribute to sparse features
+  Input in &quot;Data&quot; format and fake features
 

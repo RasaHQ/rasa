@@ -120,14 +120,6 @@ class NluDataImporter(TrainingDataImporter)
 
 Importer that skips any Core-related file reading.
 
-## CoreDataImporter Objects
-
-```python
-class CoreDataImporter(TrainingDataImporter)
-```
-
-Importer that skips any NLU related file reading.
-
 ## CombinedDataImporter Objects
 
 ```python
@@ -135,6 +127,7 @@ class CombinedDataImporter(TrainingDataImporter)
 ```
 
 A `TrainingDataImporter` that combines multiple importers.
+
 Uses multiple `TrainingDataImporter` instances
 to load the data as if they were a single instance.
 
@@ -177,4 +170,14 @@ class E2EImporter(TrainingDataImporter)
 Importer which
 - enhances the NLU training data with actions / user messages from the stories.
 - adds potential end-to-end bot messages from stories as actions to the domain
+
+#### get\_stories
+
+```python
+ | async get_stories(interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(), template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+```
+
+Retrieves the stories that should be used for training.
+
+See parent class for details.
 

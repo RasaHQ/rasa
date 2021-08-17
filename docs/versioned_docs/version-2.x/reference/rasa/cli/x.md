@@ -42,6 +42,24 @@ Generate a hexadecimal secret token used to access the Rasa X API.
 
 A new token is generated on every `rasa x` command.
 
+#### is\_rasa\_project\_setup
+
+```python
+is_rasa_project_setup(args: argparse.Namespace, project_path: Text) -> bool
+```
+
+Checks if `project_path` contains a valid Rasa Open Source project.
+
+**Arguments**:
+
+- `args` - Command-line arguments.
+- `project_path` - Path to the possible Rasa Open Source project.
+  
+
+**Returns**:
+
+  `True` if `project_path` is a valid Rasa Open Source project, `False` otherwise.
+
 #### run\_locally
 
 ```python

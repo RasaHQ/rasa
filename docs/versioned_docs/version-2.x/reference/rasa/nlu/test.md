@@ -3,6 +3,14 @@ sidebar_label: test
 title: rasa.nlu.test
 ---
 
+## CVEvaluationResult Objects
+
+```python
+class CVEvaluationResult(NamedTuple)
+```
+
+Stores NLU cross-validation results.
+
 #### log\_evaluation\_table
 
 ```python
@@ -67,19 +75,6 @@ Write successful intent predictions to a file.
 - `intent_results` - intent evaluation result
 - `successes_filename` - filename of file to save successful predictions to
 
-#### write\_intent\_errors
-
-```python
-write_intent_errors(intent_results: List[IntentEvaluationResult], errors_filename: Text) -> None
-```
-
-Write incorrect intent predictions to a file.
-
-**Arguments**:
-
-- `intent_results` - intent evaluation result
-- `errors_filename` - filename of file to save incorrect predictions to
-
 #### write\_response\_successes
 
 ```python
@@ -92,19 +87,6 @@ Write successful response selection predictions to a file.
 
 - `response_results` - response selection evaluation result
 - `successes_filename` - filename of file to save successful predictions to
-
-#### write\_response\_errors
-
-```python
-write_response_errors(response_results: List[ResponseSelectionEvaluationResult], errors_filename: Text) -> None
-```
-
-Write incorrect response selection predictions to a file.
-
-**Arguments**:
-
-- `response_results` - response selection evaluation result
-- `errors_filename` - filename of file to save incorrect predictions to
 
 #### plot\_attribute\_confidences
 
@@ -130,20 +112,20 @@ Create histogram of confidence distribution.
 plot_entity_confidences(merged_targets: List[Text], merged_predictions: List[Text], merged_confidences: List[float], hist_filename: Text, title: Text) -> None
 ```
 
-Create histogram of confidence distribution.
+Creates histogram of confidence distribution.
 
 **Arguments**:
 
-- `results` - evaluation results
+- `merged_targets` - Entity labels.
+- `merged_predictions` - Predicted entities.
+- `merged_confidences` - Confidence scores of predictions.
 - `hist_filename` - filename to save plot to
-- `target_key` - key of target in results
-- `prediction_key` - key of predictions in results
 - `title` - title of plot
 
 #### evaluate\_response\_selections
 
 ```python
-evaluate_response_selections(response_selection_results: List[ResponseSelectionEvaluationResult], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool) -> Dict
+evaluate_response_selections(response_selection_results: List[ResponseSelectionEvaluationResult], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Creates summary statistics for response selection.
@@ -159,13 +141,17 @@ evaluation result.
 - `successes` - if True success are written down to disk
 - `errors` - if True errors are written down to disk
 - `disable_plotting` - if True no plots are created
+- `report_as_dict` - `True` if the evaluation report should be returned as `dict`.
+  If `False` the report is returned in a human-readable text format. If `None`
+  `report_as_dict` is considered as `True` in case an `output_directory` is
+  given.
   
 - `Returns` - dictionary with evaluation results
 
 #### evaluate\_intents
 
 ```python
-evaluate_intents(intent_results: List[IntentEvaluationResult], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool) -> Dict
+evaluate_intents(intent_results: List[IntentEvaluationResult], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Creates summary statistics for intents.
@@ -180,6 +166,10 @@ Returns a dictionary of containing the evaluation result.
 - `successes` - if True correct predictions are written to disk
 - `errors` - if True incorrect predictions are written to disk
 - `disable_plotting` - if True no plots are created
+- `report_as_dict` - `True` if the evaluation report should be returned as `dict`.
+  If `False` the report is returned in a human-readable text format. If `None`
+  `report_as_dict` is considered as `True` in case an `output_directory` is
+  given.
   
 - `Returns` - dictionary with evaluation results
 
@@ -235,21 +225,6 @@ Replaces label names in a list of labels.
   
 - `Returns` - updated labels
 
-#### write\_incorrect\_entity\_predictions
-
-```python
-write_incorrect_entity_predictions(entity_results: List[EntityEvaluationResult], merged_targets: List[Text], merged_predictions: List[Text], error_filename: Text) -> None
-```
-
-Write incorrect entity predictions to a file.
-
-**Arguments**:
-
-- `entity_results` - response selection evaluation result
-- `merged_predictions` - list of predicted entity labels
-- `merged_targets` - list of true entity labels
-- `error_filename` - filename of file to save incorrect predictions to
-
 #### collect\_incorrect\_entity\_predictions
 
 ```python
@@ -300,7 +275,7 @@ Get correct entity predictions.
 #### evaluate\_entities
 
 ```python
-evaluate_entities(entity_results: List[EntityEvaluationResult], extractors: Set[Text], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool) -> Dict
+evaluate_entities(entity_results: List[EntityEvaluationResult], extractors: Set[Text], output_directory: Optional[Text], successes: bool, errors: bool, disable_plotting: bool, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Creates summary statistics for each entity extractor.
@@ -315,6 +290,10 @@ Logs precision, recall, and F1 per entity type for each extractor.
 - `successes` - if True correct predictions are written to disk
 - `errors` - if True incorrect predictions are written to disk
 - `disable_plotting` - if True no plots are created
+- `report_as_dict` - `True` if the evaluation report should be returned as `dict`.
+  If `False` the report is returned in a human-readable text format. If `None`
+  `report_as_dict` is considered as `True` in case an `output_directory` is
+  given.
   
 - `Returns` - dictionary with evaluation results
 
@@ -572,7 +551,7 @@ are not predicted upon parsing.
 #### run\_evaluation
 
 ```python
-run_evaluation(data_path: Text, model_path: Text, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, component_builder: Optional[ComponentBuilder] = None, disable_plotting: bool = False) -> Dict
+run_evaluation(data_path: Text, model_path: Text, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, component_builder: Optional[ComponentBuilder] = None, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Evaluate intent classification, response selection and entity extraction.
@@ -586,6 +565,10 @@ Evaluate intent classification, response selection and entity extraction.
 - `errors` - if true incorrect predictions are written to a file
 - `component_builder` - component builder
 - `disable_plotting` - if true confusion matrix and histogram will not be rendered
+- `report_as_dict` - `True` if the evaluation report should be returned as `dict`.
+  If `False` the report is returned in a human-readable text format. If `None`
+  `report_as_dict` is considered as `True` in case an `output_directory` is
+  given.
   
 - `Returns` - dictionary containing evaluation results
 
@@ -627,7 +610,7 @@ as a list, prediction results are also collected.
 #### cross\_validate
 
 ```python
-cross_validate(data: TrainingData, n_folds: int, nlu_config: Union[RasaNLUModelConfig, Text], output: Optional[Text] = None, successes: bool = False, errors: bool = False, disable_plotting: bool = False) -> Tuple[CVEvaluationResult, CVEvaluationResult, CVEvaluationResult]
+cross_validate(data: TrainingData, n_folds: int, nlu_config: Union[RasaNLUModelConfig, Text, Dict], output: Optional[Text] = None, successes: bool = False, errors: bool = False, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Tuple[CVEvaluationResult, CVEvaluationResult, CVEvaluationResult]
 ```
 
 Stratified cross validation on data.
@@ -641,6 +624,10 @@ Stratified cross validation on data.
 - `successes` - if true successful predictions are written to a file
 - `errors` - if true incorrect predictions are written to a file
 - `disable_plotting` - if true no confusion matrix and historgram plates are created
+- `report_as_dict` - `True` if the evaluation report should be returned as `dict`.
+  If `False` the report is returned in a human-readable text format. If `None`
+  `report_as_dict` is considered as `True` in case an `output_directory` is
+  given.
   
 
 **Returns**:

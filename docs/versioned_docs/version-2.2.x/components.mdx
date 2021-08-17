@@ -139,8 +139,8 @@ word vectors in your pipeline.
 
 ### HFTransformersNLP
 
-:::caution Deprecated
-The `HFTransformersNLP` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
+:::caution Deprecated in 2.1
+The `HFTransformersNLP` is deprecated and will be removed in 3.0. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
 now implements its behavior.
 :::
 
@@ -219,6 +219,10 @@ now implements its behavior.
       # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
       cache_dir: null
   ```
+
+  :::caution Changed in 2.1
+  The default pre-trained weights for BERT have been renamed from `bert-base-uncased` to `rasa/LaBSE`.
+  :::
 
 
   ## Tokenizers
@@ -410,8 +414,8 @@ now implements its behavior.
 
   ### ConveRTTokenizer
 
-:::caution Deprecated
-The `ConveRTTokenizer` is deprecated and will be removed in a future release. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
+:::caution Deprecated in 2.1
+The `ConveRTTokenizer` is deprecated and will be removed in 3.0. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
 now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
 :::
 
@@ -474,7 +478,7 @@ now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be
 
   ### LanguageModelTokenizer
 
-:::caution Deprecated
+:::caution Deprecated in 2.1
 The `LanguageModelTokenizer` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
 now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
 :::
@@ -658,6 +662,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   `tokens`
 
+  :::caution Changed in 2.1
+  `ConveRTFeaturizer` no longer requires `ConveRTTokenizer`.
+  :::
+
 
 
 * **Type**
@@ -712,6 +720,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   `tokens`.
 
+  :::caution Changed in 2.1
+  `LanguageModelFeaturizer` no longer requires `ConveRTTokenizer`.
+  :::
+
 
 
 * **Type**
@@ -734,6 +746,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 
 * **Configuration**
+
+  :::caution Changed in 2.1
+  The `model_name`, `model_weights` and `cache_dir` parameters were added to the pipeline configuration file.
+  :::
 
   Include a [Tokenizer](./components.mdx#tokenizers) component before this component.
 
@@ -835,6 +851,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     # use match word boundaries for lookup table
     "use_word_boundaries": True
   ```
+
+  :::info New in 2.2
+  `use_word_boundaries` was added.
+  :::
 
   **Configuring for incremental training**
 
@@ -984,6 +1004,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```
 
   **Configuring for incremental training**
+
+  :::info New in 2.2
+  Incremental training was added as an experimental feature.
+  :::
 
   To ensure that `sparse_features` are of fixed size during
   [incremental training](./command-line-interface.mdx#incremental-training), the
@@ -1648,10 +1672,10 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
     ```json
 
         {
-            "intent": {"name": "nlu_fallback", "confidence": 0.7183846840434321},
+            "intent": {"name": "nlu_fallback", "confidence": 1.0},
             "intent_ranking": [
                 {
-                    "confidence": 0.7183846840434321,
+                    "confidence": 1.0,
                     "name": "nlu_fallback"
                 },
                 {
@@ -1973,6 +1997,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         email: True
   ```
 
+  :::info New in 2.1
+  `split_entities_by_comma` was added.
+  :::
+
   :::note
   If POS features are used (`pos` or `pos2`), you need to have `SpacyTokenizer` in your pipeline.
 
@@ -2135,6 +2163,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         # use match word boundaries for lookup table
         "use_word_boundaries": True
   ```
+
+  :::info New in 2.2
+  `use_word_boundaries` was added.
+  :::
 
 
 ### EntitySynonymMapper

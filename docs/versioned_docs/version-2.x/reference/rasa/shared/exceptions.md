@@ -87,3 +87,11 @@ class InvalidConfigException(ValueError,  RasaException)
 
 Raised if an invalid configuration is encountered.
 
+## UnsupportedFeatureException Objects
+
+```python
+class UnsupportedFeatureException(RasaCoreException)
+```
+
+Raised if a requested feature is not supported.
+

@@ -31,6 +31,24 @@ Initialize the tracker featurizer.
 
 - `state_featurizer` - The state featurizer used to encode the states.
 
+#### training\_states\_actions\_and\_entities
+
+```python
+ | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+```
+
+Transforms list of trackers to lists of states, actions and entity data.
+
+**Arguments**:
+
+- `trackers` - The trackers to transform
+- `domain` - The domain
+  
+
+**Returns**:
+
+  A tuple of list of states, list of actions and list of entity data.
+
 #### training\_states\_and\_actions
 
 ```python
@@ -52,7 +70,11 @@ Transforms list of trackers to lists of states and actions.
 #### featurize\_trackers
 
 ```python
- | featurize_trackers(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]
+ | featurize_trackers(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter) -> Tuple[
+ |         List[List[Dict[Text, List["Features"]]]],
+ |         np.ndarray,
+ |         List[List[Dict[Text, List["Features"]]]],
+ |     ]
 ```
 
 Featurize the training trackers.
@@ -69,13 +91,16 @@ Featurize the training trackers.
   - a dictionary of state types (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
   ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
   turns in all training trackers
-  - the label ids (e.g. action ids) for every dialuge turn in all training
+  - the label ids (e.g. action ids) for every dialogue turn in all training
   trackers
+  - A dictionary of entity type (ENTITY_TAGS) to a list of features
+  containing entity tag ids for text user inputs otherwise empty dict
+  for all dialogue turns in all training trackers
 
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain) -> List[List[State]]
+ | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False) -> List[List[State]]
 ```
 
 Transforms list of trackers to lists of states for prediction.
@@ -84,6 +109,8 @@ Transforms list of trackers to lists of states for prediction.
 
 - `trackers` - The trackers to transform
 - `domain` - The domain
+- `use_text_for_last_user_input` - Indicates whether to use text or intent label
+  for featurizing last user input.
   
 
 **Returns**:
@@ -93,7 +120,7 @@ Transforms list of trackers to lists of states for prediction.
 #### create\_state\_features
 
 ```python
- | create_state_features(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter) -> List[List[Dict[Text, List["Features"]]]]
+ | create_state_features(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, use_text_for_last_user_input: bool = False) -> List[List[Dict[Text, List["Features"]]]]
 ```
 
 Create state features for prediction.
@@ -103,6 +130,8 @@ Create state features for prediction.
 - `trackers` - A list of state trackers
 - `domain` - The domain
 - `interpreter` - The interpreter
+- `use_text_for_last_user_input` - Indicates whether to use text or intent label
+  for featurizing last user input.
   
 
 **Returns**:
@@ -152,15 +181,13 @@ Creates full dialogue training data for time distributed architectures.
 Creates training data that uses each time output for prediction.
 Training data is padded up to the length of the longest dialogue with -1.
 
-#### training\_states\_and\_actions
+#### training\_states\_actions\_and\_entities
 
 ```python
- | training_states_and_actions(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]]]
+ | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
-Transforms list of trackers to lists of states and actions.
-
-Training data is padded up to the length of the longest dialogue with -1.
+Transforms list of trackers to lists of states, actions and entity data.
 
 **Arguments**:
 
@@ -170,12 +197,12 @@ Training data is padded up to the length of the longest dialogue with -1.
 
 **Returns**:
 
-  A tuple of list of states and list of actions.
+  A tuple of list of states, list of actions and list of entity data.
 
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain) -> List[List[State]]
+ | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False) -> List[List[State]]
 ```
 
 Transforms list of trackers to lists of states for prediction.
@@ -183,7 +210,9 @@ Transforms list of trackers to lists of states for prediction.
 **Arguments**:
 
 - `trackers` - The trackers to transform
-- `domain` - The domain
+- `domain` - The domain,
+- `use_text_for_last_user_input` - Indicates whether to use text or intent label
+  for featurizing last user input.
   
 
 **Returns**:
@@ -223,15 +252,13 @@ the slice length.
 
   The sliced states.
 
-#### training\_states\_and\_actions
+#### training\_states\_actions\_and\_entities
 
 ```python
- | training_states_and_actions(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]]]
+ | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
-Transforms list of trackers to lists of states and actions.
-
-Training data is padded up to the length of the longest dialogue with -1.
+Transforms list of trackers to lists of states, actions and entity data.
 
 **Arguments**:
 
@@ -241,12 +268,12 @@ Training data is padded up to the length of the longest dialogue with -1.
 
 **Returns**:
 
-  A tuple of list of states and list of actions.
+  A tuple of list of states, list of actions and list of entity data.
 
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain) -> List[List[State]]
+ | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False) -> List[List[State]]
 ```
 
 Transforms list of trackers to lists of states for prediction.
@@ -255,6 +282,8 @@ Transforms list of trackers to lists of states for prediction.
 
 - `trackers` - The trackers to transform
 - `domain` - The domain
+- `use_text_for_last_user_input` - Indicates whether to use text or intent label
+  for featurizing last user input.
   
 
 **Returns**:

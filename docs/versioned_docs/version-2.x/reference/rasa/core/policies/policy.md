@@ -52,10 +52,31 @@ or both ML-based data and rule data, they need to override this method.
 
   The data type supported by this policy (ML-based training data).
 
+#### \_\_init\_\_
+
+```python
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, should_finetune: bool = False, **kwargs: Any, ,) -> None
+```
+
+Constructs a new Policy object.
+
+#### featurizer
+
+```python
+ | @property
+ | featurizer()
+```
+
+Returns the policy&#x27;s featurizer.
+
 #### featurize\_for\_training
 
 ```python
- | featurize_for_training(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]
+ | featurize_for_training(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> Tuple[
+ |         List[List[Dict[Text, List["Features"]]]],
+ |         np.ndarray,
+ |         List[List[Dict[Text, List["Features"]]]],
+ |     ]
 ```
 
 Transform training trackers into a vector representation.
@@ -78,6 +99,9 @@ into a float vector which can be used by a ML model.
   all training trackers
   - the label ids (e.g. action ids) for every dialogue turn in all training
   trackers
+  - A dictionary of entity type (ENTITY_TAGS) to a list of features
+  containing entity tag ids for text user inputs otherwise empty dict
+  for all dialogue turns in all training trackers
 
 #### train
 
@@ -130,7 +154,7 @@ Persists the policy to storage.
 
 ```python
  | @classmethod
- | load(cls, path: Union[Text, Path]) -> "Policy"
+ | load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy"
 ```
 
 Loads a policy from path.

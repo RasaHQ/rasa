@@ -2,15 +2,51 @@
 id: testing-your-assistant
 sidebar_label: Testing Your Assistant
 title: Testing Your Assistant
-abstract: Rasa Open Source lets you test dialogues end-to-end by running through
+abstract: Rasa Open Source lets you validate and test dialogues end-to-end by running through
   test stories. In addition, you can
   also test the dialogue management and the message processing (NLU)
   separately.
 ---
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
+## Validating Data and Stories
+
+Data validation verifies that no mistakes or major inconsistencies appear in your domain, NLU
+data, or story data. To validate your data, have your CI run this command:
+
+```bash
+rasa data validate
+```
+
+If you pass a `max_history` value to one or more policies in your `config.yml` file, provide the
+smallest of those values as
+
+```bash
+rasa data validate --max-history <max_history>
+```
+
+If data validation results in errors, training a model can also fail or yield bad performance, so it's
+always good to run this check before training a model. By including the
+`--fail-on-warnings` flag, this step will fail on warnings indicating more minor issues.
+
+:::note
+Running `rasa data validate` does **not** test if your [rules](./rules.mdx) are consistent with your stories.
+However, during training, the `RulePolicy` checks for conflicts between rules and stories. Any such conflict will abort training.
+:::
+
+To read more about the validator and all of the available options, see [the documentation for
+`rasa data validate`](./command-line-interface.mdx#rasa-data-validate).
 
 ## Writing Test Stories
 
-To test your assistant completely, the best approach is to write test stories. Test stories are like
+Testing your trained model on test stories is the best way to have confidence in how your assistant
+will act in certain situations. Written in a modified story
+format, test stories allow you to provide entire conversations and test that, given certain
+user input, your model will behave in the expected manner. This is especially
+important as you start introducing more complicated stories from user
+conversations.
+
+Test stories are like
 the stories in your training data, but include the user message as well.
 
 Here are some examples:
@@ -20,7 +56,7 @@ Here are some examples:
 
   ```yaml-rasa title="tests/test_stories.yml" {5,9,13}
   stories:
-  - story: A basic end-to-end test
+  - story: A basic story test
     steps:
     - user: |
         hello
@@ -117,12 +153,19 @@ Here are some examples:
   </TabItem>
 </Tabs>
 
-Rasa Open Source looks for test stories in all files with the prefix `test_`, e.g. `tests/test_stories.yml`.
+By default, the command will run tests on stories from any files with names starting with `test_`. You can also provide
+a specific test stories file or directory with the `--stories` argument.
 You can test your assistant against them by running:
 
 ```bash
 rasa test
 ```
+
+Conversation testing is only as thorough and accurate as the test
+cases you include, so you should continue to grow your set of test stories
+as you make improvements to your assistant. A good rule of thumb to follow is that you should aim for your test stories
+to be representative of the true distribution of real conversations.
+Rasa X makes it easy to [add test conversations based on real conversations](https://rasa.com/docs/rasa-x/user-guide/test-assistant/#how-to-create-tests).
 
 See the [CLI documentation on `rasa test`](./command-line-interface.mdx#rasa-test) for
 more configuration options.
@@ -139,7 +182,7 @@ for them and include these tests in your [CI/CD pipeline](./setting-up-ci-cd.mdx
 
 ## Evaluating an NLU Model
 
-In addition to end-to-end testing, you can also test the natural language understanding (NLU) model separately.
+In addition to testing stories, you can also test the natural language understanding (NLU) model separately.
 Once your assistant is deployed in the real world, it will be processing messages that it hasn't seen
 in the training data. To simulate this, you should always set aside some part of your data for testing.
 You can [split your NLU data](./command-line-interface.mdx#rasa-data-split)
@@ -165,6 +208,24 @@ rasa test nlu
     --nlu data/nlu.yml
     --cross-validation
 ```
+
+### Comparing NLU Performance
+
+If you've made significant changes to your NLU training data (e.g.
+splitting an intent into two intents or adding a lot of training examples), you should run a
+[full NLU evaluation](./testing-your-assistant.mdx#evaluating-an-nlu-model). You'll want to compare
+the performance of the NLU model without your changes to an NLU model with your
+changes.
+
+You can do this by running NLU testing in cross-validation mode:
+
+```bash
+rasa test nlu --cross-validation
+```
+
+You could also train a model on a training set and testing it on a test set. If you use the train-test
+set approach, it is best to [shuffle and split your data](./command-line-interface.mdx#rasa-data-split) using `rasa data split` as part of this CI step, as
+opposed to using a static NLU test set, which can easily become outdated.
 
 You can find the full list of options in the
 [CLI documentation on `rasa test`](command-line-interface.mdx#rasa-test).
@@ -231,11 +292,17 @@ as well as providing an overall average. You can save these reports as JSON file
 
 The confusion matrix shows which intents are mistaken for others.
 Any samples which have been incorrectly predicted are logged and saved to a file called `errors.json` for easier debugging.
+<div align="center">
+    <img alt="image" src={useBaseUrl("/img/intent_confusion_matrix_example.png")} width="70%" />
+</div>
 
 The histogram allows you to visualize the confidence for all predictions,
 with the correct and incorrect predictions being displayed by blue and red bars respectively.
-Improving the quality of your training data will move the blue histogram bars to the right and the
-red histogram bars to the left of the plot. It should also help in reducing the number red histogram bars itself.
+Improving the quality of your training data will move the blue histogram bars up the plot and the
+red histogram bars down the plot. It should also help in reducing the number of red histogram bars itself.
+<div align="center">
+    <img alt="image" src={useBaseUrl("/img/intent_histogram_example.png")} width="70%" />
+</div>
 
 #### Response Selectors
 
@@ -270,7 +337,7 @@ multiple tokens.
 To evaluate entity extraction we apply a simple tag-based approach. We don't consider
 [BILOU tags](nlu-training-data.mdx#bilou-entity-tagging) exactly, but only the
 entity type tags on a per token basis. For location entity like “near Alexanderplatz” we
-expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`. 
+expect the labels `LOC LOC` instead of the BILOU-based `B-LOC L-LOC`.
 
 Our approach is more lenient when it comes to evaluation, as it rewards
 partial extraction and does not penalize the splitting of entities.
@@ -357,6 +424,13 @@ This training process can take a long time, so we'd suggest letting it run
 somewhere in the background where it can't be interrupted.
 
 :::
+
+### Testing Action Code
+
+The approach used to test your action code will depend on how it is
+implemented. For example, if you connect to external APIs, you should write integration tests to ensure
+that those APIs respond as expected to common inputs. However you test your action code, you should
+include these tests in your CI pipeline so that they run each time you make changes.
 
 If you have any questions or problems, please share them with us in the dedicated
 [testing section on our forum](https://forum.rasa.com/tags/testing)!

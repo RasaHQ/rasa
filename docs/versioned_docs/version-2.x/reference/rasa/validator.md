@@ -14,10 +14,17 @@ A class used to verify usage of intents and utterances.
 #### \_\_init\_\_
 
 ```python
- | __init__(domain: Domain, intents: TrainingData, story_graph: StoryGraph) -> None
+ | __init__(domain: Domain, intents: TrainingData, story_graph: StoryGraph, config: Optional[Dict[Text, Any]]) -> None
 ```
 
 Initializes the Validator object.
+
+**Arguments**:
+
+- `domain` - The domain.
+- `intents` - Training data.
+- `story_graph` - The story graph.
+- `config` - The configuration.
 
 #### from\_importer
 

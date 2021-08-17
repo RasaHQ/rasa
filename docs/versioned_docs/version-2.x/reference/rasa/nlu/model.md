@@ -110,7 +110,7 @@ Use a trained pipeline of components to parse text messages.
 
 ```python
  | @staticmethod
- | load(model_dir: Text, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False) -> "Interpreter"
+ | load(model_dir: Text, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False, new_config: Optional[Dict] = None, finetuning_epoch_fraction: float = 1.0) -> "Interpreter"
 ```
 
 Create an interpreter based on a persisted model.
@@ -123,6 +123,8 @@ Create an interpreter based on a persisted model.
 - `model_dir` - The path of the model to load
 - `component_builder` - The
   :class:`rasa.nlu.components.ComponentBuilder` to use.
+- `new_config` - Optional new config to use for the new epochs.
+- `finetuning_epoch_fraction` - Value to multiply all epochs by.
   
 
 **Returns**:
@@ -133,10 +135,25 @@ Create an interpreter based on a persisted model.
 
 ```python
  | @staticmethod
- | create(model_metadata: Metadata, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False) -> "Interpreter"
+ | create(model_metadata: Metadata, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False, should_finetune: bool = False) -> "Interpreter"
 ```
 
-Load stored model and components defined by the provided metadata.
+Create model and components defined by the provided metadata.
+
+**Arguments**:
+
+- `model_metadata` - The metadata describing each component.
+- `component_builder` - The
+  :class:`rasa.nlu.components.ComponentBuilder` to use.
+- `skip_validation` - If set to `True`, does not check that all
+  required packages for the components are installed
+  before loading them.
+- `should_finetune` - Indicates if the model components will be fine-tuned.
+  
+
+**Returns**:
+
+  An interpreter that uses the created model.
 
 #### parse
 

@@ -1,0 +1,54 @@
+usage: rasa test core [-h] [-v] [-vv] [--quiet] [-m MODEL [MODEL ...]]
+                      [-s STORIES] [--max-stories MAX_STORIES] [--out OUT]
+                      [--e2e] [--endpoints ENDPOINTS]
+                      [--fail-on-prediction-errors] [--url URL]
+                      [--evaluate-model-directory] [--no-plot] [--successes]
+                      [--no-errors]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -m MODEL [MODEL ...], --model MODEL [MODEL ...]
+                        Path to a pre-trained model. If it is a 'tar.gz' file
+                        that model file will be used. If it is a directory,
+                        the latest model in that directory will be used
+                        (exception: '--evaluate-model-directory' flag is set).
+                        If multiple 'tar.gz' files are provided, all those
+                        models will be compared. (default: [None])
+  -s STORIES, --stories STORIES
+                        File or folder containing your test stories. (default:
+                        data)
+  --max-stories MAX_STORIES
+                        Maximum number of stories to test on. (default: None)
+  --out OUT             Output path for any files created during the
+                        evaluation. (default: results)
+  --e2e, --end-to-end   Run an end-to-end evaluation for combined action and
+                        intent prediction. Requires a story file in end-to-end
+                        format. (default: False)
+  --endpoints ENDPOINTS
+                        Configuration file for the connectors as a yml file.
+                        (default: None)
+  --fail-on-prediction-errors
+                        If a prediction error is encountered, an exception is
+                        thrown. This can be used to validate stories during
+                        tests, e.g. on travis. (default: False)
+  --url URL             If supplied, downloads a story file from a URL and
+                        trains on it. Fetches the data by sending a GET
+                        request to the supplied URL. (default: None)
+  --evaluate-model-directory
+                        Should be set to evaluate models trained via 'rasa
+                        train core --config <config-1> <config-2>'. All models
+                        in the provided directory are evaluated and compared
+                        against each other. (default: False)
+  --no-plot             Don't render evaluation plots. (default: False)
+  --successes           If set successful predictions will be written to a
+                        file. (default: False)
+  --no-errors           If set incorrect predictions will NOT be written to a
+                        file. (default: False)
+
+Python Logging Options:
+  -v, --verbose         Be verbose. Sets logging level to INFO. (default:
+                        None)
+  -vv, --debug          Print lots of debugging statements. Sets logging level
+                        to DEBUG. (default: None)
+  --quiet               Be quiet! Sets logging level to WARNING. (default:
+                        None)

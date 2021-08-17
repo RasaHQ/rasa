@@ -55,3 +55,11 @@ Raised when publishing of an event fails.
 
 - `timestamp` - Unix timestamp of the event during which publishing fails.
 
+#### \_\_str\_\_
+
+```python
+ | __str__() -> Text
+```
+
+Returns string representation of exception.
+
