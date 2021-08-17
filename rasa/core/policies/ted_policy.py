@@ -166,6 +166,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
+        """Returns the default config (see parent class for full docstring)."""
         # please make sure to update the docs when changing a default parameter
         return {
             # ## Architecture of the used neural network
