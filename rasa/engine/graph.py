@@ -130,9 +130,6 @@ class GraphSchema:
 class GraphComponent(ABC):
     """Interface for any component which will run in a graph."""
 
-    # TODO: This doesn't enforce that it exists in subclasses..
-    default_config: Dict[Text, Any]
-
     @classmethod
     @abstractmethod
     def create(
@@ -182,6 +179,18 @@ class GraphComponent(ABC):
             An instantiated, loaded `GraphComponent`.
         """
         return cls.create(config, model_storage, resource, execution_context)
+
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns the component's default config.
+
+        Default config and user config are merged by the `GraphNode` before the
+        config is passed to the `create` and `load` method of the component.
+
+        Returns:
+            The default config of the component.
+        """
+        return {}
 
     @staticmethod
     def supported_languages() -> Optional[List[Text]]:
@@ -302,7 +311,7 @@ class GraphNode:
             self._component_class, self._constructor_name
         )
         self._component_config: Dict[Text, Any] = {
-            **self._component_class.default_config,
+            **self._component_class.get_default_config(),
             **component_config,
         }
         self._fn_name: Text = fn_name
