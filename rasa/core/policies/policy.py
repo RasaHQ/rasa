@@ -116,19 +116,6 @@ class PolicyGraphComponent(GraphComponent):
         """
         return SupportedData.ML_DATA
 
-    @staticmethod
-    def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
-
-    @classmethod
-    def _create_featurizer(
-        cls, featurizer: Optional[TrackerFeaturizer] = None
-    ) -> TrackerFeaturizer:
-        if featurizer:
-            return copy.deepcopy(featurizer)
-        else:
-            return cls._standard_featurizer()
-
     def __init__(
         self,
         config: Dict[Text, Any],
@@ -139,8 +126,8 @@ class PolicyGraphComponent(GraphComponent):
     ) -> None:
         """Constructs a new Policy object."""
         if featurizer is None:
-            featurizer = _featurizer_from_policy_config(config)
-        self.__featurizer = self._create_featurizer(featurizer)
+            featurizer = self._create_featurizer(config)
+        self.__featurizer = featurizer
 
         self.priority = config.get(POLICY_PRIORITY, DEFAULT_POLICY_PRIORITY)
         self.finetune_mode = execution_context.is_finetuning
@@ -161,6 +148,41 @@ class PolicyGraphComponent(GraphComponent):
     ) -> GraphComponent:
         """Creates a new untrained policy (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
+
+    @classmethod
+    def _create_featurizer(cls, policy_config: Dict[Text, Any]) -> TrackerFeaturizer:
+        policy_config = copy.deepcopy(policy_config)
+
+        featurizer_configs = policy_config.get("featurizer")
+
+        if not featurizer_configs:
+            return cls._standard_featurizer()
+
+        featurizer_func = _get_featurizer_from_config(
+            featurizer_configs,
+            cls.__name__,
+            lookup_path="rasa.core.featurizers.tracker_featurizers",
+        )
+        featurizer_config = featurizer_configs[0]
+
+        state_featurizer_configs = featurizer_config.pop("state_featurizer", None)
+        if state_featurizer_configs:
+            state_featurizer_func = _get_featurizer_from_config(
+                state_featurizer_configs,
+                cls.__name__,
+                lookup_path="rasa.core.featurizers.single_state_featurizer",
+            )
+            state_featurizer_config = state_featurizer_configs[0]
+
+            featurizer_config["state_featurizer"] = state_featurizer_func(
+                **state_featurizer_config
+            )
+
+        return featurizer_func(**featurizer_config)
+
+    @staticmethod
+    def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
+        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
 
     @property
     def featurizer(self) -> TrackerFeaturizer:
@@ -636,71 +658,24 @@ class InvalidPolicyConfig(RasaException):
     """Exception that can be raised when policy config is not valid."""
 
 
-def _featurizer_from_policy_config(
-    policy_config: Dict[Text, Any]
-) -> Optional[TrackerFeaturizer]:
-    policy_config = copy.deepcopy(policy_config)
-
-    if policy_config.get("featurizer"):
-        featurizer_func, featurizer_config = _get_featurizer_from_dict(policy_config)
-
-        if featurizer_config.get("state_featurizer"):
-            (
-                state_featurizer_func,
-                state_featurizer_config,
-            ) = _get_state_featurizer_from_dict(featurizer_config)
-
-            # override featurizer's state_featurizer
-            # with real state_featurizer class
-            featurizer_config["state_featurizer"] = state_featurizer_func(
-                **state_featurizer_config
-            )
-        else:
-            # Removes empty state featurizer things from the config
-            featurizer_config.pop("state_featurizer", None)
-
-        # override policy's featurizer with real featurizer class
-        return featurizer_func(**featurizer_config)
-
-    return None
-
-
-def _get_featurizer_from_dict(
-    policy: Dict[Text, Any]
-) -> Tuple[Callable[..., TrackerFeaturizer], Dict[Text, Any]]:
+def _get_featurizer_from_config(
+    config: List[Dict[Text, Any]], policy_name: Text, lookup_path: Text
+) -> Callable[..., TrackerFeaturizer]:
     """Gets the featurizer initializer and its arguments from a policy config."""
-    from rasa.core import registry
-
-    # policy can have only 1 featurizer
-    if len(policy["featurizer"]) > 1:
+    # Only 1 featurizer is allowed
+    if len(config) > 1:
+        featurizer_names = [
+            featurizer_config.get("name") for featurizer_config in config
+        ]
         raise InvalidPolicyConfig(
-            f"Every policy can only have 1 featurizer "
-            f"but '{policy.get('name')}' "
-            f"uses {len(policy['featurizer'])} featurizers."
+            f"Every policy can only have 1 featurizer but '{policy_name}' "
+            f"uses {len(config)} featurizers ('{', '.join(featurizer_names)}')."
         )
-    featurizer_config = policy["featurizer"][0]
+
+    featurizer_config = config[0]
     featurizer_name = featurizer_config.pop("name")
-    featurizer_func = registry.featurizer_from_module_path(featurizer_name)
-
-    return featurizer_func, featurizer_config
-
-
-def _get_state_featurizer_from_dict(
-    featurizer_config: Dict[Text, Any]
-) -> Tuple[Callable[..., SingleStateFeaturizer], Dict[Text, Any]]:
-    from rasa.core import registry
-
-    # featurizer can have only 1 state featurizer
-    if len(featurizer_config["state_featurizer"]) > 1:
-        raise InvalidPolicyConfig(
-            f"Every featurizer can only have 1 state "
-            f"featurizer but one of the featurizers uses "
-            f"{len(featurizer_config['state_featurizer'])}."
-        )
-    state_featurizer_config = featurizer_config["state_featurizer"][0]
-    state_featurizer_name = state_featurizer_config.pop("name")
-    state_featurizer_func = registry.state_featurizer_from_module_path(
-        state_featurizer_name
+    featurizer_func = rasa.shared.utils.common.class_from_module_path(
+        featurizer_name, lookup_path=lookup_path
     )
 
-    return state_featurizer_func, state_featurizer_config
+    return featurizer_func
