@@ -1,5 +1,0 @@
-event_broker:
-  url: localhost
-  client_id: kafka-python-rasa
-  security_protocol: PLAINTEXT
-  type: kafka
