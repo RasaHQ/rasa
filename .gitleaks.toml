@@ -112,7 +112,8 @@ title = "gitleaks config"
     files = ['''^\.?gitleaks.toml$''',
     '''(.*?)(jpg|gif|doc|pdf|bin)$''',
     '''(go.mod|go.sum)$''',
-    '''docusaurus.config.js$''']
+    '''docusaurus.config.js$''',
+    '''rasa/data/test_moodbot/credentials.yml$''']
     regexes = [
     # this regex is useful for documentation content: we can still show
     # that users need to configure a private key and include "..." in it
