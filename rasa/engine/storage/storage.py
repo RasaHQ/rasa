@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelStorage(abc.ABC):
-    """Serves as storage backend for `GraphComponents` which need persistance."""
+    """Serves as storage backend for `GraphComponents` which need persistence."""
 
     @classmethod
     @abc.abstractmethod
