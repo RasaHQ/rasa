@@ -398,4 +398,6 @@ def test_importer_fingerprint():
         training_data_paths=["./data/test_nlu_no_responses/nlu_with_unicode.yml"]
     )
 
-    assert importer.fingerprint() == "TrainingDataImporter"
+    fp1 = importer.fingerprint()
+    fp2 = importer.fingerprint()
+    assert fp1 != fp2

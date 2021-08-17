@@ -197,8 +197,8 @@ class TrainingDataImporter:
         )
 
     def fingerprint(self) -> Text:
-        """Returns a static fingerprint."""
-        return "TrainingDataImporter"
+        """Returns a random fingerprint as data shouldn't be cached."""
+        return rasa.shared.utils.io.random_string(25)
 
 
 class NluDataImporter(TrainingDataImporter):
