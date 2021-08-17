@@ -1,7 +1,19 @@
 import inspect
 import logging
 import typing
-from typing import Optional, Callable, Text, Tuple, Dict, Type, Any, Set, Union, TypeVar
+from typing import (
+    Optional,
+    Callable,
+    Text,
+    Tuple,
+    Dict,
+    Type,
+    Any,
+    Set,
+    Union,
+    TypeVar,
+    List,
+)
 
 import dataclasses
 
@@ -60,6 +72,8 @@ def validate(
     Raises:
         GraphSchemaValidationException: If the validation failed.
     """
+    _validate_cycle(schema)
+
     for node_name, node in schema.nodes.items():
         _validate_interface_usage(node_name, node)
         _validate_supported_languages(language, node, node_name)
@@ -80,6 +94,29 @@ def validate(
         _validate_needs(
             node_name, node, schema, create_fn_params, run_fn_params,
         )
+
+
+def _validate_cycle(schema: GraphSchema) -> None:
+    for target_name in schema.target_names:
+        parents = schema.nodes[target_name].needs.values()
+        for parent_name in parents:
+            _walk_and_check_for_cycles([], parent_name, schema)
+
+
+def _walk_and_check_for_cycles(
+    visited_so_far: List[Text], node_name: Text, schema: GraphSchema
+) -> None:
+    if node_name in visited_so_far:
+        raise GraphSchemaValidationException(
+            f"Node '{node_name}' has itself as dependency. Cycles are not allowed "
+            f"in the graph. Please make sure that '{node_name}' does not have itself"
+            f"specified in 'needs' and none of '{node_name}'s dependencies have "
+            f"'{node_name}' specified in 'needs'."
+        )
+
+    parents = schema.nodes[node_name].needs.values()
+    for parent_name in parents:
+        _walk_and_check_for_cycles([*visited_so_far, node_name], parent_name, schema)
 
 
 def _validate_interface_usage(node_name: Text, node: SchemaNode) -> None:
