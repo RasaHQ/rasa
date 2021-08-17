@@ -45,7 +45,7 @@ def test_training_hook_saves_to_cache(
         hooks=[default_training_hook],
     )
 
-    node({"input_node": "Joe"})
+    node(("input_node", "Joe"))
 
     # This is the same key that the hook will generate
     fingerprint_key = fingerprinting.calculate_fingerprint_key(
@@ -101,7 +101,7 @@ def test_training_hook_does_not_cache_cached_component(
         hooks=[default_training_hook],
     )
 
-    node({"input_node": "Joe"})
+    node(("input_node", "Joe"))
 
     # This is the same key that the hook will generate
     fingerprint_key = fingerprinting.calculate_fingerprint_key(

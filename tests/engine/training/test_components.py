@@ -32,7 +32,9 @@ def test_cached_component_returns_value_from_cache(default_model_storage: ModelS
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    returned_output = node()["cached"]
+    node_name, returned_output = node()
+
+    assert node_name == "cached"
     assert returned_output.text == "Cache me!!"
 
 
@@ -144,15 +146,12 @@ def test_fingerprint_component_hit(
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    returned_output = node(
-        {
-            "parent_node_1": FingerprintableText("input_1"),
-            "parent_node_2": FingerprintStatus(
-                is_hit=True, output_fingerprint="input_2"
-            ),
-        }
-    )["fingerprint_node"]
+    node_name, returned_output = node(
+        ("parent_node_1", FingerprintableText("input_1")),
+        ("parent_node_2", FingerprintStatus(is_hit=True, output_fingerprint="input_2")),
+    )
 
+    assert node_name == "fingerprint_node"
     assert returned_output.is_hit is True
     assert returned_output.output_fingerprint == output_fingerprint
     assert returned_output.output_fingerprint == returned_output.fingerprint()
@@ -181,16 +180,13 @@ def test_fingerprint_component_miss(
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    returned_output = node(
-        {
-            "parent_node_1": FingerprintableText("input_1"),
-            "parent_node_2": FingerprintStatus(
-                is_hit=True, output_fingerprint="input_2"
-            ),
-        }
-    )["fingerprint_node"]
+    node_name, returned_output = node(
+        ("parent_node_1", FingerprintableText("input_1")),
+        ("parent_node_2", FingerprintStatus(is_hit=True, output_fingerprint="input_2")),
+    )
 
     # As we didnt add anything to the cache, it cannot be a hit.
+    assert node_name == "fingerprint_node"
     assert returned_output.is_hit is False
     assert returned_output.output_fingerprint is None
     assert returned_output.fingerprint() != returned_output.output_fingerprint

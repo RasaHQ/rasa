@@ -113,7 +113,7 @@ class DaskGraphRunner(GraphRunner):
 
         try:
             dask_result = dask.get(run_graph, run_targets)
-            return dict(ChainMap(*dask_result))
+            return dict(dask_result)
         except RuntimeError as e:
             raise GraphRunError("Error running runner.") from e
 
@@ -126,4 +126,4 @@ class DaskGraphRunner(GraphRunner):
                     f"that none of the input names passed to the `run` method are the "
                     f"same as node names in the graph schema."
                 )
-            graph[input_name] = {input_name: input_value}
+            graph[input_name] = (input_name, input_value)
