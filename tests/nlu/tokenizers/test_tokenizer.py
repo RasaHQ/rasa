@@ -14,7 +14,6 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-import tests.utilities
 
 
 def test_tokens_comparison():
@@ -286,12 +285,3 @@ def test_token_fingerprints_are_unique():
     ]
     fingerprints = {t.fingerprint() for t in tokens}
     assert len(fingerprints) == len(tokens)
-
-
-def test_token_fingerprints_are_consistent_across_runs(tmp_path):
-    fingerprint_script = """
-        from rasa.nlu.tokenizers.tokenizer import Token
-        token = Token("testing", 2, 9, {"x": 3}, "test")
-        print(token.fingerprint())"""
-
-    tests.utilities.fingerprint_consistency_test(fingerprint_script, tmp_path)

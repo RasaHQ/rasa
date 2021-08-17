@@ -10,7 +10,6 @@ import rasa.shared.utils.io
 import rasa.utils.io as io_utils
 
 from rasa.shared.nlu.training_data.features import Features
-import tests.utilities
 
 
 @pytest.mark.parametrize("file, parents", [("A/test.md", "A"), ("A", "A")])
@@ -116,14 +115,6 @@ def test_fingerprint_containers(container):
     assert rasa.shared.utils.io.deep_container_fingerprint(
         container
     ) == rasa.shared.utils.io.deep_container_fingerprint(copy.deepcopy(container))
-
-
-def test_fingerprint_is_consistent_across_runs(tmp_path: Path):
-    fingerprint_script = """
-        import rasa.shared.utils.io
-        dictionary = {"a": ["b"], "c": {"d": "e"}}
-        print(rasa.shared.utils.io.deep_container_fingerprint(dictionary))"""
-    tests.utilities.fingerprint_consistency_test(fingerprint_script, tmp_path)
 
 
 def test_deep_container_fingerprint_can_use_instance_fingerprint():

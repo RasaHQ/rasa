@@ -16,7 +16,6 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-import tests.utilities
 
 
 @pytest.mark.parametrize(
@@ -410,17 +409,3 @@ def test_message_fingerprint_includes_data_and_features():
     assert fp3 != fp4
 
     assert len({fp1, fp2, fp3, fp4}) == 4
-
-
-def test_message_fingerprints_are_consistent_across_runs(tmp_path):
-    fingerprint_script = """
-        import numpy as np
-        from rasa.shared.nlu.training_data.features import Features
-        from rasa.shared.nlu.training_data.message import Message
-        m1 = np.asarray([[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]])
-        feature = Features(m1, "sentence", "text", "CountVectorsFeaturizer")
-        message = Message(data={"text": "This is a test sentence."})
-        message.add_features(feature)
-        print(message.fingerprint())"""
-
-    tests.utilities.fingerprint_consistency_test(fingerprint_script, tmp_path)

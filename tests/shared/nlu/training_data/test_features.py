@@ -9,7 +9,6 @@ from rasa.shared.nlu.constants import (
     TEXT,
     INTENT,
 )
-import tests.utilities
 
 
 def test_combine_with_existing_dense_features():
@@ -116,30 +115,6 @@ def test_for_features_fingerprinting_collisions():
     ]
     sparse_fingerprints = {f.fingerprint() for f in sparse_features}
     assert len(sparse_fingerprints) == len(sparse_features)
-
-
-def test_dense_feature_fingerprints_are_consistent_across_runs(tmp_path):
-    python_script = """
-        import numpy as np
-        from rasa.shared.nlu.training_data.features import Features
-        m = np.asarray([[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]])
-        feature = Features(m, "sentence", "text", "CountVectorsFeaturizer")
-        print(feature.fingerprint())"""
-
-    tests.utilities.fingerprint_consistency_test(python_script, tmp_path)
-
-
-def test_sparse_feature_fingerprints_are_consistent_across_runs(tmp_path):
-    python_script = """
-        import numpy as np
-        import scipy.sparse
-        from rasa.shared.nlu.training_data.features import Features
-        m = np.asarray([[0.5, 3.1, 3.0], [1.1, 1.2, 1.3], [4.7, 0.3, 2.7]])
-        m_sparse = scipy.sparse.coo_matrix(m)
-        feature = Features(m_sparse, "sentence", "text", "CountVectorsFeaturizer")
-        print(feature.fingerprint())"""
-
-    tests.utilities.fingerprint_consistency_test(python_script, tmp_path)
 
 
 def test_feature_fingerprints_take_into_account_full_array():

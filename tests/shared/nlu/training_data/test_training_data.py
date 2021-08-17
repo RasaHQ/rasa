@@ -39,7 +39,6 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
 from rasa.shared.importers.importer import TrainingDataImporter, E2EImporter
-import tests.utilities
 
 
 def test_luis_data():
@@ -885,14 +884,3 @@ def test_training_data_fingerprint_incorporates_features():
     training_data.training_examples[0].add_features(f1)
     # training data fingerprint has changed
     assert fp1 != training_data.fingerprint()
-
-
-def test_training_data_fingerprints_are_consistent_across_runs(tmp_path):
-    python_script = """
-        import numpy as np
-        from rasa.shared.importers.utils import training_data_from_paths
-        files = ["data/examples/rasa/demo-rasa.yml"]
-        training_data = training_data_from_paths(files, language="en")
-        print(training_data.fingerprint())"""
-
-    tests.utilities.fingerprint_consistency_test(python_script, tmp_path)
