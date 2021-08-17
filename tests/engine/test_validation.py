@@ -533,3 +533,43 @@ def test_child_accepting_any_type_from_parent():
     )
 
     validation.validate(schema, language=None, is_train_graph=True)
+
+
+@pytest.mark.parametrize("is_train_graph", [True, False])
+def test_cycle(is_train_graph: bool):
+    class MyTestComponent(TestComponentWithoutRun):
+        def run(self, training_data: TrainingData) -> TrainingData:
+            pass
+
+    schema = GraphSchema(
+        {
+            "A": SchemaNode(
+                needs={"training_data": "B"},
+                uses=MyTestComponent,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                is_target=True,
+                config={},
+            ),
+            "B": SchemaNode(
+                needs={"training_data": "C"},
+                uses=MyTestComponent,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                config={},
+            ),
+            "C": SchemaNode(
+                needs={"training_data": "A"},
+                uses=MyTestComponent,
+                eager=True,
+                constructor_name="create",
+                fn="run",
+                config={},
+            ),
+        }
+    )
+
+    with pytest.raises(GraphSchemaValidationException, match="Cycles"):
+        validation.validate(schema, language=None, is_train_graph=is_train_graph)

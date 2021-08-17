@@ -130,9 +130,6 @@ class GraphSchema:
 class GraphComponent(ABC):
     """Interface for any component which will run in a graph."""
 
-    # TODO: This doesn't enforce that it exists in subclasses..
-    default_config: Dict[Text, Any]
-
     @classmethod
     @abstractmethod
     def create(
@@ -170,7 +167,8 @@ class GraphComponent(ABC):
         If not overridden this method merely calls `create`.
 
         Args:
-            config: This config overrides the `default_config`.
+            config: The config for this graph component. This is the default config of
+                the component merged with config specified by the user.
             model_storage: Storage which graph components can use to persist and load
                 themselves.
             resource: Resource locator for this component which can be used to persist
@@ -182,6 +180,18 @@ class GraphComponent(ABC):
             An instantiated, loaded `GraphComponent`.
         """
         return cls.create(config, model_storage, resource, execution_context)
+
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns the component's default config.
+
+        Default config and user config are merged by the `GraphNode` before the
+        config is passed to the `create` and `load` method of the component.
+
+        Returns:
+            The default config of the component.
+        """
+        return {}
 
     @staticmethod
     def supported_languages() -> Optional[List[Text]]:
@@ -302,7 +312,7 @@ class GraphNode:
             self._component_class, self._constructor_name
         )
         self._component_config: Dict[Text, Any] = {
-            **self._component_class.default_config,
+            **self._component_class.get_default_config(),
             **component_config,
         }
         self._fn_name: Text = fn_name
@@ -361,24 +371,19 @@ class GraphNode:
         """The names of the parent nodes of this node."""
         return list(self._inputs.values())
 
-    @staticmethod
-    def _collapse_inputs_from_previous_nodes(
-        inputs_from_previous_nodes: Tuple[Dict[Text, Any]]
-    ) -> Dict[Text, Any]:
-        return dict(ChainMap(*inputs_from_previous_nodes))
-
-    def __call__(self, *inputs_from_previous_nodes: Dict[Text, Any]) -> Dict[Text, Any]:
+    def __call__(
+        self, *inputs_from_previous_nodes: Tuple[Text, Any]
+    ) -> Tuple[Text, Any]:
         """Calls the `GraphComponent` run method when the node executes in the graph.
 
         Args:
             *inputs_from_previous_nodes: The output of all parent nodes. Each is a
                 dictionary with a single item mapping the node's name to its output.
 
-        Returns: A dictionary with a single item mapping the node's name to the output.
+        Returns:
+            The node name and its output.
         """
-        received_inputs = self._collapse_inputs_from_previous_nodes(
-            inputs_from_previous_nodes
-        )
+        received_inputs: Dict[Text, Any] = dict(inputs_from_previous_nodes)
 
         kwargs = {}
         for input_name, input_node in self._inputs.items():
@@ -412,7 +417,7 @@ class GraphNode:
 
         self._run_after_hooks(input_hook_outputs, output)
 
-        return {self._node_name: output}
+        return self._node_name, output
 
     def _run_after_hooks(self, input_hook_outputs: List[Dict], output: Any) -> None:
         for hook, hook_data in zip(self._hooks, input_hook_outputs):
