@@ -5,7 +5,6 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.shared.core.domain import Domain
@@ -15,7 +14,6 @@ from rasa.shared.core.events import (
     SlotSet,
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from pathlib import Path
 
 
 class TestMemoizationPolicy(PolicyTestCollection):
