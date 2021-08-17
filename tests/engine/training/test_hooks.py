@@ -2,7 +2,7 @@ from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphNode, GraphSchema, SchemaNode
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training import fingerprinting
-from rasa.engine.training.components import CachedComponent
+from rasa.engine.training.components import PrecomputedValueProvider
 from rasa.engine.training.hooks import TrainingHook
 from tests.engine.graph_components_test_classes import (
     CacheableComponent,
@@ -81,7 +81,7 @@ def test_training_hook_does_not_cache_cached_component(
                     constructor_name="create",
                     fn="run",
                     config={},
-                    uses=CachedComponent,
+                    uses=PrecomputedValueProvider,
                 )
             }
         ),
@@ -89,10 +89,10 @@ def test_training_hook_does_not_cache_cached_component(
     )
     node = GraphNode(
         node_name="hello",
-        component_class=CachedComponent,
+        component_class=PrecomputedValueProvider,
         constructor_name="create",
         component_config={"output": CacheableText("hi")},
-        fn_name="get_cached_output",
+        fn_name="get_value",
         inputs={},
         eager=False,
         model_storage=default_model_storage,
@@ -105,10 +105,10 @@ def test_training_hook_does_not_cache_cached_component(
 
     # This is the same key that the hook will generate
     fingerprint_key = fingerprinting.calculate_fingerprint_key(
-        graph_component_class=CachedComponent,
+        graph_component_class=PrecomputedValueProvider,
         config={"output": CacheableText("hi")},
         inputs={},
     )
 
-    # The hook should not cache the output of a CachedComponent
+    # The hook should not cache the output of a PrecomputedValueProvider
     assert not temp_cache.get_cached_output_fingerprint(fingerprint_key)

@@ -4,7 +4,7 @@ from typing import Any, Dict, Text, Type
 from rasa.engine.caching import TrainingCache
 from rasa.engine.graph import ExecutionContext, GraphNodeHook
 from rasa.engine.storage.storage import ModelStorage
-from rasa.engine.training.components import CachedComponent
+from rasa.engine.training.components import PrecomputedValueProvider
 import rasa.shared.utils.io
 from rasa.engine.training import fingerprinting
 
@@ -52,11 +52,11 @@ class TrainingHook(GraphNodeHook):
         input_hook_data: Dict,
     ) -> None:
         """Stores the fingerprints and caches the output of the node."""
-        # We should not re-cache the output of a CachedComponent.
+        # We should not re-cache the output of a PrecomputedValueProvider.
         graph_component_class = self._get_graph_component_class(
             execution_context, node_name
         )
-        if graph_component_class == CachedComponent:
+        if graph_component_class == PrecomputedValueProvider:
             return None
 
         output_fingerprint = rasa.shared.utils.io.deep_container_fingerprint(output)
