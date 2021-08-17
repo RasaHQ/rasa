@@ -1,5 +1,7 @@
-from typing import Union, Text, Optional, List, Any, Tuple
+from os import stat
+from typing import Iterable, Union, Text, Optional, List, Any, Tuple, Set, Dict
 
+import copy
 import numpy as np
 import scipy.sparse
 
@@ -40,6 +42,7 @@ class Features:
         return (
             f"{self.__class__.__name__}("
             f"features.shape={self.features.shape}, "
+            f"is_sparse={self.is_sparse()}, "
             f"type={self.type}, "
             f"origin={self.origin}, "
             f"attribute={self.attribute})"
@@ -60,6 +63,126 @@ class Features:
             True, if features are dense, false otherwise.
         """
         return not self.is_sparse()
+
+    @staticmethod
+    def filter(
+        features_list: List["Features"],
+        attributes: Optional[Iterable[Text]] = None,
+        type: Optional[Text] = None,
+        origin: Optional[List[Text]] = None,
+        is_sparse: Optional[bool] = None,
+    ) -> List["Features"]:
+        """Filters the given list of features.
+
+
+        """
+        filtered = features_list
+        if attributes is not None:
+            attributes = set(attributes)
+            filtered = [f for f in filtered if f.attribute in attributes]
+        if origin is not None:
+            origin = set(origin)
+            filtered = [
+                f
+                for f in filtered
+                if (f.origin if not isinstance(f.origin, Text) else list([f.origin]))
+                == origin
+            ]
+        if type is not None:
+            filtered = [f for f in filtered if f.type == type]
+        if is_sparse is not None:
+            filtered = [f for f in filtered if f.is_sparse() == is_sparse]
+        return filtered
+
+    @staticmethod
+    def extract(
+        features_list: List["Features"], attributes: Optional[Iterable[Text]] = None,
+    ) -> Dict[Text, List["Features"]]:
+        if attributes is None:
+            return copy.copy(attributes)  # shallow copy on purpose
+        # ensure all requested attributes are present in the output - regardless
+        # of whether we find features later
+        extracted = (
+            dict()
+            if attributes is None
+            else {attribute: [] for attribute in attributes}
+        )
+        # extract features for all (requested) attributes
+        for feat in features_list:
+            if attributes is None or feat.attribute in attributes:
+                extracted.setdefault(feat.attribute, []).append(feat)
+        return extracted
+
+    @staticmethod
+    def combine(
+        features_list: List["Features"],
+        origin_of_combination: Optional[List[Text]] = None,
+    ) -> "Features":
+        """Combine features of the same type and level that describe the same attribute.
+
+        If sequence features are to be combined, then they must have the same
+        sequence dimension.
+
+        Args:
+          features: non-empty list of Features  of the same type and level that
+            describe the same attribute
+          origin_of_combination: origin information to be used for the resulting
+            Feature
+        Raises:
+          `ValueError` will be raised
+           - if the given list is empty
+           - if there are inconsistencies in the given list of `Features`
+           - if the origin information of a given feature is not listed in the given
+             list of origins (i.e. `origin_of_combination`)
+        """
+        if len(features_list) == 0:
+            raise ValueError("Expected a non-empty list of Features.")
+        # sanity checks
+        # (1) all origins must be mentioned
+        minimal_origin = set(f.origin for f in features_list)
+        if origin_of_combination is not None:
+            difference = minimal_origin.difference(origin_of_combination)
+            if difference:
+                raise ValueError(
+                    f"Expected given features to be from {origin_of_combination} only "
+                    f"but found features from {difference}."
+                )
+        else:
+            origin_of_combination = list(minimal_origin)
+        # (2) certain attributes (is_sparse, type, attribute) must coincide
+        for attribute in ["is_sparse", "type", "attribute"]:
+            different_settings = set(getattr(f, attribute) for f in features_list)
+            if attribute == "is_sparse":  # because this is a function atm
+                different_settings = set(
+                    is_sparse_func() for is_sparse_func in different_settings
+                )
+            if len(different_settings) > 1:
+                raise ValueError(
+                    f"Expected all Features to have the same {attribute} but found "
+                    f" {different_settings}."
+                )
+        # (3) dimensions must match
+        # Note: We shouldn't have to check sentence-level features here but it doesn't
+        # hurt either.
+        dimensions = set(f.features.shape[0] for f in features_list)
+        if len(dimensions) > 1:
+            raise ValueError(
+                f"Expected all sequence dimensions to match but found {dimensions}."
+            )
+        # Combine the features
+        arbitrary_feature = features_list[0]
+        if not arbitrary_feature.is_sparse():
+            features = np.concatenate((f.features for f in features_list), axis=-1)
+        else:
+            from scipy.sparse import hstack
+
+            features = hstack([f.features for f in features_list])
+        return Features(
+            features=features,
+            feature_type=arbitrary_feature.type,
+            attribute=arbitrary_feature.attribute,
+            origin=origin_of_combination,
+        )
 
     def combine_with_features(self, additional_features: Optional["Features"]) -> None:
         """Combine the incoming features with this instance's features.

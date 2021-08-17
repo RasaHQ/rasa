@@ -19,6 +19,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SENTENCE,
     ACTION_TEXT,
     ACTION_NAME,
+    FEATURE_TYPE_SEQUENCE,
     INTENT,
     NO_ENTITY_TAG,
     ENTITY_ATTRIBUTE_TYPE,
@@ -182,16 +183,6 @@ class SingleStateFeaturizer:
         if not sub_state:
             return {}
         output = e2e_features.lookup_features(sub_state, attributes=attributes)
-
-        # FIXME: the followign should not be necessary... but looks more closely like
-        # what was here before
-        for key in output:
-            sparse_features = [f for f in output[key] if f.is_sparse and f is not None]
-            dense_features = [
-                f for f in output[key] if not f.is_sparse and f is not None
-            ]
-            output[key] = sparse_features + dense_features
-
         # if features for INTENT or ACTION_NAME exist,
         # they are always sparse sequence features;
         # transform them to sentence sparse features
@@ -223,28 +214,29 @@ class SingleStateFeaturizer:
             attribute for attribute in sub_state.keys() if attribute != ENTITIES
         )
 
-        # Why does this look so messy?
-        # Becaues if we (had) several sequence/sentence features then
-        # get_dense_features / get_sparse_features combine them....
-        # TODO: rework this.... work with attribute_feature_dict directly.
-        # NOTE: feature dimensions match v1 :)
-        attribute_feature_dict = self._get_features_from_lookup_table(
+        # collect features for all those attributes
+        attributes_to_features = self._get_features_from_lookup_table(
             sub_state, attributes, e2e_features
         )
-        all_features = [
-            feat for feat_list in attribute_feature_dict.values() for feat in feat_list
-        ]
-        parsed_message = Message(data={}, features=all_features)
 
-        output = defaultdict(list)
-        for attribute in attributes:
-            all_features = parsed_message.get_sparse_features(
-                attribute
-            ) + parsed_message.get_dense_features(attribute)
-
-            for features in all_features:
-                if features is not None:
-                    output[attribute].append(features)
+        # per attribute, combine features of same type and level into one Feature,
+        # and (if there are any such features) store the results in a list where
+        # - all the sparse features are listed first and a
+        # - sequence feature is always listed before the sentence feature of the
+        #   same type (sparse/not sparse)
+        output = dict()
+        for attribute, features_for_attribute in attributes_to_features.items():
+            for type in [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]:
+                # sequence features first
+                for is_sparse in [True, False]:  # sparse first
+                    sublist = Features.filter(
+                        features_list=features_for_attribute,
+                        type=type,
+                        is_sparse=is_sparse,
+                    )
+                    if sublist:
+                        combined_feature = Features.combine(sublist)
+                        output.setdefault(attribute, []).append(combined_feature)
 
         # check that name attributes have features
         name_attribute = self._get_name_attribute(attributes)
@@ -258,7 +250,7 @@ class SingleStateFeaturizer:
             )
 
         # if ACTION_NAME in sub_state or ACTION_TEXT in sub_state:
-        #   print({key : [str(feat) for feat in val] for key, val in output.items()})
+        #    print({key: [str(feat) for feat in val] for key, val in output.items()})
 
         return output
 

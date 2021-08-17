@@ -5,7 +5,7 @@ from os import stat
 import os.path
 from pathlib import Path
 from re import sub
-from typing import Optional, Text, Dict, List, Union, Iterable, Tuple
+from typing import Optional, Set, Text, Dict, List, Union, Iterable, Tuple
 from collections.abc import ValuesView
 import copy
 
@@ -383,24 +383,25 @@ class E2ELookupTable:
             self.add(message)
 
     def lookup_features(
-        self, sub_state: SubState, attributes: Optional[List[Text]] = None
+        self, sub_state: SubState, attributes: Optional[Iterable[Text]] = None
     ) -> Dict[Text, List[Features]]:
         """Looks up all features for the given substate.
 
-        Note that here we do **not** impose any restrictions on the attributes that
-        may be included in the given sub_state.
         There might be be multiple messages in the lookup table that contain features
         relevant for the given substate, e.g. this is the case if `TEXT` and
-        `INTENT` are present in the given message.
+        `INTENT` are present in the given message. All of those messages will be
+        collected and their features combined.
+
+        Note that here we do **not** impose any restrictions on the attributes that
+        may be included in the *given* `sub_state`.
 
         Args:
-          sub_state: substate for which we want to lookup all relevant Messages
+          sub_state: substate for which we want to lookup the relevent features
           attributes: if not None, this specifies the list of the attributes of the
             `Features` that we're interested in (i.e. all other `Features` contained
             in the relevant messages will be ignored)
         Returns:
-          a dictionary that maps all the (requested) attributes for which we found
-          `Features` to a list of these `Features`
+          a dictionary that maps all the (requested) attributes to a list of `Features`
         Raises:
           - a `ValueError` if any of the lookup table keys that can be generated from
             the given substate is not contained in the lookup table
@@ -420,8 +421,8 @@ class E2ELookupTable:
                     f"Unknown key {key}. Cannot retrieve features for substate "
                     f"{sub_state}"
                 )
-            features_from_message = self.extract_features(
-                message, attributes=attributes
+            features_from_message = Features.extract(
+                message.features, attributes=attributes
             )
             for feat_attribute, feat_value in features_from_message.items():
                 existing_values = features.get(feat_attribute)
@@ -449,26 +450,6 @@ class E2ELookupTable:
         if message is None:
             raise ValueError(f"Expected a message with key {key} in lookup table.")
         return message
-
-    @staticmethod
-    def extract_features(
-        message: Message, attributes: Optional[List[Text]] = None
-    ) -> Dict[Text, List[Features]]:
-        """Creates an attribute to features mapping from the given message.
-
-        Args:
-          message: the message that possibly contains features
-          attributes: if specified, only features whose attributes is in this list
-            will be returned
-        Returns:
-          a dictionary mapping all (relevant) attributes for which we found features
-          to a list of these features
-        """
-        extracted = dict()
-        for feat in message.features:
-            if attributes is None or feat.attribute in attributes:
-                extracted.setdefault(feat.attribute, []).append(feat)
-        return extracted
 
 
 class MessageToE2EFeatureConverter(GraphComponent):
