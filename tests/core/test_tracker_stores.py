@@ -891,7 +891,7 @@ def prepare_token_serialisation(
     for t in tokens:
         start = current_index
         end = current_index + len(t)
-        indices.append((start, end))
+        indices.append([start, end])
         current_index = end + 1
 
     tracker = tracker_store.get_or_create_tracker(sender_id=sender_id)
@@ -910,10 +910,7 @@ def prepare_token_serialisation(
     event = retrieved_tracker.get_last_event_for(event_type=UserUttered)
     event_tokens = event.as_dict().get("parse_data").get("text_tokens")
 
-    assert event_tokens[0][0] == indices[0][0]
-    assert event_tokens[0][1] == indices[0][1]
-    assert event_tokens[1][0] == indices[1][0]
-    assert event_tokens[1][1] == indices[1][1]
+    assert event_tokens == indices
 
 
 def test_inmemory_tracker_store_with_token_serialisation(
