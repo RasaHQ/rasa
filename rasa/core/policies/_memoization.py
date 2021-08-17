@@ -1,3 +1,8 @@
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt `MemoizationPolicyGraphComponent` from
+#          the regular `rasa.core.policies.memoization` module. This module is a
+#          workaround to defer breaking changes due to the architecture revamp in 3.0.
+# flake8: noqa
 import zlib
 
 import base64
@@ -6,46 +11,26 @@ import logging
 
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
-from pathlib import Path
 
 import rasa.utils.io
 import rasa.shared.utils.io
-from rasa.engine.graph import ExecutionContext
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
-    FEATURIZER_FILE,
 )
-from rasa.shared.exceptions import FileIOException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
-from rasa.core.constants import (
-    MEMOIZATION_POLICY_PRIORITY,
-    DEFAULT_MAX_HISTORY,
-    POLICY_MAX_HISTORY,
-    POLICY_PRIORITY,
-)
-from rasa.core.policies._memoization import (
-    MemoizationPolicy,
-    AugmentedMemoizationPolicy,
-)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MemoizationPolicy = MemoizationPolicy
-AugmentedMemoizationPolicy = AugmentedMemoizationPolicy
+from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY, DEFAULT_MAX_HISTORY
 
 logger = logging.getLogger(__name__)
 
 
-class MemoizationPolicyGraphComponent(PolicyGraphComponent):
+class MemoizationPolicy(Policy):
     """A policy that follows exact examples of `max_history` turns in training stories.
 
     Since `slots` that are set some time in the past are
@@ -65,33 +50,25 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
     training stories for this, use AugmentedMemoizationPolicy.
     """
 
+    ENABLE_FEATURE_STRING_COMPRESSION = True
+
+    USE_NLU_CONFIDENCE_AS_SCORE = False
+
     @staticmethod
-    def get_default_config() -> Dict[Text, Any]:
-        """Returns the default config (see parent class for full docstring)."""
-        # please make sure to update the docs when changing a default parameter
-        return {
-            "enable_feature_string_compression": True,
-            "use_nlu_confidence_as_score": False,
-            POLICY_PRIORITY: MEMOIZATION_POLICY_PRIORITY,
-            POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
-        }
-
-    required_packages = []
-
-    def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
+    def _standard_featurizer(
+        max_history: Optional[int] = None,
+    ) -> MaxHistoryTrackerFeaturizer:
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(
-            state_featurizer=None, max_history=self.config[POLICY_MAX_HISTORY]
+            state_featurizer=None, max_history=max_history
         )
 
     def __init__(
         self,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
         featurizer: Optional[TrackerFeaturizer] = None,
+        priority: int = MEMOIZATION_POLICY_PRIORITY,
+        max_history: Optional[int] = DEFAULT_MAX_HISTORY,
         lookup: Optional[Dict] = None,
         **kwargs: Any,
     ) -> None:
@@ -105,13 +82,12 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
                 predicted actions for them
         """
         if not featurizer:
-            featurizer = self._standard_featurizer()
+            featurizer = self._standard_featurizer(max_history)
 
-        super().__init__(
-            config, model_storage, resource, execution_context, featurizer, **kwargs
-        )
-        self.config = config
-        self.lookup = lookup or {}
+        super().__init__(featurizer, priority, **kwargs)
+
+        self.max_history = self.featurizer.max_history
+        self.lookup = lookup if lookup is not None else {}
 
     def _create_lookup_from_states(
         self,
@@ -268,56 +244,20 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
-        return {"config": self.config, "lookup": self.lookup}
+        return {
+            "priority": self.priority,
+            "max_history": self.max_history,
+            "lookup": self.lookup,
+        }
 
     @classmethod
     def _metadata_filename(cls) -> Text:
         return "memorized_turns.json"
 
-    @classmethod
-    def load(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        **kwargs: Any,
-    ) -> "PolicyGraphComponent":
-        """Loads a trained policy (see parent class for full docstring)."""
-        config = {}
-        featurizer = None
-        lookup = None
 
-        try:
-            with model_storage.read_from(resource) as path:
-                metadata_file = Path(path) / cls._metadata_filename()
-                metadata = json.loads(rasa.shared.utils.io.read_file(metadata_file))
-                config = metadata["config"]
-                lookup = metadata["lookup"]
-
-                if (Path(path) / FEATURIZER_FILE).is_file():
-                    featurizer = TrackerFeaturizer.load(path)
-
-                config.update(kwargs)
-
-        except (ValueError, FileNotFoundError, FileIOException):
-            logger.info(
-                f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
-                f"metadata couldn't be loaded."
-            )
-
-        return cls(
-            config,
-            model_storage,
-            resource,
-            execution_context,
-            featurizer=featurizer,
-            lookup=lookup,
-        )
-
-
-class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
-    """The policy that remembers examples from training stories for `max_history` turns.
+class AugmentedMemoizationPolicy(MemoizationPolicy):
+    """The policy that remembers examples from training stories
+    for `max_history` turns.
 
     If it is needed to recall turns from training dialogues
     where some slots might not be set during prediction time,
