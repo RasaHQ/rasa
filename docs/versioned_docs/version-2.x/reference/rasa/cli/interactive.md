@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.cli.interactive
+sidebar_label: interactive
 title: rasa.cli.interactive
 ---
 

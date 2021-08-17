@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.jobs
+sidebar_label: jobs
 title: rasa.core.jobs
 ---
 

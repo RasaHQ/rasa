@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.cli.export
+sidebar_label: export
 title: rasa.cli.export
 ---
 

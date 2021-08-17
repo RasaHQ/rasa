@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.nlg.callback
+sidebar_label: callback
 title: rasa.core.nlg.callback
 ---
 

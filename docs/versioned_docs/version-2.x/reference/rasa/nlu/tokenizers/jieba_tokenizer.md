@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.tokenizers.jieba_tokenizer
+sidebar_label: jieba_tokenizer
 title: rasa.nlu.tokenizers.jieba_tokenizer
 ---
 

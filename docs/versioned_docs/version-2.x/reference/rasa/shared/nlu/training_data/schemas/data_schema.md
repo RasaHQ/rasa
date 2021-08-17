@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.nlu.training_data.schemas.data_schema
+sidebar_label: data_schema
 title: rasa.shared.nlu.training_data.schemas.data_schema
 ---
 

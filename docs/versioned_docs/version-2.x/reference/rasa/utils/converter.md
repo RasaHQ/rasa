@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.utils.converter
+sidebar_label: converter
 title: rasa.utils.converter
 ---
 

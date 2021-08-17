@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.extractors.extractor
+sidebar_label: extractor
 title: rasa.nlu.extractors.extractor
 ---
 
@@ -9,6 +9,14 @@ title: rasa.nlu.extractors.extractor
 class EntityExtractor(Component)
 ```
 
+#### init\_split\_entities
+
+```python
+ | init_split_entities()
+```
+
+Initialise the behaviour for splitting entities by comma (or not).
+
 #### filter\_irrelevant\_entities
 
 ```python
@@ -16,7 +24,7 @@ class EntityExtractor(Component)
  | filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list
 ```
 
-Only return dimensions the user configured
+Only return dimensions the user configured.
 
 #### filter\_trainable\_entities
 
@@ -33,7 +41,7 @@ self.name (e.g. &#x27;CRFEntityExtractor&#x27;) are removed.
 #### convert\_predictions\_into\_entities
 
 ```python
- | convert_predictions_into_entities(text: Text, tokens: List[Token], tags: Dict[Text, List[Text]], confidences: Optional[Dict[Text, List[float]]] = None) -> List[Dict[Text, Any]]
+ | convert_predictions_into_entities(text: Text, tokens: List[Token], tags: Dict[Text, List[Text]], split_entities_config: Dict[Text, bool] = None, confidences: Optional[Dict[Text, List[float]]] = None) -> List[Dict[Text, Any]]
 ```
 
 Convert predictions into entities.
@@ -43,6 +51,7 @@ Convert predictions into entities.
 - `text` - The text message.
 - `tokens` - Message tokens without CLS token.
 - `tags` - Predicted tags.
+- `split_entities_config` - config for handling splitting a list of entities
 - `confidences` - Confidences of predicted tags.
   
 

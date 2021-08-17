@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.utils.endpoints
+sidebar_label: endpoints
 title: rasa.utils.endpoints
 ---
 

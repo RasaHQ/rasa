@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.cli.x
+sidebar_label: x
 title: rasa.cli.x
 ---
 

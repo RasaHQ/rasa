@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.utils.plotting
+sidebar_label: plotting
 title: rasa.utils.plotting
 ---
 

@@ -1,5 +1,5 @@
-usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] -f {json,md,yaml}
-                             --data DATA --out OUT [-l LANGUAGE]
+usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,md,yaml}]
+                             --data DATA [--out OUT] [-l LANGUAGE]
 
 optional arguments:
   -h, --help            show this help message and exit

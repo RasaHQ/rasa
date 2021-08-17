@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.nlu.training_data.message
+sidebar_label: message
 title: rasa.shared.nlu.training_data.message
 ---
 
@@ -16,6 +16,30 @@ class Message()
 ```
 
 Get dict representation of message as it would appear in training data
+
+#### \_\_hash\_\_
+
+```python
+ | __hash__() -> int
+```
+
+Calculate a hash for the message.
+
+**Returns**:
+
+  Hash of the message.
+
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Calculate a string fingerprint for the message.
+
+**Returns**:
+
+  Fingerprint of the message.
 
 #### build
 

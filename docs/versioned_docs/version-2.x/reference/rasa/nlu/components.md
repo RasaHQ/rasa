@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.components
+sidebar_label: components
 title: rasa.nlu.components
 ---
 
@@ -30,7 +30,7 @@ Validates that all required importable python packages are installed.
 
 **Raises**:
 
-- `InvalidConfigError` - If one of the component names is `None`, likely
+- `InvalidConfigException` - If one of the component names is `None`, likely
   indicates that a custom implementation is missing this property
   or that there is an invalid configuration file that we did not
   catch earlier.
@@ -39,6 +39,19 @@ Validates that all required importable python packages are installed.
 **Arguments**:
 
 - `component_names` - The list of component names.
+
+#### validate\_component\_keys
+
+```python
+validate_component_keys(component: "Component", component_config: Dict[Text, Any]) -> None
+```
+
+Validates that all keys for a component are valid.
+
+**Arguments**:
+
+- `component` - The component class
+- `component_config` - The user-provided config for the component in the pipeline
 
 #### validate\_empty\_pipeline
 

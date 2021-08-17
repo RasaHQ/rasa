@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.training_data.visualization
+sidebar_label: visualization
 title: rasa.shared.core.training_data.visualization
 ---
 

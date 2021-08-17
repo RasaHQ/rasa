@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.featurizers.tracker_featurizers
+sidebar_label: tracker_featurizers
 title: rasa.core.featurizers.tracker_featurizers
 ---
 

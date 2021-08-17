@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.channels.hangouts
+sidebar_label: hangouts
 title: rasa.core.channels.hangouts
 ---
 

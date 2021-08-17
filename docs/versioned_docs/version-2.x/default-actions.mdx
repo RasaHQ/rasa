@@ -63,11 +63,9 @@ slots, but only a user's name and their phone number. To do that, you'd override
 `action_session_start` with a custom action that might look like this:
 
 ```python
-from typing import Text, List, Dict, Any
-
+from typing import Any, Text, Dict, List, Type
 from rasa_sdk import Action, Tracker
 from rasa_sdk.events import SlotSet, SessionStarted, ActionExecuted, EventType
-from rasa_sdk.executor import CollectingDispatcher
 
 
 class ActionSessionStart(Action):
@@ -79,24 +77,18 @@ class ActionSessionStart(Action):
         """Collect slots that contain the user's name and phone number."""
 
         slots = []
-
         for key in ("name", "phone_number"):
             value = tracker.get_slot(key)
             if value is not None:
                 slots.append(SlotSet(key=key, value=value))
-
         return slots
 
     async def run(
-        self,
-        output_channel: "OutputChannel",
-        nlg: "NaturalLanguageGenerator",
-        tracker: "DialogueStateTracker",
-        domain: "Domain",
-    ) -> List[Event]:
+      self, dispatcher, tracker: Tracker, domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
 
         # the session should begin with a `session_started` event
-        events = [SessionStarted(metadata=self.metadata)]
+        events = [SessionStarted()]
 
         # any slots that should be carried over should come after the
         # `session_started` event
@@ -148,3 +140,12 @@ their message.
 This action undoes the last user-bot interaction. It can be triggered by the user
 by sending a "/back" message to the assistant if the [RulePolicy](./policies.mdx#rule-policy) is configured.
                                                                                                                                                                                                                                                                         |
+## Form Action
+
+By default Rasa Open Source uses `FormAction` for processing any
+[form logic](forms.mdx). You can override this default action with a custom action by
+adding a custom action with the form's name to the domain.
+Overriding the default action for forms should **only** be used during the process of
+migrating from Rasa Open Source 1 to 2. In this case you can override the default
+action to instruct Rasa Open Source to use the deprecated `FormAction` which is part of
+the Rasa SDK.

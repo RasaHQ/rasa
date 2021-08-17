@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.__main__
+sidebar_label: __main__
 title: rasa.__main__
 ---
 

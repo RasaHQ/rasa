@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.registry
+sidebar_label: registry
 title: rasa.core.registry
 ---
 

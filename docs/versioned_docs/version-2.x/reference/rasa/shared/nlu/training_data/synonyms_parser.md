@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.nlu.training_data.synonyms_parser
+sidebar_label: synonyms_parser
 title: rasa.shared.nlu.training_data.synonyms_parser
 ---
 

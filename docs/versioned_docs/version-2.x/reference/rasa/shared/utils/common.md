@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.utils.common
+sidebar_label: common
 title: rasa.shared.utils.common
 ---
 

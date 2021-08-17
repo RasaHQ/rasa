@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.processor
+sidebar_label: processor
 title: rasa.core.processor
 ---
 
@@ -17,13 +17,48 @@ class MessageProcessor()
 
 Handle a single message with this processor.
 
-#### get\_tracker\_with\_session\_start
+#### predict\_next
 
 ```python
- | async get_tracker_with_session_start(sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None) -> Optional[DialogueStateTracker]
+ | async predict_next(sender_id: Text) -> Optional[Dict[Text, Any]]
 ```
 
-Get tracker for `sender_id` or create a new tracker for `sender_id`.
+Predict the next action for the current conversation state.
+
+**Arguments**:
+
+- `sender_id` - Conversation ID.
+  
+
+**Returns**:
+
+  The prediction for the next action. `None` if no domain or policies loaded.
+
+#### predict\_next\_with\_tracker
+
+```python
+ | predict_next_with_tracker(tracker: DialogueStateTracker, verbosity: EventVerbosity = EventVerbosity.AFTER_RESTART) -> Optional[Dict[Text, Any]]
+```
+
+Predict the next action for a given conversation state.
+
+**Arguments**:
+
+- `tracker` - A tracker representing a conversation state.
+- `verbosity` - Verbosity for the returned conversation state.
+  
+
+**Returns**:
+
+  The prediction for the next action. `None` if no domain or policies loaded.
+
+#### fetch\_tracker\_and\_update\_session
+
+```python
+ | async fetch_tracker_and_update_session(sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None) -> DialogueStateTracker
+```
+
+Fetches tracker for `sender_id` and updates its conversation session.
 
 If a new tracker is created, `action_session_start` is run.
 
@@ -36,17 +71,37 @@ If a new tracker is created, `action_session_start` is run.
 
 **Returns**:
 
-  Tracker for `sender_id` if available, `None` otherwise.
+  Tracker for `sender_id`.
+
+#### fetch\_tracker\_with\_initial\_session
+
+```python
+ | async fetch_tracker_with_initial_session(sender_id: Text, output_channel: Optional[OutputChannel] = None, metadata: Optional[Dict] = None) -> DialogueStateTracker
+```
+
+Fetches tracker for `sender_id` and runs a session start if it&#x27;s a new
+tracker.
+
+**Arguments**:
+
+- `metadata` - Data sent from client associated with the incoming user message.
+- `output_channel` - Output channel associated with the incoming user message.
+- `sender_id` - Conversation ID for which to fetch the tracker.
+  
+
+**Returns**:
+
+  Tracker for `sender_id`.
 
 #### get\_tracker
 
 ```python
- | get_tracker(conversation_id: Text) -> Optional[DialogueStateTracker]
+ | get_tracker(conversation_id: Text) -> DialogueStateTracker
 ```
 
 Get the tracker for a conversation.
 
-In contrast to `get_tracker_with_session_start` this does not add any
+In contrast to `fetch_tracker_and_update_session` this does not add any
 `action_session_start` or `session_start` events at the beginning of a
 conversation.
 
@@ -61,10 +116,31 @@ conversation.
   Tracker for the conversation. Creates an empty tracker in case it&#x27;s a new
   conversation.
 
+#### get\_trackers\_for\_all\_conversation\_sessions
+
+```python
+ | get_trackers_for_all_conversation_sessions(conversation_id: Text) -> List[DialogueStateTracker]
+```
+
+Fetches all trackers for a conversation.
+
+Individual trackers are returned for each conversation session found
+for `conversation_id`.
+
+**Arguments**:
+
+- `conversation_id` - The ID of the conversation for which the trackers should
+  be retrieved.
+  
+
+**Returns**:
+
+  Trackers for the conversation.
+
 #### log\_message
 
 ```python
- | async log_message(message: UserMessage, should_save_tracker: bool = True) -> Optional[DialogueStateTracker]
+ | async log_message(message: UserMessage, should_save_tracker: bool = True) -> DialogueStateTracker
 ```
 
 Log `message` on tracker belonging to the message&#x27;s conversation_id.
@@ -73,10 +149,35 @@ Optionally save the tracker if `should_save_tracker` is `True`. Tracker saving
 can be skipped if the tracker returned by this method is used for further
 processing and saved at a later stage.
 
+#### execute\_action
+
+```python
+ | async execute_action(sender_id: Text, action_name: Text, output_channel: OutputChannel, nlg: NaturalLanguageGenerator, prediction: PolicyPrediction) -> Optional[DialogueStateTracker]
+```
+
+Execute an action for a conversation.
+
+Note that this might lead to unexpected bot behavior. Rather use an intent
+to execute certain behavior within a conversation (e.g. by using
+`trigger_external_user_uttered`).
+
+**Arguments**:
+
+- `sender_id` - The ID of the conversation.
+- `action_name` - The name of the action which should be executed.
+- `output_channel` - The output channel which should be used for bot responses.
+- `nlg` - The response generator.
+- `prediction` - The prediction for the action.
+  
+
+**Returns**:
+
+  The new conversation state. Note that the new state is also persisted.
+
 #### predict\_next\_action
 
 ```python
- | predict_next_action(tracker: DialogueStateTracker) -> Tuple[rasa.core.actions.action.Action, Optional[Text], float]
+ | predict_next_action(tracker: DialogueStateTracker) -> Tuple[rasa.core.actions.action.Action, PolicyPrediction]
 ```
 
 Predicts the next action the bot should take after seeing x.

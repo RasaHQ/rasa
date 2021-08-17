@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.core.training_data.story_reader.story_step_builder
+sidebar_label: story_step_builder
 title: rasa.shared.core.training_data.story_reader.story_step_builder
 ---
 

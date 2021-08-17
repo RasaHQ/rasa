@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.cli.scaffold
+sidebar_label: scaffold
 title: rasa.cli.scaffold
 ---
 

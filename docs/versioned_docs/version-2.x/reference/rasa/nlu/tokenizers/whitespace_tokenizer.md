@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.tokenizers.whitespace_tokenizer
+sidebar_label: whitespace_tokenizer
 title: rasa.nlu.tokenizers.whitespace_tokenizer
 ---
 

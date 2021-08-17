@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.persistor
+sidebar_label: persistor
 title: rasa.nlu.persistor
 ---
 

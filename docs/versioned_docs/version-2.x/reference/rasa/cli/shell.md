@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.cli.shell
+sidebar_label: shell
 title: rasa.cli.shell
 ---
 

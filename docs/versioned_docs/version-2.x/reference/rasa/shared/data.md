@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.data
+sidebar_label: data
 title: rasa.shared.data
 ---
 
@@ -22,7 +22,7 @@ Return Markdown file extension
 #### is\_likely\_yaml\_file
 
 ```python
-is_likely_yaml_file(file_path: Text) -> bool
+is_likely_yaml_file(file_path: Union[Text, Path]) -> bool
 ```
 
 Check if a file likely contains yaml.

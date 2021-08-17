@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.classifiers.diet_classifier
+sidebar_label: diet_classifier
 title: rasa.nlu.classifiers.diet_classifier
 ---
 
@@ -35,6 +35,24 @@ similarities with negative samples.
 ```
 
 Declare instance variables with default values.
+
+#### label\_key
+
+```python
+ | @property
+ | label_key() -> Optional[Text]
+```
+
+Return key if intent classification is activated.
+
+#### label\_sub\_key
+
+```python
+ | @property
+ | label_sub_key() -> Optional[Text]
+```
+
+Return sub key if intent classification is activated.
 
 #### preprocess\_train\_data
 

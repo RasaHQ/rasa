@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.config
+sidebar_label: config
 title: rasa.core.config
 ---
 

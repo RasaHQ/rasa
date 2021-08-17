@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.policies.sklearn_policy
+sidebar_label: sklearn_policy
 title: rasa.core.policies.sklearn_policy
 ---
 
@@ -35,4 +35,12 @@ Create a new sklearn policy.
   *inverse_transform* method.
 - `shuffle` - Whether to shuffle training data.
 - `zero_state_features` - Contains default feature values for attributes
+
+#### persist
+
+```python
+ | persist(path: Union[Text, Path]) -> None
+```
+
+Persists the policy properties (see parent class for more information).
 

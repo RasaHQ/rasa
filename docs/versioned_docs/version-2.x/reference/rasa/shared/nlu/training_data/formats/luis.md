@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.shared.nlu.training_data.formats.luis
+sidebar_label: luis
 title: rasa.shared.nlu.training_data.formats.luis
 ---
 
@@ -8,6 +8,8 @@ title: rasa.shared.nlu.training_data.formats.luis
 ```python
 class LuisReader(JsonTrainingDataReader)
 ```
+
+Reads LUIS training data.
 
 #### read\_from\_json
 

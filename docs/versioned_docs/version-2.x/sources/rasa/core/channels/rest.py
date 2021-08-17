@@ -46,7 +46,7 @@ class RestInput(InputChannel):
         )
         await on_new_message(message)
 
-        await queue.put("DONE")  # pytype: disable=bad-return-type
+        await queue.put("DONE")
 
     async def _extract_sender(self, req: Request) -> Optional[Text]:
         return req.json.get("sender", None)
@@ -73,7 +73,6 @@ class RestInput(InputChannel):
                     on_new_message, text, q, sender_id, input_channel, metadata
                 )
             )
-            result = None  # declare variable up front to avoid pytype error
             while True:
                 result = await q.get()
                 if result == "DONE":
@@ -82,7 +81,7 @@ class RestInput(InputChannel):
                     await resp.write(json.dumps(result) + "\n")
             await task
 
-        return stream  # pytype: disable=bad-return-type
+        return stream
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[None]]
@@ -159,4 +158,4 @@ class QueueOutputChannel(CollectingOutputChannel):
         raise NotImplementedError("A queue doesn't allow to peek at messages.")
 
     async def _persist_message(self, message) -> None:
-        await self.messages.put(message)  # pytype: disable=bad-return-type
+        await self.messages.put(message)

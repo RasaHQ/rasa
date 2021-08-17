@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.nlu.selectors.response_selector
+sidebar_label: response_selector
 title: rasa.nlu.selectors.response_selector
 ---
 
@@ -66,4 +66,12 @@ Return the metadata necessary to load the model again.
 ```
 
 Loads the trained model from the provided directory.
+
+## DIET2DIET Objects
+
+```python
+class DIET2DIET(DIET)
+```
+
+Diet 2 Diet transformer implementation.
 

@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.utils.tensorflow.model_data_utils
+sidebar_label: model_data_utils
 title: rasa.utils.tensorflow.model_data_utils
 ---
 

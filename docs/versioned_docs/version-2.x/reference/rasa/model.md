@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.model
+sidebar_label: model
 title: rasa.model
 ---
 

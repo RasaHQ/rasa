@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.actions.forms
+sidebar_label: forms
 title: rasa.core.actions.forms
 ---
 
@@ -8,6 +8,21 @@ title: rasa.core.actions.forms
 ```python
 class FormAction(LoopAction)
 ```
+
+Action which implements and executes the form logic.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(form_name: Text, action_endpoint: Optional[EndpointConfig]) -> None
+```
+
+Creates a `FormAction`.
+
+**Arguments**:
+
+- `form_name` - Name of the form.
+- `action_endpoint` - Endpoint to execute custom actions.
 
 #### required\_slots
 
@@ -121,7 +136,7 @@ else return `None`.
 #### validate\_slots
 
 ```python
- | async validate_slots(slot_dict: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Event]
+ | async validate_slots(slot_candidates: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator) -> List[Event]
 ```
 
 Validate the extracted slots.
@@ -131,7 +146,7 @@ them. Otherwise there is no validation.
 
 **Arguments**:
 
-- `slot_dict` - Extracted slots which are candidates to fill the slots required
+- `slot_candidates` - Extracted slots which are candidates to fill the slots required
   by the form.
 - `tracker` - The current conversation tracker.
 - `domain` - The current model domain.

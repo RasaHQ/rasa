@@ -1,5 +1,5 @@
 ---
-sidebar_label: rasa.core.training.story_conflict
+sidebar_label: story_conflict
 title: rasa.core.training.story_conflict
 ---
 
