@@ -601,6 +601,39 @@ def test_or_statement_with_slot_was_set():
     assert or_statement[1].value == [{"name": "bob"}]
 
 
+def test_or_statement_with_slot_was_set_is_used_for_training():
+    stories = """
+    stories:
+    - story: tell name bob or joe
+      steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: tell_name
+      - or:
+        - slot_was_set:
+            - name: joe
+        - slot_was_set:
+            - name: bob
+    """
+
+    reader = YAMLStoryReader(is_used_for_training=True)
+    yaml_content = rasa.shared.utils.io.read_yaml(stories)
+
+    steps = reader.read_from_parsed_yaml(yaml_content)
+
+    assert len(steps) == 2
+
+    slot = steps[0].events[3]
+    assert isinstance(slot, SlotSet)
+    assert slot.key == "slot_was_set"
+    assert slot.value == [{"name": "joe"}]
+
+    slot = steps[1].events[3]
+    assert isinstance(slot, SlotSet)
+    assert slot.key == "slot_was_set"
+    assert slot.value == [{"name": "bob"}]
+
+
 @pytest.mark.parametrize(
     "file,warning",
     [

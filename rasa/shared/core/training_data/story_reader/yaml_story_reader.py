@@ -340,27 +340,11 @@ class YAMLStoryReader(StoryReader):
                 if utterance:
                     events.append(utterance)
             elif KEY_CHECKPOINT_SLOTS in item.keys():
-                if isinstance(item, dict):
-                    for key, value in item.items():
-                        parsed_events = self._parse_events(
-                            SlotSet.type_name, {key: value}
-                        )
-                        events.extend(parsed_events)
-                elif isinstance(item, str):
+                for key, value in item.items():
                     parsed_events = self._parse_events(
-                        SlotSet.type_name, {item: self._slot_default_value(item)}
+                        SlotSet.type_name, {key: value}
                     )
                     events.extend(parsed_events)
-                else:
-                    rasa.shared.utils.io.raise_warning(
-                        f"Issue found in '{self.source_name}':\n"
-                        f"Invalid slot: \n{item}\n"
-                        f"Items under the '{KEY_CHECKPOINT_SLOTS}' key must be "
-                        f"YAML dictionaries or Strings. This step will be skipped.",
-                        docs=self._get_docs_link(),
-                    )
-                    return
-                pass
             else:
                 rasa.shared.utils.io.raise_warning(
                     f"Issue found in '{self.source_name}': \n"
