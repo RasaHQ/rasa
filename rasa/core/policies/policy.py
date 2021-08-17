@@ -330,10 +330,17 @@ class PolicyGraphComponent(GraphComponent):
         )
 
     @abc.abstractmethod
-    def train(self, **kwargs: Any,) -> Resource:
+    def train(
+        self,
+        training_trackers: List[TrackerWithCachedStates],
+        domain: Domain,
+        **kwargs: Any,
+    ) -> Resource:
         """Trains a policy.
 
         Args:
+            training_trackers: The story and rules trackers from the training data.
+            domain: The model's domain.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to train itself.
 
@@ -344,10 +351,14 @@ class PolicyGraphComponent(GraphComponent):
         raise NotImplementedError("Policy must have the capacity to train.")
 
     @abc.abstractmethod
-    def predict_action_probabilities(self, **kwargs: Any,) -> PolicyPrediction:
+    def predict_action_probabilities(
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
+    ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
+            tracker: The tracker containing the conversation history up to now.
+            domain: The model's domain.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
 
