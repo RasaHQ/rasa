@@ -54,7 +54,7 @@
     "mobx": "^4.3.1",
     "postcss-preset-env": "^6.7.0",
     "postcss-pseudo-any": "^1.0.1",
-    "react": "^16.8.4",
+    "react": "^16.14.0",
     "react-dom": "^16.8.4",
     "react-live": "^2.2.3",
     "react-promise": "^3.0.2",
