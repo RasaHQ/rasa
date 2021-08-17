@@ -6,7 +6,6 @@ import os
 from typing import Any, Dict, List, Optional, Text
 
 import rasa.nlu
-from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 import rasa.shared.utils.common
@@ -26,6 +25,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    TEXT_TOKENS,
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -468,7 +468,7 @@ class Interpreter:
         data = self.default_output_attributes()
         data[TEXT] = text
 
-        output_properties = {TOKENS_NAMES.get(rasa.shared.nlu.constants.TEXT)}
+        output_properties = {TEXT_TOKENS}
         message = Message(
             data=data, time=timestamp, output_properties=output_properties
         )

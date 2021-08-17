@@ -4,7 +4,6 @@ import typing
 import copy
 
 import rasa.shared.utils.io
-from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -22,13 +21,12 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
     ACTION_NAME,
+    TEXT_TOKENS,
 )
 from rasa.shared.constants import DIAGNOSTIC_DATA
 
 if typing.TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
-
-TEXT_TOKENS = TOKENS_NAMES.get(rasa.shared.nlu.constants.TEXT)
 
 
 class Message:

@@ -90,7 +90,4 @@ async def test_interpreter_parses_text_tokens(
 
     parsed_tokens = parsed_data.get("text_tokens")
 
-    assert parsed_tokens[0][0] == indices[0][0]
-    assert parsed_tokens[0][1] == indices[0][1]
-    assert parsed_tokens[1][0] == indices[1][0]
-    assert parsed_tokens[1][1] == indices[1][1]
+    assert parsed_tokens == indices

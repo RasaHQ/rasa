@@ -1,4 +1,5 @@
 TEXT = "text"
+TEXT_TOKENS = "text_tokens"
 INTENT = "intent"
 RESPONSE = "response"
 RESPONSE_SELECTOR = "response_selector"

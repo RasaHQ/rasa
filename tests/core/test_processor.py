@@ -1333,7 +1333,4 @@ async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
     event = tracker.get_last_event_for(event_type=UserUttered)
     event_tokens = event.as_dict().get("parse_data").get("text_tokens")
 
-    assert event_tokens[0][0] == indices[0][0]
-    assert event_tokens[0][1] == indices[0][1]
-    assert event_tokens[1][0] == indices[1][0]
-    assert event_tokens[1][1] == indices[1][1]
+    assert event_tokens == indices
