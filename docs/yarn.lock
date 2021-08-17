@@ -2829,6 +2829,90 @@
     webpack-merge "^5.8.0"
     webpackbar "^5.0.0-3"
 
+"@docusaurus/core@2.0.0-beta.4":
+  version "2.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@docusaurus/core/-/core-2.0.0-beta.4.tgz#b41c5064c8737405cfceb1a373c9c5aa3410fd95"
+  integrity sha512-ITa976MPFl9KbYchMOWCCX6SU6EFDSdGeGOHtpaNcrJ9e9Sj7o77fKmMH/ciShwz1g8brTm3VxZ0FwleU8lTig==
+  dependencies:
+    "@babel/core" "^7.12.16"
+    "@babel/generator" "^7.12.15"
+    "@babel/plugin-syntax-dynamic-import" "^7.8.3"
+    "@babel/plugin-transform-runtime" "^7.12.15"
+    "@babel/preset-env" "^7.12.16"
+    "@babel/preset-react" "^7.12.13"
+    "@babel/preset-typescript" "^7.12.16"
+    "@babel/runtime" "^7.12.5"
+    "@babel/runtime-corejs3" "^7.12.13"
+    "@babel/traverse" "^7.12.13"
+    "@docusaurus/cssnano-preset" "2.0.0-beta.4"
+    "@docusaurus/react-loadable" "5.5.0"
+    "@docusaurus/types" "2.0.0-beta.4"
+    "@docusaurus/utils" "2.0.0-beta.4"
+    "@docusaurus/utils-common" "2.0.0-beta.4"
+    "@docusaurus/utils-validation" "2.0.0-beta.4"
+    "@slorber/static-site-generator-webpack-plugin" "^4.0.0"
+    "@svgr/webpack" "^5.5.0"
+    autoprefixer "^10.2.5"
+    babel-loader "^8.2.2"
+    babel-plugin-dynamic-import-node "2.3.0"
+    boxen "^5.0.1"
+    chalk "^4.1.1"
+    chokidar "^3.5.1"
+    clean-css "^5.1.2"
+    commander "^5.1.0"
+    copy-webpack-plugin "^9.0.0"
+    core-js "^3.9.1"
+    css-loader "^5.1.1"
+    css-minimizer-webpack-plugin "^3.0.1"
+    cssnano "^5.0.4"
+    del "^6.0.0"
+    detect-port "^1.3.0"
+    escape-html "^1.0.3"
+    eta "^1.12.1"
+    express "^4.17.1"
+    file-loader "^6.2.0"
+    fs-extra "^10.0.0"
+    github-slugger "^1.3.0"
+    globby "^11.0.2"
+    html-minifier-terser "^5.1.1"
+    html-tags "^3.1.0"
+    html-webpack-plugin "^5.3.2"
+    import-fresh "^3.3.0"
+    is-root "^2.1.0"
+    leven "^3.1.0"
+    lodash "^4.17.20"
+    mini-css-extract-plugin "^1.6.0"
+    module-alias "^2.2.2"
+    nprogress "^0.2.0"
+    postcss "^8.2.15"
+    postcss-loader "^5.3.0"
+    prompts "^2.4.1"
+    react-dev-utils "^11.0.1"
+    react-error-overlay "^6.0.9"
+    react-helmet "^6.1.0"
+    react-loadable "^5.5.0"
+    react-loadable-ssr-addon-v5-slorber "^1.0.1"
+    react-router "^5.2.0"
+    react-router-config "^5.1.1"
+    react-router-dom "^5.2.0"
+    resolve-pathname "^3.0.0"
+    rtl-detect "^1.0.3"
+    semver "^7.3.4"
+    serve-handler "^6.1.3"
+    shelljs "^0.8.4"
+    std-env "^2.2.1"
+    strip-ansi "^6.0.0"
+    terser-webpack-plugin "^5.1.3"
+    tslib "^2.2.0"
+    update-notifier "^5.1.0"
+    url-loader "^4.1.1"
+    wait-on "^5.3.0"
+    webpack "^5.40.0"
+    webpack-bundle-analyzer "^4.4.2"
+    webpack-dev-server "^3.11.2"
+    webpack-merge "^5.8.0"
+    webpackbar "^5.0.0-3"
+
 "@docusaurus/cssnano-preset@2.0.0-beta.3":
   version "2.0.0-beta.3"
   resolved "https://registry.yarnpkg.com/@docusaurus/cssnano-preset/-/cssnano-preset-2.0.0-beta.3.tgz#b82d58df4e95b04cd57a3e9922d39056207d2c73"
@@ -2838,14 +2922,24 @@
     postcss "^8.2.15"
     postcss-sort-media-queries "^3.10.11"
 
-"@docusaurus/lqip-loader@2.0.0-alpha.63":
-  version "2.0.0-alpha.63"
-  resolved "https://registry.yarnpkg.com/@docusaurus/lqip-loader/-/lqip-loader-2.0.0-alpha.63.tgz#412f5110dc12da05a568ae2e08d1abb463ad88dc"
-  integrity sha512-Z5ExRtfw+RAgutN1+p7Ch0Bm2M+GPo9vFGVgbYJIi0UUsC/RKJ4+ucKTQZAC0hrNvFPodcddVt6VcQhB7nHHig==
+"@docusaurus/cssnano-preset@2.0.0-beta.4":
+  version "2.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@docusaurus/cssnano-preset/-/cssnano-preset-2.0.0-beta.4.tgz#a40c0bee39143a531ca4dde05bb3a84bec416668"
+  integrity sha512-KsmFEob0ElffnFFbz93wcYH4IncU4LDnKBerdomU0Wdg/vXTLo3Q7no8df9yjbcBXVRaSX+/tNFapY9Iu/4Cew==
   dependencies:
-    loader-utils "^1.2.3"
-    lodash.sortby "^4.7.0"
+    cssnano-preset-advanced "^5.1.1"
+    postcss "^8.2.15"
+    postcss-sort-media-queries "^3.10.11"
+
+"@docusaurus/lqip-loader@2.0.0-beta.4":
+  version "2.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@docusaurus/lqip-loader/-/lqip-loader-2.0.0-beta.4.tgz#c6ee90fbc5e90c32868cc7a95dd1638cb172a7b7"
+  integrity sha512-9f7pqWwhDGf56k8mfFfl6OX0onUZYIXbprNtheWtAu5OSSh3lUmOBazRxBUK6+xGUjyW/8UF3JgJAqBdH6Sk/w==
+  dependencies:
+    file-loader "^6.2.0"
+    lodash "^4.17.20"
     node-vibrant "^3.1.5"
+    sharp "^0.28.2"
 
 "@docusaurus/mdx-loader@2.0.0-alpha.63":
   version "2.0.0-alpha.63"
@@ -2944,19 +3038,20 @@
     react-json-view "^1.21.3"
     tslib "^2.1.0"
 
-"@docusaurus/plugin-ideal-image@2.0.0-alpha.63":
-  version "2.0.0-alpha.63"
-  resolved "https://registry.yarnpkg.com/@docusaurus/plugin-ideal-image/-/plugin-ideal-image-2.0.0-alpha.63.tgz#620b29b27d58a4ea51f69b5e896d62ff02e72c72"
-  integrity sha512-VMDIHRc66JnaPd8reZCZosbod/vd7aRpYMrutPcuNJgaCuSScv7nOFOcbsuXjnZLG2fgvjg9bUrdudIwmT4Z0g==
+"@docusaurus/plugin-ideal-image@2.0.0-beta.4":
+  version "2.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@docusaurus/plugin-ideal-image/-/plugin-ideal-image-2.0.0-beta.4.tgz#755d7922dbe1376259ddfbf211b3a58ef8041305"
+  integrity sha512-U9Y5IfBsDU/FmfueX3IElge2L/7yBzbpaDfeKbrp37FxIxrAk9DNA8uT4gdEnGjoWrSEiYhn1Eo4+9yFofpTvg==
   dependencies:
-    "@docusaurus/core" "2.0.0-alpha.63"
-    "@docusaurus/lqip-loader" "2.0.0-alpha.63"
-    "@docusaurus/types" "2.0.0-alpha.63"
+    "@docusaurus/core" "2.0.0-beta.4"
+    "@docusaurus/lqip-loader" "2.0.0-beta.4"
+    "@docusaurus/responsive-loader" "1.4.0"
+    "@docusaurus/types" "2.0.0-beta.4"
     "@endiliey/react-ideal-image" "^0.0.11"
-    "@endiliey/responsive-loader" "^1.3.2"
-    react-waypoint "^9.0.2"
-    sharp "^0.25.2"
-    webpack "^4.41.2"
+    react-waypoint "^10.1.0"
+    sharp "^0.28.2"
+    tslib "^2.1.0"
+    webpack "^5.40.0"
 
 "@docusaurus/plugin-sitemap@2.0.0-alpha.63":
   version "2.0.0-alpha.63"
@@ -2975,6 +3070,13 @@
   integrity sha512-Ld/kwUE6yATIOTLq3JCsWiTa/drisajwKqBQ2Rw6IcT+sFsKfYek8F2jSH8f68AT73xX97UehduZeCSlnuCBIg==
   dependencies:
     prop-types "^15.6.2"
+
+"@docusaurus/responsive-loader@1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@docusaurus/responsive-loader/-/responsive-loader-1.4.0.tgz#dea284e15133570f5ef09be414881c65c42e43d9"
+  integrity sha512-qkVjSEUM4dVNmgOWkjbuRetZegOiCnzGPOzS1FPmxMrc9jCI70Rusx67EYdYPyAu47F2cvUf8PwX0o6AUzfNTQ==
+  dependencies:
+    loader-utils "^2.0.0"
 
 "@docusaurus/theme-search-algolia@2.0.0-alpha.63":
   version "2.0.0-alpha.63"
@@ -3012,12 +3114,31 @@
     webpack "^5.40.0"
     webpack-merge "^5.8.0"
 
+"@docusaurus/types@2.0.0-beta.4":
+  version "2.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@docusaurus/types/-/types-2.0.0-beta.4.tgz#9eef0a88b008ebd65bb9870b7ff0050de0e620c4"
+  integrity sha512-2aMCliUCBYhZO8UiiPIKpRu2KECtqt0nRu44EbN6rj1STf695AIOhJC1Zo5TiuW2WbiljSbkJTgG3XdBZ3FUBw==
+  dependencies:
+    commander "^5.1.0"
+    joi "^17.4.0"
+    querystring "0.2.0"
+    webpack "^5.40.0"
+    webpack-merge "^5.8.0"
+
 "@docusaurus/utils-common@2.0.0-beta.3":
   version "2.0.0-beta.3"
   resolved "https://registry.yarnpkg.com/@docusaurus/utils-common/-/utils-common-2.0.0-beta.3.tgz#85fc7f7572d0f55e62b8f0baeb91967bf7d699e0"
   integrity sha512-KJgDN4G2MzJcHy+OR2e/xgEwRy+vX26pzwtjPkRjNf24CPa0BwFbRmR5apbltCgTB10vT6xroStc8Quv/286Cg==
   dependencies:
     "@docusaurus/types" "2.0.0-beta.3"
+    tslib "^2.2.0"
+
+"@docusaurus/utils-common@2.0.0-beta.4":
+  version "2.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@docusaurus/utils-common/-/utils-common-2.0.0-beta.4.tgz#eb2e5876f5f79d037fa7e1867177658661b9c1c2"
+  integrity sha512-QaKs96/95ztKgZqHMUS/vNl+GzZ/6vKVEPjBXWt7Fdhg2soT1Iu4cShnibEO5HaVlwSfnJbVmDLVm8phQRdr0A==
+  dependencies:
+    "@docusaurus/types" "2.0.0-beta.4"
     tslib "^2.2.0"
 
 "@docusaurus/utils-validation@2.0.0-alpha.63":
@@ -3035,6 +3156,16 @@
   integrity sha512-jGX78NNrxDZFgDjLaa6wuJ/eKDoHdZFG2CVX3uCaIGe1x8eTMG2/e/39GzbZl+W7VHYpW0bzdf/5dFhaKLfQbQ==
   dependencies:
     "@docusaurus/utils" "2.0.0-beta.3"
+    chalk "^4.1.1"
+    joi "^17.4.0"
+    tslib "^2.1.0"
+
+"@docusaurus/utils-validation@2.0.0-beta.4":
+  version "2.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@docusaurus/utils-validation/-/utils-validation-2.0.0-beta.4.tgz#417ff389d61aab4c6544f169e31bb86573b518df"
+  integrity sha512-t1sxSeyVU02NkcFhPvE7eQFA0CFUst68hTnie6ZS3ToY3nlzdbYRPOAZY5MPr3zRMwum6yFAXgqVA+5fnR0OGg==
+  dependencies:
+    "@docusaurus/utils" "2.0.0-beta.4"
     chalk "^4.1.1"
     joi "^17.4.0"
     tslib "^2.1.0"
@@ -3066,6 +3197,23 @@
     resolve-pathname "^3.0.0"
     tslib "^2.2.0"
 
+"@docusaurus/utils@2.0.0-beta.4":
+  version "2.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@docusaurus/utils/-/utils-2.0.0-beta.4.tgz#6e572371b0a59360b49102d014579f5364f1d8da"
+  integrity sha512-6nI3ETBp0ZSt5yp5Fc5nthQjR1MmLgl2rXC3hcscrSUZx0QvzJFzTiRgD9EAIJtR/i2JkUK18eaFiBjMBoXEbQ==
+  dependencies:
+    "@docusaurus/types" "2.0.0-beta.4"
+    "@types/github-slugger" "^1.3.0"
+    chalk "^4.1.1"
+    escape-string-regexp "^4.0.0"
+    fs-extra "^10.0.0"
+    globby "^11.0.4"
+    gray-matter "^4.0.3"
+    lodash "^4.17.20"
+    micromatch "^4.0.4"
+    resolve-pathname "^3.0.0"
+    tslib "^2.2.0"
+
 "@emotion/is-prop-valid@^0.8.1":
   version "0.8.8"
   resolved "https://registry.yarnpkg.com/@emotion/is-prop-valid/-/is-prop-valid-0.8.8.tgz#db28b1c4368a259b60a97311d6a952d4fd01ac1a"
@@ -3087,13 +3235,6 @@
   version "0.0.11"
   resolved "https://registry.yarnpkg.com/@endiliey/react-ideal-image/-/react-ideal-image-0.0.11.tgz#dc3803d04e1409cf88efa4bba0f67667807bdf27"
   integrity sha512-QxMjt/Gvur/gLxSoCy7VIyGGGrGmDN+VHcXkN3R2ApoWX0EYUE+hMgPHSW/PV6VVebZ1Nd4t2UnGRBDihu16JQ==
-
-"@endiliey/responsive-loader@^1.3.2":
-  version "1.3.2"
-  resolved "https://registry.yarnpkg.com/@endiliey/responsive-loader/-/responsive-loader-1.3.2.tgz#b9276747293b57c1ae9df59c6f5bec7624b157b7"
-  integrity sha512-j77koHZIW8L6s7kw/VdZhORamdP7laW4+Gcu7Ddt7iRSXniADDk9HtKUZrBXC90hMYo+Kb4XdlqMizvMI8JGrA==
-  dependencies:
-    loader-utils "^1.2.3"
 
 "@endiliey/static-site-generator-webpack-plugin@^4.0.0":
   version "4.0.0"
@@ -6678,7 +6819,7 @@ collection-visit@^1.0.0:
     map-visit "^1.0.0"
     object-visit "^1.0.0"
 
-color-convert@^1.9.0, color-convert@^1.9.1:
+color-convert@^1.9.0, color-convert@^1.9.1, color-convert@^1.9.3:
   version "1.9.3"
   resolved "https://registry.yarnpkg.com/color-convert/-/color-convert-1.9.3.tgz#bb71850690e1f136567de629d2d5471deda4c1e8"
   integrity sha512-QfAUtd+vFdAtFQcC8CCyYt1fYWxSqAiK2cSD6zDB8N3cpsEBAvRxp9zOGg6G/SHHJYAT88/az/IuDGALsNVbGg==
@@ -6710,6 +6851,14 @@ color-string@^1.5.2:
     color-name "^1.0.0"
     simple-swizzle "^0.2.2"
 
+color-string@^1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/color-string/-/color-string-1.6.0.tgz#c3915f61fe267672cb7e1e064c9d692219f6c312"
+  integrity sha512-c/hGS+kRWJutUBEngKKmk4iH3sD59MBkoxVapS/0wgpCz2u7XsNloxknyvBhzwEs1IbV36D9PwqLPJ2DTu3vMA==
+  dependencies:
+    color-name "^1.0.0"
+    simple-swizzle "^0.2.2"
+
 color@3.0.x:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/color/-/color-3.0.0.tgz#d920b4328d534a3ac8295d68f7bd4ba6c427be9a"
@@ -6718,13 +6867,21 @@ color@3.0.x:
     color-convert "^1.9.1"
     color-string "^1.5.2"
 
-color@^3.0.0, color@^3.1.2:
+color@^3.0.0:
   version "3.1.2"
   resolved "https://registry.yarnpkg.com/color/-/color-3.1.2.tgz#68148e7f85d41ad7649c5fa8c8106f098d229e10"
   integrity sha512-vXTJhHebByxZn3lDvDJYw4lR5+uB3vuoHsuYA5AKuxRVn5wzzIfQKGLBmgdVRHKTJYeK5rvJcHnrd0Li49CFpg==
   dependencies:
     color-convert "^1.9.1"
     color-string "^1.5.2"
+
+color@^3.1.3:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/color/-/color-3.2.1.tgz#3544dc198caf4490c3ecc9a790b54fe9ff45e164"
+  integrity sha512-aBl7dZI9ENN6fUGC7mWpMTPNHmWUSNan9tuWN6ahh5ZLNk9baLJOnSMlrQkHcrfFgz2/RigjUVAjdx36VcemKA==
+  dependencies:
+    color-convert "^1.9.3"
+    color-string "^1.6.0"
 
 colord@^2.0.1:
   version "2.0.1"
@@ -7695,13 +7852,6 @@ decompress-response@^5.0.0:
   integrity sha512-TLZWWybuxWgoW7Lykv+gq9xvzOsUjQ9tF09Tj6NSTYGMTCHNXzrPnD6Hi+TgZq19PyTAGH4Ll/NIM/eTGglnMw==
   dependencies:
     mimic-response "^2.0.0"
-
-decompress-response@^6.0.0:
-  version "6.0.0"
-  resolved "https://registry.yarnpkg.com/decompress-response/-/decompress-response-6.0.0.tgz#ca387612ddb7e104bd16d85aab00d5ecf09c66fc"
-  integrity sha512-aW35yZM6Bb/4oJlZncMH2LCoZtJXTRxES17vE3hoRiowU2kWHaJKFkSBDnDR+cm9J+9QhXmREyIfv0pji9ejCQ==
-  dependencies:
-    mimic-response "^3.1.0"
 
 decompress-tar@^4.0.0, decompress-tar@^4.1.0, decompress-tar@^4.1.1:
   version "4.1.1"
@@ -12384,11 +12534,6 @@ mimic-response@^2.0.0, mimic-response@^2.1.0:
   resolved "https://registry.yarnpkg.com/mimic-response/-/mimic-response-2.1.0.tgz#d13763d35f613d09ec37ebb30bac0469c0ee8f43"
   integrity sha512-wXqjST+SLt7R009ySCglWBCFpjUygmCIfD790/kVbiGmUgfYGuB14PiTd5DwVxSV4NcYHjzMkoj5LjQZwTQLEA==
 
-mimic-response@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/mimic-response/-/mimic-response-3.1.0.tgz#2d1d59af9c1b129815accc2c46a022a5ce1fa3c9"
-  integrity sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ==
-
 min-document@^2.19.0:
   version "2.19.0"
   resolved "https://registry.yarnpkg.com/min-document/-/min-document-2.19.0.tgz#7bd282e3f5842ed295bb748cdd9f1ffa2c824685"
@@ -12513,7 +12658,7 @@ mixin-object@^2.0.1:
     for-in "^0.1.3"
     is-extendable "^0.1.1"
 
-mkdirp-classic@^0.5.2:
+mkdirp-classic@^0.5.2, mkdirp-classic@^0.5.3:
   version "0.5.3"
   resolved "https://registry.yarnpkg.com/mkdirp-classic/-/mkdirp-classic-0.5.3.tgz#fa10c9115cc6d8865be221ba47ee9bed78601113"
   integrity sha512-gKLcREMhtuZRwRAfqP3RFW+TK4JqApVBtOIftVgjuABpAtpxhPGaDcfvbhNvD0B8iD1oUr/txX35NjcaY6Ns/A==
@@ -12863,17 +13008,17 @@ no-case@^3.0.3:
     lower-case "^2.0.1"
     tslib "^1.10.0"
 
-node-abi@^2.7.0:
-  version "2.19.1"
-  resolved "https://registry.yarnpkg.com/node-abi/-/node-abi-2.19.1.tgz#6aa32561d0a5e2fdb6810d8c25641b657a8cea85"
-  integrity sha512-HbtmIuByq44yhAzK7b9j/FelKlHYISKQn0mtvcBrU5QBkhoCMp5bu8Hv5AI34DcKfOAcJBcOEMwLlwO62FFu9A==
+node-abi@^2.21.0:
+  version "2.30.0"
+  resolved "https://registry.yarnpkg.com/node-abi/-/node-abi-2.30.0.tgz#8be53bf3e7945a34eea10e0fc9a5982776cf550b"
+  integrity sha512-g6bZh3YCKQRdwuO/tSZZYJAw622SjsRfJ2X0Iy4sSOHZ34/sPPdVBn8fev2tj7njzLwuqPw9uMtGsGkO5kIQvg==
   dependencies:
     semver "^5.4.1"
 
-node-addon-api@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-3.0.0.tgz#812446a1001a54f71663bed188314bba07e09247"
-  integrity sha512-sSHCgWfJ+Lui/u+0msF3oyCgvdkhxDbkCS6Q8uiJquzOimkJBvX6hl5aSSA7DR1XbMpdM8r7phjcF63sF4rkKg==
+node-addon-api@^3.2.0:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-3.2.1.tgz#81325e0a2117789c0128dab65e7e38f07ceba161"
+  integrity sha512-mmcei9JghVNDYydghQmeDX8KoAm0FAiYyIcUt/N4nhyAipB17pllZQDOJD2fotxABnt4Mdz+dKTO7eftLg4d0A==
 
 node-emoji@^1.10.0:
   version "1.10.0"
@@ -12982,11 +13127,6 @@ node-vibrant@^3.1.5:
     lodash "^4.17.4"
     url "^0.11.0"
 
-noop-logger@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/noop-logger/-/noop-logger-0.1.1.tgz#94a2b1633c4f1317553007d8966fd0e841b6a4c2"
-  integrity sha1-lKKxYzxPExdVMAfYlm/Q6EG2pMI=
-
 noop2@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/noop2/-/noop2-2.0.0.tgz#4b636015e9882b54783c02b412f699d8c5cd0a5b"
@@ -13082,7 +13222,7 @@ npm-run-path@^4.0.0, npm-run-path@^4.0.1:
   dependencies:
     path-key "^3.0.0"
 
-npmlog@^4.0.1, npmlog@^4.1.2:
+npmlog@^4.0.1:
   version "4.1.2"
   resolved "https://registry.yarnpkg.com/npmlog/-/npmlog-4.1.2.tgz#08a7f2a8bf734604779a9efa4ad5cc717abb954b"
   integrity sha512-2uUqazuKlTaSI/dC8AzicUck7+IrEaOnN/e0jd3Xtt1KcGpwx30v50mL7oPyr/h9bL3E4aZccVwpwP+5W9Vjkg==
@@ -14910,26 +15050,24 @@ postcss@^8.1.7, postcss@^8.2.15, postcss@^8.3.5:
     nanoid "^3.1.23"
     source-map-js "^0.6.2"
 
-prebuild-install@^5.3.4:
-  version "5.3.5"
-  resolved "https://registry.yarnpkg.com/prebuild-install/-/prebuild-install-5.3.5.tgz#e7e71e425298785ea9d22d4f958dbaccf8bb0e1b"
-  integrity sha512-YmMO7dph9CYKi5IR/BzjOJlRzpxGGVo1EsLSUZ0mt/Mq0HWZIHOKHHcHdT69yG54C9m6i45GpItwRHpk0Py7Uw==
+prebuild-install@^6.1.2:
+  version "6.1.4"
+  resolved "https://registry.yarnpkg.com/prebuild-install/-/prebuild-install-6.1.4.tgz#ae3c0142ad611d58570b89af4986088a4937e00f"
+  integrity sha512-Z4vpywnK1lBg+zdPCVCsKq0xO66eEV9rWo2zrROGGiRS4JtueBOdlB1FnY8lcy7JsUud/Q3ijUxyWN26Ika0vQ==
   dependencies:
     detect-libc "^1.0.3"
     expand-template "^2.0.3"
     github-from-package "0.0.0"
     minimist "^1.2.3"
-    mkdirp "^0.5.1"
+    mkdirp-classic "^0.5.3"
     napi-build-utils "^1.0.1"
-    node-abi "^2.7.0"
-    noop-logger "^0.1.1"
+    node-abi "^2.21.0"
     npmlog "^4.0.1"
     pump "^3.0.0"
     rc "^1.2.7"
     simple-get "^3.0.3"
     tar-fs "^2.0.0"
     tunnel-agent "^0.6.0"
-    which-pm-runs "^1.0.0"
 
 precinct@^8.0.0:
   version "8.1.0"
@@ -15404,10 +15542,15 @@ react-helmet@^6.0.0-beta, react-helmet@^6.1.0:
     react-fast-compare "^3.1.1"
     react-side-effect "^2.1.0"
 
-react-is@^16.12.0, react-is@^16.6.0, react-is@^16.6.3, react-is@^16.7.0, react-is@^16.8.1, react-is@^16.8.4:
+react-is@^16.12.0, react-is@^16.6.0, react-is@^16.7.0, react-is@^16.8.1, react-is@^16.8.4:
   version "16.13.1"
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
   integrity sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==
+
+react-is@^17.0.1:
+  version "17.0.2"
+  resolved "https://registry.yarnpkg.com/react-is/-/react-is-17.0.2.tgz#e691d4a8e9c789365655539ab372762b0efb54f0"
+  integrity sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==
 
 react-json-view@^1.21.3:
   version "1.21.3"
@@ -15533,14 +15676,15 @@ react-toggle@^4.1.1:
   dependencies:
     classnames "^2.2.5"
 
-react-waypoint@^9.0.2:
-  version "9.0.3"
-  resolved "https://registry.yarnpkg.com/react-waypoint/-/react-waypoint-9.0.3.tgz#176aa4686b33eb40d0d48d361c468f0367167958"
-  integrity sha512-NRmyjW8CUBNNl4WpvBqLDgBs18rFUsixeHVHrRrFlWTdOlWP7eiDjptqlR/cJAPLD6RwP5XFCm3bi9OiofN3nA==
+react-waypoint@^10.1.0:
+  version "10.1.0"
+  resolved "https://registry.yarnpkg.com/react-waypoint/-/react-waypoint-10.1.0.tgz#6ab522a61bd52946260e4a78b3182759a97b40ec"
+  integrity sha512-wiVF0lTslVm27xHbnvUUADUrcDjrQxAp9lEYGExvcoEBScYbXu3Kt++pLrfj6CqOeeRAL4HcX8aANVLSn6bK0Q==
   dependencies:
+    "@babel/runtime" "^7.12.5"
     consolidated-events "^1.1.0 || ^2.0.0"
     prop-types "^15.0.0"
-    react-is "^16.6.3"
+    react-is "^17.0.1"
 
 react@^16.8.4:
   version "16.13.1"
@@ -16594,19 +16738,18 @@ shallow-clone@^3.0.0:
   dependencies:
     kind-of "^6.0.2"
 
-sharp@^0.25.2:
-  version "0.25.4"
-  resolved "https://registry.yarnpkg.com/sharp/-/sharp-0.25.4.tgz#1a8e542144a07ab7e9316ab89de80182b827c363"
-  integrity sha512-umSzJJ1oBwIOfwFFt/fJ7JgCva9FvrEU2cbbm7u/3hSDZhXvkME8WE5qpaJqLIe2Har5msF5UG4CzYlEg5o3BQ==
+sharp@^0.28.2:
+  version "0.28.3"
+  resolved "https://registry.yarnpkg.com/sharp/-/sharp-0.28.3.tgz#ecd74cefd020bee4891bb137c9850ee2ce277a8b"
+  integrity sha512-21GEP45Rmr7q2qcmdnjDkNP04Ooh5v0laGS5FDpojOO84D1DJwUijLiSq8XNNM6e8aGXYtoYRh3sVNdm8NodMA==
   dependencies:
-    color "^3.1.2"
+    color "^3.1.3"
     detect-libc "^1.0.3"
-    node-addon-api "^3.0.0"
-    npmlog "^4.1.2"
-    prebuild-install "^5.3.4"
-    semver "^7.3.2"
-    simple-get "^4.0.0"
-    tar "^6.0.2"
+    node-addon-api "^3.2.0"
+    prebuild-install "^6.1.2"
+    semver "^7.3.5"
+    simple-get "^3.1.0"
+    tar-fs "^2.1.1"
     tunnel-agent "^0.6.0"
 
 shebang-command@^1.2.0:
@@ -16710,21 +16853,12 @@ simple-concat@^1.0.0:
   resolved "https://registry.yarnpkg.com/simple-concat/-/simple-concat-1.0.1.tgz#f46976082ba35c2263f1c8ab5edfe26c41c9552f"
   integrity sha512-cSFtAPtRhljv69IK0hTVZQ+OfE9nePi/rtJmw5UjHeVyVroEqJXP1sFztKUy1qU+xvz3u/sfYJLa947b7nAN2Q==
 
-simple-get@^3.0.3:
+simple-get@^3.0.3, simple-get@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/simple-get/-/simple-get-3.1.0.tgz#b45be062435e50d159540b576202ceec40b9c6b3"
   integrity sha512-bCR6cP+aTdScaQCnQKbPKtJOKDp/hj9EDLJo3Nw4y1QksqaovlW/bnptB6/c1e+qmNIDHRK+oXFDdEqBT8WzUA==
   dependencies:
     decompress-response "^4.2.0"
-    once "^1.3.1"
-    simple-concat "^1.0.0"
-
-simple-get@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/simple-get/-/simple-get-4.0.0.tgz#73fa628278d21de83dadd5512d2cc1f4872bd675"
-  integrity sha512-ZalZGexYr3TA0SwySsr5HlgOOinS4Jsa8YB2GJ6lUNAazyAu4KG/VmzMTwAt2YVXzzVj8QmefmAonZIK2BSGcQ==
-  dependencies:
-    decompress-response "^6.0.0"
     once "^1.3.1"
     simple-concat "^1.0.0"
 
@@ -17478,6 +17612,16 @@ tar-fs@^2.0.0:
     pump "^3.0.0"
     tar-stream "^2.0.0"
 
+tar-fs@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/tar-fs/-/tar-fs-2.1.1.tgz#489a15ab85f1f0befabb370b7de4f9eb5cbe8784"
+  integrity sha512-V0r2Y9scmbDRLCNex/+hYzvp/zyYjvFbHPNgVTKfQvVrb6guiE/fxP+XblDNR011utopbkex2nM4dHNV6GDsng==
+  dependencies:
+    chownr "^1.1.1"
+    mkdirp-classic "^0.5.2"
+    pump "^3.0.0"
+    tar-stream "^2.1.4"
+
 tar-stream@^1.5.2:
   version "1.6.2"
   resolved "https://registry.yarnpkg.com/tar-stream/-/tar-stream-1.6.2.tgz#8ea55dab37972253d9a9af90fdcd559ae435c555"
@@ -17502,7 +17646,7 @@ tar-stream@^2.0.0:
     inherits "^2.0.3"
     readable-stream "^3.1.1"
 
-tar-stream@^2.2.0:
+tar-stream@^2.1.4, tar-stream@^2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/tar-stream/-/tar-stream-2.2.0.tgz#acad84c284136b060dc3faa64474aa9aebd77287"
   integrity sha512-ujeqbceABgwMZxEJnk2HDY2DlnUZ+9oEcb1KzTVfYHio0UE6dG71n60d8D2I4qNvleWrrXpmjpt7vZeF1LnMZQ==
@@ -18942,11 +19086,6 @@ which-module@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/which-module/-/which-module-2.0.0.tgz#d9ef07dce77b9902b8a3a8fa4b31c3e3f7e6e87a"
   integrity sha1-2e8H3Od7mQK4o6j6SzHD4/fm6Ho=
-
-which-pm-runs@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/which-pm-runs/-/which-pm-runs-1.0.0.tgz#670b3afbc552e0b55df6b7780ca74615f23ad1cb"
-  integrity sha1-Zws6+8VS4LVd9rd4DKdGFfI60cs=
 
 which@^1.2.9, which@^1.3.1:
   version "1.3.1"
