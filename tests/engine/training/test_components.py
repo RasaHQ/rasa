@@ -8,7 +8,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training import fingerprinting
 from rasa.engine.training.components import (
-    CachedComponent,
+    PrecomputedValueProvider,
     FingerprintComponent,
     FingerprintStatus,
 )
@@ -21,10 +21,10 @@ def test_cached_component_returns_value_from_cache(default_model_storage: ModelS
 
     node = GraphNode(
         node_name="cached",
-        component_class=CachedComponent,
+        component_class=PrecomputedValueProvider,
         constructor_name="create",
         component_config={"output": cached_output},
-        fn_name="get_cached_output",
+        fn_name="get_value",
         inputs={},
         eager=False,
         model_storage=default_model_storage,
@@ -50,12 +50,12 @@ def test_cached_component_replace_schema_node():
         resource=Resource("hello"),
     )
 
-    CachedComponent.replace_schema_node(schema_node, 2)
+    PrecomputedValueProvider.replace_schema_node(schema_node, 2)
 
     assert schema_node == SchemaNode(
         needs={"i1": "first_input", "i2": "second_input"},
-        uses=CachedComponent,
-        fn="get_cached_output",
+        uses=PrecomputedValueProvider,
+        fn="get_value",
         constructor_name="create",
         config={"output": 2},
         eager=False,
@@ -67,7 +67,7 @@ def test_cached_component_replace_schema_node():
 def test_fingerprint_component_replace_schema_node(temp_cache: TrainingCache):
     schema_node = SchemaNode(
         needs={"i1": "first_input", "i2": "second_input"},
-        uses=CachedComponent,
+        uses=PrecomputedValueProvider,
         fn="add",
         constructor_name="load",
         config={"a": 1},
@@ -86,7 +86,7 @@ def test_fingerprint_component_replace_schema_node(temp_cache: TrainingCache):
         config={
             "config_of_replaced_component": {"a": 1},
             "cache": temp_cache,
-            "graph_component_class": CachedComponent,
+            "graph_component_class": PrecomputedValueProvider,
         },
         eager=True,
         is_input=False,
@@ -113,7 +113,7 @@ def test_fingerprint_component_hit(
     # `FingerprintComponent`.
     component_config = {"x": 1}
     fingerprint_key = fingerprinting.calculate_fingerprint_key(
-        graph_component_class=CachedComponent,
+        graph_component_class=PrecomputedValueProvider,
         config=component_config,
         inputs={
             "param_1": FingerprintableText("input_1"),
@@ -136,7 +136,7 @@ def test_fingerprint_component_hit(
         component_config={
             "config_of_replaced_component": component_config,
             "cache": temp_cache,
-            "graph_component_class": CachedComponent,
+            "graph_component_class": PrecomputedValueProvider,
         },
         fn_name="run",
         inputs={"param_1": "parent_node_1", "param_2": "parent_node_2"},
@@ -170,7 +170,7 @@ def test_fingerprint_component_miss(
         component_config={
             "config_of_replaced_component": component_config,
             "cache": temp_cache,
-            "graph_component_class": CachedComponent,
+            "graph_component_class": PrecomputedValueProvider,
         },
         fn_name="run",
         inputs={"param_1": "parent_node_1", "param_2": "parent_node_2"},

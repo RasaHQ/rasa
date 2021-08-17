@@ -10,16 +10,21 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.training import fingerprinting
 
 
-class CachedComponent(GraphComponent):
-    """Holds the cached value of a `GraphNode` from a previous training."""
+class PrecomputedValueProvider(GraphComponent):
+    """Holds the precomputed values of a `GraphNode` from a previous training.
+
+    Pre-computed values can either be
+    - values loaded from cache
+    - values which were provided during the fingerprint run by input nodes
+    """
 
     def __init__(
         self, output: Cacheable,
     ):
-        """Initializes a `CachedComponent`.
+        """Initializes a `PrecomputedValueProvider`.
 
         Args:
-            output: The cached output to return.
+            output: The precomputed output to return.
         """
         self._output = output
 
@@ -30,29 +35,31 @@ class CachedComponent(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> CachedComponent:
-        """Creates a new `CachedComponent` (see parent class for full docstring)."""
+    ) -> PrecomputedValueProvider:
+        """Creates instance (see parent class for full docstring)."""
         return cls(output=config["output"],)
 
-    def get_cached_output(self) -> Cacheable:
-        """Returns the cached output."""
+    def get_value(self) -> Cacheable:
+        """Returns the precomputed output."""
         return self._output
 
     @classmethod
     def replace_schema_node(cls, node: SchemaNode, output: Any) -> None:
-        """Updates a `SchemaNode` to use a `CachedComponent`.
+        """Updates a `SchemaNode` to use a `PrecomputedValueProvider`.
 
-        This is for when we want to use the cached output value of a node from a
+        This is for when we want to use the precomputed output value of a node from a
         previous training in a subsequent training. We replace the class in the `uses`
-        of the node to a be a `CachedComponent` configured to return the cached value.
+        of the node to a be a `PrecomputedValueProvider` configured to return the
+        precomputed value.
 
         Args:
             node: The node to update.
-            output: The cached output that the `CachedComponent` will return.
+            output: precomputed cached output that the `PrecomputedValueProvider` will
+            return.
         """
         node.uses = cls
         node.config = {"output": output}
-        node.fn = cls.get_cached_output.__name__
+        node.fn = cls.get_value.__name__
         node.constructor_name = cls.create.__name__
 
 
