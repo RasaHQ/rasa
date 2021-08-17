@@ -22,9 +22,8 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa.nlu.model import Interpreter, Trainer
+from rasa.nlu.model import Interpreter
 from rasa.core.interpreter import RasaNLUInterpreter
-from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.test import (
     is_token_within_entity,
     do_entities_overlap,
