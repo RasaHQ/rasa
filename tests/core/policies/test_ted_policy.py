@@ -6,7 +6,6 @@ import pytest
 import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
-from rasa.constants import EPOCH_OVERRIDE
 from rasa.core.constants import POLICY_PRIORITY, POLICY_MAX_HISTORY
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
@@ -54,6 +53,7 @@ from rasa.utils.tensorflow.constants import (
     IDS,
     EVAL_NUM_EPOCHS,
     EPOCHS,
+    EPOCH_OVERRIDE,
 )
 from rasa.shared.nlu.constants import ACTION_NAME
 from rasa.utils.tensorflow import model_data_utils
