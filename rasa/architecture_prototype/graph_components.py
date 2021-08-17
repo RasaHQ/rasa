@@ -142,88 +142,20 @@ class StoryToTrainingDataConverter(GraphComponent):
         lookup_table = E2ELookupTable(handle_collisions=True)
 
         # collect all action and user (intent-only) substates known from domain
-        self.add_sub_states_from_domain(domain=domain, lookup_table=lookup_table)
+        lookup_table.derive_messages_from_domain_and_add(domain=domain)
 
         # collect all substates we see in the given data
         # TODO: we can skip intent and action with action_name here
         all_events = (
             event for step in story_graph.story_steps for event in step.events
         )
-        self.add_sub_states_from_events(events=all_events, lookup_table=lookup_table)
+        lookup_table.derive_messages_from_events_and_add(events=all_events)
 
         # make sure that there is at least one user substate with a TEXT to ensure
         # `CountVectorizer` is trained...
         lookup_table.add(Message({TEXT: "hi"}))
 
         return TrainingData(training_examples=list(lookup_table.values()))
-
-    @staticmethod
-    def add_sub_states_from_domain(domain: Domain, lookup_table: E2ELookupTable):
-        """Create action and user (intent-only) substates from the domain.
-
-        Args:
-          domain: the domain from which we extract the substates
-          lookup_table: lookup table to which the substates will be added (as messages)
-        """
-        # FIXME: which version of action_names ?
-        # intial prototype:
-        action_texts = domain.action_texts
-        action_names = domain.user_actions + DEFAULT_ACTION_NAMES
-        # if we use all names (incl forms?) ...
-        # TODO: there is no nicer way to just get the action_names
-        # action_names = domain.action_names_or_texts[: -len(domain.action_texts)]
-        # if set(action_texts).intersection(action_names):
-        #     raise NotImplementedError(
-        #         "We assumed that domain's action_names_or_texts contains all "
-        #         "action names followed by the texts. Apparently that changed. "
-        #     )
-        for tag, actions in [(ACTION_NAME, action_names), (ACTION_TEXT, action_texts)]:
-            for action in actions:
-                lookup_table.add(Message({tag: action}))
-
-        for intent in domain.intent_properties.keys():
-            lookup_table.add(Message({INTENT: intent}))
-
-    @staticmethod
-    def add_sub_states_from_events(
-        events: Iterable[Event], lookup_table: E2ELookupTable
-    ) -> List[SubState]:
-        """Creates all possible action and (partial) user substates from the events.
-
-        Note that partial user substate means all substates with intent as only
-        attribute or text plus all possible attributes (except intent).
-
-        Args:
-          events: list of events to extract the substate from
-          lookup_table: lookup table to which the substates will be added (as messages)
-        """
-        for event in events:
-            if isinstance(event, UserUttered):
-                # avoid side effects by making a copy...
-                event_copy = copy.deepcopy(event)
-                # ... before changing this flag so we get a complete sub-state
-                event_copy.use_text_for_featurization = None
-                artificial_sub_state = event_copy.as_sub_state()
-                # split it up...
-                sub_states_from_event = []
-                intent = artificial_sub_state.pop(INTENT, None)
-                if intent:
-                    sub_states_from_event.append({INTENT: intent})
-                if len(artificial_sub_state):
-                    sub_states_from_event.append(artificial_sub_state)
-                    # FIXME: seems we can just remove entities here....
-            elif isinstance(event, ActionExecuted):
-                sub_states_from_event = []
-                sub_state = event.as_sub_state()
-                for key in [ACTION_NAME, ACTION_TEXT]:
-                    if key in sub_state:
-                        sub_states_from_event.append({key: sub_state[key]})
-            else:
-                sub_states_from_event = []
-
-            for sub_state in sub_states_from_event:
-                message = Message(data=sub_state)
-                lookup_table.add(message)
 
     def convert_for_inference(self, tracker: DialogueStateTracker) -> List[Message]:
         """Creates a list of unique (partial) substates from the events in the tracker.
@@ -240,7 +172,7 @@ class StoryToTrainingDataConverter(GraphComponent):
         # type and hence just iterating over the events is quicker than "applying"
         # events first and then iterating over results (again).
         lookup_table = E2ELookupTable(handle_collisions=True)
-        self.add_sub_states_from_events(tracker.events, lookup_table)
+        lookup_table.derive_messages_from_events_and_add(tracker.events, lookup_table)
         return list(lookup_table.values())
 
 
@@ -335,27 +267,31 @@ class E2ELookupTable:
         key_attribute = list(key_attributes)[0]
         return (key_attribute, str(sub_state[key_attribute]))
 
-    def add(self, message: Message) -> None:
+    def add(self, message_with_one_key_attribute: Message) -> None:
         """Adds the given message to the lookup table.
 
         Args:
-          message: the message we want to add to the lookup table
+          message_with_unique_key_attribute: The message we want to add to the lookup table. It must have exactly one key attribute.
         Raises:
           ValueError if we cannot create a key for the given message or if this creates
           a collision that we cannot resolve
         """
-        key = self._build_key(sub_state=message.data)
+        key = self._build_key(sub_state=message_with_one_key_attribute.data)
         existing_message = self._table.get(key)
         if existing_message is not None:
             if (
-                len(existing_message.features) != len(message.features)
-                or existing_message.data.keys() != message.data.keys()
+                len(existing_message.features)
+                != len(message_with_one_key_attribute.features)
+                or existing_message.data.keys()
+                != message_with_one_key_attribute.data.keys()
             ):
                 if self._handle_collisions:
-                    if len(existing_message.features) <= len(message.features) and set(
-                        message.data.keys()
-                    ) >= set(existing_message.data.keys()):
-                        self._table[key] = message
+                    if len(existing_message.features) <= len(
+                        message_with_one_key_attribute.features
+                    ) and set(message_with_one_key_attribute.data.keys()) >= set(
+                        existing_message.data.keys()
+                    ):
+                        self._table[key] = message_with_one_key_attribute
                         self._num_collisions_resolved += 1
                     else:
                         self._num_collisions_ignored += 1
@@ -363,23 +299,23 @@ class E2ELookupTable:
                 else:
                     raise ValueError(
                         f"Expected added message to be consistent. {key} already maps to "
-                        f"{existing_message}, but we want to add {message} now."
+                        f"{existing_message}, but we want to add {message_with_one_key_attribute} now."
                     )
             else:
                 self._num_collisions_ignored += 1
         else:
-            self._table[key] = message
+            self._table[key] = message_with_one_key_attribute
 
-    def add_all(self, messages: Iterable[Message]) -> None:
+    def add_all(self, messages_with_one_key_attribute: Iterable[Message]) -> None:
         """Adds the given message to the lookup table.
 
         Args:
-          messages: the messages that we want to add to the lookup table
+          messages_with_one_key_attribute: The messages that we want to add to the lookup table. Each one must have exactly one key attribute.
         Raises:
           ValueError if we cannot create a key for one of the given messages or if
           adding a message creates a collision that we cannot resolve
         """
-        for message in messages:
+        for message in messages_with_one_key_attribute:
             self.add(message)
 
     def lookup_features(
@@ -409,7 +345,13 @@ class E2ELookupTable:
             more precisely, if features for the same attribute are found in two
             looked up messages
         """
-        features = {}
+        # If we specify a list of attributes, then we want a dict with one entry
+        # for each attribute back - even if the corresponding list of features is empty.
+        features = (
+            dict()
+            if attributes is None
+            else {attribute: [] for attribute in attributes}
+        )
         # get all keys whose values in the lookup table contain features for the
         # given substate
         key_attributes = set(sub_state.keys()).intersection(self.KEY_ATTRIBUTES)
@@ -426,7 +368,10 @@ class E2ELookupTable:
             )
             for feat_attribute, feat_value in features_from_message.items():
                 existing_values = features.get(feat_attribute)
-                if existing_values:
+                # Note: the follwing if-s are needed because if we specify a list of
+                # attributes then `features_from_message` will contain one entry per
+                # attribute even if the corresponding feature list is empty.
+                if feat_value and existing_values:
                     raise RuntimeError(
                         f"Feature for attribute {feat_attribute} has already been "
                         f"extracted from a different message stored under a key "
@@ -434,7 +379,8 @@ class E2ELookupTable:
                         f"that is different from {key_attribute}. This means there's a "
                         f"redundancy in the lookup table."
                     )
-                features[feat_attribute] = feat_value
+                if feat_value and not existing_values:
+                    features[feat_attribute] = feat_value
         return features
 
     def lookup_message(self, user_text: Text) -> Message:
@@ -450,6 +396,70 @@ class E2ELookupTable:
         if message is None:
             raise ValueError(f"Expected a message with key {key} in lookup table.")
         return message
+
+    def derive_messages_from_domain_and_add(self, domain: Domain) -> None:
+        """Adds all lookup table entries that can be derived from the domain.
+
+        Args:
+          domain: the domain from which we extract the substates
+          lookup_table: lookup table to which the substates will be added (as messages)
+        """
+        # FIXME: which version of action_names ?
+        # intial prototype:
+        action_texts = domain.action_texts
+        action_names = domain.user_actions + DEFAULT_ACTION_NAMES
+        # if we use all names (incl forms?) ...
+        # TODO: there is no nicer way to just get the action_names
+        # action_names = domain.action_names_or_texts[: -len(domain.action_texts)]
+        # if set(action_texts).intersection(action_names):
+        #     raise NotImplementedError(
+        #         "We assumed that domain's action_names_or_texts contains all "
+        #         "action names followed by the texts. Apparently that changed. "
+        #     )
+        for tag, actions in [(ACTION_NAME, action_names), (ACTION_TEXT, action_texts)]:
+            for action in actions:
+                self.add(Message({tag: action}))
+
+        for intent in domain.intent_properties.keys():
+            self.add(Message({INTENT: intent}))
+
+    def derive_messages_from_events_and_add(self, events: Iterable[Event],) -> None:
+        """Creates all possible action and (partial) user substates from the events.
+
+        Note that partial user substate means all substates with intent as only
+        attribute or text plus all possible attributes (except intent).
+
+        Args:
+          events: list of events to extract the substate from
+          lookup_table: lookup table to which the substates will be added (as messages)
+        """
+        for event in events:
+            if isinstance(event, UserUttered):
+                # avoid side effects by making a copy...
+                event_copy = copy.deepcopy(event)
+                # ... before changing this flag so we get a complete sub-state
+                event_copy.use_text_for_featurization = None
+                artificial_sub_state = event_copy.as_sub_state()
+                # split it up...
+                sub_states_from_event = []
+                intent = artificial_sub_state.pop(INTENT, None)
+                if intent:
+                    sub_states_from_event.append({INTENT: intent})
+                if len(artificial_sub_state):
+                    sub_states_from_event.append(artificial_sub_state)
+                    # FIXME: seems we can just remove entities here....
+            elif isinstance(event, ActionExecuted):
+                sub_states_from_event = []
+                sub_state = event.as_sub_state()
+                for key in [ACTION_NAME, ACTION_TEXT]:
+                    if key in sub_state:
+                        sub_states_from_event.append({key: sub_state[key]})
+            else:
+                sub_states_from_event = []
+
+            for sub_state in sub_states_from_event:
+                message = Message(data=sub_state)
+                self.add(message)
 
 
 class MessageToE2EFeatureConverter(GraphComponent):

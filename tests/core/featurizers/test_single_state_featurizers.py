@@ -27,29 +27,19 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_END,
     ENTITY_TAGS,
 )
-from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ENTITY_LABEL_SEPARATOR
+from rasa.shared.core.constants import (
+    ACTIVE_LOOP,
+    PREVIOUS_ACTION,
+    SLOTS,
+    ENTITY_LABEL_SEPARATOR,
+    USER,
+)
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.core.slots import Slot
 from rasa.shared.nlu.training_data.features import Features
 
 
-def build_lookup_table_from_state(state: State) -> E2ELookupTable:
-    # Workaround: build the lookup table by hand...
-    lookup_table = E2ELookupTable()
-    for key in [TEXT, INTENT]:
-        if key in state["user"]:
-            lookup_table.add(Message(data={key: state["user"][key]}))
-    for key in [ACTION_TEXT, ACTION_NAME]:
-        if key in state["prev_action"]:
-            lookup_table.add(Message(data={key: state["prev_action"][key]}))
-    return lookup_table
-
-
-# def workaround_train_e2e_featurization_pipeline()
-# TODO
-
-
-def test_single_state_featurizer_without_interpreter_state_not_with_action_listen():
+def test_without_lookup__state_not_with_action_listen():
     """This test are for encoding state without a trained interpreter.
     action_name is not action_listen, so, INTENT, TEXT and ENTITIES should not be
     featurized.
@@ -67,9 +57,7 @@ def test_single_state_featurizer_without_interpreter_state_not_with_action_liste
         "slots": {"g": (1.0,)},
     }
 
-    lookup_table = build_lookup_table_from_state(state)
-    # Note that nothing needs to be passed through `RegexInterpreter` ...
-    encoded = f.encode_state(state, e2e_features=lookup_table,)
+    encoded = f.encode_state(state, e2e_features=None)
 
     # user input is ignored as prev action is not action_listen
     assert list(encoded.keys()) == [ACTION_NAME, ACTIVE_LOOP, SLOTS]
@@ -82,7 +70,7 @@ def test_single_state_featurizer_without_interpreter_state_not_with_action_liste
     assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[0, 0, 1]])).nnz == 0
 
 
-def test_single_state_featurizer_without_interpreter_state_with_action_listen():
+def test_without_lookup__state_with_action_listen():
     """This test are for encoding state without a trained interpreter.
     action_name is action_listen, so, INTENT and ENTITIES should be featurized
     while text shouldn't because we don't have an interpreter.
@@ -99,9 +87,7 @@ def test_single_state_featurizer_without_interpreter_state_with_action_listen():
         "active_loop": {"name": "k"},
         "slots": {"e": (1.0,)},
     }
-    lookup_table = build_lookup_table_from_state(state)
-    # Note that nothing needs to be passed through `RegexInterpreter` ...
-    encoded = f.encode_state(state, e2e_features=lookup_table,)
+    encoded = f.encode_state(state, e2e_features=None)
 
     # we featurize all the features except for *_text ones because NLU wasn't trained
     assert list(encoded.keys()) == [INTENT, ACTION_NAME, ACTIVE_LOOP, SLOTS]
@@ -115,7 +101,7 @@ def test_single_state_featurizer_without_interpreter_state_with_action_listen():
     assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[1, 0, 0]])).nnz == 0
 
 
-def test_single_state_featurizer_without_interpreter_state_no_intent_no_action_name():
+def test_without_lookup__state_no_intent_no_action_name():
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1, "action_listen": 2}
@@ -129,11 +115,10 @@ def test_single_state_featurizer_without_interpreter_state_no_intent_no_action_n
         "slots": {"e": (1.0,)},
     }
 
-    lookup_table = build_lookup_table_from_state(state)
     # check that no intent / action_name features are added when the interpreter
     # isn't there and
     # intent / action_name not in input
-    encoded = f.encode_state(state, e2e_features=lookup_table,)
+    encoded = f.encode_state(state, e2e_features=None)
 
     assert list(encoded.keys()) == [ACTIVE_LOOP, SLOTS]
     assert (
@@ -142,20 +127,26 @@ def test_single_state_featurizer_without_interpreter_state_no_intent_no_action_n
     assert (encoded[SLOTS][0].features != scipy.sparse.coo_matrix([[1, 0, 0]])).nnz == 0
 
 
-def test_single_state_featurizer_correctly_encodes_non_existing_value():
+def test_with_lookup__correctly_fallsback_to_create_features():
+
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
     f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1}
 
-    state = {"user": {"intent": "e"}, "prev_action": {"action_name": "action_listen"}}
-    lookup_table = build_lookup_table_from_state(state)
-    encoded = f.encode_state(state, e2e_features=lookup_table,)
+    state = {USER: {INTENT: "e"}, PREVIOUS_ACTION: {ACTION_NAME: "action_listen"}}
+
+    # create a lookup table with all relevant entries but no Features
+    lookup_table = E2ELookupTable()
+    lookup_table.add(Message(data={INTENT: state[USER][INTENT]}))
+    lookup_table.add(Message(data={ACTION_NAME: state[PREVIOUS_ACTION][ACTION_NAME]}))
+
+    encoded = f.encode_state(state, e2e_features=lookup_table)
 
     assert list(encoded.keys()) == [INTENT, ACTION_NAME]
     assert (encoded[INTENT][0].features != scipy.sparse.coo_matrix([[0, 0]])).nnz == 0
 
 
-def test_single_state_featurizer_prepare_for_training():
+def test_prepare_for_training():
     domain = Domain(
         intents=["greet"],
         entities=["name"],
@@ -166,7 +157,7 @@ def test_single_state_featurizer_prepare_for_training():
     )
 
     f = SingleStateFeaturizer()
-    f.prepare_for_training(domain, RegexInterpreter())
+    f.prepare_for_training(domain)
 
     assert len(f._default_feature_states[INTENT]) > 1
     assert "greet" in f._default_feature_states[INTENT]
@@ -180,7 +171,7 @@ def test_single_state_featurizer_prepare_for_training():
     assert len(f._default_feature_states[ACTIVE_LOOP]) == 0
 
 
-def test_single_state_featurizer_creates_encoded_all_actions():
+def test_creates_encoded_all_actions():
     domain = Domain(
         intents=[],
         entities=[],
@@ -194,7 +185,8 @@ def test_single_state_featurizer_creates_encoded_all_actions():
     f.prepare_for_training(domain)
 
     lookup_table = E2ELookupTable()
-    StoryToTrainingDataConverter.add_sub_states_from_domain(domain, lookup_table)
+    lookup_table.derive_messages_from_domain_and_add(domain)
+
     encoded_actions = f.encode_all_actions(domain, e2e_features=lookup_table)
 
     assert len(encoded_actions) == len(domain.action_names_or_texts)
@@ -208,9 +200,37 @@ def test_single_state_featurizer_creates_encoded_all_actions():
 
 def test_single_state_featurizer_with_entity_roles_and_groups():
 
+    # create fake message that has been tokenized and entities have been extracted
+    text = "I am flying from London to Paris"
+    tokens = [
+        Token(text=match.group(), start=match.start())
+        for match in re.finditer(r"\S+", text)
+    ]
+    entity_tags = ["city", f"city{ENTITY_LABEL_SEPARATOR}to"]
+    entities = [
+        {
+            ENTITY_ATTRIBUTE_TYPE: entity_tags[0],
+            ENTITY_ATTRIBUTE_VALUE: "London",
+            ENTITY_ATTRIBUTE_START: 17,
+            ENTITY_ATTRIBUTE_END: 23,
+        },
+        {
+            ENTITY_ATTRIBUTE_TYPE: entity_tags[1],
+            ENTITY_ATTRIBUTE_VALUE: "Paris",
+            ENTITY_ATTRIBUTE_START: 27,
+            ENTITY_ATTRIBUTE_END: 32,
+        },
+    ]
+    message = Message({TEXT: text, TOKENS_NAMES[TEXT]: tokens, ENTITIES: entities,})
+
+    # add message  to lookup table
+    lookup_table = E2ELookupTable()
+    lookup_table.add(message)
+
+    # instantiate matching domain and single state featurizer
     domain = Domain(
         intents=[],
-        entities=["city", f"city{ENTITY_LABEL_SEPARATOR}to"],
+        entities=entity_tags,
         slots=[],
         responses={},
         forms={},
@@ -219,60 +239,25 @@ def test_single_state_featurizer_with_entity_roles_and_groups():
     f = SingleStateFeaturizer()
     f.prepare_for_training(domain)
 
-    text = "I am flying from London to Paris"
-    entity_data = {
-        TEXT: text,
-        ENTITIES: [
-            {
-                ENTITY_ATTRIBUTE_TYPE: "city",
-                ENTITY_ATTRIBUTE_VALUE: "London",
-                ENTITY_ATTRIBUTE_START: 17,
-                ENTITY_ATTRIBUTE_END: 23,
-            },
-            {
-                ENTITY_ATTRIBUTE_TYPE: f"city{ENTITY_LABEL_SEPARATOR}to",
-                ENTITY_ATTRIBUTE_VALUE: "Paris",
-                ENTITY_ATTRIBUTE_START: 27,
-                ENTITY_ATTRIBUTE_END: 32,
-            },
-        ],
-    }
+    # encode!
+    encoded = f.encode_entities(
+        entity_data={TEXT: text, ENTITIES: entities}, e2e_features=lookup_table,
+    )
 
-    # TODO: train and featurize....
-    #
-    # message = Message(data = {
-    #     TEXT: "I am flying from London to Paris",
-    #     TOKENS_NAMES[TEXT]: [Token(text=match.group(), start=match.start()) for match in re.finditer(r"\S+", text)],
-    #     ENTITY_TAGS : [],
-    # }, features = {
-    #     ENTITY_TAGS :  [[[0], [0], [0], [0], [1], [0], [2]]]
-    # })
-
-    # lookup_table = E2ELookupTable()
-    # StoryToTrainingDataConverter.add_sub_states_from_domain(domain, lookup_table=lookup_table)
-    # lookup_table.add(message)
-
-    # encoded = f.encode_entities(
-    #     entity_data = entity_data,
-    #     e2e_features=lookup_table,
-    # )
-    # assert sorted(list(encoded.keys())) == sorted([ENTITY_TAGS])
-    # assert np.all(
-    #     encoded[ENTITY_TAGS][0].features == [[0], [0], [0], [0], [1], [0], [2]]
-    # )
+    # check
+    assert len(f.entity_tag_specs) == 1
+    tags_to_ids = f.entity_tag_specs[0].tags_to_ids
+    for idx, entity_tag in enumerate(entity_tags):
+        tags_to_ids[entity_tag] = idx + 1  # hence, city -> 1, city#to -> 2
+    assert sorted(list(encoded.keys())) == [ENTITY_TAGS]
+    assert np.all(
+        encoded[ENTITY_TAGS][0].features == [[0], [0], [0], [0], [1], [0], [2]]
+    )
 
 
-"""
-@pytest.mark.timeout(
-    300, func_only=True
-)  # these can take a longer time than the default timeout
-def test_single_state_featurizer_with_bilou_entity_roles_and_groups(
-    unpacked_trained_spacybot_path: Text,
-):
-    from rasa.core.agent import Agent
+def test_without_lookup__encode_entities_with_bilou_entity_roles_and_groups():
 
-    interpreter = Agent.load(unpacked_trained_spacybot_path).interpreter
-    # TODO roles and groups are not supported in e2e yet
+    # instantiate matching domain and single state featurizer
     domain = Domain(
         intents=[],
         entities=["city", f"city{ENTITY_LABEL_SEPARATOR}to"],
@@ -282,8 +267,9 @@ def test_single_state_featurizer_with_bilou_entity_roles_and_groups(
         action_names=[],
     )
     f = SingleStateFeaturizer()
-    f.prepare_for_training(domain, RegexInterpreter(), bilou_tagging=True)
+    f.prepare_for_training(domain, bilou_tagging=True)
 
+    # encode without lookup table
     encoded = f.encode_entities(
         {
             TEXT: "I am flying from London to Paris",
@@ -302,7 +288,7 @@ def test_single_state_featurizer_with_bilou_entity_roles_and_groups(
                 },
             ],
         },
-        interpreter=interpreter,
+        e2e_features=None,
         bilou_tagging=True,
     )
     assert sorted(list(encoded.keys())) == sorted([ENTITY_TAGS])
@@ -310,6 +296,7 @@ def test_single_state_featurizer_with_bilou_entity_roles_and_groups(
         encoded[ENTITY_TAGS][0].features == [[0], [0], [0], [0], [4], [0], [8]]
     )
 
+    # encode without lookup table
     encoded = f.encode_entities(
         {
             TEXT: "I am flying to Saint Petersburg",
@@ -322,7 +309,7 @@ def test_single_state_featurizer_with_bilou_entity_roles_and_groups(
                 },
             ],
         },
-        interpreter=interpreter,
+        e2e_features=None,
         bilou_tagging=True,
     )
     assert sorted(list(encoded.keys())) == sorted([ENTITY_TAGS])
@@ -340,12 +327,13 @@ def test_single_state_featurizer_uses_dtype_float():
             "user": {"intent": "a", "entities": ["c"]},
             "prev_action": {"action_name": "d"},
         },
-        interpreter=RegexInterpreter(),
+        e2e_features=None,
     )
 
     assert encoded[ACTION_NAME][0].features.dtype == np.float32
 
 
+"""
 @pytest.mark.timeout(
     300, func_only=True
 )  # these can take a longer time than the default timeout

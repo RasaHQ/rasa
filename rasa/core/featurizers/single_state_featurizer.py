@@ -206,7 +206,10 @@ class SingleStateFeaturizer:
         )
 
     def _extract_state_features(
-        self, sub_state: SubState, e2e_features: E2ELookupTable, sparse: bool = False,
+        self,
+        sub_state: SubState,
+        e2e_features: Optional[E2ELookupTable],
+        sparse: bool = False,
     ) -> Dict[Text, List["Features"]]:
 
         # remove entities from possible attributes
@@ -215,9 +218,12 @@ class SingleStateFeaturizer:
         )
 
         # collect features for all those attributes
-        attributes_to_features = self._get_features_from_lookup_table(
-            sub_state, attributes, e2e_features
-        )
+        if e2e_features is not None:
+            attributes_to_features = self._get_features_from_lookup_table(
+                sub_state, attributes, e2e_features
+            )
+        else:
+            attributes_to_features = {}
 
         # per attribute, combine features of same type and level into one Feature,
         # and (if there are any such features) store the results in a list where
@@ -255,7 +261,7 @@ class SingleStateFeaturizer:
         return output
 
     def encode_state(
-        self, state: State, e2e_features: E2ELookupTable,
+        self, state: State, e2e_features: Optional[E2ELookupTable],
     ) -> Dict[Text, List["Features"]]:
         """Encode the given state.
 

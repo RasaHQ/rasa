@@ -74,6 +74,12 @@ class Features:
     ) -> List["Features"]:
         """Filters the given list of features.
 
+        Args:
+          origin: If specified, this method will check that the exact order of origins
+            matches the given list of origins. The reason for this is that if
+            multiple origins are listed for a Feature, this means that this feature
+            has been created by concatenating Features from the listed origins in
+            that particular order.
 
         """
         filtered = features_list
@@ -81,7 +87,6 @@ class Features:
             attributes = set(attributes)
             filtered = [f for f in filtered if f.attribute in attributes]
         if origin is not None:
-            origin = set(origin)
             filtered = [
                 f
                 for f in filtered
@@ -99,7 +104,7 @@ class Features:
         features_list: List["Features"], attributes: Optional[Iterable[Text]] = None,
     ) -> Dict[Text, List["Features"]]:
         if attributes is None:
-            return copy.copy(attributes)  # shallow copy on purpose
+            attributes = copy.copy(attributes)  # shallow copy on purpose
         # ensure all requested attributes are present in the output - regardless
         # of whether we find features later
         extracted = (
@@ -138,7 +143,7 @@ class Features:
         if len(features_list) == 0:
             raise ValueError("Expected a non-empty list of Features.")
         # sanity checks
-        # (1) all origins must be mentioned
+        # (1) all origins must be mentioned and must not violate the given order
         minimal_origin = set(f.origin for f in features_list)
         if origin_of_combination is not None:
             difference = minimal_origin.difference(origin_of_combination)
@@ -147,6 +152,17 @@ class Features:
                     f"Expected given features to be from {origin_of_combination} only "
                     f"but found features from {difference}."
                 )
+            origin_of_combination_pruned = [
+                origin for origin in origin_of_combination if origin in minimal_origin
+            ]
+            for idx, (origin, feat) in enumerate(
+                zip(origin_of_combination_pruned, features_list)
+            ):
+                if feat.origin != origin:
+                    raise ValueError(
+                        f"Expected {origin} to be the origin of the {idx}-th feature "
+                        f"(because of `origin_of_combination`) but found {feat.origin}."
+                    )
         else:
             origin_of_combination = list(minimal_origin)
         # (2) certain attributes (is_sparse, type, attribute) must coincide

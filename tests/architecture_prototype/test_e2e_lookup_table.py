@@ -7,7 +7,18 @@ from typing import List, Text
 from rasa.shared.nlu.training_data.features import Features
 from rasa.architecture_prototype.graph_components import E2ELookupTable
 from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.nlu.constants import INTENT, TEXT, ENTITIES, ACTION_NAME, ACTION_TEXT
+from rasa.shared.nlu.constants import (
+    INTENT,
+    TEXT,
+    ENTITIES,
+    ACTION_NAME,
+    ACTION_TEXT,
+    INTENT_NAME_KEY,
+)
+from rasa.shared.core.constants import DEFAULT_ACTION_NAMES
+from rasa.shared.core.slots import Slot
+from rasa.shared.core.domain import Domain
+from rasa.shared.core.events import UserUttered, ActionExecuted
 
 
 def dummy_features(id: int, attribute: Text) -> Features:
@@ -235,25 +246,38 @@ def test_lookup_features():
     table = E2ELookupTable()
     table.add_all(messages)
 
+    # If we don't specify a list of attributes, the resulting features dictionary will
+    # only contain those attributes for which there are features.
     sub_state = {TEXT: "A", INTENT: "B", OTHER: "C"}
     features = table.lookup_features(sub_state=sub_state)
-    for attribute, id in [(TEXT, 1), (INTENT, None), (OTHER, 2)]:
-        if id is not None:
+    for attribute, feature_value in [(TEXT, 1), (INTENT, None), (OTHER, 2)]:
+        if feature_value is not None:
             assert attribute in features
             assert len(features[attribute]) == 1
-            assert id == features[attribute][0].features[0]
+            assert feature_value == features[attribute][0].features[0]
         else:
-            # TODO: should this exist but be empty?
             assert attribute not in features
 
+    # If we query features for `INTENT`, then a key will be there, even if there are
+    # no feaetures
+    features = table.lookup_features(
+        sub_state=sub_state, attributes=list(sub_state.keys())
+    )
+    assert INTENT in features
+    assert len(features[INTENT]) == 0
+
+    # We only get the list of features we want...
     features = table.lookup_features(sub_state, attributes=[OTHER])
     assert TEXT not in features
     assert INTENT not in features
+    assert len(features[OTHER]) == 1
 
+    # ... even if there are no features:
     YET_ANOTHER = "another"
     features = table.lookup_features(sub_state, attributes=[YET_ANOTHER])
-    assert YET_ANOTHER not in features
+    assert len(features[YET_ANOTHER]) == 0
 
+    # And we cannot lookup features for sub states that have no key attribute
     with pytest.raises(ValueError, match="Unknown key"):
         table.lookup_features({TEXT: "A-unknwon"})
 
@@ -307,3 +331,55 @@ def test_lookup_message():
     assert OTHER in message.data.keys()
     with pytest.raises(ValueError, match=f"Expected a message with key \('{TEXT}"):
         table.lookup_message(user_text="not included")
+
+
+def test_derive_messages_from_events_and_add():
+    events = [
+        UserUttered(intent={INTENT_NAME_KEY: "greet"}),
+        ActionExecuted(action_name="utter_greet"),
+        ActionExecuted(action_name="utter_greet"),
+    ]
+    lookup_table = E2ELookupTable(handle_collisions=False)
+    lookup_table.derive_messages_from_events_and_add(events)
+    # should create: one intent-only user substate and one prev_action substate
+    assert len(lookup_table) == 2
+
+    events = [
+        UserUttered(text="text", intent={INTENT_NAME_KEY: "greet"}),
+        ActionExecuted(action_name="utter_greet"),
+    ]
+    lookup_table = E2ELookupTable(handle_collisions=False)
+    lookup_table.derive_messages_from_events_and_add(events)
+    # should create: one intent-only user substate, one text-only user substate one
+    # prev_action substate
+    assert len(lookup_table) == 3
+
+
+def test_derive_messages_from_domain_and_add():
+    action_names = ["a", "b"]
+    # action texts, response keys, forms, and action_names must be unique or the
+    # domain will complain about it
+    action_texts = ["a2", "b2"]
+    responses = {"a3": "a2", "b3": "b2"}
+    forms = ["a4"]
+    # however, intent names can be anything
+    intents = ["a", "b"]
+    domain = Domain(
+        intents=intents,
+        action_names=action_names,
+        action_texts=action_texts,
+        responses=responses,
+        entities=["e_a", "e_b", "e_c"],
+        slots=[Slot(name="s")],
+        forms=forms,
+    )
+    lookup_table = E2ELookupTable(handle_collisions=True)
+    lookup_table.derive_messages_from_domain_and_add(domain)
+    # Note that we cannot just sum the above because the `domain` will e.g. combine the
+    # `action_texts` with the `responses` to obtain the `domain.action_texts`
+    assert len(lookup_table) == (
+        len(domain.intent_properties)
+        + len(domain.user_actions)
+        + len(domain.action_texts)
+        + len(DEFAULT_ACTION_NAMES)
+    )
