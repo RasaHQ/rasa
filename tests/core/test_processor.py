@@ -1308,7 +1308,17 @@ def test_predict_next_action_raises_limit_reached_exception(domain: Domain):
 
 
 async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
-    message = UserMessage("Hello there")
+    text = "Hello there"
+    tokens = text.split()
+    current_index = 0
+    indices = []
+    for t in tokens:
+        start = current_index
+        end = current_index + len(t)
+        indices.append((start, end))
+        current_index = end + 1
+
+    message = UserMessage(text)
     tracker_store = InMemoryTrackerStore(mood_agent.domain)
     lock_store = InMemoryLockStore()
     processor = MessageProcessor(
@@ -1323,7 +1333,7 @@ async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
     event = tracker.get_last_event_for(event_type=UserUttered)
     event_tokens = event.as_dict().get("parse_data").get("text_tokens")
 
-    assert event_tokens[0][0] == 0
-    assert event_tokens[0][1] == 5
-    assert event_tokens[1][0] == 6
-    assert event_tokens[1][1] == 11
+    assert event_tokens[0][0] == indices[0][0]
+    assert event_tokens[0][1] == indices[0][1]
+    assert event_tokens[1][0] == indices[1][0]
+    assert event_tokens[1][1] == indices[1][1]
