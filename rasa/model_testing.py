@@ -187,7 +187,7 @@ def test_core(
     )
 
 
-async def test_nlu(
+def test_nlu(
     model: Optional[Text],
     nlu_data: Optional[Text],
     output_directory: Text = DEFAULT_RESULTS_PATH,
@@ -214,9 +214,7 @@ async def test_nlu(
         kwargs = rasa.shared.utils.common.minimal_kwargs(
             additional_arguments, run_evaluation, ["data_path", "model"]
         )
-        await run_evaluation(
-            nlu_data, nlu_model, output_directory=output_directory, **kwargs
-        )
+        run_evaluation(nlu_data, nlu_model, output_directory=output_directory, **kwargs)
     else:
         rasa.shared.utils.cli.print_error(
             "Could not find any model. Use 'rasa train nlu' to train a "

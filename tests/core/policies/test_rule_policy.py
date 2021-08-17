@@ -679,7 +679,7 @@ def test_all_policy_attributes_are_persisted(tmpdir: Path):
     assert persisted_policy._enable_fallback_prediction == enable_fallback_prediction
 
 
-async def test_rule_policy_finetune(
+def test_rule_policy_finetune(
     tmp_path: Path, trained_rule_policy: RulePolicy, trained_rule_policy_domain: Domain
 ):
     trained_rule_policy.persist(tmp_path)
@@ -702,7 +702,7 @@ async def test_rule_policy_finetune(
         is_rule_tracker=True,
     )
 
-    original_data = await training.load_data(
+    original_data = training.load_data(
         "examples/rules/data/rules.yml", trained_rule_policy_domain
     )
 
@@ -720,7 +720,7 @@ async def test_rule_policy_finetune(
     )
 
 
-async def test_rule_policy_contradicting_rule_finetune(
+def test_rule_policy_contradicting_rule_finetune(
     tmp_path: Path, trained_rule_policy: RulePolicy, trained_rule_policy_domain: Domain
 ):
     trained_rule_policy.persist(tmp_path)
@@ -743,7 +743,7 @@ async def test_rule_policy_contradicting_rule_finetune(
         is_rule_tracker=True,
     )
 
-    original_data = await training.load_data(
+    original_data = training.load_data(
         "examples/rules/data/rules.yml", trained_rule_policy_domain
     )
 
@@ -1791,8 +1791,8 @@ def trained_rule_policy_domain() -> Domain:
 
 
 @pytest.fixture(scope="session")
-async def trained_rule_policy(trained_rule_policy_domain: Domain) -> RulePolicy:
-    trackers = await training.load_data(
+def trained_rule_policy(trained_rule_policy_domain: Domain) -> RulePolicy:
+    trackers = training.load_data(
         "examples/rules/data/rules.yml", trained_rule_policy_domain
     )
 
