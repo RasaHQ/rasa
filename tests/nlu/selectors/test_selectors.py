@@ -1,4 +1,5 @@
 from pathlib import Path
+from rasa.shared.nlu.training_data.features import Features
 
 import pytest
 import numpy as np
@@ -17,6 +18,8 @@ from rasa.utils.tensorflow.constants import (
     EPOCHS,
     MASKED_LM,
     NUM_TRANSFORMER_LAYERS,
+    SENTENCE,
+    SEQUENCE,
     TRANSFORMER_SIZE,
     CONSTRAIN_SIMILARITIES,
     CHECKPOINT_MODEL,
@@ -42,6 +45,19 @@ from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from tests.nlu.classifiers.test_diet_classifier import as_pipeline
+
+
+def add_dummy_features_to_training_data(training_data: TrainingData) -> None:
+    dummy_features = [
+        Features(
+            features=np.zeros((1, 1)), attribute=TEXT, feature_type=SENTENCE, origin=""
+        ),
+        Features(
+            features=np.zeros((2, 1)), attribute=TEXT, feature_type=SEQUENCE, origin=""
+        ),
+    ]
+    for message in training_data.intent_examples:
+        message.features = dummy_features
 
 
 @pytest.mark.parametrize(
@@ -170,6 +186,7 @@ def test_ground_truth_for_training(use_text_as_label, label_values):
         "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
+    add_dummy_features_to_training_data(training_data)
 
     response_selector = ResponseSelector(
         component_config={"use_text_as_label": use_text_as_label}
@@ -201,6 +218,9 @@ def test_resolve_intent_response_key_from_label(
         "data/examples/rasa/demo-rasa-responses.yml"
     )
     training_data = training_data.merge(training_data_responses)
+
+    # add dummy features
+    add_dummy_features_to_training_data(training_data)
 
     response_selector = ResponseSelector(
         component_config={"use_text_as_label": train_on_text}

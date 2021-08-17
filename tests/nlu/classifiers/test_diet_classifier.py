@@ -1,7 +1,7 @@
 from pathlib import Path
-
 import numpy as np
 import pytest
+import random
 from unittest.mock import Mock
 from typing import List, Text, Dict, Any
 from _pytest.monkeypatch import MonkeyPatch
@@ -24,6 +24,8 @@ from rasa.utils.tensorflow.constants import (
     RANKING_LENGTH,
     EPOCHS,
     MASKED_LM,
+    SENTENCE,
+    SEQUENCE,
     TENSORBOARD_LOG_LEVEL,
     TENSORBOARD_LOG_DIR,
     EVAL_NUM_EPOCHS,
@@ -41,11 +43,69 @@ from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.model import Interpreter
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils import train_utils
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.utils.tensorflow.model_data_utils import FeatureArray
+from rasa.utils.tensorflow.exceptions import RasaModelConfigException
+
+
+@pytest.mark.parametrize("num_messages_per_label", ([1, 4], [4, 0], [0, 4]))
+def test_collect_one_example_per_label(num_messages_per_label: List[int]):
+
+    # make sure messages, labels and ids are unique and not as simple as 0,1,2,...
+    def idx2labelstr(idx: int) -> Text:
+        return f"{idx**2}"
+
+    def idx2labelid(idx: int) -> int:
+        # Note: this must be an increasing function otherwise the tests below will
+        # fail as the tested function sorts
+        return idx * 2 + 1
+
+    messages_per_label = {
+        idx: [
+            Message(data={"label": idx2labelstr(idx), "text": f"{msg_idx}"})
+            for msg_idx in range(num_messages)
+        ]
+        for idx, num_messages in enumerate(num_messages_per_label)
+    }
+    label_id_dict = {
+        idx2labelstr(idx): idx2labelid(idx)
+        for idx in range(len(num_messages_per_label))
+    }
+
+    # collect all messages and apply
+    messages = [msg for msg_lst in messages_per_label.values() for msg in msg_lst]
+    random.shuffle(messages)
+
+    # apply and check
+    if any(num == 0 for num in num_messages_per_label):
+        with pytest.raises(
+            InvalidConfigException, match="Expected at least one example for each label"
+        ):
+            DIETClassifier._collect_one_example_per_label(
+                messages=messages, label_id_dict=label_id_dict, label_attribute="label"
+            )
+    else:
+        (
+            sorted_labelidx,
+            sorted_messages,
+        ) = DIETClassifier._collect_one_example_per_label(
+            messages=messages, label_id_dict=label_id_dict, label_attribute="label"
+        )
+        # Because of the way labelids are created from the indices, we have...
+        assert all(
+            [
+                returned_id == idx2labelid(idx)
+                for idx, returned_id in zip(
+                    range(len(num_messages_per_label)), sorted_labelidx
+                )
+            ]
+        )
+        for idx in range(len(sorted_labelidx)):
+            assert sorted_messages[idx].data["label"] == idx2labelstr(idx)
 
 
 def test_compute_default_label_features():
@@ -113,6 +173,16 @@ def test_model_data_signature_with_entities(
     messages: List[Message], entity_expected: bool
 ):
     classifier = DIETClassifier({"BILOU_flag": False})
+    dummy_features = [
+        Features(
+            features=np.zeros((1, 1)), attribute=TEXT, feature_type=SENTENCE, origin=""
+        ),
+        Features(
+            features=np.zeros((2, 1)), attribute=TEXT, feature_type=SEQUENCE, origin=""
+        ),
+    ]
+    for message in messages:
+        message.features = dummy_features
     training_data = TrainingData(messages)
 
     # create tokens for entity parsing inside DIET
@@ -122,6 +192,37 @@ def test_model_data_signature_with_entities(
     model_data = classifier.preprocess_train_data(training_data)
     entity_exists = "entities" in model_data.get_signature().keys()
     assert entity_exists == entity_expected
+
+
+@pytest.mark.parametrize(
+    "should_raise", [True, False],
+)
+def test_preprocess_training_data_raises_if_sentence_features_are_missing(
+    should_raise: bool,
+):
+    classifier = DIETClassifier({"intent_classification": True})
+    sequence_feature = Features(
+        features=np.zeros((2, 1)), attribute=TEXT, feature_type=SEQUENCE, origin=""
+    )
+    features = [sequence_feature]
+    if not should_raise:
+        sentence_feature = Features(
+            features=np.zeros((1, 1)), attribute=TEXT, feature_type=SENTENCE, origin=""
+        )
+        features.append(sentence_feature)
+    message = Message(
+        data={TEXT: "dummy_text", INTENT: "dummy_intent"}, features=features
+    )
+    training_data = TrainingData([message])
+
+    if should_raise:
+        with pytest.raises(
+            RasaModelConfigException, match="Expected sentence level features"
+        ):
+            classifier.preprocess_train_data(training_data)
+    else:
+        model_data = classifier.preprocess_train_data(training_data)
+        assert model_data
 
 
 async def _train_persist_load_with_different_settings(

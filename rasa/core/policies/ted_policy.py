@@ -1533,7 +1533,7 @@ class TED(TransformerRasaModel):
 
         if attribute in SEQUENCE_FEATURES_TO_ENCODE:
             # get lengths of real token sequences as a 3D tensor
-            sequence_feature_lengths = self._get_sequence_feature_lengths(
+            sequence_feature_lengths = self._get_sequence_feature_lengths_or_zeros(
                 tf_batch_data, attribute
             )
 

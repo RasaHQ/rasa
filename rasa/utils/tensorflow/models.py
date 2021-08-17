@@ -19,7 +19,6 @@ from rasa.utils.tensorflow.constants import (
     IDS,
     INTENT_CLASSIFICATION,
     SENTENCE,
-    SEQUENCE,
     SEQUENCE_LENGTH,
     RANDOM_SEED,
     EMBEDDING_DIMENSION,
@@ -46,7 +45,6 @@ import rasa.utils.train_utils
 from rasa.utils.tensorflow import layers
 from rasa.utils.tensorflow import rasa_layers
 from rasa.utils.tensorflow.temp_keras_modules import TmpKerasModel
-from rasa.utils.tensorflow.exceptions import RasaModelConfigException
 from rasa.utils.tensorflow.data_generator import (
     RasaDataGenerator,
     RasaBatchDataGenerator,
@@ -823,13 +821,18 @@ class TransformerRasaModel(RasaModel):
         sequence_lengths = tf.cast(tf_batch_data[key][sub_key][0], dtype=tf.int32)
         return rasa_layers.compute_mask(sequence_lengths)
 
-    def _get_sequence_feature_lengths(
+    def _get_sequence_feature_lengths_or_zeros(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text
     ) -> tf.Tensor:
         """Tries to create sequence length information for the given key.
 
-        Note that, if no explicit sequence length information is present in the batch,
-        this function assumes the respective sequence-level features are all empty.
+        Note that, if
+        - no explicit sequence length information for the given key is present in the
+          batch (i.e. `SEQUENCE_LENGTH` subkey does not exist) or
+        - if the key is not even contained in the given `tf_batch_data`,
+        then this function assumes the respective sequence-level features are all
+        (there but) empty.
+
         This behaviour is useful in case we deal with empty sequences only (e.g.
         DIET without transformer layers and no need for sequential output).
 
@@ -837,38 +840,30 @@ class TransformerRasaModel(RasaModel):
         of the sequence of the sequence-level (token-level) features for that input
         example.
 
+        Args:
+          tf_batch_data: a nested dictionary mapping to tensors
+          key: the top-level key we want to look up in the given `tf_batch_data`
         Returns:
-           a tensor of shape (batch_size, ), always
-
-        Raises:
-           a RasaModelConfigException in case no SEQUENCE subkey can be found for the
-           given key
+           a tensor of shape `(batch_size, )`
         """
-        if SEQUENCE not in tf_batch_data[key]:
-            raise RasaModelConfigException(
-                f"Expected a sequence-level feature for {key}."
-            )
-            # Note that eliminating this check would eliminate the need to set
-            # dummy values in e.g. the ResponseSelector's batch_predict but then
-            # we'd loose this check everywhere.
         if key in tf_batch_data and SEQUENCE_LENGTH in tf_batch_data[key]:
             return tf.cast(tf_batch_data[key][SEQUENCE_LENGTH][0], dtype=tf.int32)
 
         batch_dim = self._get_batch_dim(tf_batch_data[key])
         return tf.zeros([batch_dim], dtype=tf.int32)
 
-    def _get_sentence_feature_lengths(
+    def _get_sentence_feature_lengths_or_zeros(
         self, tf_batch_data: Dict[Text, Dict[Text, List[tf.Tensor]]], key: Text,
     ) -> tf.Tensor:
         """Creates sentence length information for the given key.
 
-        Returns a tensor filled with 1s if sentence-level features are
-        stored in the given batch (i.e. a SENTENCE sub-key is present).
-        Otherwise, a tensor of 0s is returned.
+        Returns a tensor filled with ones if sentence-level features are stored in
+        the given batch under the given key (i.e. a `SENTENCE` sub-key is present).
+        Otherwise, a tensor of zeros is returned.
 
-        This is needed because we treat sentence-level features as token-level features
-        with 1 token per input example. Hence, the sequence lengths returned by this
-        function are all 1s if sentence-level features are present, and 0s otherwise.
+        This is useful because it allows us to treat sentence-level features as
+        sequence level features of length one. Moreover, returning zeros is
+        is useful in case sentence-level features are missing.
 
         Returns:
             a tensor of shape (batch_size, ), always
