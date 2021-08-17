@@ -102,8 +102,6 @@ class SupportedData(Enum):
 class PolicyGraphComponent(GraphComponent):
     """Common parent class for all dialogue policies."""
 
-    default_config = {}
-
     @staticmethod
     def supported_data() -> SupportedData:
         """The type of data supported by this policy.

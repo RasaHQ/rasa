@@ -164,161 +164,174 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
           (https://arxiv.org/abs/1709.03856) idea.
     """
 
-    # please make sure to update the docs when changing a default parameter
-    default_config = {
-        # ## Architecture of the used neural network
-        # Hidden layer sizes for layers before the embedding layers for user message
-        # and labels.
-        # The number of hidden layers is equal to the length of the corresponding list.
-        HIDDEN_LAYERS_SIZES: {TEXT: [], ACTION_TEXT: [], f"{LABEL}_{ACTION_TEXT}": []},
-        # Dense dimension to use for sparse features.
-        DENSE_DIMENSION: {
-            TEXT: 128,
-            ACTION_TEXT: 128,
-            f"{LABEL}_{ACTION_TEXT}": 128,
-            INTENT: 20,
-            ACTION_NAME: 20,
-            f"{LABEL}_{ACTION_NAME}": 20,
-            ENTITIES: 20,
-            SLOTS: 20,
-            ACTIVE_LOOP: 20,
-        },
-        # Default dimension to use for concatenating sequence and sentence features.
-        CONCAT_DIMENSION: {TEXT: 128, ACTION_TEXT: 128, f"{LABEL}_{ACTION_TEXT}": 128},
-        # Dimension size of embedding vectors before the dialogue transformer encoder.
-        ENCODING_DIMENSION: 50,
-        # Number of units in transformer encoders
-        TRANSFORMER_SIZE: {
-            TEXT: 128,
-            ACTION_TEXT: 128,
-            f"{LABEL}_{ACTION_TEXT}": 128,
-            DIALOGUE: 128,
-        },
-        # Number of layers in transformer encoders
-        NUM_TRANSFORMER_LAYERS: {
-            TEXT: 1,
-            ACTION_TEXT: 1,
-            f"{LABEL}_{ACTION_TEXT}": 1,
-            DIALOGUE: 1,
-        },
-        # Number of attention heads in transformer
-        NUM_HEADS: 4,
-        # If 'True' use key relative embeddings in attention
-        KEY_RELATIVE_ATTENTION: False,
-        # If 'True' use value relative embeddings in attention
-        VALUE_RELATIVE_ATTENTION: False,
-        # Max position for relative embeddings. Only in effect if key- or value relative
-        # attention are turned on
-        MAX_RELATIVE_POSITION: 5,
-        # Use a unidirectional or bidirectional encoder
-        # for `text`, `action_text`, and `label_action_text`.
-        UNIDIRECTIONAL_ENCODER: False,
-        # ## Training parameters
-        # Initial and final batch sizes:
-        # Batch size will be linearly increased for each epoch.
-        BATCH_SIZES: [64, 256],
-        # Strategy used whenc creating batches.
-        # Can be either 'sequence' or 'balanced'.
-        BATCH_STRATEGY: BALANCED,
-        # Number of epochs to train
-        EPOCHS: 1,
-        # Set random seed to any 'int' to get reproducible results
-        RANDOM_SEED: None,
-        # Initial learning rate for the optimizer
-        LEARNING_RATE: 0.001,
-        # ## Parameters for embeddings
-        # Dimension size of embedding vectors
-        EMBEDDING_DIMENSION: 20,
-        # The number of incorrect labels. The algorithm will minimize
-        # their similarity to the user input during training.
-        NUM_NEG: 20,
-        # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
-        SIMILARITY_TYPE: AUTO,
-        # The type of the loss function, either 'cross_entropy' or 'margin'.
-        LOSS_TYPE: CROSS_ENTROPY,
-        # Number of top actions to normalize scores for. Applicable with
-        # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
-        # to turn off normalization.
-        RANKING_LENGTH: 10,
-        # Indicates how similar the algorithm should try to make embedding vectors
-        # for correct labels.
-        # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
-        MAX_POS_SIM: 0.8,
-        # Maximum negative similarity for incorrect labels.
-        # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
-        MAX_NEG_SIM: -0.2,
-        # If 'True' the algorithm only minimizes maximum similarity over
-        # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
-        USE_MAX_NEG_SIM: True,
-        # If 'True' scale loss inverse proportionally to the confidence
-        # of the correct prediction
-        SCALE_LOSS: True,
-        # ## Regularization parameters
-        # The scale of regularization
-        REGULARIZATION_CONSTANT: 0.001,
-        # The scale of how important is to minimize the maximum similarity
-        # between embeddings of different labels,
-        # used only if 'loss_type' is set to 'margin'.
-        NEGATIVE_MARGIN_SCALE: 0.8,
-        # Dropout rate for embedding layers of dialogue features.
-        DROP_RATE_DIALOGUE: 0.1,
-        # Dropout rate for embedding layers of utterance level features.
-        DROP_RATE: 0.0,
-        # Dropout rate for embedding layers of label, e.g. action, features.
-        DROP_RATE_LABEL: 0.0,
-        # Dropout rate for attention.
-        DROP_RATE_ATTENTION: 0.0,
-        # Fraction of trainable weights in internal layers.
-        CONNECTION_DENSITY: 0.2,
-        # If 'True' apply dropout to sparse input tensors
-        SPARSE_INPUT_DROPOUT: True,
-        # If 'True' apply dropout to dense input tensors
-        DENSE_INPUT_DROPOUT: True,
-        # If 'True' random tokens of the input message will be masked. Since there is no
-        # related loss term used inside TED, the masking effectively becomes just input
-        # dropout applied to the text of user utterances.
-        MASKED_LM: False,
-        # ## Evaluation parameters
-        # How often calculate validation accuracy.
-        # Small values may hurt performance.
-        EVAL_NUM_EPOCHS: 20,
-        # How many examples to use for hold out validation set
-        # Large values may hurt performance, e.g. model accuracy.
-        # Set to 0 for no validation.
-        EVAL_NUM_EXAMPLES: 0,
-        # If you want to use tensorboard to visualize training and validation metrics,
-        # set this option to a valid output directory.
-        TENSORBOARD_LOG_DIR: None,
-        # Define when training metrics for tensorboard should be logged.
-        # Either after every epoch or for every training step.
-        # Valid values: 'epoch' and 'batch'
-        TENSORBOARD_LOG_LEVEL: "epoch",
-        # Perform model checkpointing
-        CHECKPOINT_MODEL: False,
-        # Only pick e2e prediction if the policy is confident enough
-        E2E_CONFIDENCE_THRESHOLD: 0.5,
-        # Specify what features to use as sequence and sentence features.
-        # By default all features in the pipeline are used.
-        FEATURIZERS: [],
-        # If set to true, entities are predicted in user utterances.
-        ENTITY_RECOGNITION: True,
-        # if 'True' applies sigmoid on all similarity terms and adds
-        # it to the loss function to ensure that similarity values are
-        # approximately bounded. Used inside softmax loss only.
-        CONSTRAIN_SIMILARITIES: False,
-        # Model confidence to be returned during inference. Possible values -
-        # 'softmax' and 'linear_norm'.
-        MODEL_CONFIDENCE: SOFTMAX,
-        # 'BILOU_flag' determines whether to use BILOU tagging or not.
-        # If set to 'True' labelling is more rigorous, however more
-        # examples per entity are required.
-        # Rule of thumb: you should have more than 100 examples per entity.
-        BILOU_FLAG: True,
-        # Split entities by comma, this makes sense e.g. for a list of
-        # ingredients in a recipe, but it doesn't make sense for the parts of
-        # an address
-        SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
-    }
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        # please make sure to update the docs when changing a default parameter
+        return {
+            # ## Architecture of the used neural network
+            # Hidden layer sizes for layers before the embedding layers for user message
+            # and labels.
+            # The number of hidden layers is equal to the length of the corresponding
+            # list.
+            HIDDEN_LAYERS_SIZES: {
+                TEXT: [],
+                ACTION_TEXT: [],
+                f"{LABEL}_{ACTION_TEXT}": [],
+            },
+            # Dense dimension to use for sparse features.
+            DENSE_DIMENSION: {
+                TEXT: 128,
+                ACTION_TEXT: 128,
+                f"{LABEL}_{ACTION_TEXT}": 128,
+                INTENT: 20,
+                ACTION_NAME: 20,
+                f"{LABEL}_{ACTION_NAME}": 20,
+                ENTITIES: 20,
+                SLOTS: 20,
+                ACTIVE_LOOP: 20,
+            },
+            # Default dimension to use for concatenating sequence and sentence features.
+            CONCAT_DIMENSION: {
+                TEXT: 128,
+                ACTION_TEXT: 128,
+                f"{LABEL}_{ACTION_TEXT}": 128,
+            },
+            # Dimension size of embedding vectors before the dialogue transformer
+            # encoder.
+            ENCODING_DIMENSION: 50,
+            # Number of units in transformer encoders
+            TRANSFORMER_SIZE: {
+                TEXT: 128,
+                ACTION_TEXT: 128,
+                f"{LABEL}_{ACTION_TEXT}": 128,
+                DIALOGUE: 128,
+            },
+            # Number of layers in transformer encoders
+            NUM_TRANSFORMER_LAYERS: {
+                TEXT: 1,
+                ACTION_TEXT: 1,
+                f"{LABEL}_{ACTION_TEXT}": 1,
+                DIALOGUE: 1,
+            },
+            # Number of attention heads in transformer
+            NUM_HEADS: 4,
+            # If 'True' use key relative embeddings in attention
+            KEY_RELATIVE_ATTENTION: False,
+            # If 'True' use value relative embeddings in attention
+            VALUE_RELATIVE_ATTENTION: False,
+            # Max position for relative embeddings. Only in effect if key- or value
+            # relative
+            # attention are turned on
+            MAX_RELATIVE_POSITION: 5,
+            # Use a unidirectional or bidirectional encoder
+            # for `text`, `action_text`, and `label_action_text`.
+            UNIDIRECTIONAL_ENCODER: False,
+            # ## Training parameters
+            # Initial and final batch sizes:
+            # Batch size will be linearly increased for each epoch.
+            BATCH_SIZES: [64, 256],
+            # Strategy used whenc creating batches.
+            # Can be either 'sequence' or 'balanced'.
+            BATCH_STRATEGY: BALANCED,
+            # Number of epochs to train
+            EPOCHS: 1,
+            # Set random seed to any 'int' to get reproducible results
+            RANDOM_SEED: None,
+            # Initial learning rate for the optimizer
+            LEARNING_RATE: 0.001,
+            # ## Parameters for embeddings
+            # Dimension size of embedding vectors
+            EMBEDDING_DIMENSION: 20,
+            # The number of incorrect labels. The algorithm will minimize
+            # their similarity to the user input during training.
+            NUM_NEG: 20,
+            # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
+            SIMILARITY_TYPE: AUTO,
+            # The type of the loss function, either 'cross_entropy' or 'margin'.
+            LOSS_TYPE: CROSS_ENTROPY,
+            # Number of top actions to normalize scores for. Applicable with
+            # loss type 'cross_entropy' and 'softmax' confidences. Set to 0
+            # to turn off normalization.
+            RANKING_LENGTH: 10,
+            # Indicates how similar the algorithm should try to make embedding vectors
+            # for correct labels.
+            # Should be 0.0 < ... < 1.0 for 'cosine' similarity type.
+            MAX_POS_SIM: 0.8,
+            # Maximum negative similarity for incorrect labels.
+            # Should be -1.0 < ... < 1.0 for 'cosine' similarity type.
+            MAX_NEG_SIM: -0.2,
+            # If 'True' the algorithm only minimizes maximum similarity over
+            # incorrect intent labels, used only if 'loss_type' is set to 'margin'.
+            USE_MAX_NEG_SIM: True,
+            # If 'True' scale loss inverse proportionally to the confidence
+            # of the correct prediction
+            SCALE_LOSS: True,
+            # ## Regularization parameters
+            # The scale of regularization
+            REGULARIZATION_CONSTANT: 0.001,
+            # The scale of how important is to minimize the maximum similarity
+            # between embeddings of different labels,
+            # used only if 'loss_type' is set to 'margin'.
+            NEGATIVE_MARGIN_SCALE: 0.8,
+            # Dropout rate for embedding layers of dialogue features.
+            DROP_RATE_DIALOGUE: 0.1,
+            # Dropout rate for embedding layers of utterance level features.
+            DROP_RATE: 0.0,
+            # Dropout rate for embedding layers of label, e.g. action, features.
+            DROP_RATE_LABEL: 0.0,
+            # Dropout rate for attention.
+            DROP_RATE_ATTENTION: 0.0,
+            # Fraction of trainable weights in internal layers.
+            CONNECTION_DENSITY: 0.2,
+            # If 'True' apply dropout to sparse input tensors
+            SPARSE_INPUT_DROPOUT: True,
+            # If 'True' apply dropout to dense input tensors
+            DENSE_INPUT_DROPOUT: True,
+            # If 'True' random tokens of the input message will be masked. Since there
+            # is no related loss term used inside TED, the masking effectively becomes
+            # just input dropout applied to the text of user utterances.
+            MASKED_LM: False,
+            # ## Evaluation parameters
+            # How often calculate validation accuracy.
+            # Small values may hurt performance.
+            EVAL_NUM_EPOCHS: 20,
+            # How many examples to use for hold out validation set
+            # Large values may hurt performance, e.g. model accuracy.
+            # Set to 0 for no validation.
+            EVAL_NUM_EXAMPLES: 0,
+            # If you want to use tensorboard to visualize training and validation
+            # metrics, set this option to a valid output directory.
+            TENSORBOARD_LOG_DIR: None,
+            # Define when training metrics for tensorboard should be logged.
+            # Either after every epoch or for every training step.
+            # Valid values: 'epoch' and 'batch'
+            TENSORBOARD_LOG_LEVEL: "epoch",
+            # Perform model checkpointing
+            CHECKPOINT_MODEL: False,
+            # Only pick e2e prediction if the policy is confident enough
+            E2E_CONFIDENCE_THRESHOLD: 0.5,
+            # Specify what features to use as sequence and sentence features.
+            # By default all features in the pipeline are used.
+            FEATURIZERS: [],
+            # If set to true, entities are predicted in user utterances.
+            ENTITY_RECOGNITION: True,
+            # if 'True' applies sigmoid on all similarity terms and adds
+            # it to the loss function to ensure that similarity values are
+            # approximately bounded. Used inside softmax loss only.
+            CONSTRAIN_SIMILARITIES: False,
+            # Model confidence to be returned during inference. Possible values -
+            # 'softmax' and 'linear_norm'.
+            MODEL_CONFIDENCE: SOFTMAX,
+            # 'BILOU_flag' determines whether to use BILOU tagging or not.
+            # If set to 'True' labelling is more rigorous, however more
+            # examples per entity are required.
+            # Rule of thumb: you should have more than 100 examples per entity.
+            BILOU_FLAG: True,
+            # Split entities by comma, this makes sense e.g. for a list of
+            # ingredients in a recipe, but it doesn't make sense for the parts of
+            # an address
+            SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+        }
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
@@ -386,10 +399,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
 
     def _load_params(self, config: Dict[Text, Any]) -> None:
         new_config = rasa.utils.train_utils.check_core_deprecated_options(config)
-        self.config = rasa.utils.train_utils.override_defaults(
-            self.default_config, new_config
-        )
-
+        self.config = new_config
         self._auto_update_configuration()
 
     def _auto_update_configuration(self) -> None:

@@ -90,7 +90,7 @@ def test_diagnostics(
 ):
     domain = Domain.from_yaml(DOMAIN_YAML)
     policy = TEDPolicy(
-        TEDPolicy.default_config.copy(),
+        TEDPolicy.get_default_config(),
         default_model_storage,
         Resource("TEDPolicy"),
         default_execution_context,
@@ -125,7 +125,7 @@ class TestTEDPolicy(PolicyTestCollection):
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
-            **TEDPolicy.default_config,
+            **TEDPolicy.get_default_config(),
             POLICY_PRIORITY: priority,
             **config_override,
         }
@@ -198,13 +198,13 @@ class TestTEDPolicy(PolicyTestCollection):
         [
             (
                 True,
-                TEDPolicy.default_config[EPOCHS] + 1,
-                TEDPolicy.default_config[EPOCHS] + 1,
+                TEDPolicy.get_default_config()[EPOCHS] + 1,
+                TEDPolicy.get_default_config()[EPOCHS] + 1,
             ),
             (
                 False,
-                TEDPolicy.default_config[EPOCHS] + 1,
-                TEDPolicy.default_config[EPOCHS],
+                TEDPolicy.get_default_config()[EPOCHS] + 1,
+                TEDPolicy.get_default_config()[EPOCHS],
             ),  # trained_policy uses default epochs during training
         ],
     )
@@ -578,7 +578,7 @@ class TestTEDPolicyMargin(TestTEDPolicy):
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
-            **TEDPolicy.default_config,
+            **TEDPolicy.get_default_config(),
             POLICY_PRIORITY: priority,
             LOSS_TYPE: "margin",
             **config_override,
@@ -643,7 +643,7 @@ class TestTEDPolicyWithEval(TestTEDPolicy):
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
-            **TEDPolicy.default_config,
+            **TEDPolicy.get_default_config(),
             POLICY_PRIORITY: priority,
             SCALE_LOSS: False,
             EVAL_NUM_EXAMPLES: 4,
@@ -674,7 +674,7 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
-            **TEDPolicy.default_config,
+            **TEDPolicy.get_default_config(),
             RANKING_LENGTH: 0,
             POLICY_PRIORITY: priority,
             **config_override,
@@ -730,7 +730,7 @@ class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
-            **TEDPolicy.default_config,
+            **TEDPolicy.get_default_config(),
             POLICY_PRIORITY: priority,
             MODEL_CONFIDENCE: LINEAR_NORM,
             **config_override,
@@ -799,7 +799,7 @@ class TestTEDPolicyLowRankingLength(TestTEDPolicy):
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
-            **TEDPolicy.default_config,
+            **TEDPolicy.get_default_config(),
             POLICY_PRIORITY: priority,
             RANKING_LENGTH: 3,
             **config_override,
@@ -832,7 +832,7 @@ class TestTEDPolicyHighRankingLength(TestTEDPolicy):
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
-            **TEDPolicy.default_config,
+            **TEDPolicy.get_default_config(),
             POLICY_PRIORITY: priority,
             RANKING_LENGTH: 11,
             **config_override,
@@ -865,7 +865,7 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
-            **TEDPolicy.default_config,
+            **TEDPolicy.get_default_config(),
             POLICY_PRIORITY: priority,
             **config_override,
         }
@@ -919,7 +919,7 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
-            **TEDPolicy.default_config,
+            **TEDPolicy.get_default_config(),
             POLICY_PRIORITY: priority,
             POLICY_MAX_HISTORY: self.max_history,
             **config_override,
@@ -976,7 +976,7 @@ class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
-            **TEDPolicy.default_config,
+            **TEDPolicy.get_default_config(),
             POLICY_PRIORITY: priority,
             KEY_RELATIVE_ATTENTION: True,
             VALUE_RELATIVE_ATTENTION: True,
@@ -1011,7 +1011,7 @@ class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
-            **TEDPolicy.default_config,
+            **TEDPolicy.get_default_config(),
             POLICY_PRIORITY: priority,
             KEY_RELATIVE_ATTENTION: True,
             VALUE_RELATIVE_ATTENTION: True,
