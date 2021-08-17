@@ -59,7 +59,7 @@
     "react-live": "^2.2.3",
     "react-promise": "^3.0.2",
     "react-router-dom": "^5.2.0",
-    "redoc": "^2.0.0-rc.31",
+    "redoc": "^2.0.0-rc.41",
     "remark": "^13.0.0",
     "remark-collapse": "^0.1.2",
     "remark-sources": "^1.1.0",
