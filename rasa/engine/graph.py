@@ -371,24 +371,19 @@ class GraphNode:
         """The names of the parent nodes of this node."""
         return list(self._inputs.values())
 
-    @staticmethod
-    def _collapse_inputs_from_previous_nodes(
-        inputs_from_previous_nodes: Tuple[Dict[Text, Any]]
-    ) -> Dict[Text, Any]:
-        return dict(ChainMap(*inputs_from_previous_nodes))
-
-    def __call__(self, *inputs_from_previous_nodes: Dict[Text, Any]) -> Dict[Text, Any]:
+    def __call__(
+        self, *inputs_from_previous_nodes: Tuple[Text, Any]
+    ) -> Tuple[Text, Any]:
         """Calls the `GraphComponent` run method when the node executes in the graph.
 
         Args:
             *inputs_from_previous_nodes: The output of all parent nodes. Each is a
                 dictionary with a single item mapping the node's name to its output.
 
-        Returns: A dictionary with a single item mapping the node's name to the output.
+        Returns:
+            The node name and its output.
         """
-        received_inputs = self._collapse_inputs_from_previous_nodes(
-            inputs_from_previous_nodes
-        )
+        received_inputs: Dict[Text, Any] = dict(inputs_from_previous_nodes)
 
         kwargs = {}
         for input_name, input_node in self._inputs.items():
@@ -422,7 +417,7 @@ class GraphNode:
 
         self._run_after_hooks(input_hook_outputs, output)
 
-        return {self._node_name: output}
+        return self._node_name, output
 
     def _run_after_hooks(self, input_hook_outputs: List[Dict], output: Any) -> None:
         for hook, hook_data in zip(self._hooks, input_hook_outputs):

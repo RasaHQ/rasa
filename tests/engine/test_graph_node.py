@@ -39,8 +39,9 @@ def test_calling_component(default_model_storage: ModelStorage):
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    result = node({"input_node1": 3}, {"input_node2": 4})
-    assert result == {"add_node": 7}
+    result = node(("input_node1", 3), ("input_node2", 4))
+
+    assert result == ("add_node", 7)
 
 
 @pytest.mark.parametrize("x, output", [(None, 5), (0, 5), (1, 4), (2, 3)])
@@ -60,8 +61,9 @@ def test_component_config(
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    result = node({"input_node": 5})
-    assert result == {"subtract": output}
+    result = node(("input_node", 5))
+
+    assert result == ("subtract", output)
 
 
 def test_can_use_alternate_constructor(default_model_storage: ModelStorage):
@@ -79,7 +81,7 @@ def test_can_use_alternate_constructor(default_model_storage: ModelStorage):
     )
 
     result = node()
-    assert result == {"provide": 2}
+    assert result == ("provide", 2)
 
 
 @pytest.mark.parametrize("eager", [True, False])
@@ -142,8 +144,9 @@ def test_non_eager_can_use_inputs_for_constructor(default_model_storage: ModelSt
         execution_context=ExecutionContext(GraphSchema({}), "1"),
     )
 
-    result = node({"input_node": 5})
-    assert result == {"provide": 5}
+    result = node(("input_node", 5))
+
+    assert result == ("provide", 5)
 
 
 def test_execution_context(default_model_storage: ModelStorage):
@@ -161,7 +164,7 @@ def test_execution_context(default_model_storage: ModelStorage):
     )
 
     result = node()
-    assert result == {"model_id": "some_id"}
+    assert result == ("model_id", "some_id")
 
 
 def test_constructor_exception(default_model_storage: ModelStorage):
@@ -248,7 +251,7 @@ def test_writing_to_resource_during_training(default_model_storage: ModelStorage
         execution_context=ExecutionContext(GraphSchema({}), "123"),
     )
 
-    resource = node()[node_name]
+    _, resource = node()
 
     assert resource == Resource(node_name)
 
@@ -288,7 +291,7 @@ def test_loading_from_resource_not_eager(default_model_storage: ModelStorage):
         execution_context=ExecutionContext(GraphSchema({}), "123"),
     )
 
-    value = node({parent_node_name: previous_resource})[node_name]
+    _, value = node((parent_node_name, previous_resource))
 
     assert value == test_value
 
@@ -318,6 +321,7 @@ def test_loading_from_resource_eager(default_model_storage: ModelStorage):
         execution_context=ExecutionContext(GraphSchema({}), "123"),
     )
 
-    value = node()[node_name]
+    actual_node_name, value = node()
 
+    assert actual_node_name == node_name
     assert value == test_value
