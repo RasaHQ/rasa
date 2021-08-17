@@ -390,9 +390,11 @@ def _get_max_applied_events_for_max_history(
     tracker: DialogueStateTracker, max_history: Optional[int],
 ) -> Optional[int]:
     """Computes the number of events in the tracker that correspond to max_history.
+
     Args:
         tracker: Some tracker holding the events
         max_history: The number of actions to count
+
     Returns:
         The number of actions, as counted from the end of the event list, that should
         be taken into accout according to the `max_history` setting. If all events
@@ -415,9 +417,11 @@ def _trim_tracker_by_max_history(
     tracker: DialogueStateTracker, max_history: Optional[int],
 ) -> DialogueStateTracker:
     """Removes events from the tracker until it has `max_history` actions.
+
     Args:
         tracker: Some tracker.
         max_history: Number of actions to keep.
+
     Returns:
         A new tracker with up to `max_history` actions, or the same tracker if
         `max_history` is `None`.
