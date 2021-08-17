@@ -884,9 +884,18 @@ def prepare_token_serialisation(
     response_selector_interpreter: Interpreter,
     sender_id: Text,
 ):
-    tracker = tracker_store.get_or_create_tracker(sender_id=sender_id)
+    text = "Good morning"
+    tokens = text.split()
+    current_index = 0
+    indices = []
+    for t in tokens:
+        start = current_index
+        end = current_index + len(t)
+        indices.append((start, end))
+        current_index = end + 1
 
-    parse_data = response_selector_interpreter.parse("Good morning")
+    tracker = tracker_store.get_or_create_tracker(sender_id=sender_id)
+    parse_data = response_selector_interpreter.parse(text)
     event = UserUttered(
         "Good morning",
         parse_data.get("intent"),
@@ -897,14 +906,14 @@ def prepare_token_serialisation(
     tracker.update(event)
     tracker_store.save(tracker)
 
-    tracker_2 = tracker_store.retrieve(sender_id=sender_id)
-    event = tracker_2.get_last_event_for(event_type=UserUttered)
+    retrieved_tracker = tracker_store.retrieve(sender_id=sender_id)
+    event = retrieved_tracker.get_last_event_for(event_type=UserUttered)
     event_tokens = event.as_dict().get("parse_data").get("text_tokens")
 
-    assert event_tokens[0][0] == 0
-    assert event_tokens[0][1] == 4
-    assert event_tokens[1][0] == 5
-    assert event_tokens[1][1] == 12
+    assert event_tokens[0][0] == indices[0][0]
+    assert event_tokens[0][1] == indices[0][1]
+    assert event_tokens[1][0] == indices[1][0]
+    assert event_tokens[1][1] == indices[1][1]
 
 
 def test_inmemory_tracker_store_with_token_serialisation(

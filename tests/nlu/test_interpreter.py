@@ -75,13 +75,22 @@ def test_create_interpreter(parameters, trained_nlu_model):
 async def test_interpreter_parses_text_tokens(
     response_selector_interpreter: Interpreter,
 ):
-    parsed_data = response_selector_interpreter.parse("Hello there")
+    text = "Hello there"
+    tokens = text.split()
+    current_index = 0
+    indices = []
+    for t in tokens:
+        start = current_index
+        end = current_index + len(t)
+        indices.append((start, end))
+        current_index = end + 1
 
+    parsed_data = response_selector_interpreter.parse(text)
     assert "text_tokens" in parsed_data.keys()
 
-    tokens = parsed_data.get("text_tokens")
+    parsed_tokens = parsed_data.get("text_tokens")
 
-    assert tokens[0][0] == 0
-    assert tokens[0][1] == 5
-    assert tokens[1][0] == 6
-    assert tokens[1][1] == 11
+    assert parsed_tokens[0][0] == indices[0][0]
+    assert parsed_tokens[0][1] == indices[0][1]
+    assert parsed_tokens[1][0] == indices[1][0]
+    assert parsed_tokens[1][1] == indices[1][1]
