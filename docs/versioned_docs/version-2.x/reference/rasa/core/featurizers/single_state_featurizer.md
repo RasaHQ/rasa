@@ -25,22 +25,10 @@ featurized into a list of `rasa.utils.features.Features`.
 
 Initialize the single state featurizer.
 
-#### get\_entity\_tag\_ids
-
-```python
- | get_entity_tag_ids() -> Dict[Text, int]
-```
-
-Returns the tag to index mapping for entities.
-
-**Returns**:
-
-  Tag to index mapping.
-
 #### prepare\_for\_training
 
 ```python
- | prepare_for_training(domain: Domain, interpreter: NaturalLanguageInterpreter) -> None
+ | prepare_for_training(domain: Domain, interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> None
 ```
 
 Gets necessary information for featurization from domain.
@@ -49,6 +37,7 @@ Gets necessary information for featurization from domain.
 
 - `domain` - An instance of :class:`rasa.shared.core.domain.Domain`.
 - `interpreter` - The interpreter used to encode the state
+- `bilou_tagging` - indicates whether BILOU tagging should be used or not
 
 #### encode\_state
 
@@ -71,7 +60,7 @@ Encode the given state with the help of the given interpreter.
 #### encode\_entities
 
 ```python
- | encode_entities(entity_data: Dict[Text, Any], interpreter: NaturalLanguageInterpreter) -> Dict[Text, List["Features"]]
+ | encode_entities(entity_data: Dict[Text, Any], interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> Dict[Text, List["Features"]]
 ```
 
 Encode the given entity data with the help of the given interpreter.
@@ -82,6 +71,7 @@ Produce numeric entity tags for tokens.
 
 - `entity_data` - The dict containing the text and entity labels and locations
 - `interpreter` - The interpreter used to encode the state
+- `bilou_tagging` - indicates whether BILOU tagging should be used or not
   
 
 **Returns**:

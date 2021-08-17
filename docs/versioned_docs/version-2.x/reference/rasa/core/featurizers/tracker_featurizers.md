@@ -70,7 +70,7 @@ Transforms list of trackers to lists of states and actions.
 #### featurize\_trackers
 
 ```python
- | featurize_trackers(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter) -> Tuple[
+ | featurize_trackers(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> Tuple[
  |         List[List[Dict[Text, List["Features"]]]],
  |         np.ndarray,
  |         List[List[Dict[Text, List["Features"]]]],
@@ -84,6 +84,7 @@ Featurize the training trackers.
 - `trackers` - list of training trackers
 - `domain` - the domain
 - `interpreter` - the interpreter
+- `bilou_tagging` - indicates whether BILOU tagging should be used or not
   
 
 **Returns**:

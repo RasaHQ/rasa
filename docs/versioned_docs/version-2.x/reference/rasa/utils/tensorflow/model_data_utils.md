@@ -27,6 +27,25 @@ ACTION_NAME or ENTITIES.
 
   A list of attribute to features.
 
+#### get\_tag\_ids
+
+```python
+get_tag_ids(example: Message, tag_spec: "EntityTagSpec", bilou_tagging: bool) -> "Features"
+```
+
+Creates a feature array containing the entity tag ids of the given example.
+
+**Arguments**:
+
+- `example` - the message
+- `tag_spec` - entity tag spec
+- `bilou_tagging` - indicates whether BILOU tagging should be used or not
+  
+
+**Returns**:
+
+  A list of features.
+
 #### convert\_to\_data\_format
 
 ```python

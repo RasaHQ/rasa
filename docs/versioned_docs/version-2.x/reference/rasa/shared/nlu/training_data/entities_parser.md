@@ -83,8 +83,8 @@ Users can specify entity roles, synonyms, groups for an entity in a dict, e.g.
 
 **Raises**:
 
-  ValidationError if validation of entity dict fails.
-  JSONDecodeError if provided entity dict is not valid json.
+  SchemaValidationError if validation of parsed entity fails.
+  InvalidEntityFormatException if provided entity is not valid json.
   
 
 **Returns**:

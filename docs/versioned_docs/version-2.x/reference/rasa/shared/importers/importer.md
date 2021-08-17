@@ -107,7 +107,7 @@ Instance loaded from configuration file will only read NLU training data.
 
 ```python
  | @staticmethod
- | load_from_dict(config: Optional[Dict], config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None, training_type: Optional[TrainingType] = TrainingType.BOTH) -> "TrainingDataImporter"
+ | load_from_dict(config: Optional[Dict] = None, config_path: Optional[Text] = None, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None, training_type: Optional[TrainingType] = TrainingType.BOTH) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a dictionary.

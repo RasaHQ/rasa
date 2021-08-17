@@ -83,7 +83,7 @@ The layer is composed of the sublayers:
 #### call
 
 ```python
- | call(x: tf.Tensor, pad_mask: Optional[tf.Tensor] = None, training: Optional[Union[tf.Tensor, bool]] = None) -> tf.Tensor
+ | call(x: tf.Tensor, pad_mask: Optional[tf.Tensor] = None, training: Optional[Union[tf.Tensor, bool]] = None) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Apply transformer encoder layer.
@@ -135,7 +135,7 @@ Encoder stack is made up of `num_layers` identical encoder layers.
 #### call
 
 ```python
- | call(x: tf.Tensor, pad_mask: Optional[tf.Tensor] = None, training: Optional[Union[tf.Tensor, bool]] = None) -> tf.Tensor
+ | call(x: tf.Tensor, pad_mask: Optional[tf.Tensor] = None, training: Optional[Union[tf.Tensor, bool]] = None) -> Tuple[tf.Tensor, tf.Tensor]
 ```
 
 Apply transformer encoder.

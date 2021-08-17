@@ -13,6 +13,23 @@ Given the module name and path of a class, tries to retrieve the class.
 
 The loaded class can be used to instantiate new objects.
 
+**Arguments**:
+
+- `module_path` - either an absolute path to a Python class,
+  or the name of the class in the local / global scope.
+- `lookup_path` - a path where to load the class from, if it cannot
+  be found in the local / global scope.
+  
+
+**Returns**:
+
+  a Python class
+  
+
+**Raises**:
+
+  ImportError, in case the Python class cannot be found.
+
 #### all\_subclasses
 
 ```python

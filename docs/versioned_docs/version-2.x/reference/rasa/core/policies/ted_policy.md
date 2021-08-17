@@ -79,7 +79,7 @@ class TED(TransformerRasaModel)
 #### \_\_init\_\_
 
 ```python
- | __init__(data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]], config: Dict[Text, Any], use_only_last_dialogue_turns: bool, label_data: RasaModelData, entity_tag_specs: Optional[List[EntityTagSpec]]) -> None
+ | __init__(data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]], config: Dict[Text, Any], max_history_featurizer_is_used: bool, label_data: RasaModelData, entity_tag_specs: Optional[List[EntityTagSpec]]) -> None
 ```
 
 Intializes the TED model.
@@ -88,7 +88,8 @@ Intializes the TED model.
 
 - `data_signature` - the data signature of the input data
 - `config` - the model configuration
-- `use_only_last_dialogue_turns` - if &#x27;True&#x27; only the last dialogue turn will be used
+- `max_history_featurizer_is_used` - if &#x27;True&#x27;
+  only the last dialogue turn will be used
 - `label_data` - the label data
 - `entity_tag_specs` - the entity tag specifications
 

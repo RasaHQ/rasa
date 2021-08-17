@@ -104,13 +104,13 @@ To create a workflow for building and pushing a Docker image into a DockerHub re
 
 2. In your GitHub repository create a file [`.github/workflows/action_server.yml`](https://github.com/RasaHQ/action-server-gha/blob/master/examples/action_server.yml).
 
-The GitHub Action workflow below builds a new docker image every time files inside the `actions/` directory have changed and the changes are pushed into the `master` branch.
+The GitHub Action workflow below builds a new docker image every time files inside the `actions/` directory have changed and the changes are pushed into the `main` branch.
 
 ```yaml
 on:
   push:
     branches:
-      - master
+      - main
     paths:
     - 'actions/**'
 
@@ -137,7 +137,7 @@ jobs:
         docker_image_tag: ${{ github.sha }}
 ```
 
-3. Push your changes to the `master` branch. After changes are pushed, the workflow will build and push a new image into the DockerHub registry.
+3. Push your changes to the `main` branch. After changes are pushed, the workflow will build and push a new image into the DockerHub registry.
 
 4. Now, you can use your new brand docker image.
 
@@ -147,7 +147,7 @@ jobs:
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build_and_deploy:

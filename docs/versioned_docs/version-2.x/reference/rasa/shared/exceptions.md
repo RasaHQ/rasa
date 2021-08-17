@@ -11,6 +11,9 @@ class RasaException(Exception)
 
 Base exception class for all errors raised by Rasa Open Source.
 
+These exceptions results from invalid use cases and will be reported
+to the users, but will be ignored in telemetry.
+
 ## RasaCoreException Objects
 
 ```python
@@ -34,6 +37,14 @@ class InvalidParameterException(RasaException,  ValueError)
 ```
 
 Raised when an invalid parameter is used.
+
+## MarkdownException Objects
+
+```python
+class MarkdownException(RasaException,  ValueError)
+```
+
+Raised if there is an error reading Markdown.
 
 ## YamlException Objects
 
@@ -94,4 +105,40 @@ class UnsupportedFeatureException(RasaCoreException)
 ```
 
 Raised if a requested feature is not supported.
+
+## SchemaValidationError Objects
+
+```python
+class SchemaValidationError(RasaException,  jsonschema.ValidationError)
+```
+
+Raised if schema validation via `jsonschema` failed.
+
+## InvalidEntityFormatException Objects
+
+```python
+class InvalidEntityFormatException(RasaException,  json.JSONDecodeError)
+```
+
+Raised if the format of an entity is invalid.
+
+#### create\_from
+
+```python
+ | @classmethod
+ | create_from(cls, other: json.JSONDecodeError, msg: Text) -> "InvalidEntityFormatException"
+```
+
+Create an instance of `InvalidEntityFormatException` from a `JSONDecodeError`.
+
+## ConnectionException Objects
+
+```python
+class ConnectionException(RasaException)
+```
+
+Raised when a connection to a 3rd party service fails.
+
+It&#x27;s used by our broker and tracker store classes, when
+they can&#x27;t connect to services like postgres, dynamoDB, mongo.
 

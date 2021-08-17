@@ -28,18 +28,19 @@ Create configuration from file or dict.
 component_config_from_pipeline(index: int, pipeline: List[Dict[Text, Any]], defaults: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
 ```
 
-Get config of the component with the given index in the pipeline.
+Gets the configuration of the `index`th component.
 
 **Arguments**:
 
-- `index` - index the component in the pipeline
-- `pipeline` - a list of component configs in the NLU pipeline
-- `defaults` - default config of the component
+- `index` - Index of the component in the pipeline.
+- `pipeline` - Configurations of the components in the pipeline.
+- `defaults` - Default configuration.
   
 
 **Returns**:
 
-  config of the component
+  The `index`th component configuration, expanded
+  by the given defaults.
 
 ## RasaNLUModelConfig Objects
 
@@ -60,4 +61,16 @@ Create a model configuration.
 **Arguments**:
 
 - `configuration_values` - optional dictionary to override defaults.
+
+#### override
+
+```python
+ | override(config: Optional[Dict[Text, Any]] = None) -> None
+```
+
+Overrides default config with given values.
+
+**Arguments**:
+
+- `config` - New values for the configuration.
 

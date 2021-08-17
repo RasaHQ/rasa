@@ -9,6 +9,33 @@ title: rasa.shared.nlu.training_data.message
 class Message()
 ```
 
+#### add\_diagnostic\_data
+
+```python
+ | add_diagnostic_data(origin: Text, data: Dict[Text, Any]) -> None
+```
+
+Adds diagnostic data from the `origin` component.
+
+**Arguments**:
+
+- `origin` - Name of the component that created the data.
+- `data` - The diagnostic data.
+
+#### set
+
+```python
+ | set(prop: Text, info: Any, add_to_output: bool = False) -> None
+```
+
+Sets the message&#x27;s property to the given value.
+
+**Arguments**:
+
+- `prop` - Name of the property to be set.
+- `info` - Value to be assigned to that property.
+- `add_to_output` - Decides whether to add `prop` to the `output_properties`.
+
 #### as\_dict\_nlu
 
 ```python

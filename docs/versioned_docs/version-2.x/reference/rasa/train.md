@@ -165,3 +165,11 @@ Trains an NLU model.
   If `train_path` is given it returns the path to the model archive,
   otherwise the path to the directory with the trained model files.
 
+#### train\_nlu\_async
+
+```python
+async train_nlu_async(config: Text, nlu_data: Text, output: Text, train_path: Optional[Text] = None, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, additional_arguments: Optional[Dict] = None, domain: Optional[Union[Domain, Text]] = None, model_to_finetune: Optional[Text] = None, finetuning_epoch_fraction: float = 1.0) -> Optional[Text]
+```
+
+Trains an NLU model asynchronously.
+

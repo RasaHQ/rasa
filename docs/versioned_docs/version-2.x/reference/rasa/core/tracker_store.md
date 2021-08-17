@@ -9,7 +9,7 @@ title: rasa.core.tracker_store
 class TrackerStore()
 ```
 
-Class to hold all of the TrackerStore classes
+Represents common behavior and interface for all `TrackerStore`s.
 
 #### \_\_init\_\_
 
@@ -264,7 +264,7 @@ Initialize `DynamoTrackerStore`.
  | get_or_create_table(table_name: Text) -> "boto3.resources.factory.dynamodb.Table"
 ```
 
-Returns table or creates one if the table name is not in the table list
+Returns table or creates one if the table name is not in the table list.
 
 #### save
 
@@ -272,7 +272,7 @@ Returns table or creates one if the table name is not in the table list
  | save(tracker)
 ```
 
-Saves the current conversation state
+Saves the current conversation state.
 
 #### serialise\_tracker
 
@@ -280,7 +280,7 @@ Saves the current conversation state
  | serialise_tracker(tracker: "DialogueStateTracker") -> Dict
 ```
 
-Serializes the tracker, returns object with decimal types
+Serializes the tracker, returns object with decimal types.
 
 #### keys
 
@@ -288,7 +288,7 @@ Serializes the tracker, returns object with decimal types
  | keys() -> Iterable[Text]
 ```
 
-Returns sender_ids of the DynamoTrackerStore
+Returns sender_ids of the `DynamoTrackerStore`.
 
 ## MongoTrackerStore Objects
 
@@ -296,7 +296,7 @@ Returns sender_ids of the DynamoTrackerStore
 class MongoTrackerStore(TrackerStore)
 ```
 
-Stores conversation history in Mongo
+Stores conversation history in Mongo.
 
 Property methods:
     conversations: returns the current conversation
@@ -308,7 +308,7 @@ Property methods:
  | conversations()
 ```
 
-Returns the current conversation
+Returns the current conversation.
 
 #### save
 
@@ -316,7 +316,7 @@ Returns the current conversation
  | save(tracker, timeout=None)
 ```
 
-Saves the current conversation state
+Saves the current conversation state.
 
 #### keys
 
@@ -324,7 +324,7 @@ Saves the current conversation state
  | keys() -> Iterable[Text]
 ```
 
-Returns sender_ids of the Mongo Tracker Store
+Returns sender_ids of the Mongo Tracker Store.
 
 #### is\_postgresql\_url
 
