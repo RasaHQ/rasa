@@ -595,10 +595,10 @@ def test_or_statement_with_slot_was_set():
     assert isinstance(or_statement[0], SlotSet)
     assert isinstance(or_statement[1], SlotSet)
 
-    assert or_statement[0].key == "slot_was_set"
-    assert or_statement[0].value == [{"name": "joe"}]
-    assert or_statement[1].key == "slot_was_set"
-    assert or_statement[1].value == [{"name": "bob"}]
+    assert or_statement[0].key == "name"
+    assert or_statement[0].value == "joe"
+    assert or_statement[1].key == "name"
+    assert or_statement[1].value == "bob"
 
 
 def test_or_statement_with_slot_was_set_is_used_for_training():
@@ -625,13 +625,13 @@ def test_or_statement_with_slot_was_set_is_used_for_training():
 
     slot = steps[0].events[3]
     assert isinstance(slot, SlotSet)
-    assert slot.key == "slot_was_set"
-    assert slot.value == [{"name": "joe"}]
+    assert slot.key == "name"
+    assert slot.value == "joe"
 
     slot = steps[1].events[3]
     assert isinstance(slot, SlotSet)
-    assert slot.key == "slot_was_set"
-    assert slot.value == [{"name": "bob"}]
+    assert slot.key == "name"
+    assert slot.value == "bob"
 
 
 @pytest.mark.parametrize(
