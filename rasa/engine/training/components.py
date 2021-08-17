@@ -13,8 +13,6 @@ from rasa.engine.training import fingerprinting
 class CachedComponent(GraphComponent):
     """Holds the cached value of a `GraphNode` from a previous training."""
 
-    default_config = {}
-
     def __init__(
         self, output: Cacheable,
     ):
@@ -80,8 +78,6 @@ class FingerprintStatus:
 
 class FingerprintComponent(GraphComponent):
     """Replaces non-input nodes during a fingerprint run."""
-
-    default_config = {}
 
     def __init__(
         self,

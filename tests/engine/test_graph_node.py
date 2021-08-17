@@ -88,8 +88,6 @@ def test_eager_and_not_eager(eager: bool, default_model_storage: ModelStorage):
     create_mock = Mock()
 
     class SpyComponent(GraphComponent):
-        default_config = {}
-
         @classmethod
         def create(
             cls,
@@ -168,8 +166,6 @@ def test_execution_context(default_model_storage: ModelStorage):
 
 def test_constructor_exception(default_model_storage: ModelStorage):
     class BadConstructor(GraphComponent):
-        default_config = {}
-
         @classmethod
         def create(
             cls,
@@ -200,8 +196,6 @@ def test_constructor_exception(default_model_storage: ModelStorage):
 
 def test_fn_exception(default_model_storage: ModelStorage):
     class BadFn(GraphComponent):
-        default_config = {}
-
         @classmethod
         def create(
             cls,
