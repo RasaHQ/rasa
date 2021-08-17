@@ -10,8 +10,6 @@ from rasa.engine.storage.resource import Resource
 
 
 class AddInputs(GraphComponent):
-    default_config = {}
-
     @classmethod
     def create(
         cls,
@@ -28,7 +26,9 @@ class AddInputs(GraphComponent):
 
 
 class SubtractByX(GraphComponent):
-    default_config = {"x": 0}
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        return {"x": 0}
 
     def __init__(self, x: int) -> None:
         self._x = x
@@ -49,8 +49,6 @@ class SubtractByX(GraphComponent):
 
 
 class AssertComponent(GraphComponent):
-    default_config = {}
-
     def __init__(self, value_to_assert: Any) -> None:
         self._value_to_assert = value_to_assert
 
@@ -71,8 +69,6 @@ class AssertComponent(GraphComponent):
 
 
 class ProvideX(GraphComponent):
-    default_config = {}
-
     def __init__(self) -> None:
         self.x = 1
 
@@ -109,8 +105,6 @@ class ProvideX(GraphComponent):
 
 
 class FileReader(GraphComponent):
-    default_config = {}
-
     def __init__(self, file_path: Path) -> None:
         self._file_path = file_path
 
@@ -129,8 +123,6 @@ class FileReader(GraphComponent):
 
 
 class ExecutionContextAware(GraphComponent):
-    default_config = {}
-
     def __init__(self, model_id: Text) -> None:
         self.model_id = model_id
 
@@ -150,8 +142,6 @@ class ExecutionContextAware(GraphComponent):
 
 
 class PersistableTestComponent(GraphComponent):
-    default_config = {}
-
     def __init__(
         self,
         config: Dict[Text, Any],
@@ -249,7 +239,9 @@ class CacheableText:
 
 
 class CacheableComponent(GraphComponent):
-    default_config = {"prefix": "Hello "}
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        return {"prefix": "Hello "}
 
     def __init__(self, prefix: Text):
         self.prefix = prefix

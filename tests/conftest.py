@@ -173,9 +173,7 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture(scope="session")
-async def _trained_default_agent(
-    tmpdir_factory: TempdirFactory, stories_path: Text
-) -> Agent:
+def _trained_default_agent(tmpdir_factory: TempdirFactory, stories_path: Text) -> Agent:
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent(
@@ -184,7 +182,7 @@ async def _trained_default_agent(
         model_directory=model_path,
     )
 
-    training_data = await agent.load_data(stories_path)
+    training_data = agent.load_data(stories_path)
     agent.train(training_data)
     agent.persist(model_path)
     return agent

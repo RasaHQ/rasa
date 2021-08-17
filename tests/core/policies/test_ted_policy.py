@@ -248,7 +248,7 @@ class TestTEDPolicy(PolicyTestCollection):
         assert len([w for w in warning if warn_text in str(w.message)]) == 1
         assert not checkpoint_dir.is_dir()
 
-    async def test_training_with_no_intent(
+    def test_training_with_no_intent(
         self,
         featurizer: Optional[TrackerFeaturizer],
         priority: int,
@@ -278,7 +278,7 @@ class TestTEDPolicy(PolicyTestCollection):
         )
         import tests.core.test_policies
 
-        training_trackers = await tests.core.test_policies.train_trackers(
+        training_trackers = tests.core.test_policies.train_trackers(
             default_domain, str(stories), augmentation_factor=20
         )
         with pytest.raises(RasaException) as e:
@@ -351,10 +351,10 @@ class TestTEDPolicy(PolicyTestCollection):
             == default_domain.num_actions
         )
 
-    async def test_gen_batch(
+    def test_gen_batch(
         self, trained_policy: TEDPolicy, default_domain: Domain, stories_path: Path
     ):
-        training_trackers = await tests.core.test_policies.train_trackers(
+        training_trackers = tests.core.test_policies.train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
         interpreter = RegexInterpreter()
