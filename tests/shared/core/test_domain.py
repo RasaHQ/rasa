@@ -58,11 +58,9 @@ def test_slots_states_before_user_utterance(domain: Domain):
     assert trackers_as_states == expected_states
 
 
-async def test_create_train_data_no_history(domain: Domain, stories_path: Text):
+def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = await training.load_data(
-        stories_path, domain, augmentation_factor=0
-    )
+    training_trackers = training.load_data(stories_path, domain, augmentation_factor=0)
 
     assert len(training_trackers) == 4
     (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)
@@ -88,11 +86,9 @@ async def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     ]
 
 
-async def test_create_train_data_with_history(domain: Domain, stories_path: Text):
+def test_create_train_data_with_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
-    training_trackers = await training.load_data(
-        stories_path, domain, augmentation_factor=0
-    )
+    training_trackers = training.load_data(stories_path, domain, augmentation_factor=0)
     assert len(training_trackers) == 4
     (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)
 
@@ -132,14 +128,12 @@ def check_for_too_many_entities_and_remove_them(state: State) -> State:
     return state
 
 
-async def test_create_train_data_unfeaturized_entities():
+def test_create_train_data_unfeaturized_entities():
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
     stories_file = "data/test_yaml_stories/stories_unfeaturized_entities.yml"
     domain = Domain.load(domain_file)
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = await training.load_data(
-        stories_file, domain, augmentation_factor=0
-    )
+    training_trackers = training.load_data(stories_file, domain, augmentation_factor=0)
 
     assert len(training_trackers) == 2
     (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)
@@ -1468,3 +1462,92 @@ def test_domain_invalid_yml_in_folder():
     """
     with pytest.warns(UserWarning, match="The file .* your file\\."):
         Domain.from_directory("data/test_domains/test_domain_from_directory1/")
+
+
+def test_domain_fingerprint_consistency_across_runs():
+    domain_yaml = """
+         version: "2.0"
+         intents:
+         - greet
+         - goodbye
+         entities:
+         - name
+         slots:
+           name:
+             type: text
+         responses:
+           utter_greet:
+             - text: "Hi"
+         forms:
+          test_form:
+            required_slots:
+               name:
+                - type: from_entity
+                  entity: name
+         actions:
+         - action_test
+    """
+    domain1 = Domain.from_yaml(domain_yaml)
+    domain2 = Domain.from_yaml(domain_yaml)
+
+    f1 = domain1.fingerprint()
+    f2 = domain2.fingerprint()
+    assert f1 == f2
+
+
+def test_domain_fingerprint_uniqueness():
+    domain = Domain.from_yaml(
+        """
+         version: "2.0"
+         intents:
+         - greet
+         - goodbye
+         actions:
+         - action_test
+         """
+    )
+    f1 = domain.fingerprint()
+
+    domain_with_extra_intent = Domain.from_yaml(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - goodbye
+        - test
+        actions:
+        - action_test
+        """
+    )
+    f2 = domain_with_extra_intent.fingerprint()
+    assert f1 != f2
+
+    domain_with_extra_action = Domain.from_yaml(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - goodbye
+        actions:
+        - action_test
+        - action_double_test
+        """
+    )
+    f3 = domain_with_extra_action.fingerprint()
+    assert f1 != f3
+
+    domain_with_extra_responses = Domain.from_yaml(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - goodbye
+        responses:
+          utter_greet:
+           - text: "Hi!"
+        actions:
+        - action_test
+        """
+    )
+    f4 = domain_with_extra_responses.fingerprint()
+    assert f1 != f4

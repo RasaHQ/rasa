@@ -329,7 +329,7 @@ def project_fingerprint() -> Optional[Text]:
         return None
 
 
-async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
+def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
     """Create a model fingerprint from its used configuration and training data.
 
     Args:
@@ -341,10 +341,10 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     """
     import time
 
-    config = await file_importer.get_config()
-    domain = await file_importer.get_domain()
-    stories = await file_importer.get_stories()
-    nlu_data = await file_importer.get_nlu_data()
+    config = file_importer.get_config()
+    domain = file_importer.get_domain()
+    stories = file_importer.get_stories()
+    nlu_data = file_importer.get_nlu_data()
 
     responses = domain.responses
 
@@ -615,7 +615,7 @@ def package_model(
     return output_directory
 
 
-async def update_model_with_new_domain(
+def update_model_with_new_domain(
     importer: "TrainingDataImporter", unpacked_model_path: Union[Path, Text]
 ) -> None:
     """Overwrites the domain of an unpacked model with a new domain.
@@ -625,7 +625,7 @@ async def update_model_with_new_domain(
         unpacked_model_path: Path to the unpacked model.
     """
     model_path = Path(unpacked_model_path) / DEFAULT_CORE_SUBDIRECTORY_NAME
-    domain = await importer.get_domain()
+    domain = importer.get_domain()
     domain.persist(model_path / DEFAULT_DOMAIN_PATH)
 
 
