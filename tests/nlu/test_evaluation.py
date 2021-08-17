@@ -32,7 +32,6 @@ from rasa.nlu.test import (
     remove_empty_intent_examples,
     remove_empty_response_examples,
     get_active_entity_extractors,
-    are_intent_classifiers_active,
     drop_intents_below_freq,
     cross_validate,
     run_evaluation,
@@ -48,7 +47,6 @@ from rasa.nlu.test import (
     collect_incorrect_entity_predictions,
     merge_confidences,
     _get_entity_confidences,
-    is_response_selector_present,
     get_eval_data,
     does_token_cross_borders,
     align_entity_predictions,
@@ -400,13 +398,11 @@ async def test_eval_data(
 
 
 @pytest.mark.timeout(
-    240, func_only=True
+    180, func_only=True
 )  # these can take a longer time than the default timeout
-def test_run_cv_evaluation(
-    pretrained_embeddings_spacy_config: RasaNLUModelConfig, monkeypatch: MonkeyPatch
-):
+def test_run_cv_evaluation():
     td = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.json"
+        "data/test/demo-rasa-more-ents-and-multiplied.yml"
     )
 
     nlu_config = RasaNLUModelConfig(
@@ -415,15 +411,10 @@ def test_run_cv_evaluation(
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 2},
+                {"name": "DIETClassifier", EPOCHS: 25},
             ],
         }
     )
-
-    # mock training
-    trainer = Trainer(nlu_config)
-    mock = Mock(return_value=Interpreter(trainer.pipeline, None))
-    monkeypatch.setattr(Trainer, "train", mock)
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
@@ -452,9 +443,12 @@ def test_run_cv_evaluation(
         assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
-def test_run_cv_evaluation_with_response_selector(monkeypatch: MonkeyPatch):
+@pytest.mark.timeout(
+    180, func_only=True
+)  # these can take a longer time than the default timeout
+def test_run_cv_evaluation_with_response_selector():
     training_data_obj = rasa.shared.nlu.training_data.loading.load_data(
-        "data/examples/rasa/demo-rasa.yml"
+        "data/test/demo-rasa-more-ents-and-multiplied.yml"
     )
     training_data_responses_obj = rasa.shared.nlu.training_data.loading.load_data(
         "data/examples/rasa/demo-rasa-responses.yml"
@@ -467,16 +461,11 @@ def test_run_cv_evaluation_with_response_selector(monkeypatch: MonkeyPatch):
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 2},
+                {"name": "DIETClassifier", EPOCHS: 25},
                 {"name": "ResponseSelector", EPOCHS: 2},
             ],
         }
     )
-
-    # mock training
-    trainer = Trainer(nlu_config)
-    mock = Mock(return_value=Interpreter(trainer.pipeline, None))
-    monkeypatch.setattr(Trainer, "train", mock)
 
     n_folds = 2
     intent_results, entity_results, response_selection_results = cross_validate(
@@ -495,7 +484,7 @@ def test_run_cv_evaluation_with_response_selector(monkeypatch: MonkeyPatch):
     assert len(intent_results.test["Accuracy"]) == n_folds
     assert len(intent_results.test["Precision"]) == n_folds
     assert len(intent_results.test["F1-score"]) == n_folds
-    assert intent_results.evaluation == {}
+    assert all(key in intent_results.evaluation for key in ["errors", "report"])
     assert any(
         isinstance(intent_report, dict)
         and intent_report.get("confused_with") is not None
@@ -517,22 +506,15 @@ def test_run_cv_evaluation_with_response_selector(monkeypatch: MonkeyPatch):
         for intent_report in response_selection_results.evaluation["report"].values()
     )
 
-    # Due to mock training there won't be any results ever
-    assert len(entity_results.train) == 0
-    assert len(entity_results.test) == 0
-    assert len(entity_results.evaluation) == 0
+    assert len(entity_results.train["DIETClassifier"]["Accuracy"]) == n_folds
+    assert len(entity_results.train["DIETClassifier"]["Precision"]) == n_folds
+    assert len(entity_results.train["DIETClassifier"]["F1-score"]) == n_folds
 
-
-def test_response_selector_present():
-    response_selector_component = ResponseSelector()
-
-    interpreter_with_response_selector = Interpreter(
-        [response_selector_component], context=None
-    )
-    interpreter_without_response_selector = Interpreter([], context=None)
-
-    assert is_response_selector_present(interpreter_with_response_selector)
-    assert not is_response_selector_present(interpreter_without_response_selector)
+    assert len(entity_results.test["DIETClassifier"]["Accuracy"]) == n_folds
+    assert len(entity_results.test["DIETClassifier"]["Precision"]) == n_folds
+    assert len(entity_results.test["DIETClassifier"]["F1-score"]) == n_folds
+    for extractor_evaluation in entity_results.evaluation.values():
+        assert all(key in extractor_evaluation for key in ["errors", "report"])
 
 
 def test_intent_evaluation_report(tmp_path: Path):
@@ -718,32 +700,6 @@ def test_get_active_entity_extractors(
 ):
     extractors = get_active_entity_extractors(entity_results)
     assert extractors == expected_extractors
-
-
-@pytest.mark.parametrize(
-    "intent_results, expected_result",
-    [
-        ([IntentEvaluationResult("intent1", "intent1", "test", 1.0)], True),
-        (
-            [
-                IntentEvaluationResult("intent1", "intent1", "test", 1.0),
-                IntentEvaluationResult("intent2", None, None, None),
-            ],
-            True,
-        ),
-        ([IntentEvaluationResult("intent1", "intent2", "test", 1.0)], True),
-        ([IntentEvaluationResult("intent1", None, "test", 1.0)], False),
-        ([IntentEvaluationResult("intent1", "", "test", 1.0)], False),
-        ([IntentEvaluationResult("intent1", "intent2", "test", None)], True),
-        ([IntentEvaluationResult("intent1", "intent2", "test", 0.0)], True),
-        ([IntentEvaluationResult("intent1", "intent2", None, None)], True),
-        ([IntentEvaluationResult("intent1", None, None, None)], False),
-    ],
-)
-def test_are_intent_classifiers_active(
-    intent_results: List[IntentEvaluationResult], expected_result: bool
-):
-    assert expected_result == are_intent_classifiers_active(intent_results)
 
 
 def test_entity_evaluation_report(tmp_path: Path):

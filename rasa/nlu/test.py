@@ -35,6 +35,7 @@ from rasa.nlu.constants import (
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
     ENTITY_ATTRIBUTE_CONFIDENCE_ROLE,
     ENTITY_ATTRIBUTE_CONFIDENCE_GROUP,
+    RESPONSE_SELECTOR_RETRIEVAL_INTENTS,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -1244,19 +1245,15 @@ def get_eval_data(
 
     intent_results, entity_results, response_selection_results = [], [], []
 
-    response_labels = [
+    response_labels = {
         e.get(INTENT_RESPONSE_KEY)
         for e in test_data.intent_examples
         if e.get(INTENT_RESPONSE_KEY) is not None
-    ]
+    }
     intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
     should_eval_intents = len(set(intent_labels)) >= 2
-    should_eval_response_selection = (
-        is_response_selector_present(interpreter) and len(set(response_labels)) >= 2
-    )
-    available_response_selector_types = get_available_response_selector_types(
-        interpreter
-    )
+    should_eval_response_selection = len(response_labels) >= 2
+    should_eval_entities = len(test_data.entity_examples) > 0
 
     for example in tqdm(test_data.nlu_examples):
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
@@ -1268,24 +1265,24 @@ def get_eval_data(
                 # during the test phase.
                 result = fallback_classifier.undo_fallback_prediction(result)
             intent_prediction = result.get(INTENT, {})
-            if intent_prediction:
-                intent_results.append(
-                    IntentEvaluationResult(
-                        example.get(INTENT, ""),
-                        intent_prediction.get(INTENT_NAME_KEY),
-                        result.get(TEXT),
-                        intent_prediction.get("confidence"),
-                    )
+            intent_results.append(
+                IntentEvaluationResult(
+                    example.get(INTENT, ""),
+                    intent_prediction.get(INTENT_NAME_KEY),
+                    result.get(TEXT),
+                    intent_prediction.get("confidence"),
                 )
+            )
 
         if should_eval_response_selection:
-
             # including all examples here. Empty response examples are filtered at the
             # time of metric calculation
             intent_target = example.get(INTENT, "")
             selector_properties = result.get(RESPONSE_SELECTOR_PROPERTY_NAME, {})
-
-            if intent_target in available_response_selector_types:
+            response_selector_retrieval_intents = selector_properties.get(
+                RESPONSE_SELECTOR_RETRIEVAL_INTENTS, set()
+            )
+            if intent_target in response_selector_retrieval_intents:
                 response_prediction_key = intent_target
             else:
                 response_prediction_key = RESPONSE_SELECTOR_DEFAULT_INTENT
@@ -1300,22 +1297,20 @@ def get_eval_data(
                 ResponseSelectionEvaluationResult(
                     intent_response_key_target,
                     response_prediction.get(INTENT_RESPONSE_KEY),
-                    result.get(TEXT, {}),
+                    result.get(TEXT),
                     response_prediction.get(PREDICTED_CONFIDENCE_KEY),
                 )
             )
 
-        entity_results.append(
-            EntityEvaluationResult(
-                example.get(ENTITIES, []),
-                result.get(ENTITIES, []),
-                result.get(TOKENS_NAMES[TEXT], []),
-                result.get(TEXT, ""),
+        if should_eval_entities:
+            entity_results.append(
+                EntityEvaluationResult(
+                    example.get(ENTITIES, []),
+                    result.get(ENTITIES, []),
+                    result.get(TOKENS_NAMES[TEXT], []),
+                    result.get(TEXT),
+                )
             )
-        )
-
-    if not get_active_entity_extractors(entity_results):
-        entity_results = []
 
     return intent_results, response_selection_results, entity_results
 
@@ -1330,37 +1325,6 @@ def get_active_entity_extractors(
             if EXTRACTOR in prediction:
                 extractors.add(prediction[EXTRACTOR])
     return extractors
-
-
-def are_intent_classifiers_active(intent_results: List[IntentEvaluationResult]) -> bool:
-    """Checks IntentEvaluationResults for active intent classifiers."""
-    return any([ir.intent_prediction for ir in intent_results])
-
-
-def is_response_selector_present(interpreter: Interpreter) -> bool:
-    """Checks whether response selector is present."""
-
-    from rasa.nlu.selectors.response_selector import ResponseSelector
-
-    response_selectors = [
-        c.name for c in interpreter.pipeline if isinstance(c, ResponseSelector)
-    ]
-    return response_selectors != []
-
-
-def get_available_response_selector_types(
-    interpreter: Interpreter,
-) -> List[Optional[Text]]:
-    """Gets all available response selector types."""
-    from rasa.nlu.selectors.response_selector import ResponseSelector
-
-    response_selector_types: List[Optional[Text]] = [
-        c.retrieval_intent
-        for c in interpreter.pipeline
-        if isinstance(c, ResponseSelector)
-    ]
-
-    return response_selector_types
 
 
 def remove_entities_of_extractors(
@@ -1617,10 +1581,6 @@ def cross_validate(
     intent_test_results: List[IntentEvaluationResult] = []
     entity_test_results: List[EntityEvaluationResult] = []
     response_selection_test_results: List[ResponseSelectionEvaluationResult] = []
-    intent_classifiers_active = False
-    response_selector_present = False
-    entity_evaluation_possible = False
-    extractors: Set[Text] = set()
 
     for train, test in generate_folds(n_folds, data):
         interpreter = trainer.train(train)
@@ -1645,21 +1605,7 @@ def cross_validate(
             response_selection_test_results,
         )
 
-        if not extractors:
-            extractors = get_active_entity_extractors(entity_test_results)
-            entity_evaluation_possible = (
-                entity_evaluation_possible
-                or _contains_entity_labels(entity_test_results)
-            )
-
-        if are_intent_classifiers_active(intent_test_results):
-            intent_classifiers_active = True
-
-        if is_response_selector_present(interpreter):
-            response_selector_present = True
-
-    intent_evaluation = {}
-    if intent_classifiers_active and intent_test_results:
+    if intent_test_results:
         logger.info("Accumulated test folds intent evaluation results:")
         intent_evaluation = evaluate_intents(
             intent_test_results,
@@ -1671,8 +1617,9 @@ def cross_validate(
         )
 
     entity_evaluation = {}
-    if extractors and entity_evaluation_possible:
+    if entity_test_results:
         logger.info("Accumulated test folds entity evaluation results:")
+        extractors = get_active_entity_extractors(entity_test_results)
         entity_evaluation = evaluate_entities(
             entity_test_results,
             extractors,
@@ -1684,7 +1631,7 @@ def cross_validate(
         )
 
     responses_evaluation = {}
-    if response_selector_present and response_selection_test_results:
+    if response_selection_test_results:
         logger.info("Accumulated test folds response selection evaluation results:")
         responses_evaluation = evaluate_response_selections(
             response_selection_test_results,
@@ -1694,10 +1641,6 @@ def cross_validate(
             disable_plotting,
             report_as_dict=report_as_dict,
         )
-
-    if not entity_evaluation_possible:
-        entity_test_metrics = defaultdict(lambda: defaultdict(list))
-        entity_train_metrics = defaultdict(lambda: defaultdict(list))
 
     return (
         CVEvaluationResult(
