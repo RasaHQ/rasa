@@ -12,6 +12,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from moto import mock_dynamodb2
 from pymongo.errors import OperationFailure
 
+from rasa.nlu.model import Interpreter
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
@@ -876,3 +877,54 @@ def test_tracker_store_connection_error(config: Dict, domain: Domain):
 
     with pytest.raises(ConnectionException):
         TrackerStore.create(store, domain)
+
+
+def prepare_token_serialisation(
+    tracker_store: TrackerStore,
+    response_selector_interpreter: Interpreter,
+    sender_id: Text,
+):
+    tracker = tracker_store.get_or_create_tracker(sender_id=sender_id)
+
+    parse_data = response_selector_interpreter.parse("Good morning")
+    event = UserUttered(
+        "Good morning",
+        parse_data.get("intent"),
+        parse_data.get("entities", []),
+        parse_data,
+    )
+
+    tracker.update(event)
+    tracker_store.save(tracker)
+
+    tracker_2 = tracker_store.retrieve(sender_id=sender_id)
+    event = tracker_2.get_last_event_for(event_type=UserUttered)
+    event_tokens = event.as_dict().get("parse_data").get("text_tokens")
+
+    assert event_tokens[0][0] == 0
+    assert event_tokens[0][1] == 4
+    assert event_tokens[1][0] == 5
+    assert event_tokens[1][1] == 12
+
+
+def test_inmemory_tracker_store_with_token_serialisation(
+    domain: Domain, response_selector_interpreter: Interpreter
+):
+    tracker_store = InMemoryTrackerStore(domain)
+    prepare_token_serialisation(
+        tracker_store, response_selector_interpreter, "inmemory"
+    )
+
+
+def test_mongo_tracker_store_with_token_serialisation(
+    domain: Domain, response_selector_interpreter: Interpreter
+):
+    tracker_store = MockedMongoTrackerStore(domain)
+    prepare_token_serialisation(tracker_store, response_selector_interpreter, "mongo")
+
+
+def test_sql_tracker_store_with_token_serialisation(
+    domain: Domain, response_selector_interpreter: Interpreter
+):
+    tracker_store = SQLTrackerStore(domain, **{"host": "sqlite:///"})
+    prepare_token_serialisation(tracker_store, response_selector_interpreter, "sql")
