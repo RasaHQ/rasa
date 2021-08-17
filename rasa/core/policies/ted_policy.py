@@ -14,7 +14,6 @@ from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
 import rasa.utils.io as io_utils
 import rasa.core.actions.action
-from rasa.constants import EPOCH_OVERRIDE
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -113,6 +112,7 @@ from rasa.utils.tensorflow.constants import (
     MODEL_CONFIDENCE,
     SOFTMAX,
     BILOU_FLAG,
+    EPOCH_OVERRIDE,
 )
 from rasa.shared.core.events import EntitiesAdded, Event
 from rasa.shared.nlu.training_data.message import Message
