@@ -392,8 +392,8 @@ async def test_eval_data(
     )
 
     assert len(intent_results) == 46
-    assert len(response_selection_results) == 0
-    assert len(entity_results) == 0
+    assert len(response_selection_results) == 46
+    assert len(entity_results) == 46
 
 
 @pytest.mark.timeout(
