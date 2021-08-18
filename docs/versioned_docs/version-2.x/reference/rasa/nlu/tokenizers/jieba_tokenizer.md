@@ -9,6 +9,8 @@ title: rasa.nlu.tokenizers.jieba_tokenizer
 class JiebaTokenizer(Tokenizer)
 ```
 
+This tokenizer is a wrapper for Jieba (https://github.com/fxsjy/jieba).
+
 #### \_\_init\_\_
 
 ```python

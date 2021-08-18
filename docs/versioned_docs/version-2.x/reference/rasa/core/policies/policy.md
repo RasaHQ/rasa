@@ -52,10 +52,31 @@ or both ML-based data and rule data, they need to override this method.
 
   The data type supported by this policy (ML-based training data).
 
+#### \_\_init\_\_
+
+```python
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, should_finetune: bool = False, **kwargs: Any, ,) -> None
+```
+
+Constructs a new Policy object.
+
+#### featurizer
+
+```python
+ | @property
+ | featurizer()
+```
+
+Returns the policy&#x27;s featurizer.
+
 #### featurize\_for\_training
 
 ```python
- | featurize_for_training(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> Tuple[List[List[Dict[Text, List["Features"]]]], np.ndarray]
+ | featurize_for_training(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False, **kwargs: Any, ,) -> Tuple[
+ |         List[List[Dict[Text, List["Features"]]]],
+ |         np.ndarray,
+ |         List[List[Dict[Text, List["Features"]]]],
+ |     ]
 ```
 
 Transform training trackers into a vector representation.
@@ -69,6 +90,7 @@ into a float vector which can be used by a ML model.
   the list of the :class:`rasa.core.trackers.DialogueStateTracker`
 - `domain` - the :class:`rasa.shared.core.domain.Domain`
 - `interpreter` - the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
+- `bilou_tagging` - indicates whether BILOU tagging should be used or not
   
 
 **Returns**:
@@ -78,6 +100,9 @@ into a float vector which can be used by a ML model.
   all training trackers
   - the label ids (e.g. action ids) for every dialogue turn in all training
   trackers
+  - A dictionary of entity type (ENTITY_TAGS) to a list of features
+  containing entity tag ids for text user inputs otherwise empty dict
+  for all dialogue turns in all training trackers
 
 #### train
 
@@ -130,7 +155,7 @@ Persists the policy to storage.
 
 ```python
  | @classmethod
- | load(cls, path: Union[Text, Path]) -> "Policy"
+ | load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy"
 ```
 
 Loads a policy from path.
@@ -147,6 +172,7 @@ Loads a policy from path.
 #### format\_tracker\_states
 
 ```python
+ | @staticmethod
  | format_tracker_states(states: List[Dict]) -> Text
 ```
 
@@ -172,7 +198,7 @@ Stores information about the prediction of a `Policy`.
 #### \_\_init\_\_
 
 ```python
- | __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False) -> None
+ | __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False, is_no_user_prediction: bool = False, diagnostic_data: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates a `PolicyPrediction`.
@@ -192,6 +218,12 @@ Creates a `PolicyPrediction`.
   you return as they can potentially influence the conversation flow.
 - `is_end_to_end_prediction` - `True` if the prediction used the text of the
   user message instead of the intent.
+- `is_no_user_prediction` - `True` if the prediction uses neither the text
+  of the user message nor the intent. This is for the example the case
+  for happy loop paths.
+- `diagnostic_data` - Intermediate results or other information that is not
+  necessary for Rasa to function, but intended for debugging and
+  fine-tuning purposes.
 
 #### for\_action\_name
 

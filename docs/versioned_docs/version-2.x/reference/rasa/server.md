@@ -3,6 +3,30 @@ sidebar_label: server
 title: rasa.server
 ---
 
+## ErrorResponse Objects
+
+```python
+class ErrorResponse(Exception)
+```
+
+Common exception to handle failing API requests.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(status: Union[int, HTTPStatus], reason: Text, message: Text, details: Any = None, help_url: Optional[Text] = None) -> None
+```
+
+Creates error.
+
+**Arguments**:
+
+- `status` - The HTTP status code to return.
+- `reason` - Short summary of the error.
+- `message` - Detailed explanation of the error.
+- `details` - Additional details which describe the error. Must be serializable.
+- `help_url` - URL where users can get further help (e.g. docs).
+
 #### ensure\_loaded\_agent
 
 ```python
@@ -123,6 +147,67 @@ add_root_route(app: Sanic)
 ```
 
 Add &#x27;/&#x27; route to return hello.
+
+#### async\_if\_callback\_url
+
+```python
+async_if_callback_url(f: Callable[..., Coroutine]) -> Callable
+```
+
+Decorator to enable async request handling.
+
+If the incoming HTTP request specified a `callback_url` query parameter, the request
+will return immediately with a 204 while the actual request response will
+be sent to the `callback_url`. If an error happens, the error payload will also
+be sent to the `callback_url`.
+
+**Arguments**:
+
+- `f` - The request handler function which should be decorated.
+  
+
+**Returns**:
+
+  The decorated function.
+
+#### run\_in\_thread
+
+```python
+run_in_thread(f: Callable[..., Coroutine]) -> Callable
+```
+
+Decorator which runs request on a separate thread.
+
+Some requests (e.g. training or cross-validation) are computional intense requests.
+This means that they will block the event loop and hence the processing of other
+requests. This decorator can be used to process these requests on a separate thread
+to avoid blocking the processing of incoming requests.
+
+**Arguments**:
+
+- `f` - The request handler function which should be decorated.
+  
+
+**Returns**:
+
+  The decorated function.
+
+#### inject\_temp\_dir
+
+```python
+inject_temp_dir(f: Callable[..., Coroutine]) -> Callable
+```
+
+Decorator to inject a temporary directory before a request and clean up after.
+
+**Arguments**:
+
+- `f` - The request handler function which should be decorated.
+  
+
+**Returns**:
+
+  The decorated function.
 
 #### create\_app
 

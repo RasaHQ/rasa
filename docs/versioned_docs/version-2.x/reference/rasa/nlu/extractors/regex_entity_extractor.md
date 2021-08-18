@@ -12,6 +12,14 @@ class RegexEntityExtractor(EntityExtractor)
 Searches for entities in the user&#x27;s message using the lookup tables and regexes
 defined in the training data.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(component_config: Optional[Dict[Text, Any]] = None, patterns: Optional[List[Dict[Text, Text]]] = None)
+```
+
+Extracts entities using the lookup tables and/or regexes defined in the training data.
+
 #### persist
 
 ```python

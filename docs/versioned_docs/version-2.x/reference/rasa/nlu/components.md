@@ -207,7 +207,25 @@ the pipeline to do intent classification.
  | name() -> Text
 ```
 
-Access the class&#x27;s property name from an instance.
+Returns the name of the component to be used in the model configuration.
+
+Component class name is used when integrating it in a
+pipeline. E.g. `[ComponentA, ComponentB]`
+will be a proper pipeline definition where `ComponentA`
+is the name of the first component of the pipeline.
+
+#### unique\_name
+
+```python
+ | @property
+ | unique_name() -> Text
+```
+
+Gets a unique name for the component in the pipeline.
+
+The unique name can be used to distinguish components in
+a pipeline, e.g. when the pipeline contains multiple
+featurizers of the same type.
 
 #### required\_components
 
@@ -216,11 +234,14 @@ Access the class&#x27;s property name from an instance.
  | required_components(cls) -> List[Type["Component"]]
 ```
 
-Specify which components need to be present in the pipeline.
+Specifies which components need to be present in the pipeline.
+
+Which components are required by this component.
+Listed components should appear before the component itself in the pipeline.
 
 **Returns**:
 
-  The list of class names of required components.
+  The class names of the required components.
 
 #### required\_packages
 
@@ -229,7 +250,7 @@ Specify which components need to be present in the pipeline.
  | required_packages(cls) -> List[Text]
 ```
 
-Specify which python packages need to be installed.
+Specifies which python packages need to be installed.
 
 E.g. ``[&quot;spacy&quot;]``. More specifically, these should be
 importable python package names e.g. `sklearn` and not package
@@ -249,7 +270,7 @@ if a required package is not installed.
  | load(cls, meta: Dict[Text, Any], model_dir: Optional[Text] = None, model_metadata: Optional["Metadata"] = None, cached_component: Optional["Component"] = None, **kwargs: Any, ,) -> "Component"
 ```
 
-Load this component from file.
+Loads this component from file.
 
 After a component has been trained, it will be persisted by
 calling `persist`. When the pipeline gets loaded again,
@@ -297,7 +318,7 @@ Method can access all configuration parameters.
  | provide_context() -> Optional[Dict[Text, Any]]
 ```
 
-Initialize this component for a new pipeline.
+Initializes this component for a new pipeline.
 
 This function will be called before the training
 is started and before the first message is processed using
@@ -319,7 +340,7 @@ like MITIE and spacy
  | train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
 ```
 
-Train this component.
+Trains this component.
 
 This is the components chance to train itself provided
 with the training data. The component can rely on
@@ -332,8 +353,7 @@ of components previous to this one.
 
 **Arguments**:
 
-  training_data:
-  The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
+- `training_data` - The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
 - `config` - The model configuration parameters.
 
 #### process
@@ -342,7 +362,7 @@ of components previous to this one.
  | process(message: Message, **kwargs: Any) -> None
 ```
 
-Process an incoming message.
+Processes an incoming message.
 
 This is the components chance to process an incoming
 message. The component can rely on
@@ -363,7 +383,7 @@ of components previous to this one.
  | persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
 ```
 
-Persist this component to disk for future loading.
+Persists this component to disk for future loading.
 
 **Arguments**:
 
@@ -398,6 +418,14 @@ metadata creates the same key.
 **Returns**:
 
   A unique caching key.
+
+#### \_\_getstate\_\_
+
+```python
+ | __getstate__() -> Any
+```
+
+Gets a copy of picklable parts of the component.
 
 #### prepare\_partial\_processing
 

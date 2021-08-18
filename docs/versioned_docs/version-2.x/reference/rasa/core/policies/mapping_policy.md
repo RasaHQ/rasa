@@ -18,7 +18,7 @@ any other policy.
 #### \_\_init\_\_
 
 ```python
- | __init__(priority: int = MAPPING_POLICY_PRIORITY) -> None
+ | __init__(priority: int = MAPPING_POLICY_PRIORITY, **kwargs: Any) -> None
 ```
 
 Create a new Mapping policy.

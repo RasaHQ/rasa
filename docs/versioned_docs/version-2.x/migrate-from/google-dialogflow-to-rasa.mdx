@@ -79,6 +79,8 @@ To send a request to the server, run:
 
 ```bash
 curl 'localhost:5005/model/parse?emulation_mode=dialogflow' -d '{"text": "hello"}'
+```
+
 The `emulation_mode` parameter tells Rasa that you want your JSON response to have the same format as you would
 get from the Dialogflow `sessions.detectIntent` endpoint (the format is
 described [here](https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/DetectIntentResponse)).
@@ -87,6 +89,6 @@ You can also leave it out to get the result in the usual Rasa format.
 ## Terminology:
 
 The words `intent`, `entity`, and `utterance` have the same meaning in Rasa as they do in Dialogflow.
-In Dialogflow, there is a concept called `Fulfillment`. In Rasa we call this a [Custom Action](./actions.mdx#custom-actions).
+In Dialogflow, there is a concept called `Fulfillment`. In Rasa we call this a [Custom Action](../actions.mdx#custom-actions).
 
 Join the [Rasa Community Forum](https://forum.rasa.com/) and let us know how your migration went!

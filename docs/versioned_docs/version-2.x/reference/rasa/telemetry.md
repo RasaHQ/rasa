@@ -222,7 +222,7 @@ from the `rasa` package.
 
 ```python
 @async_generator.asynccontextmanager
-async track_model_training(training_data: "TrainingDataImporter", model_type: Text) -> typing.AsyncGenerator[None, None]
+async track_model_training(training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False) -> typing.AsyncGenerator[None, None]
 ```
 
 Track a model training started.
@@ -236,6 +236,7 @@ fixed as soon as we drop python 3.6 support.
 - `training_data` - Training data used for the training.
 - `model_type` - Specifies the type of training, should be either &quot;rasa&quot;, &quot;core&quot;
   or &quot;nlu&quot;.
+- `is_finetuning` - `True` if the model is trained by finetuning another model.
 
 #### track\_telemetry\_disabled
 

@@ -107,7 +107,7 @@ Instance loaded from configuration file will only read NLU training data.
 
 ```python
  | @staticmethod
- | load_from_dict(config: Optional[Dict], config_path: Text, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None, training_type: Optional[TrainingType] = TrainingType.BOTH) -> "TrainingDataImporter"
+ | load_from_dict(config: Optional[Dict] = None, config_path: Optional[Text] = None, domain_path: Optional[Text] = None, training_data_paths: Optional[List[Text]] = None, training_type: Optional[TrainingType] = TrainingType.BOTH) -> "TrainingDataImporter"
 ```
 
 Loads a `TrainingDataImporter` instance from a dictionary.
@@ -120,14 +120,6 @@ class NluDataImporter(TrainingDataImporter)
 
 Importer that skips any Core-related file reading.
 
-## CoreDataImporter Objects
-
-```python
-class CoreDataImporter(TrainingDataImporter)
-```
-
-Importer that skips any NLU related file reading.
-
 ## CombinedDataImporter Objects
 
 ```python
@@ -135,6 +127,7 @@ class CombinedDataImporter(TrainingDataImporter)
 ```
 
 A `TrainingDataImporter` that combines multiple importers.
+
 Uses multiple `TrainingDataImporter` instances
 to load the data as if they were a single instance.
 
@@ -177,4 +170,14 @@ class E2EImporter(TrainingDataImporter)
 Importer which
 - enhances the NLU training data with actions / user messages from the stories.
 - adds potential end-to-end bot messages from stories as actions to the domain
+
+#### get\_stories
+
+```python
+ | async get_stories(interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(), template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+```
+
+Retrieves the stories that should be used for training.
+
+See parent class for details.
 

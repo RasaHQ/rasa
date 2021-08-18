@@ -1,6 +1,6 @@
 usage: rasa data validate [-h] [-v] [-vv] [--quiet]
-                          [--max-history MAX_HISTORY] [--fail-on-warnings]
-                          [-d DOMAIN] [--data DATA]
+                          [--max-history MAX_HISTORY] [-c CONFIG]
+                          [--fail-on-warnings] [-d DOMAIN] [--data DATA]
                           {stories} ...
 
 positional arguments:
@@ -12,6 +12,9 @@ optional arguments:
   --max-history MAX_HISTORY
                         Number of turns taken into account for story structure
                         validation. (default: None)
+  -c CONFIG, --config CONFIG
+                        The policy and NLU pipeline configuration of your bot.
+                        (default: config.yml)
   --fail-on-warnings    Fail validation on warnings and errors. If omitted
                         only errors will result in a non zero exit code.
                         (default: False)

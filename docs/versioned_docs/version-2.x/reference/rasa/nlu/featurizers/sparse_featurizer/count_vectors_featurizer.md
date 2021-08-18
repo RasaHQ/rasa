@@ -21,7 +21,7 @@ from https://arxiv.org/abs/1810.07150.
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None, vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None) -> None
+ | __init__(component_config: Optional[Dict[Text, Any]] = None, vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None, finetune_mode: bool = False) -> None
 ```
 
 Construct a new count vectorizer using the sklearn framework.

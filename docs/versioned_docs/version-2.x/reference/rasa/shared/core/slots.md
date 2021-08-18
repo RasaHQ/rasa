@@ -11,11 +11,21 @@ class InvalidSlotTypeException(RasaException)
 
 Raised if a slot type is invalid.
 
+## InvalidSlotConfigError Objects
+
+```python
+class InvalidSlotConfigError(RasaException,  ValueError)
+```
+
+Raised if a slot&#x27;s config is invalid.
+
 ## Slot Objects
 
 ```python
 class Slot()
 ```
+
+Key-value store for storing information during a conversation.
 
 #### \_\_init\_\_
 
@@ -76,6 +86,28 @@ If the delay is set to `None`, the slot will keep its value forever.
 
 Returns a slots class by its type name.
 
+## FloatSlot Objects
+
+```python
+class FloatSlot(Slot)
+```
+
+#### persistence\_info
+
+```python
+ | persistence_info() -> Dict[Text, Any]
+```
+
+Returns relevant information to persist this slot.
+
+## BooleanSlot Objects
+
+```python
+class BooleanSlot(Slot)
+```
+
+A slot storing a truth value.
+
 #### bool\_from\_any
 
 ```python
@@ -83,6 +115,20 @@ bool_from_any(x: Any) -> bool
 ```
 
 Converts bool/float/int/str to bool or raises error
+
+## CategoricalSlot Objects
+
+```python
+class CategoricalSlot(Slot)
+```
+
+#### persistence\_info
+
+```python
+ | persistence_info() -> Dict[Text, Any]
+```
+
+Returns serialized slot.
 
 ## AnySlot Objects
 
@@ -92,4 +138,12 @@ class AnySlot(Slot)
 
 Slot which can be used to store any value. Users need to create a subclass of
 `Slot` in case the information is supposed to get featurized.
+
+#### \_\_eq\_\_
+
+```python
+ | __eq__(other: Any) -> bool
+```
+
+Compares object with other object.
 

@@ -23,6 +23,18 @@ Fingerprint the training data.
 
   hex string as a fingerprint of the training data.
 
+#### label\_fingerprint
+
+```python
+ | label_fingerprint() -> Text
+```
+
+Fingerprints the labels in the training data.
+
+**Returns**:
+
+  hex string as a fingerprint of the training data labels.
+
 #### merge
 
 ```python
@@ -82,6 +94,48 @@ Makes sure the training data is clean.
 Remove trailing whitespaces from intent and response annotations and drop
 duplicate examples.
 
+#### nlu\_examples
+
+```python
+ | @lazy_property
+ | nlu_examples() -> List[Message]
+```
+
+Return examples which have come from NLU training data.
+
+E.g. If the example came from a story or domain it is not included.
+
+**Returns**:
+
+  List of NLU training examples.
+
+#### intent\_examples
+
+```python
+ | @lazy_property
+ | intent_examples() -> List[Message]
+```
+
+Returns the list of examples that have intent.
+
+#### response\_examples
+
+```python
+ | @lazy_property
+ | response_examples() -> List[Message]
+```
+
+Returns the list of examples that have response.
+
+#### entity\_examples
+
+```python
+ | @lazy_property
+ | entity_examples() -> List[Message]
+```
+
+Returns the list of examples that have entities.
+
 #### intents
 
 ```python
@@ -91,6 +145,15 @@ duplicate examples.
 
 Returns the set of intents in the training data.
 
+#### action\_names
+
+```python
+ | @lazy_property
+ | action_names() -> Set[Text]
+```
+
+Returns the set of action names in the training data.
+
 #### retrieval\_intents
 
 ```python
@@ -98,7 +161,7 @@ Returns the set of intents in the training data.
  | retrieval_intents() -> Set[Text]
 ```
 
-Returns the total number of response types in the training data
+Returns the total number of response types in the training data.
 
 #### number\_of\_examples\_per\_intent
 
@@ -269,11 +332,38 @@ Split the training data into a train and test set.
 
 Checks if any training data was loaded.
 
-#### can\_train\_nlu\_model
+#### contains\_no\_pure\_nlu\_data
 
 ```python
- | can_train_nlu_model() -> bool
+ | contains_no_pure_nlu_data() -> bool
 ```
 
 Checks if any NLU training data was loaded.
+
+#### has\_e2e\_examples
+
+```python
+ | has_e2e_examples()
+```
+
+Checks if there are any training examples from e2e stories.
+
+#### list\_to\_str
+
+```python
+list_to_str(lst: List[Text], delim: Text = ", ", quote: Text = "'") -> Text
+```
+
+Converts list to a string.
+
+**Arguments**:
+
+- `lst` - The list to convert.
+- `delim` - The delimiter that is used to separate list inputs.
+- `quote` - The quote that is used to wrap list inputs.
+  
+
+**Returns**:
+
+  The string.
 

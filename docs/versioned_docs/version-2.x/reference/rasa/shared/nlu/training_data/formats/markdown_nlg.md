@@ -6,10 +6,18 @@ title: rasa.shared.nlu.training_data.formats.markdown_nlg
 ## NLGMarkdownReader Objects
 
 ```python
-class NLGMarkdownReader(TrainingDataReader)
+class NLGMarkdownReader(MarkdownReader)
 ```
 
 Reads markdown training data containing NLG stories and creates a TrainingData object.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(ignore_deprecation_warning: bool = False) -> None
+```
+
+Creates reader. See parent class docstring for more information.
 
 #### reads
 
@@ -17,7 +25,7 @@ Reads markdown training data containing NLG stories and creates a TrainingData o
  | reads(s: Text, **kwargs: Any) -> "TrainingData"
 ```
 
-Read markdown string and create TrainingData object
+Read markdown string and create TrainingData object.
 
 #### is\_markdown\_nlg\_file
 
@@ -40,8 +48,10 @@ Checks if given file contains NLG training data.
 ## NLGMarkdownWriter Objects
 
 ```python
-class NLGMarkdownWriter(TrainingDataWriter)
+class NLGMarkdownWriter(MarkdownWriter)
 ```
+
+Converts retrieval intent data to Markdown.
 
 #### dumps
 

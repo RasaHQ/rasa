@@ -28,7 +28,7 @@ Initialize the single state featurizer.
 #### prepare\_for\_training
 
 ```python
- | prepare_for_training(domain: Domain, interpreter: NaturalLanguageInterpreter) -> None
+ | prepare_for_training(domain: Domain, interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> None
 ```
 
 Gets necessary information for featurization from domain.
@@ -37,6 +37,7 @@ Gets necessary information for featurization from domain.
 
 - `domain` - An instance of :class:`rasa.shared.core.domain.Domain`.
 - `interpreter` - The interpreter used to encode the state
+- `bilou_tagging` - indicates whether BILOU tagging should be used or not
 
 #### encode\_state
 
@@ -55,6 +56,27 @@ Encode the given state with the help of the given interpreter.
 **Returns**:
 
   A dictionary of state_type to list of features.
+
+#### encode\_entities
+
+```python
+ | encode_entities(entity_data: Dict[Text, Any], interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> Dict[Text, List["Features"]]
+```
+
+Encode the given entity data with the help of the given interpreter.
+
+Produce numeric entity tags for tokens.
+
+**Arguments**:
+
+- `entity_data` - The dict containing the text and entity labels and locations
+- `interpreter` - The interpreter used to encode the state
+- `bilou_tagging` - indicates whether BILOU tagging should be used or not
+  
+
+**Returns**:
+
+  A dictionary of entity type to list of features.
 
 #### encode\_all\_actions
 

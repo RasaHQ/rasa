@@ -31,7 +31,7 @@ training stories for this, use AugmentedMemoizationPolicy.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = MEMOIZATION_POLICY_PRIORITY, max_history: Optional[int] = MAX_HISTORY_NOT_SET, lookup: Optional[Dict] = None) -> None
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = MEMOIZATION_POLICY_PRIORITY, max_history: Optional[int] = MAX_HISTORY_NOT_SET, lookup: Optional[Dict] = None, **kwargs: Any, ,) -> None
 ```
 
 Initialize the policy.
