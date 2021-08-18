@@ -389,3 +389,13 @@ def test_read_conversation_tests(project: Text):
 
     test_stories = importer.get_conversation_tests()
     assert len(test_stories.story_steps) == 7
+
+
+def test_importer_fingerprint():
+    importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=["./data/test_nlu_no_responses/nlu_with_unicode.yml"]
+    )
+
+    fp1 = importer.fingerprint()
+    fp2 = importer.fingerprint()
+    assert fp1 != fp2

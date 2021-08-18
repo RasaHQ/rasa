@@ -6,6 +6,7 @@ from typing import Text, List, Optional, Dict, Any
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+import rasa.shared.utils.io
 from rasa.nlu.components import Component
 from rasa.nlu.constants import TOKENS_NAMES, MESSAGE_ATTRIBUTES
 from rasa.shared.nlu.constants import (
@@ -35,6 +36,7 @@ class Token:
         self.lemma = lemma or text
 
     def set(self, prop: Text, info: Any) -> None:
+        """Set property value."""
         self.data[prop] = info
 
     def get(self, prop: Text, default: Optional[Any] = None) -> Any:
@@ -66,9 +68,10 @@ class Token:
 
 
 class Tokenizer(Component):
+    """Base class for tokenizers."""
+
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new tokenizer using the WhitespaceTokenizer framework."""
-
         super().__init__(component_config)
 
         # flag to check whether to split intents

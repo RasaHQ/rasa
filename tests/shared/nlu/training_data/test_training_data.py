@@ -4,6 +4,7 @@ from unittest.mock import Mock
 from _pytest.monkeypatch import MonkeyPatch
 
 import pytest
+import numpy as np
 
 import rasa.shared.utils.io
 from rasa.shared.core.constants import USER_INTENT_OUT_OF_SCOPE
@@ -17,10 +18,12 @@ from rasa.shared.nlu.constants import (
     ENTITIES,
     INTENT,
     ACTION_NAME,
+    FEATURE_TYPE_SENTENCE,
 )
 from rasa.nlu.convert import convert_training_data
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import guess_format, UNK, load_data
@@ -848,3 +851,35 @@ def test_label_fingerprints(message: Message):
     )
     training_data2 = training_data1.merge(TrainingData([message]))
     assert training_data1.label_fingerprint() != training_data2.label_fingerprint()
+
+
+def test_training_data_fingerprint_incorporates_tokens():
+    from rasa.shared.importers.utils import training_data_from_paths
+
+    files = [
+        "data/examples/rasa/demo-rasa.yml",
+        "data/examples/rasa/demo-rasa-responses.yml",
+    ]
+    training_data = training_data_from_paths(files, language="en")
+    fp1 = training_data.fingerprint()
+    tokenizer = WhitespaceTokenizer()
+    tokenizer.train(training_data)
+    # training data fingerprint has changed
+    assert fp1 != training_data.fingerprint()
+
+
+def test_training_data_fingerprint_incorporates_features():
+    from rasa.shared.importers.utils import training_data_from_paths
+
+    files = [
+        "data/examples/rasa/demo-rasa.yml",
+        "data/examples/rasa/demo-rasa-responses.yml",
+    ]
+    training_data = training_data_from_paths(files, language="en")
+    fp1 = training_data.fingerprint()
+    big_array = np.random.random((128, 128))
+
+    f1 = Features(big_array, FEATURE_TYPE_SENTENCE, TEXT, "RegexFeaturizer")
+    training_data.training_examples[0].add_features(f1)
+    # training data fingerprint has changed
+    assert fp1 != training_data.fingerprint()

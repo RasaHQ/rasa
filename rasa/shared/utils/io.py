@@ -9,6 +9,8 @@ from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Text, Type, Union
 import warnings
+import random
+import string
 
 from ruamel import yaml as yaml
 from ruamel.yaml import RoundTripRepresenter, YAMLError
@@ -620,3 +622,8 @@ def is_subdirectory(path: Text, potential_parent_directory: Text) -> bool:
     potential_parent_directory = os.path.abspath(potential_parent_directory)
 
     return potential_parent_directory in path
+
+
+def random_string(length: int) -> Text:
+    """Returns a random string of given length."""
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
