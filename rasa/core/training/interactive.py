@@ -804,18 +804,12 @@ def _write_stories_to_file(
     from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
         YAMLStoryWriter,
     )
-    from rasa.shared.core.training_data.story_writer.markdown_story_writer import (
-        MarkdownStoryWriter,
-    )
 
     sub_conversations = _split_conversation_at_restarts(events)
-
     io_utils.create_path(export_story_path)
 
     if rasa.shared.data.is_likely_yaml_file(export_story_path):
         writer = YAMLStoryWriter()
-    else:
-        writer = MarkdownStoryWriter()
 
     should_append_stories = False
     if os.path.exists(export_story_path):
