@@ -6,6 +6,7 @@ on:
     - 'main'
     tags:
     - '**'
+  pull_request:
 
 # SECRETS
 # - GH_DOCS_WRITE_KEY: generated locally, added to github repo (public key)
@@ -82,12 +83,12 @@ jobs:
 
         ./scripts/push_docs_to_branch.sh
 
-    - name: Notify slack on failure
-      if: failure()
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985  # v1.5.0
-      with:
-        channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
-        status: FAILED
-        color: warning
+    # - name: Notify slack on failure
+    #   if: failure()
+    #   env:
+    #     SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+    #   uses: voxmedia/github-action-slack-notify-build@212e9f7a9ca33368c8dd879d6053972128258985  # v1.5.0
+    #   with:
+    #     channel_id: ${{ secrets.SLACK_ALERTS_CHANNEL_ID }}
+    #     status: FAILED
+    #     color: warning
