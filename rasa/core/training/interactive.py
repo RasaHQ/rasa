@@ -1490,7 +1490,7 @@ async def record_messages(
         num_messages = 0
 
         if not skip_visualization:
-            events_including_current_user_id = await _get_tracker_events_to_plot(
+            events_including_current_user_id = _get_tracker_events_to_plot(
                 domain, file_importer, conversation_id
             )
 
@@ -1555,10 +1555,10 @@ async def record_messages(
         raise
 
 
-async def _get_tracker_events_to_plot(
+def _get_tracker_events_to_plot(
     domain: Dict[Text, Any], file_importer: TrainingDataImporter, conversation_id: Text
 ) -> List[Union[Text, Deque[Event]]]:
-    training_trackers = await _get_training_trackers(file_importer, domain)
+    training_trackers = _get_training_trackers(file_importer, domain)
     number_of_trackers = len(training_trackers)
     if number_of_trackers > MAX_NUMBER_OF_TRAINING_STORIES_FOR_VISUALIZATION:
         rasa.shared.utils.cli.print_warning(
@@ -1576,12 +1576,12 @@ async def _get_tracker_events_to_plot(
     return training_data_events + [conversation_id]
 
 
-async def _get_training_trackers(
+def _get_training_trackers(
     file_importer: TrainingDataImporter, domain: Dict[str, Any]
 ) -> List[TrackerWithCachedStates]:
     from rasa.core import training
 
-    return await training.load_data(
+    return training.load_data(
         file_importer,
         Domain.from_dict(domain),
         augmentation_factor=0,

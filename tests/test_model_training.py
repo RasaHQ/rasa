@@ -368,7 +368,9 @@ def mock_async(monkeypatch: MonkeyPatch, target: Any, name: Text) -> Mock:
 
 
 def mock_core_training(monkeypatch: MonkeyPatch) -> Mock:
-    return mock_async(monkeypatch, rasa.core.train, rasa.core.train.train.__name__)
+    mock = Mock()
+    monkeypatch.setattr(rasa.core.train, rasa.core.train.train.__name__, mock)
+    return mock
 
 
 def mock_nlu_training(monkeypatch: MonkeyPatch) -> Mock:

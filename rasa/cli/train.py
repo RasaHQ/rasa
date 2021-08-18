@@ -162,9 +162,7 @@ def run_core_training(
             finetuning_epoch_fraction=args.epoch_fraction,
         )
     else:
-        rasa.utils.common.run_in_loop(
-            do_compare_training(args, story_file, additional_arguments)
-        )
+        do_compare_training(args, story_file, additional_arguments)
         return None
 
 
