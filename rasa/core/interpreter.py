@@ -171,7 +171,9 @@ def _create_from_endpoint_config(
 ) -> rasa.shared.nlu.interpreter.NaturalLanguageInterpreter:
     """Instantiate a natural language interpreter based on its configuration."""
 
-    if endpoint_config.type is None or endpoint_config.type.lower() == "http":
+    if endpoint_config and (
+        endpoint_config.type is None or endpoint_config.type.lower() == "http"
+    ):
         return RasaNLUHttpInterpreter(endpoint_config=endpoint_config)
     else:
         return _load_from_module_name_in_endpoint_config(endpoint_config)
