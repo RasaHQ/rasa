@@ -5,6 +5,10 @@ import uuid
 from pathlib import Path
 from typing import Text, Optional, Union, List, Callable, Set, Iterable
 
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
+
 YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
 JSON_FILE_EXTENSIONS = [".json"]
 MARKDOWN_FILE_EXTENSIONS = [".md"]
@@ -175,16 +179,9 @@ def is_story_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file, otherwise `False`.
     """
-    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-        YAMLStoryReader,
-    )
-    from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
-        MarkdownStoryReader,
-    )
-
     return YAMLStoryReader.is_stories_file(
         file_path
-    ) or MarkdownStoryReader.is_stories_file(file_path)
+    )
 
 
 def is_test_stories_file(file_path: Text) -> bool:
@@ -196,16 +193,9 @@ def is_test_stories_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file containing tests, otherwise `False`.
     """
-    from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
-        YAMLStoryReader,
-    )
-    from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
-        MarkdownStoryReader,
-    )
-
     return YAMLStoryReader.is_test_stories_file(
         file_path
-    ) or MarkdownStoryReader.is_test_stories_file(file_path)
+    )
 
 
 def is_config_file(file_path: Text) -> bool:

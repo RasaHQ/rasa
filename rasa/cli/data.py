@@ -105,18 +105,7 @@ def _add_data_convert_parsers(
         ),
     )
     convert_nlg_parser.set_defaults(func=_convert_nlg_data)
-
     arguments.set_convert_arguments(convert_nlg_parser, data_type="Rasa NLG")
-
-    convert_core_parser = convert_subparsers.add_parser(
-        "core",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        parents=parents,
-        help="Converts Core data between formats.",
-    )
-    convert_core_parser.set_defaults(func=_convert_core_data)
-
-    arguments.set_convert_arguments(convert_core_parser, data_type="Rasa Core")
 
     migrate_config_parser = convert_subparsers.add_parser(
         "config",
@@ -318,23 +307,6 @@ def _convert_nlu_data(args: argparse.Namespace) -> None:
         rasa.shared.utils.cli.print_error_and_exit(
             "Could not recognize output format. Supported output formats: 'json', "
             "'md', 'yaml'. Specify the desired output format with '--format'."
-        )
-
-
-def _convert_core_data(args: argparse.Namespace) -> None:
-    from rasa.core.training.converters.story_markdown_to_yaml_converter import (
-        StoryMarkdownToYamlConverter,
-    )
-
-    if args.format == "yaml":
-        rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args.out, args.data, StoryMarkdownToYamlConverter())
-        )
-        telemetry.track_data_convert(args.format, "core")
-    else:
-        rasa.shared.utils.cli.print_error_and_exit(
-            "Could not recognize output format. Supported output formats: "
-            "'yaml'. Specify the desired output format with '--format'."
         )
 
 
