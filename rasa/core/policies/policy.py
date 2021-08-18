@@ -127,6 +127,7 @@ class PolicyGraphComponent(GraphComponent):
             featurizer = self._create_featurizer(config)
         self.__featurizer = featurizer
 
+        self.config = config
         self.priority = config.get(POLICY_PRIORITY, DEFAULT_POLICY_PRIORITY)
         self.finetune_mode = execution_context.is_finetuning
 

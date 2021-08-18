@@ -93,11 +93,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         lookup: Optional[Dict] = None,
     ) -> None:
         """Initialize the policy."""
-        if not featurizer:
-            featurizer = self._standard_featurizer()
-
         super().__init__(config, model_storage, resource, execution_context, featurizer)
-        self.config = config
         self.lookup = lookup or {}
 
     def _create_lookup_from_states(
