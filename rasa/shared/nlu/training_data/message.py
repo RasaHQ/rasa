@@ -30,7 +30,13 @@ if typing.TYPE_CHECKING:
 
 
 class Message:
-    """Holds NLU training data."""
+    """Container for data that describes one conversation state.
+
+    The data describes a set of attributes that can also be used to describe
+    at most one use and one action sub-state. For example, these attributes
+    can be `TEXT` AND `INTENT` (describing a user utterance) or
+    `ACTION_NAME` (describing a bot action).
+    """
 
     def __init__(
         self,
@@ -40,7 +46,7 @@ class Message:
         features: Optional[List["Features"]] = None,
         **kwargs: Any,
     ) -> None:
-        """Builds an instance of Message."""
+        """Creates an instance of Message."""
         self.time = time
         self.data = data.copy() if data else {}
         self.features = features if features else []
