@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Text, Union
 
 from rasa.shared.nlu.constants import TEXT
-from rasa.shared.nlu.training_data.formats import MarkdownWriter, MarkdownReader
 from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io as io_utils
 

@@ -31,8 +31,8 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 )
 from rasa.shared.importers.rasa import TrainingDataImporter
 from rasa.shared.nlu.constants import TEXT
-from rasa.shared.nlu.training_data.formats import RasaYAMLReader, MarkdownReader
-from rasa.shared.nlu.training_data.loading import RASA, MARKDOWN, UNK, RASA_YAML
+from rasa.shared.nlu.training_data.formats import RasaYAMLReader
+from rasa.shared.nlu.training_data.loading import RASA, UNK, RASA_YAML
 from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 from tests import utilities
@@ -616,7 +616,6 @@ async def test_filter_intents_before_save_nlu_file(domain_path: Text):
     "path, expected_format",
     [
         ("bla.json", RASA),
-        ("other.md", MARKDOWN),
         ("other.yml", RASA_YAML),
         ("unknown", UNK),
     ],

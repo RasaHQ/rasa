@@ -5,7 +5,6 @@ import typing
 from typing import Optional, Text, Callable, Dict, Any
 
 import rasa.shared.utils.io
-from rasa.shared.nlu.training_data.formats import MarkdownReader, NLGMarkdownReader
 from rasa.shared.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT,
     DIALOGFLOW_ENTITIES,
@@ -72,12 +71,10 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
     """Generates the appropriate reader class based on the file format."""
     from rasa.shared.nlu.training_data.formats import (
         RasaYAMLReader,
-        MarkdownReader,
         WitReader,
         LuisReader,
         RasaReader,
         DialogflowReader,
-        NLGMarkdownReader,
     )
 
     reader = None
@@ -89,10 +86,6 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
         reader = DialogflowReader()
     elif fformat == RASA:
         reader = RasaReader()
-    elif fformat == MARKDOWN:
-        reader = MarkdownReader()
-    elif fformat == MARKDOWN_NLG:
-        reader = NLGMarkdownReader()
     elif fformat == RASA_YAML:
         reader = RasaYAMLReader()
     return reader
@@ -133,11 +126,7 @@ def guess_format(filename: Text) -> Text:
         content = rasa.shared.utils.io.read_file(filename)
         js = json.loads(content)
     except ValueError:
-        if MarkdownReader.is_markdown_nlu_file(filename):
-            guess = MARKDOWN
-        elif NLGMarkdownReader.is_markdown_nlg_file(filename):
-            guess = MARKDOWN_NLG
-        elif RasaYAMLReader.is_yaml_nlu_file(filename):
+        if RasaYAMLReader.is_yaml_nlu_file(filename):
             guess = RASA_YAML
     else:
         for file_format, format_heuristic in _json_format_heuristics.items():
