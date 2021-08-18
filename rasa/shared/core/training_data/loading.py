@@ -5,15 +5,12 @@ from typing import Text, Optional, Dict, List, Union
 import rasa.shared.data
 import rasa.shared.utils.io
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.training_data.story_reader.markdown_story_reader import (
-    MarkdownStoryReader,
-)
 from rasa.shared.core.training_data.story_reader.story_reader import StoryReader
 from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
     YAMLStoryReader,
 )
 from rasa.shared.core.training_data.structures import StoryStep
-from rasa.shared.data import YAML_FILE_EXTENSIONS, MARKDOWN_FILE_EXTENSIONS
+from rasa.shared.data import YAML_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +21,7 @@ def _get_reader(
     template_variables: Optional[Dict] = None,
     use_e2e: bool = False,
 ) -> StoryReader:
-
-    if rasa.shared.data.is_likely_markdown_file(filename):
-        return MarkdownStoryReader(domain, template_variables, use_e2e, filename)
-    elif rasa.shared.data.is_likely_yaml_file(filename):
+    if rasa.shared.data.is_likely_yaml_file(filename):
         return YAMLStoryReader(domain, template_variables, use_e2e, filename)
     else:
         # This is a use case for uploading the story over REST API.
@@ -43,12 +37,11 @@ def _guess_reader(
 ) -> StoryReader:
     if YAMLStoryReader.is_stories_file(filename):
         return YAMLStoryReader(domain, template_variables, use_e2e, filename)
-    elif MarkdownStoryReader.is_stories_file(filename):
-        return MarkdownStoryReader(domain, template_variables, use_e2e, filename)
+
     raise ValueError(
         f"Failed to find a reader class for the story file `{filename}`. "
         f"Supported formats are "
-        f"{', '.join(MARKDOWN_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS)}."
+        f"{', '.join(YAML_FILE_EXTENSIONS)}."
     )
 
 
