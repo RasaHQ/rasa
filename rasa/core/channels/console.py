@@ -19,6 +19,7 @@ from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_SERVER_URL
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.utils.io import DEFAULT_ENCODING
+from rasa.shared.utils.io import json_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ def _print_bot_output(
     if "custom" in message:
         rasa.shared.utils.cli.print_color("Custom json:", color=color)
         rasa.shared.utils.cli.print_color(
-            json.dumps(message["custom"], indent=2), color=color
+            json_to_string(message["custom"]), color=color
         )
 
     return None
