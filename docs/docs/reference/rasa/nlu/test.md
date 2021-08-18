@@ -550,7 +550,7 @@ are not predicted upon parsing.
 #### run\_evaluation
 
 ```python
-async run_evaluation(data_path: Text, model_path: Text, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, component_builder: Optional[ComponentBuilder] = None, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Dict
+run_evaluation(data_path: Text, model_path: Text, output_directory: Optional[Text] = None, successes: bool = False, errors: bool = False, component_builder: Optional[ComponentBuilder] = None, disable_plotting: bool = False, report_as_dict: Optional[bool] = None) -> Dict
 ```
 
 Evaluate intent classification, response selection and entity extraction.

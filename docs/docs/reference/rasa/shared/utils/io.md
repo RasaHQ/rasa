@@ -418,3 +418,11 @@ Checks if `path` is a subdirectory of `potential_parent_directory`.
 
   `True` if `path` is a subdirectory of `potential_parent_directory`.
 
+#### random\_string
+
+```python
+random_string(length: int) -> Text
+```
+
+Returns a random string of given length.
+

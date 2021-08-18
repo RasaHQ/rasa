@@ -58,7 +58,7 @@ Tests a trained Core model against a set of test stories.
 #### test\_nlu
 
 ```python
-async test_nlu(model: Optional[Text], nlu_data: Optional[Text], output_directory: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None) -> None
+test_nlu(model: Optional[Text], nlu_data: Optional[Text], output_directory: Text = DEFAULT_RESULTS_PATH, additional_arguments: Optional[Dict] = None) -> None
 ```
 
 Tests the NLU Model.

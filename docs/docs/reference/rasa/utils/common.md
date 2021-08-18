@@ -189,3 +189,69 @@ Awaits coroutine or returns value directly if it&#x27;s not a coroutine.
 
   The return value of the function.
 
+#### directory\_size\_in\_mb
+
+```python
+directory_size_in_mb(path: Path, filenames_to_exclude: Optional[List[Text]] = None) -> float
+```
+
+Calculates the size of a directory.
+
+**Arguments**:
+
+- `path` - The path to the directory.
+- `filenames_to_exclude` - Allows excluding certain files from the calculation.
+  
+
+**Returns**:
+
+  Directory size in MiB.
+
+#### copy\_directory
+
+```python
+copy_directory(source: Path, destination: Path) -> None
+```
+
+Copies the content of one directory into another.
+
+Unlike `shutil.copytree` this doesn&#x27;t raise if `destination` already exists.
+
+# TODO: Drop this in favor of `shutil.copytree(..., dirs_exist_ok=True)` when
+# dropping Python 3.7.
+
+**Arguments**:
+
+- `source` - The directory whose contents should be copied to `destination`.
+- `destination` - The directory which should contain the content `source` in the end.
+  
+
+**Raises**:
+
+- `ValueError` - If destination is not empty.
+
+#### find\_unavailable\_packages
+
+```python
+find_unavailable_packages(package_names: List[Text]) -> Set[Text]
+```
+
+Tries to import all package names and returns the packages where it failed.
+
+**Arguments**:
+
+- `package_names` - The package names to import.
+  
+
+**Returns**:
+
+  Package names that could not be imported.
+
+#### module\_path\_from\_class
+
+```python
+module_path_from_class(clazz: Type) -> Text
+```
+
+Return the module path of an instance&#x27;s class.
+

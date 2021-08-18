@@ -8,6 +8,14 @@ title: rasa.nlu.tokenizers.tokenizer
 class Token()
 ```
 
+#### set
+
+```python
+ | set(prop: Text, info: Any) -> None
+```
+
+Set property value.
+
 #### get
 
 ```python
@@ -16,11 +24,21 @@ class Token()
 
 Returns token value.
 
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Returns a stable hash for this Token.
+
 ## Tokenizer Objects
 
 ```python
 class Tokenizer(Component)
 ```
+
+Base class for tokenizers.
 
 #### \_\_init\_\_
 

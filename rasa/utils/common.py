@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import warnings
+from pathlib import Path
 from types import TracebackType
 from typing import (
     Any,
@@ -15,6 +16,7 @@ from typing import (
     TypeVar,
     Union,
     ContextManager,
+    Set,
 )
 
 import rasa.utils.io
@@ -319,3 +321,84 @@ async def call_potential_coroutine(
         return await coroutine_or_return_value
 
     return coroutine_or_return_value
+
+
+def directory_size_in_mb(
+    path: Path, filenames_to_exclude: Optional[List[Text]] = None
+) -> float:
+    """Calculates the size of a directory.
+
+    Args:
+        path: The path to the directory.
+        filenames_to_exclude: Allows excluding certain files from the calculation.
+
+    Returns:
+        Directory size in MiB.
+    """
+    filenames_to_exclude = filenames_to_exclude or []
+    size = 0.0
+    for root, _dirs, files in os.walk(path):
+        for filename in files:
+            if filename in filenames_to_exclude:
+                continue
+            size += (Path(root) / filename).stat().st_size
+
+    # bytes to MiB
+    return size / 1_048_576
+
+
+def copy_directory(source: Path, destination: Path) -> None:
+    """Copies the content of one directory into another.
+
+    Unlike `shutil.copytree` this doesn't raise if `destination` already exists.
+
+    # TODO: Drop this in favor of `shutil.copytree(..., dirs_exist_ok=True)` when
+    # dropping Python 3.7.
+
+    Args:
+        source: The directory whose contents should be copied to `destination`.
+        destination: The directory which should contain the content `source` in the end.
+
+    Raises:
+        ValueError: If destination is not empty.
+    """
+    if not destination.exists():
+        destination.mkdir(parents=True)
+
+    if list(destination.glob("*")):
+        raise ValueError(
+            f"Destination path '{destination}' is not empty. Directories "
+            f"can only be copied to empty directories."
+        )
+
+    for item in source.glob("*"):
+        if item.is_dir():
+            shutil.copytree(item, destination / item.name)
+        else:
+            shutil.copy2(item, destination / item.name)
+
+
+def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
+    """Tries to import all package names and returns the packages where it failed.
+
+    Args:
+        package_names: The package names to import.
+
+    Returns:
+        Package names that could not be imported.
+    """
+    import importlib
+
+    failed_imports = set()
+    for package in package_names:
+        try:
+            importlib.import_module(package)
+        except ImportError:
+            failed_imports.add(package)
+
+    return failed_imports
+
+
+def module_path_from_class(clazz: Type) -> Text:
+    """Return the module path of an instance's class."""
+    return clazz.__module__ + "." + clazz.__name__

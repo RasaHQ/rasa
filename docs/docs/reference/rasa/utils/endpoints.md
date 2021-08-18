@@ -46,10 +46,18 @@ Configuration for an external HTTP endpoint.
 #### \_\_init\_\_
 
 ```python
- | __init__(url: Optional[Text] = None, params: Optional[Dict[Text, Any]] = None, headers: Optional[Dict[Text, Any]] = None, basic_auth: Optional[Dict[Text, Text]] = None, token: Optional[Text] = None, token_name: Text = "token", **kwargs: Any, ,) -> None
+ | __init__(url: Optional[Text] = None, params: Optional[Dict[Text, Any]] = None, headers: Optional[Dict[Text, Any]] = None, basic_auth: Optional[Dict[Text, Text]] = None, token: Optional[Text] = None, token_name: Text = "token", cafile: Optional[Text] = None, **kwargs: Any, ,) -> None
 ```
 
 Creates an `EndpointConfig` instance.
+
+#### session
+
+```python
+ | session() -> aiohttp.ClientSession
+```
+
+Creates and returns a configured aiohttp client session.
 
 #### request
 

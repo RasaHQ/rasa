@@ -2,14 +2,6 @@
 sidebar_label: rasa.nlu.utils
 title: rasa.nlu.utils
 ---
-#### module\_path\_from\_object
-
-```python
-module_path_from_object(o: Any) -> Text
-```
-
-Returns the fully qualified class path of the instantiated object.
-
 #### write\_json\_to\_file
 
 ```python

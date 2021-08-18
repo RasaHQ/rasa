@@ -98,3 +98,11 @@ Tests if the `self` `Feature` equals to the `other`.
   `True` when the other object is a `Feature` and has the same
   type, attribute, and feature tensors.
 
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Calculate a stable string fingerprint for the features.
+

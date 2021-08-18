@@ -202,7 +202,7 @@ Create a hash for the project in the current working directory.
 #### model\_fingerprint
 
 ```python
-async model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint
+model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint
 ```
 
 Create a model fingerprint from its used configuration and training data.
@@ -336,7 +336,7 @@ Compress a trained model.
 #### update\_model\_with\_new\_domain
 
 ```python
-async update_model_with_new_domain(importer: "TrainingDataImporter", unpacked_model_path: Union[Path, Text]) -> None
+update_model_with_new_domain(importer: "TrainingDataImporter", unpacked_model_path: Union[Path, Text]) -> None
 ```
 
 Overwrites the domain of an unpacked model with a new domain.

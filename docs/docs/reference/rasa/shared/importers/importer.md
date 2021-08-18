@@ -13,7 +13,7 @@ Common interface for different mechanisms to load training data.
 #### get\_domain
 
 ```python
- | async get_domain() -> Domain
+ | get_domain() -> Domain
 ```
 
 Retrieves the domain of the bot.
@@ -25,7 +25,7 @@ Retrieves the domain of the bot.
 #### get\_stories
 
 ```python
- | async get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves the stories that should be used for training.
@@ -45,7 +45,7 @@ Retrieves the stories that should be used for training.
 #### get\_conversation\_tests
 
 ```python
- | async get_conversation_tests() -> StoryGraph
+ | get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves end-to-end conversation stories for testing.
@@ -57,7 +57,7 @@ Retrieves end-to-end conversation stories for testing.
 #### get\_config
 
 ```python
- | async get_config() -> Dict
+ | get_config() -> Dict
 ```
 
 Retrieves the configuration that should be used for the training.
@@ -69,7 +69,7 @@ Retrieves the configuration that should be used for the training.
 #### get\_nlu\_data
 
 ```python
- | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+ | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Retrieves the NLU training data that should be used for training.
@@ -123,6 +123,14 @@ Instance loaded from configuration file will only read NLU training data.
 
 Loads a `TrainingDataImporter` instance from a dictionary.
 
+#### fingerprint
+
+```python
+ | fingerprint() -> Text
+```
+
+Returns a random fingerprint as data shouldn&#x27;t be cached.
+
 ## NluDataImporter Objects
 
 ```python
@@ -131,10 +139,18 @@ class NluDataImporter(TrainingDataImporter)
 
 Importer that skips any Core-related file reading.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(actual_importer: TrainingDataImporter)
+```
+
+Initializes the NLUDataImporter.
+
 #### get\_domain
 
 ```python
- | async get_domain() -> Domain
+ | get_domain() -> Domain
 ```
 
 Retrieves model domain (see parent class for full docstring).
@@ -142,7 +158,7 @@ Retrieves model domain (see parent class for full docstring).
 #### get\_stories
 
 ```python
- | async get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).
@@ -150,7 +166,7 @@ Retrieves training stories / rules (see parent class for full docstring).
 #### get\_conversation\_tests
 
 ```python
- | async get_conversation_tests() -> StoryGraph
+ | get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves conversation test stories (see parent class for full docstring).
@@ -158,7 +174,7 @@ Retrieves conversation test stories (see parent class for full docstring).
 #### get\_config
 
 ```python
- | async get_config() -> Dict
+ | get_config() -> Dict
 ```
 
 Retrieves model config (see parent class for full docstring).
@@ -166,7 +182,7 @@ Retrieves model config (see parent class for full docstring).
 #### get\_nlu\_data
 
 ```python
- | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+ | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Retrieves NLU training data (see parent class for full docstring).
@@ -186,7 +202,7 @@ to load the data as if they were a single instance.
 
 ```python
  | @rasa.shared.utils.common.cached_method
- | async get_config() -> Dict
+ | get_config() -> Dict
 ```
 
 Retrieves model config (see parent class for full docstring).
@@ -195,7 +211,7 @@ Retrieves model config (see parent class for full docstring).
 
 ```python
  | @rasa.shared.utils.common.cached_method
- | async get_domain() -> Domain
+ | get_domain() -> Domain
 ```
 
 Retrieves model domain (see parent class for full docstring).
@@ -204,7 +220,7 @@ Retrieves model domain (see parent class for full docstring).
 
 ```python
  | @rasa.shared.utils.common.cached_method
- | async get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).
@@ -213,7 +229,7 @@ Retrieves training stories / rules (see parent class for full docstring).
 
 ```python
  | @rasa.shared.utils.common.cached_method
- | async get_conversation_tests() -> StoryGraph
+ | get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves conversation test stories (see parent class for full docstring).
@@ -222,7 +238,7 @@ Retrieves conversation test stories (see parent class for full docstring).
 
 ```python
  | @rasa.shared.utils.common.cached_method
- | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+ | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Retrieves NLU training data (see parent class for full docstring).
@@ -239,10 +255,18 @@ Synchronizes responses between Domain and NLU and
 adds retrieval intent properties from the NLU training data
 back to the Domain.
 
+#### \_\_init\_\_
+
+```python
+ | __init__(importer: TrainingDataImporter)
+```
+
+Initializes the ResponsesSyncImporter.
+
 #### get\_config
 
 ```python
- | async get_config() -> Dict
+ | get_config() -> Dict
 ```
 
 Retrieves model config (see parent class for full docstring).
@@ -251,7 +275,7 @@ Retrieves model config (see parent class for full docstring).
 
 ```python
  | @rasa.shared.utils.common.cached_method
- | async get_domain() -> Domain
+ | get_domain() -> Domain
 ```
 
 Merge existing domain with properties of retrieval intents in NLU data.
@@ -259,7 +283,7 @@ Merge existing domain with properties of retrieval intents in NLU data.
 #### get\_stories
 
 ```python
- | async get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).
@@ -267,7 +291,7 @@ Retrieves training stories / rules (see parent class for full docstring).
 #### get\_conversation\_tests
 
 ```python
- | async get_conversation_tests() -> StoryGraph
+ | get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves conversation test stories (see parent class for full docstring).
@@ -276,7 +300,7 @@ Retrieves conversation test stories (see parent class for full docstring).
 
 ```python
  | @rasa.shared.utils.common.cached_method
- | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+ | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Updates NLU data with responses for retrieval intents from domain.
@@ -292,11 +316,19 @@ Importer with the following functionality.
 - enhances the NLU training data with actions / user messages from the stories.
 - adds potential end-to-end bot messages from stories as actions to the domain
 
+#### \_\_init\_\_
+
+```python
+ | __init__(importer: TrainingDataImporter) -> None
+```
+
+Initializes the E2EImporter.
+
 #### get\_domain
 
 ```python
  | @rasa.shared.utils.common.cached_method
- | async get_domain() -> Domain
+ | get_domain() -> Domain
 ```
 
 Retrieves model domain (see parent class for full docstring).
@@ -304,7 +336,7 @@ Retrieves model domain (see parent class for full docstring).
 #### get\_stories
 
 ```python
- | async get_stories(interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(), template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(), template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves the stories that should be used for training.
@@ -314,7 +346,7 @@ See parent class for details.
 #### get\_conversation\_tests
 
 ```python
- | async get_conversation_tests() -> StoryGraph
+ | get_conversation_tests() -> StoryGraph
 ```
 
 Retrieves conversation test stories (see parent class for full docstring).
@@ -322,7 +354,7 @@ Retrieves conversation test stories (see parent class for full docstring).
 #### get\_config
 
 ```python
- | async get_config() -> Dict
+ | get_config() -> Dict
 ```
 
 Retrieves model config (see parent class for full docstring).
@@ -331,7 +363,7 @@ Retrieves model config (see parent class for full docstring).
 
 ```python
  | @rasa.shared.utils.common.cached_method
- | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+ | get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
 Retrieves NLU training data (see parent class for full docstring).

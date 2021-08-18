@@ -29,7 +29,7 @@ Initializes the Validator object.
 
 ```python
  | @classmethod
- | async from_importer(cls, importer: TrainingDataImporter) -> "Validator"
+ | from_importer(cls, importer: TrainingDataImporter) -> "Validator"
 ```
 
 Create an instance from the domain, nlu and story files.

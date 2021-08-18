@@ -509,7 +509,7 @@ class TrackerFeaturizer:
         )
 
     @staticmethod
-    def load(path: Text) -> Optional["TrackerFeaturizer"]:
+    def load(path: Union[Text, Path]) -> Optional["TrackerFeaturizer"]:
         """Loads the featurizer from file.
 
         Args:

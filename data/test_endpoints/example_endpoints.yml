@@ -23,4 +23,7 @@ tracker_store:
   #db: rasa
   #user: username
   #password: password
+action_endpoint:
+  url: http://localhost:5055/webhook
+  cafile: ./some_test_file
 empty:

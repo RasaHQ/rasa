@@ -220,8 +220,8 @@ from the `rasa` package.
 #### track\_model\_training
 
 ```python
-@async_generator.asynccontextmanager
-async track_model_training(training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False) -> typing.AsyncGenerator[None, None]
+@contextlib.contextmanager
+track_model_training(training_data: "TrainingDataImporter", model_type: Text, is_finetuning: bool = False) -> typing.Generator[None, None, None]
 ```
 
 Track a model training started.

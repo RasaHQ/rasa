@@ -69,10 +69,10 @@ Returns a dry run result.
   A tuple where the first element is the result code and the second
   is the list of human-readable texts that need to be printed to the end user.
 
-#### train\_core\_async
+#### train\_core
 
 ```python
-async train_core_async(domain: Union[Domain, Text], config: Text, stories: Text, output: Text, train_path: Optional[Text] = None, fixed_model_name: Optional[Text] = None, additional_arguments: Optional[Dict] = None, model_to_finetune: Optional[Text] = None, finetuning_epoch_fraction: float = 1.0) -> Optional[Text]
+train_core(domain: Union[Domain, Text], config: Text, stories: Text, output: Text, train_path: Optional[Text] = None, fixed_model_name: Optional[Text] = None, additional_arguments: Optional[Dict] = None, model_to_finetune: Optional[Text] = None, finetuning_epoch_fraction: float = 1.0) -> Optional[Text]
 ```
 
 Trains a Core model.

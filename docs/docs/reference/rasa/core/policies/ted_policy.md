@@ -2,10 +2,10 @@
 sidebar_label: rasa.core.policies.ted_policy
 title: rasa.core.policies.ted_policy
 ---
-## TEDPolicy Objects
+## TEDPolicyGraphComponent Objects
 
 ```python
-class TEDPolicy(Policy)
+class TEDPolicyGraphComponent(PolicyGraphComponent)
 ```
 
 Transformer Embedding Dialogue (TED) Policy.
@@ -26,10 +26,19 @@ following steps:
       actions. This step is based on the StarSpace
       (https://arxiv.org/abs/1709.03856) idea.
 
+#### get\_default\_config
+
+```python
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
+```
+
+Returns the default config (see parent class for full docstring).
+
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, fake_features: Optional[Dict[Text, List["Features"]]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, should_finetune: bool = False, **kwargs: Any, ,) -> None
+ | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, model: Optional[RasaModel] = None, featurizer: Optional[TrackerFeaturizer] = None, fake_features: Optional[Dict[Text, List[Features]]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None) -> None
 ```
 
 Declares instance variables with default values.
@@ -38,7 +47,7 @@ Declares instance variables with default values.
 
 ```python
  | @staticmethod
- | model_class() -> Type["TED"]
+ | model_class() -> Type[TED]
 ```
 
 Gets the class of the model architecture to be used by the policy.
@@ -65,43 +74,23 @@ Feeds the featurized training data to the model.
 #### train
 
 ```python
- | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
+ | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter = RegexInterpreter()) -> Resource
 ```
 
-Trains the policy on given training trackers.
-
-**Arguments**:
-
-- `training_trackers` - List of training trackers to be used
-  for training the model.
-- `domain` - Domain of the assistant.
-- `interpreter` - NLU Interpreter to be used for featurizing the states.
-- `**kwargs` - Any other argument.
+Trains the policy (see parent class for full docstring).
 
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), **kwargs: Any, ,) -> PolicyPrediction
 ```
 
-Predicts the next action the bot should take after seeing the tracker.
-
-**Arguments**:
-
-- `tracker` - the :class:`rasa.core.trackers.DialogueStateTracker`
-- `domain` - the :class:`rasa.shared.core.domain.Domain`
-- `interpreter` - Interpreter which may be used by the policies to create
-  additional features.
-  
-
-**Returns**:
-
-  The policy&#x27;s prediction (e.g. the probabilities for the actions).
+Predicts the next action (see parent class for full docstring).
 
 #### persist
 
 ```python
- | persist(path: Union[Text, Path]) -> None
+ | persist() -> None
 ```
 
 Persists the policy to a storage.
@@ -122,28 +111,10 @@ Persists model&#x27;s utility attributes like model weights, etc.
 
 ```python
  | @classmethod
- | load(cls, path: Union[Text, Path], should_finetune: bool = False, epoch_override: int = defaults[EPOCHS], **kwargs: Any, ,) -> "TEDPolicy"
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> TEDPolicyGraphComponent
 ```
 
-Loads a policy from the storage.
-
-**Arguments**:
-
-- `path` - Path on disk where policy is persisted.
-- `should_finetune` - Whether to load the policy for finetuning.
-- `epoch_override` - Override the number of epochs in persisted
-  configuration for further finetuning.
-- `**kwargs` - Any other arguments
-  
-
-**Returns**:
-
-  Loaded policy
-  
-
-**Raises**:
-
-  `PolicyModelNotFound` if the model is not found in the supplied `path`.
+Loads a policy from the storage (see parent class for full docstring).
 
 ## TED Objects
 

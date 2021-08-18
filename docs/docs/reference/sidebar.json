@@ -91,6 +91,8 @@
         },
         {
           "items": [
+            "reference/rasa/core/policies/_policy",
+            "reference/rasa/core/policies/_ted_policy",
             "reference/rasa/core/policies/ensemble",
             "reference/rasa/core/policies/memoization",
             "reference/rasa/core/policies/policy",
@@ -136,6 +138,44 @@
         "reference/rasa/core/utils"
       ],
       "label": "rasa.core",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": [
+            "reference/rasa/engine/runner/dask",
+            "reference/rasa/engine/runner/interface"
+          ],
+          "label": "rasa.engine.runner",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/engine/storage/local_model_storage",
+            "reference/rasa/engine/storage/resource",
+            "reference/rasa/engine/storage/storage"
+          ],
+          "label": "rasa.engine.storage",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/rasa/engine/training/components",
+            "reference/rasa/engine/training/fingerprinting",
+            "reference/rasa/engine/training/graph_trainer",
+            "reference/rasa/engine/training/hooks"
+          ],
+          "label": "rasa.engine.training",
+          "type": "category"
+        },
+        "reference/rasa/engine/caching",
+        "reference/rasa/engine/exceptions",
+        "reference/rasa/engine/graph",
+        "reference/rasa/engine/loader",
+        "reference/rasa/engine/validation"
+      ],
+      "label": "rasa.engine",
       "type": "category"
     },
     {
@@ -304,7 +344,8 @@
             "reference/rasa/shared/importers/autoconfig",
             "reference/rasa/shared/importers/importer",
             "reference/rasa/shared/importers/multi_project",
-            "reference/rasa/shared/importers/rasa"
+            "reference/rasa/shared/importers/rasa",
+            "reference/rasa/shared/importers/utils"
           ],
           "label": "rasa.shared.importers",
           "type": "category"

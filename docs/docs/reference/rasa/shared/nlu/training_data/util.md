@@ -124,3 +124,17 @@ Adds additional keyword parameters.
 
   an entity dictionary
 
+#### sparse\_matrix\_to\_string
+
+```python
+sparse_matrix_to_string(m: scipy.sparse.spmatrix) -> Text
+```
+
+Turns a sparse matrix into a string.
+
+Will return a line &quot;(i,j)  v&quot; for each value in the matrix.
+
+taken from official scipy source to operate on full sparse matrix to not have
+to change the `maxprint` property in-place.
+https://github.com/scipy/scipy/blob/v1.7.0/scipy/sparse/base.py#L258
+

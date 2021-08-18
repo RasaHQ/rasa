@@ -236,7 +236,7 @@ Persists the tracker featurizer to the given path.
 
 ```python
  | @staticmethod
- | load(path: Text) -> Optional["TrackerFeaturizer"]
+ | load(path: Union[Text, Path]) -> Optional["TrackerFeaturizer"]
 ```
 
 Loads the featurizer from file.

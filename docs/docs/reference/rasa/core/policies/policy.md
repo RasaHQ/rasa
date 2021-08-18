@@ -14,7 +14,7 @@ Enumeration of a policy&#x27;s supported training data type.
 
 ```python
  | @staticmethod
- | trackers_for_policy(policy: Union["Policy", Type["Policy"]], trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]
+ | trackers_for_policy(policy: Union[Policy, Type[Policy]], trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]
 ```
 
 Return trackers for a given policy.
@@ -29,11 +29,13 @@ Return trackers for a given policy.
 
   Trackers from ML-based training data and/or rule-based data.
 
-## Policy Objects
+## PolicyGraphComponent Objects
 
 ```python
-class Policy()
+class PolicyGraphComponent(GraphComponent)
 ```
+
+Common parent class for all dialogue policies.
 
 #### supported\_data
 
@@ -54,10 +56,19 @@ or both ML-based data and rule data, they need to override this method.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, should_finetune: bool = False, **kwargs: Any, ,) -> None
+ | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, featurizer: Optional[TrackerFeaturizer] = None) -> None
 ```
 
 Constructs a new Policy object.
+
+#### create
+
+```python
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> GraphComponent
+```
+
+Creates a new untrained policy (see parent class for full docstring).
 
 #### featurizer
 
@@ -79,67 +90,62 @@ Sets policy&#x27;s shared states for correct featurization.
 #### train
 
 ```python
- | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
+ | @abc.abstractmethod
+ | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, **kwargs: Any, ,) -> Resource
 ```
 
-Trains the policy on given training trackers.
+Trains a policy.
 
 **Arguments**:
 
-  training_trackers:
-  the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-- `domain` - the :class:`rasa.shared.core.domain.Domain`
-- `interpreter` - Interpreter which can be used by the polices for featurization.
+- `training_trackers` - The story and rules trackers from the training data.
+- `domain` - The model&#x27;s domain.
+- `**kwargs` - Depending on the specified `needs` section and the resulting
+  graph structure the policy can use different input to train itself.
+  
+
+**Returns**:
+
+  A policy must return its resource locator so that potential children nodes
+  can load the policy from the resource.
 
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> "PolicyPrediction"
+ | @abc.abstractmethod
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
 
 **Arguments**:
 
-- `tracker` - the :class:`rasa.core.trackers.DialogueStateTracker`
-- `domain` - the :class:`rasa.shared.core.domain.Domain`
-- `interpreter` - Interpreter which may be used by the policies to create
-  additional features.
+- `tracker` - The tracker containing the conversation history up to now.
+- `domain` - The model&#x27;s domain.
+- `**kwargs` - Depending on the specified `needs` section and the resulting
+  graph structure the policy can use different input to make predictions.
   
 
 **Returns**:
 
-  The policy&#x27;s prediction (e.g. the probabilities for the actions).
+  The prediction.
 
 #### persist
 
 ```python
- | persist(path: Union[Text, Path]) -> None
+ | persist() -> None
 ```
 
 Persists the policy to storage.
-
-**Arguments**:
-
-- `path` - Path to persist policy to.
 
 #### load
 
 ```python
  | @classmethod
- | load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy"
+ | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> "PolicyGraphComponent"
 ```
 
-Loads a policy from path.
-
-**Arguments**:
-
-- `path` - Path to load policy from.
-  
-
-**Returns**:
-
-  An instance of `Policy`.
+Loads a trained policy (see parent class for full docstring).
 
 #### format\_tracker\_states
 
@@ -205,7 +211,7 @@ Creates a `PolicyPrediction`.
 
 ```python
  | @staticmethod
- | for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0, action_metadata: Optional[Dict[Text, Any]] = None) -> "PolicyPrediction"
+ | for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0, action_metadata: Optional[Dict[Text, Any]] = None) -> PolicyPrediction
 ```
 
 Create a prediction for a given action.
@@ -284,4 +290,12 @@ Returns confidence scores if a single action is predicted.
 **Returns**:
 
   the list of the length of the number of actions
+
+## InvalidPolicyConfig Objects
+
+```python
+class InvalidPolicyConfig(RasaException)
+```
+
+Exception that can be raised when policy config is not valid.
 

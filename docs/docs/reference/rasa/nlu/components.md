@@ -2,23 +2,6 @@
 sidebar_label: rasa.nlu.components
 title: rasa.nlu.components
 ---
-#### find\_unavailable\_packages
-
-```python
-find_unavailable_packages(package_names: List[Text]) -> Set[Text]
-```
-
-Tries to import all package names and returns the packages where it failed.
-
-**Arguments**:
-
-- `package_names` - The package names to import.
-  
-
-**Returns**:
-
-  Package names that could not be imported.
-
 #### validate\_requirements
 
 ```python
