@@ -11,19 +11,13 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 
 YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
 JSON_FILE_EXTENSIONS = [".json"]
-MARKDOWN_FILE_EXTENSIONS = [".md"]
 TRAINING_DATA_EXTENSIONS = set(
-    JSON_FILE_EXTENSIONS + MARKDOWN_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS
+    JSON_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS
 )
 
 
-def markdown_file_extension() -> Text:
-    """Return Markdown file extension"""
-    return MARKDOWN_FILE_EXTENSIONS[0]
-
-
 def yaml_file_extension() -> Text:
-    """Return Markdown file extension"""
+    """Return YAML file extension"""
     return YAML_FILE_EXTENSIONS[0]
 
 
@@ -49,19 +43,6 @@ def is_likely_json_file(file_path: Text) -> bool:
         `True` if the file likely contains data in json format, `False` otherwise.
     """
     return Path(file_path).suffix in set(JSON_FILE_EXTENSIONS)
-
-
-def is_likely_markdown_file(file_path: Text) -> bool:
-    """Check if a file likely contains markdown.
-
-    Arguments:
-        file_path: path to the file
-
-    Returns:
-        `True` if the file likely contains data in markdown format,
-        `False` otherwise.
-    """
-    return Path(file_path).suffix in set(MARKDOWN_FILE_EXTENSIONS)
 
 
 def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:

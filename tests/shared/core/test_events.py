@@ -584,7 +584,7 @@ def test_events_begin_with_session_start(
         ),
     ],
 )
-def test_print_end_to_end_events_in_markdown(end_to_end_event: Event):
+def test_print_end_to_end_events(end_to_end_event: Event):
     with pytest.raises(UnsupportedFeatureException):
         end_to_end_event.as_story_string()
 

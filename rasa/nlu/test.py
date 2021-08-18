@@ -1862,7 +1862,7 @@ async def compare_nlu(
         io_utils.create_path(test_path)
 
         train, test = data.train_test_split()
-        rasa.shared.utils.io.write_text_file(test.nlu_as_markdown(), test_path)
+        rasa.shared.utils.io.write_text_file(test.nlu_as_yaml(), test_path)
 
         for percentage in exclusion_percentages:
             percent_string = f"{percentage}%_exclusion"
@@ -1878,10 +1878,10 @@ async def compare_nlu(
             train_nlg_split_path = os.path.join(train_split_path, NLG_DATA_FILE)
             io_utils.create_path(train_nlu_split_path)
             rasa.shared.utils.io.write_text_file(
-                train_included.nlu_as_markdown(), train_nlu_split_path
+                train_included.nlu_as_yaml(), train_nlu_split_path
             )
             rasa.shared.utils.io.write_text_file(
-                train_included.nlg_as_markdown(), train_nlg_split_path
+                train_included.nlg_as_yaml(), train_nlg_split_path
             )
 
             for nlu_config, model_name in zip(configs, model_names):

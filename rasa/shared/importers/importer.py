@@ -47,7 +47,7 @@ class TrainingDataImporter:
         Returns:
             `StoryGraph` containing all loaded stories.
         """
-        # TODO: Drop `use_e2e` in Rasa Open Source 3.0.0 when removing Markdown support
+        # TODO(alwx): Drop `use_e2e` in Rasa Open Source 3.0.0 when removing Markdown support
         raise NotImplementedError()
 
     def get_conversation_tests(self) -> StoryGraph:

@@ -36,7 +36,7 @@ import rasa.shared.utils.io
 import rasa.cli.utils
 import rasa.shared.data
 from rasa.shared.nlu.constants import TEXT, INTENT_NAME_KEY
-from rasa.shared.nlu.training_data.loading import MARKDOWN, RASA, RASA_YAML
+from rasa.shared.nlu.training_data.loading import RASA, RASA_YAML
 from rasa.shared.core.constants import (
     USER_INTENT_RESTART,
     ACTION_LISTEN_NAME,
@@ -878,8 +878,6 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
     nlu_format = _get_nlu_target_format(export_nlu_path)
     if nlu_format == RASA_YAML:
         stringified_training_data = nlu_data.nlu_as_yaml()
-    elif nlu_format == MARKDOWN:
-        stringified_training_data = nlu_data.nlu_as_markdown()
     else:
         stringified_training_data = nlu_data.nlu_as_json()
 
@@ -889,11 +887,9 @@ def _write_nlu_to_file(export_nlu_path: Text, events: List[Dict[Text, Any]]) -> 
 def _get_nlu_target_format(export_path: Text) -> Text:
     guessed_format = loading.guess_format(export_path)
 
-    if guessed_format not in {MARKDOWN, RASA, RASA_YAML}:
+    if guessed_format not in {RASA, RASA_YAML}:
         if rasa.shared.data.is_likely_json_file(export_path):
             guessed_format = RASA
-        elif rasa.shared.data.is_likely_markdown_file(export_path):
-            guessed_format = MARKDOWN
         elif rasa.shared.data.is_likely_yaml_file(export_path):
             guessed_format = RASA_YAML
 
