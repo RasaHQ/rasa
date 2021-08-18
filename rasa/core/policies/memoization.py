@@ -76,8 +76,6 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
             POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
         }
 
-    required_packages = []
-
     def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
