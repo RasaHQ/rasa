@@ -306,7 +306,7 @@ class E2ELookupTable:
         else:
             self._table[key] = message_with_one_key_attribute
 
-    def add_all(self, messages_with_one_key_attribute: Iterable[Message]) -> None:
+    def add_all(self, messages_with_one_key_attribute: Message) -> None:
         """Adds the given message to the lookup table.
 
         Args:
@@ -363,7 +363,7 @@ class E2ELookupTable:
                     f"Unknown key {key}. Cannot retrieve features for substate "
                     f"{sub_state}"
                 )
-            features_from_message = Features.extract(
+            features_from_message = Features.groupby_attribute(
                 message.features, attributes=attributes
             )
             for feat_attribute, feat_value in features_from_message.items():
@@ -379,7 +379,7 @@ class E2ELookupTable:
                         f"that is different from {key_attribute}. This means there's a "
                         f"redundancy in the lookup table."
                     )
-                if feat_value and not existing_values:
+                if feat_value:
                     features[feat_attribute] = feat_value
         return features
 
@@ -404,18 +404,15 @@ class E2ELookupTable:
           domain: the domain from which we extract the substates
           lookup_table: lookup table to which the substates will be added (as messages)
         """
-        # FIXME: which version of action_names ?
-        # intial prototype:
         action_texts = domain.action_texts
-        action_names = domain.user_actions + DEFAULT_ACTION_NAMES
-        # if we use all names (incl forms?) ...
-        # TODO: there is no nicer way to just get the action_names
-        # action_names = domain.action_names_or_texts[: -len(domain.action_texts)]
-        # if set(action_texts).intersection(action_names):
-        #     raise NotImplementedError(
-        #         "We assumed that domain's action_names_or_texts contains all "
-        #         "action names followed by the texts. Apparently that changed. "
-        #     )
+        action_names = domain.action_names_or_texts[
+            slice(0, -len(domain.action_texts) if domain.action_texts else None)
+        ]
+        if set(action_texts).intersection(action_names):
+            raise NotImplementedError(
+                "We assumed that domain's action_names_or_texts contains all "
+                "action names followed by the texts. Apparently that changed. "
+            )
         for tag, actions in [(ACTION_NAME, action_names), (ACTION_TEXT, action_texts)]:
             for action in actions:
                 self.add(Message({tag: action}))

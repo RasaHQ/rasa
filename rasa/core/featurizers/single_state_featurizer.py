@@ -241,7 +241,9 @@ class SingleStateFeaturizer:
                         is_sparse=is_sparse,
                     )
                     if sublist:
-                        combined_feature = Features.combine(sublist)
+                        combined_feature = Features.combine(
+                            sublist, expected_origins=None
+                        )
                         output.setdefault(attribute, []).append(combined_feature)
 
         # check that name attributes have features
@@ -254,10 +256,6 @@ class SingleStateFeaturizer:
             output[name_attribute] = self._create_features(
                 sub_state, name_attribute, sparse
             )
-
-        # if ACTION_NAME in sub_state or ACTION_TEXT in sub_state:
-        #    print({key: [str(feat) for feat in val] for key, val in output.items()})
-
         return output
 
     def encode_state(
@@ -283,6 +281,7 @@ class SingleStateFeaturizer:
             # featurize user only if it is "real" user input,
             # i.e. input from a turn after action_listen
             if state_type == USER and is_prev_action_listen_in_state(state):
+
                 state_features.update(
                     self._extract_state_features(
                         sub_state, e2e_features=e2e_features, sparse=True,

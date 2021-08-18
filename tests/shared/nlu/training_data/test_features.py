@@ -1,9 +1,214 @@
+from tests.core.featurizers.test_single_state_featurizers import sparse_equals_dense
+from typing import Optional, Text, List, Dict, Tuple, Any
+import itertools
+from attr import attributes
+
 import numpy as np
 import pytest
 import scipy.sparse
 
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.nlu.constants import TEXT, FEATURE_TYPE_SEQUENCE
+from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, TEXT, FEATURE_TYPE_SEQUENCE
+
+
+def generate_feature_list_and_modifications(
+    is_sparse: bool, type: Text, number: int
+) -> Tuple[List[Features], List[Dict[Text, Any]]]:
+    """Creates a list of features with the required properties and some modifications.
+
+    The modifications are given by a list of kwargs dictionaries that can be used to
+    instantiate `Features` that differ from the aforementioned list of features in
+    exactly one property (i.e. type, sequence length (if the given `type` is
+    sequence type only), attribute, origin)
+
+    Args:
+        is_sparse: whether all features should be sparse
+        type: the type to be used for all features
+        number: the number of features to generate
+    Returns:
+      a tuple containing a list of features with the requested attributes and
+      a list of kwargs dictionaries that can be used to instantiate `Features` that
+      differ from the aforementioned list of features in exactly one property
+    """
+
+    seq_len = 3
+    first_dim = 1 if type == FEATURE_TYPE_SENTENCE else 3
+
+    # create list of features whose properties match - except the shapes and
+    # feature values which are chosen in a specific way
+    features_list = []
+    for idx in range(number):
+        matrix = np.full(shape=(first_dim, idx + 1), fill_value=idx + 1)
+        if is_sparse:
+            matrix = scipy.sparse.coo_matrix(matrix)
+        config = dict(
+            features=matrix,
+            attribute="fixed-attribute",
+            feature_type=type,
+            origin=f"origin-{idx}",
+        )
+        feat = Features(**config)
+        features_list.append(feat)
+
+    # prepare some Features that differ from the features above in certain ways
+    modifications = []
+    # - if we modify one attribute
+    modifications.append({**config, **{"attribute": "OTHER"}})
+    # - if we modify one attribute
+    other_type = (
+        FEATURE_TYPE_SENTENCE
+        if type == FEATURE_TYPE_SEQUENCE
+        else FEATURE_TYPE_SEQUENCE
+    )
+    other_seq_len = 1 if other_type == FEATURE_TYPE_SENTENCE else seq_len
+    other_matrix = np.full(shape=(other_seq_len, number - 1), fill_value=number)
+    if is_sparse:
+        other_matrix = scipy.sparse.coo_matrix(other_matrix)
+    modifications.append(
+        {**config, **{"feature_type": other_type, "features": other_matrix}}
+    )
+    # - if we modify one origin
+    modifications.append({**config, **{"origin": "Other"}})
+    # - if we modify one sequence length
+    if type == FEATURE_TYPE_SEQUENCE:
+        matrix = np.full(shape=(seq_len + 1, idx + 1), fill_value=idx)
+        if is_sparse:
+            matrix = scipy.sparse.coo_matrix(matrix)
+        modifications.append({**config, **{"features": matrix}})
+
+    return features_list, modifications
+
+
+@pytest.mark.parametrize(
+    "is_sparse,type,number",
+    itertools.product(
+        [True, False], [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE], [1, 2, 5]
+    ),
+)
+def test_combine(is_sparse: bool, type: Text, number: int):
+
+    features_list, modifications = generate_feature_list_and_modifications(
+        is_sparse=is_sparse, type=type, number=number
+    )
+    modified_features = [Features(**config) for config in modifications]
+    first_dim = features_list[0].features.shape[0]
+
+    expected_origin = [f"origin-{idx}" for idx in range(len(features_list))]
+    if number == 1:
+        # in this case the origin will be same str as before, not a list
+        expected_origin = expected_origin[0]
+
+    # works as expected
+    combination = Features.combine(features_list, expected_origins=expected_origin)
+    assert combination.features.shape[1] == int(number * (number + 1) / 2)
+    assert combination.features.shape[0] == first_dim
+    assert combination.origin == expected_origin
+    assert combination.is_sparse() == is_sparse
+    matrix = combination.features
+    if is_sparse:
+        matrix = combination.features.todense()
+    for idx in range(number):
+        offset = int(idx * (idx + 1) / 2)
+        assert np.all(matrix[:, offset : (offset + idx + 1)] == idx + 1)
+
+    # fails as expected in these cases
+    if number > 1:
+        for modified_feature in modified_features:
+            features_list_copy = features_list.copy()
+            features_list_copy[-1] = modified_feature
+            with pytest.raises(ValueError):
+                Features.combine(features_list_copy, expected_origins=expected_origin)
+
+
+@pytest.mark.parametrize(
+    "is_sparse,type,number",
+    itertools.product(
+        [True, False], [FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE], [1, 2, 5]
+    ),
+)
+def test_filter(is_sparse: bool, type: Text, number: int):
+
+    features_list, modifications = generate_feature_list_and_modifications(
+        is_sparse=is_sparse, type=type, number=number
+    )
+
+    # fix the filter configuration first (note: we ignore origin on purpose for now)
+    filter_config = dict(attributes=["fixed-attribute"], type=type, is_sparse=is_sparse)
+
+    # we get all features back if all features map...
+    result = Features.filter(features_list, **filter_config)
+    assert len(result) == number
+
+    # ... and less matches if we change the (relevant) properties of some features
+    modified_features = [
+        Features(**config)
+        for config in modifications
+        if set(config.keys()).intersection(filter_config.keys())
+    ]
+    if number > 1:
+        for modified_feature in modified_features:
+            features_list_copy = features_list.copy()
+            features_list_copy[-1] = modified_feature
+            result = Features.filter(features_list_copy, **filter_config)
+            assert len(result) == number - 1
+    if number > 2:
+        for feat_a, feat_b in itertools.combinations(modified_features, 2):
+            features_list_copy = features_list.copy()
+            features_list_copy[-1] = feat_a
+            features_list_copy[-2] = feat_b
+            result = Features.filter(features_list_copy, **filter_config)
+            assert len(result) == number - 2
+
+    # don't forget to check the origin
+    filter_config = dict(
+        attributes=["fixed-attribute"],
+        type=type,
+        origin=["origin-0"],
+        is_sparse=is_sparse,
+    )
+    result = Features.filter(features_list, **filter_config)
+    assert len(result) == 1
+
+
+@pytest.mark.parametrize(
+    "num_features_per_attribute,specified_attributes",
+    itertools.product(
+        [{"a": 3, "b": 1, "c": 0}],
+        [None, ["a", "b", "c", "doesnt-appear"], ["doesnt-appear"]],
+    ),
+)
+def test_groupby(
+    num_features_per_attribute: Dict[Text, int],
+    specified_attributes: Optional[List[Text]],
+):
+
+    features_list = []
+    for attribute, number in num_features_per_attribute.items():
+        for idx in range(number):
+            matrix = np.full(shape=(1, idx + 1), fill_value=idx + 1)
+            config = dict(
+                features=matrix,
+                attribute=attribute,
+                feature_type=FEATURE_TYPE_SEQUENCE,  # doesn't matter
+                origin=f"origin-{idx}",  # doens't matter
+            )
+            feat = Features(**config)
+            features_list.append(feat)
+
+    result = Features.groupby_attribute(features_list, attributes=specified_attributes)
+    if specified_attributes is None:
+        for attribute, number in num_features_per_attribute.items():
+            if number > 0:
+                assert attribute in result
+                assert len(result[attribute]) == number
+            else:
+                assert attribute not in result
+    else:
+        assert set(result.keys()) == set(specified_attributes)
+        for attribute in specified_attributes:
+            assert attribute in result
+            number = num_features_per_attribute.get(attribute, 0)
+            assert len(result[attribute]) == number
 
 
 def test_combine_with_existing_dense_features():
