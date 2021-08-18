@@ -93,23 +93,12 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         execution_context: ExecutionContext,
         featurizer: Optional[TrackerFeaturizer] = None,
         lookup: Optional[Dict] = None,
-        **kwargs: Any,
     ) -> None:
-        """Initialize the policy.
-
-        Args:
-            featurizer: tracker featurizer
-            priority: the priority of the policy
-            max_history: maximum history to take into account when featurizing trackers
-            lookup: a dictionary that stores featurized tracker states and
-                predicted actions for them
-        """
+        """Initialize the policy."""
         if not featurizer:
             featurizer = self._standard_featurizer()
 
-        super().__init__(
-            config, model_storage, resource, execution_context, featurizer, **kwargs
-        )
+        super().__init__(config, model_storage, resource, execution_context, featurizer)
         self.config = config
         self.lookup = lookup or {}
 
@@ -127,7 +116,6 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         Returns:
             lookup dictionary
         """
-
         lookup = {}
 
         if not trackers_as_states:
