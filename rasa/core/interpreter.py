@@ -190,8 +190,14 @@ def _load_from_module_name_in_endpoint_config(
         )
         return nlu_interpreter_class(endpoint_config=endpoint_config)
     except (AttributeError, ImportError) as e:
-        raise Exception(
-            f"Could not find a class based on the module path "
-            f"'{endpoint_config.type}'. Failed to create a "
-            f"`NaturalLanguageInterpreter` instance. Error: {e}"
-        )
+        if endpoint_config:
+            raise Exception(
+                f"Could not find a class based on the module path "
+                f"'{endpoint_config.type}'. Failed to create a "
+                f"`NaturalLanguageInterpreter` instance. Error: {e}"
+            )
+        else:
+            raise Exception(
+                f"Endpoint configuration not found. Failed to create a "
+                f"`NaturalLanguageInterpreter` instance. Error: {e}"
+            )
