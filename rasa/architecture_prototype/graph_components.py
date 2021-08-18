@@ -136,8 +136,9 @@ class StoryToTrainingDataConverter(GraphComponent):
     ) -> TrainingData:
         """Creates a list of unique (partial) substates from the domain and story graph.
 
-        Note that partial user substate means all substates with intent as only
-        attribute or text plus all possible attributes (except intent).
+        Note that partial user substate means user substate with intent only, user
+        substate with all attributes expect intent, "prev_action" substate with
+        action text only or "prev_action" substate with action name only.
         """
         lookup_table = E2ELookupTable(handle_collisions=True)
 
@@ -160,8 +161,9 @@ class StoryToTrainingDataConverter(GraphComponent):
     def convert_for_inference(self, tracker: DialogueStateTracker) -> List[Message]:
         """Creates a list of unique (partial) substates from the events in the tracker.
 
-        Note that partial user substate means all substates with intent as only
-        attribute or text plus all possible attributes (except intent).
+        Note that partial user substate means user substate with intent only, user
+        substate with all attributes expect intent, "prev_action" substate with
+        action text only or "prev_action" substate with action name only.
 
         Args:
           tracker: contains the events from which we want to extract the substates
@@ -180,7 +182,7 @@ class E2ELookupTable:
     """A key-value store that stores specific `Messages` only.
 
     The reason this lookup table behaves as it does is that
-    a) our policies only need to pass pass very specific information through the
+    a) our policies only need to pass very specific information through the
        tokenization and featurization pipeline
     b) our tokenization and featurization pipeline featurize certain attributes
        independently of each other.
@@ -259,7 +261,7 @@ class E2ELookupTable:
                 f"Expected exactly one attribute out of "
                 f"{cls.KEY_ATTRIBUTES} but received {attributes}"
             )
-        if ENTITIES in attributes and not TEXT in attributes:
+        if ENTITIES in attributes and TEXT not in attributes:
             raise ValueError(
                 f"Expected entities information only in conjunction with `TEXT` "
                 f"but received a substate with {sub_state.keys()}."
@@ -423,8 +425,9 @@ class E2ELookupTable:
     def derive_messages_from_events_and_add(self, events: Iterable[Event],) -> None:
         """Creates all possible action and (partial) user substates from the events.
 
-        Note that partial user substate means all substates with intent as only
-        attribute or text plus all possible attributes (except intent).
+        Note that partial user substate means user substate with intent only, user
+        substate with all attributes expect intent, "prev_action" substate with
+        action text only or "prev_action" substate with action name only.
 
         Args:
           events: list of events to extract the substate from

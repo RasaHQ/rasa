@@ -329,7 +329,7 @@ def test_lookup_message():
     assert message
     message = table.lookup_message(user_text="B")
     assert OTHER in message.data.keys()
-    with pytest.raises(ValueError, match=f"Expected a message with key \('{TEXT}"):
+    with pytest.raises(ValueError, match=f"Expected a message with key \\('{TEXT}"):
         table.lookup_message(user_text="not included")
 
 
