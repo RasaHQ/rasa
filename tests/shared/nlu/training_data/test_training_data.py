@@ -675,10 +675,6 @@ def test_training_data_conversion(
             rasa.shared.data.yaml_file_extension(),
         ),
         ("data/examples", rasa.shared.data.yaml_file_extension()),
-        (
-            "data/test_md/default_retrieval_intents.md",
-            rasa.shared.data.markdown_file_extension(),
-        ),
         ("data/examples/rasa/demo-rasa.yml", rasa.shared.data.yaml_file_extension()),
         ("data/rasa_yaml_examples", rasa.shared.data.yaml_file_extension()),
     ],

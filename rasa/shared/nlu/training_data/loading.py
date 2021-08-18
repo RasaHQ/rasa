@@ -24,10 +24,8 @@ logger = logging.getLogger(__name__)
 WIT = "wit"
 LUIS = "luis"
 RASA = "rasa_nlu"
-MARKDOWN = "md"
 RASA_YAML = "rasa_yml"
 UNK = "unk"
-MARKDOWN_NLG = "nlg.md"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
 _json_format_heuristics: Dict[Text, Callable[[Any, Text], bool]] = {

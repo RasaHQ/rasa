@@ -12,7 +12,6 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.shared.nlu.training_data.formats.markdown import INTENT
 from rasa.utils.tensorflow import model_data_utils
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import (
@@ -28,6 +27,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
 
 shape = 100
+INTENT = "intent"
 
 
 def test_create_fake_features():
