@@ -62,14 +62,6 @@ Checks intents used in stories.
 Verifies if the intents used in the stories are valid, and whether
 all valid intents are used in the stories.
 
-#### verify\_utterances
-
-```python
- | verify_utterances(ignore_warnings: bool = True) -> bool
-```
-
-Compares list of utterances in actions with utterances in responses.
-
 #### verify\_utterances\_in\_stories
 
 ```python
@@ -92,7 +84,8 @@ Verifies that the bot behaviour in stories is deterministic.
 **Arguments**:
 
 - `ignore_warnings` - When `True`, return `True` even if conflicts were found.
-- `max_history` - Maximal number of events to take into account for conflict identification.
+- `max_history` - Maximal number of events to take into account for conflict
+  identification.
   
 
 **Returns**:

@@ -6,17 +6,23 @@ title: rasa.utils.tensorflow.models
 ## RasaModel Objects
 
 ```python
-class RasaModel(tf.keras.models.Model)
+class RasaModel(TmpKerasModel)
 ```
 
-Completely override all public methods of keras Model.
+Abstract custom Keras model.
 
-Cannot be used as tf.keras.Model
+ This model overwrites the following methods:
+- train_step
+- test_step
+- predict_step
+- save
+- load
+Cannot be used as tf.keras.Model.
 
 #### \_\_init\_\_
 
 ```python
- | __init__(random_seed: Optional[int] = None, tensorboard_log_dir: Optional[Text] = None, tensorboard_log_level: Optional[Text] = "epoch", checkpoint_model: Optional[bool] = False, **kwargs, ,) -> None
+ | __init__(random_seed: Optional[int] = None, **kwargs, ,) -> None
 ```
 
 Initialize the RasaModel.
@@ -57,7 +63,7 @@ For example, pre calculation of `self.all_labels_embed`.
 #### batch\_predict
 
 ```python
- | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
 ```
 
 Predicts the output of the given batch.
@@ -71,27 +77,95 @@ Predicts the output of the given batch.
 
   The output to predict.
 
-#### fit
+#### train\_step
 
 ```python
- | fit(model_data: RasaModelData, epochs: int, batch_size: Union[List[int], int], evaluate_on_num_examples: int, evaluate_every_num_epochs: int, batch_strategy: Text, silent: bool = False, loading: bool = False, eager: bool = False) -> None
+ | train_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, float]
 ```
 
-Fit model data.
+Performs a train step using the given batch.
 
-#### train\_on\_batch
+**Arguments**:
+
+- `batch_in` - The batch input.
+  
+
+**Returns**:
+
+  Training metrics.
+
+#### test\_step
 
 ```python
- | train_on_batch(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> None
+ | test_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, float]
 ```
 
-Train on batch.
+Tests the model using the given batch.
+
+This method is used during validation.
+
+**Arguments**:
+
+- `batch_in` - The batch input.
+  
+
+**Returns**:
+
+  Testing metrics.
+
+#### predict\_step
+
+```python
+ | predict_step(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
+```
+
+Predicts the output for the given batch.
+
+**Arguments**:
+
+- `batch_in` - The batch to predict.
+  
+
+**Returns**:
+
+  Prediction output.
+
+#### rasa\_predict
+
+```python
+ | rasa_predict(model_data: RasaModelData) -> Dict[Text, tf.Tensor]
+```
+
+Custom prediction method that builds tf graph on the first call.
+
+**Arguments**:
+
+- `model_data` - The model data to use for prediction.
+  
+
+**Returns**:
+
+  Prediction output.
+
+#### save
+
+```python
+ | save(model_file_name: Text, overwrite: bool = True) -> None
+```
+
+Save the model to the given file.
+
+**Arguments**:
+
+- `model_file_name` - The file name to save the model to.
+- `overwrite` - If &#x27;True&#x27; an already existing model with the same file name will
+  be overwritten.
 
 #### load
 
 ```python
  | @classmethod
- | load(cls, model_file_name: Text, model_data_example: RasaModelData, finetune_mode: bool = False, *args, **kwargs, *, ,) -> "RasaModel"
+ | load(cls, model_file_name: Text, model_data_example: RasaModelData, predict_data_example: Optional[RasaModelData] = None, finetune_mode: bool = False, *args, **kwargs, *, ,) -> "RasaModel"
 ```
 
 Loads a model from the given weights.
@@ -100,6 +174,8 @@ Loads a model from the given weights.
 
 - `model_file_name` - Path to file containing model weights.
 - `model_data_example` - Example data point to construct the model architecture.
+- `predict_data_example` - Example data point to speed up prediction during
+  inference.
 - `finetune_mode` - Indicates whether to load the model for further finetuning.
 - `*args` - Any other non key-worded arguments.
 - `**kwargs` - Any other key-worded arguments.
@@ -123,16 +199,27 @@ key-value pairs in session data. As sparse data were converted into (indices,
 data, shape) before, this method converts them into sparse tensors. Dense
 data is kept.
 
-#### linearly\_increasing\_batch\_size
+#### call
 
 ```python
- | @staticmethod
- | linearly_increasing_batch_size(epoch: int, batch_size: Union[List[int], int], epochs: int) -> int
+ | call(inputs: Union[tf.Tensor, List[tf.Tensor]], training: Optional[tf.Tensor] = None, mask: Optional[tf.Tensor] = None) -> Union[tf.Tensor, List[tf.Tensor]]
 ```
 
-Linearly increase batch size with every epoch.
+Calls the model on new inputs.
 
-The idea comes from https://arxiv.org/abs/1711.00489.
+**Arguments**:
+
+- `inputs` - A tensor or list of tensors.
+- `training` - Boolean or boolean scalar tensor, indicating whether to run
+  the `Network` in training mode or inference mode.
+- `mask` - A mask or list of masks. A mask can be
+  either a tensor or None (no mask).
+  
+
+**Returns**:
+
+  A tensor if there is a single output, or
+  a list of tensors if there are more than one outputs.
 
 ## TransformerRasaModel Objects
 
@@ -160,7 +247,7 @@ Calculates the loss for the given batch.
 #### batch\_predict
 
 ```python
- | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
 ```
 
 Predicts the output of the given batch.

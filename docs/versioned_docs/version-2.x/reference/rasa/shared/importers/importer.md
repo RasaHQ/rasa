@@ -139,8 +139,8 @@ class ResponsesSyncImporter(TrainingDataImporter)
 
 Importer that syncs `responses` between Domain and NLU training data.
 
-Synchronizes response templates between Domain and NLU
-and adds retrieval intent properties from the NLU training data
+Synchronizes responses between Domain and NLU and
+adds retrieval intent properties from the NLU training data
 back to the Domain.
 
 #### get\_domain
@@ -159,7 +159,7 @@ Merge existing domain with properties of retrieval intents in NLU data.
  | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
 ```
 
-Update NLU data with response templates for retrieval intents defined in the domain
+Updates NLU data with responses for retrieval intents from domain.
 
 ## E2EImporter Objects
 
@@ -167,7 +167,8 @@ Update NLU data with response templates for retrieval intents defined in the dom
 class E2EImporter(TrainingDataImporter)
 ```
 
-Importer which
+Importer with the following functionality.
+
 - enhances the NLU training data with actions / user messages from the stories.
 - adds potential end-to-end bot messages from stories as actions to the domain
 

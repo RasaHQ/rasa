@@ -209,14 +209,6 @@ If you want to fine-tune your model, start by modifying the following parameters
 
   Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to [handle actions predicted with low confidence](./fallback-handoff.mdx#handling-low-action-confidence).
 
-:::info New in 2.1
-`split_entities_by_comma` was added.
-:::
-
-:::info New in 2.3
-`constrain_similarities` and `model_confidence` were added.
-:::
-
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -279,6 +271,8 @@ However, additional parameters exist that can be adapted.
 | epochs                                | 1                      | Number of epochs to train.                                   |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | random_seed                           | None                   | Set random seed to any 'int' to get reproducible results.    |
++---------------------------------------+------------------------+--------------------------------------------------------------+
+| learning_rate                         | 0.001                  | Initial learning rate for the optimizer.                     |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | embedding_dimension                   | 20                     | Dimension size of dialogue & system action embedding vectors.|
 +---------------------------------------+------------------------+--------------------------------------------------------------+
@@ -348,7 +342,7 @@ However, additional parameters exist that can be adapted.
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | tensorboard_log_level                 | "epoch"                | Define when training metrics for tensorboard should be       |
 |                                       |                        | logged. Either after every epoch ('epoch') or for every      |
-|                                       |                        | training step ('minibatch').                                 |
+|                                       |                        | training step ('batch').                                 |
 +---------------------------------------+------------------------+--------------------------------------------------------------+
 | checkpoint_model                      | False                  | Save the best performing model during training. Models are   |
 |                                       |                        | stored to the location specified by `--out`. Only the one    |

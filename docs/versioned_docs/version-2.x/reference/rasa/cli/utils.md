@@ -91,7 +91,7 @@ button_choices_from_message_data(message: Dict[Text, Any], allow_free_text_input
 Return list of choices to present to the user.
 
 If allow_free_text_input is True, an additional option is added
-at the end along with the template buttons that allows the user
+at the end along with the response buttons that allows the user
 to type in free text.
 
 #### payload\_from\_button\_question

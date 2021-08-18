@@ -11,7 +11,8 @@ class WitEmulator(Emulator)
 
 Emulates the response format of this wit.ai endpoint.
 
-More information about the endpoint: https://wit.ai/docs/http/20200513/#get__message_link
+More information about the endpoint:
+https://wit.ai/docs/http/20200513/#get__message_link
 
 #### normalise\_response\_json
 

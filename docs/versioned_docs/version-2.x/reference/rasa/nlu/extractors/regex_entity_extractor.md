@@ -18,7 +18,7 @@ defined in the training data.
  | __init__(component_config: Optional[Dict[Text, Any]] = None, patterns: Optional[List[Dict[Text, Text]]] = None)
 ```
 
-Extracts entities using the lookup tables and/or regexes defined in the training data.
+Extracts entities using the lookup tables and/or regexes defined.
 
 #### persist
 

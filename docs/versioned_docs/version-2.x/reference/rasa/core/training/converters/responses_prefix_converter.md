@@ -3,10 +3,10 @@ sidebar_label: responses_prefix_converter
 title: rasa.core.training.converters.responses_prefix_converter
 ---
 
-#### normalize\_response\_name
+#### normalize\_utter\_action
 
 ```python
-normalize_response_name(action_name: Text) -> Text
+normalize_utter_action(action_name: Text) -> Text
 ```
 
 Ensure that response names start with `utter_`.

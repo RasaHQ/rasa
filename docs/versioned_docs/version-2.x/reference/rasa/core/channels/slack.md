@@ -73,7 +73,9 @@ https://api.slack.com/events-api#failure_conditions
  | get_metadata(request: Request) -> Dict[Text, Any]
 ```
 
-Extracts the metadata from a slack API event (https://api.slack.com/types/event).
+Extracts the metadata from a slack API event.
+
+Slack Documentation: https://api.slack.com/types/event
 
 **Arguments**:
 
@@ -82,8 +84,8 @@ Extracts the metadata from a slack API event (https://api.slack.com/types/event)
 
 **Returns**:
 
-  Metadata extracted from the sent event payload. This includes the output channel for the response,
-  and users that have installed the bot.
+  Metadata extracted from the sent event payload. This includes the output
+  channel for the response, and users that have installed the bot.
 
 #### is\_request\_from\_slack\_authentic
 

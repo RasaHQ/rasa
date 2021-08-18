@@ -121,7 +121,7 @@ Prepares the model for prediction.
 #### batch\_predict
 
 ```python
- | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
 ```
 
 Predicts the output of the given batch.

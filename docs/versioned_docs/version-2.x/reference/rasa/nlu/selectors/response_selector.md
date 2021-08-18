@@ -65,7 +65,18 @@ Performs sanity checks on training data, extracts encodings for labels.
  | process(message: Message, **kwargs: Any) -> None
 ```
 
-Return the most likely response, the associated intent_response_key and its similarity to the input.
+Selects most like response for message.
+
+**Arguments**:
+
+- `message` - Latest user message.
+- `kwargs` - Additional key word arguments.
+  
+
+**Returns**:
+
+  the most likely response, the associated intent_response_key and its
+  similarity to the input.
 
 #### persist
 
@@ -93,4 +104,38 @@ class DIET2DIET(DIET)
 ```
 
 Diet 2 Diet transformer implementation.
+
+#### batch\_loss
+
+```python
+ | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
+```
+
+Calculates the loss for the given batch.
+
+**Arguments**:
+
+- `batch_in` - The batch.
+  
+
+**Returns**:
+
+  The loss of the given batch.
+
+#### batch\_predict
+
+```python
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
+```
+
+Predicts the output of the given batch.
+
+**Arguments**:
+
+- `batch_in` - The batch.
+  
+
+**Returns**:
+
+  The output to predict.
 

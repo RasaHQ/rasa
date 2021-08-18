@@ -62,5 +62,6 @@ Featurize message using a trained NLU pipeline.
 
 **Returns**:
 
-  message containing tokens and features which are the output of the NLU pipeline
+  message containing tokens and features which are the output of the NLU
+  pipeline
 
