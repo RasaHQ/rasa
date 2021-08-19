@@ -16,10 +16,10 @@ Add all training parsers.
 - `subparsers` - subparser we are going to attach to
 - `parents` - Parent parsers, needed to ensure tree structure in argparse
 
-#### train
+#### run\_training
 
 ```python
-train(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]
+run_training(args: argparse.Namespace, can_exit: bool = False) -> Optional[Text]
 ```
 
 Trains a model.
@@ -35,10 +35,10 @@ Trains a model.
 
   Path to a trained model or `None` if training was not successful.
 
-#### train\_core
+#### run\_core\_training
 
 ```python
-train_core(args: argparse.Namespace, train_path: Optional[Text] = None) -> Optional[Text]
+run_core_training(args: argparse.Namespace, train_path: Optional[Text] = None) -> Optional[Text]
 ```
 
 Trains a Rasa Core model only.
@@ -53,10 +53,10 @@ Trains a Rasa Core model only.
 
   Path to a trained model or `None` if training was not successful.
 
-#### train\_nlu
+#### run\_nlu\_training
 
 ```python
-train_nlu(args: argparse.Namespace, train_path: Optional[Text] = None) -> Optional[Text]
+run_nlu_training(args: argparse.Namespace, train_path: Optional[Text] = None) -> Optional[Text]
 ```
 
 Trains an NLU model.

@@ -187,7 +187,7 @@ Returns a unique hash for the domain which is stable across python runs.
 
 ```python
  | @rasa.shared.utils.common.lazy_property
- | user_actions_and_forms()
+ | user_actions_and_forms() -> List[Text]
 ```
 
 Returns combination of user actions and forms.
@@ -214,7 +214,7 @@ Returns the number of available actions.
 
 ```python
  | @rasa.shared.utils.common.lazy_property
- | num_states()
+ | num_states() -> int
 ```
 
 Number of used input states for the action prediction.
@@ -297,7 +297,7 @@ See `_add_categorical_slot_default_value` for docstring.
 #### index\_for\_action
 
 ```python
- | index_for_action(action_name: Text) -> Optional[int]
+ | index_for_action(action_name: Text) -> int
 ```
 
 Looks up which action index corresponds to this action name.
@@ -399,18 +399,56 @@ Returns all available states.
 #### get\_active\_states
 
 ```python
- | get_active_states(tracker: "DialogueStateTracker") -> State
+ | get_active_states(tracker: "DialogueStateTracker", omit_unset_slots: bool = False) -> State
 ```
 
-Return a bag of active states from the tracker state.
+Returns a bag of active states from the tracker state.
+
+**Arguments**:
+
+- `tracker` - dialog state tracker containing the dialog so far
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
+  
+  Returns `State` containing all active states.
 
 #### states\_for\_tracker\_history
 
 ```python
- | states_for_tracker_history(tracker: "DialogueStateTracker") -> List[State]
+ | states_for_tracker_history(tracker: "DialogueStateTracker", omit_unset_slots: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
 ```
 
-Array of states for each state of the trackers history.
+List of states for each state of the trackers history.
+
+**Arguments**:
+
+- `tracker` - Dialogue state tracker containing the dialogue so far.
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
+  
+
+**Returns**:
+
+  A list of states.
+
+#### slots\_for\_entities
+
+```python
+ | slots_for_entities(entities: List[Dict[Text, Any]]) -> List[SlotSet]
+```
+
+Creates slot events for entities if auto-filling is enabled.
+
+**Arguments**:
+
+- `entities` - The list of entities.
+  
+
+**Returns**:
+
+  A list of `SlotSet` events.
 
 #### persist\_specification
 
@@ -524,6 +562,15 @@ This function preserves the orders of the keys in the domain.
 ```
 
 Return the configuration for an intent.
+
+#### intents
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | intents() -> List[Text]
+```
+
+Returns sorted list of intents.
 
 #### domain\_warnings
 

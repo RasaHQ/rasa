@@ -1,6 +1,6 @@
 ---
-sidebar_label: train
-title: rasa.train
+sidebar_label: model_training
+title: rasa.model_training
 ---
 
 ## TrainingResult Objects
@@ -10,40 +10,6 @@ class TrainingResult(NamedTuple)
 ```
 
 Holds information about the results of training.
-
-#### train
-
-```python
-train(domain: Text, config: Text, training_files: Union[Text, List[Text]], output: Text = DEFAULT_MODELS_PATH, dry_run: bool = False, force_training: bool = False, fixed_model_name: Optional[Text] = None, persist_nlu_training_data: bool = False, core_additional_arguments: Optional[Dict] = None, nlu_additional_arguments: Optional[Dict] = None, loop: Optional[asyncio.AbstractEventLoop] = None, model_to_finetune: Optional[Text] = None, finetuning_epoch_fraction: float = 1.0) -> TrainingResult
-```
-
-Runs Rasa Core and NLU training in `async` loop.
-
-**Arguments**:
-
-- `domain` - Path to the domain file.
-- `config` - Path to the config for Core and NLU.
-- `training_files` - Paths to the training data for Core and NLU.
-- `output` - Output path.
-- `dry_run` - If `True` then no training will be done, and the information about
-  whether the training needs to be done will be printed.
-- `force_training` - If `True` retrain model even if data has not changed.
-- `fixed_model_name` - Name of model to be stored.
-- `persist_nlu_training_data` - `True` if the NLU training data should be persisted
-  with the model.
-- `core_additional_arguments` - Additional training parameters for core training.
-- `nlu_additional_arguments` - Additional training parameters forwarded to training
-  method of each NLU component.
-- `loop` - Optional EventLoop for running coroutines.
-- `model_to_finetune` - Optional path to a model which should be finetuned or
-  a directory in case the latest trained model should be used.
-- `finetuning_epoch_fraction` - The fraction currently specified training epochs
-  in the model configuration which should be used for finetuning.
-  
-
-**Returns**:
-
-  An instance of `TrainingResult`.
 
 #### train\_async
 
@@ -81,7 +47,7 @@ Trains a Rasa model (Core and NLU).
 #### handle\_domain\_if\_not\_exists
 
 ```python
-async handle_domain_if_not_exists(file_importer: TrainingDataImporter, output_path, fixed_model_name)
+async handle_domain_if_not_exists(file_importer: TrainingDataImporter, output_path: Text, fixed_model_name: Optional[Text]) -> Text
 ```
 
 Trains only the nlu model and prints a warning about missing domain.

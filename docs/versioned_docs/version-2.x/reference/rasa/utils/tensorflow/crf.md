@@ -15,7 +15,7 @@ Computes the forward decoding in a linear-chain CRF.
 
 ```python
  | @typechecked
- | __init__(transition_params: TensorLike, **kwargs) -> None
+ | __init__(transition_params: TensorLike, **kwargs: Any) -> None
 ```
 
 Initialize the CrfDecodeForwardRnnCell.
@@ -26,6 +26,23 @@ Initialize the CrfDecodeForwardRnnCell.
   potentials. This matrix is expanded into a
   [1, num_tags, num_tags] in preparation for the broadcast
   summation occurring within the cell.
+
+#### output\_size
+
+```python
+ | @property
+ | output_size() -> int
+```
+
+Returns count of tags.
+
+#### build
+
+```python
+ | build(input_shape: Union[TensorShape, List[TensorShape]]) -> None
+```
+
+Creates the variables of the layer.
 
 #### call
 

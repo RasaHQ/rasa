@@ -354,7 +354,7 @@ Applies event to current conversation state.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -445,7 +445,7 @@ This class is not used in the story training as it is contained in the
 #### \_\_init\_\_
 
 ```python
- | __init__(text=None, data=None, metadata=None, timestamp=None) -> None
+ | __init__(text: Optional[Text] = None, data: Optional[Dict] = None, metadata: Optional[Dict[Text, Any]] = None, timestamp: Optional[float] = None) -> None
 ```
 
 Creates event for a bot response.
@@ -468,7 +468,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -570,7 +570,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -702,7 +702,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker) -> None
+ | apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -947,7 +947,7 @@ Applies event to current conversation state.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -985,7 +985,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1052,7 +1052,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker) -> None
+ | apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -1087,7 +1087,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker) -> None
+ | apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -1106,7 +1106,7 @@ to the latest `Turn`` in `Tracker.turns`.
 #### \_\_init\_\_
 
 ```python
- | __init__(action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, action_text: Optional[Text] = None) -> None
+ | __init__(action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, action_text: Optional[Text] = None, hide_rule_turn: bool = False) -> None
 ```
 
 Creates event for a successful event execution.
@@ -1121,6 +1121,8 @@ Creates event for a successful event execution.
 - `metadata` - Additional event metadata.
 - `action_text` - In case it&#x27;s an end-to-end action prediction, the text which
   was predicted.
+- `hide_rule_turn` - If `True`, this action should be hidden in the dialogue
+  history created for ML-based policies.
 
 #### \_\_repr\_\_
 
@@ -1223,7 +1225,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1285,7 +1287,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1380,7 +1382,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1472,7 +1474,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.

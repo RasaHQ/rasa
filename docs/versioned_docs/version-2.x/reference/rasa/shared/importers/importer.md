@@ -43,6 +43,18 @@ Retrieves the stories that should be used for training.
 
   `StoryGraph` containing all loaded stories.
 
+#### get\_conversation\_tests
+
+```python
+ | async get_conversation_tests() -> StoryGraph
+```
+
+Retrieves end-to-end conversation stories for testing.
+
+**Returns**:
+
+  `StoryGraph` containing all loaded stories.
+
 #### get\_config
 
 ```python
@@ -120,6 +132,46 @@ class NluDataImporter(TrainingDataImporter)
 
 Importer that skips any Core-related file reading.
 
+#### get\_domain
+
+```python
+ | async get_domain() -> Domain
+```
+
+Retrieves model domain (see parent class for full docstring).
+
+#### get\_stories
+
+```python
+ | async get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+```
+
+Retrieves training stories / rules (see parent class for full docstring).
+
+#### get\_conversation\_tests
+
+```python
+ | async get_conversation_tests() -> StoryGraph
+```
+
+Retrieves conversation test stories (see parent class for full docstring).
+
+#### get\_config
+
+```python
+ | async get_config() -> Dict
+```
+
+Retrieves model config (see parent class for full docstring).
+
+#### get\_nlu\_data
+
+```python
+ | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+```
+
+Retrieves NLU training data (see parent class for full docstring).
+
 ## CombinedDataImporter Objects
 
 ```python
@@ -130,6 +182,51 @@ A `TrainingDataImporter` that combines multiple importers.
 
 Uses multiple `TrainingDataImporter` instances
 to load the data as if they were a single instance.
+
+#### get\_config
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | async get_config() -> Dict
+```
+
+Retrieves model config (see parent class for full docstring).
+
+#### get\_domain
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | async get_domain() -> Domain
+```
+
+Retrieves model domain (see parent class for full docstring).
+
+#### get\_stories
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | async get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+```
+
+Retrieves training stories / rules (see parent class for full docstring).
+
+#### get\_conversation\_tests
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | async get_conversation_tests() -> StoryGraph
+```
+
+Retrieves conversation test stories (see parent class for full docstring).
+
+#### get\_nlu\_data
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+```
+
+Retrieves NLU training data (see parent class for full docstring).
 
 ## ResponsesSyncImporter Objects
 
@@ -143,6 +240,14 @@ Synchronizes responses between Domain and NLU and
 adds retrieval intent properties from the NLU training data
 back to the Domain.
 
+#### get\_config
+
+```python
+ | async get_config() -> Dict
+```
+
+Retrieves model config (see parent class for full docstring).
+
 #### get\_domain
 
 ```python
@@ -151,6 +256,22 @@ back to the Domain.
 ```
 
 Merge existing domain with properties of retrieval intents in NLU data.
+
+#### get\_stories
+
+```python
+ | async get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+```
+
+Retrieves training stories / rules (see parent class for full docstring).
+
+#### get\_conversation\_tests
+
+```python
+ | async get_conversation_tests() -> StoryGraph
+```
+
+Retrieves conversation test stories (see parent class for full docstring).
 
 #### get\_nlu\_data
 
@@ -172,6 +293,15 @@ Importer with the following functionality.
 - enhances the NLU training data with actions / user messages from the stories.
 - adds potential end-to-end bot messages from stories as actions to the domain
 
+#### get\_domain
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | async get_domain() -> Domain
+```
+
+Retrieves model domain (see parent class for full docstring).
+
 #### get\_stories
 
 ```python
@@ -181,4 +311,29 @@ Importer with the following functionality.
 Retrieves the stories that should be used for training.
 
 See parent class for details.
+
+#### get\_conversation\_tests
+
+```python
+ | async get_conversation_tests() -> StoryGraph
+```
+
+Retrieves conversation test stories (see parent class for full docstring).
+
+#### get\_config
+
+```python
+ | async get_config() -> Dict
+```
+
+Retrieves model config (see parent class for full docstring).
+
+#### get\_nlu\_data
+
+```python
+ | @rasa.shared.utils.common.cached_method
+ | async get_nlu_data(language: Optional[Text] = "en") -> TrainingData
+```
+
+Retrieves NLU training data (see parent class for full docstring).
 

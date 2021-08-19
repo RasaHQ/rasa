@@ -16,3 +16,15 @@ Add all run parsers.
 - `subparsers` - subparser we are going to attach to
 - `parents` - Parent parsers, needed to ensure tree structure in argparse
 
+#### run
+
+```python
+run(args: argparse.Namespace) -> NoReturn
+```
+
+Entrypoint for `rasa run`.
+
+**Arguments**:
+
+- `args` - The CLI arguments.
+

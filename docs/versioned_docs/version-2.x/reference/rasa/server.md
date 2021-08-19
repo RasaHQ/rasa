@@ -30,7 +30,7 @@ Creates error.
 #### ensure\_loaded\_agent
 
 ```python
-ensure_loaded_agent(app: Sanic, require_core_is_ready=False)
+ensure_loaded_agent(app: Sanic, require_core_is_ready: bool = False) -> Callable[[Callable], Callable[..., Any]]
 ```
 
 Wraps a request handler ensuring there is a loaded and usable agent.
@@ -41,7 +41,7 @@ Require the agent to have a loaded Core model if `require_core_is_ready` is
 #### ensure\_conversation\_exists
 
 ```python
-ensure_conversation_exists() -> Callable[..., HTTPResponse]
+ensure_conversation_exists() -> "SanicView"
 ```
 
 Wraps a request handler ensuring the conversation exists.
@@ -49,7 +49,7 @@ Wraps a request handler ensuring the conversation exists.
 #### requires\_auth
 
 ```python
-requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]
+requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[["SanicView"], "SanicView"]
 ```
 
 Wraps a request handler with token authentication.
@@ -151,7 +151,7 @@ Configure CORS origins for the given app.
 #### add\_root\_route
 
 ```python
-add_root_route(app: Sanic)
+add_root_route(app: Sanic) -> None
 ```
 
 Add &#x27;/&#x27; route to return hello.
@@ -220,7 +220,7 @@ Decorator to inject a temporary directory before a request and clean up after.
 #### create\_app
 
 ```python
-create_app(agent: Optional["Agent"] = None, cors_origins: Union[Text, List[Text], None] = "*", auth_token: Optional[Text] = None, response_timeout: int = DEFAULT_RESPONSE_TIMEOUT, jwt_secret: Optional[Text] = None, jwt_method: Text = "HS256", endpoints: Optional[AvailableEndpoints] = None)
+create_app(agent: Optional["Agent"] = None, cors_origins: Union[Text, List[Text], None] = "*", auth_token: Optional[Text] = None, response_timeout: int = DEFAULT_RESPONSE_TIMEOUT, jwt_secret: Optional[Text] = None, jwt_method: Text = "HS256", endpoints: Optional[AvailableEndpoints] = None) -> Sanic
 ```
 
 Class representing a Rasa HTTP server.

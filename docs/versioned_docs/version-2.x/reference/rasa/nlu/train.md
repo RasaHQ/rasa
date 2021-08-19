@@ -27,7 +27,7 @@ Load training data from a URL.
 #### create\_persistor
 
 ```python
-create_persistor(persistor: Optional[Text])
+create_persistor(persistor: Optional[Text]) -> Optional["Persistor"]
 ```
 
 Create a remote persistor to store the model if configured.

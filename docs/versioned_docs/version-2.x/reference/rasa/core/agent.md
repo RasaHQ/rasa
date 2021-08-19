@@ -11,6 +11,44 @@ async load_from_server(agent: "Agent", model_server: EndpointConfig) -> "Agent"
 
 Load a persisted model from a server.
 
+#### create\_agent
+
+```python
+create_agent(model: Text, endpoints: Text = None) -> "Agent"
+```
+
+Create an agent instance based on a stored model.
+
+**Arguments**:
+
+- `model` - file path to the stored model
+- `endpoints` - file path to the used endpoint configuration
+
+#### load\_agent
+
+```python
+async load_agent(model_path: Optional[Text] = None, model_server: Optional[EndpointConfig] = None, remote_storage: Optional[Text] = None, interpreter: Optional[NaturalLanguageInterpreter] = None, generator: Union[EndpointConfig, NaturalLanguageGenerator] = None, tracker_store: Optional[TrackerStore] = None, lock_store: Optional[LockStore] = None, action_endpoint: Optional[EndpointConfig] = None) -> Optional["Agent"]
+```
+
+Loads agent from server, remote storage or disk.
+
+**Arguments**:
+
+- `model_path` - Path to the model if it&#x27;s on disk.
+- `model_server` - Configuration for a potential server which serves the model.
+- `remote_storage` - URL of remote storage for model.
+- `interpreter` - NLU interpreter to parse incoming messages.
+- `generator` - Optional response generator.
+- `tracker_store` - TrackerStore for persisting the conversation history.
+- `lock_store` - LockStore to avoid that a conversation is modified by concurrent
+  actors.
+- `action_endpoint` - Action server configuration for executing custom actions.
+  
+
+**Returns**:
+
+  The instantiated `Agent` or `None`.
+
 ## Agent Objects
 
 ```python
@@ -87,7 +125,7 @@ The return value of this function is parsed_data.
 #### handle\_message
 
 ```python
- | async handle_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs, ,) -> Optional[List[Dict[Text, Any]]]
+ | async handle_message(message: UserMessage, message_preprocessor: Optional[Callable[[Text], Text]] = None, **kwargs: Any, ,) -> Optional[List[Dict[Text, Any]]]
 ```
 
 Handle a single message.

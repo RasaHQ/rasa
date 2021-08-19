@@ -188,8 +188,7 @@ Parses yaml from a text.
 **Arguments**:
 
 - `content` - A text containing yaml content.
-- `reader_type` - Reader type to use. By default &quot;safe&quot; will be used
-- `replace_env_vars` - Specifies if environment variables need to be replaced
+- `reader_type` - Reader type to use. By default &quot;safe&quot; will be used.
   
 
 **Raises**:
@@ -228,6 +227,29 @@ Writes a yaml to the file or to the stream
 - `data` - The data to write.
 - `target` - The path to the file which should be written or a stream object
 - `should_preserve_key_order` - Whether to force preserve key order in `data`.
+
+#### is\_key\_in\_yaml
+
+```python
+is_key_in_yaml(file_path: Union[Text, Path], *keys: Text) -> bool
+```
+
+Checks if any of the keys is contained in the root object of the yaml file.
+
+**Arguments**:
+
+- `file_path` - path to the yaml file
+- `keys` - keys to look for
+  
+
+**Returns**:
+
+  `True` if at least one of the keys is found, `False` otherwise.
+  
+
+**Raises**:
+
+- `FileNotFoundException` - if the file cannot be found.
 
 #### convert\_to\_ordered\_dict
 

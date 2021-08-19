@@ -64,45 +64,18 @@ Constructs a new Policy object.
 
 ```python
  | @property
- | featurizer()
+ | featurizer() -> TrackerFeaturizer
 ```
 
 Returns the policy&#x27;s featurizer.
 
-#### featurize\_for\_training
+#### set\_shared\_policy\_states
 
 ```python
- | featurize_for_training(training_trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False, **kwargs: Any, ,) -> Tuple[
- |         List[List[Dict[Text, List["Features"]]]],
- |         np.ndarray,
- |         List[List[Dict[Text, List["Features"]]]],
- |     ]
+ | set_shared_policy_states(**kwargs: Any) -> None
 ```
 
-Transform training trackers into a vector representation.
-
-The trackers, consisting of multiple turns, will be transformed
-into a float vector which can be used by a ML model.
-
-**Arguments**:
-
-  training_trackers:
-  the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-- `domain` - the :class:`rasa.shared.core.domain.Domain`
-- `interpreter` - the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
-- `bilou_tagging` - indicates whether BILOU tagging should be used or not
-  
-
-**Returns**:
-
-  - a dictionary of attribute (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
-  ENTITIES, SLOTS, FORM) to a list of features for all dialogue turns in
-  all training trackers
-  - the label ids (e.g. action ids) for every dialogue turn in all training
-  trackers
-  - A dictionary of entity type (ENTITY_TAGS) to a list of features
-  containing entity tag ids for text user inputs otherwise empty dict
-  for all dialogue turns in all training trackers
+Sets policy&#x27;s shared states for correct featurization.
 
 #### train
 
@@ -198,7 +171,7 @@ Stores information about the prediction of a `Policy`.
 #### \_\_init\_\_
 
 ```python
- | __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False, is_no_user_prediction: bool = False, diagnostic_data: Optional[Dict[Text, Any]] = None) -> None
+ | __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False, is_no_user_prediction: bool = False, diagnostic_data: Optional[Dict[Text, Any]] = None, hide_rule_turn: bool = False) -> None
 ```
 
 Creates a `PolicyPrediction`.
@@ -224,6 +197,8 @@ Creates a `PolicyPrediction`.
 - `diagnostic_data` - Intermediate results or other information that is not
   necessary for Rasa to function, but intended for debugging and
   fine-tuning purposes.
+- `hide_rule_turn` - `True` if the prediction was made by the rules which
+  do not appear in the stories
 
 #### for\_action\_name
 

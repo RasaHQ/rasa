@@ -80,7 +80,7 @@ The tracker begins with a `SessionStarted` event and is initially listening.
 #### save
 
 ```python
- | save(tracker)
+ | save(tracker: DialogueStateTracker) -> None
 ```
 
 Save method that will be overridden by specific tracker.
@@ -220,10 +220,10 @@ Stores conversation history in Redis
 #### save
 
 ```python
- | save(tracker, timeout=None)
+ | save(tracker: DialogueStateTracker, timeout: Optional[float] = None) -> None
 ```
 
-Saves the current conversation state
+Saves the current conversation state.
 
 #### retrieve
 
@@ -289,7 +289,7 @@ Returns table or creates one if the table name is not in the table list.
 #### save
 
 ```python
- | save(tracker)
+ | save(tracker: DialogueStateTracker) -> None
 ```
 
 Saves the current conversation state.
@@ -325,7 +325,7 @@ Property methods:
 
 ```python
  | @property
- | conversations()
+ | conversations() -> Collection
 ```
 
 Returns the current conversation.
@@ -333,7 +333,7 @@ Returns the current conversation.
 #### save
 
 ```python
- | save(tracker, timeout=None)
+ | save(tracker: DialogueStateTracker) -> None
 ```
 
 Saves the current conversation state.
@@ -411,7 +411,7 @@ Store which can save and retrieve trackers from an SQL database.
 class SQLEvent(Base)
 ```
 
-Represents an event in the SQL Tracker Store
+Represents an event in the SQL Tracker Store.
 
 #### get\_db\_url
 
@@ -445,7 +445,7 @@ to connect to an SQL database.
 
 ```python
  | @contextlib.contextmanager
- | session_scope()
+ | session_scope() -> Generator["Session", None, None]
 ```
 
 Provide a transactional scope around a series of operations.

@@ -74,3 +74,15 @@ class AzurePersistor(Persistor)
 
 Store models on Azure
 
+#### list\_models
+
+```python
+ | list_models() -> List[Text]
+```
+
+Lists models on remote storage.
+
+**Returns**:
+
+  Paths to found models.
+

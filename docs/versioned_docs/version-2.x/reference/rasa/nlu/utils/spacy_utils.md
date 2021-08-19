@@ -9,6 +9,8 @@ title: rasa.nlu.utils.spacy_utils
 class SpacyNLP(Component)
 ```
 
+The core component that links spaCy to related components in the pipeline.
+
 #### load\_model
 
 ```python
@@ -17,6 +19,30 @@ class SpacyNLP(Component)
 ```
 
 Try loading the model, catching the OSError if missing.
+
+#### provide\_context
+
+```python
+ | provide_context() -> Dict[Text, Any]
+```
+
+Creates a context dictionary from spaCy nlp object.
+
+#### doc\_for\_text
+
+```python
+ | doc_for_text(text: Text) -> "Doc"
+```
+
+Makes a spaCy doc object from a string of text.
+
+#### preprocess\_text
+
+```python
+ | preprocess_text(text: Optional[Text]) -> Text
+```
+
+Processes the text before it is handled by spaCy.
 
 #### merge\_content\_lists
 
@@ -51,6 +77,15 @@ Sends content bearing training samples to spaCy&#x27;s pipe.
 ```
 
 Creates empty Doc-objects from zero-lengthed training samples strings.
+
+#### load
+
+```python
+ | @classmethod
+ | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: "Metadata" = None, cached_component: Optional["SpacyNLP"] = None, **kwargs: Any, ,) -> "SpacyNLP"
+```
+
+Loads trained component (see parent class for full docstring).
 
 #### ensure\_proper\_language\_model
 

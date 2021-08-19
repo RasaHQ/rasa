@@ -133,6 +133,10 @@ class ActionSessionStart(Action):
         return [SessionStarted(), ActionExecuted("action_listen")]
 ```
 
+:::info New in 2.3
+The slot `session_started_metadata` was added.
+:::
+
 ## action_default_fallback
 
 This action undoes the last user-bot interaction and sends the `utter_default` response if it is defined.

@@ -248,9 +248,11 @@ To fill slots from entities with a specific role/group, you need to either defin
 
 ### Entity Roles and Groups influencing dialogue predictions
 
+:::caution Changed in 2.1
 If you want to influence the dialogue predictions by roles or groups, you need to modify your stories to contain
 the desired role or group label. You also need to list the corresponding roles and groups of an entity in your
 [domain file](./domain.mdx#entities).
+:::
 
 Let's assume you want to output a different sentence depending on what the user's location is. E.g.
 if the user just arrived from London, you might want to ask how the trip to London was. But if the user is on the way

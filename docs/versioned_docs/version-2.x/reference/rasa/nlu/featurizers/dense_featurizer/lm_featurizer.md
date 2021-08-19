@@ -44,7 +44,7 @@ Initializes LanguageModelFeaturizer with the specified model.
 
 ```python
  | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Optional[Text] = None, model_metadata: Optional["Metadata"] = None, cached_component: Optional["Component"] = None, **kwargs: Any, ,) -> "Component"
+ | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional["Metadata"] = None, cached_component: Optional["Component"] = None, **kwargs: Any, ,) -> "Component"
 ```
 
 Load this component from file.

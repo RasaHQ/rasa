@@ -6,7 +6,7 @@ title: rasa.shared.nlu.training_data.util
 #### transform\_entity\_synonyms
 
 ```python
-transform_entity_synonyms(synonyms, known_synonyms: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
+transform_entity_synonyms(synonyms: List[Dict[Text, Any]], known_synonyms: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
 ```
 
 Transforms the entity synonyms into a text-&gt;value dictionary

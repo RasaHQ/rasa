@@ -16,3 +16,11 @@ Add all init parsers.
 - `subparsers` - subparser we are going to attach to
 - `parents` - Parent parsers, needed to ensure tree structure in argparse
 
+#### print\_train\_or\_instructions
+
+```python
+print_train_or_instructions(args: argparse.Namespace, path: Text) -> None
+```
+
+Train a model if the user wants to.
+

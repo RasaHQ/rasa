@@ -57,7 +57,7 @@ Trains the component with all patterns extracted from training data.
 
 ```python
  | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Optional[Text] = None, model_metadata: Optional[Metadata] = None, cached_component: Optional["RegexFeaturizer"] = None, should_finetune: bool = False, **kwargs: Any, ,) -> "RegexFeaturizer"
+ | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["RegexFeaturizer"] = None, should_finetune: bool = False, **kwargs: Any, ,) -> "RegexFeaturizer"
 ```
 
 Loads a previously trained component.

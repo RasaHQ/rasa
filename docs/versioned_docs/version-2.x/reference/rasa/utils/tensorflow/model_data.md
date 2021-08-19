@@ -31,7 +31,7 @@ Create and return a new object.  See help(type) for accurate signature.
 #### \_\_init\_\_
 
 ```python
- | __init__(input_array: Any, number_of_dimensions: int, **kwargs)
+ | __init__(input_array: Any, number_of_dimensions: int, **kwargs: Any) -> None
 ```
 
 Initialize. FeatureArray.
@@ -59,7 +59,7 @@ This method is called when the system allocates a new array from obj.
 #### \_\_array\_ufunc\_\_
 
 ```python
- | __array_ufunc__(ufunc: Any, method: Text, *inputs, **kwargs) -> Any
+ | __array_ufunc__(ufunc: Any, method: Text, *inputs: Any, **kwargs: Any) -> Any
 ```
 
 Overwrite this method as we are subclassing numpy array.
@@ -93,7 +93,7 @@ Needed in order to pickle this object.
 #### \_\_setstate\_\_
 
 ```python
- | __setstate__(state, **kwargs) -> None
+ | __setstate__(state: Any, **kwargs: Any) -> None
 ```
 
 Sets the state.
@@ -207,7 +207,7 @@ Return the keys of the data attribute.
 #### sort
 
 ```python
- | sort()
+ | sort() -> None
 ```
 
 Sorts data according to its keys.

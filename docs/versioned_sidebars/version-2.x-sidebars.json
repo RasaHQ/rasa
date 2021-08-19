@@ -318,11 +318,7 @@
               "items": [
                 {
                   "type": "doc",
-                  "id": "version-2.x/reference/rasa/run"
-                },
-                {
-                  "type": "doc",
-                  "id": "version-2.x/reference/rasa/validator"
+                  "id": "version-2.x/reference/rasa/model_testing"
                 },
                 {
                   "type": "doc",
@@ -330,15 +326,11 @@
                 },
                 {
                   "type": "doc",
-                  "id": "version-2.x/reference/rasa/exceptions"
-                },
-                {
-                  "type": "doc",
-                  "id": "version-2.x/reference/rasa/__main__"
-                },
-                {
-                  "type": "doc",
                   "id": "version-2.x/reference/rasa/jupyter"
+                },
+                {
+                  "type": "doc",
+                  "id": "version-2.x/reference/rasa/api"
                 },
                 {
                   "type": "doc",
@@ -346,7 +338,15 @@
                 },
                 {
                   "type": "doc",
-                  "id": "version-2.x/reference/rasa/test"
+                  "id": "version-2.x/reference/rasa/validator"
+                },
+                {
+                  "type": "doc",
+                  "id": "version-2.x/reference/rasa/model_training"
+                },
+                {
+                  "type": "doc",
+                  "id": "version-2.x/reference/rasa/exceptions"
                 },
                 {
                   "type": "doc",
@@ -354,353 +354,18 @@
                 },
                 {
                   "type": "doc",
-                  "id": "version-2.x/reference/rasa/train"
+                  "id": "version-2.x/reference/rasa/__main__"
                 },
                 {
                   "collapsed": true,
                   "items": [
                     {
                       "type": "doc",
-                      "id": "version-2.x/reference/rasa/shared/data"
+                      "id": "version-2.x/reference/rasa/utils/converter"
                     },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/shared/exceptions"
-                    },
-                    {
-                      "collapsed": true,
-                      "items": [
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/importers/autoconfig"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/importers/rasa"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/importers/importer"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/importers/multi_project"
-                        }
-                      ],
-                      "label": "rasa.shared.importers",
-                      "type": "category"
-                    },
-                    {
-                      "collapsed": true,
-                      "items": [
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/utils/common"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/utils/validation"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/utils/pykwalify_extensions"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/utils/cli"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/utils/io"
-                        }
-                      ],
-                      "label": "rasa.shared.utils",
-                      "type": "category"
-                    },
-                    {
-                      "collapsed": true,
-                      "items": [
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/nlu/interpreter"
-                        },
-                        {
-                          "collapsed": true,
-                          "items": [
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/features"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/entities_parser"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/message"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/training_data"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/util"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/synonyms_parser"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/loading"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/lookup_tables_parser"
-                            },
-                            {
-                              "collapsed": true,
-                              "items": [
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/luis"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/readerwriter"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/dialogflow"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/rasa"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/markdown_nlg"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/rasa_yaml"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/markdown"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/wit"
-                                }
-                              ],
-                              "label": "rasa.shared.nlu.training_data.formats",
-                              "type": "category"
-                            },
-                            {
-                              "collapsed": true,
-                              "items": [
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/schemas/data_schema"
-                                }
-                              ],
-                              "label": "rasa.shared.nlu.training_data.schemas",
-                              "type": "category"
-                            }
-                          ],
-                          "label": "rasa.shared.nlu.training_data",
-                          "type": "category"
-                        }
-                      ],
-                      "label": "rasa.shared.nlu",
-                      "type": "category"
-                    },
-                    {
-                      "collapsed": true,
-                      "items": [
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/core/trackers"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/core/generator"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/core/domain"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/core/events"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/core/slots"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/shared/core/conversation"
-                        },
-                        {
-                          "collapsed": true,
-                          "items": [
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/shared/core/training_data/structures"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/shared/core/training_data/visualization"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/shared/core/training_data/loading"
-                            },
-                            {
-                              "collapsed": true,
-                              "items": [
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_writer/yaml_story_writer"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_writer/markdown_story_writer"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_writer/story_writer"
-                                }
-                              ],
-                              "label": "rasa.shared.core.training_data.story_writer",
-                              "type": "category"
-                            },
-                            {
-                              "collapsed": true,
-                              "items": [
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_reader/yaml_story_reader"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_reader/story_reader"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_reader/markdown_story_reader"
-                                },
-                                {
-                                  "type": "doc",
-                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_reader/story_step_builder"
-                                }
-                              ],
-                              "label": "rasa.shared.core.training_data.story_reader",
-                              "type": "category"
-                            }
-                          ],
-                          "label": "rasa.shared.core.training_data",
-                          "type": "category"
-                        }
-                      ],
-                      "label": "rasa.shared.core",
-                      "type": "category"
-                    }
-                  ],
-                  "label": "rasa.shared",
-                  "type": "category"
-                },
-                {
-                  "collapsed": true,
-                  "items": [
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/run"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/data"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/interactive"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/export"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/shell"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/utils"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/telemetry"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/x"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/test"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/scaffold"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/visualize"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/cli/train"
-                    },
-                    {
-                      "collapsed": true,
-                      "items": [
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/cli/arguments/run"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/cli/arguments/interactive"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/cli/arguments/default_arguments"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/cli/arguments/train"
-                        }
-                      ],
-                      "label": "rasa.cli.arguments",
-                      "type": "category"
-                    }
-                  ],
-                  "label": "rasa.cli",
-                  "type": "category"
-                },
-                {
-                  "collapsed": true,
-                  "items": [
                     {
                       "type": "doc",
                       "id": "version-2.x/reference/rasa/utils/common"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/utils/endpoints"
                     },
                     {
                       "type": "doc",
@@ -708,55 +373,19 @@
                     },
                     {
                       "type": "doc",
-                      "id": "version-2.x/reference/rasa/utils/plotting"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/utils/converter"
+                      "id": "version-2.x/reference/rasa/utils/endpoints"
                     },
                     {
                       "type": "doc",
                       "id": "version-2.x/reference/rasa/utils/io"
                     },
                     {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/utils/plotting"
+                    },
+                    {
                       "collapsed": true,
                       "items": [
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/utils/tensorflow/models"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/utils/tensorflow/environment"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/utils/tensorflow/layers"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/utils/tensorflow/exceptions"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/utils/tensorflow/model_data"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/utils/tensorflow/callback"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/utils/tensorflow/crf"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/utils/tensorflow/transformer"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/utils/tensorflow/temp_keras_modules"
-                        },
                         {
                           "type": "doc",
                           "id": "version-2.x/reference/rasa/utils/tensorflow/data_generator"
@@ -764,6 +393,42 @@
                         {
                           "type": "doc",
                           "id": "version-2.x/reference/rasa/utils/tensorflow/model_data_utils"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/utils/tensorflow/temp_keras_modules"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/utils/tensorflow/environment"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/utils/tensorflow/callback"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/utils/tensorflow/transformer"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/utils/tensorflow/crf"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/utils/tensorflow/layers"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/utils/tensorflow/model_data"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/utils/tensorflow/exceptions"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/utils/tensorflow/models"
                         }
                       ],
                       "label": "rasa.utils.tensorflow",
@@ -778,11 +443,11 @@
                   "items": [
                     {
                       "type": "doc",
-                      "id": "version-2.x/reference/rasa/nlu/config"
+                      "id": "version-2.x/reference/rasa/nlu/test"
                     },
                     {
                       "type": "doc",
-                      "id": "version-2.x/reference/rasa/nlu/components"
+                      "id": "version-2.x/reference/rasa/nlu/config"
                     },
                     {
                       "type": "doc",
@@ -790,59 +455,60 @@
                     },
                     {
                       "type": "doc",
+                      "id": "version-2.x/reference/rasa/nlu/components"
+                    },
+                    {
+                      "type": "doc",
                       "id": "version-2.x/reference/rasa/nlu/registry"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/nlu/test"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/nlu/persistor"
                     },
                     {
                       "type": "doc",
                       "id": "version-2.x/reference/rasa/nlu/train"
                     },
                     {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/nlu/persistor"
+                    },
+                    {
                       "collapsed": true,
                       "items": [
                         {
-                          "collapsed": true,
-                          "items": [
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/nlu/featurizers/dense_featurizer/lm_featurizer"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/nlu/featurizers/dense_featurizer/convert_featurizer"
-                            }
-                          ],
-                          "label": "rasa.nlu.featurizers.dense_featurizer",
-                          "type": "category"
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/utils/__init__"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/utils/pattern_utils"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/utils/bilou_utils"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/utils/mitie_utils"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/utils/spacy_utils"
                         },
                         {
                           "collapsed": true,
                           "items": [
                             {
                               "type": "doc",
-                              "id": "version-2.x/reference/rasa/nlu/featurizers/sparse_featurizer/count_vectors_featurizer"
+                              "id": "version-2.x/reference/rasa/nlu/utils/hugging_face/hf_transformers"
                             },
                             {
                               "type": "doc",
-                              "id": "version-2.x/reference/rasa/nlu/featurizers/sparse_featurizer/regex_featurizer"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/nlu/featurizers/sparse_featurizer/lexical_syntactic_featurizer"
+                              "id": "version-2.x/reference/rasa/nlu/utils/hugging_face/transformers_pre_post_processors"
                             }
                           ],
-                          "label": "rasa.nlu.featurizers.sparse_featurizer",
+                          "label": "rasa.nlu.utils.hugging_face",
                           "type": "category"
                         }
                       ],
-                      "label": "rasa.nlu.featurizers",
+                      "label": "rasa.nlu.utils",
                       "type": "category"
                     },
                     {
@@ -861,11 +527,7 @@
                       "items": [
                         {
                           "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/emulators/emulator"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/emulators/no_emulator"
+                          "id": "version-2.x/reference/rasa/nlu/emulators/wit"
                         },
                         {
                           "type": "doc",
@@ -873,11 +535,15 @@
                         },
                         {
                           "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/emulators/emulator"
+                        },
+                        {
+                          "type": "doc",
                           "id": "version-2.x/reference/rasa/nlu/emulators/dialogflow"
                         },
                         {
                           "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/emulators/wit"
+                          "id": "version-2.x/reference/rasa/nlu/emulators/no_emulator"
                         }
                       ],
                       "label": "rasa.nlu.emulators",
@@ -888,7 +554,7 @@
                       "items": [
                         {
                           "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/classifiers/fallback_classifier"
+                          "id": "version-2.x/reference/rasa/nlu/classifiers/keyword_intent_classifier"
                         },
                         {
                           "type": "doc",
@@ -900,14 +566,41 @@
                         },
                         {
                           "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/classifiers/mitie_intent_classifier"
+                          "id": "version-2.x/reference/rasa/nlu/classifiers/fallback_classifier"
                         },
                         {
                           "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/classifiers/keyword_intent_classifier"
+                          "id": "version-2.x/reference/rasa/nlu/classifiers/mitie_intent_classifier"
                         }
                       ],
                       "label": "rasa.nlu.classifiers",
+                      "type": "category"
+                    },
+                    {
+                      "collapsed": true,
+                      "items": [
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/tokenizers/tokenizer"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/tokenizers/lm_tokenizer"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/tokenizers/convert_tokenizer"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/tokenizers/jieba_tokenizer"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/tokenizers/whitespace_tokenizer"
+                        }
+                      ],
+                      "label": "rasa.nlu.tokenizers",
                       "type": "category"
                     },
                     {
@@ -918,11 +611,52 @@
                           "items": [
                             {
                               "type": "doc",
-                              "id": "version-2.x/reference/rasa/nlu/training_data/converters/nlg_markdown_to_yaml_converter"
+                              "id": "version-2.x/reference/rasa/nlu/featurizers/sparse_featurizer/count_vectors_featurizer"
                             },
                             {
                               "type": "doc",
+                              "id": "version-2.x/reference/rasa/nlu/featurizers/sparse_featurizer/regex_featurizer"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/nlu/featurizers/sparse_featurizer/lexical_syntactic_featurizer"
+                            }
+                          ],
+                          "label": "rasa.nlu.featurizers.sparse_featurizer",
+                          "type": "category"
+                        },
+                        {
+                          "collapsed": true,
+                          "items": [
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/nlu/featurizers/dense_featurizer/lm_featurizer"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/nlu/featurizers/dense_featurizer/convert_featurizer"
+                            }
+                          ],
+                          "label": "rasa.nlu.featurizers.dense_featurizer",
+                          "type": "category"
+                        }
+                      ],
+                      "label": "rasa.nlu.featurizers",
+                      "type": "category"
+                    },
+                    {
+                      "collapsed": true,
+                      "items": [
+                        {
+                          "collapsed": true,
+                          "items": [
+                            {
+                              "type": "doc",
                               "id": "version-2.x/reference/rasa/nlu/training_data/converters/nlu_markdown_to_yaml_converter"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/nlu/training_data/converters/nlg_markdown_to_yaml_converter"
                             }
                           ],
                           "label": "rasa.nlu.training_data.converters",
@@ -937,53 +671,7 @@
                       "items": [
                         {
                           "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/utils/__init__"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/utils/spacy_utils"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/utils/pattern_utils"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/utils/mitie_utils"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/utils/bilou_utils"
-                        },
-                        {
-                          "collapsed": true,
-                          "items": [
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/nlu/utils/hugging_face/transformers_pre_post_processors"
-                            },
-                            {
-                              "type": "doc",
-                              "id": "version-2.x/reference/rasa/nlu/utils/hugging_face/hf_transformers"
-                            }
-                          ],
-                          "label": "rasa.nlu.utils.hugging_face",
-                          "type": "category"
-                        }
-                      ],
-                      "label": "rasa.nlu.utils",
-                      "type": "category"
-                    },
-                    {
-                      "collapsed": true,
-                      "items": [
-                        {
-                          "type": "doc",
                           "id": "version-2.x/reference/rasa/nlu/extractors/extractor"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/extractors/duckling_entity_extractor"
                         },
                         {
                           "type": "doc",
@@ -995,37 +683,18 @@
                         },
                         {
                           "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/extractors/duckling_entity_extractor"
+                        },
+                        {
+                          "type": "doc",
                           "id": "version-2.x/reference/rasa/nlu/extractors/crf_entity_extractor"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/nlu/extractors/entity_synonyms"
                         }
                       ],
                       "label": "rasa.nlu.extractors",
-                      "type": "category"
-                    },
-                    {
-                      "collapsed": true,
-                      "items": [
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/tokenizers/whitespace_tokenizer"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/tokenizers/convert_tokenizer"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/tokenizers/jieba_tokenizer"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/tokenizers/lm_tokenizer"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/nlu/tokenizers/tokenizer"
-                        }
-                      ],
-                      "label": "rasa.nlu.tokenizers",
                       "type": "category"
                     }
                   ],
@@ -1037,15 +706,85 @@
                   "items": [
                     {
                       "type": "doc",
-                      "id": "version-2.x/reference/rasa/core/run"
+                      "id": "version-2.x/reference/rasa/cli/test"
                     },
                     {
                       "type": "doc",
-                      "id": "version-2.x/reference/rasa/core/interpreter"
+                      "id": "version-2.x/reference/rasa/cli/run"
                     },
                     {
                       "type": "doc",
-                      "id": "version-2.x/reference/rasa/core/processor"
+                      "id": "version-2.x/reference/rasa/cli/visualize"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/cli/telemetry"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/cli/scaffold"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/cli/export"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/cli/data"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/cli/train"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/cli/shell"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/cli/utils"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/cli/interactive"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/cli/x"
+                    },
+                    {
+                      "collapsed": true,
+                      "items": [
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/cli/arguments/default_arguments"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/cli/arguments/run"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/cli/arguments/train"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/cli/arguments/interactive"
+                        }
+                      ],
+                      "label": "rasa.cli.arguments",
+                      "type": "category"
+                    }
+                  ],
+                  "label": "rasa.cli",
+                  "type": "category"
+                },
+                {
+                  "collapsed": true,
+                  "items": [
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/core/test"
                     },
                     {
                       "type": "doc",
@@ -1053,23 +792,7 @@
                     },
                     {
                       "type": "doc",
-                      "id": "version-2.x/reference/rasa/core/exceptions"
-                    },
-                    {
-                      "type": "doc",
                       "id": "version-2.x/reference/rasa/core/lock"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/core/lock_store"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/core/utils"
-                    },
-                    {
-                      "type": "doc",
-                      "id": "version-2.x/reference/rasa/core/restore"
                     },
                     {
                       "type": "doc",
@@ -1077,11 +800,11 @@
                     },
                     {
                       "type": "doc",
-                      "id": "version-2.x/reference/rasa/core/registry"
+                      "id": "version-2.x/reference/rasa/core/run"
                     },
                     {
                       "type": "doc",
-                      "id": "version-2.x/reference/rasa/core/test"
+                      "id": "version-2.x/reference/rasa/core/processor"
                     },
                     {
                       "type": "doc",
@@ -1089,7 +812,7 @@
                     },
                     {
                       "type": "doc",
-                      "id": "version-2.x/reference/rasa/core/train"
+                      "id": "version-2.x/reference/rasa/core/registry"
                     },
                     {
                       "type": "doc",
@@ -1097,163 +820,27 @@
                     },
                     {
                       "type": "doc",
+                      "id": "version-2.x/reference/rasa/core/train"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/core/interpreter"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/core/utils"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/core/exceptions"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/core/lock_store"
+                    },
+                    {
+                      "type": "doc",
                       "id": "version-2.x/reference/rasa/core/jobs"
-                    },
-                    {
-                      "collapsed": true,
-                      "items": [
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/brokers/broker"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/brokers/sql"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/brokers/file"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/brokers/pika"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/brokers/kafka"
-                        }
-                      ],
-                      "label": "rasa.core.brokers",
-                      "type": "category"
-                    },
-                    {
-                      "collapsed": true,
-                      "items": [
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/featurizers/tracker_featurizers"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/featurizers/single_state_featurizer"
-                        }
-                      ],
-                      "label": "rasa.core.featurizers",
-                      "type": "category"
-                    },
-                    {
-                      "collapsed": true,
-                      "items": [
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/slack"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/telegram"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/twilio"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/channel"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/socketio"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/console"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/webexteams"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/callback"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/mattermost"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/botframework"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/hangouts"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/rest"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/rasa_chat"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/facebook"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/channels/rocketchat"
-                        }
-                      ],
-                      "label": "rasa.core.channels",
-                      "type": "category"
-                    },
-                    {
-                      "collapsed": true,
-                      "items": [
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/policies/memoization"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/policies/ted_policy"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/policies/mapping_policy"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/policies/form_policy"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/policies/sklearn_policy"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/policies/ensemble"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/policies/policy"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/policies/rule_policy"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/policies/two_stage_fallback"
-                        },
-                        {
-                          "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/policies/fallback"
-                        }
-                      ],
-                      "label": "rasa.core.policies",
-                      "type": "category"
                     },
                     {
                       "collapsed": true,
@@ -1298,19 +885,46 @@
                       "items": [
                         {
                           "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/nlg/generator"
+                          "id": "version-2.x/reference/rasa/core/brokers/sql"
                         },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/brokers/broker"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/brokers/file"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/brokers/pika"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/brokers/kafka"
+                        }
+                      ],
+                      "label": "rasa.core.brokers",
+                      "type": "category"
+                    },
+                    {
+                      "collapsed": true,
+                      "items": [
                         {
                           "type": "doc",
                           "id": "version-2.x/reference/rasa/core/nlg/response"
                         },
                         {
                           "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/nlg/interpolator"
+                          "id": "version-2.x/reference/rasa/core/nlg/callback"
                         },
                         {
                           "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/nlg/callback"
+                          "id": "version-2.x/reference/rasa/core/nlg/generator"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/nlg/interpolator"
                         }
                       ],
                       "label": "rasa.core.nlg",
@@ -1321,11 +935,140 @@
                       "items": [
                         {
                           "type": "doc",
-                          "id": "version-2.x/reference/rasa/core/actions/forms"
+                          "id": "version-2.x/reference/rasa/core/featurizers/single_state_featurizer"
                         },
                         {
                           "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/featurizers/tracker_featurizers"
+                        }
+                      ],
+                      "label": "rasa.core.featurizers",
+                      "type": "category"
+                    },
+                    {
+                      "collapsed": true,
+                      "items": [
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/webexteams"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/hangouts"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/rasa_chat"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/slack"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/callback"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/facebook"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/botframework"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/telegram"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/socketio"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/rocketchat"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/mattermost"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/rest"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/channel"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/twilio"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/channels/console"
+                        }
+                      ],
+                      "label": "rasa.core.channels",
+                      "type": "category"
+                    },
+                    {
+                      "collapsed": true,
+                      "items": [
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/policies/rule_policy"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/policies/policy"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/policies/mapping_policy"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/policies/fallback"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/policies/form_policy"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/policies/memoization"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/policies/ensemble"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/policies/sklearn_policy"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/policies/ted_policy"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/policies/two_stage_fallback"
+                        }
+                      ],
+                      "label": "rasa.core.policies",
+                      "type": "category"
+                    },
+                    {
+                      "collapsed": true,
+                      "items": [
+                        {
+                          "type": "doc",
                           "id": "version-2.x/reference/rasa/core/actions/action"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/core/actions/forms"
                         }
                       ],
                       "label": "rasa.core.actions",
@@ -1333,6 +1076,263 @@
                     }
                   ],
                   "label": "rasa.core",
+                  "type": "category"
+                },
+                {
+                  "collapsed": true,
+                  "items": [
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/shared/data"
+                    },
+                    {
+                      "type": "doc",
+                      "id": "version-2.x/reference/rasa/shared/exceptions"
+                    },
+                    {
+                      "collapsed": true,
+                      "items": [
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/utils/common"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/utils/pykwalify_extensions"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/utils/validation"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/utils/cli"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/utils/io"
+                        }
+                      ],
+                      "label": "rasa.shared.utils",
+                      "type": "category"
+                    },
+                    {
+                      "collapsed": true,
+                      "items": [
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/nlu/interpreter"
+                        },
+                        {
+                          "collapsed": true,
+                          "items": [
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/lookup_tables_parser"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/util"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/synonyms_parser"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/features"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/loading"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/entities_parser"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/training_data"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/shared/nlu/training_data/message"
+                            },
+                            {
+                              "collapsed": true,
+                              "items": [
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/schemas/data_schema"
+                                }
+                              ],
+                              "label": "rasa.shared.nlu.training_data.schemas",
+                              "type": "category"
+                            },
+                            {
+                              "collapsed": true,
+                              "items": [
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/markdown_nlg"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/wit"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/readerwriter"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/luis"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/rasa"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/rasa_yaml"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/markdown"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/nlu/training_data/formats/dialogflow"
+                                }
+                              ],
+                              "label": "rasa.shared.nlu.training_data.formats",
+                              "type": "category"
+                            }
+                          ],
+                          "label": "rasa.shared.nlu.training_data",
+                          "type": "category"
+                        }
+                      ],
+                      "label": "rasa.shared.nlu",
+                      "type": "category"
+                    },
+                    {
+                      "collapsed": true,
+                      "items": [
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/importers/autoconfig"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/importers/rasa"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/importers/multi_project"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/importers/importer"
+                        }
+                      ],
+                      "label": "rasa.shared.importers",
+                      "type": "category"
+                    },
+                    {
+                      "collapsed": true,
+                      "items": [
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/core/slots"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/core/trackers"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/core/domain"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/core/generator"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/core/events"
+                        },
+                        {
+                          "type": "doc",
+                          "id": "version-2.x/reference/rasa/shared/core/conversation"
+                        },
+                        {
+                          "collapsed": true,
+                          "items": [
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/shared/core/training_data/structures"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/shared/core/training_data/loading"
+                            },
+                            {
+                              "type": "doc",
+                              "id": "version-2.x/reference/rasa/shared/core/training_data/visualization"
+                            },
+                            {
+                              "collapsed": true,
+                              "items": [
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_writer/story_writer"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_writer/markdown_story_writer"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_writer/yaml_story_writer"
+                                }
+                              ],
+                              "label": "rasa.shared.core.training_data.story_writer",
+                              "type": "category"
+                            },
+                            {
+                              "collapsed": true,
+                              "items": [
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_reader/yaml_story_reader"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_reader/story_step_builder"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_reader/markdown_story_reader"
+                                },
+                                {
+                                  "type": "doc",
+                                  "id": "version-2.x/reference/rasa/shared/core/training_data/story_reader/story_reader"
+                                }
+                              ],
+                              "label": "rasa.shared.core.training_data.story_reader",
+                              "type": "category"
+                            }
+                          ],
+                          "label": "rasa.shared.core.training_data",
+                          "type": "category"
+                        }
+                      ],
+                      "label": "rasa.shared.core",
+                      "type": "category"
+                    }
+                  ],
+                  "label": "rasa.shared",
                   "type": "category"
                 }
               ],
