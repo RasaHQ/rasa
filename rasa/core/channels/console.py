@@ -19,7 +19,7 @@ from rasa.core.channels.rest import RestInput
 from rasa.core.constants import DEFAULT_SERVER_URL
 from rasa.shared.constants import INTENT_MESSAGE_PREFIX
 from rasa.shared.utils.io import DEFAULT_ENCODING
-from rasa.shared.utils.io import json_to_string
+import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
 
