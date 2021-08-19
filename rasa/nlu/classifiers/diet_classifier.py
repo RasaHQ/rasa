@@ -1027,7 +1027,7 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
             if out and self._execution_context.should_add_diagnostic_data:
                 # TODO: JUZL: use node name
                 message.add_diagnostic_data(
-                    self.__class__.__name__, out.get(DIAGNOSTIC_DATA)
+                    self._execution_context.node_name, out.get(DIAGNOSTIC_DATA)
                 )
 
         return messages

@@ -625,6 +625,7 @@ async def test_process_gives_diagnostic_data(
     should_add_diagnostic_data: bool,
 ):
     default_execution_context.should_add_diagnostic_data = should_add_diagnostic_data
+    default_execution_context.node_name = "DIETClassifier_node_name"
     processed_message = create_train_load_and_process_diet({EPOCHS: 1})
 
     if should_add_diagnostic_data:
@@ -632,7 +633,7 @@ async def test_process_gives_diagnostic_data(
         diagnostic_data = processed_message.get(DIAGNOSTIC_DATA)
 
         # DIETClassifier should add attention weights
-        name = "DIETClassifierGraphComponent"
+        name = "DIETClassifier_node_name"
         assert isinstance(diagnostic_data, dict)
         assert name in diagnostic_data
         assert "attention_weights" in diagnostic_data[name]
@@ -678,9 +679,7 @@ def test_removing_label_sparse_feature_sizes(
 async def test_adjusting_layers_incremental_training(
     create_diet: Callable[..., DIETClassifier],
     train_load_and_process_diet: Callable[..., Message],
-    default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
-    default_diet_resource: Resource,
 ):
     """Tests adjusting sparse layers of `DIETClassifier` to increased sparse
        feature sizes during incremental training.
