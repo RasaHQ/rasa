@@ -7,7 +7,7 @@ from typing import Any, List, Optional, Text, Dict, Type, TYPE_CHECKING
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-
+from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_UNLIKELY_INTENT_NAME
@@ -28,7 +28,7 @@ from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import UNLIKELY_INTENT_POLICY_PRIORITY, DIALOGUE
+from rasa.core.constants import DIALOGUE
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
