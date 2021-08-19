@@ -1,18 +1,15 @@
 from __future__ import annotations
 import inspect
 import logging
-from os import stat
 import os.path
 from pathlib import Path
-from re import sub
-from typing import Optional, Set, Text, Dict, List, Union, Iterable, Tuple
-from collections.abc import ValuesView
+from typing import Optional, Text, Dict, List, Union, Iterable, Tuple
+from collections.abc import ValuesView, KeysView
 import copy
 
 from rasa.architecture_prototype.interfaces import ComponentPersistorInterface
-from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.channels import UserMessage
 from rasa.shared.constants import DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH
-from rasa.shared.core.constants import DEFAULT_ACTION_NAMES
 from rasa.shared.core.domain import Domain, SubState
 from rasa.shared.core.events import ActionExecuted, UserUttered, Event
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -114,7 +111,7 @@ class TrackerGenerator(GraphComponent):
         return rasa.utils.common.run_in_loop(generated_coroutine)
 
 
-class StoryToTrainingDataConverter(GraphComponent):
+class StoryToTraingingDataConverter(GraphComponent):
     """Provides training data for core's NLU pipeline as well as lookup table buildup.
 
     During training as well as during inference, the given data (i.e. story graph or
@@ -131,14 +128,21 @@ class StoryToTrainingDataConverter(GraphComponent):
     run consecutively and use the respective data.
     """
 
-    def convert_for_training(
-        self, story_graph: StoryGraph, domain: Domain
-    ) -> TrainingData:
+    WORKAROUND_TEXT = "hi"
+
+    @staticmethod
+    def convert_for_training(domain: Domain, story_graph: StoryGraph,) -> TrainingData:
         """Creates a list of unique (partial) substates from the domain and story graph.
 
         Note that partial user substate means user substate with intent only, user
         substate with all attributes expect intent, "prev_action" substate with
         action text only or "prev_action" substate with action name only.
+
+        Args:
+           domain: the domain
+           story_graph: a story graph
+        Returns:
+           training data for core's NLU pipeline
         """
         lookup_table = E2ELookupTable(handle_collisions=True)
 
@@ -154,11 +158,12 @@ class StoryToTrainingDataConverter(GraphComponent):
 
         # make sure that there is at least one user substate with a TEXT to ensure
         # `CountVectorizer` is trained...
-        lookup_table.add(Message({TEXT: "hi"}))
+        lookup_table.add(Message({TEXT: StoryToTraingingDataConverter.WORKAROUND_TEXT}))
 
         return TrainingData(training_examples=list(lookup_table.values()))
 
-    def convert_for_inference(self, tracker: DialogueStateTracker) -> List[Message]:
+    @staticmethod
+    def convert_for_inference(tracker: DialogueStateTracker) -> List[Message]:
         """Creates a list of unique (partial) substates from the events in the tracker.
 
         Note that partial user substate means user substate with intent only, user
@@ -201,14 +206,13 @@ class E2ELookupTable:
     The store will resolve collisions on it's own to some degree. Messages with the
     same attributes and the same number of features will be treated as copies (and
     simply not be added again).
-
-    Moverover, if advanced collision handling is enabled, ....
-    # FIXME: check if this makes any sense if entities are not used anywhere...
-    # FIXME: remove ENTITIES?
-
-    However, it is not capable of resolving all kind of conflicts. If messages contain
-    different attributes and different number of features, the lookup table can only
-    choose to ignore that or raise an error.
+    If advanced collision handling is enabled, then messages that have a stricly higher
+    number of features and/or strictly more attributes can overwrite the entries
+    (note that attributes must be contained whereas features are not checked for
+    equality).
+    This also means, the table is not capable of resolving all kind of conflicts.
+    If messages contain different attributes and different number of features, the
+    lookup table can only choose to ignore that or raise an error.
 
     Args:
       handle_collisions: if set to True, collisions where one Message contains a larger
@@ -232,6 +236,12 @@ class E2ELookupTable:
 
     def values(self) -> ValuesView:
         return self._table.values()
+
+    def keys(self) -> KeysView:
+        return self._table.keys()
+
+    def dict(self) -> Dict[Tuple[Text, Text], Message]:
+        return self._table
 
     @property
     def num_collisions_ignored(self):
@@ -465,14 +475,15 @@ class E2ELookupTable:
 class MessageToE2EFeatureConverter(GraphComponent):
     """Collects featurised messages for use by an e2e policy."""
 
-    def convert(self, messages: Union[TrainingData, List[Message]]) -> E2ELookupTable:
+    @staticmethod
+    def convert(messages: Union[TrainingData, List[Message]]) -> E2ELookupTable:
         """Converts messages created by `StoryToTrainingDataConverter` to E2EFeatures.
         """
+        if isinstance(messages, TrainingData):
+            messages = messages.training_examples
         # Note that the input messages had been contained in a lookup table in
         # `StoryToTrainingDataConverter. Hence, we don't need to worry about
         # collisions here anymore.
-        if isinstance(messages, TrainingData):
-            messages = messages.training_examples
         lookup_table = E2ELookupTable()
         for message in messages:
             lookup_table.add(message)
