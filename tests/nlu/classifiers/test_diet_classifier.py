@@ -632,7 +632,7 @@ async def test_process_gives_diagnostic_data(
         diagnostic_data = processed_message.get(DIAGNOSTIC_DATA)
 
         # DIETClassifier should add attention weights
-        name = "DIETClassifier"
+        name = "DIETClassifierGraphComponent"
         assert isinstance(diagnostic_data, dict)
         assert name in diagnostic_data
         assert "attention_weights" in diagnostic_data[name]
