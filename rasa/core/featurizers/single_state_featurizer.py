@@ -230,21 +230,13 @@ class SingleStateFeaturizer:
         # - all the sparse features are listed first and a
         # - sequence feature is always listed before the sentence feature of the
         #   same type (sparse/not sparse)
-        output = dict()
-        for attribute, features_for_attribute in attributes_to_features.items():
-            for type in [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]:
-                # sequence features first
-                for is_sparse in [True, False]:  # sparse first
-                    sublist = Features.filter(
-                        features_list=features_for_attribute,
-                        type=type,
-                        is_sparse=is_sparse,
-                    )
-                    if sublist:
-                        combined_feature = Features.combine(
-                            sublist, expected_origins=None
-                        )
-                        output.setdefault(attribute, []).append(combined_feature)
+        output = {
+            attribute: Features.reduce(
+                features_list=features_list, expected_origins=None
+            )
+            for attribute, features_list in attributes_to_features.items()
+            if len(features_list) > 0  # otherwise, following will fail
+        }
 
         # check that name attributes have features
         name_attribute = self._get_name_attribute(attributes)

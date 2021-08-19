@@ -1,7 +1,5 @@
-from tests.core.featurizers.test_single_state_featurizers import sparse_equals_dense
 from typing import Optional, Text, List, Dict, Tuple, Any
 import itertools
-from attr import attributes
 
 import numpy as np
 import pytest
@@ -209,6 +207,72 @@ def test_groupby(
             assert attribute in result
             number = num_features_per_attribute.get(attribute, 0)
             assert len(result[attribute]) == number
+
+
+@pytest.mark.parametrize(
+    "shuffle_mode,num_features_per_combination",
+    itertools.product(
+        ["reversed", "random"], [[1, 0, 0, 0], [1, 1, 1, 1], [2, 3, 4, 5], [0, 1, 2, 2]]
+    ),
+)
+def test_reduce(
+    shuffle_mode: Text, num_features_per_combination: Tuple[int, int, int, int]
+):
+
+    # all combinations - in the expected order
+    # (i.e. all sparse before all dense and sequence before sentence)
+    all_combinations = [
+        (FEATURE_TYPE_SEQUENCE, True),
+        (FEATURE_TYPE_SENTENCE, True),
+        (FEATURE_TYPE_SEQUENCE, False),
+        (FEATURE_TYPE_SENTENCE, False),
+    ]
+
+    # multiply accordingly and mess up the order
+    chosen_combinations = [
+        spec
+        for spec, num in zip(all_combinations, num_features_per_combination)
+        for _ in range(num)
+    ]
+    if shuffle_mode == "reversed":
+        messed_up_order = reversed(chosen_combinations)
+    else:
+        # Note: rng.permutation would mess up the types
+        rng = np.random.default_rng(23452345)
+        permutation = rng.permutation(len(chosen_combinations))
+        messed_up_order = [chosen_combinations[idx] for idx in permutation]
+
+    # create features accordingly
+    features_list = []
+    for idx, (type, is_sparse) in enumerate(messed_up_order):
+        first_dim = 1 if type == FEATURE_TYPE_SEQUENCE else 3
+        matrix = np.full(shape=(first_dim, 1), fill_value=1)
+        if is_sparse:
+            matrix = scipy.sparse.coo_matrix(matrix)
+        config = dict(
+            features=matrix,
+            attribute="fixed-attribute",
+            feature_type=type,
+            origin=f"origin-{idx}-doesn't-matter-here",
+        )
+        feat = Features(**config)
+        features_list.append(feat)
+
+    # reduce!
+    reduced_list = Features.reduce(features_list)
+    assert len(reduced_list) == sum(num > 0 for num in num_features_per_combination)
+    idx = 0
+    for num, (type, is_sparse) in zip(num_features_per_combination, all_combinations):
+        if num == 0:
+            # nothing to check here - because we already checked the length above
+            # and check the types and shape of all existing features in this loop
+            pass
+        else:
+            feature = reduced_list[idx]
+            assert feature.is_sparse() == is_sparse
+            assert feature.type == type
+            assert feature.features.shape[-1] == num
+            idx += 1
 
 
 def test_combine_with_existing_dense_features():

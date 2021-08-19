@@ -6,14 +6,11 @@ import scipy.sparse
 import pytest
 
 from rasa.shared.nlu.training_data.message import Message
-from rasa.architecture_prototype.graph_components import (
-    E2ELookupTable,
-    StoryToTrainingDataConverter,
-)
+from rasa.architecture_prototype.graph_components import E2ELookupTable
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.nlu.constants import TOKENS_NAMES
-from rasa.shared.core.domain import Domain, State
+from rasa.shared.core.domain import Domain
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
@@ -44,7 +41,7 @@ from rasa.shared.nlu.training_data.features import Features
 #
 
 
-def test_state_features_for_attribute_raises_on_not_supported_attribute():
+def test_state_features_for_attribute__raises_on_not_supported_attribute():
     f = SingleStateFeaturizer()
 
     with pytest.raises(ValueError):
@@ -68,6 +65,17 @@ def test_to_sparse_sentence_features():
     assert features[0].origin == sentence_features[0].origin
     assert features[0].attribute == sentence_features[0].attribute
     assert sentence_features[0].features.shape == (1, 10)
+
+
+def test_create_features__dtype_float():
+    f = SingleStateFeaturizer()
+    f._default_feature_states[INTENT] = {"a": 0, "b": 1}
+    f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1}
+    f._default_feature_states[ENTITIES] = {"c": 0}
+
+    encoded = f._create_features({"action_name": "d"}, attribute="action_name")
+    assert len(encoded) == 1  # cause for some reason this is a list
+    assert encoded[0].features.dtype == np.float32
 
 
 #
@@ -205,22 +213,6 @@ def test_encode_state__without_lookup(action_name: bool):
         encoded[ACTIVE_LOOP][0].features, np.array([[0, 1, 0, 0]])
     )
     assert sparse_equals_dense(encoded[SLOTS][0].features, np.array([[0, 0, 1]]))
-
-
-def test_encode_state__without_lookup__creates_features_with_dtype_float():
-    f = SingleStateFeaturizer()
-    f._default_feature_states[INTENT] = {"a": 0, "b": 1}
-    f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1}
-    f._default_feature_states[ENTITIES] = {"c": 0}
-
-    encoded = f.encode_state(
-        {
-            "user": {"intent": "a", "entities": ["c"]},
-            "prev_action": {"action_name": "d"},
-        },
-        e2e_features=None,
-    )
-    assert encoded[ACTION_NAME][0].features.dtype == np.float32
 
 
 #

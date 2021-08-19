@@ -1,9 +1,10 @@
 from typing import Iterable, Union, Text, Optional, List, Any, Tuple, Dict
-import copy
 import itertools
 
 import numpy as np
 import scipy.sparse
+
+from rasa.shared.nlu.constants import FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE
 
 
 class Features:
@@ -222,6 +223,48 @@ class Features:
             attribute=arbitrary_feature.attribute,
             origin=origin_of_combination,
         )
+
+    @staticmethod
+    def reduce(
+        features_list: List["Features"], expected_origins: Optional[List[Text]] = None
+    ) -> List["Features"]:
+        """ Combine features of same type and level into one Feature.
+
+        Args:
+           features_list: list of Features which must all describe the same attribute
+           expected_origins: if specified, this list will be used to validate that
+             the features from the right featurizers are combined in the right order
+             (cf. `Features.combine`)
+        Returns:
+            a list of the combined Features, i.e. at most 4 Features, where
+            - all the sparse features are listed before the dense features
+            - sequence feature is always listed before the sentence feature with the
+              same sparseness property
+        """
+        if len(features_list) == 1:
+            return features_list
+        # sanity check
+        different_settings = set(f.attribute for f in features_list)
+        if len(different_settings) > 1:
+            raise ValueError(
+                f"Expected all Features to describe the same attribute but found "
+                f" {different_settings}."
+            )
+        output = []
+        for is_sparse in [True, False]:
+            # all sparse featues before all dense features
+            for type in [FEATURE_TYPE_SEQUENCE, FEATURE_TYPE_SENTENCE]:
+                # sequence feature that is (not) sparse before sentence feature that is
+                #  (not) sparse
+                sublist = Features.filter(
+                    features_list=features_list, type=type, is_sparse=is_sparse,
+                )
+                if sublist:
+                    combined_feature = Features.combine(
+                        sublist, expected_origins=expected_origins,
+                    )
+                    output.append(combined_feature)
+        return output
 
     def combine_with_features(self, additional_features: Optional["Features"]) -> None:
         """Combine the incoming features with this instance's features.
