@@ -33,7 +33,7 @@ class Message:
     """Container for data that describes one conversation state.
 
     The data describes a set of attributes that can also be used to describe
-    at most one use and one action sub-state. For example, these attributes
+    at most one user utterance and one action sub-state. For example, these attributes
     can be `TEXT` AND `INTENT` (describing a user utterance) or
     `ACTION_NAME` (describing a bot action).
     """
