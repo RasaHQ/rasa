@@ -174,7 +174,7 @@ class StoryToTrainingDataConverter(GraphComponent):
         # type and hence just iterating over the events is quicker than "applying"
         # events first and then iterating over results (again).
         lookup_table = E2ELookupTable(handle_collisions=True)
-        lookup_table.derive_messages_from_events_and_add(tracker.events, lookup_table)
+        lookup_table.derive_messages_from_events_and_add(tracker.events)
         return list(lookup_table.values())
 
 
@@ -422,7 +422,7 @@ class E2ELookupTable:
         for intent in domain.intent_properties.keys():
             self.add(Message({INTENT: intent}))
 
-    def derive_messages_from_events_and_add(self, events: Iterable[Event],) -> None:
+    def derive_messages_from_events_and_add(self, events: Iterable[Event]) -> None:
         """Creates all possible action and (partial) user substates from the events.
 
         Note that partial user substate means user substate with intent only, user
