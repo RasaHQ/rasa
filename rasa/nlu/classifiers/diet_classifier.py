@@ -3,7 +3,6 @@ import copy
 import logging
 from collections import defaultdict
 from pathlib import Path
-import typing
 
 import numpy as np
 import os
@@ -1082,40 +1081,61 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
+    ) -> DIETClassifierGraphComponent:
+        """Loads a policy from the storage (see parent class for full docstring)."""
+        try:
+            with model_storage.read_from(resource) as model_path:
+                return cls._load(
+                    model_path, config, model_storage, resource, execution_context
+                )
+        except ValueError:
+            logger.warning(
+                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
+                f"'{resource.name}' doesn't exist."
+            )
+            return cls(config, model_storage, resource, execution_context)
+
+    @classmethod
+    def _load(
+        cls,
+        model_path: Path,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ) -> "DIETClassifierGraphComponent":
         """Loads the trained model from the provided directory."""
-        with model_storage.read_from(resource) as model_path:
-            (
-                index_label_id_mapping,
-                entity_tag_specs,
-                label_data,
-                data_example,
-                sparse_feature_sizes,
-            ) = cls._load_from_files(model_path)
+        (
+            index_label_id_mapping,
+            entity_tag_specs,
+            label_data,
+            data_example,
+            sparse_feature_sizes,
+        ) = cls._load_from_files(model_path)
 
-            config = train_utils.update_confidence_type(config)
-            config = train_utils.update_similarity_type(config)
-            config = train_utils.update_deprecated_loss_type(config)
+        config = train_utils.update_confidence_type(config)
+        config = train_utils.update_similarity_type(config)
+        config = train_utils.update_deprecated_loss_type(config)
 
-            model = cls._load_model(
-                entity_tag_specs,
-                label_data,
-                config,
-                data_example,
-                model_path,
-                finetune_mode=execution_context.is_finetuning,
-            )
+        model = cls._load_model(
+            entity_tag_specs,
+            label_data,
+            config,
+            data_example,
+            model_path,
+            finetune_mode=execution_context.is_finetuning,
+        )
 
-            return cls(
-                config=config,
-                model_storage=model_storage,
-                resource=resource,
-                execution_context=execution_context,
-                index_label_id_mapping=index_label_id_mapping,
-                entity_tag_specs=entity_tag_specs,
-                model=model,
-                sparse_feature_sizes=sparse_feature_sizes,
-            )
+        return cls(
+            config=config,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+            index_label_id_mapping=index_label_id_mapping,
+            entity_tag_specs=entity_tag_specs,
+            model=model,
+            sparse_feature_sizes=sparse_feature_sizes,
+        )
 
     @classmethod
     def _load_from_files(

@@ -52,7 +52,8 @@ class EntityExtractorMixin(abc.ABC):
     """
 
     @property
-    def name(self):
+    def name(self) -> Text:
+        """Returns the name of the class."""
         return self.__class__.__name__
 
     def add_extractor_name(
