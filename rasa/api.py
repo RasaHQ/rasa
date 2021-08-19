@@ -142,14 +142,10 @@ def test(
         additional_arguments: additional arguments for the test call
     """
     from rasa.model_testing import test_core
-    import rasa.utils.common
     from rasa.model_testing import test_nlu
 
     if additional_arguments is None:
         additional_arguments = {}
 
     test_core(model, stories, output, additional_arguments)
-
-    rasa.utils.common.run_in_loop(
-        test_nlu(model, nlu_data, output, additional_arguments)
-    )
+    test_nlu(model, nlu_data, output, additional_arguments)

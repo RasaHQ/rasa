@@ -141,7 +141,9 @@ class Message:
         Returns:
             Fingerprint of the message.
         """
-        return rasa.shared.utils.io.deep_container_fingerprint(self.data)
+        return rasa.shared.utils.io.deep_container_fingerprint(
+            [self.data, self.features]
+        )
 
     @classmethod
     def build(
