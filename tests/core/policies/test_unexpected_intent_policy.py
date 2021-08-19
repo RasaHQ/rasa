@@ -16,7 +16,7 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES, TEDPolicy
-from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
+from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicyGraphComponent as UnexpecTEDIntentPolicy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -58,7 +58,7 @@ from tests.core.policies.test_ted_policy import TestTEDPolicy
 
 class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     @staticmethod
-    def _policy_class_to_test() -> Type[TEDPolicy]:
+    def _policy_class_to_test() -> Type[UnexpecTEDIntentPolicy]:
         return UnexpecTEDIntentPolicy
 
     def create_policy(
@@ -71,7 +71,11 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         config: Optional[Dict[Text, Any]] = None,
     ) -> UnexpecTEDIntentPolicy:
         return UnexpecTEDIntentPolicy(
-            featurizer=featurizer, priority=priority, config=config or {}
+            self._config(priority, config),
+            featurizer=featurizer,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
         )
 
     @pytest.fixture(scope="class")
