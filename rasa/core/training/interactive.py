@@ -667,7 +667,10 @@ async def _request_action_from_user(
     await _print_history(conversation_id, endpoint)
 
     choices = [
-        {"name": f'{a["score"]:03.2f} {a["action"]:40}', "value": a["action"],}
+        {
+            "name": f'{a["score"]:03.2f} {a["action"]:40}',
+            "value": a["action"],
+        }
         for a in predictions
     ]
 
@@ -1598,9 +1601,7 @@ def _serve_application(
 ) -> Sanic:
     """Start a core server and attach the interactive learning IO."""
 
-    endpoint = EndpointConfig(
-        url=DEFAULT_SERVER_FORMAT.format("http", port)
-    )
+    endpoint = EndpointConfig(url=DEFAULT_SERVER_FORMAT.format("http", port))
 
     async def run_interactive_io(running_app: Sanic) -> None:
         """Small wrapper to shut down the server once cmd io is done."""
@@ -1642,7 +1643,9 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png(request: Request,) -> HTTPResponse:
+    def visualisation_png(
+        request: Request,
+    ) -> HTTPResponse:
         try:
             headers = {"Cache-Control": "no-cache"}
             return response.file(os.path.abspath(image_path), headers=headers)

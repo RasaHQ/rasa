@@ -192,9 +192,7 @@ def serve_application(
     )
     protocol = "https" if ssl_context else "http"
 
-    logger.info(
-        f"Starting Rasa server on {protocol}://{interface}:{port}"
-    )
+    logger.info(f"Starting Rasa server on {protocol}://{interface}:{port}")
 
     app.register_listener(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
