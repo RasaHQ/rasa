@@ -15,32 +15,12 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
+import rasa.utils.common
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
-
-
-def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
-    """Tries to import all package names and returns the packages where it failed.
-
-    Args:
-        package_names: The package names to import.
-
-    Returns:
-        Package names that could not be imported.
-    """
-
-    import importlib
-
-    failed_imports = set()
-    for package in package_names:
-        try:
-            importlib.import_module(package)
-        except ImportError:
-            failed_imports.add(package)
-    return failed_imports
 
 
 def validate_requirements(component_names: List[Optional[Text]]) -> None:
@@ -68,7 +48,7 @@ def validate_requirements(component_names: List[Optional[Text]]) -> None:
                 "the component."
             )
         component_class = registry.get_component_class(component_name)
-        unavailable_packages = find_unavailable_packages(
+        unavailable_packages = rasa.utils.common.find_unavailable_packages(
             component_class.required_packages()
         )
         if unavailable_packages:

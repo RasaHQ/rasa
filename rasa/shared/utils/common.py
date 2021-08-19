@@ -75,8 +75,8 @@ def lazy_property(function: Callable) -> Any:
 
     The result gets stored in a local var. Computation of the property
     will happen once, on the first call of the property. All
-    succeeding calls will use the value stored in the private property."""
-
+    succeeding calls will use the value stored in the private property.
+    """
     attr_name = "_lazy_" + function.__name__
 
     @property
