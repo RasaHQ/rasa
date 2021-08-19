@@ -264,6 +264,62 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
             MODEL_CONFIDENCE: SOFTMAX,
         }
 
+    def __init__(
+        self,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        index_label_id_mapping: Optional[Dict[int, Text]] = None,
+        entity_tag_specs: Optional[List[EntityTagSpec]] = None,
+        model: Optional[RasaModel] = None,
+        sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None,
+    ) -> None:
+        """Declare instance variables with default values."""
+        if EPOCHS not in config:
+            rasa.shared.utils.io.raise_warning(
+                f"Please configure the number of '{EPOCHS}' in your configuration file."
+                f" We will change the default value of '{EPOCHS}' in the future to 1. "
+            )
+
+        self.component_config: Dict[Text, Any] = config
+        self._model_storage = model_storage
+        self._resource = resource
+        self._execution_context = execution_context
+
+        self._check_config_parameters()
+
+        # transform numbers to labels
+        self.index_label_id_mapping = index_label_id_mapping or {}
+
+        self._entity_tag_specs = entity_tag_specs
+
+        self.model = model
+
+        self.tmp_checkpoint_dir = None
+        if self.component_config[CHECKPOINT_MODEL]:
+            self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
+
+        self._label_data: Optional[RasaModelData] = None
+        self._data_example: Optional[Dict[Text, Dict[Text, List[FeatureArray]]]] = None
+
+        self.split_entities_config = rasa.utils.train_utils.init_split_entities(
+            self.component_config[SPLIT_ENTITIES_BY_COMMA],
+            SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+        )
+
+        self.finetune_mode = self._execution_context.is_finetuning
+        self._sparse_feature_sizes = sparse_feature_sizes
+
+        if not self.model and self.finetune_mode:
+            raise rasa.shared.exceptions.InvalidParameterException(
+                f"{self.__class__.__name__} was instantiated "
+                f"with `model=None` and `finetune_mode=True`. "
+                f"This is not a valid combination as the component "
+                f"needs an already instantiated and trained model "
+                f"to continue training in finetune mode."
+            )
+
     # init helpers
     def _check_masked_lm(self) -> None:
         if (
@@ -326,62 +382,6 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
     @classmethod
     def required_packages(cls) -> List[Text]:
         return ["tensorflow"]
-
-    def __init__(
-        self,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        index_label_id_mapping: Optional[Dict[int, Text]] = None,
-        entity_tag_specs: Optional[List[EntityTagSpec]] = None,
-        model: Optional[RasaModel] = None,
-        sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None,
-    ) -> None:
-        """Declare instance variables with default values."""
-        if EPOCHS not in config:
-            rasa.shared.utils.io.raise_warning(
-                f"Please configure the number of '{EPOCHS}' in your configuration file."
-                f" We will change the default value of '{EPOCHS}' in the future to 1. "
-            )
-
-        self.component_config: Dict[Text, Any] = config
-        self._model_storage = model_storage
-        self._resource = resource
-        self._execution_context = execution_context
-
-        self._check_config_parameters()
-
-        # transform numbers to labels
-        self.index_label_id_mapping = index_label_id_mapping or {}
-
-        self._entity_tag_specs = entity_tag_specs
-
-        self.model = model
-
-        self.tmp_checkpoint_dir = None
-        if self.component_config[CHECKPOINT_MODEL]:
-            self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
-
-        self._label_data: Optional[RasaModelData] = None
-        self._data_example: Optional[Dict[Text, Dict[Text, List[FeatureArray]]]] = None
-
-        self.split_entities_config = rasa.utils.train_utils.init_split_entities(
-            self.component_config[SPLIT_ENTITIES_BY_COMMA],
-            SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
-        )
-
-        self.finetune_mode = self._execution_context.is_finetuning
-        self._sparse_feature_sizes = sparse_feature_sizes
-
-        if not self.model and self.finetune_mode:
-            raise rasa.shared.exceptions.InvalidParameterException(
-                f"{self.__class__.__name__} was instantiated "
-                f"with `model=None` and `finetune_mode=True`. "
-                f"This is not a valid combination as the component "
-                f"needs an already instantiated and trained model "
-                f"to continue training in finetune mode."
-            )
 
     @classmethod
     def create(
