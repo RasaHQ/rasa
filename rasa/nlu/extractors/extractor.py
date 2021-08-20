@@ -45,10 +45,11 @@ class EntityTagSpec(NamedTuple):
 
 
 class EntityExtractorMixin(abc.ABC):
-    """Entity extractors are components which extract entities.
+    """Provides functionality for components that do entity extraction.
 
-    They can be placed in the pipeline like other components, and can extract
-    entities like a person's name, or a location.
+    Inheriting from this class will add utility functions for entity extraction.
+    Entity extraction is the process of identifying and extracting entities like a
+    person's name, or a location from a message.
     """
 
     @property

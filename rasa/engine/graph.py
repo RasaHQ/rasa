@@ -260,6 +260,7 @@ class ExecutionContext:
     model_id: Optional[Text] = None
     should_add_diagnostic_data: bool = False
     is_finetuning: bool = False
+    # This is set by the `GraphNode` before it is passed to the `GraphComponent`.
     node_name: Optional[Text] = None
 
 

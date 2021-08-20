@@ -5,7 +5,6 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
-import os
 import scipy.sparse
 import tensorflow as tf
 
@@ -282,7 +281,7 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
                 f" We will change the default value of '{EPOCHS}' in the future to 1. "
             )
 
-        self.component_config: Dict[Text, Any] = config
+        self.component_config = config
         self._model_storage = model_storage
         self._resource = resource
         self._execution_context = execution_context
@@ -1025,7 +1024,6 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
                 message.set(ENTITIES, entities, add_to_output=True)
 
             if out and self._execution_context.should_add_diagnostic_data:
-                # TODO: JUZL: use node name
                 message.add_diagnostic_data(
                     self._execution_context.node_name, out.get(DIAGNOSTIC_DATA)
                 )
@@ -1201,7 +1199,7 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
         finetune_mode: bool = False,
     ) -> "RasaModel":
         file_name = cls.__name__
-        tf_model_file = os.path.join(model_path, file_name + ".tf_model")
+        tf_model_file = model_path / f"{file_name}.tf_model"
 
         label_key = LABEL_KEY if config[INTENT_CLASSIFICATION] else None
         label_sub_key = LABEL_SUB_KEY if config[INTENT_CLASSIFICATION] else None
