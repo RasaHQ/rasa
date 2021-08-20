@@ -1,7 +1,9 @@
 from typing import Dict, Text, Any
 
 import pytest
-from rasa.components.providers.training_tracker_provider import TrainingTrackerProvider
+from rasa.graph_components.providers.training_tracker_provider import (
+    TrainingTrackerProvider,
+)
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
