@@ -1,8 +1,7 @@
 ---
-sidebar_label: train
+sidebar_label: rasa.cli.arguments.train
 title: rasa.cli.arguments.train
 ---
-
 #### set\_train\_arguments
 
 ```python

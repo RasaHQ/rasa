@@ -1,8 +1,7 @@
 ---
-sidebar_label: interactive
+sidebar_label: rasa.core.training.interactive
 title: rasa.core.training.interactive
 ---
-
 ## RestartConversation Objects
 
 ```python
@@ -113,14 +112,6 @@ latest_user_message(events: List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]
 
 Return most recent user message.
 
-#### all\_events\_before\_latest\_user\_msg
-
-```python
-all_events_before_latest_user_msg(events: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
-```
-
-Return all events that happened before the most recent user message.
-
 #### is\_listening\_for\_message
 
 ```python
@@ -145,14 +136,6 @@ start_visualization(image_path: Text, port: int) -> None
 
 Add routes to serve the conversation visualization files.
 
-#### wait\_til\_server\_is\_running
-
-```python
-async wait_til_server_is_running(endpoint: EndpointConfig, max_retries: int = 30, sleep_between_retries: float = 1.0) -> bool
-```
-
-Try to reach the server, retry a couple of times and sleep in between.
-
 #### run\_interactive\_learning
 
 ```python
@@ -160,4 +143,29 @@ run_interactive_learning(file_importer: TrainingDataImporter, skip_visualization
 ```
 
 Start the interactive learning with the model of the agent.
+
+#### calc\_true\_wrapping\_width
+
+```python
+calc_true_wrapping_width(text: Text, monospace_wrapping_width: int) -> int
+```
+
+Calculates a wrapping width that also works for CJK characters.
+
+Chinese, Japanese and Korean characters are often broader than ascii
+characters:
+abcdefgh (8 chars)
+我要去北京 (5 chars, roughly same visible width)
+
+We need to account for that otherwise the wrapping doesn&#x27;t work
+appropriately for long strings and the table overflows and creates
+errors.
+
+params:
+    text: text sequence that should be wrapped into multiple lines
+    monospace_wrapping_width: the maximum width per line in number of
+        standard ascii characters
+returns:
+    The maximum line width for the given string that takes into account
+    the strings visible width, so that it won&#x27;t lead to table overflow.
 

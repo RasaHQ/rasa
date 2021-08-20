@@ -1,8 +1,7 @@
 ---
-sidebar_label: model
+sidebar_label: rasa.nlu.model
 title: rasa.nlu.model
 ---
-
 ## InvalidModelError Objects
 
 ```python
@@ -224,4 +223,18 @@ Tokenize and featurize the input message
 
 - `message` - it contains the tokens and features which are the output of the
   NLU pipeline;
+
+#### warn\_of\_overlapping\_entities
+
+```python
+ | warn_of_overlapping_entities(message: Message) -> None
+```
+
+Issues a warning when there are overlapping entity annotations.
+
+This warning is only issued once per Interpreter life time.
+
+**Arguments**:
+
+- `message` - user message with all processing metadata such as entities
 

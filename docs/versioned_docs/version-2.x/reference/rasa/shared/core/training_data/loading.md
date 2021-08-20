@@ -1,8 +1,7 @@
 ---
-sidebar_label: loading
+sidebar_label: rasa.shared.core.training_data.loading
 title: rasa.shared.core.training_data.loading
 ---
-
 #### load\_data\_from\_resource
 
 ```python

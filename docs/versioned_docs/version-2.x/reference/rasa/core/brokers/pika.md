@@ -1,8 +1,7 @@
 ---
-sidebar_label: pika
+sidebar_label: rasa.core.brokers.pika
 title: rasa.core.brokers.pika
 ---
-
 ## PikaEventBroker Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: training
+sidebar_label: rasa.core.training.training
 title: rasa.core.training.training
 ---
-
 #### create\_action\_fingerprints
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: jupyter
+sidebar_label: rasa.jupyter
 title: rasa.jupyter
 ---
-
 #### pprint
 
 ```python

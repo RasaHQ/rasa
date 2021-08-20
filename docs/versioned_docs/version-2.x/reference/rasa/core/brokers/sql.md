@@ -1,8 +1,7 @@
 ---
-sidebar_label: sql
+sidebar_label: rasa.core.brokers.sql
 title: rasa.core.brokers.sql
 ---
-
 ## SQLEventBroker Objects
 
 ```python

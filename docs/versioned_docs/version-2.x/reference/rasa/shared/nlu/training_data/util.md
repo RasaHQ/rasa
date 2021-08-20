@@ -1,8 +1,7 @@
 ---
-sidebar_label: util
+sidebar_label: rasa.shared.nlu.training_data.util
 title: rasa.shared.nlu.training_data.util
 ---
-
 #### transform\_entity\_synonyms
 
 ```python

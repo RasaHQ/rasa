@@ -1,8 +1,7 @@
 ---
-sidebar_label: crf
+sidebar_label: rasa.utils.tensorflow.crf
 title: rasa.utils.tensorflow.crf
 ---
-
 ## CrfDecodeForwardRnnCell Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: rest
+sidebar_label: rasa.core.channels.rest
 title: rasa.core.channels.rest
 ---
-
 ## RestInput Objects
 
 ```python

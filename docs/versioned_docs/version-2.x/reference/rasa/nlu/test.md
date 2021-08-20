@@ -1,8 +1,7 @@
 ---
-sidebar_label: test
+sidebar_label: rasa.nlu.test
 title: rasa.nlu.test
 ---
-
 ## CVEvaluationResult Objects
 
 ```python

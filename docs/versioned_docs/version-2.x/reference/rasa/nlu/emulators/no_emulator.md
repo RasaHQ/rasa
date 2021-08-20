@@ -1,8 +1,7 @@
 ---
-sidebar_label: no_emulator
+sidebar_label: rasa.nlu.emulators.no_emulator
 title: rasa.nlu.emulators.no_emulator
 ---
-
 ## NoEmulator Objects
 
 ```python

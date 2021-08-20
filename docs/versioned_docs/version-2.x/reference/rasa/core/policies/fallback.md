@@ -1,8 +1,7 @@
 ---
-sidebar_label: fallback
+sidebar_label: rasa.core.policies.fallback
 title: rasa.core.policies.fallback
 ---
-
 ## FallbackPolicy Objects
 
 ```python

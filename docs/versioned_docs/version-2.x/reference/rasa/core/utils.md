@@ -1,8 +1,7 @@
 ---
-sidebar_label: utils
+sidebar_label: rasa.core.utils
 title: rasa.core.utils
 ---
-
 #### configure\_file\_logging
 
 ```python
@@ -15,16 +14,6 @@ Configure logging to a file.
 
 - `logger_obj` - Logger object to configure.
 - `log_file` - Path of log file to write to.
-
-#### is\_int
-
-```python
-is_int(value: Any) -> bool
-```
-
-Checks if a value is an integer.
-
-The type of the value is not important, it might be an int or a float.
 
 #### one\_hot
 
@@ -44,67 +33,6 @@ Create a one-hot array.
 **Returns**:
 
   One-hot array.
-
-## HashableNDArray Objects
-
-```python
-class HashableNDArray()
-```
-
-Hashable wrapper for ndarray objects.
-
-Instances of ndarray are not hashable, meaning they cannot be added to
-sets, nor used as keys in dictionaries. This is by design - ndarray
-objects are mutable, and therefore cannot reliably implement the
-__hash__() method.
-
-The hashable class allows a way around this limitation. It implements
-the required methods for hashable objects in terms of an encapsulated
-ndarray object. This can be either a copied instance (which is safer)
-or the original object (which requires the user to be careful enough
-not to modify it).
-
-#### \_\_init\_\_
-
-```python
- | __init__(wrapped: np.ndarray, tight: bool = False) -> None
-```
-
-Creates a new hashable object encapsulating an ndarray.
-
-wrapped
-    The wrapped ndarray.
-
-tight
-    Optional. If True, a copy of the input ndaray is created.
-    Defaults to False.
-
-#### \_\_eq\_\_
-
-```python
- | __eq__(other: Any) -> bool
-```
-
-Performs equality of the underlying array.
-
-#### \_\_hash\_\_
-
-```python
- | __hash__() -> int
-```
-
-Return the hash of the array.
-
-#### unwrap
-
-```python
- | unwrap() -> np.ndarray
-```
-
-Returns the encapsulated ndarray.
-
-If the wrapper is &quot;tight&quot;, a copy of the encapsulated ndarray is
-returned. Otherwise, the encapsulated ndarray itself is returned.
 
 #### dump\_obj\_as\_yaml\_to\_file
 
@@ -158,14 +86,6 @@ Determine whether the number of messages has reached a limit.
 
   `True` if the limit has been reached, otherwise `False`.
 
-#### read\_lines
-
-```python
-read_lines(filename: Union[Path, Text], max_line_limit: Optional[int] = None, line_pattern: Text = ".*") -> Generator[Text, Any, None]
-```
-
-Read messages from the command line and print bot responses.
-
 #### file\_as\_bytes
 
 ```python
@@ -173,48 +93,6 @@ file_as_bytes(path: Text) -> bytes
 ```
 
 Read in a file as a byte array.
-
-#### convert\_bytes\_to\_string
-
-```python
-convert_bytes_to_string(data: Union[bytes, bytearray, Text]) -> Text
-```
-
-Convert `data` to string if it is a bytes-like object.
-
-#### get\_file\_hash
-
-```python
-get_file_hash(path: Text) -> Text
-```
-
-Calculate the md5 hash of a file.
-
-#### download\_file\_from\_url
-
-```python
-async download_file_from_url(url: Text) -> Text
-```
-
-Download a story file from a url and persists it into a temp file.
-
-**Arguments**:
-
-- `url` - url to download from
-  
-
-**Returns**:
-
-  The file path of the temp file that contains the
-  downloaded content.
-
-#### pad\_lists\_to\_size
-
-```python
-pad_lists_to_size(list_x: List, list_y: List, padding_value: Optional[Any] = None) -> Tuple[List, List]
-```
-
-Compares list sizes and pads them to equal length.
 
 ## AvailableEndpoints Objects
 
@@ -241,16 +119,6 @@ Get `AvailableEndpoints` object from specified path.
 **Returns**:
 
   `AvailableEndpoints` object read from endpoints file.
-
-#### create\_task\_error\_logger
-
-```python
-create_task_error_logger(error_message: Text = "") -> Callable[[Future], None]
-```
-
-Error logger to be attached to a task.
-
-This will ensure exceptions are properly logged and won&#x27;t get lost.
 
 #### replace\_floats\_with\_decimals
 

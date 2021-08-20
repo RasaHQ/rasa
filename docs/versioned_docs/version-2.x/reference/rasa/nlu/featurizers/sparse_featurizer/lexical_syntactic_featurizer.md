@@ -1,8 +1,7 @@
 ---
-sidebar_label: lexical_syntactic_featurizer
+sidebar_label: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer
 title: rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer
 ---
-
 ## LexicalSyntacticFeaturizer Objects
 
 ```python

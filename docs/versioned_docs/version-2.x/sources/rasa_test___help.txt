@@ -42,7 +42,7 @@ Core Test Arguments:
                         Maximum number of stories to test on. (default: None)
   --endpoints ENDPOINTS
                         Configuration file for the connectors as a yml file.
-                        (default: None)
+                        (default: endpoints.yml)
   --fail-on-prediction-errors
                         If a prediction error is encountered, an exception is
                         thrown. This can be used to validate stories during

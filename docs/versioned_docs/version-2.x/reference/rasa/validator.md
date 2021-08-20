@@ -1,8 +1,7 @@
 ---
-sidebar_label: validator
+sidebar_label: rasa.validator
 title: rasa.validator
 ---
-
 ## Validator Objects
 
 ```python
@@ -109,5 +108,5 @@ Runs all the validations on intents and utterances.
 
 Checks whether the domain returned by the importer is empty.
 
-An empty domain is invalid.
+An empty domain or one that uses deprecated Mapping Policy is invalid.
 

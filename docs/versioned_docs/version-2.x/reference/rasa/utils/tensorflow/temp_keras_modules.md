@@ -1,8 +1,7 @@
 ---
-sidebar_label: temp_keras_modules
+sidebar_label: rasa.utils.tensorflow.temp_keras_modules
 title: rasa.utils.tensorflow.temp_keras_modules
 ---
-
 ## TmpKerasModel Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: story_reader
+sidebar_label: rasa.shared.core.training_data.story_reader.story_reader
 title: rasa.shared.core.training_data.story_reader.story_reader
 ---
-
 ## StoryReader Objects
 
 ```python
@@ -32,6 +31,24 @@ Constructor for the StoryReader.
   because it ends up in a invalid story that cannot be user for real
   training. Default value is `False`, which preserves the expected behavior
   of the reader.
+
+#### read\_from\_file
+
+```python
+ | read_from_file(filename: Text, skip_validation: bool = False) -> List[StoryStep]
+```
+
+Reads stories or rules from file.
+
+**Arguments**:
+
+- `filename` - Path to the story/rule file.
+- `skip_validation` - `True` if file validation should be skipped.
+  
+
+**Returns**:
+
+  `StoryStep`s read from `filename`.
 
 #### is\_test\_stories\_file
 

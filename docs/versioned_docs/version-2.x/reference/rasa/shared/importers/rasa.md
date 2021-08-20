@@ -1,8 +1,7 @@
 ---
-sidebar_label: rasa
+sidebar_label: rasa.shared.importers.rasa
 title: rasa.shared.importers.rasa
 ---
-
 ## RasaFileImporter Objects
 
 ```python

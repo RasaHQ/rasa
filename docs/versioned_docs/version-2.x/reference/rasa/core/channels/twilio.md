@@ -1,8 +1,7 @@
 ---
-sidebar_label: twilio
+sidebar_label: rasa.core.channels.twilio
 title: rasa.core.channels.twilio
 ---
-
 ## TwilioOutput Objects
 
 ```python

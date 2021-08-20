@@ -1,8 +1,7 @@
 ---
-sidebar_label: single_state_featurizer
+sidebar_label: rasa.core.featurizers.single_state_featurizer
 title: rasa.core.featurizers.single_state_featurizer
 ---
-
 ## SingleStateFeaturizer Objects
 
 ```python
@@ -95,4 +94,20 @@ Encode all action from the domain using the given interpreter.
 **Returns**:
 
   A list of encoded actions.
+
+## BinarySingleStateFeaturizer Objects
+
+```python
+class BinarySingleStateFeaturizer(SingleStateFeaturizer)
+```
+
+Dialogue State featurizer which features the state as binaries.
+
+#### \_\_init\_\_
+
+```python
+ | __init__() -> None
+```
+
+Creates featurizer.
 

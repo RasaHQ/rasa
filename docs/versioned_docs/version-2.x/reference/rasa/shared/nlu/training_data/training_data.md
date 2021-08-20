@@ -1,8 +1,7 @@
 ---
-sidebar_label: training_data
+sidebar_label: rasa.shared.nlu.training_data.training_data
 title: rasa.shared.nlu.training_data.training_data
 ---
-
 ## TrainingData Objects
 
 ```python
@@ -293,7 +292,7 @@ Extract all entities from examples and sorts them by entity type.
  | sorted_intent_examples() -> List[Message]
 ```
 
-Sorts the intent examples by the name of the intent and then response
+Sorts the intent examples by the name of the intent and then response.
 
 #### validate
 

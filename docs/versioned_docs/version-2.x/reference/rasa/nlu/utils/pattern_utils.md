@@ -1,8 +1,7 @@
 ---
-sidebar_label: pattern_utils
+sidebar_label: rasa.nlu.utils.pattern_utils
 title: rasa.nlu.utils.pattern_utils
 ---
-
 #### read\_lookup\_table\_file
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: callback
+sidebar_label: rasa.utils.tensorflow.callback
 title: rasa.utils.tensorflow.callback
 ---
-
 ## RasaTrainingLogger Objects
 
 ```python

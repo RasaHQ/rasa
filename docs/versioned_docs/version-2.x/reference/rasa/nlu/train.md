@@ -1,8 +1,7 @@
 ---
-sidebar_label: train
+sidebar_label: rasa.nlu.train
 title: rasa.nlu.train
 ---
-
 ## TrainingException Objects
 
 ```python

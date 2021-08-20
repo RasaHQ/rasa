@@ -1,8 +1,7 @@
 ---
-sidebar_label: bilou_utils
+sidebar_label: rasa.nlu.utils.bilou_utils
 title: rasa.nlu.utils.bilou_utils
 ---
-
 #### bilou\_prefix\_from\_tag
 
 ```python
@@ -63,23 +62,6 @@ Get the message key for the BILOU tagging format of the provided tag name.
 **Returns**:
 
   the message key to store the BILOU tags
-
-#### remove\_bilou\_prefixes
-
-```python
-remove_bilou_prefixes(tags: List[Text]) -> List[Text]
-```
-
-Removes the BILOU prefixes from the given list of tags.
-
-**Arguments**:
-
-- `tags` - the list of tags
-  
-
-**Returns**:
-
-  list of tags without BILOU prefix
 
 #### build\_tag\_id\_dict
 

@@ -1,8 +1,7 @@
 ---
-sidebar_label: slack
+sidebar_label: rasa.core.channels.slack
 title: rasa.core.channels.slack
 ---
-
 ## SlackBot Objects
 
 ```python

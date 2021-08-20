@@ -1,8 +1,7 @@
 ---
-sidebar_label: markdown_story_reader
+sidebar_label: rasa.shared.core.training_data.story_reader.markdown_story_reader
 title: rasa.shared.core.training_data.story_reader.markdown_story_reader
 ---
-
 ## MarkdownStoryReader Objects
 
 ```python
@@ -22,7 +21,7 @@ Creates reader. See parent class docstring for more information.
 #### read\_from\_file
 
 ```python
- | read_from_file(filename: Union[Text, Path]) -> List[StoryStep]
+ | read_from_file(filename: Union[Text, Path], skip_validation: bool = False) -> List[StoryStep]
 ```
 
 Given a md file reads the contained stories.

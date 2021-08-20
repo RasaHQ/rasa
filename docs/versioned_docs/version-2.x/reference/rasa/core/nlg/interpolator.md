@@ -1,8 +1,7 @@
 ---
-sidebar_label: interpolator
+sidebar_label: rasa.core.nlg.interpolator
 title: rasa.core.nlg.interpolator
 ---
-
 #### interpolate\_text
 
 ```python

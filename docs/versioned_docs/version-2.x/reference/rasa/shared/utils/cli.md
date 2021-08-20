@@ -1,8 +1,7 @@
 ---
-sidebar_label: cli
+sidebar_label: rasa.shared.utils.cli
 title: rasa.shared.utils.cli
 ---
-
 #### print\_error\_and\_exit
 
 ```python

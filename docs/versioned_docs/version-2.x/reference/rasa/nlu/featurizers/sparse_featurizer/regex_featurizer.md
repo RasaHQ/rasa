@@ -1,8 +1,7 @@
 ---
-sidebar_label: regex_featurizer
+sidebar_label: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer
 title: rasa.nlu.featurizers.sparse_featurizer.regex_featurizer
 ---
-
 ## RegexFeaturizer Objects
 
 ```python

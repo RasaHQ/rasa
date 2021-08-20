@@ -1,8 +1,7 @@
 ---
-sidebar_label: train
+sidebar_label: rasa.core.train
 title: rasa.core.train
 ---
-
 #### train\_comparison\_models
 
 ```python

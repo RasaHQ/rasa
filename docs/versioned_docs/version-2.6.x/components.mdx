@@ -129,15 +129,15 @@ word vectors in your pipeline.
   In addition to SpaCy's pretrained language models, you can also use this component to
   attach spaCy models that you've trained yourself.
 
-:::caution Fallback
+:::caution Changed in 2.5
 Rasa Open Source will try to fallback to a common model on your behalf if you don't pass a `model` setting. This is a
 temporary feature we've introduced as part of the spaCy 3.0 migration but the fallback will be removed in Rasa Open Source 3.0.0.
 :::
 
 ### HFTransformersNLP
 
-:::caution Deprecated
-The `HFTransformersNLP` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
+:::caution Deprecated in 2.1
+The `HFTransformersNLP` is deprecated and will be removed in 3.0. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
 now implements its behavior.
 :::
 
@@ -216,6 +216,10 @@ now implements its behavior.
       # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
       cache_dir: null
   ```
+
+  :::caution Changed in 2.1
+  The default pre-trained weights for BERT have been renamed from `bert-base-uncased` to `rasa/LaBSE`.
+  :::
 
 
   ## Tokenizers
@@ -407,8 +411,8 @@ now implements its behavior.
 
   ### ConveRTTokenizer
 
-:::caution Deprecated
-The `ConveRTTokenizer` is deprecated and will be removed in a future release. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
+:::caution Deprecated in 2.1
+The `ConveRTTokenizer` is deprecated and will be removed in 3.0. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
 now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
 :::
 
@@ -471,7 +475,7 @@ now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be
 
   ### LanguageModelTokenizer
 
-:::caution Deprecated
+:::caution Deprecated in 2.1
 The `LanguageModelTokenizer` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
 now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
 :::
@@ -655,6 +659,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   `tokens`
 
+  :::caution Changed in 2.1
+  `ConveRTFeaturizer` no longer requires `ConveRTTokenizer`.
+  :::
+
 
 
 * **Type**
@@ -709,6 +717,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
   `tokens`.
 
+  :::caution Changed in 2.1
+  `LanguageModelFeaturizer` no longer requires `ConveRTTokenizer`.
+  :::
+
 
 
 * **Type**
@@ -731,6 +743,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
 
 
 * **Configuration**
+
+  :::caution Changed in 2.1
+  The `model_name`, `model_weights` and `cache_dir` parameters were added to the pipeline configuration file.
+  :::
 
   Include a [Tokenizer](./components.mdx#tokenizers) component before this component.
 
@@ -832,6 +848,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     # use match word boundaries for lookup table
     "use_word_boundaries": True
   ```
+
+  :::info New in 2.2
+  `use_word_boundaries` was added.
+  :::
 
   **Configuring for incremental training**
 
@@ -981,6 +1001,10 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
   ```
 
   **Configuring for incremental training**
+
+  :::info New in 2.2
+  Incremental training was added as an experimental feature.
+  :::
 
   To ensure that `sparse_features` are of fixed size during
   [incremental training](./command-line-interface.mdx#incremental-training), the
@@ -1483,6 +1507,10 @@ Intent classifiers assign one of the intents defined in the domain file to incom
 
     Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
 
+  :::info New in 2.3
+  `constrain_similarities` and `model_confidence` were added.
+  :::
+
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
@@ -1675,7 +1703,7 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
     ```json
 
         {
-            "intent": {"name": "nlu_fallback", "confidence": 0.7183846840434321},
+            "intent": {"name": "nlu_fallback", "confidence": 1.0},
             "intent_ranking": [
                 {
                     "confidence": 0.7183846840434321,
@@ -2021,6 +2049,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         email: True
   ```
 
+  :::info New in 2.1
+  `split_entities_by_comma` was added.
+  :::
+
   :::note
   If POS features are used (`pos` or `pos2`), you need to have `SpacyTokenizer` in your pipeline.
 
@@ -2205,6 +2237,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
         # use match word boundaries for lookup table
         "use_word_boundaries": True
   ```
+
+  :::info New in 2.2
+  `use_word_boundaries` was added.
+  :::
 
 
 ### EntitySynonymMapper
@@ -2668,6 +2704,10 @@ Selectors predict a bot response from a set of candidate responses.
     }
     ```
 
+    :::caution Deprecated in 2.4
+    `template_name` and `response_templates` keys under `response` have been deprecated in favor of
+    `utter_action` and `responses` respectively and will be removed in Rasa Open Source 3.0.0.
+    :::
 
 
 * **Description**
@@ -2749,6 +2789,11 @@ Selectors predict a bot response from a set of candidate responses.
     * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
 
     Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
+
+  
+  :::info New in 2.3
+  `constrain_similarities` and `model_confidence` were added.
+  :::
 
   The component can also be configured to train a response selector for a particular retrieval intent.
   The parameter `retrieval_intent` sets the name of the retrieval intent for which this response selector model is trained.

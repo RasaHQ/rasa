@@ -1,8 +1,7 @@
 ---
-sidebar_label: policy
+sidebar_label: rasa.core.policies.policy
 title: rasa.core.policies.policy
 ---
-
 ## SupportedData Objects
 
 ```python

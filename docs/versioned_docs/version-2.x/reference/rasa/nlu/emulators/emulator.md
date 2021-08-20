@@ -1,8 +1,7 @@
 ---
-sidebar_label: emulator
+sidebar_label: rasa.nlu.emulators.emulator
 title: rasa.nlu.emulators.emulator
 ---
-
 ## Emulator Objects
 
 ```python

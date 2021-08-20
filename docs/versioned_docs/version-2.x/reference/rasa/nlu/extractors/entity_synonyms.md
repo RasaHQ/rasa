@@ -1,8 +1,7 @@
 ---
-sidebar_label: entity_synonyms
+sidebar_label: rasa.nlu.extractors.entity_synonyms
 title: rasa.nlu.extractors.entity_synonyms
 ---
-
 ## EntitySynonymMapper Objects
 
 ```python

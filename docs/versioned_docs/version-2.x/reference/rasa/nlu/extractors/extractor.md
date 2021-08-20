@@ -1,8 +1,7 @@
 ---
-sidebar_label: extractor
+sidebar_label: rasa.nlu.extractors.extractor
 title: rasa.nlu.extractors.extractor
 ---
-
 ## EntityTagSpec Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: markdown
+sidebar_label: rasa.shared.nlu.training_data.formats.markdown
 title: rasa.shared.nlu.training_data.formats.markdown
 ---
-
 ## MarkdownReader Objects
 
 ```python

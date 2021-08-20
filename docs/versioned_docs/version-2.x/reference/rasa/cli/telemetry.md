@@ -1,8 +1,7 @@
 ---
-sidebar_label: telemetry
+sidebar_label: rasa.cli.telemetry
 title: rasa.cli.telemetry
 ---
-
 #### add\_subparser
 
 ```python

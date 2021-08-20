@@ -1,8 +1,7 @@
 ---
-sidebar_label: common
+sidebar_label: rasa.utils.common
 title: rasa.utils.common
 ---
-
 ## TempDirectoryPath Objects
 
 ```python
@@ -82,14 +81,6 @@ set_log_and_warnings_filters() -> None
 Set log filters on the root logger, and duplicate filters for warnings.
 
 Filters only propagate on handlers, not loggers.
-
-#### obtain\_verbosity
-
-```python
-obtain_verbosity() -> int
-```
-
-Returns a verbosity level according to the set log level.
 
 #### sort\_list\_of\_dicts\_by\_first\_key
 

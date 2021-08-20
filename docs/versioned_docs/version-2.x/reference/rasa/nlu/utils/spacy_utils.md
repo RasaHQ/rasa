@@ -1,8 +1,7 @@
 ---
-sidebar_label: spacy_utils
+sidebar_label: rasa.nlu.utils.spacy_utils
 title: rasa.nlu.utils.spacy_utils
 ---
-
 ## SpacyNLP Objects
 
 ```python

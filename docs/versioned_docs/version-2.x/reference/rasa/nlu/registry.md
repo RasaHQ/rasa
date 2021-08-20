@@ -1,8 +1,7 @@
 ---
-sidebar_label: registry
+sidebar_label: rasa.nlu.registry
 title: rasa.nlu.registry
 ---
-
 This is a somewhat delicate package. It contains all registered components
 and preconfigured templates.
 
