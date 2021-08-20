@@ -182,6 +182,19 @@
       "items": [
         {
           "items": [
+            "reference/rasa/graph_components/providers/training_tracker_provider"
+          ],
+          "label": "rasa.graph_components.providers",
+          "type": "category"
+        }
+      ],
+      "label": "rasa.graph_components",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": [
             "reference/rasa/nlu/classifiers/diet_classifier",
             "reference/rasa/nlu/classifiers/fallback_classifier",
             "reference/rasa/nlu/classifiers/keyword_intent_classifier",
