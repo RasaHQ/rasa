@@ -12,12 +12,14 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.events import UserUttered, ActionExecuted
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.nlu.constants import (
     INTENT,
     TEXT,
     ENTITIES,
     ACTION_NAME,
+    SPLIT_ENTITIES_BY_COMMA,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.core.featurizers.tracker_featurizers import (
@@ -264,6 +266,10 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             # hence will result in lesser number of `action_unlikely_intent`
             # triggers. Acceptable values are between 0.0 and 1.0 (inclusive).
             TOLERANCE: 0.0,
+            # Split entities by comma, this makes sense e.g. for a list of
+            # ingredients in a recipe, but it doesn't make sense for the parts of
+            # an address
+            SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
         }
 
     def __init__(
@@ -299,6 +305,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         self.config = config
 
         common.mark_as_experimental_feature("UnexpecTED Intent Policy")
+
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
@@ -534,7 +541,9 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        # TODO: The default is a workaround until the end-to-end featurization is
+        # implemented for the graph.
+        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -852,6 +861,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
         meta = train_utils.override_defaults(cls.get_default_config(), meta)
+        meta = train_utils.update_similarity_type(meta)
         return meta
 
     @classmethod

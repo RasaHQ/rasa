@@ -15,7 +15,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.policies.ted_policy import PREDICTION_FEATURES, TEDPolicy
+from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicyGraphComponent as UnexpecTEDIntentPolicy
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
@@ -46,8 +46,7 @@ from rasa.utils.tensorflow.constants import (
     SEVERITY_KEY,
     QUERY_INTENT_KEY,
     NAME,
-    RANKING_LENGTH,
-    EPOCHS,
+    RANKING_LENGTH
 )
 from rasa.shared.nlu.constants import INTENT
 from rasa.shared.core.events import Event
@@ -1144,9 +1143,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     ],
 )
 def test_train_with_e2e_data(
-    tracker_events: List[List[Event]], skip_training: bool, domain: Domain,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    tracker_events: List[List[Event]],
+    skip_training: bool,
+    domain: Domain,
 ):
     policy = UnexpecTEDIntentPolicy(
+        UnexpecTEDIntentPolicy.get_default_config(),
+        default_model_storage,
+        Resource("UnexpecTEDIntentPolicy"),
+        default_execution_context,
         featurizer=IntentMaxHistoryTrackerFeaturizer(
             IntentTokenizerSingleStateFeaturizer()
         )
