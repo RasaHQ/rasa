@@ -1570,7 +1570,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                  | or 'inner'.                                                  |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
-|                                 |                  | or 'margin'.                                                 |
+|                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
+|                                 |                  | "model_confidence=cosine",                                   |
+|                                 |                  | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+------------------+--------------------------------------------------------------+
 | ranking_length                  | 10               | Number of top intents to normalize scores for. Applicable    |
 |                                 |                  | only with loss type 'cross_entropy' and 'softmax'            |
@@ -1768,7 +1770,28 @@ See [starspace paper](https://arxiv.org/abs/1709.03856) for details.
 
 Entity extractors extract entities, such as person names or locations, from the user message.
 
+:::note
+  If you use multiple entity extractors, we advise that each extractor targets an exclusive
+  set of entity types. For example, use [Duckling](components.mdx#ducklingentityextractor) to extract dates and times, and
+  [DIETClassifier](components.mdx#dietclassifier-1) to extract person names. Otherwise, if multiple extractors
+  target the same entity types, it is very likely that entities will be extracted multiple times.
 
+  For example, if you use two or more general purpose extractors like [MitieEntityExtractor](components.mdx#mitieentityextractor),
+  [DIETClassifier](components.mdx#dietclassifier-1), or [CRFEntityExtractor](components.mdx#crfentityextractor),
+  the entity types in your training data will be found and
+  extracted by all of them. If the [slots](domain.mdx#slots) you are filling with your entity types are of type `text`,
+  then the last extractor in your pipeline will win. If the slot is of type `list`, then all results
+  will be added to the list, including duplicates.
+
+  Another, less obvious case of duplicate/overlapping extraction can happen even if extractors focus on different
+  entity types. Imagine a food delivery bot and a user message like `I would like to order the Monday special`.
+  Hypothetically, if your time extractor's performance isn't very good, it might extract `Monday` here as a time for the order,
+  and your other extractor might extract `Monday special` as the meal.
+  If you struggle with overlapping entities of this sort, it might make sense to add additional training data
+  to improve your extractor. If that does not suffice, you can add a
+  [custom component](components.mdx#custom-components) that resolves conflicts in entity
+  extraction according to your own logic.
+:::
 ### MitieEntityExtractor
 
 
@@ -2480,7 +2503,10 @@ The `SpacyEntityExtractor` extractor does not provide a `confidence` level and w
   | similarity_type                 | "auto"           | Type of similarity measure to use, either 'auto' or 'cosine' |
   |                                 |                  | or 'inner'.                                                  |
   +---------------------------------+------------------+--------------------------------------------------------------+
-  | loss_type                       | "softmax"        | The type of the loss function, either 'softmax' or 'margin'. |
+  | loss_type                       | "cross_entropy"  | The type of the loss function, either 'cross_entropy'        |
+  |                                 |                  | or 'margin'. Type 'margin' is only compatible with           |
+  |                                 |                  | "model_confidence=cosine",                                   |
+  |                                 |                  | which is deprecated (see changelog for 2.3.4).               |
   +---------------------------------+------------------+--------------------------------------------------------------+
   | ranking_length                  | 10               | Number of top actions to normalize scores for loss type      |
   |                                 |                  | 'softmax'. Set to 0 to turn off normalization.               |
@@ -2853,7 +2879,9 @@ However, additional parameters exist that can be adapted.
 |                                 |                   | or 'inner'.                                                  |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | loss_type                       | "cross_entropy"   | The type of the loss function, either 'cross_entropy'        |
-|                                 |                   | or 'margin'.                                                 |
+|                                 |                   | or 'margin'. Type 'margin' is only compatible with           |
+|                                 |                   | "model_confidence=cosine",                                   |
+|                                 |                   | which is deprecated (see changelog for 2.3.4).               |
 +---------------------------------+-------------------+--------------------------------------------------------------+
 | ranking_length                  | 10                | Number of top responses to normalize scores for. Applicable  |
 |                                 |                   | only with loss type 'cross_entropy' and 'softmax'            |
