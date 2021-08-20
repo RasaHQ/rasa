@@ -8,6 +8,23 @@ title: rasa.shared.nlu.training_data.message
 class Message()
 ```
 
+Container for data that can be used to describe a conversation turn.
+
+The turn is described by a set of attributes such as e.g. `TEXT`  and  `INTENT`
+when describing a user utterance or e.g. `ACTION_NAME` for describing a bot action.
+The container includes raw information (`self.data`) as well as features
+(`self.features`) for each such attribute.
+Moreover, the message has a timestamp and can keep track about information
+on a specific subset of attributes (`self.output_properties`).
+
+#### \_\_init\_\_
+
+```python
+ | __init__(data: Optional[Dict[Text, Any]] = None, output_properties: Optional[Set] = None, time: Optional[int] = None, features: Optional[List["Features"]] = None, **kwargs: Any, ,) -> None
+```
+
+Creates an instance of Message.
+
 #### add\_diagnostic\_data
 
 ```python
@@ -42,6 +59,14 @@ Sets the message&#x27;s property to the given value.
 ```
 
 Get dict representation of message as it would appear in training data
+
+#### as\_dict
+
+```python
+ | as_dict(only_output_properties: bool = False) -> Dict
+```
+
+Gets dict representation of message.
 
 #### \_\_hash\_\_
 
