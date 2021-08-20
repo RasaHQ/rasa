@@ -39,7 +39,6 @@ class DomainProvider(GraphComponent):
         return cls(config)
 
     @staticmethod
-    def generate_domain(config_path: Text, domain_path: Text) -> Domain:
+    def generate_domain(importer: TrainingDataImporter) -> Domain:
         """Generates loaded Domain of the bot."""
-        importer = TrainingDataImporter.load_from_config(config_path, domain_path)
         return importer.get_domain()
