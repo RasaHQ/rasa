@@ -289,13 +289,14 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             if self.label_quantiles
             else {}
         )
-        self.ignore_intent_list = self.config[IGNORE_INTENTS_LIST]
+        self.ignore_intent_list = config.get(IGNORE_INTENTS_LIST)
 
         # Set all invalid / non configurable parameters
-        self.config[ENTITY_RECOGNITION] = False
-        self.config[BILOU_FLAG] = False
-        self.config[SIMILARITY_TYPE] = INNER
-        self.config[LOSS_TYPE] = CROSS_ENTROPY
+        config[ENTITY_RECOGNITION] = False
+        config[BILOU_FLAG] = False
+        config[SIMILARITY_TYPE] = INNER
+        config[LOSS_TYPE] = CROSS_ENTROPY
+        self.config = config
 
         common.mark_as_experimental_feature("UnexpecTED Intent Policy")
 
@@ -850,7 +851,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
 
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta = train_utils.override_defaults(cls.defaults, meta)
+        meta = train_utils.override_defaults(cls.get_default_config(), meta)
         return meta
 
     @classmethod
