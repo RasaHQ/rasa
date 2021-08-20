@@ -512,31 +512,29 @@ async def test_train_core_success_with(
 async def test_train_with_retrieval_events_success(
     rasa_app: SanicASGITestClient, stack_config_path: Text, tmp_path: Path
 ):
-    with ExitStack() as stack:
-        domain_file = stack.enter_context(
-            open("data/test_domains/default_retrieval_intents.yml")
-        )
-        config_file = stack.enter_context(open(stack_config_path))
-        core_file = stack.enter_context(
-            open("data/test_stories/stories_retrieval_intents.md")
-        )
-        responses_file = stack.enter_context(open("data/test_responses/default.yml"))
-        nlu_file = stack.enter_context(
-            open("data/test/stories_default_retrieval_intents.yml")
-        )
+    payload = {}
 
-        payload = dict(
-            domain=domain_file.read(),
-            config=config_file.read(),
-            stories=core_file.read(),
-            responses=responses_file.read(),
-            nlu=nlu_file.read(),
-        )
+    for file in [
+        "data/test_domains/default_retrieval_intents.yml",
+        stack_config_path,
+        "data/test_yaml_stories/stories_retrieval_intents.yml",
+        "data/test_responses/default.yml",
+        "data/test/stories_default_retrieval_intents.yml",
+    ]:
+        # Read in as dictionaries to avoid that keys, which are specified in
+        # multiple files (such as 'version'), clash.
+        content = rasa.shared.utils.io.read_yaml_file(file)
+        payload.update(content)
+
+        concatenated_payload_file = tmp_path / "concatenated.yml"
+        rasa.shared.utils.io.write_yaml(payload, concatenated_payload_file)
+
+        payload_as_yaml = concatenated_payload_file.read_text()
 
     # it usually takes a bit longer on windows so we're going to double the timeout
     timeout = 60 * 10 if sys.platform == "win32" else 60 * 5
 
-    _, response = await rasa_app.post("/model/train", json=payload, timeout=timeout)
+    _, response = await rasa_app.post("/model/train", data=payload_as_yaml, timeout=timeout, headers={"Content-type": rasa.server.YAML_CONTENT_TYPE})
     assert response.status == HTTPStatus.OK
     assert_trained_model(response.body, tmp_path)
 
