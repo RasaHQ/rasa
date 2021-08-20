@@ -417,14 +417,6 @@ def test_data_merging(files):
     assert td.regex_features == td_reference.regex_features
 
 
-def test_markdown_single_sections():
-    td_regex_only = load_data("data/test/markdown_single_sections/regex_only.md")
-    assert td_regex_only.regex_features == [{"name": "greet", "pattern": r"hey[^\s]*"}]
-
-    td_syn_only = load_data("data/test/markdown_single_sections/synonyms_only.md")
-    assert td_syn_only.entity_synonyms == {"Chines": "chinese", "Chinese": "chinese"}
-
-
 def test_repeated_entities(tmp_path):
     data = """
 {
@@ -621,18 +613,6 @@ def cmp_dict_list(firsts, seconds):
             "data/examples/rasa/demo-rasa.yml",
             "data/test/md_converted_to_json.json",
             "json",
-            None,
-        ),
-        (
-            "data/examples/rasa/demo-rasa.json",
-            "data/test_md/json_converted_to_md.md",
-            "md",
-            None,
-        ),
-        (
-            "data/test/training_data_containing_special_chars.json",
-            "data/test_md/json_with_special_chars_converted_to_md.md",
-            "md",
             None,
         ),
     ],

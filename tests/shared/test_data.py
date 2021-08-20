@@ -18,7 +18,7 @@ from rasa.shared.utils.io import write_text_file, json_to_string
         ("my_file.yml", True),
         ("/a/b/c/my_file.yml", True),
         ("/a/b/c/my_file.ml", False),
-        ("my_file.md", False),
+        ("my_file.json", False),
     ],
 )
 def test_is_yaml_file(path, is_yaml):
@@ -31,7 +31,6 @@ def test_is_yaml_file(path, is_yaml):
         ("my_file.json", True),
         ("/a/b/c/my_file.json", True),
         ("/a/b/c/my_file.yml", False),
-        ("my_file.md", False),
     ],
 )
 def test_is_json_file(path, is_json):
@@ -39,21 +38,16 @@ def test_is_json_file(path, is_json):
 
 
 def test_story_file_can_not_be_yml(tmpdir: Path):
-    p = tmpdir / "test_non_md.yml"
+    p = tmpdir / "test_empty.yml"
     Path(p).touch()
     assert rasa.shared.data.is_story_file(str()) is False
 
 
-def test_empty_story_file_is_not_story_file(tmpdir: Path):
-    p = tmpdir / "test_non_md.md"
-    Path(p).touch()
-    assert rasa.shared.data.is_story_file(str(p)) is False
-
-
 def test_story_file_with_minimal_story_is_story_file(tmpdir: Path):
-    p = tmpdir / "story.md"
+    p = tmpdir / "story.yml"
     s = """
-## my story
+stories:
+  - story: simple
     """
     write_text_file(s, p)
     assert rasa.shared.data.is_story_file(str(p))
@@ -83,25 +77,15 @@ def test_conversation_tests_in_a_directory(tmp_path: Path):
     assert rasa.shared.data.is_test_stories_file(str(e2e_path))
 
 
-def test_default_conversation_tests_are_conversation_tests_md(tmpdir: Path):
-    # can be removed once conversation tests MD support is removed
-    parent = tmpdir / "tests"
-    Path(parent).mkdir(parents=True)
-
-    e2e_path = parent / "test_stories.yml"
-    e2e_story = """stories:"""
-    write_text_file(e2e_story, e2e_path)
-
-    assert rasa.shared.data.is_test_stories_file(str(e2e_path))
-
-
 def test_nlu_data_files_are_not_conversation_tests(tmpdir: Path):
-    nlu_path = tmpdir / "nlu.md"
+    nlu_path = tmpdir / "nlu.yml"
     nlu_data = """
-## intent: greet
-- hello
-- hi
-- hallo
+nlu:
+- intent: greet
+  examples: |
+    hello
+    hi
+    hallo
     """
     write_text_file(nlu_data, nlu_path)
 
