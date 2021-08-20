@@ -7,6 +7,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.domain_provider import DomainProvider
 from rasa.shared.core.domain import Domain
+from rasa.shared.importers.importer import TrainingDataImporter
 
 
 @pytest.mark.parametrize(
@@ -42,5 +43,7 @@ def test_domain_provider_generates_domain(
     )
     assert isinstance(component, DomainProvider)
 
-    domain = component.generate_domain(config_path, domain_path)
+    importer = TrainingDataImporter.load_from_config(config_path, domain_path)
+    domain = component.generate_domain(importer)
+
     assert isinstance(domain, Domain)
