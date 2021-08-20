@@ -30,6 +30,7 @@ from rasa.core.channels.channel import (
     OutputChannel,
 )
 from rasa.exceptions import ActionLimitReached
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -57,6 +58,7 @@ from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
@@ -1309,14 +1311,9 @@ def test_predict_next_action_raises_limit_reached_exception(domain: Domain):
 
 async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
     text = "Hello there"
-    tokens = text.split()
-    current_index = 0
-    indices = []
-    for t in tokens:
-        start = current_index
-        end = current_index + len(t)
-        indices.append((start, end))
-        current_index = end + 1
+    tokenizer = WhitespaceTokenizer()
+    tokens = tokenizer.tokenize(Message(data={"text": text}), "text")
+    indices = [(t.start, t.end) for t in tokens]
 
     message = UserMessage(text)
     tracker_store = InMemoryTrackerStore(mood_agent.domain)

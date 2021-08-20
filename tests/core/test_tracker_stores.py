@@ -13,6 +13,7 @@ from moto import mock_dynamodb2
 from pymongo.errors import OperationFailure
 
 from rasa.nlu.model import Interpreter
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.constants import DEFAULT_SENDER_ID
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
@@ -45,6 +46,7 @@ from rasa.core.tracker_store import (
     FailSafeTrackerStore,
 )
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import MockedMongoTrackerStore
 
@@ -885,14 +887,9 @@ def prepare_token_serialisation(
     sender_id: Text,
 ):
     text = "Good morning"
-    tokens = text.split()
-    current_index = 0
-    indices = []
-    for t in tokens:
-        start = current_index
-        end = current_index + len(t)
-        indices.append([start, end])
-        current_index = end + 1
+    tokenizer = WhitespaceTokenizer()
+    tokens = tokenizer.tokenize(Message(data={"text": text}), "text")
+    indices = [[t.start, t.end] for t in tokens]
 
     tracker = tracker_store.get_or_create_tracker(sender_id=sender_id)
     parse_data = response_selector_interpreter.parse(text)
