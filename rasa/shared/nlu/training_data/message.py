@@ -30,12 +30,14 @@ if typing.TYPE_CHECKING:
 
 
 class Message:
-    """Container for data that describes one conversation state.
+    """Container for data that can be used to describe a conversation turn.
 
-    The data describes a set of attributes that can also be used to describe
-    at most one user utterance and one action sub-state. For example, these attributes
-    can be `TEXT` AND `INTENT` (describing a user utterance) or
-    `ACTION_NAME` (describing a bot action).
+    The turn is described by a set of attributes such as e.g. `TEXT`  and  `INTENT`
+    when describing a user utterance or e.g. `ACTION_NAME` for describing a bot action.
+    The container includes raw information (`self.data`) as well as features
+    (`self.features`) for each such attribute.
+    Moreover, the message has a timestamp and can keep track about information
+    on a specific subset of attributes (`self.output_properties`).
     """
 
     def __init__(
