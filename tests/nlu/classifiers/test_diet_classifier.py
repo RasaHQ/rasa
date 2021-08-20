@@ -86,9 +86,6 @@ def create_diet(
 def create_train_load_and_process_diet(
     nlu_data_path: Text,
     create_diet: Callable[..., DIETClassifier],
-    default_model_storage: ModelStorage,
-    default_execution_context: ExecutionContext,
-    default_diet_resource: Resource,
     train_load_and_process_diet: Callable[..., Message],
 ) -> Callable[..., Message]:
     def inner(
@@ -112,11 +109,7 @@ def create_train_load_and_process_diet(
 
 @pytest.fixture()
 def train_load_and_process_diet(
-    nlu_data_path: Text,
-    create_diet: Callable[..., DIETClassifier],
-    default_model_storage: ModelStorage,
-    default_execution_context: ExecutionContext,
-    default_diet_resource: Resource,
+    nlu_data_path: Text, create_diet: Callable[..., DIETClassifier],
 ) -> Callable[..., Message]:
     def inner(
         diet: DIETClassifier,

@@ -377,11 +377,6 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
             self.component_config
         )
 
-    @staticmethod
-    def required_packages() -> List[Text]:
-        """Any extra python dependencies required for this component to run."""
-        return ["tensorflow"]
-
     @classmethod
     def create(
         cls,
