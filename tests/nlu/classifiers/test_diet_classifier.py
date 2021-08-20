@@ -97,7 +97,6 @@ def create_train_load_and_process_diet(
         training_data: str = nlu_data_path,
         message_text: Text = "Rasa is great!",
         expect_intent: bool = True,
-        load_in_finetune_mode: bool = False,
     ) -> Message:
         diet = create_diet(diet_config)
         return train_load_and_process_diet(
@@ -106,7 +105,6 @@ def create_train_load_and_process_diet(
             training_data=training_data,
             message_text=message_text,
             expect_intent=expect_intent,
-            load_in_finetune_mode=load_in_finetune_mode,
         )
 
     return inner
@@ -126,7 +124,6 @@ def train_load_and_process_diet(
         training_data: str = nlu_data_path,
         message_text: Text = "Rasa is great!",
         expect_intent: bool = True,
-        load_in_finetune_mode: bool = False,
     ) -> Message:
 
         if not pipeline:
@@ -159,9 +156,7 @@ def train_load_and_process_diet(
         if expect_intent:
             assert classified_message.data["intent"]["name"]
 
-        loaded_diet = create_diet(
-            diet.component_config, load=True, finetune=load_in_finetune_mode
-        )
+        loaded_diet = create_diet(diet.component_config, load=True)
 
         classified_message2 = loaded_diet.process([message2])[0]
 
@@ -298,9 +293,9 @@ def test_model_data_signature_with_entities(
 
 @pytest.mark.skip_on_windows
 @pytest.mark.timeout(120, func_only=True)
-@pytest.mark.parametrize("finetune", [True, False])
 async def test_train_persist_load_with_different_settings_non_windows(
-    create_train_load_and_process_diet: Callable[..., Message], finetune: bool
+    create_train_load_and_process_diet: Callable[..., Message],
+    create_diet: Callable[..., DIETClassifier],
 ):
     pipeline = [
         {
@@ -310,43 +305,44 @@ async def test_train_persist_load_with_different_settings_non_windows(
         },
         {"name": "CountVectorsFeaturizer"},
     ]
-    create_train_load_and_process_diet(
-        {MASKED_LM: True, EPOCHS: 1}, pipeline, load_in_finetune_mode=finetune
-    )
+    config = {MASKED_LM: True, EPOCHS: 1}
+    create_train_load_and_process_diet(config, pipeline)
+    create_diet(config, load=True, finetune=True)
 
 
 @pytest.mark.timeout(120, func_only=True)
-@pytest.mark.parametrize("finetune", [True, False])
 async def test_train_persist_load_with_different_settings(
-    create_train_load_and_process_diet: Callable[..., Message], finetune: bool
+    create_train_load_and_process_diet: Callable[..., Message],
+    create_diet: Callable[..., DIETClassifier],
 ):
-    create_train_load_and_process_diet(
-        {LOSS_TYPE: "margin", EPOCHS: 1}, load_in_finetune_mode=finetune
-    )
+    config = {LOSS_TYPE: "margin", EPOCHS: 1}
+    create_train_load_and_process_diet(config)
+    create_diet(config, load=True, finetune=True)
 
 
 @pytest.mark.timeout(120, func_only=True)
-@pytest.mark.parametrize("finetune", [True, False])
 async def test_train_persist_load_with_only_entity_recognition(
-    create_train_load_and_process_diet: Callable[..., Message], finetune: bool
+    create_train_load_and_process_diet: Callable[..., Message],
+    create_diet: Callable[..., DIETClassifier],
 ):
+    config = {ENTITY_RECOGNITION: True, INTENT_CLASSIFICATION: False, EPOCHS: 1}
     create_train_load_and_process_diet(
-        {ENTITY_RECOGNITION: True, INTENT_CLASSIFICATION: False, EPOCHS: 1},
+        config,
         training_data="data/examples/rasa/demo-rasa-multi-intent.yml",
         expect_intent=False,
-        load_in_finetune_mode=finetune,
     )
+    create_diet(config, load=True, finetune=True)
 
 
 @pytest.mark.timeout(120, func_only=True)
-@pytest.mark.parametrize("finetune", [True, False])
 async def test_train_persist_load_with_only_intent_classification(
-    create_train_load_and_process_diet: Callable[..., Message], finetune: bool,
+    create_train_load_and_process_diet: Callable[..., Message],
+    create_diet: Callable[..., DIETClassifier],
 ):
     create_train_load_and_process_diet(
         {ENTITY_RECOGNITION: False, INTENT_CLASSIFICATION: True, EPOCHS: 1,},
-        load_in_finetune_mode=finetune,
     )
+    create_diet({MASKED_LM: True, EPOCHS: 1}, load=True, finetune=True)
 
 
 @pytest.mark.parametrize(
