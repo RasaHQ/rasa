@@ -13,10 +13,12 @@ class TrainingTrackerProvider(GraphComponent):
     """Provides training trackers to policies based on training stories."""
 
     def __init__(self, config: Dict[Text, Any]) -> None:
+        """Creates provider from config."""
         self._config = config
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
+        """Returns default configuration (see parent class for full docstring)."""
         return {
             "remove_duplicates": True,
             "unique_last_num_states": None,
