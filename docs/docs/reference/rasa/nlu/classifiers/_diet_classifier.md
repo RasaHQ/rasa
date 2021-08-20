@@ -1,11 +1,11 @@
 ---
-sidebar_label: rasa.nlu.classifiers.diet_classifier
-title: rasa.nlu.classifiers.diet_classifier
+sidebar_label: rasa.nlu.classifiers._diet_classifier
+title: rasa.nlu.classifiers._diet_classifier
 ---
-## DIETClassifierGraphComponent Objects
+## DIETClassifier Objects
 
 ```python
-class DIETClassifierGraphComponent(GraphComponent,  EntityExtractorMixin)
+class DIETClassifier(IntentClassifier,  EntityExtractor)
 ```
 
 A multi-task model for intent classification and entity extraction.
@@ -19,31 +19,13 @@ intent labels are embedded into a single semantic vector space. We use the
 dot-product loss to maximize the similarity with the target label and minimize
 similarities with negative samples.
 
-#### get\_default\_config
-
-```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
-```
-
-The component&#x27;s default config (see parent class for full docstring).
-
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, index_label_id_mapping: Optional[Dict[int, Text]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, model: Optional[RasaModel] = None, sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None) -> None
+ | __init__(component_config: Optional[Dict[Text, Any]] = None, index_label_id_mapping: Optional[Dict[int, Text]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, model: Optional[RasaModel] = None, finetune_mode: bool = False, sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None) -> None
 ```
 
 Declare instance variables with default values.
-
-#### create
-
-```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DIETClassifierGraphComponent
-```
-
-Creates a new untrained component (see parent class for full docstring).
 
 #### label\_key
 
@@ -76,7 +58,7 @@ Performs sanity checks on training data, extracts encodings for labels.
 #### train
 
 ```python
- | train(training_data: TrainingData) -> Resource
+ | train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
 ```
 
 Train the embedding intent classifier on a data set.
@@ -84,7 +66,7 @@ Train the embedding intent classifier on a data set.
 #### process
 
 ```python
- | process(messages: List[Message]) -> List[Message]
+ | process(message: Message, **kwargs: Any) -> None
 ```
 
 Augments the message with intents, entities, and diagnostic data.
@@ -92,19 +74,21 @@ Augments the message with intents, entities, and diagnostic data.
 #### persist
 
 ```python
- | persist() -> None
+ | persist(file_name: Text, model_dir: Text) -> Dict[Text, Any]
 ```
 
 Persist this model into the passed directory.
+
+Return the metadata necessary to load the model again.
 
 #### load
 
 ```python
  | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> DIETClassifierGraphComponent
+ | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Metadata = None, cached_component: Optional["DIETClassifier"] = None, should_finetune: bool = False, **kwargs: Any, ,) -> "DIETClassifier"
 ```
 
-Loads a policy from the storage (see parent class for full docstring).
+Loads the trained model from the provided directory.
 
 ## DIET Objects
 

@@ -195,6 +195,7 @@
       "items": [
         {
           "items": [
+            "reference/rasa/nlu/classifiers/_diet_classifier",
             "reference/rasa/nlu/classifiers/diet_classifier",
             "reference/rasa/nlu/classifiers/fallback_classifier",
             "reference/rasa/nlu/classifiers/keyword_intent_classifier",
@@ -217,6 +218,7 @@
         },
         {
           "items": [
+            "reference/rasa/nlu/extractors/_extractor",
             "reference/rasa/nlu/extractors/crf_entity_extractor",
             "reference/rasa/nlu/extractors/duckling_entity_extractor",
             "reference/rasa/nlu/extractors/entity_synonyms",

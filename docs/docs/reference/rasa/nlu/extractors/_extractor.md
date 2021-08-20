@@ -1,6 +1,6 @@
 ---
-sidebar_label: rasa.nlu.extractors.extractor
-title: rasa.nlu.extractors.extractor
+sidebar_label: rasa.nlu.extractors._extractor
+title: rasa.nlu.extractors._extractor
 ---
 ## EntityTagSpec Objects
 
@@ -10,26 +10,16 @@ class EntityTagSpec(NamedTuple)
 
 Specification of an entity tag present in the training data.
 
-## EntityExtractorMixin Objects
+## EntityExtractor Objects
 
 ```python
-class EntityExtractorMixin(abc.ABC)
+class EntityExtractor(Component)
 ```
 
-Provides functionality for components that do entity extraction.
+Entity extractors are components which extract entities.
 
-Inheriting from this class will add utility functions for entity extraction.
-Entity extraction is the process of identifying and extracting entities like a
-person&#x27;s name, or a location from a message.
-
-#### name
-
-```python
- | @property
- | name() -> Text
-```
-
-Returns the name of the class.
+They can be placed in the pipeline like other components, and can extract
+entities like a person&#x27;s name, or a location.
 
 #### add\_extractor\_name
 
@@ -64,6 +54,20 @@ Adds this extractor&#x27;s name to the list of processors for this entity.
 **Returns**:
 
   the modified entity.
+
+#### init\_split\_entities
+
+```python
+ | init_split_entities() -> Dict[Text, bool]
+```
+
+Initialises the behaviour for splitting entities by comma (or not).
+
+**Returns**:
+
+  Defines desired behaviour for splitting specific entity types and
+  default behaviour for splitting any entity types for which no
+  behaviour is defined.
 
 #### filter\_irrelevant\_entities
 
