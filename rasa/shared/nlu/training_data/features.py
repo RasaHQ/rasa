@@ -71,22 +71,6 @@ class Features:
         """
         return not self.is_sparse()
 
-    def is_sparse(self) -> bool:
-        """Checks if features are sparse or not.
-
-        Returns:
-            True, if features are sparse, false otherwise.
-        """
-        return isinstance(self.features, scipy.sparse.spmatrix)
-
-    def is_dense(self) -> bool:
-        """Checks if features are dense or not.
-
-        Returns:
-            True, if features are dense, false otherwise.
-        """
-        return isinstance(self.features, np.ndarray)
-
     def combine_with_features(self, additional_features: Optional[Features]) -> None:
         """Combine the incoming features with this instance's features.
 
