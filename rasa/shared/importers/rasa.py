@@ -46,7 +46,6 @@ class RasaFileImporter(TrainingDataImporter):
     def get_stories(
         self,
         template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
@@ -54,14 +53,13 @@ class RasaFileImporter(TrainingDataImporter):
             self._story_files,
             self.get_domain(),
             template_variables,
-            use_e2e,
             exclusion_percentage,
         )
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
         return utils.story_graph_from_paths(
-            self._conversation_test_files, self.get_domain(), use_e2e=True,
+            self._conversation_test_files, self.get_domain(),
         )
 
     def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:

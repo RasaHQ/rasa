@@ -475,7 +475,7 @@ stories:
     """
 
     story_as_yaml = rasa.shared.utils.io.read_yaml(story)
-    steps = YAMLStoryReader(use_e2e=True).read_from_parsed_yaml(story_as_yaml)
+    steps = YAMLStoryReader().read_from_parsed_yaml(story_as_yaml)
     user_uttered = steps[0].events[0]
 
     assert user_uttered == UserUttered(
@@ -584,7 +584,7 @@ def test_handles_mixed_steps_for_test_and_e2e_stories(is_conversation_test):
         intent: suspicion
     """
 
-    reader = YAMLStoryReader(use_e2e=is_conversation_test)
+    reader = YAMLStoryReader()
     yaml_content = rasa.shared.utils.io.read_yaml(stories)
 
     steps = reader.read_from_parsed_yaml(yaml_content)

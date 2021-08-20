@@ -20,7 +20,6 @@ class StoryReader:
         self,
         domain: Optional[Domain] = None,
         template_vars: Optional[Dict] = None,
-        use_e2e: bool = False,
         source_name: Optional[Text] = None,
         is_used_for_training: bool = True,
     ) -> None:
@@ -29,7 +28,6 @@ class StoryReader:
         Args:
             domain: Domain object.
             template_vars: Template variables to be replaced.
-            use_e2e: Specifies whether to use the e2e parser or not.
             source_name: Name of the training data source.
             is_used_for_training: Identifies if the user utterances should be parsed
               (entities are extracted and removed from the original text) and
@@ -43,7 +41,6 @@ class StoryReader:
         self.current_step_builder: Optional[StoryStepBuilder] = None
         self.domain = domain
         self.template_variables = template_vars if template_vars else {}
-        self.use_e2e = use_e2e
         self.source_name = source_name
         self._is_used_for_training = is_used_for_training
         self._is_parsing_conditions = False

@@ -19,24 +19,22 @@ def _get_reader(
     filename: Text,
     domain: Domain,
     template_variables: Optional[Dict] = None,
-    use_e2e: bool = False,
 ) -> StoryReader:
     if rasa.shared.data.is_likely_yaml_file(filename):
-        return YAMLStoryReader(domain, template_variables, use_e2e, filename)
+        return YAMLStoryReader(domain, template_variables, filename)
     else:
         # This is a use case for uploading the story over REST API.
         # The source file has a random name.
-        return _guess_reader(filename, domain, template_variables, use_e2e)
+        return _guess_reader(filename, domain, template_variables)
 
 
 def _guess_reader(
     filename: Text,
     domain: Domain,
     template_variables: Optional[Dict] = None,
-    use_e2e: bool = False,
 ) -> StoryReader:
     if YAMLStoryReader.is_stories_file(filename):
-        return YAMLStoryReader(domain, template_variables, use_e2e, filename)
+        return YAMLStoryReader(domain, template_variables, filename)
 
     raise ValueError(
         f"Failed to find a reader class for the story file `{filename}`. "
@@ -49,7 +47,6 @@ def load_data_from_resource(
     resource: Union[Text],
     domain: Domain,
     template_variables: Optional[Dict] = None,
-    use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
 ) -> List["StoryStep"]:
     """Loads core training data from the specified folder.
@@ -58,7 +55,6 @@ def load_data_from_resource(
         resource: Folder/File with core training data files.
         domain: Domain object.
         template_variables: Variables that have to be replaced in the training data.
-        use_e2e: Identifies if the e2e reader should be used.
         exclusion_percentage: Identifies the percentage of training data that
                               should be excluded from the training.
 
@@ -72,7 +68,6 @@ def load_data_from_resource(
         rasa.shared.utils.io.list_files(resource),
         domain,
         template_variables,
-        use_e2e,
         exclusion_percentage,
     )
 
@@ -81,7 +76,6 @@ def load_data_from_files(
     story_files: List[Text],
     domain: Domain,
     template_variables: Optional[Dict] = None,
-    use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
 ) -> List["StoryStep"]:
     """Loads core training data from the specified files.
@@ -90,7 +84,6 @@ def load_data_from_files(
         story_files: List of files with training data in it.
         domain: Domain object.
         template_variables: Variables that have to be replaced in the training data.
-        use_e2e: Identifies whether the e2e reader should be used.
         exclusion_percentage: Identifies the percentage of training data that
                               should be excluded from the training.
 
@@ -101,7 +94,7 @@ def load_data_from_files(
 
     for story_file in story_files:
 
-        reader = _get_reader(story_file, domain, template_variables, use_e2e)
+        reader = _get_reader(story_file, domain, template_variables)
 
         steps = reader.read_from_file(story_file)
         story_steps.extend(steps)
