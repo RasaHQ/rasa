@@ -698,5 +698,5 @@ def default_model_storage(tmp_path: Path) -> ModelStorage:
 
 
 @pytest.fixture()
-def default_execution_context(tmp_path: Path) -> ExecutionContext:
-    return ExecutionContext(graph_schema=GraphSchema({}), model_id=uuid.uuid4().hex,)
+def default_execution_context() -> ExecutionContext:
+    return ExecutionContext(GraphSchema({}), uuid.uuid4().hex)
