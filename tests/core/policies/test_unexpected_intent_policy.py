@@ -16,7 +16,9 @@ from rasa.core.featurizers.tracker_featurizers import (
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES
-from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicyGraphComponent as UnexpecTEDIntentPolicy
+from rasa.core.policies.unexpected_intent_policy import (
+    UnexpecTEDIntentPolicyGraphComponent as UnexpecTEDIntentPolicy,
+)
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -46,7 +48,7 @@ from rasa.utils.tensorflow.constants import (
     SEVERITY_KEY,
     QUERY_INTENT_KEY,
     NAME,
-    RANKING_LENGTH
+    RANKING_LENGTH,
 )
 from rasa.shared.nlu.constants import INTENT
 from rasa.shared.core.events import Event
@@ -89,14 +91,11 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         trained_policy: UnexpecTEDIntentPolicy,
         model_storage: ModelStorage,
         resource: Resource,
-        execution_context: ExecutionContext
+        execution_context: ExecutionContext,
     ):
         trained_policy.persist()
         return trained_policy.__class__.load(
-            trained_policy.config,
-            model_storage,
-            resource,
-            execution_context
+            trained_policy.config, model_storage, resource, execution_context
         )
 
     @pytest.mark.skip
@@ -433,7 +432,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         is_unlikely: bool,
         tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, model_storage, resource, execution_context)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
         # Construct dummy similarities
         similarities = np.array([[0.0] * len(default_domain.intents)])
         dummy_intent_index = 4
@@ -451,13 +452,15 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_should_check_for_intent(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
-            model_storage: ModelStorage,
-            resource: Resource,
-            execution_context: ExecutionContext,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, model_storage, resource, execution_context)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
 
         intent_index = 0
         assert (
@@ -491,7 +494,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         default_domain: Domain,
         tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, model_storage, resource, execution_context)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
 
         expected_probabilities = [0] * default_domain.num_actions
 
@@ -531,9 +536,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_action_unlikely_intent_prediction(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
-            model_storage: ModelStorage,
-            resource: Resource,
-            execution_context: ExecutionContext,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         predicted_similarity,
         threshold_value,
@@ -541,7 +546,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         monkeypatch: MonkeyPatch,
         tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, model_storage, resource, execution_context)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
 
         similarities = np.array([[[0.0] * len(default_domain.intents)]])
 
@@ -635,9 +642,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_skip_predictions_to_prevent_loop(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
-            model_storage: ModelStorage,
-            resource: Resource,
-            execution_context: ExecutionContext,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         caplog: LogCaptureFixture,
         tracker_events: List[Event],
@@ -645,7 +652,9 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         tmp_path: Path,
     ):
         caplog.set_level(logging.DEBUG)
-        loaded_policy = self.persist_and_load_policy(trained_policy, model_storage, resource, execution_context)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
         interpreter = RegexInterpreter()
         tracker = DialogueStateTracker(sender_id="init", slots=default_domain.slots)
         tracker.update_with_events(tracker_events, default_domain)
@@ -726,15 +735,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_ignore_action_unlikely_intent(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
-            model_storage: ModelStorage,
-            resource: Resource,
-            execution_context: ExecutionContext,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         tracker_events_with_action: List[Event],
         tracker_events_without_action: List[Event],
         tmp_path: Path,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, model_storage, resource, execution_context)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
         interpreter = RegexInterpreter()
         tracker_with_action = DialogueStateTracker.from_events(
             "test 1", evts=tracker_events_with_action
@@ -792,15 +803,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_collect_action_metadata(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
-            model_storage: ModelStorage,
-            resource: Resource,
-            execution_context: ExecutionContext,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
         default_domain: Domain,
         tmp_path: Path,
         query_intent_index: int,
         ranking_length: int,
     ):
-        loaded_policy = self.persist_and_load_policy(trained_policy, model_storage, resource, execution_context)
+        loaded_policy = self.persist_and_load_policy(
+            trained_policy, model_storage, resource, execution_context
+        )
 
         def test_individual_label_metadata(
             label_metadata: Dict[Text, Optional[float]],
@@ -1156,7 +1169,7 @@ def test_train_with_e2e_data(
         default_execution_context,
         featurizer=IntentMaxHistoryTrackerFeaturizer(
             IntentTokenizerSingleStateFeaturizer()
-        )
+        ),
     )
     trackers_for_training = [
         TrackerWithCachedStates.from_events(

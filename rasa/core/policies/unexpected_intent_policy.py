@@ -282,11 +282,18 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         featurizer: Optional[TrackerFeaturizer] = None,
         fake_features: Optional[Dict[Text, List[Features]]] = None,
         entity_tag_specs: Optional[List[EntityTagSpec]] = None,
-        label_quantiles: Optional[Dict[int, List[float]]] = None
+        label_quantiles: Optional[Dict[int, List[float]]] = None,
     ):
         """Declares instance variables with default values."""
         super().__init__(
-            config, model_storage, resource, execution_context, model, featurizer, fake_features, entity_tag_specs
+            config,
+            model_storage,
+            resource,
+            execution_context,
+            model,
+            featurizer,
+            fake_features,
+            entity_tag_specs,
         )
 
         self.label_quantiles = label_quantiles or {}
@@ -305,7 +312,6 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         self.config = config
 
         common.mark_as_experimental_feature("UnexpecTED Intent Policy")
-
 
     @staticmethod
     def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
@@ -884,7 +890,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             featurizer=featurizer,
             fake_features=model_utilities["fake_features"],
             entity_tag_specs=model_utilities["entity_tag_specs"],
-            label_quantiles=model_utilities["label_quantiles"]
+            label_quantiles=model_utilities["label_quantiles"],
         )
 
 
