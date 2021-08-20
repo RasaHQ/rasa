@@ -200,15 +200,14 @@ def test_can_read_test_story_with_entities_without_value(domain: Domain):
 
 
 @pytest.mark.parametrize(
-    "file,is_yaml_file",
+    "file",
     [
-        ("data/test_yaml_stories/stories.yml", True),
-        ("data/test_md/end_to_end_story.md", False),
-        ("data/test_yaml_stories/rules_without_stories.yml", True),
+        "data/test_yaml_stories/stories.yml",
+        "data/test_yaml_stories/rules_without_stories.yml",
     ],
 )
-async def test_is_yaml_file(file: Text, is_yaml_file: bool):
-    assert YAMLStoryReader.is_stories_file(file) == is_yaml_file
+async def test_is_yaml_file(file: Text):
+    assert YAMLStoryReader.is_stories_file(file) == True
 
 
 def test_yaml_intent_with_leading_slash_warning(domain: Domain):

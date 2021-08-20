@@ -12,19 +12,19 @@ import rasa.utils.io as io_utils
 from rasa.shared.nlu.training_data.features import Features
 
 
-@pytest.mark.parametrize("file, parents", [("A/test.md", "A"), ("A", "A")])
+@pytest.mark.parametrize("file, parents", [("A/test.yml", "A"), ("A", "A")])
 def test_file_in_path(file, parents):
     assert rasa.shared.utils.io.is_subdirectory(file, parents)
 
 
 @pytest.mark.parametrize(
-    "file, parents", [("A", "A/B"), ("B", "A"), ("A/test.md", "A/B"), (None, "A")]
+    "file, parents", [("A", "A/B"), ("B", "A"), ("A/test.yml", "A/B"), (None, "A")]
 )
 def test_file_not_in_path(file, parents):
     assert not rasa.shared.utils.io.is_subdirectory(file, parents)
 
 
-@pytest.mark.parametrize("actual_path", ["", "file.md", "file"])
+@pytest.mark.parametrize("actual_path", ["", "file.json", "file"])
 def test_file_path_validator_with_invalid_paths(actual_path):
     test_error_message = actual_path
 

@@ -443,35 +443,6 @@ async def test_parse_on_invalid_emulation_mode(
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
-async def test_train_stack_success_with_md(
-    rasa_app: SanicASGITestClient,
-    domain_path: Text,
-    stack_config_path: Text,
-    nlu_data_path: Text,
-    tmp_path: Path,
-):
-    payload = dict(
-        domain=Path(domain_path).read_text(),
-        config=Path(stack_config_path).read_text(),
-        stories=Path("data/test_stories/stories_defaultdomain.md").read_text(),
-        nlu=Path(nlu_data_path).read_text(),
-    )
-
-    _, response = await rasa_app.post("/model/train", json=payload)
-    assert response.status == HTTPStatus.OK
-
-    assert response.headers["filename"] is not None
-
-    # save model to temporary file
-    model_path = str(tmp_path / "model.tar.gz")
-    with open(model_path, "wb") as f:
-        f.write(response.body)
-
-    # unpack model and ensure fingerprint is present
-    model_path = unpack_model(model_path)
-    assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
-
-
 async def test_train_nlu_success(
     rasa_app: SanicASGITestClient,
     stack_config_path: Text,
@@ -787,34 +758,6 @@ async def test_evaluate_stories_not_ready_agent(
     assert response.status == HTTPStatus.CONFLICT
 
 
-async def test_evaluate_stories_end_to_end_md(
-    rasa_app: SanicASGITestClient, end_to_end_story_md_path: Text
-):
-    stories = rasa.shared.utils.io.read_file(end_to_end_story_md_path)
-
-    _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories,)
-
-    assert response.status == HTTPStatus.OK
-    js = response.json()
-    assert set(js.keys()) == {
-        "report",
-        "precision",
-        "f1",
-        "accuracy",
-        "actions",
-        "in_training_data_fraction",
-        "is_end_to_end_evaluation",
-    }
-    assert js["is_end_to_end_evaluation"]
-    assert js["actions"] != []
-    assert set(js["actions"][0].keys()) == {
-        "action",
-        "predicted",
-        "confidence",
-        "policy",
-    }
-
-
 async def test_evaluate_stories_end_to_end(
     rasa_app: SanicASGITestClient, end_to_end_story_path: Text
 ):
@@ -1025,22 +968,6 @@ async def test_cross_validation(
         assert all(
             key in details for key in ["precision", "f1_score", "report", "errors"]
         )
-
-
-async def test_cross_validation_with_md(
-    rasa_non_trained_app: SanicASGITestClient, nlu_data_path: Text
-):
-    payload = """
-    ## intent: greet
-    - Hi
-    - Hello
-        """
-
-    _, response = await rasa_non_trained_app.post(
-        "/model/test/intents", data=payload, params={"cross_validation_folds": 3},
-    )
-
-    assert response.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_cross_validation_with_callback_success(

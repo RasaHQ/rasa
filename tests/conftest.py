@@ -133,11 +133,6 @@ def end_to_end_story_path() -> Text:
 
 
 @pytest.fixture(scope="session")
-def end_to_end_story_md_path() -> Text:
-    return "data/test_md/end_to_end_story.md"
-
-
-@pytest.fixture(scope="session")
 def e2e_story_file_unknown_entity_path() -> Text:
     return "data/test_evaluations/test_story_unknown_entity.yml"
 

@@ -46,18 +46,11 @@ def test_can_read_test_story(domain: Domain):
     assert tracker.events[4] == ActionExecuted("action_listen")
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    [
-        "data/test_stories/stories_checkpoint_after_or.md",
-        "data/test_yaml_stories/stories_checkpoint_after_or.yml",
-    ],
-)
 def test_can_read_test_story_with_checkpoint_after_or(
-    stories_file: Text, domain: Domain
+    domain: Domain
 ):
     trackers = training.load_data(
-        stories_file,
+        "data/test_yaml_stories/stories_checkpoint_after_or.yml",
         domain,
         use_story_concatenation=False,
         tracker_limit=1000,
@@ -66,15 +59,8 @@ def test_can_read_test_story_with_checkpoint_after_or(
     assert len(trackers) == 2
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    [
-        "data/test_stories/stories_with_cycle.md",
-        "data/test_yaml_stories/stories_with_cycle.yml",
-    ],
-)
-def test_read_story_file_with_cycles(stories_file: Text, domain: Domain):
-    graph = training.extract_story_graph(stories_file, domain)
+def test_read_story_file_with_cycles(domain: Domain):
+    graph = training.extract_story_graph("data/test_yaml_stories/stories_with_cycle.yml", domain)
 
     assert len(graph.story_steps) == 5
 
@@ -89,16 +75,9 @@ def test_read_story_file_with_cycles(stories_file: Text, domain: Domain):
     assert len(graph_without_cycles.story_end_checkpoints) == 2
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    [
-        "data/test_stories/stories_with_cycle.md",
-        "data/test_yaml_stories/stories_with_cycle.yml",
-    ],
-)
-def test_generate_training_data_with_cycles(stories_file: Text, domain: Domain):
+def test_generate_training_data_with_cycles(domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
-    training_trackers = training.load_data(stories_file, domain, augmentation_factor=0,)
+    training_trackers = training.load_data("data/test_yaml_stories/stories_with_cycle.yml", domain, augmentation_factor=0,)
 
     _, label_ids, _ = featurizer.featurize_trackers(
         training_trackers, domain, interpreter=RegexInterpreter()
@@ -116,34 +95,20 @@ def test_generate_training_data_with_cycles(stories_file: Text, domain: Domain):
     assert Counter(all_label_ids) == {0: 6, 14: 3, 13: num_tens, 1: 2, 15: 1}
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    [
-        "data/test_stories/stories_unused_checkpoints.md",
-        "data/test_yaml_stories/stories_unused_checkpoints.yml",
-    ],
-)
 def test_generate_training_data_with_unused_checkpoints(
-    stories_file: Text, domain: Domain
+    domain: Domain
 ):
-    training_trackers = training.load_data(stories_file, domain)
+    training_trackers = training.load_data("data/test_yaml_stories/stories_unused_checkpoints.yml", domain)
     # there are 3 training stories:
     #   2 with unused end checkpoints -> training_trackers
     #   1 with unused start checkpoints -> ignored
     assert len(training_trackers) == 2
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    [
-        "data/test_stories/stories_defaultdomain.md",
-        "data/test_yaml_stories/stories_defaultdomain.yml",
-    ],
-)
 def test_generate_training_data_original_and_augmented_trackers(
-    stories_file: Text, domain: Domain
+    domain: Domain
 ):
-    training_trackers = training.load_data(stories_file, domain, augmentation_factor=3,)
+    training_trackers = training.load_data("data/test_yaml_stories/stories_defaultdomain.yml", domain, augmentation_factor=3,)
     # there are three original stories
     # augmentation factor of 3 indicates max of 3*10 augmented stories generated
     # maximum number of stories should be augmented+original = 33
@@ -156,17 +121,10 @@ def test_generate_training_data_original_and_augmented_trackers(
     assert len(training_trackers) <= 34
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    [
-        "data/test_stories/stories_with_cycle.md",
-        "data/test_yaml_stories/stories_with_cycle.yml",
-    ],
-)
 def test_visualize_training_data_graph(
-    stories_file: Text, tmp_path: Path, domain: Domain
+    tmp_path: Path, domain: Domain
 ):
-    graph = training.extract_story_graph(stories_file, domain)
+    graph = training.extract_story_graph("data/test_yaml_stories/stories_with_cycle.yml", domain)
 
     graph = graph.with_cycles_removed()
 
@@ -186,21 +144,9 @@ def test_visualize_training_data_graph(
         assert len(G.edges()) == 16
 
 
-@pytest.mark.parametrize(
-    "stories_resources",
-    [
-        ["data/test_stories/stories.md", "data/test_multifile_md_stories"],
-        ["data/test_yaml_stories/stories.yml", "data/test_multifile_yaml_stories"],
-        ["data/test_stories/stories.md", "data/test_multifile_yaml_stories"],
-        ["data/test_yaml_stories/stories.yml", "data/test_multifile_md_stories"],
-        ["data/test_stories/stories.md", "data/test_mixed_yaml_md_stories"],
-    ],
-)
-def test_load_multi_file_training_data(stories_resources: List, domain: Domain):
-    # the stories file in `data/test_multifile_stories` is the same as in
-    # `data/test_stories/stories.md`, but split across multiple files
+def test_load_multi_file_training_data(domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
-    trackers = training.load_data(stories_resources[0], domain, augmentation_factor=0)
+    trackers = training.load_data("data/test_yaml_stories/stories.yml", domain, augmentation_factor=0)
     trackers = sorted(trackers, key=lambda t: t.sender_id)
 
     (tr_as_sts, tr_as_acts) = featurizer.training_states_and_labels(trackers, domain)
@@ -215,7 +161,7 @@ def test_load_multi_file_training_data(stories_resources: List, domain: Domain):
 
     featurizer_mul = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
     trackers_mul = training.load_data(
-        stories_resources[1], domain, augmentation_factor=0
+        "data/test_multifile_yaml_stories", domain, augmentation_factor=0
     )
     trackers_mul = sorted(trackers_mul, key=lambda t: t.sender_id)
 
@@ -269,17 +215,10 @@ def test_session_started_event_is_not_serialised():
     assert SessionStarted().as_story_string() is None
 
 
-@pytest.mark.parametrize(
-    "stories_file",
-    [
-        "data/test_stories/story_slot_different_types.md",
-        "data/test_yaml_stories/story_slot_different_types.yml",
-    ],
-)
-def test_yaml_slot_different_types(stories_file: Text, domain: Domain):
+def test_yaml_slot_different_types(domain: Domain):
     with pytest.warns(None):
         tracker = training.load_data(
-            stories_file,
+            "data/test_yaml_stories/story_slot_different_types.yml",
             domain,
             use_story_concatenation=False,
             tracker_limit=1000,

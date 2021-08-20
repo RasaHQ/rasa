@@ -176,11 +176,11 @@ def test_importing_additional_files(tmp_path: Path):
     config_path = str(tmp_path / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
-    additional_file = tmp_path / "directory" / "file.md"
+    additional_file = tmp_path / "directory" / "file.yml"
     additional_file.parent.mkdir()
 
     # create intermediate directories and fake files
-    rasa.shared.utils.io.write_text_file("""## story""", additional_file)
+    rasa.shared.utils.io.write_text_file("stories:\n  - story: simple", additional_file)
     selector = MultiProjectImporter(
         config_path,
         training_data_paths=[str(tmp_path / "directory"), str(additional_file)],
@@ -266,9 +266,9 @@ def test_not_importing_e2e_conversation_tests_in_project(tmp_path: Path,):
     config_path = str(tmp_path / "config.yml")
     utils.dump_obj_as_yaml_to_file(config_path, config)
 
-    story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.md"
+    story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.yml"
     story_file.parent.mkdir(parents=True)
-    rasa.shared.utils.io.write_text_file("""## story""", story_file)
+    rasa.shared.utils.io.write_text_file("stories:\n  - story: simple", story_file)
 
     story_test_file = tmp_path / "bots" / "Bot A" / "test_stories.yml"
     rasa.shared.utils.io.write_text_file("""stories:""", story_test_file)
