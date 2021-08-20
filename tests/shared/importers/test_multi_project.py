@@ -250,7 +250,6 @@ def test_only_getting_e2e_conversation_tests_if_e2e_enabled(tmp_path: Path):
         resource=str(story_test_file),
         domain=Domain.empty(),
         template_variables=None,
-        use_e2e=True,
         exclusion_percentage=None,
     )
 

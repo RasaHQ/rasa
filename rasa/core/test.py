@@ -745,7 +745,6 @@ async def _predict_tracker_actions(
     tracker: DialogueStateTracker,
     agent: "Agent",
     fail_on_prediction_errors: bool = False,
-    use_e2e: bool = False,
 ) -> Tuple[
     EvaluationStore,
     DialogueStateTracker,
@@ -791,23 +790,6 @@ async def _predict_tracker_actions(
                         "confidence": prediction.max_confidence,
                     }
                 )
-
-        elif use_e2e and isinstance(event, UserUttered):
-            # This means that user utterance didn't have a user message, only intent,
-            # so we can skip the NLU part and take the parse data directly.
-            # Indirectly that means that the test story was in YAML format.
-            if not event.text:
-                predicted = event.parse_data
-            # Indirectly that means that the test story was either:
-            # in YAML format containing a user message, or in Markdown format.
-            # Leaving that as it is because Markdown is in legacy mode.
-            else:
-                predicted = await processor.parse_message(UserMessage(event.text))
-            user_uttered_result = _collect_user_uttered_predictions(
-                event, predicted, partial_tracker, fail_on_prediction_errors
-            )
-
-            tracker_eval_store.merge_store(user_uttered_result)
         else:
             partial_tracker.update(event)
 
@@ -871,7 +853,6 @@ async def _collect_story_predictions(
     completed_trackers: List["DialogueStateTracker"],
     agent: "Agent",
     fail_on_prediction_errors: bool = False,
-    use_e2e: bool = False,
 ) -> Tuple[StoryEvaluation, int, List[EntityEvaluationResult]]:
     """Test the stories from a file, running them through the stored model."""
     from sklearn.metrics import accuracy_score
@@ -896,7 +877,7 @@ async def _collect_story_predictions(
             tracker_actions,
             tracker_entity_results,
         ) = await _predict_tracker_actions(
-            tracker, agent, fail_on_prediction_errors, use_e2e
+            tracker, agent, fail_on_prediction_errors
         )
 
         entity_results.extend(tracker_entity_results)
@@ -931,7 +912,7 @@ async def _collect_story_predictions(
 
     _log_evaluation_table(
         [1] * len(completed_trackers),
-        "END-TO-END" if use_e2e else "CONVERSATION",
+        "CONVERSATION",
         accuracy,
     )
 
@@ -1005,7 +986,6 @@ async def test(
         out_directory: path to directory to results to
         fail_on_prediction_errors: boolean indicating whether to fail on prediction
             errors or not
-        e2e: boolean indicating whether to use end to end evaluation or not
         disable_plotting: boolean indicating whether to disable plotting or not
         successes: boolean indicating whether to write down successful predictions or
             not
@@ -1021,7 +1001,7 @@ async def test(
     completed_trackers = generator.generate_story_trackers()
 
     story_evaluation, _, entity_results = await _collect_story_predictions(
-        completed_trackers, agent, fail_on_prediction_errors, e2e
+        completed_trackers, agent, fail_on_prediction_errors
     )
 
     evaluation_store = story_evaluation.evaluation_store

@@ -1123,13 +1123,13 @@ def create_app(
             "evaluate your model.",
         )
 
-        test_data = _test_data_file_from_payload(request, temporary_directory, ".md")
+        test_data = _test_data_file_from_payload(request, temporary_directory, ".yml")
 
-        use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
+        e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
             evaluation = await test(
-                test_data, app.agent, e2e=use_e2e, disable_plotting=True
+                test_data, app.agent, e2e=e2e, disable_plotting=True
             )
             return response.json(evaluation)
         except Exception as e:

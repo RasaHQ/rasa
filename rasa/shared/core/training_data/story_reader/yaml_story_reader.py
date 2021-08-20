@@ -76,7 +76,6 @@ class YAMLStoryReader(StoryReader):
         return cls(
             reader.domain,
             reader.template_variables,
-            reader.use_e2e,
             reader.source_name,
             reader._is_used_for_training,
         )

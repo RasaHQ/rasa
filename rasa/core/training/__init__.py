@@ -10,7 +10,6 @@ if TYPE_CHECKING:
 def extract_story_graph(
     resource_name: Text,
     domain: "Domain",
-    use_e2e: bool = False,
     exclusion_percentage: Optional[int] = None,
 ) -> "StoryGraph":
     """Loads training stories / rules from file or directory.
@@ -18,7 +17,6 @@ def extract_story_graph(
     Args:
         resource_name: Path to file or directory.
         domain: The model domain.
-        use_e2e: `True` if Markdown files should be parsed as conversation test files.
         exclusion_percentage: Percentage of stories which should be dropped. `None`
             if all training data should be used.
 
@@ -31,7 +29,6 @@ def extract_story_graph(
     story_steps = core_loading.load_data_from_resource(
         resource_name,
         domain,
-        use_e2e=use_e2e,
         exclusion_percentage=exclusion_percentage,
     )
     return StoryGraph(story_steps)
