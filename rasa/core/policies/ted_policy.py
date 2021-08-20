@@ -3,29 +3,32 @@ import logging
 import shutil
 from pathlib import Path
 from collections import defaultdict
-
-import numpy as np
-
-import rasa.shared.utils.io
-import rasa.utils.train_utils
-import tensorflow as tf
-import tensorflow_addons as tfa
 from typing import Any, List, Optional, Text, Dict, Tuple, Union, Type
 
-import rasa.utils.io as io_utils
-import rasa.core.actions.action
+import numpy as np
+import tensorflow as tf
+import tensorflow_addons as tfa
+
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
-from rasa.shared.core.domain import Domain
+import rasa.core.actions.action
+from rasa.core.featurizers.precomputation import CoreFeaturizationPrecomputations
 from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer2 as TrackerFeaturizer,
 )
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.tracker_featurizers import (
+    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
+)
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer2 as SingleStateFeaturizer,
+)
+from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
+from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY
 from rasa.shared.exceptions import RasaException
+from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
     ACTION_NAME,
@@ -39,13 +42,14 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
-from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
-from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY
-from rasa.shared.constants import DIAGNOSTIC_DATA
+from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
+from rasa.shared.core.events import EntitiesAdded, Event
+from rasa.shared.utils import io as shared_io_utils
+import rasa.utils.io as io_utils
 import rasa.utils.train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow import rasa_layers
@@ -114,9 +118,6 @@ from rasa.utils.tensorflow.constants import (
     BILOU_FLAG,
     EPOCH_OVERRIDE,
 )
-from rasa.shared.core.events import EntitiesAdded, Event
-from rasa.shared.nlu.training_data.message import Message
-from rasa.shared.utils import io as shared_io_utils
 from rasa.core.policies._ted_policy import TEDPolicy
 
 from rasa.shared.nlu.training_data.features import Features
@@ -415,11 +416,13 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         )
 
     def _create_label_data(
-        self, domain: Domain, interpreter: NaturalLanguageInterpreter
+        self,
+        domain: Domain,
+        precomputations: Optional[CoreFeaturizationPrecomputations],
     ) -> Tuple[RasaModelData, List[Dict[Text, List[Features]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
-        encoded_all_labels = state_featurizer.encode_all_labels(domain, interpreter)
+        encoded_all_labels = state_featurizer.encode_all_labels(domain, precomputations)
 
         attribute_data, _ = convert_to_data_format(
             encoded_all_labels, featurizers=self.config[FEATURIZERS]
@@ -586,7 +589,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: CoreFeaturizationPrecomputations,
         **kwargs: Any,
     ) -> Tuple[RasaModelData, np.ndarray]:
         """Prepares data to be fed into the model.
@@ -594,7 +597,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         Args:
             trackers: List of training trackers to be featurized.
             domain: Domain of the assistant.
-            interpreter: NLU interpreter to be used for featurizing states.
+            precomputations: Contains precomputed features and attributes.
             **kwargs: Any other arguments.
 
         Returns:
@@ -605,7 +608,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         tracker_state_features, label_ids, entity_tags = self._featurize_for_training(
             training_trackers,
             domain,
-            interpreter,
+            precomputations=precomputations,
             bilou_tagging=self.config[BILOU_FLAG],
             **kwargs,
         )
@@ -614,7 +617,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             return RasaModelData(), label_ids
 
         self._label_data, encoded_all_labels = self._create_label_data(
-            domain, interpreter
+            domain, precomputations=precomputations
         )
 
         # extract actual training data to feed to model
@@ -686,9 +689,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        # TODO: The default is a workaround until the end-to-end featurization is
-        # implemented for the graph.
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        precomputations: Optional[CoreFeaturizationPrecomputations] = None,
     ) -> Resource:
         """Trains the policy (see parent class for full docstring)."""
         if not training_trackers:
@@ -702,7 +703,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             return self._resource
 
         model_data, label_ids = self._prepare_for_training(
-            training_trackers, domain, interpreter
+            training_trackers, domain, precomputations,
         )
 
         if model_data.is_empty():
@@ -721,11 +722,11 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
 
         return self._resource
 
-    def _featurize_tracker_for_e2e(
+    def _featurize_tracker(
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[CoreFeaturizationPrecomputations] = None,
     ) -> List[List[Dict[Text, List[Features]]]]:
         # construct two examples in the batch to be fed to the model -
         # one by featurizing last user text
@@ -733,7 +734,10 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
         tracker_state_features = self._featurize_for_prediction(
-            tracker, domain, interpreter, use_text_for_last_user_input=self.only_e2e,
+            tracker,
+            domain,
+            precomputations=precomputations,
+            use_text_for_last_user_input=self.only_e2e,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -742,7 +746,10 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             and not self.only_e2e
         ):
             tracker_state_features += self._featurize_for_prediction(
-                tracker, domain, interpreter, use_text_for_last_user_input=True,
+                tracker,
+                domain,
+                precomputations=precomputations,
+                use_text_for_last_user_input=True,
             )
         return tracker_state_features
 
@@ -794,7 +801,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         domain: Domain,
         # TODO: The default is a workaround until the end-to-end featurization is
         # implemented for the graph.
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        precomputations: Optional[CoreFeaturizationPrecomputations] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for full docstring)."""
@@ -802,8 +809,8 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             return self._prediction(self._default_predictions(domain))
 
         # create model data from tracker
-        tracker_state_features = self._featurize_tracker_for_e2e(
-            tracker, domain, interpreter
+        tracker_state_features = self._featurize_tracker(
+            tracker, domain, precomputations
         )
         model_data = self._create_model_data(tracker_state_features)
         outputs: Dict[Text, np.ndarray] = self.model.run_inference(model_data)
@@ -824,7 +831,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             )
 
         optional_events = self._create_optional_event_for_entities(
-            outputs, is_e2e_prediction, interpreter, tracker
+            outputs, is_e2e_prediction, precomputations, tracker
         )
 
         return self._prediction(
@@ -838,7 +845,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         prediction_output: Dict[Text, tf.Tensor],
         is_e2e_prediction: bool,
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[CoreFeaturizationPrecomputations],
         tracker: DialogueStateTracker,
     ) -> Optional[List[Event]]:
         if tracker.latest_action_name != ACTION_LISTEN_NAME or not is_e2e_prediction:
@@ -870,7 +877,10 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         # entities belong to the last message of the tracker
         # convert the predicted tags to actual entities
         text = tracker.latest_message.text
-        parsed_message = interpreter.featurize_message(Message(data={TEXT: text}))
+        if precomputations is not None:
+            parsed_message = precomputations.lookup_message(user_text=text)
+        else:
+            parsed_message = Message(data={TEXT: text})
         tokens = parsed_message.get(TOKENS_NAMES[TEXT])
         entities = EntityExtractor.convert_predictions_into_entities(
             text,
@@ -899,7 +909,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             model_filename = self._metadata_filename()
             tf_model_file = model_path / f"{model_filename}.tf_model"
 
-            rasa.shared.utils.io.create_directory_for_file(tf_model_file)
+            shared_io_utils.create_directory_for_file(tf_model_file)
 
             self.featurizer.persist(model_path)
 
@@ -934,7 +944,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             if self._entity_tag_specs
             else []
         )
-        rasa.shared.utils.io.dump_obj_as_json_to_file(
+        shared_io_utils.dump_obj_as_json_to_file(
             model_path / f"{model_filename}.entity_tag_specs.json", entity_tag_specs,
         )
 
@@ -959,7 +969,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         priority = io_utils.json_unpickle(
             model_path / f"{cls._metadata_filename()}.priority.pkl"
         )
-        entity_tag_specs = rasa.shared.utils.io.read_json_file(
+        entity_tag_specs = shared_io_utils.read_json_file(
             model_path / f"{cls._metadata_filename()}.entity_tag_specs.json"
         )
         entity_tag_specs = [
@@ -1064,7 +1074,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-        featurizer: [TrackerFeaturizer],
+        featurizer: TrackerFeaturizer,
         model: TED,
         model_utilities: Dict[Text, Any],
     ) -> TEDPolicyGraphComponent:

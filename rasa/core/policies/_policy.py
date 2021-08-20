@@ -21,8 +21,8 @@ from typing import (
 
 import numpy as np
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.featurizers.tracker_featurizers import (
+from rasa.core.featurizers._single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers._tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
     FEATURIZER_FILE,
