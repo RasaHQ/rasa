@@ -292,7 +292,7 @@ async def _replace_edge_labels_with_nodes(
                 parsed_info = await interpreter.parse(d.get("label", k))
                 label = message_generator.message_for_data(parsed_info)
             else:
-                label = d.get("label", k)
+                label = d.get("label", k) if d.get("label") else k
             next_id += 1
             graph.remove_edge(s, e, k)
             graph.add_node(
