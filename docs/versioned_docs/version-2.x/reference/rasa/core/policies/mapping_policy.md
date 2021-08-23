@@ -1,8 +1,7 @@
 ---
-sidebar_label: mapping_policy
+sidebar_label: rasa.core.policies.mapping_policy
 title: rasa.core.policies.mapping_policy
 ---
-
 ## MappingPolicy Objects
 
 ```python

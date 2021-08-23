@@ -1,8 +1,7 @@
 ---
-sidebar_label: multi_project
+sidebar_label: rasa.shared.importers.multi_project
 title: rasa.shared.importers.multi_project
 ---
-
 ## MultiProjectImporter Objects
 
 ```python

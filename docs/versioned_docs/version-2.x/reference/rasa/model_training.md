@@ -1,8 +1,7 @@
 ---
-sidebar_label: model_training
+sidebar_label: rasa.model_training
 title: rasa.model_training
 ---
-
 ## TrainingResult Objects
 
 ```python

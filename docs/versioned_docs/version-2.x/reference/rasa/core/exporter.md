@@ -1,8 +1,7 @@
 ---
-sidebar_label: exporter
+sidebar_label: rasa.core.exporter
 title: rasa.core.exporter
 ---
-
 ## Exporter Objects
 
 ```python

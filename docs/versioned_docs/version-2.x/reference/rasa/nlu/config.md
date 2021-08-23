@@ -1,8 +1,7 @@
 ---
-sidebar_label: config
+sidebar_label: rasa.nlu.config
 title: rasa.nlu.config
 ---
-
 #### load
 
 ```python

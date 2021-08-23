@@ -1,8 +1,7 @@
 ---
-sidebar_label: interactive
+sidebar_label: rasa.cli.arguments.interactive
 title: rasa.cli.arguments.interactive
 ---
-
 #### set\_interactive\_arguments
 
 ```python

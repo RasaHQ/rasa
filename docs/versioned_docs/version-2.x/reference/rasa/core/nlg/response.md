@@ -1,8 +1,7 @@
 ---
-sidebar_label: response
+sidebar_label: rasa.core.nlg.response
 title: rasa.core.nlg.response
 ---
-
 ## TemplatedNaturalLanguageGenerator Objects
 
 ```python

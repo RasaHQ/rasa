@@ -1,8 +1,7 @@
 ---
-sidebar_label: facebook
+sidebar_label: rasa.core.channels.facebook
 title: rasa.core.channels.facebook
 ---
-
 ## Messenger Objects
 
 ```python

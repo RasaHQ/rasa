@@ -1,8 +1,7 @@
 ---
-sidebar_label: models
+sidebar_label: rasa.utils.tensorflow.models
 title: rasa.utils.tensorflow.models
 ---
-
 ## RasaModel Objects
 
 ```python
@@ -130,22 +129,23 @@ Predicts the output for the given batch.
 
   Prediction output.
 
-#### rasa\_predict
+#### run\_inference
 
 ```python
- | rasa_predict(model_data: RasaModelData) -> Dict[Text, tf.Tensor]
+ | run_inference(model_data: RasaModelData, batch_size: Union[int, List[int]] = 1) -> Dict[Text, Union[np.ndarray, Dict[Text, Any]]]
 ```
 
-Custom prediction method that builds tf graph on the first call.
+Implements bulk inferencing through the model.
 
 **Arguments**:
 
-- `model_data` - The model data to use for prediction.
+- `model_data` - Input data to be fed to the model.
+- `batch_size` - Size of batches that the generator should create.
   
 
 **Returns**:
 
-  Prediction output.
+  Model outputs corresponding to the inputs fed.
 
 #### save
 

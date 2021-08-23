@@ -1,8 +1,7 @@
 ---
-sidebar_label: domain
+sidebar_label: rasa.shared.core.domain
 title: rasa.shared.core.domain
 ---
-
 ## InvalidDomain Objects
 
 ```python
@@ -19,6 +18,31 @@ class ActionNotFoundException(ValueError,  RasaException)
 
 Raised when an action name could not be found.
 
+## SessionConfig Objects
+
+```python
+class SessionConfig(NamedTuple)
+```
+
+The Session Configuration.
+
+#### default
+
+```python
+ | @staticmethod
+ | default() -> "SessionConfig"
+```
+
+Returns the SessionConfig with the default values.
+
+#### are\_sessions\_enabled
+
+```python
+ | are_sessions_enabled() -> bool
+```
+
+Returns a boolean value depending on the value of session_expiration_time.
+
 ## Domain Objects
 
 ```python
@@ -29,6 +53,24 @@ The domain specifies the universe in which the bot&#x27;s policy acts.
 
 A Domain subclass provides the actions the bot can take, the intents
 and entities it can recognise.
+
+#### from\_file
+
+```python
+ | @classmethod
+ | from_file(cls, path: Text) -> "Domain"
+```
+
+Loads the `Domain` from a YAML file.
+
+#### from\_yaml
+
+```python
+ | @classmethod
+ | from_yaml(cls, yaml: Text, original_filename: Text = "") -> "Domain"
+```
+
+Loads the `Domain` from YAML text after validating it.
 
 #### from\_dict
 
@@ -162,6 +204,14 @@ for more implementation.
 **Returns**:
 
   A deep copy of the current domain.
+
+#### count\_conditional\_response\_variations
+
+```python
+ | count_conditional_response_variations() -> int
+```
+
+Returns count of conditional response variations.
 
 #### \_\_hash\_\_
 
@@ -396,20 +446,23 @@ Provide a mapping from state names to indices.
 
 Returns all available states.
 
-#### get\_active\_states
+#### get\_active\_state
 
 ```python
- | get_active_states(tracker: "DialogueStateTracker", omit_unset_slots: bool = False) -> State
+ | get_active_state(tracker: "DialogueStateTracker", omit_unset_slots: bool = False) -> State
 ```
 
-Returns a bag of active states from the tracker state.
+Given a dialogue tracker, makes a representation of current dialogue state.
 
 **Arguments**:
 
 - `tracker` - dialog state tracker containing the dialog so far
 - `omit_unset_slots` - If `True` do not include the initial values of slots.
   
-  Returns `State` containing all active states.
+
+**Returns**:
+
+  A representation of the dialogue&#x27;s current state.
 
 #### states\_for\_tracker\_history
 

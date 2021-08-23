@@ -1,8 +1,7 @@
 ---
-sidebar_label: ensemble
+sidebar_label: rasa.core.policies.ensemble
 title: rasa.core.policies.ensemble
 ---
-
 ## PolicyEnsemble Objects
 
 ```python

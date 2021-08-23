@@ -1,8 +1,7 @@
 ---
-sidebar_label: mattermost
+sidebar_label: rasa.core.channels.mattermost
 title: rasa.core.channels.mattermost
 ---
-
 ## MattermostBot Objects
 
 ```python

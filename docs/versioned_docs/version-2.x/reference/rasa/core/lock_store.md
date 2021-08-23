@@ -1,8 +1,7 @@
 ---
-sidebar_label: lock_store
+sidebar_label: rasa.core.lock_store
 title: rasa.core.lock_store
 ---
-
 ## LockError Objects
 
 ```python
@@ -159,6 +158,14 @@ Create a lock store which uses Redis for persistence.
   alphanumeric.
 - `socket_timeout` - Timeout in seconds after which an exception will be raised
   in case Redis doesn&#x27;t respond within `socket_timeout` seconds.
+
+#### get\_lock
+
+```python
+ | get_lock(conversation_id: Text) -> Optional[TicketLock]
+```
+
+Retrieves lock (see parent docstring for more information).
 
 ## InMemoryLockStore Objects
 

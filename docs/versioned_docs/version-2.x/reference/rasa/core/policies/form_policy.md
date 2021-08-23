@@ -1,8 +1,7 @@
 ---
-sidebar_label: form_policy
+sidebar_label: rasa.core.policies.form_policy
 title: rasa.core.policies.form_policy
 ---
-
 ## FormPolicy Objects
 
 ```python

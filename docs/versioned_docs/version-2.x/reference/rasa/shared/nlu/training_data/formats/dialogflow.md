@@ -1,8 +1,7 @@
 ---
-sidebar_label: dialogflow
+sidebar_label: rasa.shared.nlu.training_data.formats.dialogflow
 title: rasa.shared.nlu.training_data.formats.dialogflow
 ---
-
 ## DialogflowReader Objects
 
 ```python

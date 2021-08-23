@@ -1,8 +1,7 @@
 ---
-sidebar_label: train_utils
+sidebar_label: rasa.utils.train_utils
 title: rasa.utils.train_utils
 ---
-
 #### normalize
 
 ```python
@@ -44,6 +43,23 @@ Updates LOSS_TYPE to &#x27;cross_entropy&#x27; if it is set to &#x27;softmax&#x2
 **Returns**:
 
   updated model configuration
+
+#### update\_deprecated\_sparsity\_to\_density
+
+```python
+update_deprecated_sparsity_to_density(config: Dict[Text, Any]) -> Dict[Text, Any]
+```
+
+Updates `WEIGHT_SPARSITY` to `CONNECTION_DENSITY = 1 - WEIGHT_SPARSITY`.
+
+**Arguments**:
+
+- `config` - model configuration
+  
+
+**Returns**:
+
+  Updated model configuration
 
 #### align\_token\_features
 
@@ -168,7 +184,7 @@ We cannot use `dict.update` method because configs contain nested dicts.
 #### create\_data\_generators
 
 ```python
-create_data_generators(model_data: RasaModelData, batch_sizes: Union[int, List[int]], epochs: int, batch_strategy: Text = SEQUENCE, eval_num_examples: int = 0, random_seed: Optional[int] = None) -> Tuple[RasaBatchDataGenerator, Optional[RasaBatchDataGenerator]]
+create_data_generators(model_data: RasaModelData, batch_sizes: Union[int, List[int]], epochs: int, batch_strategy: Text = SEQUENCE, eval_num_examples: int = 0, random_seed: Optional[int] = None, shuffle: bool = True) -> Tuple[RasaBatchDataGenerator, Optional[RasaBatchDataGenerator]]
 ```
 
 Create data generators for train and optional validation data.
@@ -181,6 +197,7 @@ Create data generators for train and optional validation data.
 - `batch_strategy` - The batch strategy to use.
 - `eval_num_examples` - Number of examples to use for validation data.
 - `random_seed` - The random seed.
+- `shuffle` - Whether to shuffle data inside the data generator.
   
 
 **Returns**:

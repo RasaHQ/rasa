@@ -1,8 +1,7 @@
 ---
-sidebar_label: rasa
+sidebar_label: rasa.shared.nlu.training_data.formats.rasa
 title: rasa.shared.nlu.training_data.formats.rasa
 ---
-
 ## RasaReader Objects
 
 ```python

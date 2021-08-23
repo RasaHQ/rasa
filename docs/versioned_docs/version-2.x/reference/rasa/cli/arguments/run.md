@@ -1,8 +1,7 @@
 ---
-sidebar_label: run
+sidebar_label: rasa.cli.arguments.run
 title: rasa.cli.arguments.run
 ---
-
 #### set\_run\_arguments
 
 ```python

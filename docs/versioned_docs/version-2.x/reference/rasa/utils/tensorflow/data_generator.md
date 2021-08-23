@@ -1,8 +1,7 @@
 ---
-sidebar_label: data_generator
+sidebar_label: rasa.utils.tensorflow.data_generator
 title: rasa.utils.tensorflow.data_generator
 ---
-
 ## RasaDataGenerator Objects
 
 ```python

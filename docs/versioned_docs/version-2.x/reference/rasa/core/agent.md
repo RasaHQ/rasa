@@ -1,8 +1,7 @@
 ---
-sidebar_label: agent
+sidebar_label: rasa.core.agent
 title: rasa.core.agent
 ---
-
 #### load\_from\_server
 
 ```python
@@ -186,23 +185,6 @@ the bot wants to respond.
 &gt;&gt;&gt; agent = Agent.load(&quot;examples/moodbot/models&quot;)
 &gt;&gt;&gt; await agent.handle_text(&quot;hello&quot;)
 [u&#x27;how can I help you?&#x27;]
-
-#### toggle\_memoization
-
-```python
- | toggle_memoization(activate: bool) -> None
-```
-
-Toggles the memoization on and off.
-
-If a memoization policy is present in the ensemble, this will toggle
-the prediction of that policy. When set to ``False`` the Memoization
-policies present in the policy ensemble will not make any predictions.
-Hence, the prediction result from the ensemble always needs to come
-from a different policy (e.g. ``TEDPolicy``). Useful to test
-prediction
-capabilities of an ensemble when ignoring memorized turns from the
-training data.
 
 #### load\_data
 

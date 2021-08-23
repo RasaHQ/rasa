@@ -1,8 +1,7 @@
 ---
-sidebar_label: converter
+sidebar_label: rasa.utils.converter
 title: rasa.utils.converter
 ---
-
 ## TrainingDataConverter Objects
 
 ```python

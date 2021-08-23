@@ -1,8 +1,7 @@
 ---
-sidebar_label: common
+sidebar_label: rasa.shared.utils.common
 title: rasa.shared.utils.common
 ---
-
 #### class\_from\_module\_path
 
 ```python

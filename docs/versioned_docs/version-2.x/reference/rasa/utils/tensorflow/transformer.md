@@ -1,8 +1,7 @@
 ---
-sidebar_label: transformer
+sidebar_label: rasa.utils.tensorflow.transformer
 title: rasa.utils.tensorflow.transformer
 ---
-
 ## MultiHeadAttention Objects
 
 ```python
@@ -17,8 +16,8 @@ Multi-headed attention layer.
 - `num_heads` - Positive integer, number of heads
   to repeat the same attention structure.
 - `attention_dropout_rate` - Float, dropout rate inside attention for training.
-- `sparsity` - Float between 0 and 1. Fraction of the `kernel`
-  weights to set to zero.
+- `density` - Approximate fraction of trainable weights (in
+  `RandomlyConnectedDense` layers).
 - `unidirectional` - Boolean, use a unidirectional or bidirectional encoder.
 - `use_key_relative_position` - Boolean, if &#x27;True&#x27; use key
   relative embeddings in attention.
@@ -69,8 +68,7 @@ The layer is composed of the sublayers:
 - `filter_units` - Positive integer, output dim of the first ffn hidden layer.
 - `dropout_rate` - Float between 0 and 1; fraction of the input units to drop.
 - `attention_dropout_rate` - Float, dropout rate inside attention for training.
-- `sparsity` - Float between 0 and 1. Fraction of the `kernel`
-  weights to set to zero.
+- `density` - Fraction of trainable weights in `RandomlyConnectedDense` layers.
 - `unidirectional` - Boolean, use a unidirectional or bidirectional encoder.
 - `use_key_relative_position` - Boolean, if &#x27;True&#x27; use key
   relative embeddings in attention.
@@ -120,8 +118,8 @@ Encoder stack is made up of `num_layers` identical encoder layers.
 - `reg_lambda` - Float, regularization factor.
 - `dropout_rate` - Float between 0 and 1; fraction of the input units to drop.
 - `attention_dropout_rate` - Float, dropout rate inside attention for training.
-- `sparsity` - Float between 0 and 1. Fraction of the `kernel`
-  weights to set to zero.
+- `density` - Approximate fraction of trainable weights (in
+  `RandomlyConnectedDense` layers).
 - `unidirectional` - Boolean, use a unidirectional or bidirectional encoder.
 - `use_key_relative_position` - Boolean, if &#x27;True&#x27; use key
   relative embeddings in attention.

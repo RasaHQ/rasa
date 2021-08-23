@@ -1,8 +1,7 @@
 ---
-sidebar_label: plotting
+sidebar_label: rasa.utils.plotting
 title: rasa.utils.plotting
 ---
-
 #### plot\_confusion\_matrix
 
 ```python
@@ -23,20 +22,29 @@ Normalization can be applied by setting `normalize=True`.
   zmin:
 - `output_file` - output file to save plot to
 
-#### plot\_histogram
+#### plot\_paired\_histogram
 
 ```python
 @_needs_matplotlib_backend
-plot_histogram(hist_data: List[List[float]], title: Text, output_file: Optional[Text] = None) -> None
+plot_paired_histogram(histogram_data: List[List[float]], title: Text, output_file: Optional[Text] = None, num_bins: int = 25, colors: Tuple[Text, Text] = ("#009292", "#920000",), axes_label: Tuple[Text, Text] = ("Correct", "Wrong"), frame_label: Tuple[Text, Text] = ("Number of Samples", "Confidence"), density: bool = False, x_pad_fraction: float = 0.05, y_pad_fraction: float = 0.10) -> None
 ```
 
 Plots a side-by-side comparative histogram of the confidence distribution.
 
 **Arguments**:
 
-- `hist_data` - histogram data
-- `title` - title of the plot
-- `output_file` - output file to save the plot to
+- `histogram_data` - Two data vectors
+- `title` - Title to be displayed above the plot
+- `output_file` - File to save the plot to
+- `num_bins` - Number of bins to be used for the histogram
+- `colors` - Left and right bar colors as hex color strings
+- `axes_label` - Labels shown above the left and right histogram,
+  respectively
+- `frame_label` - Labels shown below and on the left of the
+  histogram, respectively
+- `density` - If true, generate a probability density histogram
+- `x_pad_fraction` - Percentage of extra space in the horizontal direction
+- `y_pad_fraction` - Percentage of extra space in the vertical direction
 
 #### plot\_curve
 

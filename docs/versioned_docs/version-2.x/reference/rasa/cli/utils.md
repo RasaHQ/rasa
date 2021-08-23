@@ -1,8 +1,7 @@
 ---
-sidebar_label: utils
+sidebar_label: rasa.cli.utils
 title: rasa.cli.utils
 ---
-
 #### get\_validated\_path
 
 ```python
@@ -101,4 +100,12 @@ payload_from_button_question(button_question: "Question") -> Text
 ```
 
 Prompt user with a button question and returns the nlu payload.
+
+#### signal\_handler
+
+```python
+signal_handler(_: int, __: FrameType) -> None
+```
+
+Kills Rasa when OS signal is received.
 

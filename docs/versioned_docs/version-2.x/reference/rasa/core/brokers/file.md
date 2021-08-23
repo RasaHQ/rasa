@@ -1,8 +1,7 @@
 ---
-sidebar_label: file
+sidebar_label: rasa.core.brokers.file
 title: rasa.core.brokers.file
 ---
-
 ## FileEventBroker Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: tokenizer
+sidebar_label: rasa.nlu.tokenizers.tokenizer
 title: rasa.nlu.tokenizers.tokenizer
 ---
-
 ## Token Objects
 
 ```python

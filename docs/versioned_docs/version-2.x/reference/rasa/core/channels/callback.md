@@ -1,8 +1,7 @@
 ---
-sidebar_label: callback
+sidebar_label: rasa.core.channels.callback
 title: rasa.core.channels.callback
 ---
-
 ## CallbackInput Objects
 
 ```python

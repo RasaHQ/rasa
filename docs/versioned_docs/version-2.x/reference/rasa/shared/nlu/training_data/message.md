@@ -1,8 +1,7 @@
 ---
-sidebar_label: message
+sidebar_label: rasa.shared.nlu.training_data.message
 title: rasa.shared.nlu.training_data.message
 ---
-
 ## Message Objects
 
 ```python
@@ -104,7 +103,7 @@ Get intent as it appears in training data
  | get_combined_intent_response_key() -> Text
 ```
 
-Get intent as it appears in training data
+Get intent as it appears in training data.
 
 #### get\_sparse\_features
 
@@ -212,4 +211,12 @@ Checks whether the message came from an e2e story.
 **Returns**:
 
   `True`, if message is a from an e2e story, `False` otherwise.
+
+#### find\_overlapping\_entities
+
+```python
+ | find_overlapping_entities() -> List[Tuple[Dict[Text, Any], Dict[Text, Any]]]
+```
+
+Finds any overlapping entity annotations.
 

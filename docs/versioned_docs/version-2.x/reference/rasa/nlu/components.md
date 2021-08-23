@@ -1,8 +1,7 @@
 ---
-sidebar_label: components
+sidebar_label: rasa.nlu.components
 title: rasa.nlu.components
 ---
-
 #### find\_unavailable\_packages
 
 ```python
@@ -111,13 +110,31 @@ Check if any of the provided components are listed in the pipeline.
 
 **Arguments**:
 
-- `components` - A list of :class:`rasa.nlu.components.Component`s to check.
+- `components` - Component class names to check.
 - `pipeline` - A list of :class:`rasa.nlu.components.Component`s.
   
 
 **Returns**:
 
   `True` if any of the `components` are in the `pipeline`, else `False`.
+
+#### find\_components\_in\_pipeline
+
+```python
+find_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]) -> Set[Text]
+```
+
+Finds those of the given components that are present in the pipeline.
+
+**Arguments**:
+
+- `components` - A list of str of component class names to check.
+- `pipeline` - A list of :class:`rasa.nlu.components.Component`s.
+  
+
+**Returns**:
+
+  A list of str of component class names that are present in the pipeline.
 
 #### validate\_required\_components\_from\_data
 
@@ -126,6 +143,40 @@ validate_required_components_from_data(pipeline: List["Component"], data: Traini
 ```
 
 Validates that all components are present in the pipeline based on data.
+
+**Arguments**:
+
+- `pipeline` - The list of the :class:`rasa.nlu.components.Component`s.
+- `data` - The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
+
+#### warn\_of\_competing\_extractors
+
+```python
+warn_of_competing_extractors(pipeline: List["Component"]) -> None
+```
+
+Warns the user when using competing extractors.
+
+Competing extractors are e.g. `CRFEntityExtractor` and `DIETClassifier`.
+Both of these look for the same entities based on the same training data
+leading to ambiguity in the results.
+
+**Arguments**:
+
+- `pipeline` - The list of the :class:`rasa.nlu.components.Component`s.
+
+#### warn\_of\_competition\_with\_regex\_extractor
+
+```python
+warn_of_competition_with_regex_extractor(pipeline: List["Component"], data: TrainingData) -> None
+```
+
+Warns when regex entity extractor is competing with a general one.
+
+This might be the case when the following conditions are all met:
+* You are using a general entity extractor and the `RegexEntityExtractor`
+* AND you have regex patterns for entity type A
+* AND you have annotated text examples for entity type A
 
 **Arguments**:
 

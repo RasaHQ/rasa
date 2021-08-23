@@ -1,8 +1,7 @@
 ---
-sidebar_label: responses_prefix_converter
+sidebar_label: rasa.core.training.converters.responses_prefix_converter
 title: rasa.core.training.converters.responses_prefix_converter
 ---
-
 #### normalize\_utter\_action
 
 ```python

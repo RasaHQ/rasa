@@ -1,8 +1,7 @@
 ---
-sidebar_label: interpreter
+sidebar_label: rasa.shared.nlu.interpreter
 title: rasa.shared.nlu.interpreter
 ---
-
 ## RegexInterpreter Objects
 
 ```python

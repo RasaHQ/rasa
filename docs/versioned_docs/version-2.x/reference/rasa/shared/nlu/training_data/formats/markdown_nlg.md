@@ -1,8 +1,7 @@
 ---
-sidebar_label: markdown_nlg
+sidebar_label: rasa.shared.nlu.training_data.formats.markdown_nlg
 title: rasa.shared.nlu.training_data.formats.markdown_nlg
 ---
-
 ## NLGMarkdownReader Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: data_schema
+sidebar_label: rasa.shared.nlu.training_data.schemas.data_schema
 title: rasa.shared.nlu.training_data.schemas.data_schema
 ---
-
 #### entity\_dict\_schema
 
 ```python

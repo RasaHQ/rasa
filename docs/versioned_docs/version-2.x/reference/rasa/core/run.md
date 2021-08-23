@@ -1,8 +1,7 @@
 ---
-sidebar_label: run
+sidebar_label: rasa.core.run
 title: rasa.core.run
 ---
-
 #### create\_http\_input\_channels
 
 ```python

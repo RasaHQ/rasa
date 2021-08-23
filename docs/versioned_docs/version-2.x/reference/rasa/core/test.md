@@ -1,8 +1,7 @@
 ---
-sidebar_label: test
+sidebar_label: rasa.core.test
 title: rasa.core.test
 ---
-
 ## WrongPredictionException Objects
 
 ```python
@@ -113,10 +112,19 @@ Set `predicted_intent` and `predicted_entities` attributes.
 #### inline\_comment
 
 ```python
- | inline_comment() -> Text
+ | inline_comment() -> Optional[Text]
 ```
 
 A comment attached to this event. Used during dumping.
+
+#### inline\_comment\_for\_entity
+
+```python
+ | @staticmethod
+ | inline_comment_for_entity(predicted: Dict[Text, Any], entity: Dict[Text, Any]) -> Optional[Text]
+```
+
+Returns the predicted entity which is then printed as a comment.
 
 #### as\_story\_string
 

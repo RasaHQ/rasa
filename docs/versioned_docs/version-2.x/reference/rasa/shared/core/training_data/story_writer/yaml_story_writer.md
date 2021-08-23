@@ -1,8 +1,7 @@
 ---
-sidebar_label: yaml_story_writer
+sidebar_label: rasa.shared.core.training_data.story_writer.yaml_story_writer
 title: rasa.shared.core.training_data.story_writer.yaml_story_writer
 ---
-
 ## YAMLStoryWriter Objects
 
 ```python

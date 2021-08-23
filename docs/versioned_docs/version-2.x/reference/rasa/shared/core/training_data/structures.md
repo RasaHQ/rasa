@@ -1,8 +1,7 @@
 ---
-sidebar_label: structures
+sidebar_label: rasa.shared.core.training_data.structures
 title: rasa.shared.core.training_data.structures
 ---
-
 ## EventTypeError Objects
 
 ```python

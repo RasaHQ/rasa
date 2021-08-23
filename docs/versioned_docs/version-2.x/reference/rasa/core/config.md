@@ -1,8 +1,7 @@
 ---
-sidebar_label: config
+sidebar_label: rasa.core.config
 title: rasa.core.config
 ---
-
 #### load
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: count_vectors_featurizer
+sidebar_label: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer
 title: rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer
 ---
-
 ## CountVectorsFeaturizer Objects
 
 ```python

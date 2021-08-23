@@ -1,8 +1,7 @@
 ---
-sidebar_label: regex_entity_extractor
+sidebar_label: rasa.nlu.extractors.regex_entity_extractor
 title: rasa.nlu.extractors.regex_entity_extractor
 ---
-
 ## RegexEntityExtractor Objects
 
 ```python
@@ -36,5 +35,6 @@ Loads trained component (see parent class for full docstring).
 ```
 
 Persist this model into the passed directory.
+
 Return the metadata necessary to load the model again.
 

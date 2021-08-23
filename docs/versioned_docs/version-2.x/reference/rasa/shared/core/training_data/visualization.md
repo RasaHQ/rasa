@@ -1,8 +1,7 @@
 ---
-sidebar_label: visualization
+sidebar_label: rasa.shared.core.training_data.visualization
 title: rasa.shared.core.training_data.visualization
 ---
-
 ## UserMessageGenerator Objects
 
 ```python

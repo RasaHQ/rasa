@@ -1,8 +1,7 @@
 ---
-sidebar_label: webexteams
+sidebar_label: rasa.core.channels.webexteams
 title: rasa.core.channels.webexteams
 ---
-
 ## WebexTeamsBot Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: validator
+sidebar_label: rasa.validator
 title: rasa.validator
 ---
-
 ## Validator Objects
 
 ```python
@@ -73,6 +72,14 @@ Verifies usage of utterances in stories.
 Checks whether utterances used in the stories are valid,
 and whether all valid utterances are used in stories.
 
+#### verify\_actions\_in\_stories\_rules
+
+```python
+ | verify_actions_in_stories_rules() -> bool
+```
+
+Verifies that actions used in stories and rules are present in the domain.
+
 #### verify\_story\_structure
 
 ```python
@@ -101,6 +108,14 @@ Verifies that the bot behaviour in stories is deterministic.
 
 Runs all the validations on intents and utterances.
 
+#### verify\_form\_slots
+
+```python
+ | verify_form_slots() -> bool
+```
+
+Verifies that form slots match the slot mappings in domain.
+
 #### verify\_domain\_validity
 
 ```python
@@ -109,5 +124,5 @@ Runs all the validations on intents and utterances.
 
 Checks whether the domain returned by the importer is empty.
 
-An empty domain is invalid.
+An empty domain or one that uses deprecated Mapping Policy is invalid.
 

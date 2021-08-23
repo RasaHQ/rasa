@@ -1,8 +1,7 @@
 ---
-sidebar_label: tracker_store
+sidebar_label: rasa.core.tracker_store
 title: rasa.core.tracker_store
 ---
-
 ## TrackerStore Objects
 
 ```python

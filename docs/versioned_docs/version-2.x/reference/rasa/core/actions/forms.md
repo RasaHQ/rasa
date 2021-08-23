@@ -1,8 +1,7 @@
 ---
-sidebar_label: forms
+sidebar_label: rasa.core.actions.forms
 title: rasa.core.actions.forms
 ---
-
 ## FormAction Objects
 
 ```python
@@ -63,11 +62,28 @@ Get mappings for requested slot.
 
 If None, map requested slot to an entity with the same name
 
+#### get\_ignored\_intents
+
+```python
+ | get_ignored_intents(domain: Domain) -> List[Text]
+```
+
+Returns a list of ignored intents.
+
+**Arguments**:
+
+- `domain` - The current model domain.
+  
+
+**Returns**:
+
+  The value/s found in `ignored_intents` parameter in the `domain.yml`
+  (under forms).
+
 #### intent\_is\_desired
 
 ```python
- | @staticmethod
- | intent_is_desired(requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker") -> bool
+ | intent_is_desired(requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker", domain: Domain) -> bool
 ```
 
 Check whether user intent matches intent conditions.
@@ -93,11 +109,11 @@ Check whether slot should be filled by an entity in the input or not.
 
   True, if slot should be filled, false otherwise.
 
-#### get\_entity\_value
+#### get\_entity\_value\_for\_slot
 
 ```python
  | @staticmethod
- | get_entity_value(name: Text, tracker: "DialogueStateTracker", role: Optional[Text] = None, group: Optional[Text] = None) -> Any
+ | get_entity_value_for_slot(name: Text, tracker: "DialogueStateTracker", slot_to_be_filled: Text, role: Optional[Text] = None, group: Optional[Text] = None) -> Any
 ```
 
 Extract entities for given name and optional role and group.
@@ -106,6 +122,7 @@ Extract entities for given name and optional role and group.
 
 - `name` - entity type (name) of interest
 - `tracker` - the tracker
+- `slot_to_be_filled` - Slot which is supposed to be filled by this entity.
 - `role` - optional entity role of interest
 - `group` - optional entity group of interest
   

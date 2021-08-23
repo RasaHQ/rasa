@@ -1,8 +1,7 @@
 ---
-sidebar_label: lock
+sidebar_label: rasa.core.lock
 title: rasa.core.lock
 ---
-
 ## Ticket Objects
 
 ```python

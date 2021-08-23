@@ -1,8 +1,7 @@
 ---
-sidebar_label: jobs
+sidebar_label: rasa.core.jobs
 title: rasa.core.jobs
 ---
-
 #### scheduler
 
 ```python

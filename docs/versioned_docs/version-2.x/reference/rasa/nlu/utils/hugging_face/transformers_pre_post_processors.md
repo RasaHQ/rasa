@@ -1,8 +1,7 @@
 ---
-sidebar_label: transformers_pre_post_processors
+sidebar_label: rasa.nlu.utils.hugging_face.transformers_pre_post_processors
 title: rasa.nlu.utils.hugging_face.transformers_pre_post_processors
 ---
-
 #### cleanup\_tokens
 
 ```python

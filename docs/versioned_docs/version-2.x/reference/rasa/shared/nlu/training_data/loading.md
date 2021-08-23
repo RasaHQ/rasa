@@ -1,8 +1,7 @@
 ---
-sidebar_label: loading
+sidebar_label: rasa.shared.nlu.training_data.loading
 title: rasa.shared.nlu.training_data.loading
 ---
-
 #### load\_data
 
 ```python

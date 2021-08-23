@@ -1,8 +1,7 @@
 ---
-sidebar_label: export
+sidebar_label: rasa.cli.export
 title: rasa.cli.export
 ---
-
 #### add\_subparser
 
 ```python

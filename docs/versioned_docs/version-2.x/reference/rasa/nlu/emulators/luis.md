@@ -1,8 +1,7 @@
 ---
-sidebar_label: luis
+sidebar_label: rasa.nlu.emulators.luis
 title: rasa.nlu.emulators.luis
 ---
-
 ## LUISEmulator Objects
 
 ```python

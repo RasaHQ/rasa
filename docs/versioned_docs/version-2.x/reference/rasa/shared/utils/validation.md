@@ -1,8 +1,7 @@
 ---
-sidebar_label: validation
+sidebar_label: rasa.shared.utils.validation
 title: rasa.shared.utils.validation
 ---
-
 ## YamlValidationException Objects
 
 ```python

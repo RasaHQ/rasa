@@ -1,8 +1,7 @@
 ---
-sidebar_label: story_markdown_to_yaml_converter
+sidebar_label: rasa.core.training.converters.story_markdown_to_yaml_converter
 title: rasa.core.training.converters.story_markdown_to_yaml_converter
 ---
-
 ## StoryMarkdownToYamlConverter Objects
 
 ```python

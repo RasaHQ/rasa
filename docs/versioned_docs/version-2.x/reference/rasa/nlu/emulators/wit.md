@@ -1,8 +1,7 @@
 ---
-sidebar_label: wit
+sidebar_label: rasa.nlu.emulators.wit
 title: rasa.nlu.emulators.wit
 ---
-
 ## WitEmulator Objects
 
 ```python

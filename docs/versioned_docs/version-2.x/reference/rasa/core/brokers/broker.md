@@ -1,8 +1,7 @@
 ---
-sidebar_label: broker
+sidebar_label: rasa.core.brokers.broker
 title: rasa.core.brokers.broker
 ---
-
 ## EventBroker Objects
 
 ```python

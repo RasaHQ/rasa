@@ -1,8 +1,7 @@
 ---
-sidebar_label: trackers
+sidebar_label: rasa.shared.core.trackers
 title: rasa.shared.core.trackers
 ---
-
 ## EventVerbosity Objects
 
 ```python

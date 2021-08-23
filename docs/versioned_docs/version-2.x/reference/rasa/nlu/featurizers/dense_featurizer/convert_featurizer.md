@@ -1,8 +1,7 @@
 ---
-sidebar_label: convert_featurizer
+sidebar_label: rasa.nlu.featurizers.dense_featurizer.convert_featurizer
 title: rasa.nlu.featurizers.dense_featurizer.convert_featurizer
 ---
-
 ## ConveRTFeaturizer Objects
 
 ```python

@@ -1,8 +1,7 @@
 ---
-sidebar_label: console
+sidebar_label: rasa.core.channels.console
 title: rasa.core.channels.console
 ---
-
 #### record\_messages
 
 ```python

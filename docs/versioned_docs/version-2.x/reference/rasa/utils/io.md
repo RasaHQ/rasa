@@ -1,8 +1,7 @@
 ---
-sidebar_label: io
+sidebar_label: rasa.utils.io
 title: rasa.utils.io
 ---
-
 #### pickle\_dump
 
 ```python
@@ -93,14 +92,6 @@ create_validator(function: Callable[[Text], bool], error_message: Text) -> Type[
 Helper method to create `Validator` classes from callable functions. Should be
 removed when questionary supports `Validator` objects.
 
-#### zip\_folder
-
-```python
-zip_folder(folder: Text) -> Text
-```
-
-Create an archive from a folder.
-
 #### json\_unpickle
 
 ```python
@@ -127,4 +118,12 @@ Pickle an object to a file using json.
 
 - `file_name` - the file to store the object to
 - `obj` - the object to store
+
+#### get\_emoji\_regex
+
+```python
+get_emoji_regex() -> Pattern
+```
+
+Returns regex to identify emojis.
 

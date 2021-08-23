@@ -1,8 +1,7 @@
 ---
-sidebar_label: processor
+sidebar_label: rasa.core.processor
 title: rasa.core.processor
 ---
-
 ## MessageProcessor Objects
 
 ```python

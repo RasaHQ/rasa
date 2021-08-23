@@ -1,8 +1,7 @@
 ---
-sidebar_label: exceptions
+sidebar_label: rasa.shared.exceptions
 title: rasa.shared.exceptions
 ---
-
 ## RasaException Objects
 
 ```python
