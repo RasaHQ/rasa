@@ -48,6 +48,9 @@ then
     EXISTING_VERSION=$NEW_VERSION
 fi
 
+# install yarn dependencies in the temp directory
+cd $TMP_DOCS_FOLDER/docs && yarn install && cd - || exit 1
+
 if [ ! -z "$EXISTING_VERSION" ]
 then
     echo "Updating docs for existing version $EXISTING_VERSION..."
@@ -59,7 +62,8 @@ else
     echo "Updating the docs..."
     # remove everything in the previous docs/ folder, except versioned_docs/*, versioned_sidebars/*
     # and versions.js files.
-    cd $TMP_DOCS_FOLDER/docs/ && find . ! -path . ! -regex '.*version.*' -exec rm -rf {} + && cd - || exit 1
+    # skip node_modules/ because `yarn install` has run
+    cd $TMP_DOCS_FOLDER/docs/ && find  . ! -path . ! -regex '.*\(version\|node_modules\).*' -exec rm -rf {} + && cd - || exit 1
     # update the docs/ folder with the latest version of the docs
     cp -R `ls -A | grep -v "^\.git$"` $TMP_DOCS_FOLDER/
 
@@ -73,7 +77,7 @@ fi
 CURRENTLY_EDITING_VERSION=${EXISTING_VERSION:-$NEW_VERSION}
 if [ -n "$CURRENTLY_EDITING_VERSION" ]
 then
-    cd $TMP_DOCS_FOLDER/docs && yarn run update-versioned-sources -- $CURRENTLY_EDITING_VERSION && cd - || exit 1
+    cd $TMP_DOCS_FOLDER/docs && yarn run update-versioned-sources $CURRENTLY_EDITING_VERSION && cd - || exit 1
 fi
 
 cd $TMP_DOCS_FOLDER

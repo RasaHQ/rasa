@@ -40,7 +40,10 @@ from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
-from tests.nlu.classifiers.test_diet_classifier import as_pipeline
+
+
+def as_pipeline(*components):
+    return [{"name": c} for c in components]
 
 
 @pytest.mark.parametrize(
