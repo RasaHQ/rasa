@@ -133,9 +133,11 @@ The official [Poetry guide](https://python-poetry.org/docs/managing-environments
 This is how it can be done:
 
 ```bash
-pyenv install 3.7.6
-pyenv local 3.7.6  # Activate Python 3.7.6 for the current project
+pyenv install 3.7.9
+pyenv local 3.7.9  # Activate Python 3.7.9 for the current project
 ```
+*Note*: If you have trouble installing a specific version of python on your system
+it might be worth trying other supported versions.
 
 By default, Poetry will try to use the currently activated Python version to create the virtual environment
 for the current project automatically. You can also create and activate a virtual environment manually — in this
@@ -159,6 +161,9 @@ To install dependencies and `rasa` itself in editable mode execute
 ```bash
 make install
 ```
+
+*Note for macOS users*: under macOS Big Sur we've seen some compiler issues for 
+dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped. 
 
 ### Running and changing the documentation
 
