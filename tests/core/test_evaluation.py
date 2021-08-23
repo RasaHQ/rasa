@@ -12,11 +12,14 @@ from rasa.core.test import (
     _create_data_generator,
     _collect_story_predictions,
     test as evaluate_stories,
-    FAILED_STORIES_FILE,
+    _clean_entity_results,
+)
+from rasa.core.constants import (
     CONFUSION_MATRIX_STORIES_FILE,
     REPORT_STORIES_FILE,
+    FAILED_STORIES_FILE,
     SUCCESSFUL_STORIES_FILE,
-    _clean_entity_results,
+    STORIES_WITH_WARNINGS_FILE,
 )
 from rasa.core.policies.memoization import MemoizationPolicy
 
@@ -31,6 +34,7 @@ async def test_evaluation_file_creation(
 ):
     failed_stories_path = str(tmpdir / FAILED_STORIES_FILE)
     success_stories_path = str(tmpdir / SUCCESSFUL_STORIES_FILE)
+    stories_with_warnings_path = str(tmpdir / STORIES_WITH_WARNINGS_FILE)
     report_path = str(tmpdir / REPORT_STORIES_FILE)
     confusion_matrix_path = str(tmpdir / CONFUSION_MATRIX_STORIES_FILE)
 
@@ -42,10 +46,12 @@ async def test_evaluation_file_creation(
         e2e=False,
         errors=True,
         successes=True,
+        warnings=True,
     )
 
     assert os.path.isfile(failed_stories_path)
     assert os.path.isfile(success_stories_path)
+    assert os.path.isfile(stories_with_warnings_path)
     assert os.path.isfile(report_path)
     assert os.path.isfile(confusion_matrix_path)
 
@@ -53,7 +59,7 @@ async def test_evaluation_file_creation(
 async def test_end_to_end_evaluation_script(
     default_agent: Agent, end_to_end_story_path: Text
 ):
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         end_to_end_story_path, default_agent, use_conversation_test_files=True
     )
     completed_trackers = generator.generate_story_trackers()
@@ -93,7 +99,7 @@ async def test_end_to_end_evaluation_script(
 async def test_end_to_end_evaluation_script_unknown_entity(
     default_agent: Agent, e2e_story_file_unknown_entity_path: Text
 ):
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         e2e_story_file_unknown_entity_path,
         default_agent,
         use_conversation_test_files=True,
@@ -111,7 +117,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(
 
 @pytest.mark.timeout(300, func_only=True)
 async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         "data/test_evaluations/test_form_end_to_end_stories.yml",
         form_bot_agent,
         use_conversation_test_files=True,
@@ -153,10 +159,10 @@ async def test_end_to_evaluation_trips_circuit_breaker(
         domain="data/test_domains/default.yml",
         policies=[MemoizationPolicy(max_history=11)],
     )
-    training_data = await agent.load_data(e2e_story_file_trips_circuit_breaker_path)
+    training_data = agent.load_data(e2e_story_file_trips_circuit_breaker_path)
     agent.train(training_data)
 
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         e2e_story_file_trips_circuit_breaker_path,
         agent,
         use_conversation_test_files=True,
@@ -264,7 +270,7 @@ def test_event_has_proper_implementation(
     ],
 )
 async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text):
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         test_file, response_selector_agent, use_conversation_test_files=True,
     )
     test_stories = generator.generate_story_trackers()
@@ -402,6 +408,7 @@ stories:
                     "accuracy": 2.0 / 3.0,
                     "total": 3,
                     "correct": 2,
+                    "with_warnings": 0,
                 },
             },
         ],

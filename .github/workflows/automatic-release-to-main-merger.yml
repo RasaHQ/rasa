@@ -1,0 +1,100 @@
+name: Automatic main branch merger
+on:
+  # whenever a pull request is merged into a release branch,
+  # open a pull request to merge changes down to the main branch
+  pull_request:
+    branches:
+    - '[0-9]+.[0-9]+.x'
+
+    types:
+    # means that the PR is closed, we still have to check if it was merged
+    - closed
+
+env:
+  # keep this in sync with the automatic-pr-approver workflow
+  LABEL_TYPE: type:release-branch-port
+  LABEL_STATUS: status:ready-to-merge
+
+jobs:
+  update_merge_pr:
+    runs-on: ubuntu-20.04
+
+    # only run this workflow if a pull request has been merged
+    if: github.event.pull_request.merged == true
+
+    steps:
+      - name: Checkout git repository 🕝
+        uses: actions/checkout@v2
+
+      - name: Fetch git tags 🎨
+        # see https://github.com/actions/checkout/issues/206#issuecomment-617937725
+        run: git fetch --prune --unshallow --tags
+
+      - name: Get branch name ✍️
+        id: get-branch-name
+        run: |
+          GITHUB_BRANCH=${GITHUB_REF/refs\/heads\//}
+          echo "::set-output name=release_branch::${GITHUB_BRANCH}"
+          echo "::set-output name=new_branch::merge-${GITHUB_BRANCH}-main-${GITHUB_SHA:0:7}"
+
+      - name: Get GitHub labels 🏷
+        id: get-github-labels
+        run: |
+          LATEST_RASA_MINOR=$(git tag --list | grep -P '^\d+\.\d+\.\d+$' | tail -n1 | sed -e 's/.\([0-9]\)*$/.0/g')
+          echo "Latest minor: ${LATEST_RASA_MINOR}"
+          # bash doesn't support nested variable access
+          CURRENT_RASA_MINOR=${GITHUB_REF/refs\/heads\//}
+          CURRENT_RASA_MINOR=${CURRENT_RASA_MINOR/\.x/\.0}
+
+          if [[ ${LATEST_RASA_MINOR} == ${CURRENT_RASA_MINOR} ]]
+          then
+            echo "::set-output name=labels::${LABEL_TYPE},${LABEL_STATUS}"
+          else
+            echo "::set-output name=labels::${LABEL_TYPE}"
+          fi
+
+      - name: Close outdated release-merge PRs 🧹
+        run: |
+          # fetch all open merge-PRs that have been opened from the current release branch
+          gh pr list -S "is:open label:${LABEL_TYPE} head:merge-${{ steps.get-branch-name.outputs.release_branch }}-main" > prs.txt
+          less prs.txt
+
+          # extract the PR ids
+          awk '{print $1}' prs.txt > pr_ids.txt
+
+          # close all outdated PRs
+          while read id; do
+            gh pr close $id -d
+          done <pr_ids.txt
+        env:
+            GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Notify Slack when closing of outdated merge-PRs failed 💬
+        if: failure()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_INFRASTRUCTURE_SQUAD_MONITORS_WEBHOOK_URL }}
+        uses: Ilshidur/action-slack@689ad44a9c9092315abd286d0e3a9a74d31ab78a
+        with:
+          args: "🚨 There was a problem with closing outdated release-merge-PRs of the ${{ env.RELEASE_BRANCH }} release branch. Check out the Github action: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} \
+                These release-merge-PRs are currently open: https://github.com/${{ github.repository }}/pulls?q=is%3Aopen+label%3A${{ env.LABEL_TYPE }}+head%3Amerge-${{ steps.get-branch-name.outputs.release_branch }}-main"
+
+      - name: Create new branch 🐣
+        if: always()
+        uses: peterjgrainger/action-create-branch@385b67cce679227d7470f00ce18d7a64405a18f1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          branch: ${{ steps.get-branch-name.outputs.new_branch }}
+
+      - name: Open pull request ☄️
+        if: always()
+        uses: repo-sync/pull-request@65194d8015be7624d231796ddee1cd52a5023cb3
+        with:
+          # using this token to make sure it triggers other actions
+          github_token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
+          source_branch: ${{ steps.get-branch-name.outputs.new_branch }}
+          destination_branch: main
+          pr_title: Merge ${{ steps.get-branch-name.outputs.release_branch }} into main
+          pr_template: .github/PULL_REQUEST_AUTOMATIC_TEMPLATE.md
+          pr_label: ${{ steps.get-github-labels.outputs.labels }}
+          pr_reviewer: ${{ github.event.pull_request.user.login }}

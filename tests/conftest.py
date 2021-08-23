@@ -7,6 +7,9 @@ import sys
 import uuid
 
 from _pytest.python import Function
+from rasa.engine.graph import ExecutionContext, GraphSchema
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.storage import ModelStorage
 from sanic.request import Request
 
 from typing import Iterator, Callable, Generator
@@ -72,20 +75,6 @@ PATH_PYTEST_MARKER_MAPPINGS = {
     ],
     "category_performance": [Path("tests", "test_memory_leak.py").absolute()],
 }
-
-
-TEST_DIALOGUES = [
-    "data/test_dialogues/default.json",
-    "data/test_dialogues/formbot.json",
-    "data/test_dialogues/moodbot.json",
-]
-
-EXAMPLE_DOMAINS = [
-    "data/test_domains/default_with_mapping.yml",
-    "data/test_domains/default_with_slots.yml",
-    "examples/formbot/domain.yml",
-    "data/test_moodbot/domain.yml",
-]
 
 
 @pytest.fixture(scope="session")
@@ -184,9 +173,7 @@ def event_loop(request: Request) -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.fixture(scope="session")
-async def _trained_default_agent(
-    tmpdir_factory: TempdirFactory, stories_path: Text
-) -> Agent:
+def _trained_default_agent(tmpdir_factory: TempdirFactory, stories_path: Text) -> Agent:
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent(
@@ -195,7 +182,7 @@ async def _trained_default_agent(
         model_directory=model_path,
     )
 
-    training_data = await agent.load_data(stories_path)
+    training_data = agent.load_data(stories_path)
     agent.train(training_data)
     agent.persist(model_path)
     return agent
@@ -224,6 +211,15 @@ async def trained_moodbot_path(trained_async: Callable) -> Text:
     return await trained_async(
         domain="data/test_moodbot/domain.yml",
         config="data/test_moodbot/config.yml",
+        training_files="data/test_moodbot/data/",
+    )
+
+
+@pytest.fixture(scope="session")
+async def trained_unexpected_intent_policy_path(trained_async: Callable) -> Text:
+    return await trained_async(
+        domain="data/test_moodbot/domain.yml",
+        config="data/test_moodbot/unexpected_intent_policy_config.yml",
         training_files="data/test_moodbot/data/",
     )
 
@@ -273,6 +269,18 @@ async def core_agent(trained_core_model: Text) -> Agent:
 @pytest.fixture(scope="session")
 async def nlu_agent(trained_nlu_model: Text) -> Agent:
     return await load_agent(model_path=trained_nlu_model)
+
+
+@pytest.fixture(scope="session")
+async def unexpected_intent_policy_agent(
+    trained_unexpected_intent_policy_path: Text,
+) -> Agent:
+    return await load_agent(model_path=trained_unexpected_intent_policy_path)
+
+
+@pytest.fixture(scope="session")
+async def mood_agent(trained_moodbot_path: Text) -> Agent:
+    return await load_agent(model_path=trained_moodbot_path)
 
 
 @pytest.fixture(scope="session")
@@ -406,6 +414,11 @@ async def trained_e2e_model(
 def moodbot_domain() -> Domain:
     domain_path = os.path.join("data", "test_moodbot", "domain.yml")
     return Domain.load(domain_path)
+
+
+@pytest.fixture(scope="session")
+def moodbot_nlu_data_path() -> Path:
+    return Path(os.getcwd()) / "data" / "test_moodbot" / "data" / "nlu.yml"
 
 
 @pytest.fixture
@@ -671,3 +684,19 @@ def pytest_collection_modifyitems(items: List[Function]) -> None:
     for item in items:
         marker = _get_marker_for_ci_matrix(item)
         item.add_marker(marker)
+
+
+def create_test_file_with_size(directory: Path, size_in_mb: float) -> None:
+    with open(directory / f"{uuid.uuid4().hex}", mode="wb") as f:
+        f.seek(int(1024 * 1024 * size_in_mb))
+        f.write(b"\0")
+
+
+@pytest.fixture()
+def default_model_storage(tmp_path: Path) -> ModelStorage:
+    return LocalModelStorage.create(tmp_path)
+
+
+@pytest.fixture()
+def default_execution_context() -> ExecutionContext:
+    return ExecutionContext(GraphSchema({}), uuid.uuid4().hex)

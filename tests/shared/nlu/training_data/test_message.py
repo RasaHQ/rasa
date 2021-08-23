@@ -15,6 +15,7 @@ from rasa.shared.nlu.constants import (
     RESPONSE,
 )
 from rasa.shared.nlu.training_data.message import Message
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 @pytest.mark.parametrize(
@@ -177,6 +178,115 @@ def test_get_sparse_features(
 
 
 @pytest.mark.parametrize(
+    "features, attribute, featurizers, "
+    "expected_sequence_sizes, expected_sentence_sizes",
+    [
+        (None, TEXT, [], [], []),
+        (
+            [
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 0]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "test",
+                )
+            ],
+            TEXT,
+            [],
+            [3],
+            [],
+        ),
+        (
+            [
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 0]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "c2",
+                ),
+                Features(
+                    scipy.sparse.csr_matrix([1, 2, 2]),
+                    FEATURE_TYPE_SENTENCE,
+                    TEXT,
+                    "c1",
+                ),
+                Features(
+                    scipy.sparse.csr_matrix([1, 2, 1]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "c1",
+                ),
+            ],
+            TEXT,
+            [],
+            [3, 3],
+            [3],
+        ),
+        (
+            [
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 0]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "c1",
+                ),
+                Features(
+                    scipy.sparse.csr_matrix([1, 2, 1]),
+                    FEATURE_TYPE_SENTENCE,
+                    TEXT,
+                    "test",
+                ),
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 1]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "test",
+                ),
+            ],
+            TEXT,
+            ["c1"],
+            [3],
+            [],
+        ),
+        (
+            [
+                Features(
+                    scipy.sparse.csr_matrix([1, 1, 0, 0]),
+                    FEATURE_TYPE_SEQUENCE,
+                    TEXT,
+                    "c1",
+                ),
+                Features(
+                    scipy.sparse.csr_matrix([1, 2, 1]),
+                    FEATURE_TYPE_SENTENCE,
+                    TEXT,
+                    "test",
+                ),
+                Features(np.array([1, 1, 0]), FEATURE_TYPE_SEQUENCE, TEXT, "c1"),
+                Features(np.array([1, 2, 1]), FEATURE_TYPE_SENTENCE, TEXT, "test"),
+            ],
+            TEXT,
+            ["c1"],
+            [4],
+            [],
+        ),
+    ],
+)
+def test_get_sparse_feature_sizes(
+    features: Optional[List[Features]],
+    attribute: Text,
+    featurizers: List[Text],
+    expected_sequence_sizes: List[int],
+    expected_sentence_sizes: List[int],
+):
+    message = Message(data={TEXT: "This is a test sentence."}, features=features)
+    feature_sizes = message.get_sparse_feature_sizes(attribute, featurizers)
+
+    assert feature_sizes[FEATURE_TYPE_SEQUENCE] == expected_sequence_sizes
+    assert feature_sizes[FEATURE_TYPE_SENTENCE] == expected_sentence_sizes
+
+
+@pytest.mark.parametrize(
     "features, attribute, featurizers, expected",
     [
         (None, TEXT, [], False),
@@ -272,3 +382,30 @@ def test_add_diagnostic_data_with_repeated_component_raises_warning():
     message.add_diagnostic_data("a", {})
     with pytest.warns(UserWarning):
         message.add_diagnostic_data("a", {})
+
+
+def test_message_fingerprint_includes_data_and_features():
+    message = Message(data={TEXT: "This is a test sentence."})
+    fp1 = message.fingerprint()
+    tokenizer = WhitespaceTokenizer()
+    tokenizer.process(message)
+    fp2 = message.fingerprint()
+
+    assert fp1 != fp2
+
+    message.add_features(
+        Features(scipy.sparse.csr_matrix([1, 1, 0]), FEATURE_TYPE_SEQUENCE, TEXT, "c2",)
+    )
+
+    fp3 = message.fingerprint()
+    assert fp2 != fp3
+
+    message.add_features(
+        Features(np.ndarray([1, 2, 2]), FEATURE_TYPE_SEQUENCE, TEXT, "c1")
+    )
+
+    fp4 = message.fingerprint()
+
+    assert fp3 != fp4
+
+    assert len({fp1, fp2, fp3, fp4}) == 4

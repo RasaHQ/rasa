@@ -30,6 +30,36 @@ def test_paired_histogram_specification_bins(
 
 
 @pytest.mark.parametrize(
+    "bad_data", [([[]]), ([[], []]),],
+)
+def test_paired_histogram_specification_bins_raises(bad_data: List):
+    """`_extract_paired_histogram_specification` raises a ValueError on empty data"""
+    for density in [False, True]:
+        with pytest.raises(ValueError):
+            rasa.utils.plotting._extract_paired_histogram_specification(
+                bad_data,
+                num_bins=2,
+                density=density,
+                x_pad_fraction=0,
+                y_pad_fraction=0,
+            )
+
+
+@pytest.mark.parametrize(
+    "bad_data", [([[]]), ([[], []]),],
+)
+def test_plot_paired_histogram_warns_on_bad_data(bad_data: List):
+    """Empty data shouldn't raise an error."""
+    for density in [False, True]:
+        with pytest.warns(
+            UserWarning, match=r"Unable to plot paired histogram 'TITLE': .*"
+        ):
+            rasa.utils.plotting.plot_paired_histogram(
+                bad_data, title="TITLE", density=density
+            )
+
+
+@pytest.mark.parametrize(
     "data, num_bins, density, expected_histograms",
     [
         (

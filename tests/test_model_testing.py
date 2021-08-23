@@ -206,7 +206,7 @@ def test_write_classification_errors():
 
 def test_log_failed_stories(tmp_path: Path):
     path = str(tmp_path / "stories.yml")
-    rasa.core.test._log_stories([], path)
+    rasa.core.test._log_stories([], path, "Some text")
 
     dump = rasa.shared.utils.io.read_file(path)
 
@@ -362,7 +362,7 @@ def test_evaluation_store_serialise(entity_predictions, entity_targets):
             i_target += 1
 
 
-async def test_test_does_not_use_rules(tmp_path: Path, default_agent: Agent):
+def test_test_does_not_use_rules(tmp_path: Path, default_agent: Agent):
     from rasa.core.test import _create_data_generator
 
     test_file = tmp_path / "test.yml"
@@ -383,7 +383,7 @@ rules:
 
     test_file.write_text(tests)
 
-    generator = await _create_data_generator(str(test_file), default_agent)
+    generator = _create_data_generator(str(test_file), default_agent)
     test_trackers = generator.generate_story_trackers()
     assert len(test_trackers) == 1
     assert test_trackers[0].sender_id == test_name

@@ -1,3 +1,5 @@
+import ssl
+
 import aiohttp
 import logging
 import os
@@ -5,6 +7,7 @@ from aiohttp.client_exceptions import ContentTypeError
 from sanic.request import Request
 from typing import Any, Optional, Text, Dict
 
+from rasa.shared.exceptions import FileNotFoundException
 import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
@@ -73,24 +76,28 @@ class EndpointConfig:
 
     def __init__(
         self,
-        url: Text = None,
-        params: Dict[Text, Any] = None,
-        headers: Dict[Text, Any] = None,
-        basic_auth: Dict[Text, Text] = None,
+        url: Optional[Text] = None,
+        params: Optional[Dict[Text, Any]] = None,
+        headers: Optional[Dict[Text, Any]] = None,
+        basic_auth: Optional[Dict[Text, Text]] = None,
         token: Optional[Text] = None,
         token_name: Text = "token",
+        cafile: Optional[Text] = None,
         **kwargs: Any,
     ) -> None:
+        """Creates an `EndpointConfig` instance."""
         self.url = url
-        self.params = params if params else {}
-        self.headers = headers if headers else {}
-        self.basic_auth = basic_auth
+        self.params = params or {}
+        self.headers = headers or {}
+        self.basic_auth = basic_auth or {}
         self.token = token
         self.token_name = token_name
         self.type = kwargs.pop("store_type", kwargs.pop("type", None))
+        self.cafile = cafile
         self.kwargs = kwargs
 
     def session(self) -> aiohttp.ClientSession:
+        """Creates and returns a configured aiohttp client session."""
         # create authentication parameters
         if self.basic_auth:
             auth = aiohttp.BasicAuth(
@@ -142,12 +149,24 @@ class EndpointConfig:
             del kwargs["headers"]
 
         url = concat_url(self.url, subpath)
+
+        sslcontext = None
+        if self.cafile:
+            try:
+                sslcontext = ssl.create_default_context(cafile=self.cafile)
+            except FileNotFoundError as e:
+                raise FileNotFoundException(
+                    f"Failed to find certificate file, "
+                    f"'{os.path.abspath(self.cafile)}' does not exist."
+                ) from e
+
         async with self.session() as session:
             async with session.request(
                 method,
                 url,
                 headers=headers,
                 params=self.combine_parameters(kwargs),
+                ssl=sslcontext,
                 **kwargs,
             ) as response:
                 if response.status >= 400:

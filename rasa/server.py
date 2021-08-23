@@ -33,6 +33,7 @@ from sanic_jwt import Initialize, exceptions
 
 import rasa
 import rasa.core.utils
+from rasa.nlu.emulators.emulator import Emulator
 import rasa.utils.common
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -78,9 +79,12 @@ from rasa.utils.endpoints import EndpointConfig
 if TYPE_CHECKING:
     from ssl import SSLContext  # noqa: F401
     from rasa.core.processor import MessageProcessor
-    from mypy_extensions import VarArg, KwArg
+    from mypy_extensions import Arg, VarArg, KwArg
 
-    SanicView = Callable[[Request, VarArg(), KwArg()], response.BaseHTTPResponse]
+    SanicView = Callable[
+        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
+        response.BaseHTTPResponse,
+    ]
 
 
 logger = logging.getLogger(__name__)
@@ -165,10 +169,10 @@ def ensure_loaded_agent(
     return decorator
 
 
-def ensure_conversation_exists() -> "SanicView":
+def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
     """Wraps a request handler ensuring the conversation exists."""
 
-    def decorator(f: "SanicView") -> HTTPResponse:
+    def decorator(f: "SanicView") -> "SanicView":
         @wraps(f)
         def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
@@ -440,10 +444,11 @@ def create_ssl_context(
         return None
 
 
-def _create_emulator(mode: Optional[Text]) -> NoEmulator:
+def _create_emulator(mode: Optional[Text]) -> Emulator:
     """Create emulator for specified mode.
-    If no emulator is specified, we will use the Rasa NLU format."""
 
+    If no emulator is specified, we will use the Rasa NLU format.
+    """
     if mode is None:
         return NoEmulator()
     elif mode.lower() == "wit":
@@ -1224,7 +1229,7 @@ def create_app(
                 HTTPStatus.CONFLICT, "Conflict", "Missing NLU model directory.",
             )
 
-        return await rasa.nlu.test.run_evaluation(
+        return rasa.nlu.test.run_evaluation(
             data_path, nlu_model, disable_plotting=True, report_as_dict=True
         )
 
@@ -1233,8 +1238,8 @@ def create_app(
         importer = TrainingDataImporter.load_from_dict(
             config=None, config_path=config_file, training_data_paths=[data_file]
         )
-        config = await importer.get_config()
-        nlu_data = await importer.get_nlu_data()
+        config = importer.get_config()
+        nlu_data = importer.get_nlu_data()
 
         evaluations = rasa.nlu.test.cross_validate(
             data=nlu_data,

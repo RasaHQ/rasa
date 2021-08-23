@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 
 from rasa.core import training
-from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_DEACTIVATE_LOOP_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted, SessionStarted, SlotSet
 from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
@@ -19,8 +18,8 @@ from rasa.shared.nlu.constants import ACTION_NAME, ENTITIES, INTENT, INTENT_NAME
 from rasa.utils.tensorflow.model_data_utils import _surface_attributes
 
 
-async def test_can_read_test_story(domain: Domain):
-    trackers = await training.load_data(
+def test_can_read_test_story(domain: Domain):
+    trackers = training.load_data(
         "data/test_yaml_stories/stories.yml",
         domain,
         use_story_concatenation=False,
@@ -54,10 +53,10 @@ async def test_can_read_test_story(domain: Domain):
         "data/test_yaml_stories/stories_checkpoint_after_or.yml",
     ],
 )
-async def test_can_read_test_story_with_checkpoint_after_or(
+def test_can_read_test_story_with_checkpoint_after_or(
     stories_file: Text, domain: Domain
 ):
-    trackers = await training.load_data(
+    trackers = training.load_data(
         stories_file,
         domain,
         use_story_concatenation=False,
@@ -74,8 +73,8 @@ async def test_can_read_test_story_with_checkpoint_after_or(
         "data/test_yaml_stories/stories_with_cycle.yml",
     ],
 )
-async def test_read_story_file_with_cycles(stories_file: Text, domain: Domain):
-    graph = await training.extract_story_graph(stories_file, domain)
+def test_read_story_file_with_cycles(stories_file: Text, domain: Domain):
+    graph = training.extract_story_graph(stories_file, domain)
 
     assert len(graph.story_steps) == 5
 
@@ -97,11 +96,9 @@ async def test_read_story_file_with_cycles(stories_file: Text, domain: Domain):
         "data/test_yaml_stories/stories_with_cycle.yml",
     ],
 )
-async def test_generate_training_data_with_cycles(stories_file: Text, domain: Domain):
+def test_generate_training_data_with_cycles(stories_file: Text, domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
-    training_trackers = await training.load_data(
-        stories_file, domain, augmentation_factor=0,
-    )
+    training_trackers = training.load_data(stories_file, domain, augmentation_factor=0,)
 
     _, label_ids, _ = featurizer.featurize_trackers(
         training_trackers, domain, interpreter=RegexInterpreter()
@@ -116,7 +113,7 @@ async def test_generate_training_data_with_cycles(stories_file: Text, domain: Do
     # if new default actions are added the keys of the actions will be changed
 
     all_label_ids = [id for ids in label_ids for id in ids]
-    assert Counter(all_label_ids) == {0: 6, 12: num_tens, 14: 1, 1: 2, 13: 3}
+    assert Counter(all_label_ids) == {0: 6, 14: 3, 13: num_tens, 1: 2, 15: 1}
 
 
 @pytest.mark.parametrize(
@@ -126,10 +123,10 @@ async def test_generate_training_data_with_cycles(stories_file: Text, domain: Do
         "data/test_yaml_stories/stories_unused_checkpoints.yml",
     ],
 )
-async def test_generate_training_data_with_unused_checkpoints(
+def test_generate_training_data_with_unused_checkpoints(
     stories_file: Text, domain: Domain
 ):
-    training_trackers = await training.load_data(stories_file, domain)
+    training_trackers = training.load_data(stories_file, domain)
     # there are 3 training stories:
     #   2 with unused end checkpoints -> training_trackers
     #   1 with unused start checkpoints -> ignored
@@ -143,12 +140,10 @@ async def test_generate_training_data_with_unused_checkpoints(
         "data/test_yaml_stories/stories_defaultdomain.yml",
     ],
 )
-async def test_generate_training_data_original_and_augmented_trackers(
+def test_generate_training_data_original_and_augmented_trackers(
     stories_file: Text, domain: Domain
 ):
-    training_trackers = await training.load_data(
-        stories_file, domain, augmentation_factor=3,
-    )
+    training_trackers = training.load_data(stories_file, domain, augmentation_factor=3,)
     # there are three original stories
     # augmentation factor of 3 indicates max of 3*10 augmented stories generated
     # maximum number of stories should be augmented+original = 33
@@ -168,10 +163,10 @@ async def test_generate_training_data_original_and_augmented_trackers(
         "data/test_yaml_stories/stories_with_cycle.yml",
     ],
 )
-async def test_visualize_training_data_graph(
+def test_visualize_training_data_graph(
     stories_file: Text, tmp_path: Path, domain: Domain
 ):
-    graph = await training.extract_story_graph(stories_file, domain)
+    graph = training.extract_story_graph(stories_file, domain)
 
     graph = graph.with_cycles_removed()
 
@@ -201,16 +196,14 @@ async def test_visualize_training_data_graph(
         ["data/test_stories/stories.md", "data/test_mixed_yaml_md_stories"],
     ],
 )
-async def test_load_multi_file_training_data(stories_resources: List, domain: Domain):
+def test_load_multi_file_training_data(stories_resources: List, domain: Domain):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
-    trackers = await training.load_data(
-        stories_resources[0], domain, augmentation_factor=0
-    )
+    trackers = training.load_data(stories_resources[0], domain, augmentation_factor=0)
     trackers = sorted(trackers, key=lambda t: t.sender_id)
 
-    (tr_as_sts, tr_as_acts) = featurizer.training_states_and_actions(trackers, domain)
+    (tr_as_sts, tr_as_acts) = featurizer.training_states_and_labels(trackers, domain)
     hashed = []
     for sts, acts in zip(tr_as_sts, tr_as_acts):
         hashed.append(json.dumps(sts + acts, sort_keys=True))
@@ -221,12 +214,12 @@ async def test_load_multi_file_training_data(stories_resources: List, domain: Do
     )
 
     featurizer_mul = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
-    trackers_mul = await training.load_data(
+    trackers_mul = training.load_data(
         stories_resources[1], domain, augmentation_factor=0
     )
     trackers_mul = sorted(trackers_mul, key=lambda t: t.sender_id)
 
-    (tr_as_sts_mul, tr_as_acts_mul) = featurizer.training_states_and_actions(
+    (tr_as_sts_mul, tr_as_acts_mul) = featurizer.training_states_and_labels(
         trackers_mul, domain
     )
     hashed_mul = []
@@ -265,56 +258,15 @@ async def test_load_multi_file_training_data(stories_resources: List, domain: Do
     assert np.all(label_ids == label_ids_mul)
 
 
-async def test_load_training_data_reader_not_found_throws(
-    tmp_path: Path, domain: Domain
-):
+def test_load_training_data_reader_not_found_throws(tmp_path: Path, domain: Domain):
     (tmp_path / "file").touch()
 
     with pytest.raises(Exception):
-        await training.load_data(str(tmp_path), domain)
+        training.load_data(str(tmp_path), domain)
 
 
 def test_session_started_event_is_not_serialised():
     assert SessionStarted().as_story_string() is None
-
-
-@pytest.mark.parametrize(
-    "story_payload, file_suffix",
-    [
-        (
-            """## my story
-* greet
-  - action_deactivate_form""",
-            ".md",
-        ),
-        (
-            """stories:
-- story: my story
-  steps:
-  - intent: greet
-  - action: action_deactivate_form""",
-            ".yml",
-        ),
-    ],
-)
-async def test_action_deactivate_form_is_mapped_to_new_form(
-    story_payload: Text, file_suffix: Text, domain: Domain, tmp_path: Path
-):
-    stories_file = tmp_path / f"stories{file_suffix}"
-    stories_file.write_text(story_payload)
-    with pytest.warns(FutureWarning):
-        training_trackers = await training.load_data(
-            str(stories_file), domain, augmentation_factor=3
-        )
-
-    expected_events = [
-        ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered(None, intent={"name": "greet", "confidence": 1.0}),
-        ActionExecuted(ACTION_DEACTIVATE_LOOP_NAME),
-        ActionExecuted(ACTION_LISTEN_NAME),
-    ]
-
-    assert list(training_trackers[0].events) == expected_events
 
 
 @pytest.mark.parametrize(
@@ -324,9 +276,9 @@ async def test_action_deactivate_form_is_mapped_to_new_form(
         "data/test_yaml_stories/story_slot_different_types.yml",
     ],
 )
-async def test_yaml_slot_different_types(stories_file: Text, domain: Domain):
+def test_yaml_slot_different_types(stories_file: Text, domain: Domain):
     with pytest.warns(None):
-        tracker = await training.load_data(
+        tracker = training.load_data(
             stories_file,
             domain,
             use_story_concatenation=False,

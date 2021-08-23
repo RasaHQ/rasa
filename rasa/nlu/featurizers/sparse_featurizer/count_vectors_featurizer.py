@@ -16,12 +16,12 @@ from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.exceptions import RasaException
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     MESSAGE_ATTRIBUTES,
     DENSE_FEATURIZABLE_ATTRIBUTES,
     FEATURIZER_CLASS_ALIAS,
-    MIN_ADDITIONAL_CVF_VOCABULARY,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -148,34 +148,28 @@ class CountVectorsFeaturizer(SparseFeaturizer):
             self.OOV_token = self.OOV_token.lower()
             if self.OOV_words:
                 self.OOV_words = [w.lower() for w in self.OOV_words]
-
-        # Additional vocabulary size to be kept reserved
-        self.additional_vocabulary_size = self.component_config[
-            "additional_vocabulary_size"
+        additional_size_attributes = [
+            key
+            for key, value in self.component_config[
+                "additional_vocabulary_size"
+            ].items()
+            if value
         ]
-
-    def _check_attribute_vocabulary(self, attribute: Text) -> bool:
-        """Checks if trained vocabulary exists in attribute's count vectorizer."""
-        try:
-            return hasattr(self.vectorizers[attribute], "vocabulary_")
-        except (AttributeError, TypeError):
-            return False
+        if additional_size_attributes:
+            rasa.shared.utils.io.raise_deprecation_warning(
+                f"The parameter `additional_vocabulary_size` has been specified for "
+                f"attributes - `{additional_size_attributes}`. The parameter has been "
+                f"deprecated since the pipeline no longer creates an extra buffer for "
+                f"additional vocabulary. Any value assigned to "
+                f"this parameter will be ignored. You can omit specifying "
+                f"`additional_vocabulary_size` in future runs."
+            )
 
     def _get_attribute_vocabulary(self, attribute: Text) -> Optional[Dict[Text, int]]:
-        """Get trained vocabulary from attribute's count vectorizer"""
-
+        """Gets trained vocabulary from attribute's count vectorizer."""
         try:
             return self.vectorizers[attribute].vocabulary_
-        except (AttributeError, TypeError):
-            return None
-
-    def _get_attribute_vocabulary_tokens(self, attribute: Text) -> Optional[List[Text]]:
-        """Get all keys of vocabulary of an attribute"""
-
-        attribute_vocabulary = self._get_attribute_vocabulary(attribute)
-        try:
-            return list(attribute_vocabulary.keys())
-        except TypeError:
+        except (AttributeError, TypeError, KeyError):
             return None
 
     def _check_analyzer(self) -> None:
@@ -229,7 +223,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         self._attributes = self._attributes_for(self.analyzer)
 
         # declare class instance for CountVectorizer
-        self.vectorizers = vectorizers
+        self.vectorizers = vectorizers or {}
 
         self.finetune_mode = finetune_mode
 
@@ -264,18 +258,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _replace_with_oov_token(
         self, tokens: List[Text], attribute: Text
     ) -> List[Text]:
-        """Replace OOV words with OOV token"""
-
+        """Replace OOV words with OOV token."""
         if self.OOV_token and self.analyzer == "word":
-            vocabulary_exists = self._check_attribute_vocabulary(attribute)
-            if vocabulary_exists and self.OOV_token in self._get_attribute_vocabulary(
-                attribute
-            ):
+            attribute_vocab = self._get_attribute_vocabulary(attribute)
+            if attribute_vocab is not None and self.OOV_token in attribute_vocab:
                 # CountVectorizer is trained, process for prediction
+                attribute_vocabulary_tokens = set(attribute_vocab.keys())
                 tokens = [
-                    t
-                    if t in self._get_attribute_vocabulary_tokens(attribute)
-                    else self.OOV_token
+                    t if t in attribute_vocabulary_tokens else self.OOV_token
                     for t in tokens
                 ]
             elif self.OOV_words:
@@ -355,19 +345,10 @@ class CountVectorsFeaturizer(SparseFeaturizer):
 
         return attribute_texts
 
-    @staticmethod
-    def _get_starting_empty_index(vocabulary: Dict[Text, int]) -> int:
-        for key in vocabulary.keys():
-            if key.startswith(BUFFER_SLOTS_PREFIX):
-                return int(key.split(BUFFER_SLOTS_PREFIX)[1])
-        return len(vocabulary)
-
     def _update_vectorizer_vocabulary(
         self, attribute: Text, new_vocabulary: Set[Text]
     ) -> None:
         """Updates the existing vocabulary of the vectorizer with new unseen words.
-
-        These unseen words should only occupy the empty buffer slots.
 
         Args:
             attribute: Message attribute for which vocabulary should be updated.
@@ -375,92 +356,38 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 unseen.
         """
         existing_vocabulary: Dict[Text, int] = self.vectorizers[attribute].vocabulary
-        if len(new_vocabulary) > len(existing_vocabulary):
-            rasa.shared.utils.io.raise_warning(
-                f"New data contains vocabulary of size {len(new_vocabulary)} for "
-                f"attribute {attribute} "
-                f"which is larger than the maximum vocabulary size "
-                f"({len(existing_vocabulary)}) of the original model. "
-                f"Some tokens will have to be dropped "
-                f"in order to continue training. It is advised to re-train the "
-                f"model from scratch on the complete data."
-            )
         self._merge_new_vocabulary_tokens(existing_vocabulary, new_vocabulary)
         self._set_vocabulary(attribute, existing_vocabulary)
 
     def _merge_new_vocabulary_tokens(
         self, existing_vocabulary: Dict[Text, int], vocabulary: Set[Text]
     ) -> None:
-        available_empty_index = self._get_starting_empty_index(existing_vocabulary)
+        """Merges new vocabulary tokens with the existing vocabulary.
+
+        New vocabulary items should always be added to the end of the existing
+        vocabulary and the order of the existing vocabulary should not be disturbed.
+
+        Args:
+            existing_vocabulary: existing vocabulary
+            vocabulary: set of new tokens
+
+        Raises:
+            RasaException: if `use_shared_vocab` is set to True and there are new
+                           vocabulary items added during incremental training.
+        """
         for token in vocabulary:
             if token not in existing_vocabulary:
-                existing_vocabulary[token] = available_empty_index
-                del existing_vocabulary[f"{BUFFER_SLOTS_PREFIX}{available_empty_index}"]
-                available_empty_index += 1
-                if available_empty_index == len(existing_vocabulary):
-                    # We have exhausted all available vocabulary slots.
-                    # Drop the remaining vocabulary.
-                    return
-
-    def _get_additional_vocabulary_size(
-        self, attribute: Text, existing_vocabulary_size: int
-    ) -> int:
-        """Gets additional vocabulary size to be saved for incremental training.
-
-        If `self.additional_vocabulary_size` is not `None`,
-        we return that as the user should have specified
-        this number. If not then we take the default
-        additional vocabulary size which is 1/2 of the
-        current vocabulary size.
-
-        Args:
-            attribute: Message attribute for which additional vocabulary size should
-                be computed.
-            existing_vocabulary_size: Current size of vocabulary learnt from the
-                training data.
-
-        Returns:
-            Size of additional vocabulary that should be set aside for incremental
-            training.
-        """
-        # Vocabulary expansion for INTENTS, ACTION_NAME
-        # and INTENT_RESPONSE_KEY is currently not supported as
-        # incremental training does not support creation/deletion
-        # of new/existing labels(intents, actions, etc.)
-        if attribute not in DENSE_FEATURIZABLE_ATTRIBUTES:
-            return 0
-
-        configured_additional_size = self.additional_vocabulary_size.get(attribute)
-        if configured_additional_size is not None:
-            return configured_additional_size
-
-        # If the user hasn't defined additional vocabulary size,
-        # then we increase it by 1000 minimum. If the current
-        # vocabulary size is greater than 2000, we take half of
-        # that number as additional vocabulary size.
-        return max(MIN_ADDITIONAL_CVF_VOCABULARY, int(existing_vocabulary_size * 0.5))
-
-    def _add_buffer_to_vocabulary(self, attribute: Text) -> None:
-        """Adds extra tokens to vocabulary for incremental training.
-
-        These extra tokens act as buffer slots which are used up sequentially
-        when more data is received as part of incremental training. Each of
-        these tokens start with a prefix `buf_` followed by the extra slot index.
-        So for example - buf_1, buf_2, buf_3... and so on.
-
-        Args:
-            attribute: Name of the attribute for which the vocabulary should be
-            expanded.
-        """
-        original_vocabulary = self.vectorizers[attribute].vocabulary_
-        current_vocabulary_size = len(original_vocabulary)
-        for index in range(
-            current_vocabulary_size,
-            current_vocabulary_size
-            + self._get_additional_vocabulary_size(attribute, current_vocabulary_size),
-        ):
-            original_vocabulary[f"{BUFFER_SLOTS_PREFIX}{index}"] = index
-        self._set_vocabulary(attribute, original_vocabulary)
+                if self.use_shared_vocab:
+                    raise RasaException(
+                        "Using a shared vocabulary in `CountVectorsFeaturizer` is not "
+                        "supported during incremental training since it requires "
+                        "dynamically adjusting layers that correspond to label "
+                        f"attributes such as {INTENT_RESPONSE_KEY}, {INTENT}, etc. "
+                        "This is currently not possible. In order to avoid this "
+                        "exception we suggest to set `use_shared_vocab=False` or train"
+                        " from scratch."
+                    )
+                existing_vocabulary[token] = len(existing_vocabulary)
 
     def _set_vocabulary(
         self, attribute: Text, original_vocabulary: Dict[Text, int]
@@ -560,18 +487,16 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 )
 
     def _log_vocabulary_stats(self, attribute: Text) -> None:
-        """Logs number of vocabulary slots filled out of the total available ones.
+        """Logs number of vocabulary items that were created for a specified attribute.
 
         Args:
             attribute: Message attribute for which vocabulary stats are logged.
         """
         if attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
-            attribute_vocabulary = self.vectorizers[attribute].vocabulary_
-            first_empty_index = self._get_starting_empty_index(attribute_vocabulary)
+            vocabulary_size = len(self.vectorizers[attribute].vocabulary_)
             logger.info(
-                f"{first_empty_index} vocabulary slots "
-                f"consumed out of {len(attribute_vocabulary)} "
-                f"slots configured for {attribute} attribute."
+                f"{vocabulary_size} vocabulary items "
+                f"were created for {attribute} attribute."
             )
 
     def _fit_loaded_vectorizer(
@@ -611,9 +536,6 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 f"`.fit()` method failed. Leaving an untrained "
                 f"CountVectorizer for it."
             )
-        # Add buffer for extra vocabulary tokens
-        # that come in during incremental training.
-        self._add_buffer_to_vocabulary(attribute)
 
     def _create_features(
         self, attribute: Text, all_tokens: List[List[Text]]
@@ -664,9 +586,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     ) -> Tuple[
         List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
     ]:
-        """Return features of a particular attribute for complete data"""
-
-        if self._check_attribute_vocabulary(attribute):
+        """Returns features of a particular attribute for complete data."""
+        if self._get_attribute_vocabulary(attribute) is not None:
             # count vectorizer was trained
             return self._create_features(attribute, all_tokens)
         else:
@@ -885,7 +806,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
         """Loads trained component (see parent class for full docstring)."""
-        file_name = meta.get("file")
+        file_name = meta["file"]
         featurizer_file = os.path.join(model_dir, file_name)
 
         if not os.path.exists(featurizer_file):
