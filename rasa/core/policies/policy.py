@@ -123,11 +123,11 @@ class PolicyGraphComponent(GraphComponent):
         featurizer: Optional[TrackerFeaturizer] = None,
     ) -> None:
         """Constructs a new Policy object."""
+        self.config = config
         if featurizer is None:
             featurizer = self._create_featurizer(config)
         self.__featurizer = featurizer
 
-        self.config = config
         self.priority = config.get(POLICY_PRIORITY, DEFAULT_POLICY_PRIORITY)
         self.finetune_mode = execution_context.is_finetuning
 
@@ -148,18 +148,17 @@ class PolicyGraphComponent(GraphComponent):
         """Creates a new untrained policy (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
-    @classmethod
-    def _create_featurizer(cls, policy_config: Dict[Text, Any]) -> TrackerFeaturizer:
+    def _create_featurizer(self, policy_config: Dict[Text, Any]) -> TrackerFeaturizer:
         policy_config = copy.deepcopy(policy_config)
 
         featurizer_configs = policy_config.get("featurizer")
 
         if not featurizer_configs:
-            return cls._standard_featurizer()
+            return self._standard_featurizer()
 
         featurizer_func = _get_featurizer_from_config(
             featurizer_configs,
-            cls.__name__,
+            type(self).__name__,
             lookup_path="rasa.core.featurizers.tracker_featurizers",
         )
         featurizer_config = featurizer_configs[0]
@@ -168,7 +167,7 @@ class PolicyGraphComponent(GraphComponent):
         if state_featurizer_configs:
             state_featurizer_func = _get_featurizer_from_config(
                 state_featurizer_configs,
-                cls.__name__,
+                type(self).__name__,
                 lookup_path="rasa.core.featurizers.single_state_featurizer",
             )
             state_featurizer_config = state_featurizer_configs[0]
@@ -179,8 +178,7 @@ class PolicyGraphComponent(GraphComponent):
 
         return featurizer_func(**featurizer_config)
 
-    @staticmethod
-    def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
+    def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
 
     @property

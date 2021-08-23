@@ -6,7 +6,11 @@ import pytest
 import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
-from rasa.core.constants import POLICY_PRIORITY, POLICY_MAX_HISTORY
+from rasa.core.constants import (
+    POLICY_PRIORITY,
+    POLICY_MAX_HISTORY,
+    DEFAULT_POLICY_PRIORITY,
+)
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
@@ -570,6 +574,48 @@ class TestTEDPolicy(PolicyTestCollection):
             prediction_with_action.probabilities
             == prediction_without_action.probabilities
         )
+
+    @pytest.mark.parametrize(
+        "featurizer_config, tracker_featurizer, state_featurizer",
+        [
+            (None, MaxHistoryTrackerFeaturizer(), SingleStateFeaturizer),
+            ([], MaxHistoryTrackerFeaturizer(), SingleStateFeaturizer),
+        ],
+    )
+    def test_empty_featurizer_configs(
+        self,
+        featurizer_config: Optional[Dict[Text, Any]],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        tracker_featurizer: MaxHistoryTrackerFeaturizer,
+        state_featurizer: Type[SingleStateFeaturizer],
+    ):
+        featurizer_config_override = (
+            {"featurizer": featurizer_config} if featurizer_config else {}
+        )
+        policy = self.create_policy(
+            None,
+            priority=DEFAULT_POLICY_PRIORITY,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+            config=self._config(DEFAULT_POLICY_PRIORITY, featurizer_config_override),
+        )
+
+        featurizer = policy.featurizer
+        assert isinstance(featurizer, tracker_featurizer.__class__)
+
+        if featurizer_config:
+            expected_max_history = featurizer_config[0].get(POLICY_MAX_HISTORY)
+        else:
+            expected_max_history = self._config(DEFAULT_POLICY_PRIORITY).get(
+                POLICY_MAX_HISTORY
+            )
+
+        assert featurizer.max_history == expected_max_history
+
+        assert isinstance(featurizer.state_featurizer, state_featurizer)
 
 
 class TestTEDPolicyMargin(TestTEDPolicy):

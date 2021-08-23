@@ -152,7 +152,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
-        if self.ENABLE_FEATURE_STRING_COMPRESSION:
+        if self.config["enable_feature_string_compression"]:
             compressed = zlib.compress(
                 bytes(feature_str, rasa.shared.utils.io.DEFAULT_ENCODING)
             )
@@ -166,7 +166,6 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         # only considers original trackers (no augmented ones)
@@ -207,7 +206,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
     ) -> List[float]:
         result = self._default_predictions(domain)
         if action_name:
-            if self.USE_NLU_CONFIDENCE_AS_SCORE:
+            if self.config["use_nlu_confidence_as_score"]:
                 # the memoization will use the confidence of NLU on the latest
                 # user message to set the confidence of the action
                 score = tracker.latest_message.intent.get("confidence", 1.0)
@@ -264,7 +263,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "PolicyGraphComponent":
+    ) -> "MemoizationPolicyGraphComponent":
         """Loads a trained policy (see parent class for full docstring)."""
         featurizer = None
         lookup = None
