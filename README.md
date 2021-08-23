@@ -161,7 +161,7 @@ To install dependencies and `rasa` itself in editable mode execute
 make install
 ```
 
-*Note for MacOs users*: under macOS BigSur we've seen some compiler issues for 
+*Note for macOS users*: under macOS Big Sur we've seen some compiler issues for 
 dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped. 
 
 ### Running and changing the documentation
