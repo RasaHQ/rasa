@@ -1554,14 +1554,6 @@ def _validate_json_training_payload(rjs: Dict) -> None:
             {"parameter": "domain", "in": "body"},
         )
 
-    if "force" in rjs or "save_to_default_model_directory" in rjs:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "Specifying 'force' and 'save_to_default_model_directory' as part of the "
-            "JSON payload is deprecated. Please use the header arguments "
-            "'force_training' and 'save_to_default_model_directory'.",
-            docs=_docs("/api/http-api"),
-        )
-
 
 def _training_payload_from_yaml(
     request: Request, temp_dir: Path, file_name: Text = "data.yml"
