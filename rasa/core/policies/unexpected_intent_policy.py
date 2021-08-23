@@ -30,7 +30,12 @@ from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DIALOGUE
+from rasa.core.constants import (
+    DIALOGUE,
+    POLICY_PRIORITY,
+    UNLIKELY_INTENT_POLICY_PRIORITY,
+    POLICY_MAX_HISTORY
+)
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
@@ -150,6 +155,10 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
     def get_default_config() -> Dict[Text, Any]:
         """Returns the default config (see parent class for full docstring)."""
         return {
+            # Sets the priority for the policy
+            POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
+            # Maximum history to take into account when featurizing trackers
+            POLICY_MAX_HISTORY: None,
             # ## Architecture of the used neural network
             # Hidden layer sizes for layers before the embedding layers for user message
             # and labels.
@@ -285,8 +294,10 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         label_quantiles: Optional[Dict[int, List[float]]] = None,
     ):
         """Declares instance variables with default values."""
+        self.config = self._update_loaded_params(config)
+
         super().__init__(
-            config,
+            self.config,
             model_storage,
             resource,
             execution_context,
@@ -302,14 +313,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             if self.label_quantiles
             else {}
         )
-        self.ignore_intent_list = config.get(IGNORE_INTENTS_LIST)
-
-        # Set all invalid / non configurable parameters
-        config[ENTITY_RECOGNITION] = False
-        config[BILOU_FLAG] = False
-        config[SIMILARITY_TYPE] = INNER
-        config[LOSS_TYPE] = CROSS_ENTROPY
-        self.config = config
+        self.ignore_intent_list = self.config[IGNORE_INTENTS_LIST]
 
         common.mark_as_experimental_feature("UnexpecTED Intent Policy")
 
@@ -866,8 +870,10 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
 
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta = train_utils.override_defaults(cls.get_default_config(), meta)
-        meta = train_utils.update_similarity_type(meta)
+        meta[ENTITY_RECOGNITION] = False
+        meta[BILOU_FLAG] = False
+        meta[SIMILARITY_TYPE] = INNER
+        meta[LOSS_TYPE] = CROSS_ENTROPY
         return meta
 
     @classmethod

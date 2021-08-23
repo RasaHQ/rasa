@@ -7,6 +7,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 import logging
 
+from rasa.core.constants import POLICY_PRIORITY
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
@@ -15,7 +16,10 @@ from rasa.core.featurizers.tracker_featurizers import (
     IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.policies.ted_policy import PREDICTION_FEATURES
+from rasa.core.policies.ted_policy import (
+    TEDPolicyGraphComponent as TEDPolicy,
+    PREDICTION_FEATURES
+)
 from rasa.core.policies.unexpected_intent_policy import (
     UnexpecTEDIntentPolicyGraphComponent as UnexpecTEDIntentPolicy,
 )
@@ -62,6 +66,16 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def _policy_class_to_test() -> Type[UnexpecTEDIntentPolicy]:
         return UnexpecTEDIntentPolicy
 
+    def _config(
+        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+    ) -> Dict[Text, Any]:
+        config_override = config_override or {}
+        return {
+            **UnexpecTEDIntentPolicy.get_default_config(),
+            POLICY_PRIORITY: priority,
+            **config_override,
+        }
+
     def create_policy(
         self,
         featurizer: Optional[TrackerFeaturizer],
@@ -93,7 +107,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         resource: Resource,
         execution_context: ExecutionContext,
     ):
-        trained_policy.persist()
         return trained_policy.__class__.load(
             trained_policy.config, model_storage, resource, execution_context
         )
