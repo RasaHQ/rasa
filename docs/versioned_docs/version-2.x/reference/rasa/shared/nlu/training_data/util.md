@@ -6,7 +6,7 @@ title: rasa.shared.nlu.training_data.util
 #### transform\_entity\_synonyms
 
 ```python
-transform_entity_synonyms(synonyms, known_synonyms: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
+transform_entity_synonyms(synonyms: List[Dict[Text, Any]], known_synonyms: Optional[Dict[Text, Any]] = None) -> Dict[Text, Any]
 ```
 
 Transforms the entity synonyms into a text-&gt;value dictionary
@@ -75,6 +75,14 @@ Resolve the intent response key for the given response template.
 - `template_key` - Name of the response template.
   
 - `Returns` - The corresponding intent response key.
+
+#### has\_string\_escape\_chars
+
+```python
+has_string_escape_chars(s: Text) -> bool
+```
+
+Checks whether there are any of the escape characters in the string.
 
 #### encode\_string
 

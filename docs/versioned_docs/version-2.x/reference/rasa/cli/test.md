@@ -63,7 +63,7 @@ Runs NLU tests.
 #### test
 
 ```python
-test(args: argparse.Namespace)
+test(args: argparse.Namespace) -> None
 ```
 
 Run end-to-end tests.

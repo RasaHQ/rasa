@@ -77,11 +77,46 @@ After how many turns the slot should be reset to the initial_value.
 
 If the delay is set to `None`, the slot will keep its value forever.
 
+#### reset
+
+```python
+ | reset() -> None
+```
+
+Resets the slot&#x27;s value to the initial value.
+
+#### value
+
+```python
+ | @property
+ | value() -> Any
+```
+
+Gets the slot&#x27;s value.
+
+#### value
+
+```python
+ | @value.setter
+ | value(value: Any) -> None
+```
+
+Sets the slot&#x27;s value.
+
+#### has\_been\_set
+
+```python
+ | @property
+ | has_been_set() -> bool
+```
+
+Indicates if the slot&#x27;s value has been set.
+
 #### resolve\_by\_type
 
 ```python
  | @staticmethod
- | resolve_by_type(type_name) -> Type["Slot"]
+ | resolve_by_type(type_name: Text) -> Type["Slot"]
 ```
 
 Returns a slots class by its type name.

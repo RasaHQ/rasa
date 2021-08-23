@@ -11,11 +11,12 @@ class FeatureArray(np.ndarray)
 
 Stores any kind of features ready to be used by a RasaModel.
 
-Next to the input numpy array of features, it also received the number of dimensions of the features.
-As our features can have 1 to 4 dimensions we might have different number of numpy arrays stacked.
-The number of dimensions helps us to figure out how to handle this particular feature array.
-Also, it is automatically determined whether the feature array is sparse or not and the number of units
-is determined as well.
+Next to the input numpy array of features, it also received the number of
+dimensions of the features.
+As our features can have 1 to 4 dimensions we might have different number of numpy
+arrays stacked. The number of dimensions helps us to figure out how to handle this
+particular feature array. Also, it is automatically determined whether the feature
+array is sparse or not and the number of units is determined as well.
 
 Subclassing np.array: https://numpy.org/doc/stable/user/basics.subclassing.html
 
@@ -30,7 +31,7 @@ Create and return a new object.  See help(type) for accurate signature.
 #### \_\_init\_\_
 
 ```python
- | __init__(input_array: Any, number_of_dimensions: int, **kwargs)
+ | __init__(input_array: Any, number_of_dimensions: int, **kwargs: Any) -> None
 ```
 
 Initialize. FeatureArray.
@@ -49,7 +50,7 @@ to function FeatureArray.__init__ &#x27;
  | __array_finalize__(obj: Any) -> None
 ```
 
-This method is called whenever the system internally allocates a new array from obj.
+This method is called when the system allocates a new array from obj.
 
 **Arguments**:
 
@@ -58,7 +59,7 @@ This method is called whenever the system internally allocates a new array from 
 #### \_\_array\_ufunc\_\_
 
 ```python
- | __array_ufunc__(ufunc: Any, method: Text, *inputs, **kwargs) -> Any
+ | __array_ufunc__(ufunc: Any, method: Text, *inputs: Any, **kwargs: Any) -> Any
 ```
 
 Overwrite this method as we are subclassing numpy array.
@@ -92,7 +93,7 @@ Needed in order to pickle this object.
 #### \_\_setstate\_\_
 
 ```python
- | __setstate__(state, **kwargs) -> None
+ | __setstate__(state: Any, **kwargs: Any) -> None
 ```
 
 Sets the state.
@@ -102,30 +103,6 @@ Sets the state.
 - `state` - The state argument must be a sequence that contains the following
   elements version, shape, dtype, isFortan, rawdata.
 - `**kwargs` - Any additional parameter
-
-#### get\_shape\_type\_info
-
-```python
- | get_shape_type_info() -> Tuple[
- |         List[
- |             Union[
- |                 int,
- |                 Tuple[None],
- |                 Tuple[None, int],
- |                 Tuple[None, None, int],
- |                 Tuple[None, None, None, int],
- |             ]
- |         ],
- |         List[int],
- |     ]
-```
-
-Returns shapes and types needed to convert this feature array into tensors.
-
-**Returns**:
-
-  A list of shape tuples.
-  A list of type tuples.
 
 ## FeatureSignature Objects
 
@@ -230,7 +207,7 @@ Return the keys of the data attribute.
 #### sort
 
 ```python
- | sort()
+ | sort() -> None
 ```
 
 Sorts data according to its keys.
@@ -347,7 +324,7 @@ Add incoming data to data.
  | update_key(from_key: Text, from_sub_key: Text, to_key: Text, to_sub_key: Text) -> None
 ```
 
-Copies the features under the given keys to the new keys and deletes the old keys.
+Copies the features under the given keys to the new keys and deletes the old.
 
 **Arguments**:
 
@@ -420,44 +397,43 @@ Signature stores the shape and whether features are sparse or not for every key.
   A dictionary of key and sub-key to a list of feature signatures
   (same structure as the data attribute).
 
-#### as\_tf\_dataset
+#### shuffled\_data
 
 ```python
- | as_tf_dataset(batch_size: int, batch_strategy: Text = SEQUENCE, shuffle: bool = False) -> tf.data.Dataset
+ | shuffled_data(data: Data) -> Data
 ```
 
-Create tf dataset.
+Shuffle model data.
 
 **Arguments**:
 
-- `batch_size` - The batch size to use.
-- `batch_strategy` - The batch strategy to use.
-- `shuffle` - Boolean indicating whether the data should be shuffled or not.
+- `data` - The data to shuffle
   
 
 **Returns**:
 
-  The tf.data.Dataset.
+  The shuffled data.
 
-#### prepare\_batch
+#### balanced\_data
 
 ```python
- | prepare_batch(data: Optional[Data] = None, start: Optional[int] = None, end: Optional[int] = None, tuple_sizes: Optional[Dict[Text, int]] = None) -> Tuple[Optional[np.ndarray]]
+ | balanced_data(data: Data, batch_size: int, shuffle: bool) -> Data
 ```
 
-Slices model data into batch using given start and end value.
+Mix model data to account for class imbalance.
+
+This batching strategy puts rare classes approximately in every other batch,
+by repeating them. Mimics stratified batching, but also takes into account
+that more populated classes should appear more often.
 
 **Arguments**:
 
-- `data` - The data to prepare.
-- `start` - The start index of the batch
-- `end` - The end index of the batch
-- `tuple_sizes` - In case the feature is not present we propagate the batch with
-  None. Tuple sizes contains the number of how many None values to add for
-  what kind of feature.
+- `data` - The data.
+- `batch_size` - The batch size.
+- `shuffle` - Boolean indicating whether to shuffle the data or not.
   
 
 **Returns**:
 
-  The features of the batch.
+  The balanced data.
 

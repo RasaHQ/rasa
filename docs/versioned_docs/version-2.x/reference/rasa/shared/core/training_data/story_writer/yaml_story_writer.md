@@ -141,7 +141,7 @@ Converts a single action into an ordered dict.
 
 ```python
  | @staticmethod
- | process_slot(event: SlotSet)
+ | process_slot(event: SlotSet) -> Dict[Text, List[Dict]]
 ```
 
 Converts a single `SlotSet` event into an ordered dict.

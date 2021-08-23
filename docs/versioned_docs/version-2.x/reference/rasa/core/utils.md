@@ -67,7 +67,7 @@ not to modify it).
 #### \_\_init\_\_
 
 ```python
- | __init__(wrapped, tight=False) -> None
+ | __init__(wrapped: np.ndarray, tight: bool = False) -> None
 ```
 
 Creates a new hashable object encapsulating an ndarray.
@@ -82,7 +82,7 @@ tight
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Performs equality of the underlying array.
@@ -123,7 +123,7 @@ Writes `obj` to the filename in YAML repr.
 #### list\_routes
 
 ```python
-list_routes(app: Sanic)
+list_routes(app: Sanic) -> Text
 ```
 
 List all the routes of a sanic application.
@@ -143,7 +143,7 @@ Return both, the filtered kwargs as well as the remaining kwargs.
 #### is\_limit\_reached
 
 ```python
-is_limit_reached(num_messages: int, limit: int) -> bool
+is_limit_reached(num_messages: int, limit: Optional[int]) -> bool
 ```
 
 Determine whether the number of messages has reached a limit.
@@ -161,7 +161,7 @@ Determine whether the number of messages has reached a limit.
 #### read\_lines
 
 ```python
-read_lines(filename, max_line_limit=None, line_pattern=".*") -> Generator[Text, Any, None]
+read_lines(filename: Union[Path, Text], max_line_limit: Optional[int] = None, line_pattern: Text = ".*") -> Generator[Text, Any, None]
 ```
 
 Read messages from the command line and print bot responses.
@@ -241,17 +241,6 @@ Get `AvailableEndpoints` object from specified path.
 **Returns**:
 
   `AvailableEndpoints` object read from endpoints file.
-
-#### set\_default\_subparser
-
-```python
-set_default_subparser(parser, default_subparser) -> None
-```
-
-default subparser selection. Call after setup, just before parse_args()
-
-parser: the name of the parser you&#x27;re making changes to
-default_subparser: the name of the subparser to call by default
 
 #### create\_task\_error\_logger
 

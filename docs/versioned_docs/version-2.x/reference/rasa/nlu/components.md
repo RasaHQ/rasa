@@ -104,7 +104,7 @@ Validates the pipeline.
 #### any\_components\_in\_pipeline
 
 ```python
-any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"])
+any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]) -> bool
 ```
 
 Check if any of the provided components are listed in the pipeline.
@@ -169,7 +169,7 @@ Metaclass with `name` class property.
 
 ```python
  | @property
- | name(cls)
+ | name(cls) -> Text
 ```
 
 The name property is a function of the class - its __name__.
@@ -267,7 +267,7 @@ if a required package is not installed.
 
 ```python
  | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Optional[Text] = None, model_metadata: Optional["Metadata"] = None, cached_component: Optional["Component"] = None, **kwargs: Any, ,) -> "Component"
+ | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional["Metadata"] = None, cached_component: Optional["Component"] = None, **kwargs: Any, ,) -> "Component"
 ```
 
 Loads this component from file.
@@ -353,7 +353,8 @@ of components previous to this one.
 
 **Arguments**:
 
-- `training_data` - The :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
+- `training_data` - The
+  :class:`rasa.shared.nlu.training_data.training_data.TrainingData`.
 - `config` - The model configuration parameters.
 
 #### process
@@ -375,7 +376,8 @@ of components previous to this one.
 
 **Arguments**:
 
-- `message` - The :class:`rasa.shared.nlu.training_data.message.Message` to process.
+- `message` - The :class:`rasa.shared.nlu.training_data.message.Message` to
+  process.
 
 #### persist
 

@@ -6,6 +6,7 @@ title: rasa.utils.plotting
 #### plot\_confusion\_matrix
 
 ```python
+@_needs_matplotlib_backend
 plot_confusion_matrix(confusion_matrix: np.ndarray, classes: Union[np.ndarray, List[Text]], normalize: bool = False, title: Text = "Confusion matrix", color_map: Any = None, zmin: int = 1, output_file: Optional[Text] = None) -> None
 ```
 
@@ -25,10 +26,11 @@ Normalization can be applied by setting `normalize=True`.
 #### plot\_histogram
 
 ```python
+@_needs_matplotlib_backend
 plot_histogram(hist_data: List[List[float]], title: Text, output_file: Optional[Text] = None) -> None
 ```
 
-Plot a side-by-side comparative histogram of the confidence distribution (misses and hits).
+Plots a side-by-side comparative histogram of the confidence distribution.
 
 **Arguments**:
 
@@ -39,6 +41,7 @@ Plot a side-by-side comparative histogram of the confidence distribution (misses
 #### plot\_curve
 
 ```python
+@_needs_matplotlib_backend
 plot_curve(output_directory: Text, number_of_examples: List[int], x_label_text: Text, y_label_text: Text, graph_path: Text) -> None
 ```
 

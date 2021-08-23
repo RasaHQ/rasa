@@ -13,6 +13,14 @@ Save events into an SQL database.
 
 All events will be stored in a table called `events`.
 
+## SQLBrokerEvent Objects
+
+```python
+class SQLBrokerEvent(Base)
+```
+
+ORM which represents a row in the `events` table.
+
 #### from\_endpoint\_config
 
 ```python
@@ -26,7 +34,7 @@ Creates broker. See the parent class for more information.
 
 ```python
  | @contextlib.contextmanager
- | session_scope()
+ | session_scope() -> Generator[Session, None, None]
 ```
 
 Provide a transactional scope around a series of operations.

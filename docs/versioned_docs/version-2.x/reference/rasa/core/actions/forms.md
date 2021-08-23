@@ -70,7 +70,7 @@ If None, map requested slot to an entity with the same name
  | intent_is_desired(requested_slot_mapping: Dict[Text, Any], tracker: "DialogueStateTracker") -> bool
 ```
 
-Check whether user intent matches intent conditions
+Check whether user intent matches intent conditions.
 
 #### entity\_is\_desired
 
@@ -142,10 +142,23 @@ previous form and must be ignored.
 #### extract\_requested\_slot
 
 ```python
- | extract_requested_slot(tracker: "DialogueStateTracker", domain: Domain) -> Dict[Text, Any]
+ | extract_requested_slot(tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text) -> Dict[Text, Any]
 ```
 
-Extracts the value of requested slot from a user input else return `None`.
+Extract the value of requested slot from a user input else return `None`.
+
+**Arguments**:
+
+- `tracker` - a DialogueStateTracker instance
+- `domain` - the current domain
+- `slot_to_fill` - the name of the slot to fill
+  
+
+**Returns**:
+
+  a dictionary with one key being the name of the slot to fill
+  and its value being the slot value, or an empty dictionary
+  if no slot value was found.
 
 #### validate\_slots
 
@@ -160,8 +173,8 @@ them. Otherwise there is no validation.
 
 **Arguments**:
 
-- `slot_candidates` - Extracted slots which are candidates to fill the slots required
-  by the form.
+- `slot_candidates` - Extracted slots which are candidates to fill the slots
+  required by the form.
 - `tracker` - The current conversation tracker.
 - `domain` - The current model domain.
 - `output_channel` - The output channel which can be used to send messages
@@ -191,7 +204,7 @@ Subclass this method to add custom validation and rejection logic
  | async request_next_slot(tracker: "DialogueStateTracker", domain: Domain, output_channel: OutputChannel, nlg: NaturalLanguageGenerator, events_so_far: List[Event]) -> List[Event]
 ```
 
-Request the next slot and utter template if needed, else return `None`.
+Request the next slot and response if needed, else return `None`.
 
 #### activate
 

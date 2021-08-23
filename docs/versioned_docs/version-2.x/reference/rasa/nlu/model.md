@@ -39,7 +39,7 @@ Captures all information about a model to load and prepare it.
 
 ```python
  | @staticmethod
- | load(model_dir: Text)
+ | load(model_dir: Text) -> "Metadata"
 ```
 
 Loads the metadata from a models directory.
@@ -51,6 +51,48 @@ Loads the metadata from a models directory.
 **Returns**:
 
 - `Metadata` - A metadata object describing the model
+
+#### \_\_init\_\_
+
+```python
+ | __init__(metadata: Dict[Text, Any]) -> None
+```
+
+Set `metadata` attribute.
+
+#### get
+
+```python
+ | get(property_name: Text, default: Any = None) -> Any
+```
+
+Proxy function to get property on `metadata` attribute.
+
+#### component\_classes
+
+```python
+ | @property
+ | component_classes() -> List[Optional[Text]]
+```
+
+Returns a list of component class names.
+
+#### number\_of\_components
+
+```python
+ | @property
+ | number_of_components() -> int
+```
+
+Returns count of components.
+
+#### for\_component
+
+```python
+ | for_component(index: int, defaults: Any = None) -> Dict[Text, Any]
+```
+
+Returns the configuration of the component based on index.
 
 #### language
 
@@ -64,7 +106,7 @@ Language of the underlying model
 #### persist
 
 ```python
- | persist(model_dir: Text)
+ | persist(model_dir: Text) -> None
 ```
 
 Persists the metadata of a model to a given directory.
@@ -135,13 +177,14 @@ Create an interpreter based on a persisted model.
 
 ```python
  | @staticmethod
- | create(model_metadata: Metadata, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False, should_finetune: bool = False) -> "Interpreter"
+ | create(model_dir: Text, model_metadata: Metadata, component_builder: Optional[ComponentBuilder] = None, skip_validation: bool = False, should_finetune: bool = False) -> "Interpreter"
 ```
 
 Create model and components defined by the provided metadata.
 
 **Arguments**:
 
+- `model_dir` - The directory containing the model.
 - `model_metadata` - The metadata describing each component.
 - `component_builder` - The
   :class:`rasa.nlu.components.ComponentBuilder` to use.
@@ -179,5 +222,6 @@ Tokenize and featurize the input message
 
 **Returns**:
 
-- `message` - it contains the tokens and features which are the output of the NLU pipeline;
+- `message` - it contains the tokens and features which are the output of the
+  NLU pipeline;
 

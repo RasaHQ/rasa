@@ -148,7 +148,7 @@ Add routes to serve the conversation visualization files.
 #### wait\_til\_server\_is\_running
 
 ```python
-async wait_til_server_is_running(endpoint, max_retries=30, sleep_between_retries=1) -> bool
+async wait_til_server_is_running(endpoint: EndpointConfig, max_retries: int = 30, sleep_between_retries: float = 1.0) -> bool
 ```
 
 Try to reach the server, retry a couple of times and sleep in between.

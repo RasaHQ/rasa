@@ -208,6 +208,14 @@ Returns the set of entity roles in the training data.
 
 Returns the set of entity groups in the training data.
 
+#### entity\_roles\_groups\_used
+
+```python
+ | entity_roles_groups_used() -> bool
+```
+
+Checks if any entity roles or groups are used in the training data.
+
 #### number\_of\_examples\_per\_entity
 
 ```python
@@ -343,7 +351,7 @@ Checks if any NLU training data was loaded.
 #### has\_e2e\_examples
 
 ```python
- | has_e2e_examples()
+ | has_e2e_examples() -> bool
 ```
 
 Checks if there are any training examples from e2e stories.

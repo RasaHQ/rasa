@@ -12,7 +12,7 @@ class HangoutsOutput(OutputChannel)
 #### send\_custom\_json
 
 ```python
- | async send_custom_json(recipient_id: Text, json_message: Dict, **kwargs) -> None
+ | async send_custom_json(recipient_id: Text, json_message: Dict, **kwargs: Any) -> None
 ```
 
 Custom json payload is simply forwarded to Google Hangouts without

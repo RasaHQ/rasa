@@ -3,6 +3,14 @@ sidebar_label: jupyter
 title: rasa.jupyter
 ---
 
+#### pprint
+
+```python
+pprint(obj: Any) -> None
+```
+
+Prints JSONs with indent.
+
 #### chat
 
 ```python

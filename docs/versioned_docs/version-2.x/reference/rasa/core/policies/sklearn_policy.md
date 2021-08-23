@@ -14,7 +14,7 @@ Use an sklearn classifier to train a policy.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[MaxHistoryTrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: int = DEFAULT_MAX_HISTORY, model: Optional["sklearn.base.BaseEstimator"] = None, param_grid: Optional[Dict[Text, List] or List[Dict]] = None, cv: Optional[int] = None, scoring: Optional[Text or List or Dict or Callable] = "accuracy", label_encoder: LabelEncoder = LabelEncoder(), shuffle: bool = True, zero_state_features: Optional[Dict[Text, List["Features"]]] = None, **kwargs: Any, ,) -> None
+ | __init__(featurizer: Optional[MaxHistoryTrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: int = DEFAULT_MAX_HISTORY, model: Optional["sklearn.base.BaseEstimator"] = None, param_grid: Optional[Union[Dict[Text, List], List[Dict]]] = None, cv: Optional[int] = None, scoring: Optional[Union[Text, List, Dict, Callable]] = "accuracy", label_encoder: LabelEncoder = LabelEncoder(), shuffle: bool = True, zero_state_features: Optional[Dict[Text, List["Features"]]] = None, **kwargs: Any, ,) -> None
 ```
 
 Create a new sklearn policy.
@@ -37,6 +37,34 @@ Create a new sklearn policy.
   *inverse_transform* method.
 - `shuffle` - Whether to shuffle training data.
 - `zero_state_features` - Contains default feature values for attributes
+
+#### model\_architecture
+
+```python
+ | model_architecture(**kwargs: Any) -> Any
+```
+
+Sets model parameters for training.
+
+#### predict\_action\_probabilities
+
+```python
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
+```
+
+Predicts the next action the bot should take after seeing the tracker.
+
+**Arguments**:
+
+- `tracker` - the :class:`rasa.core.trackers.DialogueStateTracker`
+- `domain` - the :class:`rasa.shared.core.domain.Domain`
+- `interpreter` - Interpreter which may be used by the policies to create
+  additional features.
+  
+
+**Returns**:
+
+  The policy&#x27;s prediction (e.g. the probabilities for the actions).
 
 #### persist
 

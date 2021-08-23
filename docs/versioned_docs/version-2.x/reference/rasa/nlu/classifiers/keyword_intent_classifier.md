@@ -25,3 +25,12 @@ Persist this model into the passed directory.
 
 Return the metadata necessary to load the model again.
 
+#### load
+
+```python
+ | @classmethod
+ | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Metadata = None, cached_component: Optional["KeywordIntentClassifier"] = None, **kwargs: Any, ,) -> "KeywordIntentClassifier"
+```
+
+Loads trained component (see parent class for full docstring).
+

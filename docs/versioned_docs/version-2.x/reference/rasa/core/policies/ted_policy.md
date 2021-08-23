@@ -47,9 +47,19 @@ Train the policy on given training trackers.
  | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
-Predicts the next action the bot should take.
+Predicts the next action the bot should take after seeing the tracker.
 
-See the docstring of the parent class `Policy` for more information.
+**Arguments**:
+
+- `tracker` - the :class:`rasa.core.trackers.DialogueStateTracker`
+- `domain` - the :class:`rasa.shared.core.domain.Domain`
+- `interpreter` - Interpreter which may be used by the policies to create
+  additional features.
+  
+
+**Returns**:
+
+  The policy&#x27;s prediction (e.g. the probabilities for the actions).
 
 #### persist
 
@@ -121,7 +131,7 @@ Prepares the model for prediction.
 #### batch\_predict
 
 ```python
- | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, tf.Tensor]
+ | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
 ```
 
 Predicts the output of the given batch.

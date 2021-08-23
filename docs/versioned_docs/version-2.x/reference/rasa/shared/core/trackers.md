@@ -110,19 +110,24 @@ Convert State dict into a hashable format FrozenState.
 #### past\_states
 
 ```python
- | past_states(domain: Domain) -> List[State]
+ | past_states(domain: Domain, omit_unset_slots: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
 ```
 
-Generate the past states of this tracker based on the history.
+Generates the past states of this tracker based on the history.
 
 **Arguments**:
 
-- `domain` - a :class:`rasa.shared.core.domain.Domain`
+- `domain` - The Domain.
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
   
 
 **Returns**:
 
-  a list of states
+  A list of states
 
 #### change\_loop\_to
 
@@ -255,12 +260,16 @@ Creates a new state tracker with the same initial values.
 #### generate\_all\_prior\_trackers
 
 ```python
- | generate_all_prior_trackers() -> Generator["DialogueStateTracker", None, None]
+ | generate_all_prior_trackers() -> Generator[Tuple["DialogueStateTracker", bool], None, None]
 ```
 
 Returns a generator of the previous trackers of this tracker.
 
-The resulting array is representing the trackers before each action.
+**Returns**:
+
+  The tuple with the tracker before each action,
+  and the boolean flag representing whether this action should be hidden
+  in the dialogue history created for ML-based policies.
 
 #### applied\_events
 

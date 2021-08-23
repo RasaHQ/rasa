@@ -105,31 +105,6 @@ Check if file contains Core training data or rule data in YAML format.
 - `YamlException` - if the file seems to be a YAML file (extension) but
   can not be read / parsed.
 
-#### is\_key\_in\_yaml
-
-```python
- | @classmethod
- | is_key_in_yaml(cls, file_path: Union[Text, Path], *keys: Text) -> bool
-```
-
-Check if all keys are contained in the parsed dictionary from a yaml file.
-
-**Arguments**:
-
-- `file_path` - path to the yaml file
-- `keys` - keys to look for
-  
-
-**Returns**:
-
-  `True` if all the keys are contained in the file, `False` otherwise.
-  
-
-**Raises**:
-
-- `YamlException` - if the file seems to be a YAML file (extension) but
-  can not be read / parsed.
-
 #### is\_test\_stories\_file
 
 ```python

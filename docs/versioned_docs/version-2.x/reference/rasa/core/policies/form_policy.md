@@ -11,6 +11,25 @@ class FormPolicy(MemoizationPolicy)
 
 Policy which handles prediction of Forms
 
+#### recall
+
+```python
+ | recall(states: List[State], tracker: DialogueStateTracker, domain: Domain) -> Optional[Text]
+```
+
+Finds the action based on the given states.
+
+**Arguments**:
+
+- `states` - List of states.
+- `tracker` - The tracker.
+- `domain` - The Domain.
+  
+
+**Returns**:
+
+  The name of the action.
+
 #### predict\_action\_probabilities
 
 ```python

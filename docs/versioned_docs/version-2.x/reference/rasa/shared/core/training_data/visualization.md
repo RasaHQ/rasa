@@ -31,7 +31,7 @@ Plots the graph and persists it into a html file.
 #### visualize\_neighborhood
 
 ```python
-async visualize_neighborhood(current: Optional[List[Event]], event_sequences: List[List[Event]], output_file: Optional[Text] = None, max_history: int = 2, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), nlu_training_data: Optional["TrainingData"] = None, should_merge_nodes: bool = True, max_distance: int = 1, fontsize: int = 12)
+async visualize_neighborhood(current: Optional[List[Event]], event_sequences: List[List[Event]], output_file: Optional[Text] = None, max_history: int = 2, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), nlu_training_data: Optional["TrainingData"] = None, should_merge_nodes: bool = True, max_distance: int = 1, fontsize: int = 12) -> "networkx.MultiDiGraph"
 ```
 
 Given a set of event lists, visualizing the flows.
@@ -39,11 +39,10 @@ Given a set of event lists, visualizing the flows.
 #### visualize\_stories
 
 ```python
-async visualize_stories(story_steps: List[StoryStep], domain: Domain, output_file: Optional[Text], max_history: int, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), nlu_training_data: Optional["TrainingData"] = None, should_merge_nodes: bool = True, fontsize: int = 12)
+async visualize_stories(story_steps: List[StoryStep], domain: Domain, output_file: Optional[Text], max_history: int, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), nlu_training_data: Optional["TrainingData"] = None, should_merge_nodes: bool = True, fontsize: int = 12) -> "networkx.MultiDiGraph"
 ```
 
-Given a set of stories, generates a graph visualizing the flows in the
-stories.
+Given a set of stories, generates a graph visualizing the flows in the stories.
 
 Visualization is always a trade off between making the graph as small as
 possible while

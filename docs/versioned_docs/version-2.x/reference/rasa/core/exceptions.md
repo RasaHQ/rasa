@@ -15,6 +15,14 @@ Raised when a model is too old to be loaded.
 
 - `message` - explanation of why the model is invalid
 
+#### \_\_init\_\_
+
+```python
+ | __init__(message: Text, model_version: Optional[Text] = None) -> None
+```
+
+Initialize message and model_version attributes.
+
 ## AgentNotReady Objects
 
 ```python
@@ -26,4 +34,20 @@ Raised if someone tries to use an agent that is not ready.
 An agent might be created, e.g. without an interpreter attached. But
 if someone tries to parse a message with that agent, this exception
 will be thrown.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(message: Text) -> None
+```
+
+Initialize message attribute.
+
+## ChannelConfigError Objects
+
+```python
+class ChannelConfigError(RasaCoreException)
+```
+
+Raised if a channel is not configured correctly.
 

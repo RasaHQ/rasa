@@ -3,6 +3,20 @@ sidebar_label: tokenizer
 title: rasa.nlu.tokenizers.tokenizer
 ---
 
+## Token Objects
+
+```python
+class Token()
+```
+
+#### get
+
+```python
+ | get(prop: Text, default: Optional[Any] = None) -> Any
+```
+
+Returns token value.
+
 ## Tokenizer Objects
 
 ```python

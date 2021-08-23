@@ -59,11 +59,37 @@ Create a `RulePolicy` object.
   using the rules.
 - `check_for_contradictions` - Check for contradictions.
 
+#### train
+
+```python
+ | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
+```
+
+Trains the policy on given training trackers.
+
+**Arguments**:
+
+- `training_trackers` - The list of the trackers.
+- `domain` - The domain.
+- `interpreter` - Interpreter which can be used by the polices for featurization.
+
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> "PolicyPrediction"
 ```
 
 Predicts the next action (see parent class for more information).
+
+#### get\_rule\_only\_data
+
+```python
+ | get_rule_only_data() -> Dict[Text, Any]
+```
+
+Gets the slots and loops that are used only in rule data.
+
+**Returns**:
+
+  Slots and loops that are used only in rule data.
 

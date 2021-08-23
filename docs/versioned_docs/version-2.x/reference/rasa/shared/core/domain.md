@@ -30,6 +30,24 @@ The domain specifies the universe in which the bot&#x27;s policy acts.
 A Domain subclass provides the actions the bot can take, the intents
 and entities it can recognise.
 
+#### from\_dict
+
+```python
+ | @classmethod
+ | from_dict(cls, data: Dict) -> "Domain"
+```
+
+Deserializes and creates domain.
+
+**Arguments**:
+
+- `data` - The serialized domain.
+  
+
+**Returns**:
+
+  The instantiated `Domain` object.
+
 #### from\_directory
 
 ```python
@@ -104,7 +122,7 @@ Get intent properties for a domain from what is provided by a domain file.
 #### \_\_init\_\_
 
 ```python
- | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], templates: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default()) -> None
+ | __init__(intents: Union[Set[Text], List[Text], List[Dict[Text, Any]]], entities: List[Union[Text, Dict[Text, Any]]], slots: List[Slot], responses: Dict[Text, List[Dict[Text, Any]]], action_names: List[Text], forms: Union[Dict[Text, Any], List[Text]], action_texts: Optional[List[Text]] = None, store_entities_as_slots: bool = True, session_config: SessionConfig = SessionConfig.default()) -> None
 ```
 
 Creates a `Domain`.
@@ -114,7 +132,7 @@ Creates a `Domain`.
 - `intents` - Intent labels.
 - `entities` - The names of entities which might be present in user messages.
 - `slots` - Slots to store information during the conversation.
-- `templates` - Bot responses. If an action with the same name is executed, it
+- `responses` - Bot responses. If an action with the same name is executed, it
   will send the matching response to the user.
 - `action_names` - Names of custom actions.
 - `forms` - Form names and their slot mappings.
@@ -169,7 +187,7 @@ Returns a unique hash for the domain which is stable across python runs.
 
 ```python
  | @rasa.shared.utils.common.lazy_property
- | user_actions_and_forms()
+ | user_actions_and_forms() -> List[Text]
 ```
 
 Returns combination of user actions and forms.
@@ -196,7 +214,7 @@ Returns the number of available actions.
 
 ```python
  | @rasa.shared.utils.common.lazy_property
- | num_states()
+ | num_states() -> int
 ```
 
 Number of used input states for the action prediction.
@@ -208,18 +226,49 @@ Number of used input states for the action prediction.
  | retrieval_intent_templates() -> Dict[Text, List[Dict[Text, Any]]]
 ```
 
-Return only the templates which are defined for retrieval intents
+Return only the responses which are defined for retrieval intents.
+
+#### retrieval\_intent\_responses
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | retrieval_intent_responses() -> Dict[Text, List[Dict[Text, Any]]]
+```
+
+Return only the responses which are defined for retrieval intents.
+
+#### templates
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | templates() -> Dict[Text, List[Dict[Text, Any]]]
+```
+
+Temporary property before templates become completely deprecated.
 
 #### is\_retrieval\_intent\_template
 
 ```python
  | @staticmethod
- | is_retrieval_intent_template(template: Tuple[Text, List[Dict[Text, Any]]]) -> bool
+ | is_retrieval_intent_template(response: Tuple[Text, List[Dict[Text, Any]]]) -> bool
 ```
 
-Check if the response template is for a retrieval intent.
+Check if the response is for a retrieval intent.
 
-These templates have a `/` symbol in their name. Use that to filter them from the rest.
+These templates have a `/` symbol in their name. Use that to filter them from
+the rest.
+
+#### is\_retrieval\_intent\_response
+
+```python
+ | @staticmethod
+ | is_retrieval_intent_response(response: Tuple[Text, List[Dict[Text, Any]]]) -> bool
+```
+
+Check if the response is for a retrieval intent.
+
+These responses have a `/` symbol in their name. Use that to filter them from
+the rest.
 
 #### add\_categorical\_slot\_default\_value
 
@@ -248,7 +297,7 @@ See `_add_categorical_slot_default_value` for docstring.
 #### index\_for\_action
 
 ```python
- | index_for_action(action_name: Text) -> Optional[int]
+ | index_for_action(action_name: Text) -> int
 ```
 
 Looks up which action index corresponds to this action name.
@@ -350,18 +399,56 @@ Returns all available states.
 #### get\_active\_states
 
 ```python
- | get_active_states(tracker: "DialogueStateTracker") -> State
+ | get_active_states(tracker: "DialogueStateTracker", omit_unset_slots: bool = False) -> State
 ```
 
-Return a bag of active states from the tracker state.
+Returns a bag of active states from the tracker state.
+
+**Arguments**:
+
+- `tracker` - dialog state tracker containing the dialog so far
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
+  
+  Returns `State` containing all active states.
 
 #### states\_for\_tracker\_history
 
 ```python
- | states_for_tracker_history(tracker: "DialogueStateTracker") -> List[State]
+ | states_for_tracker_history(tracker: "DialogueStateTracker", omit_unset_slots: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[State]
 ```
 
-Array of states for each state of the trackers history.
+List of states for each state of the trackers history.
+
+**Arguments**:
+
+- `tracker` - Dialogue state tracker containing the dialogue so far.
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
+  
+
+**Returns**:
+
+  A list of states.
+
+#### slots\_for\_entities
+
+```python
+ | slots_for_entities(entities: List[Dict[Text, Any]]) -> List[SlotSet]
+```
+
+Creates slot events for entities if auto-filling is enabled.
+
+**Arguments**:
+
+- `entities` - The list of entities.
+  
+
+**Returns**:
+
+  A list of `SlotSet` events.
 
 #### persist\_specification
 
@@ -476,6 +563,15 @@ This function preserves the orders of the keys in the domain.
 
 Return the configuration for an intent.
 
+#### intents
+
+```python
+ | @rasa.shared.utils.common.lazy_property
+ | intents() -> List[Text]
+```
+
+Returns sorted list of intents.
+
 #### domain\_warnings
 
 ```python
@@ -494,7 +590,15 @@ from domain warnings in case they are not featurized.
  | check_missing_templates() -> None
 ```
 
-Warn user of utterance names which have no specified template.
+Warn user of utterance names which have no specified response.
+
+#### check\_missing\_responses
+
+```python
+ | check_missing_responses() -> None
+```
+
+Warn user of utterance names which have no specified response.
 
 #### is\_empty
 

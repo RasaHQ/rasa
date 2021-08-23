@@ -34,7 +34,7 @@ Initialize the tracker featurizer.
 #### training\_states\_actions\_and\_entities
 
 ```python
- | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+ | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
 Transforms list of trackers to lists of states, actions and entity data.
@@ -43,6 +43,7 @@ Transforms list of trackers to lists of states, actions and entity data.
 
 - `trackers` - The trackers to transform
 - `domain` - The domain
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
   
 
 **Returns**:
@@ -52,7 +53,7 @@ Transforms list of trackers to lists of states, actions and entity data.
 #### training\_states\_and\_actions
 
 ```python
- | training_states_and_actions(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]]]
+ | training_states_and_actions(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False) -> Tuple[List[List[State]], List[List[Text]]]
 ```
 
 Transforms list of trackers to lists of states and actions.
@@ -61,6 +62,7 @@ Transforms list of trackers to lists of states and actions.
 
 - `trackers` - The trackers to transform
 - `domain` - The domain
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
   
 
 **Returns**:
@@ -101,17 +103,21 @@ Featurize the training trackers.
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False) -> List[List[State]]
+ | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[List[State]]
 ```
 
 Transforms list of trackers to lists of states for prediction.
 
 **Arguments**:
 
-- `trackers` - The trackers to transform
-- `domain` - The domain
+- `trackers` - The trackers to transform.
+- `domain` - The domain.
 - `use_text_for_last_user_input` - Indicates whether to use text or intent label
   for featurizing last user input.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
   
 
 **Returns**:
@@ -121,7 +127,7 @@ Transforms list of trackers to lists of states for prediction.
 #### create\_state\_features
 
 ```python
- | create_state_features(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, use_text_for_last_user_input: bool = False) -> List[List[Dict[Text, List["Features"]]]]
+ | create_state_features(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[List[Dict[Text, List["Features"]]]]
 ```
 
 Create state features for prediction.
@@ -133,11 +139,17 @@ Create state features for prediction.
 - `interpreter` - The interpreter
 - `use_text_for_last_user_input` - Indicates whether to use text or intent label
   for featurizing last user input.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
   
 
 **Returns**:
 
-  A dictionary of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
+  A list (corresponds to the list of trackers)
+  of lists (corresponds to all dialogue turns)
+  of dictionaries of state type (INTENT, TEXT, ACTION_NAME, ACTION_TEXT,
   ENTITIES, SLOTS, ACTIVE_LOOP) to a list of features for all dialogue
   turns in all trackers.
 
@@ -185,7 +197,7 @@ Training data is padded up to the length of the longest dialogue with -1.
 #### training\_states\_actions\_and\_entities
 
 ```python
- | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+ | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
 Transforms list of trackers to lists of states, actions and entity data.
@@ -194,6 +206,7 @@ Transforms list of trackers to lists of states, actions and entity data.
 
 - `trackers` - The trackers to transform
 - `domain` - The domain
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
   
 
 **Returns**:
@@ -203,17 +216,21 @@ Transforms list of trackers to lists of states, actions and entity data.
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False) -> List[List[State]]
+ | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[List[State]]
 ```
 
 Transforms list of trackers to lists of states for prediction.
 
 **Arguments**:
 
-- `trackers` - The trackers to transform
-- `domain` - The domain,
+- `trackers` - The trackers to transform.
+- `domain` - The domain.
 - `use_text_for_last_user_input` - Indicates whether to use text or intent label
   for featurizing last user input.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
   
 
 **Returns**:
@@ -256,7 +273,7 @@ the slice length.
 #### training\_states\_actions\_and\_entities
 
 ```python
- | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
+ | training_states_actions_and_entities(trackers: List[DialogueStateTracker], domain: Domain, omit_unset_slots: bool = False) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]
 ```
 
 Transforms list of trackers to lists of states, actions and entity data.
@@ -265,6 +282,7 @@ Transforms list of trackers to lists of states, actions and entity data.
 
 - `trackers` - The trackers to transform
 - `domain` - The domain
+- `omit_unset_slots` - If `True` do not include the initial values of slots.
   
 
 **Returns**:
@@ -274,17 +292,21 @@ Transforms list of trackers to lists of states, actions and entity data.
 #### prediction\_states
 
 ```python
- | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False) -> List[List[State]]
+ | prediction_states(trackers: List[DialogueStateTracker], domain: Domain, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None) -> List[List[State]]
 ```
 
 Transforms list of trackers to lists of states for prediction.
 
 **Arguments**:
 
-- `trackers` - The trackers to transform
-- `domain` - The domain
+- `trackers` - The trackers to transform.
+- `domain` - The domain.
 - `use_text_for_last_user_input` - Indicates whether to use text or intent label
   for featurizing last user input.
+- `ignore_rule_only_turns` - If True ignore dialogue turns that are present
+  only in rules.
+- `rule_only_data` - Slots and loops,
+  which only occur in rules but not in stories.
   
 
 **Returns**:

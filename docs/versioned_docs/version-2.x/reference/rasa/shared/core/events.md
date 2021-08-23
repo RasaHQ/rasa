@@ -257,8 +257,10 @@ Returns text representation of event.
  | as_sub_state() -> Dict[Text, Union[None, Text, List[Optional[Text]]]]
 ```
 
-Turns a UserUttered event into a substate containing information about entities,
-intent and text of the UserUttered
+Turns a UserUttered event into features.
+
+The substate contains information about entities, intent and text of the
+`UserUttered` event.
 
 **Returns**:
 
@@ -352,7 +354,7 @@ Applies event to current conversation state.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -443,7 +445,7 @@ This class is not used in the story training as it is contained in the
 #### \_\_init\_\_
 
 ```python
- | __init__(text=None, data=None, metadata=None, timestamp=None) -> None
+ | __init__(text: Optional[Text] = None, data: Optional[Dict] = None, metadata: Optional[Dict[Text, Any]] = None, timestamp: Optional[float] = None) -> None
 ```
 
 Creates event for a bot response.
@@ -466,7 +468,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -568,7 +570,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -700,7 +702,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker) -> None
+ | apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -794,13 +796,16 @@ Cancel certain jobs.
 Creates a ReminderCancelled event.
 
 If all arguments are `None`, this will cancel all reminders.
-are to be cancelled. If no arguments are supplied, this will cancel all reminders.
+are to be cancelled. If no arguments are supplied, this will cancel all
+reminders.
 
 **Arguments**:
 
 - `name` - Name of the reminder to be cancelled.
-- `intent` - Intent name that is to be used to identify the reminders to be cancelled.
-- `entities` - Entities that are to be used to identify the reminders to be cancelled.
+- `intent` - Intent name that is to be used to identify the reminders to be
+  cancelled.
+- `entities` - Entities that are to be used to identify the reminders to be
+  cancelled.
 - `timestamp` - Optional timestamp.
 - `metadata` - Optional event metadata.
 
@@ -834,7 +839,7 @@ Returns text representation of event.
  | cancels_job_with_name(job_name: Text, sender_id: Text) -> bool
 ```
 
-Determines if this `ReminderCancelled` event should cancel the job with the given name.
+Determines if this event should cancel the job with the given name.
 
 **Arguments**:
 
@@ -844,8 +849,8 @@ Determines if this `ReminderCancelled` event should cancel the job with the give
 
 **Returns**:
 
-  `True`, if this `ReminderCancelled` event should cancel the job with the given name,
-  and `False` otherwise.
+  `True`, if this `ReminderCancelled` event should cancel the job with the
+  given name, and `False` otherwise.
 
 #### as\_story\_string
 
@@ -942,7 +947,7 @@ Applies event to current conversation state.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -980,7 +985,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1047,7 +1052,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker) -> None
+ | apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -1082,7 +1087,7 @@ Returns text representation of event.
 #### apply\_to
 
 ```python
- | apply_to(tracker) -> None
+ | apply_to(tracker: "DialogueStateTracker") -> None
 ```
 
 Applies event to current conversation state.
@@ -1101,7 +1106,7 @@ to the latest `Turn`` in `Tracker.turns`.
 #### \_\_init\_\_
 
 ```python
- | __init__(action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, action_text: Optional[Text] = None) -> None
+ | __init__(action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, action_text: Optional[Text] = None, hide_rule_turn: bool = False) -> None
 ```
 
 Creates event for a successful event execution.
@@ -1116,6 +1121,8 @@ Creates event for a successful event execution.
 - `metadata` - Additional event metadata.
 - `action_text` - In case it&#x27;s an end-to-end action prediction, the text which
   was predicted.
+- `hide_rule_turn` - If `True`, this action should be hidden in the dialogue
+  history created for ML-based policies.
 
 #### \_\_repr\_\_
 
@@ -1218,7 +1225,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1245,7 +1252,7 @@ Returns serialized event.
 class ActiveLoop(Event)
 ```
 
-If `name` is not None: activates a loop with `name` else deactivates active loop.
+If `name` is given: activates a loop with `name` else deactivates active loop.
 
 #### \_\_init\_\_
 
@@ -1280,7 +1287,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1375,7 +1382,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.
@@ -1467,7 +1474,7 @@ Returns unique hash for event.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other) -> bool
+ | __eq__(other: Any) -> bool
 ```
 
 Compares object with other object.

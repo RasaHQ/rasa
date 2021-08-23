@@ -11,7 +11,8 @@ get_persistor(name: Text) -> Optional["Persistor"]
 
 Returns an instance of the requested persistor.
 
-Currently, `aws`, `gcs`, `azure` and providing module paths are supported remote storages.
+Currently, `aws`, `gcs`, `azure` and providing module paths are supported remote
+storages.
 
 ## Persistor Objects
 
@@ -72,4 +73,16 @@ class AzurePersistor(Persistor)
 ```
 
 Store models on Azure
+
+#### list\_models
+
+```python
+ | list_models() -> List[Text]
+```
+
+Lists models on remote storage.
+
+**Returns**:
+
+  Paths to found models.
 

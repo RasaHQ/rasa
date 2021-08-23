@@ -228,7 +228,7 @@ Replaces label names in a list of labels.
 #### collect\_incorrect\_entity\_predictions
 
 ```python
-collect_incorrect_entity_predictions(entity_results: List[EntityEvaluationResult], merged_predictions: List[Text], merged_targets: List[Text])
+collect_incorrect_entity_predictions(entity_results: List[EntityEvaluationResult], merged_predictions: List[Text], merged_targets: List[Text]) -> List["EntityPrediction"]
 ```
 
 Get incorrect entity predictions.
@@ -259,7 +259,7 @@ Write correct entity predictions to a file.
 #### collect\_successful\_entity\_predictions
 
 ```python
-collect_successful_entity_predictions(entity_results: List[EntityEvaluationResult], merged_predictions: List[Text], merged_targets: List[Text])
+collect_successful_entity_predictions(entity_results: List[EntityEvaluationResult], merged_predictions: List[Text], merged_targets: List[Text]) -> List["EntityPrediction"]
 ```
 
 Get correct entity predictions.
