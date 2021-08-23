@@ -435,14 +435,10 @@ class PolicyGraphComponent(GraphComponent):
         **kwargs: Any,
     ) -> "PolicyGraphComponent":
         """Loads a trained policy (see parent class for full docstring)."""
-        config = {}
         featurizer = None
 
         try:
             with model_storage.read_from(resource) as path:
-                metadata_file = Path(path) / cls._metadata_filename()
-                config = json.loads(rasa.shared.utils.io.read_file(metadata_file))
-
                 if (Path(path) / FEATURIZER_FILE).is_file():
                     featurizer = TrackerFeaturizer.load(path)
 

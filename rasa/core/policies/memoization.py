@@ -250,7 +250,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
-        return {"config": self.config, "lookup": self.lookup}
+        return {"lookup": self.lookup}
 
     @classmethod
     def _metadata_filename(cls) -> Text:
@@ -266,7 +266,6 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         **kwargs: Any,
     ) -> "PolicyGraphComponent":
         """Loads a trained policy (see parent class for full docstring)."""
-        config = {}
         featurizer = None
         lookup = None
 
@@ -274,7 +273,6 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
             with model_storage.read_from(resource) as path:
                 metadata_file = Path(path) / cls._metadata_filename()
                 metadata = json.loads(rasa.shared.utils.io.read_file(metadata_file))
-                config = metadata["config"]
                 lookup = metadata["lookup"]
 
                 if (Path(path) / FEATURIZER_FILE).is_file():
