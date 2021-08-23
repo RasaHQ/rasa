@@ -2,11 +2,17 @@ import pytest
 import copy
 import numpy as np
 import itertools
-from typing import List, Text
+from typing import List, Text, Optional, Dict
 
+
+from rasa.core.featurizers.precomputation import (
+    CoreFeaturizationCollector,
+    CoreFeaturizationPrecomputations,
+    CoreFeaturizationPreparer,
+)
 from rasa.shared.nlu.training_data.features import Features
-from rasa.core.featurizers.precomputation import CoreFeaturizationPrecomputations
 from rasa.shared.nlu.training_data.message import Message
+from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.constants import (
     INTENT,
     TEXT,
@@ -14,11 +20,17 @@ from rasa.shared.nlu.constants import (
     ACTION_NAME,
     ACTION_TEXT,
     INTENT_NAME_KEY,
+    ENTITY_ATTRIBUTE_VALUE,
+    ENTITY_ATTRIBUTE_TYPE,
+    ENTITY_ATTRIBUTE_ROLE,
+    ENTITY_ATTRIBUTE_GROUP,
 )
 from rasa.shared.core.constants import DEFAULT_ACTION_NAMES
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import UserUttered, ActionExecuted
+from rasa.shared.core.training_data.structures import StoryGraph, StoryStep
+from rasa.shared.core.trackers import DialogueStateTracker
 
 
 def _dummy_features(id: int, attribute: Text) -> Features:
@@ -386,3 +398,168 @@ def test_precomputation_derive_messages_from_domain_and_add():
         + len(DEFAULT_ACTION_NAMES)
         + len(domain.form_names)
     )
+
+
+def _create_entity(
+    value: Text, type: Text, role: Optional[Text] = None, group: Optional[Text] = None
+) -> Dict[Text, Text]:
+    entity = {}
+    entity[ENTITY_ATTRIBUTE_VALUE] = value
+    entity[ENTITY_ATTRIBUTE_TYPE] = type
+    entity[ENTITY_ATTRIBUTE_ROLE] = role
+    entity[ENTITY_ATTRIBUTE_GROUP] = group
+    return entity
+
+
+def test_preparation_for_training():
+    """Tests whether story graph and domain information ends up in training data.
+    Note: We do not test for completeness/shape of the result here. These aspects are
+    defined by the same principles as the lookup table. Hence, these aspects should
+    be tested in the lookup table tests, whereas here we just probe whether the lookup
+    table is applied correctly.
+    """
+    # create domain and story graph
+    intent_in_domain_only = "only-appears-in-domain"
+    event_text_prefix = "only-appears-in-events"
+    domain = Domain(
+        intents=["greet", "inform", intent_in_domain_only],
+        entities=["entity_name"],
+        slots=[],
+        responses=dict(),
+        action_names=["action_listen", "utter_greet"],
+        forms=dict(),
+        action_texts=["Hi how are you?"],
+    )
+    text_that_contains_entities = f"{event_text_prefix}-1"
+    events = [
+        ActionExecuted(action_name="action_listen"),
+        UserUttered(
+            text=text_that_contains_entities,
+            intent={"intent_name": "greet"},
+            entities=[_create_entity(value="Bot", type="entity_name")],
+        ),
+        ActionExecuted(action_name="utter_greet", action_text="Hi how are you?"),
+        ActionExecuted(action_name="action_listen"),
+        UserUttered(text=f"{event_text_prefix}-2", intent={"intent_name": "inform"}),
+        ActionExecuted(action_name="action_listen"),
+    ]
+    story_graph = StoryGraph([StoryStep(events=events)])
+
+    # convert!
+    training_data = CoreFeaturizationPreparer.prepare_for_training(
+        domain=domain, story_graph=story_graph
+    )
+
+    # check information from events is contained - by checking the TEXTs
+    training_texts = sorted(
+        message.data.get(TEXT)
+        for message in training_data.training_examples
+        if TEXT in message.data
+    )
+    assert all(
+        [
+            (
+                text.startswith(event_text_prefix)
+                or text == CoreFeaturizationPreparer.WORKAROUND_TEXT
+            )
+            for text in training_texts
+        ]
+    )
+    assert CoreFeaturizationPreparer.WORKAROUND_TEXT in training_texts
+    # check that entities are accessible via the TEXT
+    messages = [
+        message
+        for message in training_data.training_examples
+        if message.data.get(TEXT) == text_that_contains_entities
+    ]
+    assert len(messages) == 1
+    message = messages[0]
+    assert message.data.get(ENTITIES)
+    # check information from domain is contained - by checking the INTENTs
+    training_intents = set(
+        message.get(INTENT) for message in training_data.training_examples
+    )
+    assert intent_in_domain_only in training_intents
+
+
+def test_preparation_for_inference():
+    """Tests whether information from tracker events end up in the messages.
+    Note: We do not test for completeness/shape of the result here. These aspects are
+    defined by the same principles as the lookup table. Hence, these aspects should
+    be tested in the lookup table tests, whereas here we just probe whether the lookup
+    table is applied correctly.
+    """
+    # create tracker
+    event_text_prefix = "this-is-a-text-prefix"
+    text_that_contains_entities = f"{event_text_prefix}-1"
+    events = [
+        UserUttered(
+            text=text_that_contains_entities,
+            intent={"intent_name": "greet"},
+            entities=[_create_entity(value="Bot", type="entity_name")],
+        ),
+        ActionExecuted(action_name="utter_greet", action_text="Hi how are you?"),
+        ActionExecuted(action_name="action_listen"),
+        UserUttered(text=f"{event_text_prefix}-2", intent={"intent_name": "inform"}),
+    ]
+    tracker = DialogueStateTracker.from_events(sender_id="arbitrary", evts=events)
+
+    # convert!
+    messages = CoreFeaturizationPreparer.prepare_for_inference(tracker)
+
+    # check information from events is contained - by checking the TEXTs
+    message_texts = sorted(
+        message.data.get(TEXT) for message in messages if TEXT in message.data
+    )
+    assert all([(text.startswith(event_text_prefix)) for text in message_texts])
+    assert CoreFeaturizationPreparer.WORKAROUND_TEXT not in message_texts
+    # check that ENTITIES are accessible via the TEXT
+    messages_for_chosen_text = [
+        message
+        for message in messages
+        if message.data.get(TEXT) == text_that_contains_entities
+    ]
+    assert len(messages_for_chosen_text) == 1
+    message = messages_for_chosen_text[0]
+    assert message.data.get(ENTITIES)
+
+
+@pytest.mark.parametrize(
+    "messages_with_unique_lookup_key",
+    [
+        [
+            Message(data={TEXT: "A"}, features=[_dummy_features(1, TEXT)]),
+            Message(data={ACTION_TEXT: "B"}),
+        ],
+        [],
+    ],
+)
+def test_collection(messages_with_unique_lookup_key: List[Message]):
+
+    messages = messages_with_unique_lookup_key
+
+    # pass as training data
+    training_data = TrainingData(training_examples=messages)
+    precomputations = CoreFeaturizationCollector.collect(training_data)
+    assert len(precomputations) == len(messages)
+
+    # pass the list of messages directly
+    precomputations = CoreFeaturizationCollector.collect(messages)
+    assert len(precomputations) == len(messages)
+
+
+def test_collection_fails():
+    """The collection expects messages that have a unique lookup key.
+
+    This is because they (should) have been passed through the preparation stage which
+    will have constructed messages with this property.
+    """
+    messages = [
+        Message(data={TEXT: "A", ACTION_TEXT: "B"}, features=[_dummy_features(1, TEXT)])
+    ]
+    training_data = TrainingData(training_examples=messages)
+
+    with pytest.raises(ValueError):
+        CoreFeaturizationCollector.collect(training_data)
+    with pytest.raises(ValueError):
+        CoreFeaturizationCollector.collect(messages)

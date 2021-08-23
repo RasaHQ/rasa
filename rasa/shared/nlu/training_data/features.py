@@ -223,7 +223,7 @@ class Features:
         """
         # ensure all requested attributes are present in the output - regardless
         # of whether we find features later
-        extracted = (
+        extracted: Dict[Text, List[Features]] = (
             dict()
             if attributes is None
             else {attribute: [] for attribute in attributes}

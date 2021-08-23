@@ -119,9 +119,7 @@ class TrackerFeaturizer2:
         """
         return [
             [
-                self.state_featurizer.encode_state(
-                    state, precomputations=precomputations
-                )
+                self.state_featurizer.encode_state(state, precomputations)
                 for state in tracker_states
             ]
             for tracker_states in trackers_as_states
@@ -169,9 +167,7 @@ class TrackerFeaturizer2:
         return [
             [
                 self.state_featurizer.encode_entities(
-                    entity_data,
-                    bilou_tagging=bilou_tagging,
-                    precomputations=precomputations,
+                    entity_data, bilou_tagging, precomputations,
                 )
                 for entity_data in trackers_entities
             ]

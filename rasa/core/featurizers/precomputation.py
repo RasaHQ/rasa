@@ -63,7 +63,7 @@ class CoreFeaturizationPrecomputations:
                 larger or equal number of attributes and of features than the other
                 message, then the collision will be resolved automatically
         """
-        self._table: Dict[Text, SubState] = {}
+        self._table: Dict[Tuple[Text, Text], Message] = {}
         self._handle_collisions = handle_collisions
         self._num_collisions_ignored = 0
         self._num_collisions_resolved = 0
@@ -83,12 +83,12 @@ class CoreFeaturizationPrecomputations:
         return self._table.keys()
 
     @property
-    def num_collisions_ignored(self):
+    def num_collisions_ignored(self) -> int:
         """Returns the number of collisions that have been ignored."""
         return self._num_collisions_ignored
 
     @property
-    def num_collisions_resolved(self):
+    def num_collisions_resolved(self) -> int:
         """Returns the number of collisions that have been resolved."""
         return self._num_collisions_resolved
 
@@ -207,7 +207,7 @@ class CoreFeaturizationPrecomputations:
         """
         # If we specify a list of attributes, then we want a dict with one entry
         # for each attribute back - even if the corresponding list of features is empty.
-        features = (
+        features: Dict[Text, List[Features]] = (
             dict()
             if attributes is None
             else {attribute: [] for attribute in attributes}
@@ -384,7 +384,7 @@ class CoreFeaturizationPreparer(GraphComponent):
             event
             for step in story_graph.story_steps
             for event in step.events
-            if not isinstance(ActionExecuted, event)
+            if not isinstance(event, ActionExecuted)
             # because all action names and texts are known to the domain
         )
         lookup_table.derive_messages_from_events_and_add(events=all_events)
