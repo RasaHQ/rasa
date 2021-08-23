@@ -407,9 +407,9 @@ def test_reduce(
             matrix = scipy.sparse.coo_matrix(matrix)
         config = dict(
             features=matrix,
-            attribute="fixed-attribute",
+            attribute="fixed-attribute",  # must be the same
             feature_type=type,
-            origin=f"origin-{idx}-doesn't-matter-here",
+            origin="origin-does-matter-here",  # must be the same
         )
         feat = Features(**config)
         features_list.append(feat)
@@ -429,3 +429,25 @@ def test_reduce(
             assert feature.type == type
             assert feature.features.shape[-1] == num
             idx += 1
+
+
+@pytest.mark.parametrize("differ", ["attribute", "origin"])
+def test_reduce_raises_if_combining_different_origins_or_attributes(differ: Text):
+    # create features accordingly
+    arbitrary_fixed_type = FEATURE_TYPE_SENTENCE
+    features_list = []
+    for idx in range(2):
+        first_dim = 1
+        arbitrary_matrix_matching_type = np.full(shape=(first_dim, 1), fill_value=1)
+        config = dict(
+            features=arbitrary_matrix_matching_type,
+            attribute="fixed-attribute" if differ != "attribute" else f"attr-{idx}",
+            feature_type=arbitrary_fixed_type,
+            origin="fixed-origin" if differ != "origin" else f"origin-{idx}",
+        )
+        feat = Features(**config)
+        features_list.append(feat)
+
+    # reduce!
+    with pytest.raises(ValueError, match="Expected all Features"):
+        Features.reduce(features_list)

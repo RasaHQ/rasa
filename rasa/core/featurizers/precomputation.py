@@ -20,6 +20,12 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.features import Features
 
+# TODO: cacheable version of `CoreFeaturizationPrecomputations` and new
+# `collect_and_cache` function for `CoreFeaturizationCollector` to be used during
+# train (caveat: we're not able to dynamically switch on/off caching - we could only
+# change the recipe such that the non-caching prediction-time method would be used
+# to collect)
+
 
 class CoreFeaturizationPrecomputations:
     """A container (key-value store) that stores specific `Messages` only.

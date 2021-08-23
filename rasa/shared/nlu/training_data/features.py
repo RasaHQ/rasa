@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Iterable, Union, Text, Optional, List, Any, Tuple, Dict
+from typing import Iterable, Union, Text, Optional, List, Any, Tuple, Dict, Set
 import itertools
 
 import numpy as np
@@ -284,20 +284,37 @@ class Features:
                             f"feature (because of `origin_of_combination`) but found a "
                             f"feature from {actual}."
                         )
+        else:
+            origins: Set[Tuple[Text]] = set(
+                tuple(f.origin) if not isinstance(f.origin, Text) else (f.origin,)
+                for f in features_list
+            )
+            if len(origins) > 1:
+                raise ValueError(
+                    f"Expected all Features to have the same origin "
+                    f"found the following origins: {origins}."
+                )
         # (2) attributes (is_sparse, type, attribute) must coincide
         # Note: we could also use `filter` for this check, but then the erorr msgs
         # aren't as nice.
-        for attribute in ["is_sparse", "type", "attribute"]:
-            different_settings = set(getattr(f, attribute) for f in features_list)
-            if attribute == "is_sparse":  # because this is a function atm
-                different_settings = set(
-                    is_sparse_func() for is_sparse_func in different_settings
-                )
-            if len(different_settings) > 1:
-                raise ValueError(
-                    f"Expected all Features to have the same {attribute} but found "
-                    f" {different_settings}."
-                )
+        sparseness: Set[bool] = set(f.is_sparse() for f in features_list)
+        if len(sparseness) > 1:
+            raise ValueError(
+                "Expected all Features to have the same sparseness property but "
+                "found both (sparse and dense)."
+            )
+        types: Set[Text] = set(f.type for f in features_list)
+        if len(types) > 1:
+            raise ValueError(
+                f"Expected all Features to have the same type but found the "
+                f"following types {types}."
+            )
+        attributes: Set[Text] = set(f.attribute for f in features_list)
+        if len(attributes) > 1:
+            raise ValueError(
+                f"Expected all Features to describe the same attribute but found "
+                f"attributes: {attributes}."
+            )
         # (3) dimensions must match
         # Note: We shouldn't have to check sentence-level features here but it doesn't
         # hurt either.
