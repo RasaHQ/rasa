@@ -1,5 +1,3 @@
-from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
-from rasa.shared.nlu.interpreter import RegexInterpreter
 import uuid
 from pathlib import Path
 from typing import Type, List, Text, Optional, Dict, Any
@@ -8,16 +6,19 @@ import dataclasses
 import numpy as np
 import pytest
 from _pytest.tmpdir import TempPathFactory
+
+from rasa.core import training
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, POLICY_MAX_HISTORY
+from rasa.core.policies.policy import SupportedData, Policy, InvalidPolicyConfig
+from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies.ted_policy import TEDPolicy
+from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.engine.graph import ExecutionContext, GraphSchema, GraphComponent
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-
-from rasa.shared.core.generator import TrackerWithCachedStates
-
-from rasa.core import training
 from rasa.shared.constants import DEFAULT_SENDER_ID
+from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
@@ -45,11 +46,8 @@ from rasa.core.featurizers.single_state_featurizer import (
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
 )
-from rasa.core.policies.policy import SupportedData, Policy, InvalidPolicyConfig
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.shared.core.trackers import DialogueStateTracker
+from rasa.shared.core.generator import TrackerWithCachedStates
 from tests.dialogues import TEST_DEFAULT_DIALOGUE
 from tests.core.utilities import get_tracker, tracker_from_dialogue
 
@@ -156,8 +154,8 @@ class PolicyTestCollection:
         tmp_path: Path,
         execution_context: ExecutionContext,
     ):
-        if isinstance(trained_policy, UnexpecTEDIntentPolicy):
-            # FIXME
+        if not isinstance(trained_policy, GraphComponent):
+            # TODO: Drop after all policies are migrated to `GraphComponent`
             return
 
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
@@ -420,6 +418,9 @@ class TestMemoizationPolicy(PolicyTestCollection):
         return MemoizationPolicy(priority=priority, max_history=max_history)
 
     def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
+        if not isinstance(trained_policy, GraphComponent):
+            # TODO: Drop after all policies are migrated to `GraphComponent`
+            return
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.state_featurizer is None
         trained_policy.persist(str(tmp_path))
