@@ -1,4 +1,4 @@
-from typing import Dict, Text, Any, Optional
+from typing import Text, Optional
 
 import pytest
 
@@ -11,46 +11,15 @@ from rasa.shared.nlu.training_data.message import Message
 
 
 @pytest.mark.parametrize(
-    "config, text",
-    [
-        ({}, "Hi"),
-        ({"augmentation_factor": 0}, "Hi"),
-        ({"use_story_concatenation": False}, "Hi"),
-        (
-            {
-                "remove_duplicates": True,
-                "unique_last_num_states": None,
-                "augmentation_factor": 50,
-                "tracker_limit": None,
-                "use_story_concatenation": True,
-                "debug_plots": False,
-            },
-            "Hi",
-        ),
-        ({}, None),
-        ({"augmentation_factor": 0}, None),
-        ({"use_story_concatenation": False}, None),
-        (
-            {
-                "remove_duplicates": True,
-                "unique_last_num_states": None,
-                "augmentation_factor": 50,
-                "tracker_limit": None,
-                "use_story_concatenation": True,
-                "debug_plots": False,
-            },
-            None,
-        ),
-    ],
+    "text", ["Hi", None],
 )
 def test_nlu_message_converter_converts_message(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
-    config: Dict[Text, Any],
     text: Optional[Text],
 ):
     component = NLUMessageConverter.create(
-        {**NLUMessageConverter.get_default_config(), **config},
+        {**NLUMessageConverter.get_default_config()},
         default_model_storage,
         Resource("test"),
         default_execution_context,
