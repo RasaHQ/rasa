@@ -1,8 +1,5 @@
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
-from numpy.lib.arraysetops import isin
-from numpy.lib.utils import lookfor
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from rasa.core.featurizers import precomputation
 import uuid
 from pathlib import Path
 from typing import Type, List, Text, Optional, Dict, Any

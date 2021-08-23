@@ -59,6 +59,7 @@ class Features:
 
     def is_sparse(self) -> bool:
         """Checks if features are sparse or not.
+
         Returns:
             True, if features are sparse, false otherwise.
         """
@@ -66,6 +67,7 @@ class Features:
 
     def is_dense(self) -> bool:
         """Checks if features are dense or not.
+
         Returns:
             True, if features are dense, false otherwise.
         """
@@ -166,6 +168,7 @@ class Features:
         is_sparse: Optional[bool] = None,
     ) -> List[Features]:
         """Filters the given list of features.
+
         Args:
           features_list: list of features to be filtered
           attributes: List of attributes that we're interested in. Set this to `None`
@@ -179,6 +182,7 @@ class Features:
             that particular order.
           is_sparse: Defines whether all features that we're interested in should be
             sparse. Set this to `None` to disable this filter.
+
         Returns:
             sub-list of features with the desired properties
         """
@@ -276,9 +280,9 @@ class Features:
                 ):
                     if expected != actual:
                         raise ValueError(
-                            f"Expected {expected} to be the origin of the {idx}-th feature "
-                            f"(because of `origin_of_combination`) but found a feature "
-                            f"from {actual}."
+                            f"Expected {expected} to be the origin of the {idx}-th "
+                            f"feature (because of `origin_of_combination`) but found a "
+                            f"feature from {actual}."
                         )
         # (2) attributes (is_sparse, type, attribute) must coincide
         # Note: we could also use `filter` for this check, but then the erorr msgs

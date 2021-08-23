@@ -27,7 +27,7 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.exceptions import RasaException
 from rasa.utils.tensorflow.constants import LABEL_PAD_ID
-
+from rasa.core.featurizers import _tracker_featurizers
 
 FEATURIZER_FILE = "featurizer.json"
 
@@ -36,8 +36,6 @@ logger = logging.getLogger(__name__)
 # All code outside this module will continue to use the old `tracker_featurizer` module
 # TODO: This is a workaround around until we have all components migrated to
 # `GraphComponent`.
-from rasa.core.featurizers import _tracker_featurizers
-
 TrackerFeaturizer = _tracker_featurizers.TrackerFeaturizer
 MaxHistoryTrackerFeaturizer = _tracker_featurizers.MaxHistoryTrackerFeaturizer
 IntentMaxHistoryTrackerFeaturizer = (
@@ -50,6 +48,11 @@ class InvalidStory(RasaException):
     """Exception that can be raised if story cannot be featurized."""
 
     def __init__(self, message: Text) -> None:
+        """Creates an InvalidStory exception.
+
+        Args:
+          message: a custom message
+        """
         self.message = message
         super(InvalidStory, self).__init__()
 

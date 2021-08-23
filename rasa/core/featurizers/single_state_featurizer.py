@@ -3,10 +3,7 @@ import numpy as np
 import scipy.sparse
 from typing import List, Optional, Dict, Text, Set, Any
 
-from rasa.core.featurizers.precomputation import (
-    CoreFeaturizationCollector,
-    CoreFeaturizationPrecomputations,
-)
+from rasa.core.featurizers.precomputation import CoreFeaturizationPrecomputations
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.utils import bilou_utils
 from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
@@ -26,14 +23,13 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.training_data.features import Features
 from rasa.utils.tensorflow import model_data_utils
+from rasa.core.featurizers import _single_state_featurizer
 
 logger = logging.getLogger(__name__)
 
 # All code outside this module will continue to use the old `tracker_featurizer` module
 # TODO: This is a workaround around until we have all components migrated to
 # `GraphComponent`.
-from rasa.core.featurizers import _single_state_featurizer
-
 SingleStateFeaturizer = _single_state_featurizer.SingleStateFeaturizer
 IntentTokenizerSingleStateFeaturizer = (
     _single_state_featurizer.IntentTokenizerSingleStateFeaturizer
@@ -42,6 +38,7 @@ IntentTokenizerSingleStateFeaturizer = (
 
 class SingleStateFeaturizer2:
     """Base class to transform the dialogue state into an ML format.
+
     Subclasses of SingleStateFeaturizer will decide how a bot will
     transform the dialogue state into a dictionary mapping an attribute
     to its features. Possible attributes are: INTENT, TEXT, ACTION_NAME,
@@ -254,9 +251,11 @@ class SingleStateFeaturizer2:
         self, state: State, precomputations: Optional[CoreFeaturizationPrecomputations],
     ) -> Dict[Text, List["Features"]]:
         """Encode the given state.
+
         Args:
             state: The state to encode
             precomputations: Contains precomputed features and attributes.
+
         Returns:
             A dictionary of state_type to list of features.
         """
@@ -296,11 +295,14 @@ class SingleStateFeaturizer2:
         bilou_tagging: bool = False,
     ) -> Dict[Text, List["Features"]]:
         """Encode the given entity data.
+
         Produce numeric entity tags for tokens.
+
         Args:
             entity_data: The dict containing the text and entity labels and locations
             precomputations: Contains precomputed features and attributes.
             bilou_tagging: indicates whether BILOU tagging should be used or not
+
         Returns:
             A dictionary of entity type to list of features.
         """
@@ -350,9 +352,11 @@ class SingleStateFeaturizer2:
         precomputations: Optional[CoreFeaturizationPrecomputations],
     ) -> List[Dict[Text, List["Features"]]]:
         """Encode all action from the domain.
+
         Args:
             domain: The domain that contains the actions.
             precomputations: Contains precomputed features and attributes.
+
         Returns:
             A list of encoded actions.
         """

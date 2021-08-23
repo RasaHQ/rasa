@@ -22,44 +22,47 @@ from rasa.shared.nlu.training_data.features import Features
 
 
 class CoreFeaturizationPrecomputations:
-    """A key-value store that stores specific `Messages` only.
+    """A container (key-value store) that stores specific `Messages` only.
 
     The motivation for this lookup table is that
     a) our policies only need to pass very specific information through the
-       tokenization and featurization pipeline
+    tokenization and featurization pipeline
     b) our tokenization and featurization pipeline featurize certain attributes
-       independently of each other.
+    independently of each other.
 
     Therefore, this key-value store can only store messages where exactly one
     attribute is one of `ACTION_NAME`, `ACTION_TEXT`, `TEXT`, or `INTENT`.
-    Moreover, it checks that if an `ENTITIES` attribute appears, it is contained in a
-    message with `TEXT` (in order to catch bugs due to wrong usage early on).
+    Moreover, it checks that if an `ENTITIES` attribute appears, it is contained in
+    a message with `TEXT` (in order to catch bugs due to wrong usage early on).
     Keys are constructed by concatenating the key attribute, which is defined by
-    the list of attributes mentioned above, and the actual payload for that attribute
-    in the Message. This is to avoid collisions that we otherwise cannot resolve
-    afterwards (Example: An intent name also appears as text and interpreted as text,
-    it will be "dense featurizable" while the intent name is not)
+    the list of attributes mentioned above, and the actual payload for that
+    attribute in the message. This is to avoid collisions that we otherwise cannot
+    resolve afterwards. For example, an intent name also appears as text and
+    interpreted as text, it will be "dense featurizable" while the intent name is
+    not.
 
     The store will resolve collisions on it's own to some degree. Messages with the
     same attributes and the same number of features will be treated as copies (and
     simply not be added again).
-    If advanced collision handling is enabled, then messages that have a stricly higher
-    number of features and/or strictly more attributes can overwrite the entries
-    (note that attributes must be contained whereas features are not checked for
-    equality).
+    If advanced collision handling is enabled, then messages that have a stricly
+    higher number of features and/or strictly more attributes can overwrite the
+    entries (note that attributes must be contained whereas features are not
+    checked for equality).
     This also means, the table is not capable of resolving all kind of conflicts.
     If messages contain different attributes and different number of features, the
     lookup table can only choose to ignore that or raise an error.
-
-    Args:
-      handle_collisions: if set to True, collisions where one Message contains a larger
-        or equal number of attributes and of features than the other Message, then
-        the collision will be resolved automatically
     """
 
     KEY_ATTRIBUTES = [ACTION_NAME, ACTION_TEXT, TEXT, INTENT]
 
     def __init__(self, handle_collisions: bool = True):
+        """Creates an empty container for precomputations.
+
+        Args:
+            handle_collisions: if set to True, collisions where one message contains a
+                larger or equal number of attributes and of features than the other
+                message, then the collision will be resolved automatically
+        """
         self._table: Dict[Text, SubState] = {}
         self._handle_collisions = handle_collisions
         self._num_collisions_ignored = 0
@@ -72,20 +75,21 @@ class CoreFeaturizationPrecomputations:
         return len(self._table)
 
     def values(self) -> ValuesView:
+        """Returns the lookup table values."""
         return self._table.values()
 
     def keys(self) -> KeysView:
+        """Returns the lookup table keys."""
         return self._table.keys()
-
-    def dict(self) -> Dict[Tuple[Text, Text], Message]:
-        return self._table
 
     @property
     def num_collisions_ignored(self):
+        """Returns the number of collisions that have been ignored."""
         return self._num_collisions_ignored
 
     @property
     def num_collisions_resolved(self):
+        """Returns the number of collisions that have been resolved."""
         return self._num_collisions_resolved
 
     @classmethod
@@ -118,9 +122,11 @@ class CoreFeaturizationPrecomputations:
 
     def add(self, message_with_one_key_attribute: Message) -> None:
         """Adds the given message to the lookup table.
+
         Args:
           message_with_unique_key_attribute: The message we want to add to the lookup
             table. It must have exactly one key attribute.
+
         Raises:
           ValueError if we cannot create a key for the given message or if this creates
           a collision that we cannot resolve
@@ -179,6 +185,7 @@ class CoreFeaturizationPrecomputations:
         relevant for the given substate, e.g. this is the case if `TEXT` and
         `INTENT` are present in the given message. All of those messages will be
         collected and their features combined.
+
         Note that here we do **not** impose any restrictions on the attributes that
         may be included in the *given* `sub_state`.
 
@@ -187,8 +194,10 @@ class CoreFeaturizationPrecomputations:
           attributes: if not None, this specifies the list of the attributes of the
             `Features` that we're interested in (i.e. all other `Features` contained
             in the relevant messages will be ignored)
+
         Returns:
           a dictionary that maps all the (requested) attributes to a list of `Features`
+
         Raises:
           - a `ValueError` if any of the lookup table keys that can be generated from
             the given substate is not contained in the lookup table
@@ -435,8 +444,7 @@ class CoreFeaturizationCollector(GraphComponent):
     def collect(
         messages: Union[TrainingData, List[Message]]
     ) -> CoreFeaturizationPrecomputations:
-        """Collects messages created by a MessageContainerForCoreFeaturization
-        """
+        """Collects messages created by a MessageContainerForCoreFeaturization."""
         if isinstance(messages, TrainingData):
             messages = messages.training_examples
         # Note that the input messages had been contained in a lookup table in

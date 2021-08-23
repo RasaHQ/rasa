@@ -203,7 +203,8 @@ def test_encode_state__without_lookup(action_name: Text):
             encoded[ACTION_NAME][0].features, np.array([action_name_encoding])
         )
 
-    # the intent / user substate is only featurized if action_listen is with_action_listen
+    # the intent / user substate is only featurized if action_listen is
+    # with_action_listen
     if action_name == "action_listen":
         assert sparse_equals_dense(encoded[INTENT][0].features, np.array([[1, 0]]))
 
