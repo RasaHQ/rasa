@@ -29,6 +29,14 @@ class MitieModel:
     model_path: Path
 
     def fingerprint(self) -> Text:
+        """Fingerprints the model path.
+
+        Use a static fingerprint as we assume this only changes if the file path
+        changes and want to avoid investigating the model in greater detail for now.
+
+        Returns:
+            Fingerprint for model.
+        """
         return str(self.model_path)
 
 
