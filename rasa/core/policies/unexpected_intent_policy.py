@@ -33,8 +33,7 @@ from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import (
     DIALOGUE,
     POLICY_PRIORITY,
-    UNLIKELY_INTENT_POLICY_PRIORITY,
-    POLICY_MAX_HISTORY,
+    UNLIKELY_INTENT_POLICY_PRIORITY
 )
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
