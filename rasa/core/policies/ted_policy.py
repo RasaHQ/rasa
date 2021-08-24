@@ -338,7 +338,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
 
     def _standard_featurizer(self) -> TrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
-            SingleStateFeaturizer(), max_history=self.config[POLICY_MAX_HISTORY]
+            SingleStateFeaturizer(), max_history=self.config.get(POLICY_MAX_HISTORY)
         )
 
     def __init__(
@@ -378,12 +378,6 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self.tmp_checkpoint_dir = None
         if self.config[CHECKPOINT_MODEL]:
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
-
-    def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
-        """Initializes the standard featurizer for this policy."""
-        return MaxHistoryTrackerFeaturizer(
-            SingleStateFeaturizer(), self.config.get(POLICY_MAX_HISTORY)
-        )
 
     @staticmethod
     def model_class() -> Type[TED]:
