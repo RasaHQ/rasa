@@ -272,6 +272,17 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             # ingredients in a recipe, but it doesn't make sense for the parts of
             # an address
             SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+            # Type of similarity measure to use, either 'auto' or 'cosine' or 'inner'.
+            SIMILARITY_TYPE: INNER,
+            # If set to true, entities are predicted in user utterances.
+            ENTITY_RECOGNITION: False,
+            # 'BILOU_flag' determines whether to use BILOU tagging or not.
+            # If set to 'True' labelling is more rigorous, however more
+            # examples per entity are required.
+            # Rule of thumb: you should have more than 100 examples per entity.
+            BILOU_FLAG: False,
+            # The type of the loss function, either 'cross_entropy' or 'margin'.
+            LOSS_TYPE: CROSS_ENTROPY,
         }
 
     def __init__(
@@ -287,7 +298,12 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         label_quantiles: Optional[Dict[int, List[float]]] = None,
     ):
         """Declares instance variables with default values."""
-        self.config = self._update_loaded_params(config)
+        # Set all invalid / non configurable parameters
+        config[ENTITY_RECOGNITION] = False
+        config[BILOU_FLAG] = False
+        config[SIMILARITY_TYPE] = INNER
+        config[LOSS_TYPE] = CROSS_ENTROPY
+        self.config = config
 
         super().__init__(
             self.config,
@@ -863,10 +879,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
 
     @classmethod
     def _update_loaded_params(cls, meta: Dict[Text, Any]) -> Dict[Text, Any]:
-        meta[ENTITY_RECOGNITION] = False
-        meta[BILOU_FLAG] = False
-        meta[SIMILARITY_TYPE] = INNER
-        meta[LOSS_TYPE] = CROSS_ENTROPY
+        meta = train_utils.override_defaults(cls.get_default_config(), meta)
         return meta
 
     @classmethod
