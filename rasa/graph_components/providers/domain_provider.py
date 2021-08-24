@@ -53,7 +53,7 @@ class DomainProvider(GraphComponent):
             domain.persist(resource_directory / "domain.yml")
 
     def provide_train(self, importer: TrainingDataImporter) -> Domain:
-        """Generates loaded Domain of the bot during training."""
+        """Provides domain from training data during training."""
         domain = importer.get_domain()
         self.persist(domain)
         return domain
