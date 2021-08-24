@@ -30,6 +30,26 @@ class RestInput(InputChannel):
     def name(cls) -> Text:
         return "rest"
 
+
+    @classmethod
+    def from_credentials(cls, credentials: Optional[Dict[Text, Any]]) -> InputChannel:
+        credentials = credentials or {}
+        return cls(
+            credentials.get("jwt_key"),
+            credentials.get("jwt_method", "HS256"),
+        )
+
+ 	def __init__(
+        self,
+        jwt_key: Optional[Text] = None,
+        jwt_method: Optional[Text] = "HS256",
+    ):
+    	logger.debug(jwt_key)
+        self.jwt_key = jwt_key
+        self.jwt_algorithm = jwt_method
+
+
+
     @staticmethod
     async def on_message_wrapper(
         on_new_message: Callable[[UserMessage], Awaitable[Any]],
@@ -98,6 +118,23 @@ class RestInput(InputChannel):
 
         @custom_webhook.route("/webhook", methods=["POST"])
         async def receive(request: Request) -> HTTPResponse:
+
+        	logger.debug(request.headers)
+        	auth = request.headers["Authorization"]
+
+    		if self.jwt_key:
+    			jwt_payload = None
+
+    			if auth:
+                	jwt_payload = rasa.core.channels.channel.decode_bearer_token(
+                    	auth, self.jwt_key, self.jwt_algorithm,
+                	)
+
+            	if jwt_payload:
+                	logger.debug(f"User {sid} connected to REST endpoint.")
+            	else:
+            		return
+
             sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
             should_use_stream = rasa.utils.endpoints.bool_arg(
