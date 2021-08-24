@@ -126,7 +126,7 @@ class PolicyGraphComponent(GraphComponent):
         featurizer: Optional[TrackerFeaturizer] = None,
     ) -> None:
         """Constructs a new Policy object."""
-        self.config = config
+        self._config = config
         if featurizer is None:
             featurizer = self._create_featurizer(config)
         self.__featurizer = featurizer

@@ -80,7 +80,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(
-            state_featurizer=None, max_history=self.config[POLICY_MAX_HISTORY]
+            state_featurizer=None, max_history=self._config[POLICY_MAX_HISTORY]
         )
 
     def __init__(
@@ -152,7 +152,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
-        if self.config["enable_feature_string_compression"]:
+        if self._config["enable_feature_string_compression"]:
             compressed = zlib.compress(
                 bytes(feature_str, rasa.shared.utils.io.DEFAULT_ENCODING)
             )
@@ -206,7 +206,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
     ) -> List[float]:
         result = self._default_predictions(domain)
         if action_name:
-            if self.config["use_nlu_confidence_as_score"]:
+            if self._config["use_nlu_confidence_as_score"]:
                 # the memoization will use the confidence of NLU on the latest
                 # user message to set the confidence of the action
                 score = tracker.latest_message.intent.get("confidence", 1.0)
