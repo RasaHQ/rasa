@@ -1,6 +1,10 @@
 import pytest
+
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from tests.core.test_policies import PolicyTestCollection
-from typing import Optional
+from typing import Optional, Dict, Text, Any
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
@@ -18,14 +22,30 @@ from rasa.shared.nlu.interpreter import RegexInterpreter
 
 class TestMemoizationPolicy(PolicyTestCollection):
     def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
+        self,
+        featurizer: Optional[TrackerFeaturizer],
+        priority: Optional[int],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> MemoizationPolicy:
         return MemoizationPolicy(featurizer=featurizer, priority=priority)
 
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
-    def test_prediction(self, max_history):
+    def test_prediction(
+        self,
+        max_history: Optional[int],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ):
         policy = self.create_policy(
-            featurizer=MaxHistoryTrackerFeaturizer(max_history=max_history), priority=1
+            featurizer=MaxHistoryTrackerFeaturizer(max_history=max_history),
+            priority=1,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
         )
 
         GREET_INTENT_NAME = "greet"
@@ -84,14 +104,30 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
 class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
     def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
+        self,
+        featurizer: Optional[TrackerFeaturizer],
+        priority: Optional[int],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> MemoizationPolicy:
         return AugmentedMemoizationPolicy(featurizer=featurizer, priority=priority)
 
     @pytest.mark.parametrize("max_history", [1, 2, 3, 4, None])
-    def test_augmented_prediction(self, max_history):
+    def test_augmented_prediction(
+        self,
+        max_history: Optional[int],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ):
         policy = self.create_policy(
-            featurizer=MaxHistoryTrackerFeaturizer(max_history=max_history), priority=1
+            featurizer=MaxHistoryTrackerFeaturizer(max_history=max_history),
+            priority=1,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
         )
 
         GREET_INTENT_NAME = "greet"

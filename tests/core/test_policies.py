@@ -228,8 +228,8 @@ class PolicyTestCollection:
     ):
         resource = Resource(uuid.uuid4().hex)
         empty_policy = self.create_policy(
-            DEFAULT_POLICY_PRIORITY,
             None,
+            DEFAULT_POLICY_PRIORITY,
             default_model_storage,
             resource,
             execution_context,
