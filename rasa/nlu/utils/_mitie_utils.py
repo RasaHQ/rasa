@@ -1,3 +1,8 @@
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt `MitieNLP` from
+#          the regular `rasa.nlu.utils.mitie_utils` module. This module is a
+#          workaround to defer breaking changes due to the architecture revamp in 3.0.
+# flake8: noqa
 import os
 import typing
 from typing import Any, Dict, List, Optional, Text
@@ -6,17 +11,13 @@ from rasa.nlu.components import Component
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.utils.train_utils
 from rasa.nlu.model import Metadata
-import rasa.nlu.utils._mitie_utils
+
 
 if typing.TYPE_CHECKING:
     import mitie
 
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MitieNLP = rasa.nlu.utils._mitie_utils.MitieNLP
 
-
-class MitieNLPGraphComponent(Component):
+class MitieNLP(Component):
 
     defaults = {
         # name of the language model to load - this contains
