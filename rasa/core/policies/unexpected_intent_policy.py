@@ -156,8 +156,6 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         return {
             # Sets the priority for the policy
             POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
-            # Maximum history to take into account when featurizing trackers
-            POLICY_MAX_HISTORY: None,
             # ## Architecture of the used neural network
             # Hidden layer sizes for layers before the embedding layers for user message
             # and labels.
