@@ -1,12 +1,15 @@
-import os
+from __future__ import annotations
 import typing
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 
-from rasa.nlu.components import Component
-from rasa.nlu.config import RasaNLUModelConfig
-import rasa.utils.train_utils
-from rasa.nlu.model import Metadata
+import dataclasses
+
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 import rasa.nlu.utils._mitie_utils
+from rasa.shared.exceptions import InvalidConfigException
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -16,41 +19,63 @@ if typing.TYPE_CHECKING:
 MitieNLP = rasa.nlu.utils._mitie_utils.MitieNLP
 
 
-class MitieNLPGraphComponent(Component):
+@dataclasses.dataclass
+class MitieModel:
+    """Wraps `MitieNLPGraphComponent` output to make it fingerprintable."""
 
-    defaults = {
-        # name of the language model to load - this contains
-        # the MITIE feature extractor
-        "model": os.path.join("data", "total_word_feature_extractor.dat")
-    }
+    import mitie
+
+    word_feature_extractor: mitie.total_word_feature_extractor
+    model_path: Path
+
+    def fingerprint(self) -> Text:
+        return str(self.model_path)
+
+
+class MitieNLPGraphComponent(GraphComponent):
+    """Component which provides the common configuration and loaded model to others.
+
+    This is used to avoid loading the Mitie model multiple times. Instead the Mitie
+    model is only loaded once and then shared by depending components.
+    """
+
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns default config (see parent class for full docstring)."""
+        return {
+            # name of the language model to load - this contains
+            # the MITIE feature extractor
+            "model": Path("data", "total_word_feature_extractor.dat")
+        }
 
     def __init__(
         self,
-        component_config: Optional[Dict[Text, Any]] = None,
+        path_to_model_file: Path,
         extractor: Optional["mitie.total_word_feature_extractor"] = None,
     ) -> None:
-        """Construct a new language model from the MITIE framework."""
-        super().__init__(component_config)
-
-        self.extractor = extractor
+        """Constructs a new language model from the MITIE framework."""
+        self._path_to_model_file = path_to_model_file
+        self._extractor = extractor
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Lists required dependencies (see parent class for full docstring)."""
         return ["mitie"]
 
     @classmethod
     def create(
-        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
-    ) -> "MitieNLP":
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> MitieNLPGraphComponent:
+        """Creates component (see parent class for full docstring)."""
         import mitie
 
-        component_config = rasa.utils.train_utils.override_defaults(
-            cls.defaults, component_config
-        )
-
-        model_file = component_config.get("model")
-        if not model_file:
-            raise Exception(
+        model_file = config.get("model")
+        if not model_file or not Path(model_file).is_file():
+            raise InvalidConfigException(
                 "The MITIE component 'MitieNLP' needs "
                 "the configuration value for 'model'."
                 "Please take a look at the "
@@ -58,61 +83,12 @@ class MitieNLPGraphComponent(Component):
                 "to get more info about this "
                 "parameter."
             )
-        extractor = mitie.total_word_feature_extractor(model_file)
-        cls.ensure_proper_language_model(extractor)
+        extractor = mitie.total_word_feature_extractor(str(model_file))
 
-        return cls(component_config, extractor)
+        return cls(Path(model_file), extractor)
 
-    @classmethod
-    def cache_key(
-        cls, component_meta: Dict[Text, Any], model_metadata: "Metadata"
-    ) -> Optional[Text]:
-
-        mitie_file = component_meta.get("model")
-        if mitie_file is not None:
-            return f"{cls.name}-{os.path.abspath(mitie_file)}"
-        else:
-            return None
-
-    def provide_context(self) -> Dict[Text, Any]:
-
-        return {
-            "mitie_feature_extractor": self.extractor,
-            "mitie_file": self.component_config.get("model"),
-        }
-
-    @staticmethod
-    def ensure_proper_language_model(
-        extractor: Optional["mitie.total_word_feature_extractor"],
-    ) -> None:
-
-        if extractor is None:
-            raise Exception(
-                "Failed to load MITIE feature extractor. "
-                "Loading the model returned 'None'."
-            )
-
-    @classmethod
-    def load(
-        cls,
-        meta: Dict[Text, Any],
-        model_dir: Text,
-        model_metadata: Optional[Metadata] = None,
-        cached_component: Optional["MitieNLP"] = None,
-        **kwargs: Any,
-    ) -> "MitieNLP":
-        """Loads trained component (see parent class for full docstring)."""
-        import mitie
-
-        if cached_component:
-            return cached_component
-
-        mitie_file = meta.get("model")
-        return cls(meta, mitie.total_word_feature_extractor(mitie_file))
-
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
-
-        return {
-            "mitie_feature_extractor_fingerprint": self.extractor.fingerprint,
-            "model": self.component_config.get("model"),
-        }
+    def provide(self) -> MitieModel:
+        """Provides loaded `MitieModel` and path during training and inference."""
+        return MitieModel(
+            word_feature_extractor=self._extractor, model_path=self._path_to_model_file
+        )
