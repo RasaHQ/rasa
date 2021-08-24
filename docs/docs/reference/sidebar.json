@@ -182,6 +182,13 @@
       "items": [
         {
           "items": [
+            "reference/rasa/graph_components/converters/nlu_message_converter"
+          ],
+          "label": "rasa.graph_components.converters",
+          "type": "category"
+        },
+        {
+          "items": [
             "reference/rasa/graph_components/providers/training_tracker_provider"
           ],
           "label": "rasa.graph_components.providers",
