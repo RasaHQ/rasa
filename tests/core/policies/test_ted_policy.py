@@ -6,11 +6,7 @@ import pytest
 import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
-from rasa.core.constants import (
-    POLICY_PRIORITY,
-    POLICY_MAX_HISTORY,
-    DEFAULT_POLICY_PRIORITY,
-)
+from rasa.core.constants import POLICY_MAX_HISTORY
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
@@ -228,7 +224,6 @@ class TestTEDPolicy(PolicyTestCollection):
     def test_training_with_no_intent(
         self,
         featurizer: Optional[TrackerFeaturizer],
-        priority: int,
         default_domain: Domain,
         tmp_path: Path,
         caplog: LogCaptureFixture,

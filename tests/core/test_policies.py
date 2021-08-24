@@ -125,10 +125,6 @@ class PolicyTestCollection:
         return featurizer
 
     @pytest.fixture(scope="class")
-    def priority(self) -> int:
-        return 1
-
-    @pytest.fixture(scope="class")
     def default_domain(self, domain_path: Text) -> Domain:
         return Domain.load(domain_path)
 
