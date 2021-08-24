@@ -47,7 +47,7 @@ class DomainProvider(GraphComponent):
             domain = Domain.from_path(resource_directory)
         return cls(model_storage, resource, domain)
 
-    def persist(self, domain: Domain) -> None:
+    def _persist(self, domain: Domain) -> None:
         """Persists domain to model storage."""
         with self._model_storage.write_to(self._resource) as resource_directory:
             domain.persist(resource_directory / "domain.yml")
@@ -55,7 +55,7 @@ class DomainProvider(GraphComponent):
     def provide_train(self, importer: TrainingDataImporter) -> Domain:
         """Provides domain from training data during training."""
         domain = importer.get_domain()
-        self.persist(domain)
+        self._persist(domain)
         return domain
 
     def provide_inference(self) -> Optional[Domain]:
