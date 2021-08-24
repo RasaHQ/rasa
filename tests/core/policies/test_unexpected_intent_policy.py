@@ -16,10 +16,7 @@ from rasa.core.featurizers.tracker_featurizers import (
     IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.policies.ted_policy import (
-    TEDPolicyGraphComponent as TEDPolicy,
-    PREDICTION_FEATURES
-)
+from rasa.core.policies.ted_policy import PREDICTION_FEATURES
 from rasa.core.policies.unexpected_intent_policy import (
     UnexpecTEDIntentPolicyGraphComponent as UnexpecTEDIntentPolicy,
 )
