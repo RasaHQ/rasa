@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Text
 
 from rasa.engine.graph import ExecutionContext
@@ -12,11 +11,10 @@ from rasa.shared.importers.importer import TrainingDataImporter
 def test_domain_provider_generates_and_persists_domain(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
-    tmp_path: Path,
     config_path: Text,
     domain_path: Text,
 ):
-    resource = Resource.from_cache("xy", tmp_path, default_model_storage)
+    resource = Resource("xy")
     component = DomainProvider.create(
         DomainProvider.get_default_config(),
         default_model_storage,
@@ -35,3 +33,11 @@ def test_domain_provider_generates_and_persists_domain(
         assert len(match) == 1
         assert match[0].is_file()
         assert domain.fingerprint() == Domain.from_path(match[0]).fingerprint()
+
+    component_2 = DomainProvider.load(
+        {}, default_model_storage, resource, default_execution_context
+    )
+    domain_2 = component_2.provide_inference()
+
+    assert isinstance(domain_2, Domain)
+    assert domain.fingerprint() == domain_2.fingerprint()
