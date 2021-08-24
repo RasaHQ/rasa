@@ -35,13 +35,9 @@ class NLUMessageConverter(GraphComponent):
         if message:
             data = {
                 TEXT: message.text,
-                "input_channel": message.input_channel,
                 "message_id": message.message_id,
                 "metadata": message.metadata,
             }
-
-            if message.parse_data:
-                data["parse_data"] = message.parse_data
 
             return [Message(data=data)]
 
