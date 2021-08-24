@@ -452,10 +452,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         stories_path: Text,
     ):
         trackers = train_trackers(default_domain, stories_path, augmentation_factor=20)
-        if isinstance(trained_policy, PolicyGraphComponent):
-            trained_policy.train(trackers, default_domain)
-        else:
-            trained_policy.train(trackers, default_domain, RegexInterpreter())
+        trained_policy.train(trackers, default_domain)
         lookup_with_augmentation = trained_policy.lookup
 
         trackers = [
