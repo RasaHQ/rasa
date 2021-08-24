@@ -194,6 +194,10 @@ class TrainingDataImporter:
             config_path, domain_path, training_data_paths, **constructor_arguments
         )
 
+    def fingerprint(self) -> Text:
+        """Returns a random fingerprint as data shouldn't be cached."""
+        return rasa.shared.utils.io.random_string(25)
+
 
 class NluDataImporter(TrainingDataImporter):
     """Importer that skips any Core-related file reading."""
