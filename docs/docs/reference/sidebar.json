@@ -93,6 +93,7 @@
           "items": [
             "reference/rasa/core/policies/_policy",
             "reference/rasa/core/policies/_ted_policy",
+            "reference/rasa/core/policies/_unexpected_intent_policy",
             "reference/rasa/core/policies/ensemble",
             "reference/rasa/core/policies/memoization",
             "reference/rasa/core/policies/policy",

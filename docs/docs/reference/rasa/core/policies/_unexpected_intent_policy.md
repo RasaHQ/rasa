@@ -1,11 +1,11 @@
 ---
-sidebar_label: rasa.core.policies.unexpected_intent_policy
-title: rasa.core.policies.unexpected_intent_policy
+sidebar_label: rasa.core.policies._unexpected_intent_policy
+title: rasa.core.policies._unexpected_intent_policy
 ---
-## UnexpecTEDIntentPolicyGraphComponent Objects
+## UnexpecTEDIntentPolicy Objects
 
 ```python
-class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy)
+class UnexpecTEDIntentPolicy(TEDPolicy)
 ```
 
 `UnexpecTEDIntentPolicy` has the same model architecture as `TEDPolicy`.
@@ -15,19 +15,10 @@ Instead of predicting the next probable action, this policy
 predicts whether the last predicted intent is a likely intent
 according to the training stories and conversation context.
 
-#### get\_default\_config
-
-```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
-```
-
-Returns the default config (see parent class for full docstring).
-
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, model: Optional[RasaModel] = None, featurizer: Optional[TrackerFeaturizer] = None, fake_features: Optional[Dict[Text, List[Features]]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, label_quantiles: Optional[Dict[int, List[float]]] = None)
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = UNLIKELY_INTENT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, fake_features: Optional[Dict[Text, List["Features"]]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, should_finetune: bool = False, label_quantiles: Optional[Dict[int, List[float]]] = None, **kwargs: Any, ,) -> None
 ```
 
 Declares instance variables with default values.
@@ -84,7 +75,7 @@ Feeds the featurized training data to the model.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), **kwargs: Any, ,) -> PolicyPrediction
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
