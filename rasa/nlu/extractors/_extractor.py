@@ -1,11 +1,17 @@
-import abc
-from typing import Any, Dict, List, NamedTuple, Text, Tuple, Optional
+# flake8: noqa
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt
+#          EntityExtractorMixin from the regular
+#          `rasa.nlu.extractors.extractor` module. This module is a workaround to defer
+#          breaking changes due to the architecture revamp in 3.0.
+from typing import Any, Dict, List, Text, Tuple, Optional, NamedTuple
 
 import rasa.shared.utils.io
 from rasa.shared.constants import DOCS_URL_TRAINING_DATA_NLU
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.components import Component
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     ENTITY_ATTRIBUTE_CONFIDENCE_TYPE,
@@ -25,14 +31,10 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     NO_ENTITY_TAG,
     SPLIT_ENTITIES_BY_COMMA,
+    SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
     SINGLE_ENTITY_ALLOWED_INTERLEAVING_CHARSET,
 )
 import rasa.utils.train_utils
-
-from rasa.nlu.extractors._extractor import EntityExtractor
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-EntityExtractor = EntityExtractor
 
 
 class EntityTagSpec(NamedTuple):
@@ -44,18 +46,12 @@ class EntityTagSpec(NamedTuple):
     num_tags: int
 
 
-class EntityExtractorMixin(abc.ABC):
-    """Provides functionality for components that do entity extraction.
+class EntityExtractor(Component):
+    """Entity extractors are components which extract entities.
 
-    Inheriting from this class will add utility functions for entity extraction.
-    Entity extraction is the process of identifying and extracting entities like a
-    person's name, or a location from a message.
+    They can be placed in the pipeline like other components, and can extract
+    entities like a person's name, or a location.
     """
-
-    @property
-    def name(self) -> Text:
-        """Returns the name of the class."""
-        return self.__class__.__name__
 
     def add_extractor_name(
         self, entities: List[Dict[Text, Any]]
@@ -87,6 +83,24 @@ class EntityExtractorMixin(abc.ABC):
             entity["processors"] = [self.name]
 
         return entity
+
+    def init_split_entities(self) -> Dict[Text, bool]:
+        """Initialises the behaviour for splitting entities by comma (or not).
+
+        Returns:
+            Defines desired behaviour for splitting specific entity types and
+            default behaviour for splitting any entity types for which no
+            behaviour is defined.
+        """
+        split_entities_config = self.component_config.get(
+            SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
+        )
+        default_value = self.defaults.get(
+            SPLIT_ENTITIES_BY_COMMA, SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
+        )
+        return rasa.utils.train_utils.init_split_entities(
+            split_entities_config, default_value
+        )
 
     @staticmethod
     def filter_irrelevant_entities(extracted: list, requested_dimensions: set) -> list:
@@ -187,7 +201,7 @@ class EntityExtractorMixin(abc.ABC):
         last_token_end = -1
 
         for idx, token in enumerate(tokens):
-            current_entity_tag = EntityExtractorMixin.get_tag_for(
+            current_entity_tag = EntityExtractor.get_tag_for(
                 tags, ENTITY_ATTRIBUTE_TYPE, idx
             )
 
@@ -196,11 +210,11 @@ class EntityExtractorMixin(abc.ABC):
                 last_token_end = token.end
                 continue
 
-            current_group_tag = EntityExtractorMixin.get_tag_for(
+            current_group_tag = EntityExtractor.get_tag_for(
                 tags, ENTITY_ATTRIBUTE_GROUP, idx
             )
             current_group_tag = bilou_utils.tag_without_prefix(current_group_tag)
-            current_role_tag = EntityExtractorMixin.get_tag_for(
+            current_role_tag = EntityExtractor.get_tag_for(
                 tags, ENTITY_ATTRIBUTE_ROLE, idx
             )
             current_role_tag = bilou_utils.tag_without_prefix(current_role_tag)
@@ -242,7 +256,7 @@ class EntityExtractorMixin(abc.ABC):
 
             if new_tag_found:
                 # new entity found
-                entity = EntityExtractorMixin._create_new_entity(
+                entity = EntityExtractor._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
                     current_group_tag,
@@ -252,7 +266,7 @@ class EntityExtractorMixin(abc.ABC):
                     confidences,
                 )
                 entities.append(entity)
-            elif EntityExtractorMixin._check_is_single_entity(
+            elif EntityExtractor._check_is_single_entity(
                 text, token, last_token_end, split_entities_config, current_entity_tag
             ):
                 # current token has the same entity tag as the token before and
@@ -261,7 +275,7 @@ class EntityExtractorMixin(abc.ABC):
                 # and a whitespace.
                 entities[-1][ENTITY_ATTRIBUTE_END] = token.end
                 if confidences is not None:
-                    EntityExtractorMixin._update_confidence_values(
+                    EntityExtractor._update_confidence_values(
                         entities, confidences, idx
                     )
 
@@ -270,7 +284,7 @@ class EntityExtractorMixin(abc.ABC):
                 # tokens are separated by at least 2 symbols (e.g. multiple spaces,
                 # a comma and a space, etc.) and also shouldn't be represented as a
                 # single entity
-                entity = EntityExtractorMixin._create_new_entity(
+                entity = EntityExtractor._create_new_entity(
                     list(tags.keys()),
                     current_entity_tag,
                     current_group_tag,

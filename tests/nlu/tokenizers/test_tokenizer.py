@@ -1,5 +1,4 @@
 from typing import Tuple, Text, List
-
 import pytest
 
 from rasa.nlu.tokenizers.tokenizer import Token
@@ -272,3 +271,17 @@ def test_split_action_name(text: Text, expected_tokens: List[Text]):
     message.set(ACTION_NAME, text)
 
     assert [t.text for t in tk._split_name(message, ACTION_NAME)] == expected_tokens
+
+
+def test_token_fingerprints_are_unique():
+    """Tests that token fingerprints are consistent across runs and machines."""
+    tokens = [
+        Token("testing", 2, 9, {"x": 3}, "test"),
+        Token("testing", 3, 10, {"x": 3}, "test"),
+        Token("working", 2, 9, {"x": 3}, "work"),
+        Token("testing", 2, 9, None, "test"),
+        Token("testing", 2, 9),
+        Token("testing", 3),
+    ]
+    fingerprints = {t.fingerprint() for t in tokens}
+    assert len(fingerprints) == len(tokens)
