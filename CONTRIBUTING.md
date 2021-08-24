@@ -12,7 +12,7 @@
     - [Draft PRs](#draft-prs)
     - [PRs should be a reasonable length](#prs-should-be-a-reasonable-length)
     - [Code style](#code-style)
-    - [Formatting and Type Checking](#Formatting and Type Checking)
+    - [Formatting and Type Checking](#formatting-and-type-checking)
 - [How to open a PR and contribute code to Rasa Open Source](#how-to-open-a-pr-and-contribute-code-to-rasa-open-source)
   - [1. Forking the Rasa Repository](#1-forking-the-rasa-repository)
   - [2. Cloning the Forked Repository Locally](#2-cloning-the-forked-repository-locally)
