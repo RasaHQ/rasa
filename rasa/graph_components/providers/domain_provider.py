@@ -41,11 +41,11 @@ class DomainProvider(GraphComponent):
             domain.persist(resource_directory.joinpath("domain.yml"))
 
     def provide_train(self, importer: TrainingDataImporter) -> Domain:
-        """Generates loaded Domain of the bot."""
+        """Generates loaded Domain of the bot during training."""
         domain = importer.get_domain()
         self.persist(domain)
         return domain
 
-    def provide_inference(self):
+    def provide_inference(self) -> Optional[Domain]:
         """Provides the domain during inference."""
         return self.domain

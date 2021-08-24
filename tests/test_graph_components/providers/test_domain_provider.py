@@ -32,5 +32,6 @@ def test_domain_provider_generates_and_persists_domain(
 
     with default_model_storage.read_from(resource) as d:
         match = list(d.glob("**/domain.yml"))
+        assert len(match) == 1
         assert match[0].is_file()
         assert domain.fingerprint() == Domain.from_path(match[0]).fingerprint()
