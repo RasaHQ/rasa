@@ -277,8 +277,6 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
                 if (Path(path) / FEATURIZER_FILE).is_file():
                     featurizer = TrackerFeaturizer.load(path)
 
-                config.update(kwargs)
-
         except (ValueError, FileNotFoundError, FileIOException):
             logger.info(
                 f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
