@@ -510,7 +510,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         trained_policy.persist()
         execution_context = dataclasses.replace(execution_context, is_finetuning=True)
         loaded_policy = MemoizationPolicyGraphComponent.load(
-            trained_policy._config, model_storage, resource, execution_context
+            trained_policy.config, model_storage, resource, execution_context
         )
 
         assert loaded_policy.finetune_mode

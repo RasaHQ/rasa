@@ -695,7 +695,7 @@ def test_model_finetuning_core(
     assert isinstance(model_to_finetune, Agent)
 
     ted = model_to_finetune.policy_ensemble.policies[0]
-    assert ted._config[EPOCHS] == 2
+    assert ted.config[EPOCHS] == 2
     assert ted.finetune_mode
 
 
@@ -727,7 +727,7 @@ def test_model_finetuning_core_with_default_epochs(
     model_to_finetune = kwargs["model_to_finetune"]
 
     ted = model_to_finetune.policy_ensemble.policies[0]
-    assert ted._config[EPOCHS] == TEDPolicy.defaults[EPOCHS] * 2
+    assert ted.config[EPOCHS] == TEDPolicy.defaults[EPOCHS] * 2
 
 
 def test_model_finetuning_core_new_domain_label(

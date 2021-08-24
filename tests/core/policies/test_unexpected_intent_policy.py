@@ -453,7 +453,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             default_domain.intents[intent_index], default_domain
         )
 
-        loaded_policy._config[IGNORE_INTENTS_LIST] = [
+        loaded_policy.config[IGNORE_INTENTS_LIST] = [
             default_domain.intents[intent_index]
         ]
         assert (
@@ -790,7 +790,7 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         # Monkey-patch certain attributes of the policy to make the testing easier.
         label_thresholds = {0: 1.2, 1: -0.3, 4: -2.3, 5: 0.2}
         loaded_policy.label_thresholds = label_thresholds
-        loaded_policy._config[RANKING_LENGTH] = ranking_length
+        loaded_policy.config[RANKING_LENGTH] = ranking_length
 
         # Some dummy similarities
         similarities = np.array([[3.2, 0.2, -1.2, -4.3, -5.1, 2.3]])
