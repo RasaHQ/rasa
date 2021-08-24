@@ -8,11 +8,12 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.importers.importer import TrainingDataImporter
 
 
-def test_domain_provider_generates_and_persists_domain(
+def test_domain_provider_provides_and_persists_domain(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     config_path: Text,
     domain_path: Text,
+    domain: Domain,
 ):
     resource = Resource("xy")
     component = DomainProvider.create(
@@ -24,9 +25,10 @@ def test_domain_provider_generates_and_persists_domain(
     assert isinstance(component, DomainProvider)
 
     importer = TrainingDataImporter.load_from_config(config_path, domain_path)
-    domain = component.provide_train(importer)
+    training_domain = component.provide_train(importer)
 
-    assert isinstance(domain, Domain)
+    assert isinstance(training_domain, Domain)
+    assert domain.fingerprint() == training_domain.fingerprint()
 
     with default_model_storage.read_from(resource) as d:
         match = list(d.glob("**/domain.yml"))
@@ -37,7 +39,7 @@ def test_domain_provider_generates_and_persists_domain(
     component_2 = DomainProvider.load(
         {}, default_model_storage, resource, default_execution_context
     )
-    domain_2 = component_2.provide_inference()
+    inference_domain = component_2.provide_inference()
 
-    assert isinstance(domain_2, Domain)
-    assert domain.fingerprint() == domain_2.fingerprint()
+    assert isinstance(inference_domain, Domain)
+    assert domain.fingerprint() == inference_domain.fingerprint()
