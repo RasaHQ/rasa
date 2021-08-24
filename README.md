@@ -18,6 +18,15 @@
 
 <hr />
 
+💡 **Rasa Open Source 3.0 is coming up!** 💡
+
+[2.8](https://github.com/RasaHQ/rasa/milestone/39) will be the last minor in the 2.x series, as we need to pause releasing minors while we work on architectural changes in 3.0. You can still contribute new features and improvements which we plan to release together with 3.0. Read more
+about [our contributor guidelines](#how-to-contribute).
+
+We plan to ship alpha releases and release candidates over the next few months in order to get early feedback. Stay tuned!
+
+<hr />
+
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Open Source">
 
 Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contextual assistants on:
@@ -123,9 +132,11 @@ The official [Poetry guide](https://python-poetry.org/docs/managing-environments
 This is how it can be done:
 
 ```bash
-pyenv install 3.7.6
-pyenv local 3.7.6  # Activate Python 3.7.6 for the current project
+pyenv install 3.7.9
+pyenv local 3.7.9  # Activate Python 3.7.9 for the current project
 ```
+*Note*: If you have trouble installing a specific version of python on your system
+it might be worth trying other supported versions.
 
 By default, Poetry will try to use the currently activated Python version to create the virtual environment
 for the current project automatically. You can also create and activate a virtual environment manually — in this
@@ -149,6 +160,9 @@ To install dependencies and `rasa` itself in editable mode execute
 ```bash
 make install
 ```
+
+*Note for macOS users*: under macOS Big Sur we've seen some compiler issues for 
+dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped. 
 
 ### Running and changing the documentation
 

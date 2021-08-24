@@ -509,7 +509,7 @@ class TrackerFeaturizer:
         )
 
     @staticmethod
-    def load(path: Text) -> Optional["TrackerFeaturizer"]:
+    def load(path: Union[Text, Path]) -> Optional["TrackerFeaturizer"]:
         """Loads the featurizer from file.
 
         Args:
@@ -560,7 +560,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         domain: Domain,
         omit_unset_slots: bool = False,
         ignore_action_unlikely_intent: bool = False,
-    ) -> Tuple[List[List[State]], List[List[Text]], List[List[Dict[Text, Any]]]]:
+    ) -> Tuple[
+        List[List[State]], List[List[Optional[Text]]], List[List[Dict[Text, Any]]]
+    ]:
         """Transforms trackers to states, action labels, and entity data.
 
         Args:

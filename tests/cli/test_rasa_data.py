@@ -137,7 +137,7 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
         ]
     )
 
-    async def mock_from_importer(importer: TrainingDataImporter) -> Validator:
+    def mock_from_importer(importer: TrainingDataImporter) -> Validator:
         return Mock()
 
     monkeypatch.setattr("rasa.validator.Validator.from_importer", mock_from_importer)
@@ -180,10 +180,11 @@ def test_validate_files_form_slots_not_matching(tmp_path: Path):
         version: "2.0"
         forms:
           name_form:
-             first_name:
-             - type: from_text
-             last_name:
-             - type: from_text
+            required_slots:
+              first_name:
+              - type: from_text
+              last_name:
+              - type: from_text
         slots:
              first_name:
                 type: text

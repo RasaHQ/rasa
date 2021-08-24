@@ -3,18 +3,16 @@ import functools
 import importlib
 import inspect
 import logging
-from typing import Text, Dict, Optional, Any, List, Callable, Collection
+from typing import Text, Dict, Optional, Any, List, Callable, Collection, Type
 
-import rasa.shared.utils.io
-from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
-
+from rasa.shared.exceptions import RasaException
 
 logger = logging.getLogger(__name__)
 
 
 def class_from_module_path(
     module_path: Text, lookup_path: Optional[Text] = None
-) -> Any:
+) -> Type:
     """Given the module name and path of a class, tries to retrieve the class.
 
     The loaded class can be used to instantiate new objects.
@@ -30,6 +28,7 @@ def class_from_module_path(
 
     Raises:
         ImportError, in case the Python class cannot be found.
+        RasaException, in case the imported result is something other than a class
     """
     klass = None
     if "." in module_path:
@@ -45,13 +44,10 @@ def class_from_module_path(
         raise ImportError(f"Cannot retrieve class from path {module_path}.")
 
     if not inspect.isclass(klass):
-        rasa.shared.utils.io.raise_deprecation_warning(
+        raise RasaException(
             f"`class_from_module_path()` is expected to return a class, "
-            f"but {module_path} is not one. "
-            f"This warning will be converted "
-            f"into an exception in {NEXT_MAJOR_VERSION_FOR_DEPRECATIONS}."
+            f"but for {module_path} we got a {type(klass)}."
         )
-
     return klass
 
 
@@ -79,8 +75,8 @@ def lazy_property(function: Callable) -> Any:
 
     The result gets stored in a local var. Computation of the property
     will happen once, on the first call of the property. All
-    succeeding calls will use the value stored in the private property."""
-
+    succeeding calls will use the value stored in the private property.
+    """
     attr_name = "_lazy_" + function.__name__
 
     @property

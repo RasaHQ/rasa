@@ -602,7 +602,7 @@ async def test_write_domain_to_file_with_form(tmp_path: Path):
         - utter_greet
         - utter_goodbye
         forms:
-          {form_name}:
+          {form_name}: {{}}
         intents:
         - greet
         """
@@ -675,9 +675,7 @@ async def test_initial_plotting_call(
     mock_file_importer: TrainingDataImporter,
 ):
     get_training_trackers = Mock(return_value=trackers)
-    monkeypatch.setattr(
-        interactive, "_get_training_trackers", asyncio.coroutine(get_training_trackers)
-    )
+    monkeypatch.setattr(interactive, "_get_training_trackers", get_training_trackers)
 
     monkeypatch.setattr(interactive.utils, "is_limit_reached", lambda _, __: True)
 

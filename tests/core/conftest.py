@@ -25,7 +25,8 @@ from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import INTENT, ACTION_NAME, FEATURE_TYPE_SENTENCE
-from tests.core.utilities import tracker_from_dialogue_file
+from tests.dialogues import TEST_MOODBOT_DIALOGUE
+from tests.core.utilities import tracker_from_dialogue
 
 
 class CustomSlot(Slot):
@@ -42,18 +43,11 @@ class ExamplePolicy(Policy):
 class MockedMongoTrackerStore(MongoTrackerStore):
     """In-memory mocked version of `MongoTrackerStore`."""
 
-    def __init__(
-        self,
-        _domain: Domain,
-        retrieve_events_from_previous_conversation_sessions: bool = False,
-    ) -> None:
+    def __init__(self, _domain: Domain,) -> None:
         from mongomock import MongoClient
 
         self.db = MongoClient().rasa
         self.collection = "conversations"
-        self.retrieve_events_from_previous_conversation_sessions = (
-            retrieve_events_from_previous_conversation_sessions
-        )
 
         # skipcq: PYL-E1003
         # Skip `MongoTrackerStore` constructor to avoid that actual Mongo connection
@@ -200,6 +194,4 @@ def moodbot_features(
 
 @pytest.fixture
 def moodbot_tracker(moodbot_domain: Domain) -> DialogueStateTracker:
-    return tracker_from_dialogue_file(
-        "data/test_dialogues/moodbot.json", moodbot_domain
-    )
+    return tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
