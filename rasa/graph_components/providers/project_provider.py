@@ -4,6 +4,11 @@ from typing import Dict, Text, Any
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.constants import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_DOMAIN_PATH,
+    DEFAULT_DATA_PATH,
+)
 from rasa.shared.importers.importer import TrainingDataImporter
 
 
@@ -14,9 +19,10 @@ class ProjectProvider(GraphComponent):
     def get_default_config() -> Dict[Text, Any]:
         """Default config for ProjectProvider."""
         return {
-            "config_path": "config.yml",
-            "domain_path": "domain.yml",
-            "training_data_paths": ["data/"],
+            "config": {},
+            "config_path": DEFAULT_CONFIG_PATH,
+            "domain_path": DEFAULT_DOMAIN_PATH,
+            "training_data_paths": [DEFAULT_DATA_PATH],
         }
 
     def __init__(self, config: Dict[Text, Any]) -> None:
@@ -35,9 +41,5 @@ class ProjectProvider(GraphComponent):
         return cls(config)
 
     def provide(self) -> TrainingDataImporter:
-        """Provides the domain during inference."""
-        return TrainingDataImporter.load_from_config(
-            self._config["config_path"],
-            self._config["domain_path"],
-            self._config["training_data_paths"],
-        )
+        """Provides the TrainingDataImporter."""
+        return TrainingDataImporter.load_from_dict(**self._config)
