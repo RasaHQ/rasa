@@ -1,3 +1,9 @@
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt
+#          `MitieIntentClassifier` from the regular
+#          `rasa.nlu.classifiers.mitie_intent_classifier` module. This module is a
+#          workaround to defer breaking changes due to the architecture revamp in 3.0.
+# flake8: noqa
 import os
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
@@ -12,19 +18,12 @@ from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-import rasa.nlu.classifiers._mitie_intent_classifier
 
 if typing.TYPE_CHECKING:
     import mitie
 
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MitieIntentClassifier = (
-    rasa.nlu.classifiers._mitie_intent_classifier.MitieIntentClassifier
-)
 
-
-class MitieIntentClassifierGraphComponent(IntentClassifier):
+class MitieIntentClassifier(IntentClassifier):
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [MitieNLP, Tokenizer]
