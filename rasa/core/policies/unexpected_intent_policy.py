@@ -34,7 +34,7 @@ from rasa.core.constants import (
     DIALOGUE,
     POLICY_PRIORITY,
     UNLIKELY_INTENT_POLICY_PRIORITY,
-    POLICY_MAX_HISTORY
+    POLICY_MAX_HISTORY,
 )
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
@@ -117,7 +117,6 @@ from rasa.core.exceptions import RasaCoreException
 from rasa.shared.utils import common
 
 if TYPE_CHECKING:
-    from rasa.shared.nlu.training_data.features import Features
     from typing_extensions import TypedDict
 
     RankingCandidateMetadata = TypedDict(
@@ -162,7 +161,8 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             # ## Architecture of the used neural network
             # Hidden layer sizes for layers before the embedding layers for user message
             # and labels.
-            # The number of hidden layers is equal to the length of the corresponding list.
+            # The number of hidden layers is equal to the length
+            # of the corresponding list.
             HIDDEN_LAYERS_SIZES: {TEXT: []},
             # Dense dimension to use for sparse features.
             DENSE_DIMENSION: {
@@ -176,7 +176,8 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             },
             # Default dimension to use for concatenating sequence and sentence features.
             CONCAT_DIMENSION: {TEXT: 128},
-            # Dimension size of embedding vectors before the dialogue transformer encoder.
+            # Dimension size of embedding vectors before
+            # the dialogue transformer encoder.
             ENCODING_DIMENSION: 50,
             # Number of units in transformer encoders
             TRANSFORMER_SIZE: {TEXT: 128, DIALOGUE: 128,},
@@ -188,8 +189,8 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             KEY_RELATIVE_ATTENTION: False,
             # If 'True' use value relative embeddings in attention
             VALUE_RELATIVE_ATTENTION: False,
-            # Max position for relative embeddings. Only in effect if key- or value relative
-            # attention are turned on
+            # Max position for relative embeddings. Only in effect
+            # if key- or value relative attention are turned on
             MAX_RELATIVE_POSITION: 5,
             # Use a unidirectional or bidirectional encoder
             # for `text`, `action_text`, and `label_action_text`.
@@ -236,9 +237,10 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             SPARSE_INPUT_DROPOUT: True,
             # If 'True' apply dropout to dense input tensors
             DENSE_INPUT_DROPOUT: True,
-            # If 'True' random tokens of the input message will be masked. Since there is no
-            # related loss term used inside TED, the masking effectively becomes just input
-            # dropout applied to the text of user utterances.
+            # If 'True' random tokens of the input message will be masked.
+            # Since there is no related loss term used inside TED, the masking
+            # effectively becomes just input dropout applied to the text of user
+            # utterances.
             MASKED_LM: False,
             # ## Evaluation parameters
             # How often calculate validation accuracy.
@@ -247,8 +249,8 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             # How many examples to use for hold out validation set
             # Large values may hurt performance, e.g. model accuracy.
             EVAL_NUM_EXAMPLES: 0,
-            # If you want to use tensorboard to visualize training and validation metrics,
-            # set this option to a valid output directory.
+            # If you want to use tensorboard to visualize training and validation
+            # metrics, set this option to a valid output directory.
             TENSORBOARD_LOG_DIR: None,
             # Define when training metrics for tensorboard should be logged.
             # Either after every epoch or for every training step.
