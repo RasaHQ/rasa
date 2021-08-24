@@ -31,9 +31,7 @@ from rasa.core.featurizers.single_state_featurizer import (
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import (
-    DIALOGUE,
-    POLICY_PRIORITY,
-    UNLIKELY_INTENT_POLICY_PRIORITY
+    DIALOGUE
 )
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
@@ -153,8 +151,6 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
     def get_default_config() -> Dict[Text, Any]:
         """Returns the default config (see parent class for full docstring)."""
         return {
-            # Sets the priority for the policy
-            POLICY_PRIORITY: UNLIKELY_INTENT_POLICY_PRIORITY,
             # ## Architecture of the used neural network
             # Hidden layer sizes for layers before the embedding layers for user message
             # and labels.
