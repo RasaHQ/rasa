@@ -150,21 +150,25 @@ def test_non_eager_can_use_inputs_for_constructor(default_model_storage: ModelSt
 
 
 def test_execution_context(default_model_storage: ModelStorage):
+    context = ExecutionContext(GraphSchema({}), "some_id")
     node = GraphNode(
-        node_name="model_id",
+        node_name="execution_context_aware",
         component_class=ExecutionContextAware,
         constructor_name="create",
         component_config={},
-        fn_name="get_model_id",
+        fn_name="get_execution_context",
         inputs={},
         eager=False,
         model_storage=default_model_storage,
         resource=None,
-        execution_context=ExecutionContext(GraphSchema({}), "some_id"),
+        execution_context=context,
     )
 
-    result = node()
-    assert result == ("model_id", "some_id")
+    context.model_id = "a_new_id"
+
+    result = node()[1]
+    assert result.model_id == "some_id"
+    assert result.node_name == "execution_context_aware"
 
 
 def test_constructor_exception(default_model_storage: ModelStorage):
