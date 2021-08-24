@@ -37,7 +37,11 @@ from rasa.shared.exceptions import RasaException, FileIOException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY, POLICY_PRIORITY
+from rasa.core.constants import (
+    DEFAULT_POLICY_PRIORITY,
+    POLICY_PRIORITY,
+    POLICY_MAX_HISTORY,
+)
 from rasa.shared.core.constants import (
     USER,
     SLOTS,
@@ -155,9 +159,17 @@ class PolicyGraphComponent(GraphComponent):
         if not featurizer_configs:
             return self._standard_featurizer()
 
+        if (
+            POLICY_MAX_HISTORY not in featurizer_configs[0]
+            and POLICY_MAX_HISTORY in policy_config
+        ):
+            featurizer_configs[0][POLICY_MAX_HISTORY] = policy_config[
+                POLICY_MAX_HISTORY
+            ]
+
         featurizer_func = _get_featurizer_from_config(
             featurizer_configs,
-            type(self).__name__,
+            self.__class__.__name__,
             lookup_path="rasa.core.featurizers.tracker_featurizers",
         )
         featurizer_config = featurizer_configs[0]
@@ -166,7 +178,7 @@ class PolicyGraphComponent(GraphComponent):
         if state_featurizer_configs:
             state_featurizer_func = _get_featurizer_from_config(
                 state_featurizer_configs,
-                type(self).__name__,
+                self.__class__.__name__,
                 lookup_path="rasa.core.featurizers.single_state_featurizer",
             )
             state_featurizer_config = state_featurizer_configs[0]
