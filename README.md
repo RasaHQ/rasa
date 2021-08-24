@@ -358,7 +358,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 3. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for minors and micros)
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
-4. If this is a minor or major release, update the list of actively maintained versions [in the README](#actively-maintained-versions) and in [the docs](./docs/docs/actively-maintained-versions.mdx).
+4. If this is a major release, update the list of actively maintained versions [in the README](#actively-maintained-versions) and in [the docs](./docs/docs/actively-maintained-versions.mdx).
 5. Run `make release`
 6. Create a PR against the release branch (e.g. `1.2.x`)
 7. Once your PR is merged, tag a new release (this SHOULD always happen on the release branch), e.g. using
@@ -396,15 +396,7 @@ steps + get the PR merged.
 We're actively maintaining _any minor on our latest major release_ and _the latest minor of the previous major release_.
 Currently, this means the following minor versions will receive bugfixes updates:
 - 1.10
-- 2.0
-- 2.1
-- 2.2
-- 2.3
-- 2.4
-- 2.5
-- 2.6
-- 2.7
-- 2.8
+- Every minor version on 2.x
 
 ## License
 Licensed under the Apache License, Version 2.0.
