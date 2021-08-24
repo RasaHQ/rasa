@@ -41,7 +41,13 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
-from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY, DEFAULT_MAX_HISTORY
+from rasa.core.constants import (
+    DIALOGUE,
+    POLICY_MAX_HISTORY,
+    DEFAULT_MAX_HISTORY,
+    DEFAULT_POLICY_PRIORITY,
+    POLICY_PRIORITY,
+)
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -334,6 +340,8 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
             # Max history of the policy, unbounded by default
             POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
+            # Determines the importance of policies, higher values take precedence
+            POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
         }
 
     def _standard_featurizer(self) -> TrackerFeaturizer:
