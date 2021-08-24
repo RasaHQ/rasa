@@ -178,6 +178,7 @@ class PolicyGraphComponent(GraphComponent):
         return featurizer_func(**featurizer_config)
 
     def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
+        """Initializes the standard featurizer for this policy."""
         return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
 
     @property

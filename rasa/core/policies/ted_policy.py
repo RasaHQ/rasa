@@ -361,13 +361,6 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             config[SPLIT_ENTITIES_BY_COMMA], SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
 
-        # TODO: check if this statement can be removed.
-        #  More context here -
-        #  https://github.com/RasaHQ/rasa/issues/5786#issuecomment-840762751
-        max_history = config.get(POLICY_MAX_HISTORY)
-        if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer) and max_history:
-            self.featurizer.max_history = max_history
-
         self._load_params(config)
 
         self.model = model
@@ -385,6 +378,12 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self.tmp_checkpoint_dir = None
         if self.config[CHECKPOINT_MODEL]:
             self.tmp_checkpoint_dir = Path(rasa.utils.io.create_temporary_directory())
+
+    def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
+        """Initializes the standard featurizer for this policy."""
+        return MaxHistoryTrackerFeaturizer(
+            SingleStateFeaturizer(), self.config.get(POLICY_MAX_HISTORY)
+        )
 
     @staticmethod
     def model_class() -> Type[TED]:

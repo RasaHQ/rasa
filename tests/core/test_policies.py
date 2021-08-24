@@ -283,12 +283,9 @@ class PolicyTestCollection:
         index = scores.index(max(scores))
         return domain.action_names_or_texts[index]
 
-    # TODO: make these two commented out parametrizations testable in subclasses
     @pytest.mark.parametrize(
         "featurizer_config, tracker_featurizer, state_featurizer",
         [
-            # (None, MaxHistoryTrackerFeaturizer(), SingleStateFeaturizer),
-            # ([], MaxHistoryTrackerFeaturizer(), SingleStateFeaturizer),
             (
                 [
                     {
