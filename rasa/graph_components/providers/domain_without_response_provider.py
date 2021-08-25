@@ -1,11 +1,10 @@
 from __future__ import annotations
 from typing import Dict, Text, Any
-import copy
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.shared.core.domain import Domain
+from rasa.shared.core.domain import KEY_RESPONSES, Domain
 
 
 class DomainWithoutResponseProvider(GraphComponent):
@@ -32,18 +31,6 @@ class DomainWithoutResponseProvider(GraphComponent):
             Domain that has been created from the same parameters as the given domain
             but with an empty set of responses.
         """
-        responses = dict()
-        domain = copy.deepcopy(domain)
-        domain.responses = responses
-        domain.user_actions = domain._custom_actions
-        domain.action_names_or_texts = (
-            domain._combine_user_with_default_actions(domain.user_actions)
-            + [
-                form_name
-                for form_name in domain.form_names
-                if form_name not in domain._custom_actions
-            ]
-            + domain.action_texts
-        )
-
-        return domain
+        serliaized_domain = domain.as_dict()
+        del serliaized_domain[KEY_RESPONSES]
+        return Domain.from_dict(serliaized_domain)
