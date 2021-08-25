@@ -31,6 +31,6 @@ class DomainWithoutResponseProvider(GraphComponent):
             Domain that has been created from the same parameters as the given domain
             but with an empty set of responses.
         """
-        serliaized_domain = domain.as_dict()
-        del serliaized_domain[KEY_RESPONSES]
-        return Domain.from_dict(serliaized_domain)
+        serialized_domain = domain.as_dict()
+        del serialized_domain[KEY_RESPONSES]
+        return Domain.from_dict(serialized_domain)
