@@ -1008,6 +1008,7 @@ async def test(
         out_directory: path to directory to results to
         fail_on_prediction_errors: boolean indicating whether to fail on prediction
             errors or not
+        e2e: boolean indicating whether to use end to end evaluation or not
         disable_plotting: boolean indicating whether to disable plotting or not
         successes: boolean indicating whether to write down successful predictions or
             not

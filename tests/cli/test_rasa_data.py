@@ -105,6 +105,19 @@ def test_data_convert_help(run: Callable[..., RunResult]):
         assert line in printed_help
 
 
+def test_data_convert_help(run: Callable[..., RunResult]):
+    output = run("data", "convert", "nlu", "--help")
+
+    help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,yaml}] --data
+                             DATA [DATA ...] [--out OUT] [-l LANGUAGE]"""
+
+    lines = help_text.split("\n")
+    # expected help text lines should appear somewhere in the output
+    printed_help = set(output.outlines)
+    for line in lines:
+        assert line in printed_help
+
+
 def test_data_validate_help(run: Callable[..., RunResult]):
     output = run("data", "validate", "--help")
 
