@@ -418,7 +418,7 @@ class TrainingData:
             # backwards compatibility: previously NLG was always dumped as md. now
             # we are going to dump in the same format as the NLU data. unfortunately
             # there is a special case: NLU is in json format, in this case we use
-            # md as we do not have a NLG json format
+            # YAML as we do not have a NLG json format
             extension = rasa.shared.data.yaml_file_extension()
         # Add nlg_ as prefix and change extension to the correct one
         filename = (
