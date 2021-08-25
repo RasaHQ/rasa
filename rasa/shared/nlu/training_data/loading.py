@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 
 # Different supported file formats and their identifier
 WIT = "wit"
-WATSON = "watson"
 LUIS = "luis"
 RASA = "rasa_nlu"
 RASA_YAML = "rasa_yml"
@@ -33,7 +32,6 @@ _json_format_heuristics: Dict[Text, Callable[[Any, Text], bool]] = {
     WIT: lambda js, fn: "utterances" in js and "luis_schema_version" not in js,
     LUIS: lambda js, fn: "luis_schema_version" in js,
     RASA: lambda js, fn: "rasa_nlu_data" in js,
-    WATSON: lambda js, fn: "metadata" in js,
     DIALOGFLOW_AGENT: lambda js, fn: "supportedLanguages" in js,
     DIALOGFLOW_PACKAGE: lambda js, fn: "version" in js and len(js) == 1,
     DIALOGFLOW_INTENT: lambda js, fn: "responses" in js,
@@ -72,7 +70,6 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
     from rasa.shared.nlu.training_data.formats import (
         RasaYAMLReader,
         WitReader,
-        WatsonReader,
         LuisReader,
         RasaReader,
         DialogflowReader,
@@ -83,8 +80,6 @@ def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:
         reader = LuisReader()
     elif fformat == WIT:
         reader = WitReader()
-    elif fformat == WATSON:
-        reader = WatsonReader()
     elif fformat in DIALOGFLOW_RELEVANT:
         reader = DialogflowReader()
     elif fformat == RASA:

@@ -25,14 +25,13 @@ class WatsonTrainingDataConverter(TrainingDataConverter):
         Returns:
             `True` if the given file can be converted, `False` otherwise
         """
-
-        if os.path.isfile(source_path):
+        if source_path.is_file:
             js = self._read_from_json(source_path)
             return self._check_watson_file(js)
-        elif os.path.isdir(source_path):
+        elif source_path.is_dir:
             for root, _, files in os.walk(source_path, followlinks=True):
                 for f in sorted(files):
-                    source_path = Path(os.path.join(root, f))
+                    source_path = Path(root, f)
                     js = self._read_from_json(source_path)
                     return self._check_watson_file(js)
 

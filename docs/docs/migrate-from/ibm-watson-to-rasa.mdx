@@ -28,13 +28,21 @@ mv /path/to/file.json data/
 
 ## Step 3: Train your NLU model
 
+To train a model using your Watson data, you should convert the data to a format Rasa can understand.:
+
+```bash
+rasa data convert -i data/your-watson-file.json -o data/file.yml --format yaml
+```
+
+## Step 4: Train your NLU model
+
 To train a model using your Watson data, run:
 
 ```bash
 rasa train nlu
 ```
 
-## Step 4: Test your NLU model
+## Step 5: Test your NLU model
 
 Let's see how your NLU model will interpret some test messages.
 To start a testing session, run:
