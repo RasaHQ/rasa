@@ -247,10 +247,7 @@ def test_only_getting_e2e_conversation_tests_if_e2e_enabled(tmp_path: Path):
     selector = MultiProjectImporter(config_path)
 
     story_steps = core_loading.load_data_from_resource(
-        resource=str(story_test_file),
-        domain=Domain.empty(),
-        template_variables=None,
-        exclusion_percentage=None,
+        resource=str(story_test_file), domain=Domain.empty(), exclusion_percentage=None,
     )
 
     expected = StoryGraph(story_steps)
