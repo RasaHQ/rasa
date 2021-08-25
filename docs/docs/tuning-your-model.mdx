@@ -171,6 +171,7 @@ pipeline:
 Let's say you have a financial services bot and you have examples for intents `check_balances` and `transfer_money`:
 
 ```yaml-rasa
+nlu:
 - intent: check_balances
   examples: |
     - How much money do I have?
@@ -191,6 +192,7 @@ However, your bot receives incoming messages like this one, which combine both i
 If you see enough of these examples, you can create a new intent multi-intent `check_balances+transfer_money` and add the incoming examples to it, for example:
 
 ```yaml-rasa
+nlu:
 - intent: check_balances+transfer_money
   examples: |
     - How much money do I have? I want to transfer some to savings.
