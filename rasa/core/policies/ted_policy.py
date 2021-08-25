@@ -346,7 +346,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
 
     def _standard_featurizer(self) -> TrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(
-            SingleStateFeaturizer(), max_history=self.config.get(POLICY_MAX_HISTORY)
+            SingleStateFeaturizer(), max_history=self.config[POLICY_MAX_HISTORY]
         )
 
     def __init__(
