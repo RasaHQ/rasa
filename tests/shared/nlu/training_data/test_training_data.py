@@ -401,7 +401,6 @@ def test_train_test_split_with_random_seed(filepaths):
     "files",
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),
-        ("data/examples/rasa/demo-rasa.yml", "data/test/multiple_files_markdown"),
         ("data/examples/rasa/demo-rasa.yml", "data/test/duplicate_intents_yaml"),
     ],
 )

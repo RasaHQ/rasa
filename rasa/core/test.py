@@ -13,6 +13,7 @@ from rasa.core.constants import (
     SUCCESSFUL_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
 )
+from rasa.core.channels import UserMessage
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.test import EntityEvaluationResult, evaluate_entities
 from rasa.shared.core.constants import (
@@ -750,6 +751,7 @@ async def _predict_tracker_actions(
     tracker: DialogueStateTracker,
     agent: "Agent",
     fail_on_prediction_errors: bool = False,
+    use_e2e: bool = False,
 ) -> Tuple[
     EvaluationStore,
     DialogueStateTracker,
@@ -795,6 +797,22 @@ async def _predict_tracker_actions(
                         "confidence": prediction.max_confidence,
                     }
                 )
+        elif use_e2e and isinstance(event, UserUttered):
+            # This means that user utterance didn't have a user message, only intent,
+            # so we can skip the NLU part and take the parse data directly.
+            # Indirectly that means that the test story was in YAML format.
+            if not event.text:
+                predicted = event.parse_data
+            # Indirectly that means that the test story was either:
+            # in YAML format containing a user message, or in Markdown format.
+            # Leaving that as it is because Markdown is in legacy mode.
+            else:
+                predicted = await processor.parse_message(UserMessage(event.text))
+            user_uttered_result = _collect_user_uttered_predictions(
+                event, predicted, partial_tracker, fail_on_prediction_errors
+            )
+
+            tracker_eval_store.merge_store(user_uttered_result)
         else:
             partial_tracker.update(event)
 
@@ -858,6 +876,7 @@ async def _collect_story_predictions(
     completed_trackers: List["DialogueStateTracker"],
     agent: "Agent",
     fail_on_prediction_errors: bool = False,
+    use_e2e: bool = False,
 ) -> Tuple[StoryEvaluation, int, List[EntityEvaluationResult]]:
     """Test the stories from a file, running them through the stored model."""
     from sklearn.metrics import accuracy_score
@@ -881,7 +900,9 @@ async def _collect_story_predictions(
             predicted_tracker,
             tracker_actions,
             tracker_entity_results,
-        ) = await _predict_tracker_actions(tracker, agent, fail_on_prediction_errors)
+        ) = await _predict_tracker_actions(
+            tracker, agent, fail_on_prediction_errors, use_e2e
+        )
 
         entity_results.extend(tracker_entity_results)
 
@@ -1002,7 +1023,7 @@ async def test(
     completed_trackers = generator.generate_story_trackers()
 
     story_evaluation, _, entity_results = await _collect_story_predictions(
-        completed_trackers, agent, fail_on_prediction_errors
+        completed_trackers, agent, fail_on_prediction_errors, use_e2e=e2e
     )
 
     evaluation_store = story_evaluation.evaluation_store
