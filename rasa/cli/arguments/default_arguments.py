@@ -84,7 +84,14 @@ def add_out_param(
     required: bool = False,
 ) -> None:
     parser.add_argument(
-        "--out", type=str, default=default, help=help_text, required=required
+        "--out",
+        type=str,
+        default=default,
+        help=help_text,
+        # The desired behaviour is that required indicates if this argument must
+        # have a value, but argparse interprets it as "must have a value
+        # from user input", so we toggle it only if our default is not set
+        required=required and default is None,
     )
 
 
