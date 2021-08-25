@@ -1328,14 +1328,14 @@ def _get_active_entity_extractors(
 
 
 def _remove_entities_of_extractors(
-    result_dict: Dict[Text, Any], extractor_names: Set[Text]
+    nlu_parse_result: Dict[Text, Any], extractor_names: Set[Text]
 ) -> None:
     """Removes the entities annotated by the given extractor names."""
-    entities = result_dict.get(ENTITIES)
+    entities = nlu_parse_result.get(ENTITIES)
     if not entities:
         return
     filtered_entities = [e for e in entities if e.get(EXTRACTOR) not in extractor_names]
-    result_dict[ENTITIES] = filtered_entities
+    nlu_parse_result[ENTITIES] = filtered_entities
 
 
 def run_evaluation(
