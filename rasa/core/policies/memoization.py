@@ -1,3 +1,4 @@
+from __future__ import annotations
 import zlib
 
 import base64
@@ -265,7 +266,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> "MemoizationPolicyGraphComponent":
+    ) -> MemoizationPolicyGraphComponent:
         """Loads a trained policy (see parent class for full docstring)."""
         featurizer = None
         lookup = None
