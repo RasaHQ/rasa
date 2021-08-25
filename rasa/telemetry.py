@@ -579,7 +579,7 @@ def filter_errors(
         the event without any sensitive / PII data or `None` if the event constitutes
         an `ImportError` which should be discarded.
     """
-    if "exc_info" in hint:
+    if hint and "exc_info" in hint:
         exc_type, exc_value, tb = hint.get("exc_info")
         if isinstance(exc_value, ImportError):
             return None
