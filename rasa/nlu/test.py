@@ -1257,7 +1257,7 @@ def get_eval_data(
 
     for example in tqdm(test_data.nlu_examples):
         result = interpreter.parse(example.get(TEXT), only_output_properties=False)
-        remove_entities_of_extractors(result, PRETRAINED_EXTRACTORS)
+        _remove_entities_of_extractors(result, PRETRAINED_EXTRACTORS)
         if should_eval_intents:
             if fallback_classifier.is_fallback_classifier_prediction(result):
                 # Revert fallback prediction to not shadow
@@ -1327,7 +1327,7 @@ def _get_active_entity_extractors(
     return extractors
 
 
-def remove_entities_of_extractors(
+def _remove_entities_of_extractors(
     result_dict: Dict[Text, Any], extractor_names: Set[Text]
 ) -> None:
     """Removes the entities annotated by the given extractor names."""

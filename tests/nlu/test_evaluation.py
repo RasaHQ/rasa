@@ -51,7 +51,7 @@ from rasa.nlu.test import (
     align_entity_predictions,
     determine_intersection,
     determine_token_labels,
-    remove_entities_of_extractors,
+    _remove_entities_of_extractors,
 )
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
@@ -1146,7 +1146,7 @@ def test_remove_entities_of_extractors():
     extractor_2 = "DIET"
     extractor_3 = "YetAnotherExtractor"
     # shouldn't crash when there are no annotations
-    remove_entities_of_extractors({}, [extractor])
+    _remove_entities_of_extractors({}, [extractor])
 
     # add some entities
     entities = [
@@ -1167,7 +1167,7 @@ def test_remove_entities_of_extractors():
         },
     ]
     result_dict = {ENTITIES: entities}
-    remove_entities_of_extractors(result_dict, [extractor, extractor_3])
+    _remove_entities_of_extractors(result_dict, [extractor, extractor_3])
 
     assert len(result_dict[ENTITIES]) == 1
     remaining_entity = result_dict[ENTITIES][0]
