@@ -1454,9 +1454,7 @@ def _get_output_channel(
     )
 
 
-def _test_data_file_from_payload(
-    request: Request, temporary_directory: Path
-) -> Text:
+def _test_data_file_from_payload(request: Request, temporary_directory: Path) -> Text:
     return str(
         _training_payload_from_yaml(
             request,
