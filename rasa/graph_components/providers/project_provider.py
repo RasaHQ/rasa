@@ -13,7 +13,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 
 
 class ProjectProvider(GraphComponent):
-    """Provides domain during training and inference time."""
+    """Provides domain and training data during training and inference time."""
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
