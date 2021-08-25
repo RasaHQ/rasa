@@ -32,9 +32,7 @@ from rasa.shared.core.training_data.structures import STORY_START
         "data/test_yaml_stories/stories_defaultdomain.yml",
     ],
 )
-async def test_simple_story(
-    tmpdir: Path, domain: Domain, input_yaml_file: Text
-):
+async def test_simple_story(tmpdir: Path, domain: Domain, input_yaml_file: Text):
     original_yaml_reader = YAMLStoryReader(domain, None, False)
     original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
 

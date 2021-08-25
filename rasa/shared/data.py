@@ -11,9 +11,7 @@ from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
 
 YAML_FILE_EXTENSIONS = [".yml", ".yaml"]
 JSON_FILE_EXTENSIONS = [".json"]
-TRAINING_DATA_EXTENSIONS = set(
-    JSON_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS
-)
+TRAINING_DATA_EXTENSIONS = set(JSON_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS)
 
 
 def yaml_file_extension() -> Text:
@@ -160,9 +158,7 @@ def is_story_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file, otherwise `False`.
     """
-    return YAMLStoryReader.is_stories_file(
-        file_path
-    )
+    return YAMLStoryReader.is_stories_file(file_path)
 
 
 def is_test_stories_file(file_path: Text) -> bool:
@@ -174,9 +170,7 @@ def is_test_stories_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a story file containing tests, otherwise `False`.
     """
-    return YAMLStoryReader.is_test_stories_file(
-        file_path
-    )
+    return YAMLStoryReader.is_test_stories_file(file_path)
 
 
 def is_config_file(file_path: Text) -> bool:
