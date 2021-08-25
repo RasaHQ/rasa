@@ -423,7 +423,7 @@ def test_split_entities_by_comma(
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
-            "    - I want to fly from [Berlin](location) to [ San Fransisco](location)\n",
+            "    - I want to fly from [Berlin](location) to [ London](location)\n",
             1,
         ),
         (
@@ -431,7 +431,7 @@ def test_split_entities_by_comma(
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
-            "    - I want to fly from [Berlin ](location) to [San Fransisco](location)\n",
+            "    - I want to fly from [Berlin ](location) to [London](location)\n",
             1,
         ),
         (
@@ -439,7 +439,7 @@ def test_split_entities_by_comma(
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
-            "    - I want to fly from [Berlin](location) to [San Fransisco.](location)\n"
+            "    - I want to fly from [Berlin](location) to [London.](location)\n"
             "    - I have nothing to say.\n",
             1,
         ),

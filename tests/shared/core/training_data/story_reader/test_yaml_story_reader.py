@@ -207,7 +207,7 @@ def test_can_read_test_story_with_entities_without_value(domain: Domain):
     ],
 )
 async def test_is_yaml_file(file: Text):
-    assert YAMLStoryReader.is_stories_file(file) == True
+    assert YAMLStoryReader.is_stories_file(file) is True
 
 
 def test_yaml_intent_with_leading_slash_warning(domain: Domain):

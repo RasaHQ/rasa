@@ -2,7 +2,6 @@ import json
 import os
 from collections import Counter
 from pathlib import Path
-from typing import Text, List
 
 import numpy as np
 import pytest
