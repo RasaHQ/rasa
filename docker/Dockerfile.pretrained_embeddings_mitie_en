@@ -19,7 +19,7 @@ WORKDIR /build
 
 # install dependencies
 RUN python -m venv /opt/venv && \
-  . /opt/venv/bin/activate
+  . /opt/venv/bin/activate && pip install --no-cache-dir -U pip
 RUN . /opt/venv/bin/activate && poetry install --no-dev --no-root --no-interaction
 RUN . /opt/venv/bin/activate && make install-mitie  && \
   poetry build -f wheel -n && \
