@@ -6,7 +6,7 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
-
+from rasa.shared.nlu.training_data.loading import load_data
 
 class NLUTrainingDataProvider(GraphComponent):
     """Provides NLU training data during training and inference time."""
@@ -44,7 +44,7 @@ class NLUTrainingDataProvider(GraphComponent):
     ) -> NLUTrainingDataProvider:
         """Creates provider using a persisted version of itself."""
         with model_storage.read_from(resource) as resource_directory:
-            training_data = TrainingData.from_path(resource_directory)
+            training_data = load_data(resource_name=str(resource_directory), language=config['language'])
         return cls(model_storage, resource, training_data)
 
     def _persist(self, training_data: TrainingData) -> None:
@@ -52,7 +52,7 @@ class NLUTrainingDataProvider(GraphComponent):
         with self._model_storage.write_to(self._resource) as resource_directory:
             training_data.persist(str(resource_directory), "nlu.yml")
 
-    def provide_train(
+    def provide_at_training(
         self,
         importer: TrainingDataImporter,
         language: Optional[Text],
@@ -64,6 +64,6 @@ class NLUTrainingDataProvider(GraphComponent):
             self._persist(training_data)
         return training_data
 
-    def provide_inference(self) -> Optional[TrainingData]:
+    def provide_at_inference(self) -> Optional[TrainingData]:
         """Provides the nlu training data during inference."""
         return self._training_data
