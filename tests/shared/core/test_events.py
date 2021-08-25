@@ -783,3 +783,7 @@ def test_event_fingerprint_uniqueness(event: Event):
     f2 = event.fingerprint()
 
     assert f1 != f2
+
+
+def test_session_started_event_is_not_serialised():
+    assert SessionStarted().as_story_string() is None
