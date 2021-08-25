@@ -159,14 +159,6 @@ class PolicyGraphComponent(GraphComponent):
         if not featurizer_configs:
             return self._standard_featurizer()
 
-        if (
-            POLICY_MAX_HISTORY not in featurizer_configs[0]
-            and POLICY_MAX_HISTORY in policy_config
-        ):
-            featurizer_configs[0][POLICY_MAX_HISTORY] = policy_config[
-                POLICY_MAX_HISTORY
-            ]
-
         featurizer_func = _get_featurizer_from_config(
             featurizer_configs,
             self.__class__.__name__,
@@ -187,7 +179,14 @@ class PolicyGraphComponent(GraphComponent):
                 **state_featurizer_config
             )
 
-        return featurizer_func(**featurizer_config)
+        featurizer = featurizer_func(**featurizer_config)
+        if (
+            isinstance(featurizer, MaxHistoryTrackerFeaturizer)
+            and POLICY_MAX_HISTORY in policy_config
+            and POLICY_MAX_HISTORY not in featurizer_config
+        ):
+            featurizer.max_history = policy_config[POLICY_MAX_HISTORY]
+        return featurizer
 
     def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
         """Initializes the standard featurizer for this policy."""
