@@ -52,7 +52,6 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
-    DEFAULT_CONVERSATION_TEST_PATH,
     TEST_STORIES_FILE_PREFIX,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
