@@ -14,7 +14,7 @@ WORKDIR /build
 
 # install dependencies
 RUN python -m venv /opt/venv && \
-  . /opt/venv/bin/activate && pip install --no-cache-dir -U pip
+  . /opt/venv/bin/activate && pip install --no-cache-dir -U "pip==21.*"
 RUN . /opt/venv/bin/activate && poetry install --extras spacy --no-dev --no-root --no-interaction
 RUN . /opt/venv/bin/activate && poetry build -f wheel -n && \
   pip install --no-deps dist/*.whl && \
