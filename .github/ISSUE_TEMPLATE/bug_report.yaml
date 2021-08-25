@@ -1,0 +1,74 @@
+name: Bug Report
+description: Create a report to help us improve
+title: "[Bug]: "
+labels: ["area:rasa-oss :ferris_wheel:","type:bug :bug:"]
+assignees:
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    id: version-rasa
+    attributes:
+      label: Rasa Open Source version
+      description: What's the rasa open source version you used (`rasa --version`)
+    validations:
+      required: true
+  - type: input
+    id: version-rasa-sdk
+    attributes:
+      label: Rasa SDK version
+      description: What's the rasa SDK version you used (if relevant)
+  - type: input
+    id: version-rasa-x
+    attributes:
+      label: Rasa X version
+      description: What's the Rasa X version you used (if relevant)
+  - type: dropdown
+    id: version-python
+    attributes:
+      label: Version
+      description: What python version are you running?
+      options:
+        - 3.6
+        - 3.7
+        - 3.8
+        - 3.9
+        - 3.10
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: version-os
+    attributes:
+      label: What operating system are you using?
+      multiple: true
+      options:
+        - Linux
+        - OSX
+        - Windows
+        - Cloud (AWS / GCP / AZURE)
+        - Self hosted Cloud (openshift)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command / Request
+      description: Command or request that led to the error. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output including errors and stacktraces. This will be automatically formatted into code, so no need for backticks.
+      render: shell
