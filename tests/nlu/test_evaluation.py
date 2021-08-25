@@ -408,7 +408,7 @@ def test_run_cv_evaluation():
             "pipeline": [
                 {"name": "WhitespaceTokenizer"},
                 {"name": "CountVectorsFeaturizer"},
-                {"name": "DIETClassifier", EPOCHS: 25},
+                {"name": "DIETClassifier", EPOCHS: 2},
             ],
         }
     )
@@ -438,6 +438,54 @@ def test_run_cv_evaluation():
     )
     for extractor_evaluation in entity_results.evaluation.values():
         assert all(key in extractor_evaluation for key in ["errors", "report"])
+
+
+@pytest.mark.timeout(
+    180, func_only=True
+)  # these can take a longer time than the default timeout
+def test_run_cv_evaluation_no_entities():
+    td = rasa.shared.nlu.training_data.loading.load_data(
+        "data/test/demo-rasa-no-ents.yml"
+    )
+
+    nlu_config = RasaNLUModelConfig(
+        {
+            "language": "en",
+            "pipeline": [
+                {"name": "WhitespaceTokenizer"},
+                {"name": "CountVectorsFeaturizer"},
+                {"name": "DIETClassifier", EPOCHS: 25},
+            ],
+        }
+    )
+
+    n_folds = 2
+    intent_results, entity_results, response_selection_results = cross_validate(
+        td,
+        n_folds,
+        nlu_config,
+        successes=False,
+        errors=False,
+        disable_plotting=True,
+        report_as_dict=True,
+    )
+
+    assert len(intent_results.train["Accuracy"]) == n_folds
+    assert len(intent_results.train["Precision"]) == n_folds
+    assert len(intent_results.train["F1-score"]) == n_folds
+    assert len(intent_results.test["Accuracy"]) == n_folds
+    assert len(intent_results.test["Precision"]) == n_folds
+    assert len(intent_results.test["F1-score"]) == n_folds
+    assert all(key in intent_results.evaluation for key in ["errors", "report"])
+    assert any(
+        isinstance(intent_report, dict)
+        and intent_report.get("confused_with") is not None
+        for intent_report in intent_results.evaluation["report"].values()
+    )
+
+    assert len(entity_results.train) == 0
+    assert len(entity_results.test) == 0
+    assert len(entity_results.evaluation) == 0
 
 
 @pytest.mark.timeout(
