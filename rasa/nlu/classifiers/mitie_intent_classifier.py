@@ -130,7 +130,10 @@ class MitieIntentClassifierGraphComponent(GraphComponent):
         try:
             with model_storage.read_from(resource) as directory:
                 text_categorizer = mitie.text_categorizer(str(directory / "model.dat"))
-        except ValueError:
+        except (
+            ValueError,
+            Exception,
+        ):  # the latter is thrown by the `mitie.text_categorizer`
             logger.warning(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."

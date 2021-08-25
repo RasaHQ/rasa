@@ -89,3 +89,28 @@ def test_load_from_untrained(
     component.process([test_message], mitie_model)
 
     assert test_message.data[INTENT] == {"name": None, "confidence": 0.0}
+
+
+def test_load_from_untrained_but_with_resource_existing(
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+    mitie_model: MitieModel,
+):
+    resource = Resource("some_resource")
+
+    with default_model_storage.write_to(resource):
+        # This makes sure the directory exists but the model file itself doesn't
+        pass
+
+    component = MitieIntentClassifierGraphComponent.load(
+        MitieIntentClassifierGraphComponent.get_default_config(),
+        default_model_storage,
+        resource,
+        default_execution_context,
+    )
+
+    test_message = Message({TEXT: "hi"})
+    MitieTokenizer().process(test_message)
+    component.process([test_message], mitie_model)
+
+    assert test_message.data[INTENT] == {"name": None, "confidence": 0.0}
