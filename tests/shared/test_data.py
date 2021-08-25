@@ -1,4 +1,3 @@
-import glob
 import os
 import tempfile
 from pathlib import Path
@@ -154,7 +153,7 @@ def test_is_nlu_file_with_json():
     directory = tempfile.mkdtemp()
     file = os.path.join(directory, "test.json")
 
-    rasa.shared.utils.io.write_text_file(json_to_string(test), file)
+    write_text_file(json_to_string(test), file)
 
     assert rasa.shared.data.is_nlu_file(file)
 
@@ -162,7 +161,7 @@ def test_is_nlu_file_with_json():
 def test_is_not_nlu_file_with_json():
     directory = tempfile.mkdtemp()
     file = os.path.join(directory, "test.json")
-    rasa.shared.utils.io.write_text_file('{"test": "a"}', file)
+    write_text_file('{"test": "a"}', file)
 
     assert not rasa.shared.data.is_nlu_file(file)
 

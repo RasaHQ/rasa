@@ -1,4 +1,4 @@
-from typing import Iterable, Text, Optional, Dict, List
+from typing import Iterable, Text, Optional, List
 
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.training_data.structures import StoryGraph
