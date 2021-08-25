@@ -17,6 +17,7 @@ from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     TEXT,
+    INTENT,
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
@@ -27,7 +28,6 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.tensorflow.model_data_utils import TAG_ID_ORIGIN
 
 shape = 100
-INTENT = "intent"
 
 
 def test_create_fake_features():

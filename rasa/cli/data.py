@@ -275,7 +275,7 @@ def _validate_story_structure(validator: "Validator", args: argparse.Namespace) 
 def _convert_nlu_data(args: argparse.Namespace) -> None:
     import rasa.nlu.convert
 
-    if args.format in ["json", "md"]:
+    if args.format == "json":
         rasa.nlu.convert.convert_training_data(
             args.data, args.out, args.format, args.language
         )

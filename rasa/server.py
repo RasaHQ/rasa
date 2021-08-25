@@ -1123,7 +1123,7 @@ def create_app(
             "evaluate your model.",
         )
 
-        test_data = _test_data_file_from_payload(request, temporary_directory, ".yml")
+        test_data = _test_data_file_from_payload(request, temporary_directory)
 
         e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
@@ -1456,24 +1456,16 @@ def _get_output_channel(
 
 
 def _test_data_file_from_payload(
-    request: Request, temporary_directory: Path, suffix: Text = ".tmp"
+    request: Request, temporary_directory: Path
 ) -> Text:
-    if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-        return str(
-            _training_payload_from_yaml(
-                request,
-                temporary_directory,
-                # test stories have to prefixed with `test_`
-                file_name=f"{TEST_STORIES_FILE_PREFIX}data.yml",
-            )["training_files"]
-        )
-    else:
-        # MD test stories have to be in the `tests` directory
-        test_dir = temporary_directory / DEFAULT_CONVERSATION_TEST_PATH
-        test_dir.mkdir()
-        test_file = test_dir / f"tests{suffix}"
-        test_file.write_bytes(request.body)
-        return str(test_file)
+    return str(
+        _training_payload_from_yaml(
+            request,
+            temporary_directory,
+            # test stories have to prefixed with `test_`
+            file_name=f"{TEST_STORIES_FILE_PREFIX}data.yml",
+        )["training_files"]
+    )
 
 
 def _training_payload_from_json(request: Request, temp_dir: Path) -> Dict[Text, Any]:

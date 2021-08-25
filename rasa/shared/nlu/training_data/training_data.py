@@ -420,7 +420,7 @@ class TrainingData:
             # there is a special case: NLU is in json format, in this case we use
             # md as we do not have a NLG json format
             extension = rasa.shared.data.yaml_file_extension()
-        # Add nlg_ as prefix and change extension to .md
+        # Add nlg_ as prefix and change extension to the correct one
         filename = (
             Path(nlu_filename)
             .with_name("nlg_" + Path(nlu_filename).name)

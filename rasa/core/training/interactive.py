@@ -720,8 +720,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
             "will append the stories)",
             default=PATHS["stories"],
             validate=io_utils.file_type_validator(
-                rasa.shared.data.MARKDOWN_FILE_EXTENSIONS
-                + rasa.shared.data.YAML_FILE_EXTENSIONS,
+                rasa.shared.data.YAML_FILE_EXTENSIONS,
                 "Please provide a valid export path for the stories, "
                 "e.g. 'stories.yml'.",
             ),
