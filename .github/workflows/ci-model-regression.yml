@@ -654,7 +654,7 @@ jobs:
           echo "::set-output name=result::$OUTPUT"
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@v1
+        uses: marocchino/sticky-pull-request-comment@v2.1.0
         if: always()
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -730,7 +730,7 @@ jobs:
           echo "::set-output name=result::$OUTPUT"
 
       - name: Publish results as a PR comment
-        uses: marocchino/sticky-pull-request-comment@v1
+        uses: marocchino/sticky-pull-request-comment@v2.1.0
         if: always()
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
