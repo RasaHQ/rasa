@@ -1315,7 +1315,7 @@ def get_eval_data(
     return intent_results, response_selection_results, entity_results
 
 
-def get_active_entity_extractors(
+def _get_active_entity_extractors(
     entity_results: List[EntityEvaluationResult],
 ) -> Set[Text]:
     """Finds the names of entity extractors from the EntityEvaluationResults."""
@@ -1413,7 +1413,7 @@ def run_evaluation(
 
     if any(entity_results):
         logger.info("Entity evaluation results:")
-        extractors = get_active_entity_extractors(entity_results)
+        extractors = _get_active_entity_extractors(entity_results)
         result["entity_evaluation"] = evaluate_entities(
             entity_results,
             extractors,
@@ -1619,7 +1619,7 @@ def cross_validate(
     entity_evaluation = {}
     if entity_test_results:
         logger.info("Accumulated test folds entity evaluation results:")
-        extractors = get_active_entity_extractors(entity_test_results)
+        extractors = _get_active_entity_extractors(entity_test_results)
         entity_evaluation = evaluate_entities(
             entity_test_results,
             extractors,
@@ -1864,7 +1864,7 @@ def _compute_entity_metrics(
     from rasa.model_testing import get_evaluation_metrics
 
     entity_metric_results: EntityMetrics = defaultdict(lambda: defaultdict(list))
-    extractors = get_active_entity_extractors(entity_results)
+    extractors = _get_active_entity_extractors(entity_results)
 
     if not extractors:
         return entity_metric_results

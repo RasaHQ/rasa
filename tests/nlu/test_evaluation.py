@@ -30,7 +30,7 @@ from rasa.nlu.test import (
     merge_labels,
     remove_empty_intent_examples,
     remove_empty_response_examples,
-    get_active_entity_extractors,
+    _get_active_entity_extractors,
     drop_intents_below_freq,
     cross_validate,
     run_evaluation,
@@ -695,7 +695,7 @@ def test_response_evaluation_report(tmp_path: Path):
 def test_get_active_entity_extractors(
     entity_results: List[EntityEvaluationResult], expected_extractors: Set[Text]
 ):
-    extractors = get_active_entity_extractors(entity_results)
+    extractors = _get_active_entity_extractors(entity_results)
     assert extractors == expected_extractors
 
 
@@ -710,7 +710,7 @@ def test_entity_evaluation_report(tmp_path: Path):
 
     rasa.shared.utils.io.create_directory(report_folder)
 
-    extractors = get_active_entity_extractors([EN_entity_result])
+    extractors = _get_active_entity_extractors([EN_entity_result])
     result = evaluate_entities(
         [EN_entity_result],
         extractors,
