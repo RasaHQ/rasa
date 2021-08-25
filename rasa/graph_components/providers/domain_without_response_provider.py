@@ -17,7 +17,7 @@ class DomainWithoutResponsesProvider(GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> DomainWithoutResponseProvider:
+    ) -> DomainWithoutResponsesProvider:
         """Creates component (see parent class for full docstring)."""
         return cls()
 

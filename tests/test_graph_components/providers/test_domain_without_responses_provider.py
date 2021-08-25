@@ -2,7 +2,7 @@ from typing import Text
 
 import pytest
 from rasa.graph_components.providers.domain_without_response_provider import (
-    DomainWithoutResponseProvider,
+    DomainWithoutResponsesProvider,
 )
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
@@ -17,13 +17,13 @@ from rasa.shared.core.domain import KEY_E2E_ACTIONS, KEY_RESPONSES, Domain
         ("data/test_domains/mixed_retrieval_intents.yml"),
     ],
 )
-def test_recreate_without_responses(
+def test_provide(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     domain_yml: Text,
 ):
 
-    component = DomainWithoutResponseProvider.create(
+    component = DomainWithoutResponsesProvider.create(
         {"arbitrary-unused": 234},
         default_model_storage,
         Resource("xy"),
@@ -33,7 +33,7 @@ def test_recreate_without_responses(
     original_domain = Domain.from_file(path=domain_yml)
     original_dict = original_domain.as_dict()
 
-    modified_domain = component.recreate_without_responses(domain=original_domain)
+    modified_domain = component.provide(domain=original_domain)
     modified_dict = modified_domain.as_dict()
 
     # all configurations not impacted by responses stay intact
