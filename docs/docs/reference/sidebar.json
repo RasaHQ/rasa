@@ -301,6 +301,7 @@
               "type": "category"
             },
             "reference/rasa/nlu/utils/__init__",
+            "reference/rasa/nlu/utils/_mitie_utils",
             "reference/rasa/nlu/utils/bilou_utils",
             "reference/rasa/nlu/utils/mitie_utils",
             "reference/rasa/nlu/utils/pattern_utils",
