@@ -33,6 +33,7 @@ def mitie_model(
     return component.provide()
 
 
+@pytest.mark.timeout(120)
 def test_train_load_predict_loop(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
