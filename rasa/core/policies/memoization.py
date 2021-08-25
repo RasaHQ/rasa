@@ -183,6 +183,8 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         )
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
 
+        self.persist()
+
     def _recall_states(self, states: List[State]) -> Optional[Text]:
         return self.lookup.get(self._create_feature_key(states))
 

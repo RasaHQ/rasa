@@ -454,7 +454,6 @@ class TestMemoizationPolicy(PolicyTestCollection):
         stories_path: Text,
     ):
 
-        trained_policy.persist()
         execution_context = dataclasses.replace(execution_context, is_finetuning=True)
         loaded_policy = MemoizationPolicyGraphComponent.load(
             trained_policy.config, model_storage, resource, execution_context
