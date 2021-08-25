@@ -52,7 +52,7 @@ def get_core_directory(paths: Optional[Union[Text, List[Text]]]) -> Text:
     Returns:
         Path to temporary directory containing all found Core training files.
     """
-    core_files = get_data_files(paths, is_story_file)
+    core_files = get_data_files(paths, YAMLStoryReader.is_stories_file)
     return _copy_files_to_new_dir(core_files)
 
 
@@ -147,30 +147,6 @@ def is_nlu_file(file_path: Text) -> bool:
     from rasa.shared.nlu.training_data import loading as nlu_loading
 
     return nlu_loading.guess_format(file_path) != nlu_loading.UNK
-
-
-def is_story_file(file_path: Text) -> bool:
-    """Checks if a file is a Rasa story file.
-
-    Args:
-        file_path: Path of the file which should be checked.
-
-    Returns:
-        `True` if it's a story file, otherwise `False`.
-    """
-    return YAMLStoryReader.is_stories_file(file_path)
-
-
-def is_test_stories_file(file_path: Text) -> bool:
-    """Checks if a file is a test stories file.
-
-    Args:
-        file_path: Path of the file which should be checked.
-
-    Returns:
-        `True` if it's a story file containing tests, otherwise `False`.
-    """
-    return YAMLStoryReader.is_test_stories_file(file_path)
 
 
 def is_config_file(file_path: Text) -> bool:

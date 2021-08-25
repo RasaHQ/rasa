@@ -9,6 +9,9 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.importers.autoconfig import TrainingType
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.core.domain import InvalidDomain, Domain
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 import rasa.shared.utils.io
 
 logger = logging.getLogger(__name__)
@@ -31,10 +34,10 @@ class RasaFileImporter(TrainingDataImporter):
             training_data_paths, rasa.shared.data.is_nlu_file
         )
         self._story_files = rasa.shared.data.get_data_files(
-            training_data_paths, rasa.shared.data.is_story_file
+            training_data_paths, YAMLStoryReader.is_stories_file
         )
         self._conversation_test_files = rasa.shared.data.get_data_files(
-            training_data_paths, rasa.shared.data.is_test_stories_file
+            training_data_paths, YAMLStoryReader.is_test_stories_file
         )
 
         self.config = autoconfig.get_configuration(config_file, training_type)
