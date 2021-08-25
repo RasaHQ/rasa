@@ -7,7 +7,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import KEY_RESPONSES, Domain
 
 
-class DomainWithoutResponseProvider(GraphComponent):
+class DomainWithoutResponsesProvider(GraphComponent):
     """Provides domain without information about responses."""
 
     @classmethod
@@ -21,7 +21,7 @@ class DomainWithoutResponseProvider(GraphComponent):
         """Creates component (see parent class for full docstring)."""
         return cls()
 
-    def recreate_without_responses(self, domain: Domain) -> Domain:
+    def provide(self, domain: Domain) -> Domain:
         """Recreates the given domain but acts as if responses have not been specified.
 
         Args:

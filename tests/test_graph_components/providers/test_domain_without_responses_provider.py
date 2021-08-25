@@ -48,7 +48,7 @@ def test_recreate_without_responses(
         f"This test needs to be adapted. The domain yamls have been changed so that "
         f"they no longer contain some actions and some responses - which do not "
         f"coincide (i.e. not all responses are listed as actions). Hence "
-        f"{domain_yml} is no longer a good test case here. Please Remove the yaml from "
+        f"{domain_yml} is no longer a good test case here. Please remove the yaml from "
         f"the parameterization or replace it with an different yaml."
     )
     assert original_domain.responses, reminder
