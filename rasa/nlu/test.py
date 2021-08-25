@@ -1250,7 +1250,7 @@ def get_eval_data(
         for e in test_data.intent_examples
         if e.get(INTENT_RESPONSE_KEY) is not None
     }
-    intent_labels = [e.get(INTENT) for e in test_data.intent_examples]
+    intent_labels = {e.get(INTENT) for e in test_data.intent_examples}
     should_eval_intents = len(set(intent_labels)) >= 2
     should_eval_response_selection = len(response_labels) >= 2
     should_eval_entities = len(test_data.entity_examples) > 0
