@@ -51,7 +51,7 @@ class InvalidStory(RasaException):
         """Creates an InvalidStory exception.
 
         Args:
-          message: a custom message
+          message: a custom exception message.
         """
         self.message = message
         super(InvalidStory, self).__init__()

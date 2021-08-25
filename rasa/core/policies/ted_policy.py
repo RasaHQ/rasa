@@ -799,8 +799,6 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        # TODO: The default is a workaround until the end-to-end featurization is
-        # implemented for the graph.
         precomputations: Optional[CoreFeaturizationPrecomputations] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:

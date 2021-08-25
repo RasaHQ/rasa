@@ -112,7 +112,7 @@ def test_precomputation_build_with_inconsistencies_due_to_missing_annotations():
 
     # add some substats with an additional attribute
     ARBITRARY_NON_KEY = "arbitrary_non_key"
-    sub_states = list(unique_sub_states)  # copy :)
+    sub_states = unique_sub_states.copy()
     for sub_state in unique_sub_states:
         sub_state_copy = dict(sub_state)
         sub_state_copy[ARBITRARY_NON_KEY] = "anything"
@@ -184,7 +184,7 @@ def test_precomputation_build_with_inconsistencies_due_to_missing_features():
 
 
 def test_precomputation_build_with_inconsistent_data():
-    """Tests whether the lookup table can deal not-too messy training data.
+    """Tests whether the lookup table can deal with not-too messy training data.
     That is, we assume that someone missed to annotate `ENTITIES`
     """
 
@@ -233,7 +233,7 @@ def test_precomputation_build_with_inconsistent_data():
 # TODO: one test where an inconsistency is ignored...
 def test_precomputation_build_ignores_some_inconsistencies():
     # This is a reminder that not everything inconsistency will be detected.
-    # Similarly, differences in the actual Features (values/origin/...) will be ingored.
+    # Similarly, differences in the actual Features (values/origin/...) will be ignored.
     ARBITRARY_NON_KEY = "arbitrary_non_key"
     sub_states = [
         {TEXT: "text", ENTITIES: "1"},
@@ -248,7 +248,6 @@ def test_precomputation_build_ignores_some_inconsistencies():
 
 
 def test_precomputation_lookup_features():
-
     OTHER = "other"
     messages = [
         Message(data={TEXT: "A"}, features=[_dummy_features(1, TEXT)]),
@@ -273,7 +272,7 @@ def test_precomputation_lookup_features():
             assert attribute not in features
 
     # If we query features for `INTENT`, then a key will be there, even if there are
-    # no feaetures
+    # no features
     features = table.lookup_features(
         sub_state=sub_state, attributes=list(sub_state.keys())
     )
@@ -312,7 +311,7 @@ def test_precomputation_lookup_features_if_lookup_table_is_broken():
     ):
         broken_table.lookup_features({TEXT: "A", INTENT: "B"})
 
-    # as a reminder that we don't fix every strange edgecase:
+    # as a reminder that we don't fix every strange edge case:
     not_broken_but_strange_table = CoreFeaturizationPrecomputations()
     not_broken_but_strange_table._table = {
         CoreFeaturizationPrecomputations._build_key({TEXT: "A"}): Message(data=dict()),

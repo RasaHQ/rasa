@@ -50,7 +50,7 @@ class CoreFeaturizationPrecomputations:
     The store will resolve collisions on it's own to some degree. Messages with the
     same attributes and the same number of features will be treated as copies (and
     simply not be added again).
-    If advanced collision handling is enabled, then messages that have a stricly
+    If advanced collision handling is enabled, then messages that have a strictly
     higher number of features and/or strictly more attributes can overwrite the
     entries (note that attributes must be contained whereas features are not
     checked for equality).
@@ -65,9 +65,9 @@ class CoreFeaturizationPrecomputations:
         """Creates an empty container for precomputations.
 
         Args:
-            handle_collisions: if set to True, collisions where one message contains a
+            handle_collisions: if set to `True`, collisions where one message contains a
                 larger or equal number of attributes and of features than the other
-                message, then the collision will be resolved automatically
+                message, then the collision will be resolved automatically.
         """
         self._table: Dict[Tuple[Text, Text], Message] = {}
         self._handle_collisions = handle_collisions
@@ -116,7 +116,7 @@ class CoreFeaturizationPrecomputations:
         if not key_attributes or len(key_attributes) > 1:
             raise ValueError(
                 f"Expected exactly one attribute out of "
-                f"{cls.KEY_ATTRIBUTES} but received {attributes}"
+                f"{cls.KEY_ATTRIBUTES} but received {len(attributes)} attributes ({attributes})."
             )
         if ENTITIES in attributes and TEXT not in attributes:
             raise ValueError(
@@ -124,13 +124,13 @@ class CoreFeaturizationPrecomputations:
                 f"but received a substate with {sub_state.keys()}."
             )
         key_attribute = list(key_attributes)[0]
-        return (key_attribute, str(sub_state[key_attribute]))
+        return key_attribute, str(sub_state[key_attribute])
 
     def add(self, message_with_one_key_attribute: Message) -> None:
         """Adds the given message to the lookup table.
 
         Args:
-          message_with_unique_key_attribute: The message we want to add to the lookup
+          message_with_one_key_attribute: The message we want to add to the lookup
             table. It must have exactly one key attribute.
 
         Raises:
@@ -168,7 +168,7 @@ class CoreFeaturizationPrecomputations:
         else:
             self._table[key] = message_with_one_key_attribute
 
-    def add_all(self, messages_with_one_key_attribute: Message) -> None:
+    def add_all(self, messages_with_one_key_attribute: List[Message]) -> None:
         """Adds the given message to the lookup table.
 
         Args:
@@ -197,7 +197,7 @@ class CoreFeaturizationPrecomputations:
 
         Args:
           sub_state: substate for which we want to lookup the relevent features
-          attributes: if not None, this specifies the list of the attributes of the
+          attributes: if not `None`, this specifies the list of the attributes of the
             `Features` that we're interested in (i.e. all other `Features` contained
             in the relevant messages will be ignored)
 
@@ -205,9 +205,9 @@ class CoreFeaturizationPrecomputations:
           a dictionary that maps all the (requested) attributes to a list of `Features`
 
         Raises:
-          - a `ValueError` if any of the lookup table keys that can be generated from
+          ValueError: if any of the lookup table keys that can be generated from
             the given substate is not contained in the lookup table
-          - a `RuntimeError` if an inconsistency in the lookup table is detected;
+          RuntimeError: if an inconsistency in the lookup table is detected;
             more precisely, if features for the same attribute are found in two
             looked up messages
         """
@@ -234,7 +234,7 @@ class CoreFeaturizationPrecomputations:
             )
             for feat_attribute, feat_value in features_from_message.items():
                 existing_values = features.get(feat_attribute)
-                # Note: the follwing if-s are needed because if we specify a list of
+                # Note: the following if-s are needed because if we specify a list of
                 # attributes then `features_from_message` will contain one entry per
                 # attribute even if the corresponding feature list is empty.
                 if feat_value and existing_values:
@@ -309,7 +309,7 @@ class CoreFeaturizationPrecomputations:
                 intent = artificial_sub_state.pop(INTENT, None)
                 if intent:
                     sub_states_from_event.append({INTENT: intent})
-                if len(artificial_sub_state):
+                if artificial_sub_state:
                     sub_states_from_event.append(artificial_sub_state)
                     # FIXME: seems we can just remove entities here....
             elif isinstance(event, ActionExecuted):
@@ -344,7 +344,6 @@ class CoreFeaturizationPreparer(GraphComponent):
     # run consecutively and use the respective data.
 
     @classmethod
-    @abstractmethod
     def create(
         cls,
         config: Dict[Text, Any],
@@ -426,7 +425,6 @@ class CoreFeaturizationCollector(GraphComponent):
     """Collects featurised messages for use by a policy."""
 
     @classmethod
-    @abstractmethod
     def create(
         cls,
         config: Dict[Text, Any],
