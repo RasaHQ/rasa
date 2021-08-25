@@ -1704,7 +1704,7 @@ def compute_metrics(
 
     entity_metrics = {}
     if entity_results:
-        entity_metrics = _compute_entity_metrics(entity_results, interpreter)
+        entity_metrics = _compute_entity_metrics(entity_results)
 
     response_selection_metrics = {}
     if response_selection_results:
@@ -1851,14 +1851,12 @@ def _compute_metrics(
 
 
 def _compute_entity_metrics(
-    entity_results: List[EntityEvaluationResult], interpreter: Interpreter
+    entity_results: List[EntityEvaluationResult],
 ) -> EntityMetrics:
     """Computes entity evaluation metrics and returns the results.
 
     Args:
         entity_results: entity evaluation results
-        interpreter: the interpreter
-
     Returns: entity metrics
     """
     from rasa.model_testing import get_evaluation_metrics
