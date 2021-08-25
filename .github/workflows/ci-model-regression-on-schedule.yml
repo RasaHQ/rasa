@@ -309,7 +309,7 @@ jobs:
 
       - name: Check duplicate issue
         if: failure()
-        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+        uses: actions/github-script@f891eff65186019cbb3f7190c4590bc0a1b76fbc  # v4
         id: issue-exists
         with:
           result-encoding: string
@@ -338,7 +338,7 @@ jobs:
       - name: Create GitHub Issue 📬
         id: create-issue
         if: failure() && steps.issue-exists.outputs.result == 'false'
-        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+        uses: actions/github-script@f891eff65186019cbb3f7190c4590bc0a1b76fbc  # v4
         with:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
           github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
@@ -462,7 +462,7 @@ jobs:
 
       - name: Check duplicate issue
         if: steps.performance.outputs.is_dropped == 'true'
-        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+        uses: actions/github-script@f891eff65186019cbb3f7190c4590bc0a1b76fbc  # v4
         id: issue-exists
         with:
           result-encoding: string
@@ -489,7 +489,7 @@ jobs:
       - name: Create GitHub Issue 📬
         id: create-issue
         if: steps.performance.outputs.is_dropped == 'true' && steps.issue-exists.outputs.result == 'false'
-        uses: actions/github-script@a3e7071a34d7e1f219a8a4de9a5e0a34d1ee1293  # v4
+        uses: actions/github-script@f891eff65186019cbb3f7190c4590bc0a1b76fbc  # v4
         with:
           # do not use GITHUB_TOKEN here because it wouldn't trigger subsequent workflows
           github-token: ${{ secrets.RASABOT_GITHUB_TOKEN }}
