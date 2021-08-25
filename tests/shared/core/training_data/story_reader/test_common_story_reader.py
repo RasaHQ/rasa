@@ -46,9 +46,7 @@ def test_can_read_test_story(domain: Domain):
     assert tracker.events[4] == ActionExecuted("action_listen")
 
 
-def test_can_read_test_story_with_checkpoint_after_or(
-    domain: Domain
-):
+def test_can_read_test_story_with_checkpoint_after_or(domain: Domain):
     trackers = training.load_data(
         "data/test_yaml_stories/stories_checkpoint_after_or.yml",
         domain,
@@ -60,7 +58,9 @@ def test_can_read_test_story_with_checkpoint_after_or(
 
 
 def test_read_story_file_with_cycles(domain: Domain):
-    graph = training.extract_story_graph("data/test_yaml_stories/stories_with_cycle.yml", domain)
+    graph = training.extract_story_graph(
+        "data/test_yaml_stories/stories_with_cycle.yml", domain
+    )
 
     assert len(graph.story_steps) == 5
 
@@ -77,7 +77,9 @@ def test_read_story_file_with_cycles(domain: Domain):
 
 def test_generate_training_data_with_cycles(domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=4)
-    training_trackers = training.load_data("data/test_yaml_stories/stories_with_cycle.yml", domain, augmentation_factor=0,)
+    training_trackers = training.load_data(
+        "data/test_yaml_stories/stories_with_cycle.yml", domain, augmentation_factor=0,
+    )
 
     _, label_ids, _ = featurizer.featurize_trackers(
         training_trackers, domain, interpreter=RegexInterpreter()
@@ -95,20 +97,22 @@ def test_generate_training_data_with_cycles(domain: Domain):
     assert Counter(all_label_ids) == {0: 6, 14: 3, 13: num_tens, 1: 2, 15: 1}
 
 
-def test_generate_training_data_with_unused_checkpoints(
-    domain: Domain
-):
-    training_trackers = training.load_data("data/test_yaml_stories/stories_unused_checkpoints.yml", domain)
+def test_generate_training_data_with_unused_checkpoints(domain: Domain):
+    training_trackers = training.load_data(
+        "data/test_yaml_stories/stories_unused_checkpoints.yml", domain
+    )
     # there are 3 training stories:
     #   2 with unused end checkpoints -> training_trackers
     #   1 with unused start checkpoints -> ignored
     assert len(training_trackers) == 2
 
 
-def test_generate_training_data_original_and_augmented_trackers(
-    domain: Domain
-):
-    training_trackers = training.load_data("data/test_yaml_stories/stories_defaultdomain.yml", domain, augmentation_factor=3,)
+def test_generate_training_data_original_and_augmented_trackers(domain: Domain):
+    training_trackers = training.load_data(
+        "data/test_yaml_stories/stories_defaultdomain.yml",
+        domain,
+        augmentation_factor=3,
+    )
     # there are three original stories
     # augmentation factor of 3 indicates max of 3*10 augmented stories generated
     # maximum number of stories should be augmented+original = 33
@@ -121,10 +125,10 @@ def test_generate_training_data_original_and_augmented_trackers(
     assert len(training_trackers) <= 34
 
 
-def test_visualize_training_data_graph(
-    tmp_path: Path, domain: Domain
-):
-    graph = training.extract_story_graph("data/test_yaml_stories/stories_with_cycle.yml", domain)
+def test_visualize_training_data_graph(tmp_path: Path, domain: Domain):
+    graph = training.extract_story_graph(
+        "data/test_yaml_stories/stories_with_cycle.yml", domain
+    )
 
     graph = graph.with_cycles_removed()
 
@@ -146,7 +150,9 @@ def test_visualize_training_data_graph(
 
 def test_load_multi_file_training_data(domain: Domain):
     featurizer = MaxHistoryTrackerFeaturizer(SingleStateFeaturizer(), max_history=2)
-    trackers = training.load_data("data/test_yaml_stories/stories.yml", domain, augmentation_factor=0)
+    trackers = training.load_data(
+        "data/test_yaml_stories/stories.yml", domain, augmentation_factor=0
+    )
     trackers = sorted(trackers, key=lambda t: t.sender_id)
 
     (tr_as_sts, tr_as_acts) = featurizer.training_states_and_labels(trackers, domain)

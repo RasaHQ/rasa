@@ -190,9 +190,7 @@ class MultiProjectImporter(TrainingDataImporter):
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
-        return utils.story_graph_from_paths(
-            self._e2e_story_paths, self.get_domain()
-        )
+        return utils.story_graph_from_paths(self._e2e_story_paths, self.get_domain())
 
     def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""

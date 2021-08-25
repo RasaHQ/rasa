@@ -16,9 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_reader(
-    filename: Text,
-    domain: Domain,
-    template_variables: Optional[Dict] = None,
+    filename: Text, domain: Domain, template_variables: Optional[Dict] = None,
 ) -> StoryReader:
     if rasa.shared.data.is_likely_yaml_file(filename):
         return YAMLStoryReader(domain, template_variables, filename)
@@ -29,9 +27,7 @@ def _get_reader(
 
 
 def _guess_reader(
-    filename: Text,
-    domain: Domain,
-    template_variables: Optional[Dict] = None,
+    filename: Text, domain: Domain, template_variables: Optional[Dict] = None,
 ) -> StoryReader:
     if YAMLStoryReader.is_stories_file(filename):
         return YAMLStoryReader(domain, template_variables, filename)

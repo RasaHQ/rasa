@@ -882,9 +882,7 @@ async def _collect_story_predictions(
             predicted_tracker,
             tracker_actions,
             tracker_entity_results,
-        ) = await _predict_tracker_actions(
-            tracker, agent, fail_on_prediction_errors
-        )
+        ) = await _predict_tracker_actions(tracker, agent, fail_on_prediction_errors)
 
         entity_results.extend(tracker_entity_results)
 
@@ -917,9 +915,7 @@ async def _collect_story_predictions(
         accuracy = 0
 
     _log_evaluation_table(
-        [1] * len(completed_trackers),
-        "CONVERSATION",
-        accuracy,
+        [1] * len(completed_trackers), "CONVERSATION", accuracy,
     )
 
     return (

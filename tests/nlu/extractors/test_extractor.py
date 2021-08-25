@@ -419,7 +419,7 @@ def test_split_entities_by_comma(
     "text, warnings",
     [
         (
-            "version: \"2.0\"\n"
+            'version: "2.0"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -427,7 +427,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            "version: \"2.0\"\n"
+            'version: "2.0"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -435,7 +435,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            "version: \"2.0\"\n"
+            'version: "2.0"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -444,7 +444,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            "version: \"2.0\"\n"
+            'version: "2.0"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"
@@ -453,7 +453,7 @@ def test_split_entities_by_comma(
             1,
         ),
         (
-            "version: \"2.0\"\n"
+            'version: "2.0"\n'
             "nlu:\n"
             "- intent: test\n"
             "  examples: |\n"

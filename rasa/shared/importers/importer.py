@@ -388,9 +388,7 @@ class ResponsesSyncImporter(TrainingDataImporter):
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
-        return self._importer.get_stories(
-            template_variables, exclusion_percentage
-        )
+        return self._importer.get_stories(template_variables, exclusion_percentage)
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
@@ -478,9 +476,7 @@ class E2EImporter(TrainingDataImporter):
 
         See parent class for details.
         """
-        return self.importer.get_stories(
-            template_variables, exclusion_percentage
-        )
+        return self.importer.get_stories(template_variables, exclusion_percentage)
 
     def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""

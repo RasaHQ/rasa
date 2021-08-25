@@ -534,7 +534,12 @@ async def test_train_with_retrieval_events_success(
     # it usually takes a bit longer on windows so we're going to double the timeout
     timeout = 60 * 10 if sys.platform == "win32" else 60 * 5
 
-    _, response = await rasa_app.post("/model/train", data=payload_as_yaml, timeout=timeout, headers={"Content-type": rasa.server.YAML_CONTENT_TYPE})
+    _, response = await rasa_app.post(
+        "/model/train",
+        data=payload_as_yaml,
+        timeout=timeout,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
     assert response.status == HTTPStatus.OK
     assert_trained_model(response.body, tmp_path)
 
