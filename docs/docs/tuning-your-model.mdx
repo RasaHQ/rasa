@@ -235,7 +235,7 @@ rules:
 
 2) Allow a machine-learning policy to generalize to the multi-intent scenario from single-intent stories.
 
-When using a multi-intent, the intent is featurized for machine learning policies using multi-hot encoding. That means the featurization of `check_balances+transfer_money` will overlap with the featurization of each individual intent. Machine learning policies (like TEDPolicy) can then make a prediction based on the multi-intent even if it does not explicitly appear in any stories. It will typically act as if only one of the individual intents was present, however, so it is always a good idea to write a specific story or rule that deals with the multi-intent case.
+When using a multi-intent, the intent is featurized for machine learning policies using multi-hot encoding. That means the featurization of `check_balances+transfer_money` will overlap with the featurization of each individual intent. Machine learning policies (like [TEDPolicy](./policies.mdx#ted-policy)) can then make a prediction based on the multi-intent even if it does not explicitly appear in any stories. It will typically act as if only one of the individual intents was present, however, so it is always a good idea to write a specific story or rule that deals with the multi-intent case.
 
 
 ### Comparing Pipelines
