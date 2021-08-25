@@ -184,6 +184,44 @@ Write to the configuration if telemetry tracking should be enabled or disabled.
 - `is_enabled` - `True` if the telemetry reporting should be enabled,
   `False` otherwise.
 
+#### filter\_errors
+
+```python
+filter_errors(event: Dict[Text, Any], hint: Optional[Dict[Text, Any]] = None) -> Optional[Dict[Text, Any]]
+```
+
+Filter errors.
+
+**Arguments**:
+
+- `event` - event to be logged to sentry
+- `hint` - some hinting information sent alongside of the event
+  
+
+**Returns**:
+
+  the event without any sensitive / PII data or `None` if the event constitutes
+  an `ImportError` which should be discarded.
+
+#### before\_send
+
+```python
+before_send(event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None) -> Optional[Dict[Text, Any]]
+```
+
+Strips the sensitive data and filters errors before sending to sentry.
+
+**Arguments**:
+
+- `event` - event to be logged to sentry
+- `_unused_hint` - some hinting information sent alongside of the event
+  
+
+**Returns**:
+
+  the event without any sensitive / PII data or `None` if the event should
+  be discarded.
+
 #### strip\_sensitive\_data\_from\_sentry\_event
 
 ```python

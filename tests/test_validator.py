@@ -31,6 +31,7 @@ def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
         training_data_paths=[story_file_name, nlu_data_path],
         training_type=TrainingType.NLU,
     )
+
     validator = Validator.from_importer(importer)
     assert validator.verify_nlu()
 
