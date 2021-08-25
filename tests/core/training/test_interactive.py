@@ -4,7 +4,7 @@ import os
 import uuid
 from collections import deque
 from pathlib import Path
-from typing import Any, Dict, List, Text, Tuple, Callable
+from typing import Any, Dict, List, Text, Tuple
 from tests.conftest import AsyncMock
 
 import pytest
