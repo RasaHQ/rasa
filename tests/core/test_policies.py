@@ -306,10 +306,6 @@ class PolicyTestCollection:
             config=self._config(featurizer_config_override),
         )
 
-        if not isinstance(policy, GraphComponent):
-            # TODO: Drop this after all policies have been migration to graph components
-            return
-
         featurizer = policy.featurizer
         assert isinstance(featurizer, tracker_featurizer.__class__)
 
@@ -349,10 +345,6 @@ class PolicyTestCollection:
         resource: Resource,
         execution_context: ExecutionContext,
     ):
-        if not isinstance(trained_policy, GraphComponent):
-            # TODO: Drop this after all policies have been migration to graph components
-            return
-
         with pytest.raises(InvalidPolicyConfig):
             self.create_policy(
                 None,
@@ -425,12 +417,8 @@ class TestMemoizationPolicy(PolicyTestCollection):
         trackers_no_augmentation = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
-        if isinstance(trained_policy, PolicyGraphComponent):
-            trained_policy.train(trackers_no_augmentation, default_domain)
-        else:
-            trained_policy.train(
-                trackers_no_augmentation, default_domain, RegexInterpreter()
-            )
+        trained_policy.train(trackers_no_augmentation, default_domain)
+
         lookup_no_augmentation = trained_policy.lookup
 
         assert lookup_no_augmentation == lookup_with_augmentation
