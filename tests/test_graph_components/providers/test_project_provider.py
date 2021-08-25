@@ -36,3 +36,29 @@ def test_provide_importer(
     assert isinstance(importer.get_nlu_data(), TrainingData)
     assert len(importer.get_nlu_data().training_examples) > 0
     assert isinstance(importer.get_stories(), StoryGraph)
+
+
+def test_provide_multiproject_importer(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+) -> None:
+    config_path = "data/test_multiproject/config.yml"
+    importer_config = {"importers": [{"name": "MultiProjectImporter"}]}
+    config = {
+        "config_path": config_path,
+        "config": importer_config,
+        "domain_path": None,
+        "training_data_paths": None,
+    }
+    project_provider = ProjectProvider.create(
+        config, default_model_storage, Resource("xy"), default_execution_context
+    )
+    importer = project_provider.provide()
+
+    training_data = importer.get_nlu_data()
+    assert len(training_data.intents) == 4
+
+    domain = importer.get_domain()
+    assert len(domain.responses) == 4
+
+    project_config = importer.get_config()
+    assert len(project_config["policies"]) == 3
