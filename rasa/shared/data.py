@@ -15,7 +15,7 @@ TRAINING_DATA_EXTENSIONS = set(JSON_FILE_EXTENSIONS + YAML_FILE_EXTENSIONS)
 
 
 def yaml_file_extension() -> Text:
-    """Return YAML file extension"""
+    """Return YAML file extension."""
     return YAML_FILE_EXTENSIONS[0]
 
 

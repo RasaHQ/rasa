@@ -65,7 +65,7 @@ async def test_end_to_end_evaluation_script(
     completed_trackers = generator.generate_story_trackers()
 
     story_evaluation, num_stories, _ = await _collect_story_predictions(
-        completed_trackers, default_agent
+        completed_trackers, default_agent, use_e2e=True
     )
 
     serialised_store = [

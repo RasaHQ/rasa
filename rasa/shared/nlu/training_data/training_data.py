@@ -372,6 +372,11 @@ class TrainingData:
         return RasaYAMLWriter().dumps(TrainingData(responses=self.responses))
 
     def nlu_as_yaml(self) -> Text:
+        """Generates YAML representation of NLU of TrainingData.
+
+        Returns:
+            data in YAML format as a string
+        """
         from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
         # avoid dumping NLG data (responses). this is a workaround until we
@@ -383,6 +388,7 @@ class TrainingData:
         return RasaYAMLWriter().dumps(no_responses_training_data)
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
+        """Saves NLU to a file."""
         if rasa.shared.data.is_likely_json_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_json(indent=2), filename)
         elif rasa.shared.data.is_likely_yaml_file(filename):
@@ -395,6 +401,7 @@ class TrainingData:
             )
 
     def persist_nlg(self, filename: Text) -> None:
+        """Saves NLG to a file."""
         if rasa.shared.data.is_likely_yaml_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
         else:
@@ -405,7 +412,7 @@ class TrainingData:
 
     @staticmethod
     def get_nlg_persist_filename(nlu_filename: Text) -> Text:
-
+        """Returns the full filename to persist NLG data."""
         extension = Path(nlu_filename).suffix
         if rasa.shared.data.is_likely_json_file(nlu_filename):
             # backwards compatibility: previously NLG was always dumped as md. now

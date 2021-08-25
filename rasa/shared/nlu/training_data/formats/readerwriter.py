@@ -44,6 +44,8 @@ class TrainingDataReader(abc.ABC):
 
 
 class TrainingDataWriter:
+    """A class for writing training data to a file."""
+
     def dump(self, filename: Text, training_data: "TrainingData") -> None:
         """Writes a TrainingData object to a file."""
         s = self.dumps(training_data)
