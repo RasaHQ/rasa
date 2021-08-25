@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from _pytest.tmpdir import TempPathFactory
 from rasa.core.constants import POLICY_MAX_HISTORY
-from rasa.engine.graph import ExecutionContext, GraphSchema, GraphComponent
+from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
