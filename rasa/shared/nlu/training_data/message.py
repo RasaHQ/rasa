@@ -21,6 +21,7 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     ACTION_TEXT,
     ACTION_NAME,
+    TEXT_TOKENS,
 )
 from rasa.shared.constants import DIAGNOSTIC_DATA
 
@@ -29,6 +30,16 @@ if typing.TYPE_CHECKING:
 
 
 class Message:
+    """Container for data that can be used to describe a conversation turn.
+
+    The turn is described by a set of attributes such as e.g. `TEXT`  and  `INTENT`
+    when describing a user utterance or e.g. `ACTION_NAME` for describing a bot action.
+    The container includes raw information (`self.data`) as well as features
+    (`self.features`) for each such attribute.
+    Moreover, the message has a timestamp and can keep track about information
+    on a specific subset of attributes (`self.output_properties`).
+    """
+
     def __init__(
         self,
         data: Optional[Dict[Text, Any]] = None,
@@ -37,6 +48,7 @@ class Message:
         features: Optional[List["Features"]] = None,
         **kwargs: Any,
     ) -> None:
+        """Creates an instance of Message."""
         self.time = time
         self.data = data.copy() if data else {}
         self.features = features if features else []
@@ -95,12 +107,15 @@ class Message:
         return d
 
     def as_dict(self, only_output_properties: bool = False) -> Dict:
+        """Gets dict representation of message."""
         if only_output_properties:
-            d = {
-                key: value
-                for key, value in self.data.items()
-                if key in self.output_properties
-            }
+            d = {}
+            for key, value in self.data.items():
+                if key in self.output_properties:
+                    if key == TEXT_TOKENS:
+                        d[TEXT_TOKENS] = [(t.start, t.end) for t in value]
+                    else:
+                        d[key] = value
         else:
             d = self.data
 
