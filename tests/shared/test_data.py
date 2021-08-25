@@ -9,6 +9,9 @@ import rasa.shared
 import rasa.shared.data
 from rasa.shared.nlu.training_data.loading import load_data
 from rasa.shared.utils.io import write_text_file, json_to_string
+from rasa.shared.core.training_data.story_reader.yaml_story_reader import (
+    YAMLStoryReader,
+)
 
 
 @pytest.mark.parametrize(
@@ -35,76 +38,6 @@ def test_is_yaml_file(path, is_yaml):
 )
 def test_is_json_file(path, is_json):
     assert rasa.shared.data.is_likely_json_file(path) == is_json
-
-
-def test_story_file_can_not_be_yml(tmpdir: Path):
-    p = tmpdir / "test_empty.yml"
-    Path(p).touch()
-    assert rasa.shared.data.is_story_file(str()) is False
-
-
-def test_story_file_with_minimal_story_is_story_file(tmpdir: Path):
-    p = tmpdir / "story.yml"
-    s = """
-stories:
-  - story: simple
-    """
-    write_text_file(s, p)
-    assert rasa.shared.data.is_story_file(str(p))
-
-
-def test_default_story_files_are_story_files():
-    for fn in glob.glob(os.path.join("data", "test_stories", "*")):
-        assert rasa.shared.data.is_story_file(fn)
-
-
-def test_default_conversation_tests_are_conversation_tests_yml(tmp_path: Path):
-    e2e_path = tmp_path / "test_stories.yml"
-    e2e_story = """stories:"""
-    write_text_file(e2e_story, e2e_path)
-
-    assert rasa.shared.data.is_test_stories_file(str(e2e_path))
-
-
-def test_conversation_tests_in_a_directory(tmp_path: Path):
-    parent = tmp_path / "tests"
-    Path(parent).mkdir(parents=True)
-
-    e2e_path = parent / "test_stories.yml"
-    e2e_story = """stories:"""
-    write_text_file(e2e_story, e2e_path)
-
-    assert rasa.shared.data.is_test_stories_file(str(e2e_path))
-
-
-def test_nlu_data_files_are_not_conversation_tests(tmpdir: Path):
-    nlu_path = tmpdir / "nlu.yml"
-    nlu_data = """
-nlu:
-- intent: greet
-  examples: |
-    hello
-    hi
-    hallo
-    """
-    write_text_file(nlu_data, nlu_path)
-
-    assert not rasa.shared.data.is_test_stories_file(str(nlu_path))
-
-
-def test_domain_files_are_not_conversation_tests(tmpdir: Path):
-    domain_path = tmpdir / "domain.yml"
-    assert not rasa.shared.data.is_test_stories_file(str(domain_path))
-
-
-async def test_get_files_with_mixed_training_data():
-    default_data_path = "data/test_mixed_yaml_training_data/training_data.yml"
-    assert rasa.shared.data.get_data_files(
-        default_data_path, rasa.shared.data.is_nlu_file
-    )
-    assert rasa.shared.data.get_data_files(
-        default_data_path, rasa.shared.data.is_story_file
-    )
 
 
 def test_get_core_directory(project):
@@ -146,7 +79,7 @@ def test_get_core_nlu_files(project):
         [data_dir], rasa.shared.data.is_nlu_file
     )
     core_files = rasa.shared.data.get_data_files(
-        [data_dir], rasa.shared.data.is_story_file
+        [data_dir], YAMLStoryReader.is_stories_file
     )
     assert len(nlu_files) == 1
     assert list(nlu_files)[0].endswith("nlu.yml")
@@ -237,6 +170,6 @@ def test_is_not_nlu_file_with_json():
 def test_get_story_file_with_yaml():
     examples_dir = "data/test_yaml_stories"
     core_files = rasa.shared.data.get_data_files(
-        [examples_dir], rasa.shared.data.is_story_file
+        [examples_dir], YAMLStoryReader.is_stories_file
     )
     assert core_files
