@@ -1,6 +1,6 @@
 name: Bug Report
 description: Create a report to help us improve
-title: "[Bug]: "
+title: ""
 labels: ["area:rasa-oss :ferris_wheel:","type:bug :bug:"]
 assignees: []
 body:
@@ -28,8 +28,7 @@ body:
   - type: dropdown
     id: version-python
     attributes:
-      label: Version
-      description: What python version are you running?
+      label: Python version
       options:
         - 3.6
         - 3.7
