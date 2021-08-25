@@ -47,8 +47,8 @@ from rasa.core.policies.policy import (
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.memoization import (
-    AugmentedMemoizationPolicyGraphComponent,
-    MemoizationPolicyGraphComponent,
+    AugmentedMemoizationPolicyGraphComponent as AugmentedMemoizationPolicy,
+    MemoizationPolicyGraphComponent as MemoizationPolicy,
 )
 
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -366,7 +366,7 @@ class PolicyTestCollection:
 class TestMemoizationPolicy(PolicyTestCollection):
     @staticmethod
     def _policy_class_to_test() -> Type[PolicyGraphComponent]:
-        return MemoizationPolicyGraphComponent
+        return MemoizationPolicy
 
     @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:
@@ -394,7 +394,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
     def test_memorise(
         self,
-        trained_policy: MemoizationPolicyGraphComponent,
+        trained_policy: MemoizationPolicy,
         default_domain: Domain,
         stories_path: Text,
     ):
@@ -436,7 +436,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         assert lookup_no_augmentation == lookup_with_augmentation
 
     def test_memorise_with_nlu(
-        self, trained_policy: MemoizationPolicyGraphComponent, default_domain: Domain
+        self, trained_policy: MemoizationPolicy, default_domain: Domain
     ):
         tracker = tracker_from_dialogue(TEST_DEFAULT_DIALOGUE, default_domain)
         states = trained_policy._prediction_states(tracker, default_domain)
@@ -446,7 +446,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
     def test_finetune_after_load(
         self,
-        trained_policy: MemoizationPolicyGraphComponent,
+        trained_policy: MemoizationPolicy,
         resource: Resource,
         model_storage: ModelStorage,
         execution_context: ExecutionContext,
@@ -455,7 +455,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
     ):
 
         execution_context = dataclasses.replace(execution_context, is_finetuning=True)
-        loaded_policy = MemoizationPolicyGraphComponent.load(
+        loaded_policy = MemoizationPolicy.load(
             trained_policy.config, model_storage, resource, execution_context
         )
 
@@ -520,7 +520,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
     )
     def test_ignore_action_unlikely_intent(
         self,
-        trained_policy: MemoizationPolicyGraphComponent,
+        trained_policy: MemoizationPolicy,
         default_domain: Domain,
         tracker_events_with_action: List[Event],
         tracker_events_without_action: List[Event],
@@ -589,7 +589,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
     @staticmethod
     def _policy_class_to_test() -> Type[PolicyGraphComponent]:
-        return AugmentedMemoizationPolicyGraphComponent
+        return AugmentedMemoizationPolicy
 
 
 @pytest.mark.parametrize(
@@ -597,7 +597,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
     [
         (TEDPolicy, SupportedData.ML_DATA),
         (RulePolicy, SupportedData.ML_AND_RULE_DATA),
-        (MemoizationPolicyGraphComponent, SupportedData.ML_DATA),
+        (MemoizationPolicy, SupportedData.ML_DATA),
     ],
 )
 def test_supported_data(policy: Type[Policy], supported_data: SupportedData):
