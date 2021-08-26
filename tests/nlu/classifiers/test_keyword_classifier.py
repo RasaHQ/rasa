@@ -9,9 +9,11 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.classifiers.keyword_intent_classifier import (
     KeywordIntentClassifierGraphComponent,
 )
+from rasa.shared.nlu.constants import TEXT
 
 from rasa.shared.nlu.training_data.formats.rasa import RasaReader
 import rasa.shared.nlu.training_data.loading
+from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
@@ -58,29 +60,31 @@ def test_persist_and_load(
         assert m1.get("intent") == m2.get("intent")
 
 
-# @pytest.mark.parametrize(
-#     "message, intent",
-#     [
-#         ("hey there joe", "greet"),
-#         ("hello weiouaosdhalkh", "greet"),
-#         ("show me chinese restaurants in the north of town", "restaurant_search"),
-#         ("great", "affirm"),
-#         ("bye bye birdie", "goodbye"),
-#         ("show me a mexican place", None),
-#         ("i", None),
-#         ("in", None),
-#         ("eet", None),
-#     ],
-# )
-# def test_classification(
-#         message: Text,
-#         intent: Text,
-#         default_keyword_intent_classifier: KeywordIntentClassifierGraphComponent,
-# ):
-#     text = Message(data={TEXT: message})
-#     messages = default_keyword_intent_classifier.process([text])
-#     for m in messages:
-#         assert m.get("intent").get("name", "NOT_CLASSIFIED") == intent
+@pytest.mark.parametrize(
+    "message, intent",
+    [
+        ("hey there joe", "greet"),
+        ("hello weiouaosdhalkh", "greet"),
+        ("show me chinese restaurants in the north of town", "restaurant_search"),
+        ("great", "affirm"),
+        ("bye bye birdie", "goodbye"),
+        ("show me a mexican place", None),
+        ("i", None),
+        ("in", None),
+        ("eet", None),
+    ],
+)
+def test_classification(
+    message: Text,
+    intent: Text,
+    training_data: TrainingData,
+    default_keyword_intent_classifier: KeywordIntentClassifierGraphComponent,
+):
+    text = Message(data={TEXT: message})
+    default_keyword_intent_classifier.train(training_data)
+    messages = default_keyword_intent_classifier.process([text])
+    for m in messages:
+        assert m.get("intent").get("name", "NOT_CLASSIFIED") == intent
 
 
 def test_valid_data(

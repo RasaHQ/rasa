@@ -163,22 +163,29 @@ class KeywordIntentClassifierGraphComponent(GraphComponent):
         **kwargs: Any,
     ) -> KeywordIntentClassifierGraphComponent:
         """Loads trained component (see parent class for full docstring)."""
-        with model_storage.read_from(resource) as model_dir:
-            keyword_file = list(model_dir.glob("**/*.json"))
+        try:
+            with model_storage.read_from(resource) as model_dir:
+                keyword_file = list(model_dir.glob("**/*.json"))
 
-            if keyword_file:
-                assert len(keyword_file) == 1
-                intent_keyword_map = rasa.shared.utils.io.read_json_file(
-                    keyword_file[0]
-                )
-            else:
-                rasa.shared.utils.io.raise_warning(
-                    f"Failed to load key word file for "
-                    f"`KeywordIntentClassifierGraphComponent`, "
-                    f"maybe {keyword_file} does not exist?"
-                )
-                intent_keyword_map = None
-
-            return cls(
-                config, model_storage, resource, execution_context, intent_keyword_map
+                if keyword_file:
+                    assert len(keyword_file) == 1
+                    intent_keyword_map = rasa.shared.utils.io.read_json_file(
+                        keyword_file[0]
+                    )
+                else:
+                    rasa.shared.utils.io.raise_warning(
+                        f"Failed to load key word file for "
+                        f"`KeywordIntentClassifierGraphComponent`, "
+                        f"maybe {keyword_file} does not exist?"
+                    )
+                    intent_keyword_map = None
+        except ValueError:
+            logger.warning(
+                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
+                f"'{resource.name}' doesn't exist."
             )
+            intent_keyword_map = None
+
+        return cls(
+            config, model_storage, resource, execution_context, intent_keyword_map,
+        )
