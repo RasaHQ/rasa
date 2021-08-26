@@ -50,7 +50,6 @@ from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     DOCS_BASE_URL,
     DEFAULT_SENDER_ID,
-    DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
     TEST_STORIES_FILE_PREFIX,
 )
