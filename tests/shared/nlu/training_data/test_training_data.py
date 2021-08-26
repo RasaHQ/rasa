@@ -401,7 +401,6 @@ def test_train_test_split_with_random_seed(filepaths):
     "files",
     [
         ("data/examples/rasa/demo-rasa.json", "data/test/multiple_files_json"),
-        ("data/examples/rasa/demo-rasa.yml", "data/test/multiple_files_markdown"),
         ("data/examples/rasa/demo-rasa.yml", "data/test/duplicate_intents_yaml"),
     ],
 )
@@ -415,14 +414,6 @@ def test_data_merging(files):
     assert td.entities == td_reference.entities
     assert td.entity_synonyms == td_reference.entity_synonyms
     assert td.regex_features == td_reference.regex_features
-
-
-def test_markdown_single_sections():
-    td_regex_only = load_data("data/test/markdown_single_sections/regex_only.md")
-    assert td_regex_only.regex_features == [{"name": "greet", "pattern": r"hey[^\s]*"}]
-
-    td_syn_only = load_data("data/test/markdown_single_sections/synonyms_only.md")
-    assert td_syn_only.entity_synonyms == {"Chines": "chinese", "Chinese": "chinese"}
 
 
 def test_repeated_entities(tmp_path):
@@ -623,18 +614,6 @@ def cmp_dict_list(firsts, seconds):
             "json",
             None,
         ),
-        (
-            "data/examples/rasa/demo-rasa.json",
-            "data/test_md/json_converted_to_md.md",
-            "md",
-            None,
-        ),
-        (
-            "data/test/training_data_containing_special_chars.json",
-            "data/test_md/json_with_special_chars_converted_to_md.md",
-            "md",
-            None,
-        ),
     ],
 )
 def test_training_data_conversion(
@@ -675,10 +654,6 @@ def test_training_data_conversion(
             rasa.shared.data.yaml_file_extension(),
         ),
         ("data/examples", rasa.shared.data.yaml_file_extension()),
-        (
-            "data/test_md/default_retrieval_intents.md",
-            rasa.shared.data.markdown_file_extension(),
-        ),
         ("data/examples/rasa/demo-rasa.yml", rasa.shared.data.yaml_file_extension()),
         ("data/rasa_yaml_examples", rasa.shared.data.yaml_file_extension()),
     ],

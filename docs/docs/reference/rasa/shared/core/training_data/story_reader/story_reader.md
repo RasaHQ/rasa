@@ -13,7 +13,7 @@ Helper class to read a story file.
 #### \_\_init\_\_
 
 ```python
- | __init__(domain: Optional[Domain] = None, template_vars: Optional[Dict] = None, use_e2e: bool = False, source_name: Optional[Text] = None, is_used_for_training: bool = True) -> None
+ | __init__(domain: Optional[Domain] = None, source_name: Optional[Text] = None, is_used_for_training: bool = True) -> None
 ```
 
 Constructor for the StoryReader.
@@ -21,8 +21,6 @@ Constructor for the StoryReader.
 **Arguments**:
 
 - `domain` - Domain object.
-- `template_vars` - Template variables to be replaced.
-- `use_e2e` - Specifies whether to use the e2e parser or not.
 - `source_name` - Name of the training data source.
 - `is_used_for_training` - Identifies if the user utterances should be parsed
   (entities are extracted and removed from the original text) and
@@ -49,24 +47,6 @@ Reads stories or rules from file.
 **Returns**:
 
   `StoryStep`s read from `filename`.
-
-#### is\_test\_stories\_file
-
-```python
- | @staticmethod
- | is_test_stories_file(filename: Text) -> bool
-```
-
-Checks if the specified file is a test story file.
-
-**Arguments**:
-
-- `filename` - File to check.
-  
-
-**Returns**:
-
-  `True` if specified file is a test story file, `False` otherwise.
 
 #### is\_stories\_file
 

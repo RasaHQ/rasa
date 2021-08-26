@@ -211,14 +211,6 @@ Create a graph with the cyclic edges removed from this graph.
 
 Looks a story step up by its id.
 
-#### as\_story\_string
-
-```python
- | as_story_string() -> Text
-```
-
-Convert the graph into the story file format.
-
 #### order\_steps
 
 ```python

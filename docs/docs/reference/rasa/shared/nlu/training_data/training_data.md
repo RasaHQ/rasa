@@ -240,15 +240,6 @@ Sorts regex features lexicographically by name+pattern
 
 Represent this set of training examples as json.
 
-#### nlg\_as\_markdown
-
-```python
- | nlg_as_markdown() -> Text
-```
-
-Generates the markdown representation of the response phrases (NLG) of
-TrainingData.
-
 #### nlg\_as\_yaml
 
 ```python
@@ -261,13 +252,42 @@ Generates yaml representation of the response phrases (NLG) of TrainingData.
 
   responses in yaml format as a string
 
-#### nlu\_as\_markdown
+#### nlu\_as\_yaml
 
 ```python
- | nlu_as_markdown() -> Text
+ | nlu_as_yaml() -> Text
 ```
 
-Generates the markdown representation of the NLU part of TrainingData.
+Generates YAML representation of NLU of TrainingData.
+
+**Returns**:
+
+  data in YAML format as a string
+
+#### persist\_nlu
+
+```python
+ | persist_nlu(filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None
+```
+
+Saves NLU to a file.
+
+#### persist\_nlg
+
+```python
+ | persist_nlg(filename: Text) -> None
+```
+
+Saves NLG to a file.
+
+#### get\_nlg\_persist\_filename
+
+```python
+ | @staticmethod
+ | get_nlg_persist_filename(nlu_filename: Text) -> Text
+```
+
+Returns the full filename to persist NLG data.
 
 #### persist
 

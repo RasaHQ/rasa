@@ -41,13 +41,15 @@ Reads TrainingData from a string.
 class TrainingDataWriter()
 ```
 
+A class for writing training data to a file.
+
 #### dump
 
 ```python
  | dump(filename: Text, training_data: "TrainingData") -> None
 ```
 
-Writes a TrainingData object in markdown format to a file.
+Writes a TrainingData object to a file.
 
 #### dumps
 

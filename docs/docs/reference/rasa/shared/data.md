@@ -2,21 +2,13 @@
 sidebar_label: rasa.shared.data
 title: rasa.shared.data
 ---
-#### markdown\_file\_extension
-
-```python
-markdown_file_extension() -> Text
-```
-
-Return Markdown file extension
-
 #### yaml\_file\_extension
 
 ```python
 yaml_file_extension() -> Text
 ```
 
-Return Markdown file extension
+Return YAML file extension.
 
 #### is\_likely\_yaml\_file
 
@@ -51,24 +43,6 @@ Check if a file likely contains json.
 **Returns**:
 
   `True` if the file likely contains data in json format, `False` otherwise.
-
-#### is\_likely\_markdown\_file
-
-```python
-is_likely_markdown_file(file_path: Text) -> bool
-```
-
-Check if a file likely contains markdown.
-
-**Arguments**:
-
-- `file_path` - path to the file
-  
-
-**Returns**:
-
-  `True` if the file likely contains data in markdown format,
-  `False` otherwise.
 
 #### get\_core\_directory
 
@@ -155,40 +129,6 @@ Checks if a file is a Rasa compatible nlu file.
 **Returns**:
 
   `True` if it&#x27;s a nlu file, otherwise `False`.
-
-#### is\_story\_file
-
-```python
-is_story_file(file_path: Text) -> bool
-```
-
-Checks if a file is a Rasa story file.
-
-**Arguments**:
-
-- `file_path` - Path of the file which should be checked.
-  
-
-**Returns**:
-
-  `True` if it&#x27;s a story file, otherwise `False`.
-
-#### is\_test\_stories\_file
-
-```python
-is_test_stories_file(file_path: Text) -> bool
-```
-
-Checks if a file is a test stories file.
-
-**Arguments**:
-
-- `file_path` - Path of the file which should be checked.
-  
-
-**Returns**:
-
-  `True` if it&#x27;s a story file containing tests, otherwise `False`.
 
 #### is\_config\_file
 

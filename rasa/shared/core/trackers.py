@@ -703,12 +703,7 @@ class DialogueStateTracker:
         Returns:
             The dumped tracker as a string.
         """
-
-        # TODO: we need to revisit all usages of this, the caller needs to specify
-        #       the format. this likely points to areas where we are not properly
-        #       handling markdown vs yaml
         story = self.as_story(include_source)
-
         return writer.dumps(
             story.story_steps, is_appendable=should_append_stories, is_test_story=e2e
         )

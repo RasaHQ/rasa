@@ -15,7 +15,6 @@ import rasa.shared.core.constants
 from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 from rasa.shared.importers.importer import (
-    CombinedDataImporter,
     TrainingDataImporter,
     NluDataImporter,
     E2EImporter,
@@ -51,34 +50,6 @@ def test_use_of_interface():
     for f in functions_to_test:
         with pytest.raises(NotImplementedError):
             f()
-
-
-def test_combined_file_importer_with_single_importer(project: Text):
-    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
-    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
-    default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-
-    importer = RasaFileImporter(config_path, domain_path, [default_data_path])
-    combined = CombinedDataImporter([importer])
-
-    assert importer.get_config() == combined.get_config()
-    actual_domain = combined.get_domain()
-    expected_domain = importer.get_domain()
-    assert hash(actual_domain) == hash(expected_domain)
-
-    actual_training_data = combined.get_nlu_data()
-    expected_training_data = importer.get_nlu_data()
-    assert hash(actual_training_data) == hash(expected_training_data)
-
-    expected_stories = importer.get_stories()
-    actual_stories = combined.get_stories()
-
-    assert actual_stories.as_story_string() == expected_stories.as_story_string()
-
-    expected_tests = importer.get_conversation_tests()
-    actual_tests = combined.get_conversation_tests()
-
-    assert actual_tests.as_story_string() == expected_tests.as_story_string()
 
 
 @pytest.mark.parametrize(

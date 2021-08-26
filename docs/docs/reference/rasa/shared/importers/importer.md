@@ -25,16 +25,13 @@ Retrieves the domain of the bot.
 #### get\_stories
 
 ```python
- | get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves the stories that should be used for training.
 
 **Arguments**:
 
-- `template_variables` - Values of templates that should be replaced while
-  reading the story files.
-- `use_e2e` - Specifies whether to parse end to end learning annotations.
 - `exclusion_percentage` - Amount of training data that should be excluded.
   
 
@@ -158,7 +155,7 @@ Retrieves model domain (see parent class for full docstring).
 #### get\_stories
 
 ```python
- | get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).
@@ -220,7 +217,7 @@ Retrieves model domain (see parent class for full docstring).
 
 ```python
  | @rasa.shared.utils.common.cached_method
- | get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).
@@ -283,7 +280,7 @@ Merge existing domain with properties of retrieval intents in NLU data.
 #### get\_stories
 
 ```python
- | get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).
@@ -336,7 +333,7 @@ Retrieves model domain (see parent class for full docstring).
 #### get\_stories
 
 ```python
- | get_stories(interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(), template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(), exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves the stories that should be used for training.

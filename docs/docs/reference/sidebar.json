@@ -108,8 +108,7 @@
           "items": [
             {
               "items": [
-                "reference/rasa/core/training/converters/responses_prefix_converter",
-                "reference/rasa/core/training/converters/story_markdown_to_yaml_converter"
+                "reference/rasa/core/training/converters/responses_prefix_converter"
               ],
               "label": "rasa.core.training.converters",
               "type": "category"
@@ -284,20 +283,6 @@
           "items": [
             {
               "items": [
-                "reference/rasa/nlu/training_data/converters/nlg_markdown_to_yaml_converter",
-                "reference/rasa/nlu/training_data/converters/nlu_markdown_to_yaml_converter"
-              ],
-              "label": "rasa.nlu.training_data.converters",
-              "type": "category"
-            }
-          ],
-          "label": "rasa.nlu.training_data",
-          "type": "category"
-        },
-        {
-          "items": [
-            {
-              "items": [
                 "reference/rasa/nlu/utils/hugging_face/transformers_pre_post_processors"
               ],
               "label": "rasa.nlu.utils.hugging_face",
@@ -333,7 +318,6 @@
               "items": [
                 {
                   "items": [
-                    "reference/rasa/shared/core/training_data/story_reader/markdown_story_reader",
                     "reference/rasa/shared/core/training_data/story_reader/story_reader",
                     "reference/rasa/shared/core/training_data/story_reader/story_step_builder",
                     "reference/rasa/shared/core/training_data/story_reader/yaml_story_reader"
@@ -343,7 +327,6 @@
                 },
                 {
                   "items": [
-                    "reference/rasa/shared/core/training_data/story_writer/markdown_story_writer",
                     "reference/rasa/shared/core/training_data/story_writer/story_writer",
                     "reference/rasa/shared/core/training_data/story_writer/yaml_story_writer"
                   ],
@@ -386,8 +369,6 @@
                   "items": [
                     "reference/rasa/shared/nlu/training_data/formats/dialogflow",
                     "reference/rasa/shared/nlu/training_data/formats/luis",
-                    "reference/rasa/shared/nlu/training_data/formats/markdown",
-                    "reference/rasa/shared/nlu/training_data/formats/markdown_nlg",
                     "reference/rasa/shared/nlu/training_data/formats/rasa",
                     "reference/rasa/shared/nlu/training_data/formats/rasa_yaml",
                     "reference/rasa/shared/nlu/training_data/formats/readerwriter",

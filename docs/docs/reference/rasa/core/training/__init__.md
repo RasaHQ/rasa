@@ -5,7 +5,7 @@ title: rasa.core.training
 #### extract\_story\_graph
 
 ```python
-extract_story_graph(resource_name: Text, domain: "Domain", use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> "StoryGraph"
+extract_story_graph(resource_name: Text, domain: "Domain", exclusion_percentage: Optional[int] = None) -> "StoryGraph"
 ```
 
 Loads training stories / rules from file or directory.
@@ -14,7 +14,6 @@ Loads training stories / rules from file or directory.
 
 - `resource_name` - Path to file or directory.
 - `domain` - The model domain.
-- `use_e2e` - `True` if Markdown files should be parsed as conversation test files.
 - `exclusion_percentage` - Percentage of stories which should be dropped. `None`
   if all training data should be used.
   

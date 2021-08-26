@@ -8,7 +8,7 @@ title: rasa.shared.nlu.training_data.schemas.data_schema
 entity_dict_schema() -> Dict[Text, Any]
 ```
 
-Returns: schema for defining entities in Markdown format.
+Returns: schema for defining entities.
 
 #### rasa\_nlu\_data\_schema
 

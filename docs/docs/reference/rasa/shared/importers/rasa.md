@@ -21,7 +21,7 @@ Retrieves model config (see parent class for full docstring).
 #### get\_stories
 
 ```python
- | get_stories(template_variables: Optional[Dict] = None, use_e2e: bool = False, exclusion_percentage: Optional[int] = None) -> StoryGraph
+ | get_stories(exclusion_percentage: Optional[int] = None) -> StoryGraph
 ```
 
 Retrieves training stories / rules (see parent class for full docstring).

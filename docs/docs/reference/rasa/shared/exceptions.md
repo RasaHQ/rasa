@@ -37,14 +37,6 @@ class InvalidParameterException(RasaException,  ValueError)
 
 Raised when an invalid parameter is used.
 
-## MarkdownException Objects
-
-```python
-class MarkdownException(RasaException,  ValueError)
-```
-
-Raised if there is an error reading Markdown.
-
 ## YamlException Objects
 
 ```python
