@@ -212,51 +212,6 @@ def test_not_importing_not_relevant_additional_files(tmp_path: Path):
     assert not selector.is_imported(str(not_relevant_file2))
 
 
-def test_only_getting_e2e_conversation_tests_if_e2e_enabled(tmp_path: Path):
-    from rasa.shared.core.training_data.structures import StoryGraph
-    import rasa.shared.core.training_data.loading as core_loading
-
-    config = {"imports": ["bots/Bot A"]}
-    config_path = str(tmp_path / "config.yml")
-    utils.dump_obj_as_yaml_to_file(config_path, config)
-
-    story_file = tmp_path / "bots" / "Bot A" / "data" / "stories.yml"
-    story_file.parent.mkdir(parents=True)
-    rasa.shared.utils.io.write_text_file(
-        """
-        stories:
-        - story: story
-          steps:
-          - intent: greet
-          - action: utter_greet
-        """,
-        story_file,
-    )
-
-    test_story = """
-        stories:
-        - story: story test
-          steps:
-          - user: hello
-            intent: greet
-          - action: utter_greet
-    """
-    story_test_file = tmp_path / "bots" / "Bot A" / "test_stories.yml"
-    rasa.shared.utils.io.write_text_file(test_story, story_test_file)
-
-    selector = MultiProjectImporter(config_path)
-
-    story_steps = core_loading.load_data_from_resource(
-        resource=str(story_test_file), domain=Domain.empty(), exclusion_percentage=None,
-    )
-
-    expected = StoryGraph(story_steps)
-
-    actual = selector.get_conversation_tests()
-
-    assert expected.as_story_string() == actual.as_story_string()
-
-
 def test_not_importing_e2e_conversation_tests_in_project(tmp_path: Path,):
     config = {"imports": ["bots/Bot A"]}
     config_path = str(tmp_path / "config.yml")
