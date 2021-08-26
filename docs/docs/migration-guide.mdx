@@ -68,6 +68,28 @@ class MyImporter(TrainingDataImporter):
     # ...
 ```
 
+`template_variables` and `e2e` arguments also got removed from `get_stories` method of `TrainingDataImporter`.
+Its new signature looks this way:
+
+```python
+from typing import Optional
+
+from rasa.shared.nlu.interpreter import RegexInterpreter
+from rasa.shared.core.training_data.structures import StoryGraph
+
+class TrainingDataImporter:
+    # ...
+
+    def get_stories(
+        self,
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
+        pass
+
+    # ...
+```
+
 ## Rasa 2.7 to 2.8
 
 :::caution
