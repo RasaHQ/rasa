@@ -1462,57 +1462,6 @@ def _test_data_file_from_payload(request: Request, temporary_directory: Path) ->
     )
 
 
-def _training_payload_from_json(request: Request, temp_dir: Path) -> Dict[Text, Any]:
-    logger.debug(
-        "Extracting JSON payload with Markdown training data from request body."
-    )
-
-    request_payload = request.json
-    _validate_json_training_payload(request_payload)
-
-    config_path = os.path.join(temp_dir, "config.yml")
-
-    rasa.shared.utils.io.write_text_file(request_payload["config"], config_path)
-
-    if "nlu" in request_payload:
-        nlu_path = os.path.join(temp_dir, "nlu.md")
-        rasa.shared.utils.io.write_text_file(request_payload["nlu"], nlu_path)
-
-    if "stories" in request_payload:
-        stories_path = os.path.join(temp_dir, "stories.md")
-        rasa.shared.utils.io.write_text_file(request_payload["stories"], stories_path)
-
-    if "responses" in request_payload:
-        responses_path = os.path.join(temp_dir, "responses.md")
-        rasa.shared.utils.io.write_text_file(
-            request_payload["responses"], responses_path
-        )
-
-    domain_path = DEFAULT_DOMAIN_PATH
-    if "domain" in request_payload:
-        domain_path = os.path.join(temp_dir, "domain.yml")
-        rasa.shared.utils.io.write_text_file(request_payload["domain"], domain_path)
-
-    model_output_directory = str(temp_dir)
-    if request_payload.get(
-        "save_to_default_model_directory",
-        rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True),
-    ):
-        model_output_directory = DEFAULT_MODELS_PATH
-
-    return dict(
-        domain=domain_path,
-        config=config_path,
-        training_files=str(temp_dir),
-        output=model_output_directory,
-        force_training=request_payload.get(
-            "force", rasa.utils.endpoints.bool_arg(request, "force_training", False)
-        ),
-        core_additional_arguments=_extract_core_additional_arguments(request),
-        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
-    )
-
-
 def _validate_json_training_payload(rjs: Dict) -> None:
     if "config" not in rjs:
         raise ErrorResponse(
