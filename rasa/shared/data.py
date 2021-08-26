@@ -158,7 +158,6 @@ def is_config_file(file_path: Text) -> bool:
     Returns:
         `True` if it's a Rasa config file, otherwise `False`.
     """
-
     file_name = os.path.basename(file_path)
 
     return file_name in ["config.yml", "config.yaml"]

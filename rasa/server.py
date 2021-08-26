@@ -1061,10 +1061,7 @@ def create_app(
             "train your model.",
         )
 
-        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-            training_payload = _training_payload_from_yaml(request, temporary_directory)
-        else:
-            training_payload = _training_payload_from_json(request, temporary_directory)
+        training_payload = _training_payload_from_yaml(request, temporary_directory)
 
         try:
             with app.active_training_processes.get_lock():

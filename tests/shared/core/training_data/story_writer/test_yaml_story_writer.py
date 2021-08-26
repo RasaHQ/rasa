@@ -55,7 +55,7 @@ async def test_simple_story(tmpdir: Path, domain: Domain, input_yaml_file: Text)
 async def test_story_start_checkpoint_is_skipped(domain: Domain):
     input_yaml_file = "data/test_yaml_stories/stories.yml"
 
-    original_yaml_reader = YAMLStoryReader(domain, None, False, input_yaml_file)
+    original_yaml_reader = YAMLStoryReader(domain, None, False)
     original_yaml_story_steps = original_yaml_reader.read_from_file(input_yaml_file)
 
     yaml_text = YAMLStoryWriter().dumps(original_yaml_story_steps)
@@ -65,7 +65,7 @@ async def test_story_start_checkpoint_is_skipped(domain: Domain):
 
 async def test_forms_are_converted(domain: Domain):
     original_yaml_reader = YAMLStoryReader(
-        domain, None, False, is_used_for_training=False
+        domain, None, False
     )
     original_yaml_story_steps = original_yaml_reader.read_from_file(
         "data/test_yaml_stories/stories_form.yml"

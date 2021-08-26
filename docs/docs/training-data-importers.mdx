@@ -189,7 +189,6 @@ class MyImporter(TrainingDataImporter):
     def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
-        template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
