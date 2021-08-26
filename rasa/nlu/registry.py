@@ -44,7 +44,6 @@ from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.utils.io
-from rasa.shared.constants import DOCS_URL_COMPONENTS
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.config import RasaNLUModelConfig
@@ -102,16 +101,6 @@ class ComponentNotFoundException(ModuleNotFoundError, RasaException):
 
 def get_component_class(component_name: Text) -> Type["Component"]:
     """Resolve component name to a registered components class."""
-
-    if component_name == "DucklingHTTPExtractor":
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "The component 'DucklingHTTPExtractor' has been renamed to "
-            "'DucklingEntityExtractor'. Update your pipeline to use "
-            "'DucklingEntityExtractor'.",
-            docs=DOCS_URL_COMPONENTS,
-        )
-        component_name = "DucklingEntityExtractor"
-
     if component_name not in registered_components:
         try:
             return rasa.shared.utils.common.class_from_module_path(component_name)
