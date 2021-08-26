@@ -321,6 +321,7 @@ class SingleStateFeaturizer:
             return {}
 
         message = e2e_features.lookup_message(user_text=entity_data[TEXT])
+        message.data[ENTITIES] = entity_data[ENTITIES]
 
         if not message:
             return {}

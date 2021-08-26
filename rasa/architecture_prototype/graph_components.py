@@ -111,7 +111,7 @@ class TrackerGenerator(GraphComponent):
         return rasa.utils.common.run_in_loop(generated_coroutine)
 
 
-class StoryToTraingingDataConverter(GraphComponent):
+class StoryToTrainingDataConverter(GraphComponent):
     """Provides training data for core's NLU pipeline as well as lookup table buildup.
 
     During training as well as during inference, the given data (i.e. story graph or
@@ -130,8 +130,9 @@ class StoryToTraingingDataConverter(GraphComponent):
 
     WORKAROUND_TEXT = "hi"
 
-    @staticmethod
-    def convert_for_training(domain: Domain, story_graph: StoryGraph,) -> TrainingData:
+    def convert_for_training(
+        self, domain: Domain, story_graph: StoryGraph
+    ) -> TrainingData:
         """Creates a list of unique (partial) substates from the domain and story graph.
 
         Note that partial user substate means user substate with intent only, user
@@ -152,18 +153,20 @@ class StoryToTraingingDataConverter(GraphComponent):
         # collect all substates we see in the given data
         # TODO: we can skip intent and action with action_name here
         all_events = (
-            event for step in story_graph.story_steps for event in step.events
+            event
+            for step in story_graph.story_steps
+            for event in step.events
+            if isinstance(event, UserUttered)
         )
         lookup_table.derive_messages_from_events_and_add(events=all_events)
 
         # make sure that there is at least one user substate with a TEXT to ensure
         # `CountVectorizer` is trained...
-        lookup_table.add(Message({TEXT: StoryToTraingingDataConverter.WORKAROUND_TEXT}))
+        lookup_table.add(Message({TEXT: StoryToTrainingDataConverter.WORKAROUND_TEXT}))
 
         return TrainingData(training_examples=list(lookup_table.values()))
 
-    @staticmethod
-    def convert_for_inference(tracker: DialogueStateTracker) -> List[Message]:
+    def convert_for_inference(self, tracker: DialogueStateTracker) -> List[Message]:
         """Creates a list of unique (partial) substates from the events in the tracker.
 
         Note that partial user substate means user substate with intent only, user
@@ -452,6 +455,7 @@ class E2ELookupTable:
                 artificial_sub_state = event_copy.as_sub_state()
                 # split it up...
                 sub_states_from_event = []
+                artificial_sub_state.pop(ENTITIES, None)
                 intent = artificial_sub_state.pop(INTENT, None)
                 if intent:
                     sub_states_from_event.append({INTENT: intent})
@@ -473,10 +477,9 @@ class E2ELookupTable:
 
 
 class MessageToE2EFeatureConverter(GraphComponent):
-    """Collects featurised messages for use by an e2e policy."""
+    """Collects featurized messages for use by an e2e policy."""
 
-    @staticmethod
-    def convert(messages: Union[TrainingData, List[Message]]) -> E2ELookupTable:
+    def convert(self, messages: Union[TrainingData, List[Message]]) -> E2ELookupTable:
         """Converts messages created by `StoryToTrainingDataConverter` to E2EFeatures.
         """
         if isinstance(messages, TrainingData):
