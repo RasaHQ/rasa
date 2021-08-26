@@ -95,7 +95,8 @@ def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("data", "convert", "nlu", "--help")
 
     help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,md,yaml}]
-                             --data DATA [DATA ...] [--out OUT] [-l LANGUAGE]"""
+                             [--data DATA [DATA ...]] [--out OUT]
+                             [-l LANGUAGE]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
