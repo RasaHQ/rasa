@@ -64,9 +64,7 @@ async def test_story_start_checkpoint_is_skipped(domain: Domain):
 
 
 async def test_forms_are_converted(domain: Domain):
-    original_yaml_reader = YAMLStoryReader(
-        domain, None, False
-    )
+    original_yaml_reader = YAMLStoryReader(domain, None, False)
     original_yaml_story_steps = original_yaml_reader.read_from_file(
         "data/test_yaml_stories/stories_form.yml"
     )

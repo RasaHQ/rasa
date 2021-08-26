@@ -15,7 +15,6 @@ import rasa.shared.core.constants
 from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 from rasa.shared.importers.importer import (
-    CombinedDataImporter,
     TrainingDataImporter,
     NluDataImporter,
     E2EImporter,
