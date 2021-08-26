@@ -699,27 +699,6 @@ def test_training_payload_from_yaml_save_to_default_model_directory(
     assert payload.get("output") == expected
 
 
-async def test_train_missing_config(rasa_non_trained_app: SanicASGITestClient):
-    payload = dict(domain="domain data", config=None)
-
-    _, response = await rasa_non_trained_app.post("/model/train", json=payload)
-    assert response.status == HTTPStatus.BAD_REQUEST
-
-
-async def test_train_missing_training_data(rasa_app: SanicASGITestClient):
-    payload = dict(domain="domain data", config="config data")
-
-    _, response = await rasa_app.post("/model/train", json=payload)
-    assert response.status == HTTPStatus.BAD_REQUEST
-
-
-async def test_train_internal_error(rasa_non_trained_app: SanicASGITestClient):
-    payload = dict(domain="domain data", config="config data", nlu="nlu data")
-
-    _, response = await rasa_non_trained_app.post("/model/train", json=payload)
-    assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
-
-
 async def test_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Text):
     stories = rasa.shared.utils.io.read_file(stories_path)
 
@@ -799,23 +778,6 @@ async def test_evaluate_intent(rasa_app: SanicASGITestClient, nlu_data_path: Tex
         "/model/test/intents",
         data=nlu_data,
         headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
-    )
-
-    assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
-        "intent_evaluation",
-        "entity_evaluation",
-        "response_selection_evaluation",
-    }
-
-
-async def test_evaluate_intent_json(rasa_app: SanicASGITestClient):
-    nlu_data = rasa.shared.utils.io.read_file("data/test/demo-rasa-small.json")
-
-    _, response = await rasa_app.post(
-        "/model/test/intents",
-        json=nlu_data,
-        headers={"Content-type": rasa.server.JSON_CONTENT_TYPE},
     )
 
     assert response.status == HTTPStatus.OK
