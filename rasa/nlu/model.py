@@ -25,6 +25,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    TEXT_TOKENS,
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -467,7 +468,7 @@ class Interpreter:
         data = self.default_output_attributes()
         data[TEXT] = text
 
-        message = Message(data=data, time=timestamp)
+        message = Message(data=data, time=timestamp, output_properties={TEXT_TOKENS})
 
         for component in self.pipeline:
             component.process(message, **self.context)
