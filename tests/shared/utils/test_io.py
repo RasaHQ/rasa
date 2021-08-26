@@ -545,7 +545,6 @@ def test_read_invalid_config_file(tmp_path: Path, content: Text):
         ),
         ("data/test_yaml_stories/rules_without_stories.yml", ["rules"], True),
         ("data/test_yaml_stories/rules_without_stories.yml", ["stories"], False),
-        ("data/test_stories/stories.md", ["something"], False),
     ],
 )
 async def test_is_key_in_yaml(file: Text, keys: List[Text], expected_result: bool):
@@ -557,3 +556,14 @@ async def test_is_key_in_yaml_with_unicode_files():
     assert rasa.shared.utils.io.is_key_in_yaml(
         "./data/test_nlu_no_responses/nlu_with_unicode.yml", "nlu"
     )
+
+
+@pytest.mark.parametrize("length", [4, 8, 16, 32])
+def test_random_string(length):
+
+    s = rasa.shared.utils.io.random_string(length)
+    s2 = rasa.shared.utils.io.random_string(length)
+
+    assert len(s) == length
+    assert len(s2) == length
+    assert s != s2

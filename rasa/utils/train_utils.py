@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     from tensorflow.keras.callbacks import Callback
 
 
-def normalize(values: np.ndarray, ranking_length: Optional[int] = 0) -> np.ndarray:
+def normalize(values: np.ndarray, ranking_length: int = 0) -> np.ndarray:
     """Normalizes an array of positive numbers over the top `ranking_length` values.
 
     Other values will be set to 0.
@@ -139,7 +139,7 @@ def align_token_features(
 ) -> np.ndarray:
     """Align token features to match tokens.
 
-    ConveRTTokenizer, LanguageModelTokenizers might split up tokens into sub-tokens.
+    ConveRTFeaturizer and LanguageModelFeaturizer might split up tokens into sub-tokens.
     We need to take the mean of the sub-token vectors and take that as token vector.
 
     Args:

@@ -1,4 +1,5 @@
 TEXT = "text"
+TEXT_TOKENS = "text_tokens"
 INTENT = "intent"
 RESPONSE = "response"
 RESPONSE_SELECTOR = "response_selector"
@@ -23,7 +24,6 @@ EXTRACTOR = "extractor"
 PRETRAINED_EXTRACTORS = {
     "DucklingEntityExtractor",
     "SpacyEntityExtractor",
-    "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
 }
 TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 

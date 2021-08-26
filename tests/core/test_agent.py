@@ -14,7 +14,6 @@ from sanic.response import StreamingHTTPResponse
 import rasa.core
 from rasa.exceptions import ModelNotFound
 import rasa.shared.utils.common
-from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.rule_policy import RulePolicy
 import rasa.utils.io
 from rasa.core import jobs
@@ -57,15 +56,15 @@ def model_server(
     return loop.run_until_complete(sanic_client(app))
 
 
-async def test_training_data_is_reproducible():
+def test_training_data_is_reproducible():
     training_data_file = "data/test_moodbot/data/stories.yml"
     agent = Agent(
         "data/test_moodbot/domain.yml", policies=[AugmentedMemoizationPolicy()]
     )
 
-    training_data = await agent.load_data(training_data_file)
+    training_data = agent.load_data(training_data_file)
     # make another copy of training data
-    same_training_data = await agent.load_data(training_data_file)
+    same_training_data = agent.load_data(training_data_file)
 
     # test if both datasets are identical (including in the same order)
     for i, x in enumerate(training_data):
@@ -80,7 +79,7 @@ async def test_agent_train(trained_rasa_model: Text):
     assert loaded.domain.action_names_or_texts == domain.action_names_or_texts
     assert loaded.domain.intents == domain.intents
     assert loaded.domain.entities == domain.entities
-    assert loaded.domain.templates == domain.templates
+    assert loaded.domain.responses == domain.responses
     assert [s.name for s in loaded.domain.slots] == [s.name for s in domain.slots]
 
     # test policies
@@ -234,75 +233,19 @@ async def test_load_agent(trained_rasa_model: Text):
 def test_form_without_form_policy(policy_config: Dict[Text, List[Text]]):
     with pytest.raises(InvalidDomain) as execinfo:
         Agent(
-            domain=Domain.from_dict({"forms": ["restaurant_form"]}),
+            domain=Domain.from_dict({"forms": {"restaurant_form": {}}}),
             policies=PolicyEnsemble.from_dict(policy_config),
         )
-    assert "neither added the 'RulePolicy' nor the 'FormPolicy'" in str(execinfo.value)
+    assert "have not added the 'RulePolicy'" in str(execinfo.value)
 
 
-@pytest.mark.parametrize(
-    "policy_config",
-    [
-        {"policies": [{"name": FormPolicy.__name__}]},
-        {"policies": [{"name": RulePolicy.__name__}]},
-    ],
-)
-def test_forms_with_suited_policy(policy_config: Dict[Text, List[Text]]):
+def test_forms_with_suited_policy():
+    policy_config = {"policies": [{"name": RulePolicy.__name__}]}
     # Doesn't raise
     Agent(
-        domain=Domain.from_dict({"forms": ["restaurant_form"]}),
+        domain=Domain.from_dict({"forms": {"restaurant_form": {}}}),
         policies=PolicyEnsemble.from_dict(policy_config),
     )
-
-
-@pytest.mark.parametrize(
-    "domain, policy_config",
-    [
-        (
-            {
-                "intents": [{"affirm": {"triggers": "utter_ask_num_people"}}],
-                "actions": ["utter_ask_num_people"],
-            },
-            {"policies": [{"name": "MemoizationPolicy"}]},
-        )
-    ],
-)
-def test_trigger_without_mapping_policy(
-    domain: Dict[Text, Any], policy_config: Dict[Text, Any]
-):
-    with pytest.raises(InvalidDomain) as execinfo:
-        Agent(
-            domain=Domain.from_dict(domain),
-            policies=PolicyEnsemble.from_dict(policy_config),
-        )
-    assert "haven't added the MappingPolicy" in str(execinfo.value)
-
-
-@pytest.mark.parametrize(
-    "domain, policy_config",
-    [
-        (
-            {"intents": ["affirm"]},
-            {
-                "policies": [
-                    {
-                        "name": "TwoStageFallbackPolicy",
-                        "deny_suggestion_intent_name": "deny",
-                    }
-                ]
-            },
-        )
-    ],
-)
-def test_two_stage_fallback_without_deny_suggestion(
-    domain: Dict[Text, Any], policy_config: Dict[Text, Any]
-):
-    with pytest.raises(InvalidDomain) as execinfo:
-        Agent(
-            domain=Domain.from_dict(domain),
-            policies=PolicyEnsemble.from_dict(policy_config),
-        )
-    assert "The intent 'deny' must be present" in str(execinfo.value)
 
 
 @pytest.mark.parametrize(
