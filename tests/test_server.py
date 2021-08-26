@@ -581,32 +581,6 @@ def assert_trained_model(response_body: bytes, tmp_path: Path) -> None:
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
 
 
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {"config": None, "stories": None, "nlu": None, "domain": None, "force": True},
-        {
-            "config": None,
-            "stories": None,
-            "nlu": None,
-            "domain": None,
-            "force": False,
-            "save_to_default_model_directory": True,
-        },
-        {
-            "config": None,
-            "stories": None,
-            "nlu": None,
-            "domain": None,
-            "save_to_default_model_directory": False,
-        },
-    ],
-)
-def test_deprecation_warnings_json_payload(payload: Dict):
-    with pytest.warns(FutureWarning):
-        rasa.server._validate_json_training_payload(payload)
-
-
 async def test_train_with_yaml(rasa_app: SanicASGITestClient, tmp_path: Path):
     training_data = """
 version: "2.0"
