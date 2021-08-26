@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest an idea on how to improve Rasa
+labels: ["area:rasa-oss :ferris_wheel:","type:enhancement :sparkles:"]
+body:
+  - type: textarea
+    id: current-state
+    attributes:
+      label: What problem are you trying to solve?
+      description: Short overview of the current situation. Why is this feature needed? Please link any relevant [forum](https://forum.rasa.com) threads here.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: What's your suggested solution?
+      description: What would a possible solution look like? Describe, without going too low into technical details, what changes need to happen during implementation of this feature.
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples (if relevant)
+      description: List examples and/or link to relevant references.
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Is anything blocking this from being implemented? (if relevant)
+      description: Is this feature blocked by anything or anyone? Or might there be any potential blockers on the way?
+  - type: textarea
+    id: definition-of-done
+    attributes:
+      label: Definition of Done
+      description: What needs to be there to consider this feature as done?
