@@ -1,7 +1,8 @@
 # flake8: noqa
 # WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
-#          Please don't do any changes in this module and rather adapt KeywordIntentClassifier2
-#          from the regular `rasa.nlu.classifiers.keyword_intent_classifier` module.
+#          Please don't do any changes in this module and rather adapt
+#          KeywordIntentClassifierGraphComponent from the regular
+#          `rasa.nlu.classifiers.keyword_intent_classifier` module.
 #          This module is a workaround to defer breaking changes due to the architecture
 #          revamp in 3.0.
 import os
