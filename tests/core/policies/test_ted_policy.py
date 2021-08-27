@@ -1,6 +1,4 @@
-from os import pread
 from pathlib import Path
-from rasa.core.featurizers import precomputation
 from typing import Optional, List, Type, Dict, Text, Any
 
 from unittest.mock import Mock
@@ -24,7 +22,7 @@ from rasa.core.featurizers.single_state_featurizer import (
 from rasa.core.policies.policy import PolicyGraphComponent as Policy
 from rasa.core.policies.ted_policy import TEDPolicyGraphComponent as TEDPolicy
 from rasa.core.policies.ted_policy import TEDPolicy as Rasa2TEDPolicy
-from rasa.engine.graph import ExecutionContext, GraphComponent
+from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.constants import ACTION_LISTEN_NAME, ACTION_UNLIKELY_INTENT_NAME
@@ -37,7 +35,6 @@ from rasa.shared.core.events import (
     ActiveLoop,
 )
 from rasa.shared.exceptions import RasaException, InvalidConfigException
-from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.model_training import train_core

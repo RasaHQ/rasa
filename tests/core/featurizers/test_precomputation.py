@@ -1,8 +1,7 @@
-from rasa.core.actions.action import action_for_name_or_text
 import pytest
 import numpy as np
 import itertools
-from typing import List, Text, Optional, Dict, Tuple
+from typing import List, Text, Optional, Dict
 
 
 from rasa.engine.graph import ExecutionContext
@@ -18,7 +17,6 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.constants import (
     INTENT,
-    INTENT_NAME_KEY,
     TEXT,
     ENTITIES,
     ACTION_NAME,
@@ -29,7 +27,6 @@ from rasa.shared.nlu.constants import (
     ENTITY_ATTRIBUTE_ROLE,
     ENTITY_ATTRIBUTE_GROUP,
 )
-from rasa.shared.core.constants import DEFAULT_ACTION_NAMES
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import Event, UserUttered, ActionExecuted
@@ -306,7 +303,7 @@ def test_container_message_lookup():
 
 def test_container_message_lookup_fails_if_text_cannot_be_looked_up():
     table = MessageContainerForCoreFeaturization()
-    with pytest.raises(ValueError, match=f"Expected a message with key"):
+    with pytest.raises(ValueError, match="Expected a message with key"):
         table.lookup_message(user_text="a text not included in the table")
 
 

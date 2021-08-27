@@ -1,6 +1,6 @@
 from __future__ import annotations
 import typing
-from typing import Optional, Text, Dict, List, Union, Iterable, Any, Iterator, Tuple
+from typing import Optional, Text, Dict, List, Union, Iterable, Any, Iterator
 from collections.abc import ValuesView, KeysView
 
 from rasa.engine.graph import GraphComponent
@@ -17,7 +17,6 @@ from rasa.shared.nlu.constants import ACTION_NAME, ACTION_TEXT, INTENT, TEXT
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.features import Features
-from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
 
 # TODO: make precomputations (MessageContainerForCoreFeaturization) cacheable
@@ -325,8 +324,7 @@ class CoreFeaturizationInputConverter(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> CoreFeaturizationInputConverter:
-        """Creates a new instance (see parent class for full docstring).
-        """
+        """Creates a new instance (see parent class for full docstring)."""
         return cls()
 
     def convert_for_training(
