@@ -8,6 +8,7 @@ from rasa.shared.importers.importer import TrainingDataImporter
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.loading import load_data
 
+
 class NLUTrainingDataProvider(GraphComponent):
     """Provides NLU training data during training and inference time."""
 
