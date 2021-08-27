@@ -39,7 +39,7 @@ def test_persist_and_load(
 ):
     pipeline = [
         {"name": "WhitespaceTokenizer"},
-        {"name": "ConveRTFeaturizer"},
+        {"name": "LanguageModelFeaturizer"},
     ]
     loaded_pipeline = [
         registry.get_component_class(component.pop("name"))(component)
