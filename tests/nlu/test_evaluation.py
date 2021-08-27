@@ -986,7 +986,7 @@ async def test_nlu_comparison(
     }
 
     run_1_path = os.path.join(output, "run_1")
-    assert set(os.listdir(run_1_path)) == {"50%_exclusion", "80%_exclusion", "test.md"}
+    assert set(os.listdir(run_1_path)) == {"50%_exclusion", "80%_exclusion", "test.yml"}
 
     exclude_50_path = os.path.join(run_1_path, "50%_exclusion")
     modelnames = [os.path.splitext(os.path.basename(config))[0] for config in configs]

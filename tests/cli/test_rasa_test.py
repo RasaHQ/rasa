@@ -218,7 +218,7 @@ def test_test_core_comparison(
         files[0],
         "models/copy-model.tar.gz",
         "--stories",
-        "data/stories.md",
+        "data/stories.yml",
     )
 
     assert os.path.exists(os.path.join(DEFAULT_RESULTS_PATH, RESULTS_FILE))
