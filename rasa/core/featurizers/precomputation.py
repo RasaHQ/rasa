@@ -62,7 +62,7 @@ class MessageContainerForCoreFeaturization:
 
     KEY_ATTRIBUTES = [ACTION_NAME, ACTION_TEXT, TEXT, INTENT]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Creates an empty container for precomputations.
 
         Args:

@@ -218,7 +218,7 @@ def test_container_feature_lookup():
     # If we don't specify a list of attributes, the resulting features dictionary will
     # only contain those attributes for which there are features.
     sub_state = {TEXT: "A", INTENT: "B", arbitrary_attribute: "C"}
-    features = table.extract_features(sub_state=sub_state)
+    features = table.collect_features(sub_state=sub_state)
     for attribute, feature_value in [
         (TEXT, 1),
         (INTENT, None),
@@ -233,28 +233,28 @@ def test_container_feature_lookup():
 
     # If we query features for `INTENT`, then a key will be there, even if there are
     # no features
-    features = table.extract_features(
+    features = table.collect_features(
         sub_state=sub_state, attributes=list(sub_state.keys())
     )
     assert INTENT in features
     assert len(features[INTENT]) == 0
 
     # We only get the list of features we want...
-    features = table.extract_features(sub_state, attributes=[arbitrary_attribute])
+    features = table.collect_features(sub_state, attributes=[arbitrary_attribute])
     assert TEXT not in features
     assert INTENT not in features
     assert len(features[arbitrary_attribute]) == 1
 
     # ... even if there are no features:
     YET_ANOTHER = "another"
-    features = table.extract_features(sub_state, attributes=[YET_ANOTHER])
+    features = table.collect_features(sub_state, attributes=[YET_ANOTHER])
     assert len(features[YET_ANOTHER]) == 0
 
 
 def test_container_feature_lookup_fails_without_key_attribute():
     table = MessageContainerForCoreFeaturization()
     with pytest.raises(ValueError, match="Unknown key"):
-        table.extract_features({TEXT: "A-unknown"})
+        table.collect_features({TEXT: "A-unknown"})
 
 
 def test_container_feature_lookup_fails_if_different_features_for_same_attribute():
@@ -266,7 +266,7 @@ def test_container_feature_lookup_fails_if_different_features_for_same_attribute
     with pytest.raises(
         RuntimeError, match=f"Feature for attribute {TEXT} has already been"
     ):
-        broken_table.extract_features({TEXT: "A", INTENT: "B"})
+        broken_table.collect_features({TEXT: "A", INTENT: "B"})
 
 
 def test_container_feature_lookup_works_if_messages_are_broken_but_consistent():
@@ -275,7 +275,7 @@ def test_container_feature_lookup_works_if_messages_are_broken_but_consistent():
         TEXT: {"A": Message(data=dict())},
         INTENT: {"B": Message(data=dict(), features=[_dummy_features(1, TEXT)])},
     }
-    features = not_broken_but_strange_table.extract_features({TEXT: "A", INTENT: "B"})
+    features = not_broken_but_strange_table.collect_features({TEXT: "A", INTENT: "B"})
     assert TEXT in features and len(features[TEXT]) == 1
 
 
