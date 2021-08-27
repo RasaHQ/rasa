@@ -3,7 +3,7 @@ import numpy as np
 import scipy.sparse
 from typing import List, Optional, Dict, Text, Set, Any
 
-from rasa.core.featurizers.precomputation import CoreFeaturizationPrecomputations
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.nlu.utils import bilou_utils
 from rasa.nlu.utils.bilou_utils import BILOU_PREFIXES
@@ -41,8 +41,8 @@ class SingleStateFeaturizer2:
 
     Subclasses of SingleStateFeaturizer will decide how a bot will
     transform the dialogue state into a dictionary mapping an attribute
-    to its features. Possible attributes are: INTENT, TEXT, ACTION_NAME,
-    ACTION_TEXT, ENTITIES, SLOTS and ACTIVE_LOOP. Each attribute will be
+    to its features. Possible attributes are: `INTENT`, `TEXT`, `ACTION_NAME`,
+    `ACTION_TEXT`, `ENTITIES`, `SLOTS` and `ACTIVE_LOOP`. Each attribute will be
     featurized into a list of `rasa.utils.features.Features`.
     """
 
@@ -144,7 +144,7 @@ class SingleStateFeaturizer2:
 
     def _create_features(
         self, sub_state: SubState, attribute: Text, sparse: bool = False
-    ) -> List["Features"]:
+    ) -> List[Features]:
         state_features = self._state_features_for_attribute(sub_state, attribute)
 
         features = np.zeros(len(self._default_feature_states[attribute]), np.float32)
@@ -166,8 +166,8 @@ class SingleStateFeaturizer2:
 
     @staticmethod
     def _to_sparse_sentence_features(
-        sparse_sequence_features: List["Features"],
-    ) -> List["Features"]:
+        sparse_sequence_features: List[Features],
+    ) -> List[Features]:
         return [
             Features(
                 scipy.sparse.coo_matrix(feature.features.sum(0)),
@@ -193,17 +193,18 @@ class SingleStateFeaturizer2:
     def _extract_state_features(
         self,
         sub_state: SubState,
-        precomputations: Optional[CoreFeaturizationPrecomputations],
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         sparse: bool = False,
-    ) -> Dict[Text, List["Features"]]:
+    ) -> Dict[Text, List[Features]]:
 
         # Remove entities from possible attributes
         attributes = set(
             attribute for attribute in sub_state.keys() if attribute != ENTITIES
         )
 
-        # Collect features for all those attributes
         if precomputations is not None:
+
+            # Collect features for all those attributes
             attributes_to_features = precomputations.lookup_features(
                 sub_state, attributes=attributes
             )
@@ -218,22 +219,22 @@ class SingleStateFeaturizer2:
                 attributes_to_features[ACTION_NAME] = self._to_sparse_sentence_features(
                     attributes_to_features[ACTION_NAME]
                 )
-        else:
-            attributes_to_features = {}
 
-        # Combine and sort the features:
-        # Per attribute, combine features of same type and level into one Feature,
-        # and (if there are any such features) store the results in a list where
-        # - all the sparse features are listed first and a
-        # - sequence feature is always listed before the sentence feature of the
-        #   same type (sparse/not sparse).
-        output = {
-            attribute: Features.reduce(
-                features_list=features_list, expected_origins=None
-            )
-            for attribute, features_list in attributes_to_features.items()
-            if len(features_list) > 0  # otherwise, following will fail
-        }
+            # Combine and sort the features:
+            # Per attribute, combine features of same type and level into one Feature,
+            # and (if there are any such features) store the results in a list where
+            # - all the sparse features are listed first and a
+            # - sequence feature is always listed before the sentence feature of the
+            #   same type (sparse/not sparse).
+            output = {
+                attribute: Features.reduce(
+                    features_list=features_list, expected_origins=None
+                )
+                for attribute, features_list in attributes_to_features.items()
+                if len(features_list) > 0  # otherwise, following will fail
+            }
+        else:
+            output = {}
 
         # Check that the name attribute has features
         name_attribute = self._get_name_attribute(attributes)
@@ -248,8 +249,10 @@ class SingleStateFeaturizer2:
         return output
 
     def encode_state(
-        self, state: State, precomputations: Optional[CoreFeaturizationPrecomputations],
-    ) -> Dict[Text, List["Features"]]:
+        self,
+        state: State,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
+    ) -> Dict[Text, List[Features]]:
         """Encode the given state.
 
         Args:
@@ -291,9 +294,9 @@ class SingleStateFeaturizer2:
     def encode_entities(
         self,
         entity_data: Dict[Text, Any],
-        precomputations: Optional[CoreFeaturizationPrecomputations],
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         bilou_tagging: bool = False,
-    ) -> Dict[Text, List["Features"]]:
+    ) -> Dict[Text, List[Features]]:
         """Encode the given entity data.
 
         Produce numeric entity tags for tokens.
@@ -319,6 +322,7 @@ class SingleStateFeaturizer2:
             return {}
 
         message = precomputations.lookup_message(user_text=entity_data[TEXT])
+        message.data[ENTITIES] = entity_data[ENTITIES]
 
         if not message:
             return {}
@@ -335,8 +339,10 @@ class SingleStateFeaturizer2:
         }
 
     def _encode_action(
-        self, action: Text, precomputations: Optional[CoreFeaturizationPrecomputations],
-    ) -> Dict[Text, List["Features"]]:
+        self,
+        action: Text,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
+    ) -> Dict[Text, List[Features]]:
         if action in self.action_texts:
             action_as_sub_state = {ACTION_TEXT: action}
         else:
@@ -349,8 +355,8 @@ class SingleStateFeaturizer2:
     def encode_all_labels(
         self,
         domain: Domain,
-        precomputations: Optional[CoreFeaturizationPrecomputations],
-    ) -> List[Dict[Text, List["Features"]]]:
+        precomputations: Optional[MessageContainerForCoreFeaturization],
+    ) -> List[Dict[Text, List[Features]]]:
         """Encode all action from the domain.
 
         Args:
@@ -370,7 +376,9 @@ class IntentTokenizerSingleStateFeaturizer2(SingleStateFeaturizer2):
     """A SingleStateFeaturizer for use with policies that predict intent labels."""
 
     def _encode_intent(
-        self, intent: Text, precomputations: Optional[CoreFeaturizationPrecomputations],
+        self,
+        intent: Text,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> Dict[Text, List[Features]]:
         """Extracts a numeric representation of an intent.
 
@@ -382,13 +390,12 @@ class IntentTokenizerSingleStateFeaturizer2(SingleStateFeaturizer2):
             Encoded representation of intent.
         """
         intent_as_sub_state = {INTENT: intent}
-
         return self._extract_state_features(intent_as_sub_state, precomputations)
 
     def encode_all_labels(
         self,
         domain: Domain,
-        precomputations: Optional[CoreFeaturizationPrecomputations],
+        precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> List[Dict[Text, List[Features]]]:
         """Encodes all relevant labels from the domain using the given interpreter.
 

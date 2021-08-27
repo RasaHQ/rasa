@@ -15,7 +15,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityExtractor, EntityTagSpec
 import rasa.core.actions.action
-from rasa.core.featurizers.precomputation import CoreFeaturizationPrecomputations
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer2 as TrackerFeaturizer,
 )
@@ -48,8 +48,8 @@ from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.core.events import EntitiesAdded, Event
-from rasa.shared.utils import io as shared_io_utils
-import rasa.utils.io as io_utils
+import rasa.shared.utils.io
+import rasa.utils.io
 import rasa.utils.train_utils
 from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow import rasa_layers
@@ -418,7 +418,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
     def _create_label_data(
         self,
         domain: Domain,
-        precomputations: Optional[CoreFeaturizationPrecomputations],
+        precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> Tuple[RasaModelData, List[Dict[Text, List[Features]]]]:
         # encode all label_ids with policies' featurizer
         state_featurizer = self.featurizer.state_featurizer
@@ -589,7 +589,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        precomputations: CoreFeaturizationPrecomputations,
+        precomputations: MessageContainerForCoreFeaturization,
         **kwargs: Any,
     ) -> Tuple[RasaModelData, np.ndarray]:
         """Prepares data to be fed into the model.
@@ -689,11 +689,11 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        precomputations: Optional[CoreFeaturizationPrecomputations] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
     ) -> Resource:
         """Trains the policy (see parent class for full docstring)."""
         if not training_trackers:
-            shared_io_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Skipping training of `{self.__class__.__name__}` "
                 f"as no data was provided. You can exclude this "
                 f"policy in the configuration "
@@ -707,7 +707,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         )
 
         if model_data.is_empty():
-            shared_io_utils.raise_warning(
+            rasa.shared.utils.io.raise_warning(
                 f"Skipping training of `{self.__class__.__name__}` "
                 f"as no data was provided. You can exclude this "
                 f"policy in the configuration "
@@ -726,7 +726,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[CoreFeaturizationPrecomputations] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
     ) -> List[List[Dict[Text, List[Features]]]]:
         # construct two examples in the batch to be fed to the model -
         # one by featurizing last user text
@@ -799,7 +799,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[CoreFeaturizationPrecomputations] = None,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action (see parent class for full docstring)."""
@@ -843,7 +843,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self,
         prediction_output: Dict[Text, tf.Tensor],
         is_e2e_prediction: bool,
-        precomputations: Optional[CoreFeaturizationPrecomputations],
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         tracker: DialogueStateTracker,
     ) -> Optional[List[Event]]:
         if tracker.latest_action_name != ACTION_LISTEN_NAME or not is_e2e_prediction:
@@ -907,7 +907,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             model_filename = self._metadata_filename()
             tf_model_file = model_path / f"{model_filename}.tf_model"
 
-            shared_io_utils.create_directory_for_file(tf_model_file)
+            rasa.shared.utils.io.create_directory_for_file(tf_model_file)
 
             self.featurizer.persist(model_path)
 
@@ -924,16 +924,16 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             model_path: Path where model is to be persisted
         """
         model_filename = self._metadata_filename()
-        io_utils.json_pickle(
+        rasa.utils.io.json_pickle(
             model_path / f"{model_filename}.priority.pkl", self.priority
         )
-        io_utils.pickle_dump(
+        rasa.utils.io.pickle_dump(
             model_path / f"{model_filename}.data_example.pkl", self.data_example,
         )
-        io_utils.pickle_dump(
+        rasa.utils.io.pickle_dump(
             model_path / f"{model_filename}.fake_features.pkl", self.fake_features,
         )
-        io_utils.pickle_dump(
+        rasa.utils.io.pickle_dump(
             model_path / f"{model_filename}.label_data.pkl",
             dict(self._label_data.data),
         )
@@ -942,7 +942,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             if self._entity_tag_specs
             else []
         )
-        shared_io_utils.dump_obj_as_json_to_file(
+        rasa.shared.utils.io.dump_obj_as_json_to_file(
             model_path / f"{model_filename}.entity_tag_specs.json", entity_tag_specs,
         )
 
@@ -954,20 +954,20 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             model_path: Path where model is to be persisted.
         """
         tf_model_file = model_path / f"{cls._metadata_filename()}.tf_model"
-        loaded_data = io_utils.pickle_load(
+        loaded_data = rasa.utils.io.pickle_load(
             model_path / f"{cls._metadata_filename()}.data_example.pkl"
         )
-        label_data = io_utils.pickle_load(
+        label_data = rasa.utils.io.pickle_load(
             model_path / f"{cls._metadata_filename()}.label_data.pkl"
         )
-        fake_features = io_utils.pickle_load(
+        fake_features = rasa.utils.io.pickle_load(
             model_path / f"{cls._metadata_filename()}.fake_features.pkl"
         )
         label_data = RasaModelData(data=label_data)
-        priority = io_utils.json_unpickle(
+        priority = rasa.utils.io.json_unpickle(
             model_path / f"{cls._metadata_filename()}.priority.pkl"
         )
-        entity_tag_specs = shared_io_utils.read_json_file(
+        entity_tag_specs = rasa.shared.utils.io.read_json_file(
             model_path / f"{cls._metadata_filename()}.entity_tag_specs.json"
         )
         entity_tag_specs = [
@@ -1152,7 +1152,7 @@ class TED(TransformerRasaModel):
         label_data: RasaModelData,
         entity_tag_specs: Optional[List[EntityTagSpec]],
     ) -> None:
-        """Intializes the TED model.
+        """Initializes the TED model.
 
         Args:
             data_signature: the data signature of the input data

@@ -23,7 +23,7 @@ import numpy as np
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.core.featurizers.precomputation import CoreFeaturizationPrecomputations
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer2 as TrackerFeaturizer,
 )
@@ -219,7 +219,7 @@ class PolicyGraphComponent(GraphComponent):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        precomputations: Optional[CoreFeaturizationPrecomputations],
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         bilou_tagging: bool = False,
         **kwargs: Any,
     ) -> Tuple[
@@ -301,7 +301,7 @@ class PolicyGraphComponent(GraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[CoreFeaturizationPrecomputations],
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         use_text_for_last_user_input: bool = False,
     ) -> List[List[Dict[Text, List["Features"]]]]:
         """Transforms training tracker into a vector representation.

@@ -1,4 +1,6 @@
+from os import pread
 from pathlib import Path
+from rasa.core.featurizers import precomputation
 from typing import Optional, List, Type, Dict, Text, Any
 
 from unittest.mock import Mock
@@ -111,8 +113,7 @@ def test_diagnostics(
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
     )
-    # TODO: drop when policies are migrated
-    precomputations = None if isinstance(policy, GraphComponent) else RegexInterpreter()
+    precomputations = None
     policy.train([GREET_RULE], domain, precomputations)
     prediction = policy.predict_action_probabilities(
         GREET_RULE, domain, precomputations,
@@ -289,12 +290,8 @@ class TestTEDPolicy(PolicyTestCollection):
         training_trackers = tests.core.test_policies.train_trackers(
             default_domain, str(stories), augmentation_factor=20
         )
-        # TODO: drop when policies are migrated
-        precomputations = (
-            None if isinstance(policy, GraphComponent) else RegexInterpreter()
-        )
         with pytest.raises(RasaException) as e:
-            policy.train(training_trackers, default_domain, precomputations)
+            policy.train(training_trackers, default_domain, precomputations=None)
 
         assert "No user features specified. Cannot train 'TED' model." == str(e.value)
 
@@ -311,10 +308,7 @@ class TestTEDPolicy(PolicyTestCollection):
         default_domain: Domain,
         monkeypatch: MonkeyPatch,
     ):
-        # TODO: drop when policies are migrated
-        precomputations = (
-            None if isinstance(trained_policy, GraphComponent) else RegexInterpreter()
-        )
+        precomputations = None
         # first check the output is what we expect
         prediction = trained_policy.predict_action_probabilities(
             tracker, default_domain, precomputations,
@@ -340,13 +334,9 @@ class TestTEDPolicy(PolicyTestCollection):
     def test_label_data_assembly(
         self, trained_policy: TEDPolicy, default_domain: Domain
     ):
-        # TODO: drop when policies are migrated
-        precomputations = (
-            None if isinstance(trained_policy, GraphComponent) else RegexInterpreter()
-        )
         state_featurizer = trained_policy.featurizer.state_featurizer
         encoded_all_labels = state_featurizer.encode_all_labels(
-            default_domain, precomputations
+            default_domain, precomputations=None
         )
 
         attribute_data, _ = model_data_utils.convert_to_data_format(encoded_all_labels)
@@ -375,10 +365,7 @@ class TestTEDPolicy(PolicyTestCollection):
         training_trackers = tests.core.test_policies.train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
-        # TODO: drop when policies are migrated
-        precomputations = (
-            None if isinstance(trained_policy, GraphComponent) else RegexInterpreter()
-        )
+        precomputations = None
         training_data, label_ids, entity_tags = trained_policy._featurize_for_training(
             training_trackers, default_domain, precomputations,
         )
@@ -574,10 +561,7 @@ class TestTEDPolicy(PolicyTestCollection):
         tracker_events_with_action: List[Event],
         tracker_events_without_action: List[Event],
     ):
-        # TODO: drop when policies are migrated
-        precomputations = (
-            None if isinstance(trained_policy, GraphComponent) else RegexInterpreter()
-        )
+        precomputations = None
         tracker_with_action = DialogueStateTracker.from_events(
             "test 1", evts=tracker_events_with_action
         )
@@ -641,15 +625,11 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         default_domain: Domain,
         monkeypatch: MonkeyPatch,
     ):
-        # TODO: drop when policies are migrated
-        precomputations = (
-            None if isinstance(trained_policy, GraphComponent) else RegexInterpreter()
-        )
         # Mock actual normalization method
         mock = Mock()
         monkeypatch.setattr(train_utils, "normalize", mock.normalize)
         trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker, default_domain, precomputations=None,
         )
 
         # function should not get called for margin loss_type
@@ -658,13 +638,9 @@ class TestTEDPolicyMargin(TestTEDPolicy):
     def test_prediction_on_empty_tracker(
         self, trained_policy: Policy, default_domain: Domain
     ):
-        # TODO: drop when policies are migrated
-        precomputations = (
-            None if isinstance(trained_policy, GraphComponent) else RegexInterpreter()
-        )
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker, default_domain, precomputations=None,
         )
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions
@@ -742,10 +718,7 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
         default_domain: Domain,
         monkeypatch: MonkeyPatch,
     ):
-        # TODO: drop when policies are migrated
-        precomputations = (
-            None if isinstance(trained_policy, GraphComponent) else RegexInterpreter()
-        )
+        precomputations = None
         # first check the output is what we expect
         predicted_probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain, precomputations,
@@ -802,10 +775,7 @@ class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
         default_domain: Domain,
         monkeypatch: MonkeyPatch,
     ):
-        # TODO: drop when policies are migrated
-        precomputations = (
-            None if isinstance(trained_policy, GraphComponent) else RegexInterpreter()
-        )
+        precomputations = None
         # first check the output is what we expect
         predicted_probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain, precomputations,
@@ -826,13 +796,9 @@ class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
     def test_prediction_on_empty_tracker(
         self, trained_policy: Policy, default_domain: Domain
     ):
-        # TODO: drop when policies are migrated
-        precomputations = (
-            None if isinstance(trained_policy, GraphComponent) else RegexInterpreter()
-        )
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker, default_domain, precomputations=None,
         )
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions

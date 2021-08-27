@@ -11,7 +11,7 @@ import numpy as np
 
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.featurizers.precomputation import CoreFeaturizationPrecomputations
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.exceptions import InvalidTrackerFeaturizerUsageError
 import rasa.shared.core.trackers
 import rasa.shared.utils.io
@@ -105,7 +105,7 @@ class TrackerFeaturizer2:
     def _featurize_states(
         self,
         trackers_as_states: List[List[State]],
-        precomputations: Optional[CoreFeaturizationPrecomputations],
+        precomputations: Optional[MessageContainerForCoreFeaturization],
     ) -> List[List[Dict[Text, List[Features]]]]:
         """Featurizes state histories with `state_featurizer`.
 
@@ -151,7 +151,7 @@ class TrackerFeaturizer2:
     def _create_entity_tags(
         self,
         trackers_as_entities: List[List[Dict[Text, Any]]],
-        precomputations: Optional[CoreFeaturizationPrecomputations],
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         bilou_tagging: bool = False,
     ) -> List[List[Dict[Text, List[Features]]]]:
         """Featurizes extracted entities with `state_featurizer`.
@@ -167,7 +167,7 @@ class TrackerFeaturizer2:
         return [
             [
                 self.state_featurizer.encode_entities(
-                    entity_data, bilou_tagging, precomputations,
+                    entity_data, precomputations, bilou_tagging,
                 )
                 for entity_data in trackers_entities
             ]
@@ -353,7 +353,7 @@ class TrackerFeaturizer2:
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
-        precomputations: Optional[CoreFeaturizationPrecomputations],
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         bilou_tagging: bool = False,
         ignore_action_unlikely_intent: bool = False,
     ) -> Tuple[
@@ -469,7 +469,7 @@ class TrackerFeaturizer2:
         self,
         trackers: List[DialogueStateTracker],
         domain: Domain,
-        precomputations: Optional[CoreFeaturizationPrecomputations],
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         use_text_for_last_user_input: bool = False,
         ignore_rule_only_turns: bool = False,
         rule_only_data: Optional[Dict[Text, Any]] = None,

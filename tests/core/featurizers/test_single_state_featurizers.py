@@ -1,4 +1,3 @@
-from rasa.utils.tensorflow.constants import SENTENCE, SEQUENCE
 from typing import Text
 import numpy as np
 import re
@@ -6,12 +5,12 @@ import scipy.sparse
 import pytest
 
 
-from rasa.core.featurizers.precomputation import CoreFeaturizationPrecomputations
 from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.constants import TOKENS_NAMES
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 from rasa.core.featurizers.single_state_featurizer import (
     SingleStateFeaturizer2 as SingleStateFeaturizer,
 )
-from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
@@ -31,12 +30,14 @@ from rasa.shared.nlu.constants import (
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.slots import Slot
 from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
     ACTIVE_LOOP,
     PREVIOUS_ACTION,
     SLOTS,
     ENTITY_LABEL_SEPARATOR,
     USER,
 )
+from rasa.utils.tensorflow.constants import SENTENCE, SEQUENCE
 
 
 #
@@ -76,7 +77,7 @@ def test_create_features__dtype_float():
     f._default_feature_states[ACTION_NAME] = {"e": 0, "d": 1}
     f._default_feature_states[ENTITIES] = {"c": 0}
 
-    encoded = f._create_features({"action_name": "d"}, attribute="action_name")
+    encoded = f._create_features({ACTION_NAME: "d"}, attribute=ACTION_NAME)
     assert len(encoded) == 1  # cause for some reason this is a list
     assert encoded[0].features.dtype == np.float32
 
@@ -131,7 +132,7 @@ def test_encode_all_labels__encoded_all_action_names_and_texts():
     f = SingleStateFeaturizer()
     f.prepare_for_training(domain)
 
-    precomputations = CoreFeaturizationPrecomputations()
+    precomputations = MessageContainerForCoreFeaturization()
     precomputations.derive_messages_from_domain_and_add(domain)
 
     encoded_actions = f.encode_all_labels(domain, precomputations=precomputations)
@@ -153,10 +154,10 @@ def test_encode_all_labels__encoded_all_action_names_and_texts():
 def sparse_equals_dense(
     sparse_matrix: scipy.sparse.spmatrix, dense_matrix: np.ndarray
 ) -> bool:
-    return (sparse_matrix != scipy.sparse.coo_matrix(dense_matrix)).nnz == 0
+    return np.all(sparse_matrix.todense() == dense_matrix)
 
 
-@pytest.mark.parametrize("action_name", [None, "NOT_action_listen", "action_listen"])
+@pytest.mark.parametrize("action_name", [None, "NOT_action_listen", ACTION_LISTEN_NAME])
 def test_encode_state__without_lookup(action_name: Text):
     """Tests that `encode_state` creates features for every attribute.
     In particular, that this is done even when there is no lookup table.
@@ -169,25 +170,25 @@ def test_encode_state__without_lookup(action_name: Text):
         "c": 0,
         "d": 1,
         "NOT_action_listen": 2,
-        "action_listen": 3,
+        ACTION_LISTEN_NAME: 3,
     }
     f._default_feature_states[SLOTS] = {"e_0": 0, "f_0": 1, "g_0": 2}
     f._default_feature_states[ACTIVE_LOOP] = {"h": 0, "i": 1, "j": 2, "k": 3}
 
     state = {
-        "user": {"intent": "a", "text": "blah blah blah"},
-        "prev_action": {"action_text": "boom"},
-        "active_loop": {"name": "i"},
-        "slots": {"g": (1.0,)},
+        USER: {INTENT: "a", TEXT: "blah blah blah"},
+        PREVIOUS_ACTION: {ACTION_TEXT: "boom"},
+        ACTIVE_LOOP: {"name": "i"},
+        SLOTS: {"g": (1.0,)},
     }
     if action_name is not None:
-        state["prev_action"]["action_name"] = action_name
+        state[PREVIOUS_ACTION][ACTION_NAME] = action_name
 
     encoded = f.encode_state(state, precomputations=None)
 
-    # this differs depending on whether action name is "action_listen" or "d"
+    # this differs depending on whether action name is ACTION_LISTEN_NAME or "d"
     expected_attributes = [ACTIVE_LOOP, SLOTS]
-    if action_name == "action_listen":
+    if action_name == ACTION_LISTEN_NAME:
         expected_attributes += [INTENT]
     if action_name is not None:
         expected_attributes += [ACTION_NAME]
@@ -205,7 +206,7 @@ def test_encode_state__without_lookup(action_name: Text):
 
     # the intent / user substate is only featurized if action_listen is
     # with_action_listen
-    if action_name == "action_listen":
+    if action_name == ACTION_LISTEN_NAME:
         assert sparse_equals_dense(encoded[INTENT][0].features, np.array([[1, 0]]))
 
     # this is always the same
@@ -229,7 +230,7 @@ def dummy_features(
     if is_sparse:
         matrix = scipy.sparse.coo_matrix(matrix)
     return Features(
-        features=matrix, attribute=attribute, feature_type=type, origin="doesnt-matter",
+        features=matrix, attribute=attribute, feature_type=type, origin="whatever",
     )
 
 
@@ -246,14 +247,14 @@ def test_encode_state__with_lookup__creates_features_for_intent_and_action_name(
 
     f = SingleStateFeaturizer()
     f._default_feature_states[INTENT] = {"a": 0, "b": 1}
-    f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1, "action_listen": 2}
+    f._default_feature_states[ACTION_NAME] = {"c": 0, "d": 1, ACTION_LISTEN_NAME: 2}
 
     # create state
-    action_name = "action_listen" if with_action_listen else "c"
+    action_name = ACTION_LISTEN_NAME if with_action_listen else "c"
     state = {USER: {INTENT: "e"}, PREVIOUS_ACTION: {ACTION_NAME: action_name}}
 
     # create a lookup table with all relevant entries **but no Features**
-    precomputations = CoreFeaturizationPrecomputations()
+    precomputations = MessageContainerForCoreFeaturization()
     precomputations.add(Message(data={INTENT: state[USER][INTENT]}))
     precomputations.add(
         Message(data={ACTION_NAME: state[PREVIOUS_ACTION][ACTION_NAME]})
@@ -271,11 +272,11 @@ def test_encode_state__with_lookup__creates_features_for_intent_and_action_name(
         assert set(encoded.keys()) == set([ACTION_NAME])
 
 
-@pytest.mark.parametrize("action_name", [None, "NOT_action_listen", "action_listen"])
+@pytest.mark.parametrize("action_name", [None, "NOT_action_listen", ACTION_LISTEN_NAME])
 def test_encode_state__with_lookup__looksup_or_creates_features(action_name: Text):
     """Tests that features from table are combined or created from scratch.
     If the given action name is ...
-    - "action_listen" then the user substate and the action name are encoded
+    - ACTION_LISTEN_NAME then the user substate and the action name are encoded
     - some "other" action, then the user-substate is not encoed but the action name is
     - set to "None", then we remove the action name from the user substate and as a
       result there should be no encoding for the action name and for the user substate
@@ -291,7 +292,7 @@ def test_encode_state__with_lookup__looksup_or_creates_features(action_name: Tex
     f._default_feature_states[ACTION_NAME] = {
         "NOT_action_listen": 0,
         "utter_greet": 1,
-        "action_listen": 2,
+        ACTION_LISTEN_NAME: 2,
     }
     # `_0` in slots represent feature dimension
     f._default_feature_states[SLOTS] = {"slot_1_0": 0, "slot_2_0": 1, "slot_3_0": 2}
@@ -312,13 +313,13 @@ def test_encode_state__with_lookup__looksup_or_creates_features(action_name: Tex
     action_text = "throw a ball"
     intent = "inform"
     state = {
-        "user": {"text": text, "intent": intent, "entities": entity_name_list,},
-        "prev_action": {"action_name": action_name, "action_text": action_text,},
-        "active_loop": {"name": "active_loop_4"},
-        "slots": {"slot_1": (1.0,)},
+        USER: {TEXT: text, INTENT: intent, ENTITIES: entity_name_list,},
+        PREVIOUS_ACTION: {ACTION_NAME: action_name, ACTION_TEXT: action_text,},
+        ACTIVE_LOOP: {"name": "active_loop_4"},
+        SLOTS: {"slot_1": (1.0,)},
     }
     if action_name is None:
-        del state["prev_action"]["action_name"]
+        del state[PREVIOUS_ACTION][ACTION_NAME]
 
     # Build lookup table with all relevant information - and dummy features for all
     # dense featurizable attributes.
@@ -326,7 +327,7 @@ def test_encode_state__with_lookup__looksup_or_creates_features(action_name: Tex
     # here because `encode_state` won't featurize the entities using the lookup table
     # (only `encode_entities` does that).
     units = 300
-    precomputations = CoreFeaturizationPrecomputations()
+    precomputations = MessageContainerForCoreFeaturization()
     precomputations.add_all(
         [
             Message(
@@ -380,15 +381,15 @@ def test_encode_state__with_lookup__looksup_or_creates_features(action_name: Tex
     # check all the features are encoded and *_text features are encoded by a
     # dense featurizer
     expected_attributes = [SLOTS, ACTIVE_LOOP, ACTION_TEXT]
-    if action_name is not None:  # i.e. we did not removed it from the state
+    if action_name is not None:  # i.e. we did not remove it from the state
         expected_attributes += [ACTION_NAME]
-    if action_name == "action_listen":
+    if action_name == ACTION_LISTEN_NAME:
         expected_attributes += [TEXT, ENTITIES, INTENT]
     assert set(encoded.keys()) == set(expected_attributes)
 
     # Remember, sparse sequence features come first (and `.features` denotes the matrix
-    # not an `Features` object)
-    if action_name == "action_listen":
+    # not a `Features` object)
+    if action_name == ACTION_LISTEN_NAME:
         assert encoded[TEXT][0].features.shape[-1] == units
         assert encoded[TEXT][0].is_sparse()
         assert encoded[ENTITIES][0].features.shape[-1] == 4
@@ -443,7 +444,7 @@ def test_encode_entities__with_entity_roles_and_groups():
     message = Message({TEXT: text, TOKENS_NAMES[TEXT]: tokens, ENTITIES: entities})
 
     # create a lookup table that has seen this message
-    precomputations = CoreFeaturizationPrecomputations()
+    precomputations = MessageContainerForCoreFeaturization()
     precomputations.add(message)
 
     # instantiate matching domain and single state featurizer
@@ -515,7 +516,7 @@ def test_encode_entities__with_bilou_entity_roles_and_groups():
     message = Message({TEXT: text, TOKENS_NAMES[TEXT]: tokens, ENTITIES: entities})
 
     # create a lookup table that has seen this message
-    precomputations = CoreFeaturizationPrecomputations()
+    precomputations = MessageContainerForCoreFeaturization()
     precomputations.add(message)
 
     # encode!
@@ -548,7 +549,7 @@ def test_encode_entities__with_bilou_entity_roles_and_groups():
     message = Message({TEXT: text, TOKENS_NAMES[TEXT]: tokens, ENTITIES: entities})
 
     # create a lookup table that has seen this message
-    precomputations = CoreFeaturizationPrecomputations()
+    precomputations = MessageContainerForCoreFeaturization()
     precomputations.add(message)
 
     # encode!
