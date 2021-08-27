@@ -175,7 +175,7 @@ class MessageContainerForCoreFeaturization:
         for message in messages_with_one_key_attribute:
             self.add(message)
 
-    def extract_features(
+    def collect_features(
         self, sub_state: SubState, attributes: Optional[Iterable[Text]] = None
     ) -> Dict[Text, List[Features]]:
         """Collects features for all attributes in the given substate.

@@ -205,7 +205,7 @@ class SingleStateFeaturizer2:
         if precomputations is not None:
 
             # Collect features for all those attributes
-            attributes_to_features = precomputations.lookup_features(
+            attributes_to_features = precomputations.collect_features(
                 sub_state, attributes=attributes
             )
             # if features for INTENT or ACTION_NAME exist,
