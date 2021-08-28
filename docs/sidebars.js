@@ -132,7 +132,7 @@ module.exports = {
       type: 'category',
       label: 'Change Log',
       collapsed: true,
-      items: ['changelog', 'migration-guide'],
+      items: ['changelog', 'migration-guide', 'actively-maintained-versions'],
     },
   ],
 };
