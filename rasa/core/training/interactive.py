@@ -667,10 +667,7 @@ async def _request_action_from_user(
     await _print_history(conversation_id, endpoint)
 
     choices = [
-        {
-            "name": f'{a["score"]:03.2f} {a["action"]:40}',
-            "value": a["action"],
-        }
+        {"name": f'{a["score"]:03.2f} {a["action"]:40}', "value": a["action"],}
         for a in predictions
     ]
 
@@ -1643,9 +1640,7 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png(
-        request: Request,
-    ) -> HTTPResponse:
+    def visualisation_png(request: Request,) -> HTTPResponse:
         try:
             headers = {"Cache-Control": "no-cache"}
             return response.file(os.path.abspath(image_path), headers=headers)
@@ -1716,7 +1711,7 @@ def calc_true_wrapping_width(text: Text, monospace_wrapping_width: int) -> int:
     Chinese, Japanese and Korean characters are often broader than ascii
     characters:
     abcdefgh (8 chars)
-    我要去北京 (5 chars, roughly same visible width)
+    æˆ‘è¦åŽ»åŒ—äº¬ (5 chars, roughly same visible width)
 
     We need to account for that otherwise the wrapping doesn't work
     appropriately for long strings and the table overflows and creates
