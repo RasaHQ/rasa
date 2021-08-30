@@ -16,10 +16,16 @@ class NLUTrainingDataProvider(GraphComponent):
         self,
         model_storage: ModelStorage,
         resource: Resource,
+        training_data: Optional[TrainingData] = None,
     ) -> None:
         """Creates NLU training data provider."""
         self._model_storage = model_storage
         self._resource = resource
+        self._training_data = training_data
+
+    @classmethod
+    def get_default_config(cls) -> Dict[Text, Any]:
+        return {"language": "en", "persist": False}
 
     @classmethod
     def create(
@@ -46,30 +52,24 @@ class NLUTrainingDataProvider(GraphComponent):
             training_data = load_data(
                 resource_name=str(resource_directory), language=config["language"]
             )
-        return cls(model_storage, resource)
-
-    @classmethod
-    def default_config(cls) -> Dict:
-        return {"language": "en", "persist": False}
+        return cls(model_storage, resource, training_data)
 
     def _persist(self, training_data: TrainingData) -> None:
         """Persists NLU training data to model storage."""
         with self._model_storage.write_to(self._resource) as resource_directory:
             training_data.persist(str(resource_directory), "nlu.yml")
 
-    def provide(self,
-                config: Dict[Text, Any],
-                importer: TrainingDataImporter,
-                ) -> TrainingData:
+    def provide(
+        self, config: Dict[Text, Any], importer: TrainingDataImporter,
+    ) -> TrainingData:
         """Provides nlu training data during training."""
 
-        if config == {}:  # use default config if config is None
-            config = self.default_config()
+        if config == {}:  # use default config if config is empty
+            config = self.get_default_config()
 
-        training_data = importer.get_nlu_data(language=config['language'])
+        training_data = importer.get_nlu_data(language=config["language"])
 
-        if config['persist']:
+        if config["persist"]:
             self._persist(training_data)
 
         return training_data
-
