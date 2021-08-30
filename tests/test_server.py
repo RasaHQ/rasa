@@ -5,7 +5,6 @@ import time
 import urllib.parse
 import uuid
 import sys
-from contextlib import ExitStack
 from http import HTTPStatus
 from multiprocessing import Process, Manager
 from multiprocessing.managers import DictProxy
@@ -443,35 +442,6 @@ async def test_parse_on_invalid_emulation_mode(
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
-async def test_train_stack_success_with_md(
-    rasa_app: SanicASGITestClient,
-    domain_path: Text,
-    stack_config_path: Text,
-    nlu_data_path: Text,
-    tmp_path: Path,
-):
-    payload = dict(
-        domain=Path(domain_path).read_text(),
-        config=Path(stack_config_path).read_text(),
-        stories=Path("data/test_stories/stories_defaultdomain.md").read_text(),
-        nlu=Path(nlu_data_path).read_text(),
-    )
-
-    _, response = await rasa_app.post("/model/train", json=payload)
-    assert response.status == HTTPStatus.OK
-
-    assert response.headers["filename"] is not None
-
-    # save model to temporary file
-    model_path = str(tmp_path / "model.tar.gz")
-    with open(model_path, "wb") as f:
-        f.write(response.body)
-
-    # unpack model and ensure fingerprint is present
-    model_path = unpack_model(model_path)
-    assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
-
-
 async def test_train_nlu_success(
     rasa_app: SanicASGITestClient,
     stack_config_path: Text,
@@ -541,31 +511,34 @@ async def test_train_core_success_with(
 async def test_train_with_retrieval_events_success(
     rasa_app: SanicASGITestClient, stack_config_path: Text, tmp_path: Path
 ):
-    with ExitStack() as stack:
-        domain_file = stack.enter_context(
-            open("data/test_domains/default_retrieval_intents.yml")
-        )
-        config_file = stack.enter_context(open(stack_config_path))
-        core_file = stack.enter_context(
-            open("data/test_stories/stories_retrieval_intents.md")
-        )
-        responses_file = stack.enter_context(open("data/test_responses/default.yml"))
-        nlu_file = stack.enter_context(
-            open("data/test/stories_default_retrieval_intents.yml")
-        )
+    payload = {}
 
-        payload = dict(
-            domain=domain_file.read(),
-            config=config_file.read(),
-            stories=core_file.read(),
-            responses=responses_file.read(),
-            nlu=nlu_file.read(),
-        )
+    for file in [
+        "data/test_domains/default_retrieval_intents.yml",
+        stack_config_path,
+        "data/test_yaml_stories/stories_retrieval_intents.yml",
+        "data/test_responses/default.yml",
+        "data/test/stories_default_retrieval_intents.yml",
+    ]:
+        # Read in as dictionaries to avoid that keys, which are specified in
+        # multiple files (such as 'version'), clash.
+        content = rasa.shared.utils.io.read_yaml_file(file)
+        payload.update(content)
+
+        concatenated_payload_file = tmp_path / "concatenated.yml"
+        rasa.shared.utils.io.write_yaml(payload, concatenated_payload_file)
+
+        payload_as_yaml = concatenated_payload_file.read_text()
 
     # it usually takes a bit longer on windows so we're going to double the timeout
     timeout = 60 * 10 if sys.platform == "win32" else 60 * 5
 
-    _, response = await rasa_app.post("/model/train", json=payload, timeout=timeout)
+    _, response = await rasa_app.post(
+        "/model/train",
+        data=payload_as_yaml,
+        timeout=timeout,
+        headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+    )
     assert response.status == HTTPStatus.OK
     assert_trained_model(response.body, tmp_path)
 
@@ -579,32 +552,6 @@ def assert_trained_model(response_body: bytes, tmp_path: Path) -> None:
     # unpack model and ensure fingerprint is present
     model_path = unpack_model(model_path)
     assert os.path.exists(os.path.join(model_path, "fingerprint.json"))
-
-
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {"config": None, "stories": None, "nlu": None, "domain": None, "force": True},
-        {
-            "config": None,
-            "stories": None,
-            "nlu": None,
-            "domain": None,
-            "force": False,
-            "save_to_default_model_directory": True,
-        },
-        {
-            "config": None,
-            "stories": None,
-            "nlu": None,
-            "domain": None,
-            "save_to_default_model_directory": False,
-        },
-    ],
-)
-def test_deprecation_warnings_json_payload(payload: Dict):
-    with pytest.warns(FutureWarning):
-        rasa.server._validate_json_training_payload(payload)
 
 
 async def test_train_with_yaml(rasa_app: SanicASGITestClient, tmp_path: Path):
@@ -752,27 +699,6 @@ def test_training_payload_from_yaml_save_to_default_model_directory(
     assert payload.get("output") == expected
 
 
-async def test_train_missing_config(rasa_non_trained_app: SanicASGITestClient):
-    payload = dict(domain="domain data", config=None)
-
-    _, response = await rasa_non_trained_app.post("/model/train", json=payload)
-    assert response.status == HTTPStatus.BAD_REQUEST
-
-
-async def test_train_missing_training_data(rasa_app: SanicASGITestClient):
-    payload = dict(domain="domain data", config="config data")
-
-    _, response = await rasa_app.post("/model/train", json=payload)
-    assert response.status == HTTPStatus.BAD_REQUEST
-
-
-async def test_train_internal_error(rasa_non_trained_app: SanicASGITestClient):
-    payload = dict(domain="domain data", config="config data", nlu="nlu data")
-
-    _, response = await rasa_non_trained_app.post("/model/train", json=payload)
-    assert response.status == HTTPStatus.INTERNAL_SERVER_ERROR
-
-
 async def test_evaluate_stories(rasa_app: SanicASGITestClient, stories_path: Text):
     stories = rasa.shared.utils.io.read_file(stories_path)
 
@@ -811,34 +737,6 @@ async def test_evaluate_stories_not_ready_agent(
     _, response = await rasa_non_trained_app.post("/model/test/stories", data=stories)
 
     assert response.status == HTTPStatus.CONFLICT
-
-
-async def test_evaluate_stories_end_to_end_md(
-    rasa_app: SanicASGITestClient, end_to_end_story_md_path: Text
-):
-    stories = rasa.shared.utils.io.read_file(end_to_end_story_md_path)
-
-    _, response = await rasa_app.post("/model/test/stories?e2e=true", data=stories,)
-
-    assert response.status == HTTPStatus.OK
-    js = response.json()
-    assert set(js.keys()) == {
-        "report",
-        "precision",
-        "f1",
-        "accuracy",
-        "actions",
-        "in_training_data_fraction",
-        "is_end_to_end_evaluation",
-    }
-    assert js["is_end_to_end_evaluation"]
-    assert js["actions"] != []
-    assert set(js["actions"][0].keys()) == {
-        "action",
-        "predicted",
-        "confidence",
-        "policy",
-    }
 
 
 async def test_evaluate_stories_end_to_end(
@@ -880,23 +778,6 @@ async def test_evaluate_intent(rasa_app: SanicASGITestClient, nlu_data_path: Tex
         "/model/test/intents",
         data=nlu_data,
         headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
-    )
-
-    assert response.status == HTTPStatus.OK
-    assert set(response.json().keys()) == {
-        "intent_evaluation",
-        "entity_evaluation",
-        "response_selection_evaluation",
-    }
-
-
-async def test_evaluate_intent_json(rasa_app: SanicASGITestClient):
-    nlu_data = rasa.shared.utils.io.read_file("data/test/demo-rasa-small.json")
-
-    _, response = await rasa_app.post(
-        "/model/test/intents",
-        json=nlu_data,
-        headers={"Content-type": rasa.server.JSON_CONTENT_TYPE},
     )
 
     assert response.status == HTTPStatus.OK
@@ -1051,22 +932,6 @@ async def test_cross_validation(
         assert all(
             key in details for key in ["precision", "f1_score", "report", "errors"]
         )
-
-
-async def test_cross_validation_with_md(
-    rasa_non_trained_app: SanicASGITestClient, nlu_data_path: Text
-):
-    payload = """
-    ## intent: greet
-    - Hi
-    - Hello
-        """
-
-    _, response = await rasa_non_trained_app.post(
-        "/model/test/intents", data=payload, params={"cross_validation_folds": 3},
-    )
-
-    assert response.status == HTTPStatus.BAD_REQUEST
 
 
 async def test_cross_validation_with_callback_success(

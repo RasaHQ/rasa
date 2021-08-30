@@ -34,9 +34,6 @@ def convert_training_data(
     if output_format == "json":
         td = rasa.shared.nlu.training_data.loading.load_data(data_file, language)
         output = td.nlu_as_json(indent=2)
-    elif output_format == "md":
-        td = rasa.shared.nlu.training_data.loading.load_data(data_file, language)
-        output = td.nlu_as_markdown()
     else:
         print_error(
             "Did not recognize output format. Supported output formats: 'json' and "

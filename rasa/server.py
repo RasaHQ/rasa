@@ -50,9 +50,7 @@ from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     DOCS_BASE_URL,
     DEFAULT_SENDER_ID,
-    DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
-    DEFAULT_CONVERSATION_TEST_PATH,
     TEST_STORIES_FILE_PREFIX,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
@@ -1062,10 +1060,7 @@ def create_app(
             "train your model.",
         )
 
-        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-            training_payload = _training_payload_from_yaml(request, temporary_directory)
-        else:
-            training_payload = _training_payload_from_json(request, temporary_directory)
+        training_payload = _training_payload_from_yaml(request, temporary_directory)
 
         try:
             with app.active_training_processes.get_lock():
@@ -1123,13 +1118,13 @@ def create_app(
             "evaluate your model.",
         )
 
-        test_data = _test_data_file_from_payload(request, temporary_directory, ".md")
+        test_data = _test_data_file_from_payload(request, temporary_directory)
 
-        use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
+        e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
             evaluation = await test(
-                test_data, app.agent, e2e=use_e2e, disable_plotting=True
+                test_data, app.agent, e2e=e2e, disable_plotting=True
             )
             return response.json(evaluation)
         except Exception as e:
@@ -1455,75 +1450,14 @@ def _get_output_channel(
     )
 
 
-def _test_data_file_from_payload(
-    request: Request, temporary_directory: Path, suffix: Text = ".tmp"
-) -> Text:
-    if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-        return str(
-            _training_payload_from_yaml(
-                request,
-                temporary_directory,
-                # test stories have to prefixed with `test_`
-                file_name=f"{TEST_STORIES_FILE_PREFIX}data.yml",
-            )["training_files"]
-        )
-    else:
-        # MD test stories have to be in the `tests` directory
-        test_dir = temporary_directory / DEFAULT_CONVERSATION_TEST_PATH
-        test_dir.mkdir()
-        test_file = test_dir / f"tests{suffix}"
-        test_file.write_bytes(request.body)
-        return str(test_file)
-
-
-def _training_payload_from_json(request: Request, temp_dir: Path) -> Dict[Text, Any]:
-    logger.debug(
-        "Extracting JSON payload with Markdown training data from request body."
-    )
-
-    request_payload = request.json
-    _validate_json_training_payload(request_payload)
-
-    config_path = os.path.join(temp_dir, "config.yml")
-
-    rasa.shared.utils.io.write_text_file(request_payload["config"], config_path)
-
-    if "nlu" in request_payload:
-        nlu_path = os.path.join(temp_dir, "nlu.md")
-        rasa.shared.utils.io.write_text_file(request_payload["nlu"], nlu_path)
-
-    if "stories" in request_payload:
-        stories_path = os.path.join(temp_dir, "stories.md")
-        rasa.shared.utils.io.write_text_file(request_payload["stories"], stories_path)
-
-    if "responses" in request_payload:
-        responses_path = os.path.join(temp_dir, "responses.md")
-        rasa.shared.utils.io.write_text_file(
-            request_payload["responses"], responses_path
-        )
-
-    domain_path = DEFAULT_DOMAIN_PATH
-    if "domain" in request_payload:
-        domain_path = os.path.join(temp_dir, "domain.yml")
-        rasa.shared.utils.io.write_text_file(request_payload["domain"], domain_path)
-
-    model_output_directory = str(temp_dir)
-    if request_payload.get(
-        "save_to_default_model_directory",
-        rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True),
-    ):
-        model_output_directory = DEFAULT_MODELS_PATH
-
-    return dict(
-        domain=domain_path,
-        config=config_path,
-        training_files=str(temp_dir),
-        output=model_output_directory,
-        force_training=request_payload.get(
-            "force", rasa.utils.endpoints.bool_arg(request, "force_training", False)
-        ),
-        core_additional_arguments=_extract_core_additional_arguments(request),
-        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
+def _test_data_file_from_payload(request: Request, temporary_directory: Path) -> Text:
+    return str(
+        _training_payload_from_yaml(
+            request,
+            temporary_directory,
+            # test stories have to prefixed with `test_`
+            file_name=f"{TEST_STORIES_FILE_PREFIX}data.yml",
+        )["training_files"]
     )
 
 
@@ -1552,14 +1486,6 @@ def _validate_json_training_payload(rjs: Dict) -> None:
             "To train a Rasa model with story training data, you also need to "
             "specify the `domain`.",
             {"parameter": "domain", "in": "body"},
-        )
-
-    if "force" in rjs or "save_to_default_model_directory" in rjs:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "Specifying 'force' and 'save_to_default_model_directory' as part of the "
-            "JSON payload is deprecated. Please use the header arguments "
-            "'force_training' and 'save_to_default_model_directory'.",
-            docs=_docs("/api/http-api"),
         )
 
 
