@@ -24,7 +24,6 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
