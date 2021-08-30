@@ -575,6 +575,8 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
 
 class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
+    """Test suite for AugmentedMemoizationPolicy."""
+
     @staticmethod
     def _policy_class_to_test() -> Type[PolicyGraphComponent]:
         return AugmentedMemoizationPolicy
