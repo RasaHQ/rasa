@@ -367,6 +367,13 @@ class CategoricalSlot(Slot):
     def _as_feature(self) -> List[float]:
         r = [0.0] * self.feature_dimensionality()
 
+        # Return the zero-filled array if the slot is unset (i.e. set to None).
+        # Conceptually, this is similar to the case when the slot is set to an invalid
+        # value, or more generally to the case when the featurisation process fails,
+        # hence the returned features here are the same as for the mentioned cases.
+        if self.value is None:
+            return r
+
         try:
             for i, v in enumerate(self.values):
                 if v == str(self.value).lower():
