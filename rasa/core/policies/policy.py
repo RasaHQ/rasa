@@ -173,14 +173,10 @@ class PolicyGraphComponent(GraphComponent):
             state_featurizer_config = state_featurizer_configs[0]
 
             featurizer_config["state_featurizer"] = state_featurizer_func(
-                **rasa.shared.utils.common.without_keys(
-                    state_featurizer_config, {"name"}
-                )
+                **state_featurizer_config
             )
 
-        featurizer = featurizer_func(
-            **rasa.shared.utils.common.without_keys(featurizer_config, {"name"})
-        )
+        featurizer = featurizer_func(**featurizer_config)
         if (
             isinstance(featurizer, MaxHistoryTrackerFeaturizer)
             and POLICY_MAX_HISTORY in self.config
