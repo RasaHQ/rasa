@@ -155,7 +155,7 @@ Calculates a wrapping width that also works for CJK characters.
 Chinese, Japanese and Korean characters are often broader than ascii
 characters:
 abcdefgh (8 chars)
-我要去北京 (5 chars, roughly same visible width)
+æˆ‘è¦åŽ»åŒ—äº¬ (5 chars, roughly same visible width)
 
 We need to account for that otherwise the wrapping doesn&#x27;t work
 appropriately for long strings and the table overflows and creates

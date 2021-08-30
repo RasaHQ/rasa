@@ -18,6 +18,14 @@ set_run_action_arguments(parser: argparse.ArgumentParser) -> None
 
 Set arguments for running Rasa SDK.
 
+#### add\_interface\_argument
+
+```python
+add_interface_argument(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]) -> None
+```
+
+Binds the RASA process to a network interface.
+
 #### add\_port\_argument
 
 ```python
