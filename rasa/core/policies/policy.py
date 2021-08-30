@@ -399,33 +399,6 @@ class PolicyGraphComponent(GraphComponent):
             action_metadata=action_metadata,
         )
 
-    def _metadata(self) -> Optional[Dict[Text, Any]]:
-        """Returns this policy's attributes that should be persisted.
-
-        Policies using the default `persist()` and `load()` implementations must
-        implement the `_metadata()` method."
-
-        Returns:
-            The policy metadata.
-        """
-        pass
-
-    @classmethod
-    def _metadata_filename(cls) -> Text:
-        """Returns the filename of the persisted policy metadata.
-
-        Policies using the default `persist()` and `load()` implementations must
-        implement the `_metadata_filename()` method.
-
-        Returns:
-            The filename of the persisted policy metadata.
-        """
-        pass
-
-    def persist(self) -> None:
-        """Persists the policy to storage."""
-        pass
-
     @classmethod
     def load(
         cls,
