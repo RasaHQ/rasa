@@ -179,3 +179,20 @@ def test_class_from_module_path_fails():
     module_path = "rasa.shared.core.domain.logger"
     with pytest.raises(RasaException):
         rasa.shared.utils.common.class_from_module_path(module_path)
+
+
+@pytest.mark.parametrize(
+    "dictionary,excluded_keys,expected_result",
+    [
+        ({"a": 1, "b": 2}, {"b"}, {"a": 1}),
+        ({"a": 1, "b": 2}, {"a", "b"}, {}),
+        ({"a": 1, "b": 2}, {}, {"a": 1, "b": 2}),
+        ({"a": 1, "b": 2}, {"c"}, {"a": 1, "b": 2}),
+        ({"a": 1, "b": 2, "c": 3}, {"a", "c"}, {"b": 2}),
+    ],
+)
+def test_without_keys(dictionary, excluded_keys, expected_result) -> None:
+    assert (
+        rasa.shared.utils.common.without_keys(dictionary, excluded_keys)
+        == expected_result
+    )

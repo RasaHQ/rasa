@@ -3,7 +3,7 @@ import functools
 import importlib
 import inspect
 import logging
-from typing import Text, Dict, Optional, Any, List, Callable, Collection, Type
+from typing import Text, Dict, Optional, Any, List, Callable, Collection, Type, Set
 
 from rasa.shared.exceptions import RasaException
 
@@ -68,6 +68,11 @@ def module_path_from_instance(inst: Any) -> Text:
 def sort_list_of_dicts_by_first_key(dicts: List[Dict]) -> List[Dict]:
     """Sorts a list of dictionaries by their first key."""
     return sorted(dicts, key=lambda d: list(d.keys())[0])
+
+
+def without_keys(original: Dict[Any, Any], excluded_keys: Set[Any]) -> Dict[Any, Any]:
+    """Returns thee original dictionary without excludedd keys."""
+    return {k: original[k] for k in original if k not in excluded_keys}
 
 
 def lazy_property(function: Callable) -> Any:
