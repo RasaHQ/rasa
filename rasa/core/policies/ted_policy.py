@@ -344,11 +344,6 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
         }
 
-    def _standard_featurizer(self) -> TrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(
-            SingleStateFeaturizer(), max_history=self.config[POLICY_MAX_HISTORY]
-        )
-
     def __init__(
         self,
         config: Dict[Text, Any],
