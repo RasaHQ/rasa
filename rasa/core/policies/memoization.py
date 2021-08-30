@@ -286,7 +286,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         try:
             with model_storage.read_from(resource) as path:
                 metadata_file = Path(path) / cls._metadata_filename()
-                metadata = json.loads(rasa.shared.utils.io.read_file(metadata_file))
+                metadata = rasa.shared.utils.io.read_json_file(metadata_file)
                 lookup = metadata["lookup"]
 
                 if (Path(path) / FEATURIZER_FILE).is_file():
