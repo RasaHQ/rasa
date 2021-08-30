@@ -1,6 +1,4 @@
 import pytest
-from tests.core.test_policies import PolicyTestCollection
-from typing import Optional
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
