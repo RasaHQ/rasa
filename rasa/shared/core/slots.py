@@ -343,9 +343,20 @@ class CategoricalSlot(Slot):
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
-        self.values = [str(v).lower() for v in values] if values else []
+        if values and None in values:
+            rasa.shared.utils.io.raise_warning(
+                f"Categorical slot '{self.name}' has `null` listed as a possible value,"
+                f" which translates to `None` in Python. This value is reserved for"
+                f" when a slot is not set and should not be used as a normal value."
+                f" Rasa will proceed, not treating `null` as a possible normal value"
+                f" for the '{self.name}' slot."
+            )
+        self.values = (
+            [str(v).lower() for v in values if v is not None] if values else []
+        )
 
     def add_default_value(self) -> None:
+        """Adds the special default value to the list of possible values."""
         values = set(self.values)
         if rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE not in values:
             self.values.append(
@@ -368,9 +379,8 @@ class CategoricalSlot(Slot):
         r = [0.0] * self.feature_dimensionality()
 
         # Return the zero-filled array if the slot is unset (i.e. set to None).
-        # Conceptually, this is similar to the case when the slot is set to an invalid
-        # value, or more generally to the case when the featurisation process fails,
-        # hence the returned features here are the same as for the mentioned cases.
+        # Conceptually, this is similar to the case when the featurisation process
+        # fails, hence the returned features here are the same as for that case.
         if self.value is None:
             return r
 

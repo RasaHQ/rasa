@@ -1171,8 +1171,8 @@ class Domain:
                     slots[slot_name] = rasa.shared.core.constants.SHOULD_NOT_BE_SET
                 elif any(slot.as_feature()):
                     # Only include slot in featurised sub-state if the slot is not
-                    # unset, i.e. is set to some actual valid value, has been
-                    # successfully featurized, and so has at least one non-zero feature.
+                    # unset, i.e. is set to some actual value and has been successfully
+                    # featurized, and hence has at least one non-zero feature.
                     slots[slot_name] = tuple(slot.as_feature())
         return slots
 

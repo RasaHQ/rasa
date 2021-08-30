@@ -239,7 +239,7 @@ class TestCategoricalSlot(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
         return CategoricalSlot(
             "test",
-            values=[1, "two", "小于", {"three": 3}, None],
+            values=[1, "two", "小于", {"three": 3}],
             influence_conversation=influence_conversation,
         )
 
@@ -249,15 +249,12 @@ class TestCategoricalSlot(SlotTestCollection):
 
     @pytest.fixture(
         params=[
-            (None, [0, 0, 0, 0, 1]),
-            (1, [1, 0, 0, 0, 0]),
-            ("two", [0, 1, 0, 0, 0]),
-            ("小于", [0, 0, 1, 0, 0]),
-            ({"three": 3}, [0, 0, 0, 1, 0]),
-            (
-                rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE,
-                [0, 0, 0, 0, 0],
-            ),
+            (None, [0, 0, 0, 0]),
+            (1, [1, 0, 0, 0]),
+            ("two", [0, 1, 0, 0]),
+            ("小于", [0, 0, 1, 0]),
+            ({"three": 3}, [0, 0, 0, 1]),
+            (rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE, [0, 0, 0, 0],),
         ]
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
@@ -268,7 +265,7 @@ class TestCategoricalSlotDefaultValue(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
         slot = CategoricalSlot(
             "test",
-            values=[1, "two", "小于", {"three": 3}, None],
+            values=[1, "two", "小于", {"three": 3}],
             influence_conversation=influence_conversation,
         )
         slot.add_default_value()
@@ -280,16 +277,16 @@ class TestCategoricalSlotDefaultValue(SlotTestCollection):
 
     @pytest.fixture(
         params=[
-            (None, [0, 0, 0, 0, 1, 0]),
-            (1, [1, 0, 0, 0, 0, 0]),
-            ("two", [0, 1, 0, 0, 0, 0]),
-            ("小于", [0, 0, 1, 0, 0, 0]),
-            ({"three": 3}, [0, 0, 0, 1, 0, 0]),
+            (None, [0, 0, 0, 0, 0]),
+            (1, [1, 0, 0, 0, 0]),
+            ("two", [0, 1, 0, 0, 0]),
+            ("小于", [0, 0, 1, 0, 0]),
+            ({"three": 3}, [0, 0, 0, 1, 0]),
             (
                 rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE,
-                [0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 1],
             ),
-            ("unseen value", [0, 0, 0, 0, 0, 1]),
+            ("unseen value", [0, 0, 0, 0, 1]),
         ]
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
