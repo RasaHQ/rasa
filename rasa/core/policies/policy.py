@@ -128,7 +128,7 @@ class PolicyGraphComponent(GraphComponent):
         """Constructs a new Policy object."""
         self.config = config
         if featurizer is None:
-            featurizer = self._create_featurizer(config)
+            featurizer = self._create_featurizer()
         self.__featurizer = featurizer
 
         self.priority = config.get(POLICY_PRIORITY, DEFAULT_POLICY_PRIORITY)
@@ -151,10 +151,8 @@ class PolicyGraphComponent(GraphComponent):
         """Creates a new untrained policy (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
-    def _create_featurizer(self, policy_config: Dict[Text, Any]) -> TrackerFeaturizer:
-        policy_config = copy.deepcopy(policy_config)
-
-        featurizer_configs = policy_config.get("featurizer")
+    def _create_featurizer(self) -> TrackerFeaturizer:
+        featurizer_configs = self.config.get("featurizer")
 
         if not featurizer_configs:
             return self._standard_featurizer()
@@ -166,7 +164,7 @@ class PolicyGraphComponent(GraphComponent):
         )
         featurizer_config = featurizer_configs[0]
 
-        state_featurizer_configs = featurizer_config.pop("state_featurizer", None)
+        state_featurizer_configs = featurizer_config.get("state_featurizer", None)
         if state_featurizer_configs:
             state_featurizer_func = _get_featurizer_from_config(
                 state_featurizer_configs,
@@ -182,10 +180,10 @@ class PolicyGraphComponent(GraphComponent):
         featurizer = featurizer_func(**featurizer_config)
         if (
             isinstance(featurizer, MaxHistoryTrackerFeaturizer)
-            and POLICY_MAX_HISTORY in policy_config
+            and POLICY_MAX_HISTORY in self.config
             and POLICY_MAX_HISTORY not in featurizer_config
         ):
-            featurizer.max_history = policy_config[POLICY_MAX_HISTORY]
+            featurizer.max_history = self.config[POLICY_MAX_HISTORY]
         return featurizer
 
     def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
@@ -653,7 +651,7 @@ def _get_featurizer_from_config(
         )
 
     featurizer_config = config[0]
-    featurizer_name = featurizer_config.pop("name")
+    featurizer_name = featurizer_config["name"]
     featurizer_func = rasa.shared.utils.common.class_from_module_path(
         featurizer_name, lookup_path=lookup_path
     )
