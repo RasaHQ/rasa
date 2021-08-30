@@ -128,7 +128,7 @@ class PolicyGraphComponent(GraphComponent):
         """Constructs a new Policy object."""
         self.config = config
         if featurizer is None:
-            featurizer = self._create_featurizer(config)
+            featurizer = self._create_featurizer()
         self.__featurizer = featurizer
 
         self.priority = config.get(POLICY_PRIORITY, DEFAULT_POLICY_PRIORITY)
