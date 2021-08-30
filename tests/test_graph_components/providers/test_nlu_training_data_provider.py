@@ -12,33 +12,25 @@ def test_nlu_training_data_provider_provides_and_persists_data(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     config_path: Text,
-    training_data_path: Text,
-    training_data: TrainingData,
+    nlu_data_path: Text,
+
 ):
     resource = Resource("xy")
-    provider_1 = NLUTrainingDataProvider.create(
-        NLUTrainingDataProvider.get_default_config(),
-        default_model_storage,
-        resource,
-        default_execution_context,
-    )
-    assert isinstance(provider_1, NLUTrainingDataProvider)
+    importer = TrainingDataImporter.load_from_config(config_path, nlu_data_path)
 
-    # importer = TrainingDataImporter.load_from_config(config_path, training_data_path)
-    # training_data_from_provider = provider_1.provide_train(importer)
-    #
-    # assert isinstance(training_data, TrainingData)
-    # assert training_data.fingerprint() == training_data_from_provider.fingerprint()
-    #
-    # with default_model_storage.read_from(resource) as d:
-    #     match = list(d.glob("**/nlu.yml"))
-    #     assert len(match) == 1
-    #     assert match[0].is_file()
-    #
-    # provider_2 = NLUTrainingDataProvider.load(
-    #     {}, default_model_storage, resource, default_execution_context
-    # )
-    # inference_training_data = provider_2.provide_inference()
-    #
-    # assert isinstance(inference_training_data, TrainingData)
-    # assert training_data.fingerprint() == inference_training_data.fingerprint()
+    config = NLUTrainingDataProvider.default_config()
+    assert config['language'] == 'en'
+    assert config['persist'] is False
+
+    provider_1 = NLUTrainingDataProvider(default_model_storage, resource)
+    data_from_provider_1 = provider_1.provide({}, importer)
+
+    assert isinstance(provider_1, NLUTrainingDataProvider)
+    assert data_from_provider_1.fingerprint() == importer.get_nlu_data(config['language']).fingerprint()
+
+    # provider_2 = NLUTrainingDataProvider(default_model_storage, resource)
+    # data_from_provider_2 = provider_2.provide({'language': 'en', 'persist': True}, importer)
+
+
+
+

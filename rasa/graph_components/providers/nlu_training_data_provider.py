@@ -16,12 +16,10 @@ class NLUTrainingDataProvider(GraphComponent):
         self,
         model_storage: ModelStorage,
         resource: Resource,
-        training_data: Optional[TrainingData] = None,
     ) -> None:
         """Creates NLU training data provider."""
         self._model_storage = model_storage
         self._resource = resource
-        self._training_data = training_data
 
     @classmethod
     def create(
@@ -45,26 +43,33 @@ class NLUTrainingDataProvider(GraphComponent):
     ) -> NLUTrainingDataProvider:
         """Creates provider using a persisted version of itself."""
         with model_storage.read_from(resource) as resource_directory:
-            training_data = load_data(resource_name=str(resource_directory), language=config['language'])
-        return cls(model_storage, resource, training_data)
+            training_data = load_data(
+                resource_name=str(resource_directory), language=config["language"]
+            )
+        return cls(model_storage, resource)
+
+    @classmethod
+    def default_config(cls) -> Dict:
+        return {"language": "en", "persist": False}
 
     def _persist(self, training_data: TrainingData) -> None:
         """Persists NLU training data to model storage."""
         with self._model_storage.write_to(self._resource) as resource_directory:
             training_data.persist(str(resource_directory), "nlu.yml")
 
-    def provide_at_training(
-        self,
-        importer: TrainingDataImporter,
-        language: Optional[Text],
-        persist: Optional[bool],
-    ) -> TrainingData:
+    def provide(self,
+                config: Dict[Text, Any],
+                importer: TrainingDataImporter,
+                ) -> TrainingData:
         """Provides nlu training data during training."""
-        training_data = importer.get_nlu_data(language=language)
-        if persist:
+
+        if config == {}:  # use default config if config is None
+            config = self.default_config()
+
+        training_data = importer.get_nlu_data(language=config['language'])
+
+        if config['persist']:
             self._persist(training_data)
+
         return training_data
 
-    def provide_at_inference(self) -> Optional[TrainingData]:
-        """Provides the nlu training data during inference."""
-        return self._training_data
