@@ -381,7 +381,9 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         logger.debug("Launch DeLorean...")
 
         # Truncate the tracker based on `max_history`
-        mcfly_tracker = _trim_tracker_by_max_history(tracker, self.max_history)
+        mcfly_tracker = _trim_tracker_by_max_history(
+            tracker, self.config[POLICY_MAX_HISTORY]
+        )
         mcfly_tracker = self._back_to_the_future(tracker)
         while mcfly_tracker is not None:
             states = self._prediction_states(mcfly_tracker, domain,)
