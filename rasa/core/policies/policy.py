@@ -1,5 +1,6 @@
 from __future__ import annotations
 import abc
+import copy
 import logging
 from enum import Enum
 from pathlib import Path
@@ -150,8 +151,8 @@ class PolicyGraphComponent(GraphComponent):
         """Creates a new untrained policy (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
-    def _create_featurizer(self, policy_config: Dict[Text, Any]) -> TrackerFeaturizer:
-        policy_config = copy.deepcopy(policy_config)
+    def _create_featurizer(self) -> TrackerFeaturizer:
+        policy_config = copy.deepcopy(self.config)
 
         featurizer_configs = policy_config.get("featurizer")
 
