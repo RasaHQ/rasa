@@ -16,21 +16,37 @@ def test_nlu_training_data_provider_provides_and_persists_data(
     config_path: Text,
     nlu_data_path: Text,
 ):
+    # create a resource and an importer
     resource = Resource("xy")
-    importer = TrainingDataImporter.load_from_config(config_path, nlu_data_path)
-
-    config = NLUTrainingDataProvider.get_default_config()
-    assert config["language"] == "en"
-    assert config["persist"] is False
-
-    provider_1 = NLUTrainingDataProvider(default_model_storage, resource)
-    data_from_provider_1 = provider_1.provide({}, importer)
-
-    assert isinstance(provider_1, NLUTrainingDataProvider)
-    assert (
-        data_from_provider_1.fingerprint()
-        == importer.get_nlu_data(config["language"]).fingerprint()
+    importer = TrainingDataImporter.load_from_config(
+        config_path=config_path, training_data_paths=[nlu_data_path]
     )
 
-    # provider_2 = NLUTrainingDataProvider(get_default_model_storage, resource)
-    # data_from_provider_2 = provider_2.provide({'language': 'en', 'persist': True}, importer)
+    # check the default configuration is as expected
+    config_1 = NLUTrainingDataProvider.get_default_config()
+    assert config_1["language"] == "en"
+    assert config_1["persist"] is False
+
+    # create a provider without training data
+    provider_1 = NLUTrainingDataProvider(default_model_storage, resource)
+    assert isinstance(provider_1, NLUTrainingDataProvider)
+
+    # check the data provided is as expected
+    data_0 = provider_1.provide({}, importer)
+    data = importer.get_nlu_data(config_1["language"])
+    assert data_0.fingerprint() == data.fingerprint()
+
+    # check persistence has the correct behaviour
+    # new config with persist == true
+    config_2 = {"language": "en", "persist": True}
+
+    # get data and persist it using config
+    data_1 = provider_1.provide(config_2, importer)
+
+    # load the provider
+    provider_2 = NLUTrainingDataProvider.load(
+        config_2, default_model_storage, resource, default_execution_context
+    )
+    data_2 = provider_2.provide(config_1)
+
+    # assert data_1.fingerprint() == data_2.fingerprint()
