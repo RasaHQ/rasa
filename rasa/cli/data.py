@@ -251,6 +251,7 @@ def _validate_domain(validator: "Validator") -> bool:
     return (
         validator.verify_domain_validity()
         and validator.verify_actions_in_stories_rules()
+        and validator.verify_forms_in_stories_rules()
         and validator.verify_form_slots()
     )
 

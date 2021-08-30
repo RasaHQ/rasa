@@ -6,11 +6,12 @@ import rasa.core.training.story_conflict
 import rasa.shared.nlu.constants
 from rasa.shared.constants import (
     DOCS_URL_DOMAINS,
+    DOCS_URL_FORMS,
     UTTER_PREFIX,
     DOCS_URL_ACTIONS,
 )
 from rasa.shared.core.domain import Domain
-from rasa.shared.core.events import ActionExecuted
+from rasa.shared.core.events import ActionExecuted, ActiveLoop
 from rasa.shared.core.events import UserUttered
 from rasa.shared.core.generator import TrainingDataGenerator
 from rasa.shared.core.training_data.structures import StoryGraph
@@ -196,6 +197,34 @@ class Validator:
                 everything_is_alright = ignore_warnings and everything_is_alright
 
         return everything_is_alright
+
+    def verify_forms_in_stories_rules(self) -> bool:
+        """Verifies that forms referenced in active_loop directives are present in the domain"""
+        all_forms_exist = True
+        visited_loops = set()
+
+        for story in self.story_graph.story_steps:
+            for event in story.events:
+                if not isinstance(event, ActiveLoop):
+                    continue
+
+                if event.name in visited_loops:
+                    # We've seen this loop before, don't alert on it twice
+                    continue
+
+                # TODO: Only fire once for each form
+                if event.name not in self.domain.form_names:
+                    rasa.shared.utils.io.raise_warning(
+                        f"The form '{event.name}' is used in the "
+                        f"'{story.block_name}' block, but it "
+                        f"is not listed in the domain file. You should add it to your "
+                        f"domain file!",
+                        docs=DOCS_URL_FORMS,
+                    )
+                    all_forms_exist = False
+                visited_loops.add(event.name)
+
+        return all_forms_exist
 
     def verify_actions_in_stories_rules(self) -> bool:
         """Verifies that actions used in stories and rules are present in the domain."""
