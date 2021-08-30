@@ -1700,7 +1700,7 @@ def calc_true_wrapping_width(text: Text, monospace_wrapping_width: int) -> int:
     Chinese, Japanese and Korean characters are often broader than ascii
     characters:
     abcdefgh (8 chars)
-    我要去北京 (5 chars, roughly same visible width)
+    æˆ‘è¦åŽ»åŒ—äº¬ (5 chars, roughly same visible width)
 
     We need to account for that otherwise the wrapping doesn't work
     appropriately for long strings and the table overflows and creates
