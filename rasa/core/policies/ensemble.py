@@ -40,12 +40,8 @@ NOTE: differences to previous version
    -->  can be replaced by an check that determines whether the policy is
         some kind of memoization policy *inside the tests* (via its name...)
 NOTE/FIXME: questions
--  Where are the events from the (winning) predictions applied? The ensemble only
-   seems to add `DefinePrevUserUtteredFeaturization` after *ever* predict step.
-- An "end2end prediction" is supposed to denote a prediction made based on text...
-  but we could use text + intent (predicted from NLU pipeline) and in that case the
-  name "is_end_to_end_prediction" and the logic of adding the
-  `DefinePrevUserUtteredFeaturization` events is confusing
+-  Where are the events from the (winning) predictions applied? We only add things to
+   the final `PolicyPrediction` here.
 """
 
 from abc import abstractmethod
