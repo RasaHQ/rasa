@@ -15,7 +15,7 @@ def set_convert_arguments(parser: argparse.ArgumentParser, data_type: Text) -> N
         "-f",
         "--format",
         default="yaml",
-        choices=["json", "md", "yaml"],
+        choices=["json", "yaml"],
         help="Output format the training data should be converted into. "
         "Note: currently training data can be converted to 'yaml' format "
         "only from 'md' format",
