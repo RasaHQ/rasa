@@ -239,22 +239,26 @@ class TestCategoricalSlot(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
         return CategoricalSlot(
             "test",
-            values=[1, "two", "小于", {"three": 3}],
+            values=[1, "two", "小于", {"three": 3}, "nOnE", "None"],
             influence_conversation=influence_conversation,
         )
 
-    @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴"])
+    # None is a special value reserved for unset slots.
+    @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴", None])
     def invalid_value(self, request: SubRequest) -> Any:
         return request.param
 
     @pytest.fixture(
         params=[
-            (None, [0, 0, 0, 0]),
-            (1, [1, 0, 0, 0]),
-            ("two", [0, 1, 0, 0]),
-            ("小于", [0, 0, 1, 0]),
-            ({"three": 3}, [0, 0, 0, 1]),
-            (rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE, [0, 0, 0, 0],),
+            (None, [0, 0, 0, 0, 0, 0]),  # slot is unset
+            (1, [1, 0, 0, 0, 0, 0]),
+            ("two", [0, 1, 0, 0, 0, 0]),
+            ("小于", [0, 0, 1, 0, 0, 0]),
+            ({"three": 3}, [0, 0, 0, 1, 0, 0]),
+            (
+                rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE,
+                [0, 0, 0, 0, 0, 0],
+            ),
         ]
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
@@ -265,28 +269,29 @@ class TestCategoricalSlotDefaultValue(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
         slot = CategoricalSlot(
             "test",
-            values=[1, "two", "小于", {"three": 3}],
+            values=[1, "two", "小于", {"three": 3}, "nOnE", "None"],
             influence_conversation=influence_conversation,
         )
         slot.add_default_value()
         return slot
 
-    @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴"])
+    # None is a special value reserved for unset slots.
+    @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴", None])
     def invalid_value(self, request: SubRequest) -> Any:
         return request.param
 
     @pytest.fixture(
         params=[
-            (None, [0, 0, 0, 0, 0]),
-            (1, [1, 0, 0, 0, 0]),
-            ("two", [0, 1, 0, 0, 0]),
-            ("小于", [0, 0, 1, 0, 0]),
-            ({"three": 3}, [0, 0, 0, 1, 0]),
+            (None, [0, 0, 0, 0, 0, 0, 0]),  # slot is unset
+            (1, [1, 0, 0, 0, 0, 0, 0]),
+            ("two", [0, 1, 0, 0, 0, 0, 0]),
+            ("小于", [0, 0, 1, 0, 0, 0, 0]),
+            ({"three": 3}, [0, 0, 0, 1, 0, 0, 0]),
             (
                 rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE,
-                [0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 1],
             ),
-            ("unseen value", [0, 0, 0, 0, 1]),
+            ("unseen value", [0, 0, 0, 0, 0, 0, 1]),
         ]
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
@@ -320,3 +325,17 @@ class TestAnySlot(SlotTestCollection):
 def test_raises_on_invalid_slot_type():
     with pytest.raises(InvalidSlotTypeException):
         Slot.resolve_by_type("foobar")
+
+
+def test_categorical_slot_ignores_none_value():
+    """Checks that None can't be added as a possible value for categorical slots."""
+    with pytest.warns(UserWarning) as records:
+        slot = CategoricalSlot(name="branch", values=["Berlin", None, "San Francisco"])
+
+    assert not ("none" in slot.values)
+
+    message_text = (
+        "Rasa will proceed, not treating `null` as a possible normal value"
+        " for the 'branch' slot."
+    )
+    assert any(message_text in record.message.args[0] for record in records)

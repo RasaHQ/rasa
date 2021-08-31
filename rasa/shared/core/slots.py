@@ -349,7 +349,8 @@ class CategoricalSlot(Slot):
                 f" which translates to `None` in Python. This value is reserved for"
                 f" when a slot is not set and should not be used as a normal value."
                 f" Rasa will proceed, not treating `null` as a possible normal value"
-                f" for the '{self.name}' slot."
+                f" for the '{self.name}' slot.",
+                category=UserWarning,
             )
         self.values = (
             [str(v).lower() for v in values if v is not None] if values else []
