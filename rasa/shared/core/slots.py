@@ -390,25 +390,24 @@ class CategoricalSlot(Slot):
                     r[i] = 1.0
                     break
             else:
-                if self.value is not None:
-                    if (
+                if (
+                    rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
+                    in self.values
+                ):
+                    i = self.values.index(
                         rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
-                        in self.values
-                    ):
-                        i = self.values.index(
-                            rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE
-                        )
-                        r[i] = 1.0
-                    else:
-                        rasa.shared.utils.io.raise_warning(
-                            f"Categorical slot '{self.name}' is set to a value "
-                            f"('{self.value}') "
-                            "that is not specified in the domain. "
-                            "Value will be ignored and the slot will "
-                            "behave as if no value is set. "
-                            "Make sure to add all values a categorical "
-                            "slot should store to the domain."
-                        )
+                    )
+                    r[i] = 1.0
+                else:
+                    rasa.shared.utils.io.raise_warning(
+                        f"Categorical slot '{self.name}' is set to a value "
+                        f"('{self.value}') "
+                        "that is not specified in the domain. "
+                        "Value will be ignored and the slot will "
+                        "behave as if no value is set. "
+                        "Make sure to add all values a categorical "
+                        "slot should store to the domain."
+                    )
         except (TypeError, ValueError):
             logger.exception("Failed to featurize categorical slot.")
             return r
