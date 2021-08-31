@@ -28,6 +28,7 @@ class NLUTrainingDataProvider(GraphComponent):
 
     @classmethod
     def get_default_config(cls) -> Dict[Text, Any]:
+        """Get Default class configuration"""
         return {"language": "en", "persist": False}
 
     @classmethod
@@ -72,16 +73,12 @@ class NLUTrainingDataProvider(GraphComponent):
         self, config: Dict[Text, Any], importer: Optional[TrainingDataImporter] = None,
     ) -> TrainingData:
         """Provides nlu training data during training."""
-
         if config == {}:  # use default config if config is empty
             config = self.get_default_config()
-
         if importer is None:
             training_data = self._training_data
         else:
             training_data = importer.get_nlu_data(language=config["language"])
-
         if config["persist"]:
             self._persist(training_data)
-
         return training_data
