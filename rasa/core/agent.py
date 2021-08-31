@@ -37,7 +37,7 @@ from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.lock_store import InMemoryLockStore, LockStore
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.core.policies._ensemble import PolicyEnsemble, SimplePolicyEnsemble
+from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import (
