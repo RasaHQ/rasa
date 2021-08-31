@@ -757,6 +757,8 @@ def collect_incorrect_entity_predictions(
     errors = []
     offset = 0
     for entity_result in entity_results:
+        if not entity_result.tokens:
+            continue
         for i in range(offset, offset + len(entity_result.tokens)):
             if merged_targets[i] != merged_predictions[i]:
                 errors.append(
@@ -1123,7 +1125,7 @@ def align_entity_predictions(
     extractor_confidences: Dict[Text, List] = {
         extractor: [] for extractor in extractors
     }
-    for t in result.tokens:
+    for t in (result.tokens or {}):
         true_token_labels.append(_concat_entity_labels(t, result.entity_targets))
         for extractor, entities in entities_by_extractors.items():
             extracted_labels = _concat_entity_labels(t, entities, {extractor})
