@@ -199,7 +199,7 @@ class Validator:
         return everything_is_alright
 
     def verify_forms_in_stories_rules(self) -> bool:
-        """Verifies that forms referenced in active_loop directives are present"""
+        """Verifies that forms referenced in active_loop directives are present."""
         all_forms_exist = True
         visited_loops = set()
 
