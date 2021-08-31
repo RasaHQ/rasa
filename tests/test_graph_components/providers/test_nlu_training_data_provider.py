@@ -6,11 +6,10 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.graph_components.providers.nlu_training_data_provider import (
     NLUTrainingDataProvider,
 )
-from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.importers.importer import TrainingDataImporter
 
 
-def test_nlu_training_data_provider_provides_and_persists_data(
+def test_nlu_training_data_provider(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     config_path: Text,
@@ -28,25 +27,30 @@ def test_nlu_training_data_provider_provides_and_persists_data(
     assert config_1["persist"] is False
 
     # create a provider without training data
-    provider_1 = NLUTrainingDataProvider(default_model_storage, resource)
+    provider_1 = NLUTrainingDataProvider.create(
+        NLUTrainingDataProvider.get_default_config(),
+        default_model_storage,
+        resource,
+        default_execution_context,
+    )
     assert isinstance(provider_1, NLUTrainingDataProvider)
 
     # check the data provided is as expected
     data_0 = provider_1.provide({}, importer)
-    data = importer.get_nlu_data(config_1["language"])
-    assert data_0.fingerprint() == data.fingerprint()
+    data_1 = importer.get_nlu_data(config_1["language"])
+    assert data_0.fingerprint() == data_1.fingerprint()
 
     # check persistence has the correct behaviour
     # new config with persist == true
     config_2 = {"language": "en", "persist": True}
 
     # get data and persist it using config
-    data_1 = provider_1.provide(config_2, importer)
+    data_2 = provider_1.provide(config_2, importer)
 
     # load the provider
     provider_2 = NLUTrainingDataProvider.load(
         config_2, default_model_storage, resource, default_execution_context
     )
-    data_2 = provider_2.provide(config_1)
+    data_3 = provider_2.provide(config_1)
 
-    # assert data_1.fingerprint() == data_2.fingerprint()
+    assert data_2.fingerprint() != data_3.fingerprint()
