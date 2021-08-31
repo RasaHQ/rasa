@@ -20,11 +20,17 @@ MitieNLP = rasa.nlu.utils._mitie_utils.MitieNLP
 class MitieModel:
     """Wraps `MitieNLPGraphComponent` output to make it fingerprintable."""
 
-    def __init__(self, model_path: Path) -> None:
-        """Initialize MitieModel."""
+    def __init__(
+        self,
+        model_path: Path,
+        word_feature_extractor: Optional["mitie.total_word_feature_extractor"] = None,
+    ) -> None:
+        """Initializing MitieModel."""
         import mitie
 
-        self.word_feature_extractor = mitie.total_word_feature_extractor
+        self.word_feature_extractor = (
+            word_feature_extractor or mitie.total_word_feature_extractor
+        )
         self.model_path = model_path
 
     def fingerprint(self) -> Text:
