@@ -81,7 +81,6 @@ def get_file_format_extension(resource_name: Text) -> Text:
         return rasa.shared.data.yaml_file_extension()
 
     known_file_formats = {
-        loading.MARKDOWN: rasa.shared.data.markdown_file_extension(),
         loading.RASA_YAML: rasa.shared.data.yaml_file_extension(),
     }
     fformat = file_formats[0]

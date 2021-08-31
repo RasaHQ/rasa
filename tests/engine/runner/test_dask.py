@@ -247,25 +247,26 @@ def test_can_use_alternate_constructor(default_model_storage: ModelStorage):
 def test_execution_context(default_model_storage: ModelStorage):
     graph_schema = GraphSchema(
         {
-            "model_id": SchemaNode(
+            "execution_context_aware": SchemaNode(
                 needs={},
                 uses=ExecutionContextAware,
-                fn="get_model_id",
+                fn="get_execution_context",
                 constructor_name="create",
                 config={},
                 is_target=True,
             ),
         }
     )
+    context = ExecutionContext(graph_schema=graph_schema, model_id="some_id")
     runner = DaskGraphRunner(
         graph_schema=graph_schema,
         model_storage=default_model_storage,
-        execution_context=ExecutionContext(
-            graph_schema=graph_schema, model_id="some_id"
-        ),
+        execution_context=context,
     )
-    results = runner.run()
-    assert results["model_id"] == "some_id"
+    context.model_id = "a_new_id"
+    result = runner.run()["execution_context_aware"]
+    assert result.model_id == "some_id"
+    assert result.node_name == "execution_context_aware"
 
 
 def test_loop(default_model_storage: ModelStorage):
