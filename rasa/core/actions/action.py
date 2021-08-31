@@ -252,7 +252,7 @@ class Action:
         return ActionExecuted(
             self.name(),
             prediction.policy_name,
-            prediction.max_confidence,
+            prediction.max_probability,
             hide_rule_turn=prediction.hide_rule_turn,
             metadata=prediction.action_metadata,
         )
@@ -338,7 +338,7 @@ class ActionEndToEndResponse(Action):
         """
         return ActionExecuted(
             policy=prediction.policy_name,
-            confidence=prediction.max_confidence,
+            confidence=prediction.max_probability,
             action_text=self.action_text,
             hide_rule_turn=prediction.hide_rule_turn,
             metadata=prediction.action_metadata,

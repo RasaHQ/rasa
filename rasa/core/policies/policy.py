@@ -563,7 +563,7 @@ class PolicyPrediction:
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
-        self.policy_priority = (policy_priority,)
+        self.policy_priority = policy_priority
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction
@@ -571,6 +571,22 @@ class PolicyPrediction:
         self.diagnostic_data = diagnostic_data or {}
         self.hide_rule_turn = hide_rule_turn
         self.action_metadata = action_metadata
+
+    def __repr__(self) -> Text:
+        return (
+            f"{self.__class__.__name__}("
+            f"probabilities={self.probabilities}, "
+            f"policy_name={self.policy_name}, "
+            f"policy_priority={self.policy_priority}, "
+            f"events={self.events}, "
+            f"optional_events={self.optional_events}, "
+            f"is_end_to_end_prediction={self.is_end_to_end_prediction}, "
+            f"is_no_user_prediction={self.is_no_user_prediction}, "
+            f"diagnostic_data={self.diagnostic_data}, "
+            f"hide_rule_turn={self.hide_rule_turn}, "
+            f"action_metadata={self.action_metadata}, "
+            f")"
+        )
 
     @staticmethod
     def for_action_name(
@@ -625,16 +641,16 @@ class PolicyPrediction:
         )
 
     @property
-    def max_confidence_index(self) -> int:
-        """Gets the index of the action prediction with the highest confidence.
+    def max_probability_index(self) -> int:
+        """Gets the index of the action with the highest predicted probability.
 
         Returns:
-            The index of the action with the highest confidence.
+            The index of the action with the highest predicted probability.
         """
-        return self.probabilities.index(self.max_confidence)
+        return self.probabilities.index(self.max_probability)
 
     @property
-    def max_confidence(self) -> float:
+    def max_probability(self) -> float:
         """Gets the highest predicted probability.
 
         Returns:

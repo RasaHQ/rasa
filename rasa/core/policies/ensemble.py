@@ -1,21 +1,75 @@
-import importlib
-import json
-import logging
-import math
-import os
-import sys
-from collections import defaultdict
-from datetime import datetime
-from pathlib import Path
-from typing import Text, Optional, Any, List, Dict, Tuple, Type, Union, Callable
+"""Notes.
 
+NOTE: *not* covered here / other changes required
+-  `validate` contains checks that where previously done during intialisation of
+    the ensemble
+    --> trigger in graph validation
+    --> see: `validate` functions in ensembles
+-  `set_rule_data` was done during intialisation and as last step of train
+    --> e.g. persist rule_only_data separately during RulePolicy persist and
+        create a graph component to the prediction graph that loads this specific
+        resource during prediction and has access to all policies and can modify those
+        graph components after they've been loaded, or maybe add a component that
+        after training loads the rule data and adds that resource to all policies
+        by persisting it to each policy resource (?) (FIXME)
+    --> see: `propagate_specification_of_rule_only_data` below
+-  final prediction requires access to domain
+   --> add domain provider in predict graph
+-  final prediction needs to add events to the tracker if and only if the sequence of
+   events seen so far ends with a `UserUttered` event
+   --> add tracker provider to predict graph
+- specific unit tests related to action unlikely intent which basically test whether the
+  *semantic* / idea behind the simple ensemble makes sense
+   --> should replace this with some test in unexpecTEDintentPolicy which test that
+       the probability, priority, ... whatever is chosen such that the tests that were
+       previously here would pass (there is no real need to actually use the ensemble
+       in these tests if no one decides to change the meaning of the simple policy
+       instead of parametrising it's behavior)
+NOTE: differences to previous version
+-  previously there was a comment there saying
+    # find rejected action before running the policies
+    # because some of them might add events
+   this seems to be outdated because the policy prediction contains the event lists
+   and because I could not find policies adding events while they predict
+   --> we do *not* move this to a component that is executed before the policies
+   but leave this snippet in the ensemble's predict
+-  refactored the way the "best prediction" is determined because that decision
+   process was a bit scattered and in-explicit and changed PolicyPrediction such that
+   priority is an int not a tuple (?!)
+- `is_not_in_training_data` has been removed
+   -->  can be replaced by an check that determines whether the policy is
+        some kind of memoization policy *inside the tests* (via its name...)
+NOTE/FIXME: questions
+-  Where are the events from the (winning) predictions applied? The ensemble only
+   seems to add `DefinePrevUserUtteredFeaturization` after *ever* predict step.
+- An "end2end prediction" is supposed to denote a prediction made based on text...
+  but we could use text + intent (predicted from NLU pipeline) and in that case the
+  name "is_end_to_end_prediction" and the logic of adding the
+  `DefinePrevUserUtteredFeaturization` events is confusing
+"""
+
+from abc import abstractmethod
+from typing import Text, Optional, Tuple, List, Dict, Any
+import logging
+import copy
+
+from rasa.engine.graph import GraphComponent
+from rasa.engine.storage.storage import ModelStorage
+from rasa.engine.storage.resource import Resource
+from rasa.engine.runner.interface import ExecutionContext
 import rasa.core
 import rasa.core.training.training
+from rasa.core.policies.policy import (
+    InvalidPolicyConfig,
+    Policy,
+    SupportedData,
+    PolicyPrediction,
+)
+from rasa.core.policies.rule_policy import RulePolicy
+from rasa.core.policies._ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa.shared.exceptions import RasaException, InvalidConfigException
 import rasa.shared.utils.common
 import rasa.shared.utils.io
-import rasa.utils.io
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.shared.constants import (
     DOCS_URL_RULES,
     DOCS_URL_POLICIES,
@@ -23,9 +77,9 @@ from rasa.shared.constants import (
     DOCS_URL_DEFAULT_ACTIONS,
 )
 from rasa.shared.core.constants import (
+    ACTION_LISTEN_NAME,
     USER_INTENT_BACK,
     USER_INTENT_RESTART,
-    ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
     ACTION_BACK_NAME,
 )
@@ -34,53 +88,130 @@ from rasa.shared.core.events import (
     ActionExecutionRejected,
     ActionExecuted,
     DefinePrevUserUtteredFeaturization,
+    Event,
 )
-from rasa.core.exceptions import UnsupportedDialogueModelError
-from rasa.core.featurizers.tracker_featurizers import MaxHistoryTrackerFeaturizer
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import Policy, SupportedData, PolicyPrediction
-from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.training import training
 from rasa.shared.core.trackers import DialogueStateTracker
-from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core import registry
-from rasa.utils.tensorflow.constants import EPOCHS
+import rasa.utils.io
 
 logger = logging.getLogger(__name__)
 
+# TODO: This is a workaround around until we have all components migrated to
+# `GraphComponent`.
+SimplePolicyEnsemble = SimplePolicyEnsemble
+PolicyEnsemble = PolicyEnsemble
+InvalidPolicyConfig = InvalidPolicyConfig
 
-class PolicyEnsemble:
-    versioned_packages = ["rasa", "tensorflow", "sklearn"]
 
-    def __init__(
-        self,
-        policies: List[Policy],
-        action_fingerprints: Optional[Dict[Any, Dict[Text, List]]] = None,
-    ) -> None:
-        self.policies = policies
-        self.date_trained = None
+def propagate_specification_of_rule_only_data(ensemble: List[Policy]) -> None:
+    """Extracts information on rule only data and propagates it to all policies.
 
-        self.action_fingerprints = action_fingerprints or {}
+    NOTE: *previously* this was called `set_rule_only_data` and used during
+    initialization (where it can be replaced by initializing rule_only_data with
+    an empty dict, cf. `RulePolicy`/`.lookup`) and again as final step of train
 
-        self._check_priorities()
-        self._check_for_important_policies()
+    FIXME: previous (and this) implementation  effectively just grab
+    `rule_only_data` from the *first* rule policy -> check for multiple rule policies?
+    """
+    rule_policy = next(
+        (policy for policy in ensemble if isinstance(policy, RulePolicy)), None
+    )
+    if rule_policy:
+        rule_only_data = rule_policy.get_rule_only_data()
+    else:
+        rule_only_data = dict()
+    for policy in ensemble:
+        policy.set_shared_policy_states(rule_only_data=rule_only_data)
 
-        self._set_rule_only_data()
 
-    def _set_rule_only_data(self) -> None:
-        rule_only_data = {}
-        for policy in self.policies:
-            if isinstance(policy, RulePolicy):
-                rule_only_data = policy.get_rule_only_data()
-                break
+def warn_rule_based_data_unused_or_missing(
+    ensemble: List[Policy], training_trackers: List[DialogueStateTracker]
+) -> None:
+    """Emit `UserWarning`s about missing or unused rule-based data.
 
-        for policy in self.policies:
-            policy.set_shared_policy_states(rule_only_data=rule_only_data)
+    NOTE: this was used at the start of train
 
-    def _check_for_important_policies(self) -> None:
+    Args:
+        ensemble: a list of policies
+        training_trackers: trackers to be used for training
+    """
+    consuming_rule_data = any(
+        policy.supported_data()
+        in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
+        for policy in ensemble
+    )
+    contains_rule_tracker = any(
+        tracker.is_rule_tracker for tracker in training_trackers
+    )
 
-        if not any(isinstance(policy, RulePolicy) for policy in self.policies):
+    if consuming_rule_data and not contains_rule_tracker:
+        rasa.shared.utils.io.raise_warning(
+            f"Found a rule-based policy in your pipeline but "
+            f"no rule-based training data. Please add rule-based "
+            f"stories to your training data or "
+            f"remove the rule-based policy (`{RulePolicy.__name__}`) from your "
+            f"your pipeline.",
+            docs=DOCS_URL_RULES,
+        )
+    elif not consuming_rule_data and contains_rule_tracker:
+        rasa.shared.utils.io.raise_warning(
+            f"Found rule-based training data but no policy supporting rule-based "
+            f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
+            f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`.",
+            docs=DOCS_URL_RULES,
+        )
+
+
+class InvalidPolicyEnsembleConfig(RasaException):
+    """Exception that can be raised when the policy ensemble is not valid."""
+
+
+class PolicyPredictionEnsemble:
+    """Interface for any policy prediction ensemble.
+
+    Given a list of predictions from policies, which include some meta data about the
+    policies themselves, an "ensemble" decides who the final prediction looks like as
+    follows:
+    1. If the previously predicted action was rejected, then the ensemble sets the
+       probability for this action to 0.0 (in all given predictions).
+    2. It combines the information from the single predictions, which include some
+       meta data about the policies (e.g. priority), into a final prediction.
+    3. If the sequence of events given at the time of prediction ends with a user
+       utterance, then the ensemble adds a special event to the event-list included in
+       the final prediction that indicates whether the final prediction was made based
+       on the actual text of that user utterance.
+
+    Observe that the final prediction (as well as the given predictions by the
+    predictions of the single policies) includes "mandatory" as well as "optional"
+    events. Which is why in step 3. we add that event to the final prediction.
+    It also means that the ensemble not just assigns probabilities to all possible
+    actions but also decides which events are passed on.
+    """
+
+    def validate(self, ensemble: List[Policy], domain: Domain) -> None:
+        """Checks that predictions of the given policy ensemble can be used as input.
+
+        Args:
+          ensemble: a list of policies
+          domain: the common domain
+
+        Raises:
+          `InvalidPolicyEnsembleConfig`: if this ensemble cannot be applied to
+            the given ensemble of policies
+        """
+        self.warn_rule_policy_not_contained(ensemble=ensemble)
+        self.assert_compatibility_with_domain(ensemble=ensemble, domain=domain)
+
+    @staticmethod
+    def warn_rule_policy_not_contained(ensemble: List[Policy]) -> None:
+        """Checks that a rule policy is present.
+
+        Args:
+          ensemble: list of policies
+
+        Raises:
+           `InvalidDomain` exception if no rule policy is present
+        """
+        if not any(isinstance(policy, RulePolicy) for policy in ensemble):
             rasa.shared.utils.io.raise_warning(
                 f"'{RulePolicy.__name__}' is not included in the model's "
                 f"policy configuration. Default intents such as "
@@ -91,25 +222,199 @@ class PolicyEnsemble:
             )
 
     @staticmethod
-    def check_domain_ensemble_compatibility(
-        ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]
+    def assert_compatibility_with_domain(
+        ensemble: List[Policy], domain: Optional[Domain]
     ) -> None:
-        """Check for elements that only work with certain policy/domain combinations."""
-        policies_needing_validation = [
-            RulePolicy,
-        ]
-        for policy in policies_needing_validation:
-            policy.validate_against_domain(ensemble, domain)
+        """Check for elements that only work with certain policy/domain combinations.
 
-        _check_policy_for_forms_available(domain, ensemble)
+        NOTE: is used in `agent.py`
 
-    def _check_priorities(self) -> None:
-        """Checks for duplicate policy priorities within PolicyEnsemble."""
+        TODO: Seems this check should also be done if we just use a single policy
+        and drop the "ensemble" component (because of the form check below)? (Or we
+        *always* add an ensemble)
 
-        priority_dict = defaultdict(list)
-        for p in self.policies:
-            priority_dict[p.priority].append(type(p).__name__)
+        Args:
+            ensemble: list of policies
+            domain: a domain
 
+        Raises:
+            `InvalidDomain` exception if the given domain is incompatible with the
+            given ensemble
+        """
+        for policy in ensemble:
+            if isinstance(policy, RulePolicy):
+                # TODO: does it make sense to add `validate_compatibility_with_domain`
+                # to other policies?
+                policy.validate_compatibility_with_domain(domain)
+
+        contains_rule_policy = any(
+            isinstance(policy, RulePolicy) for policy in ensemble
+        )
+        if domain.form_names and not contains_rule_policy:
+            raise InvalidDomain(
+                "You have defined a form action, but have not added the "
+                f"'{RulePolicy.__name__}' to your policy ensemble. Either "
+                f"remove all forms from your domain or add the '{RulePolicy.__name__}' "
+                f"to your policy configuration."
+            )
+
+    def predict(
+        self,
+        predictions: List[PolicyPrediction],
+        domain: Domain,
+        tracker: DialogueStateTracker,
+    ) -> PolicyPrediction:
+        """Derives a final prediction from the given list of predictions.
+
+        Args:
+            predictions: a list of predictions made by policies
+            tracker: dialogue state tracker holding the state of the conversation
+            domain: the common domain
+
+        Returns:
+            a single prediction
+        """
+        # apply side constraints and modify the given predictions accordingly
+        self._exclude_last_action_from_predictions_if_it_was_rejected(
+            tracker, predictions, domain
+        )
+
+        # combine the resulting predictions (with probabilities that do not
+        # necessarily sum up to one anymore)
+        final_prediction = self.combine_predictions(predictions, tracker)
+
+        logger.debug(f"Predicted next action using {final_prediction.policy_name}.")
+        return final_prediction
+
+    @staticmethod
+    def _exclude_last_action_from_predictions_if_it_was_rejected(
+        tracker: DialogueStateTracker,
+        predictions: List[PolicyPrediction],
+        domain: Domain,
+    ) -> None:
+        """Sets the probability for the last action to 0 if it was just rejected.
+
+        Args:
+          tracker:  dialogue state tracker holding the state of the conversation
+          predictions: a list of predictions from policies
+          domain: the common domain
+        """
+        last_action_event = next(
+            (
+                event
+                for event in reversed(tracker.events)
+                if isinstance(event, (ActionExecutionRejected, ActionExecuted))
+            ),
+            None,
+        )
+
+        rejected_action_name = None
+        if len(tracker.events) > 0 and isinstance(
+            last_action_event, ActionExecutionRejected
+        ):
+            rejected_action_name = last_action_event.action_name
+
+        if rejected_action_name:
+            logger.debug(
+                f"Execution of '{rejected_action_name}' was rejected. "
+                f"Setting its confidence to 0.0 in all predictions."
+            )
+            index_of_rejected_action = domain.index_for_action(rejected_action_name)
+            for prediction in predictions:
+                prediction.probabilities[index_of_rejected_action] = 0.0
+
+    @abstractmethod
+    def combine_predictions(
+        self, predictions: List[PolicyPrediction], tracker: DialogueStateTracker
+    ) -> PolicyPrediction:
+        """Derives a single prediction from the given list of predictions.
+
+        Args:
+            predictions: a list of policy predictions that include "probabilities"
+              which are non-negative but *do not* necessarily up to 1
+            tracker: dialogue state tracker holding the state of the conversation,
+              which may influence the combination of predictions as well
+
+        Returns:
+            a single prediction
+        """
+        ...
+
+
+class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
+    """An ensemble that picks the "best" prediction and combines events from all.
+
+    The following rules determine which prediction is the "best":
+    1. "No user" predictions overrule all other predictions.
+
+    2. End-to-end predictions overrule all other predictions based on
+        user input - if and only if *no* "no user" prediction is present in the
+        given ensemble.
+
+    3. Given two predictions, if the maximum probability of one prediction is
+        strictly larger than that of the other, then the prediction with the
+        strictly larger maximum probability is considered to be "better".
+        The priorities of the policies that made these predictions does not matter.
+
+    4. Given two predictions of policies that are equally confident, the
+        prediction of the policy with the higher priority is considered to be
+        "better".
+
+    Observe that this comparison is *not* symmetric if the priorities are allowed to
+    coincide (i.e. if we cannot distinguish two predictions using 1.-4., then
+    the first prediction is considered to be "better").
+
+    The list of events in the final prediction will contain all mandatory
+    events contained in the given predictions, the optional events given in the
+    "best" prediction, and `DefinePrevUserUtteredFeaturization` event (if the
+    prediction was made for a sequence of events ending with a user utterance).
+    """
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> GraphComponent:
+        """Creates a new instance (see parent class for full docstring)."""
+        return cls()
+
+    def __str__(self) -> Text:
+        return f"{self.__class__.__name__}()"
+
+    def validate(self, ensemble: List[Policy], domain: Domain) -> None:
+        """Checks whether this ensemble can be applied to the given policies.
+
+        Args:
+          ensemble: a list of policies
+          domain: the common domain
+        Raises:
+          `InvalidPolicyEnsembleConfig`: if this ensemble cannot be applied to
+            the given ensemble of policies
+        """
+        super().validate(ensemble=ensemble, domain=domain)
+        # TODO: shouldn't we raise in case priorities are not unique since this might
+        # lead to unexpected results in edge cases (swap order in your config)
+        self.warn_priorities_not_unique(ensemble=ensemble)
+        # TODO: shouldn't we assert that there's at most one rule policy here?
+
+    @staticmethod
+    def warn_priorities_not_unique(ensemble: List[Policy]) -> None:
+        """Checks for duplicate policy priorities.
+
+        Only raises a warning if two policies have the same priority.
+
+        Args:
+          ensemble: list of policies
+
+        Raises:
+           nothing
+        """
+        priority_dict: Dict[int, List[Text]] = dict()
+        for p in ensemble:
+            priority_dict.setdefault(p.priority, []).append(type(p).__name__)
         for k, v in priority_dict.items():
             if len(v) > 1:
                 rasa.shared.utils.io.raise_warning(
@@ -120,561 +425,112 @@ class PolicyEnsemble:
                     docs=DOCS_URL_POLICIES,
                 )
 
-    def _policy_ensemble_contains_policy_with_rules_support(self) -> bool:
-        """Determine whether the policy ensemble contains at least one policy
-        supporting rule-based data.
-
-        Returns:
-            Whether or not the policy ensemble contains at least one policy that
-            supports rule-based data.
-        """
-        return any(
-            policy.supported_data()
-            in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
-            for policy in self.policies
-        )
-
-    @staticmethod
-    def _training_trackers_contain_rule_trackers(
-        training_trackers: List[DialogueStateTracker],
-    ) -> bool:
-        """Determine whether there are rule-based training trackers.
-
-        Args:
-            training_trackers: Trackers to inspect.
-
-        Returns:
-            Whether or not any of the supplied training trackers contain rule-based
-            data.
-        """
-        return any(tracker.is_rule_tracker for tracker in training_trackers)
-
-    def _emit_rule_policy_warning(
-        self, training_trackers: List[DialogueStateTracker]
-    ) -> None:
-        """Emit `UserWarning`s about missing rule-based data."""
-        is_rules_consuming_policy_available = (
-            self._policy_ensemble_contains_policy_with_rules_support()
-        )
-        contain_rule_trackers = self._training_trackers_contain_rule_trackers(
-            training_trackers
-        )
-
-        if is_rules_consuming_policy_available and not contain_rule_trackers:
-            rasa.shared.utils.io.raise_warning(
-                f"Found a rule-based policy in your pipeline but "
-                f"no rule-based training data. Please add rule-based "
-                f"stories to your training data or "
-                f"remove the rule-based policy (`{RulePolicy.__name__}`) from your "
-                f"your pipeline.",
-                docs=DOCS_URL_RULES,
-            )
-        elif not is_rules_consuming_policy_available and contain_rule_trackers:
-            rasa.shared.utils.io.raise_warning(
-                f"Found rule-based training data but no policy supporting rule-based "
-                f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
-                f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`.",
-                docs=DOCS_URL_RULES,
-            )
-
-    def train(
-        self,
-        training_trackers: List[TrackerWithCachedStates],
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
-    ) -> None:
-        if training_trackers:
-            self._emit_rule_policy_warning(training_trackers)
-
-            for policy in self.policies:
-                trackers_to_train = SupportedData.trackers_for_policy(
-                    policy, training_trackers
-                )
-                policy.train(
-                    trackers_to_train, domain, interpreter=interpreter, **kwargs
-                )
-
-            self.action_fingerprints = training.create_action_fingerprints(
-                training_trackers, domain
-            )
-            # set rule only data after training in order to make ensemble usable
-            # without loading
-            self._set_rule_only_data()
-        else:
-            logger.info("Skipped training, because there are no training samples.")
-
-        self.date_trained = datetime.now().strftime("%Y%m%d-%H%M%S")
-
-    def probabilities_using_best_policy(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
+    def combine_predictions(
+        self, predictions: List[PolicyPrediction], tracker: DialogueStateTracker
     ) -> PolicyPrediction:
-        raise NotImplementedError
+        """Derives a single prediction from the given list of predictions.
 
-    def _max_histories(self) -> List[Optional[int]]:
-        """Return max history."""
-
-        max_histories = []
-        for p in self.policies:
-            if isinstance(p.featurizer, MaxHistoryTrackerFeaturizer):
-                max_histories.append(p.featurizer.max_history)
-            else:
-                max_histories.append(None)
-        return max_histories
-
-    def _add_package_version_info(self, metadata: Dict[Text, Any]) -> None:
-        """Adds version info for self.versioned_packages to metadata."""
-
-        for package_name in self.versioned_packages:
-            try:
-                p = importlib.import_module(package_name)
-                v = p.__version__
-                metadata[package_name] = v
-            except ImportError:
-                pass
-
-    def _persist_metadata(self, path: Text) -> None:
-        """Persists the domain specification to storage."""
-
-        # make sure the directory we persist exists
-        domain_spec_path = os.path.join(path, "metadata.json")
-        rasa.shared.utils.io.create_directory_for_file(domain_spec_path)
-
-        policy_names = [
-            rasa.shared.utils.common.module_path_from_instance(p) for p in self.policies
-        ]
-
-        metadata = {
-            "action_fingerprints": self.action_fingerprints,
-            "python": ".".join([str(s) for s in sys.version_info[:3]]),
-            "max_histories": self._max_histories(),
-            "ensemble_name": self.__module__ + "." + self.__class__.__name__,
-            "policy_names": policy_names,
-            "trained_at": self.date_trained,
-        }
-
-        self._add_package_version_info(metadata)
-
-        rasa.shared.utils.io.dump_obj_as_json_to_file(domain_spec_path, metadata)
-
-    def persist(self, path: Union[Text, Path]) -> None:
-        """Persists the policy to storage."""
-
-        self._persist_metadata(path)
-
-        for i, policy in enumerate(self.policies):
-            dir_name = "policy_{}_{}".format(i, type(policy).__name__)
-            policy_path = Path(path) / dir_name
-            policy.persist(policy_path)
-
-    @classmethod
-    def load_metadata(cls, path: Text) -> Dict[Text, Any]:
-        metadata_path = os.path.join(path, "metadata.json")
-        metadata = json.loads(
-            rasa.shared.utils.io.read_file(os.path.abspath(metadata_path))
-        )
-        return metadata
-
-    @staticmethod
-    def ensure_model_compatibility(
-        metadata: Dict[Text, Any], version_to_check: Optional[Text] = None
-    ) -> None:
-        from packaging import version
-
-        if version_to_check is None:
-            version_to_check = MINIMUM_COMPATIBLE_VERSION
-
-        model_version = metadata.get("rasa", "0.0.0")
-        if version.parse(model_version) < version.parse(version_to_check):
-            raise UnsupportedDialogueModelError(
-                "The model version is too old to be "
-                "loaded by this Rasa Core instance. "
-                "Either retrain the model, or run with "
-                "an older version. "
-                "Model version: {} Instance version: {} "
-                "Minimal compatible version: {}"
-                "".format(model_version, rasa.__version__, version_to_check),
-                model_version,
-            )
-
-    @classmethod
-    def _ensure_loaded_policy(
-        cls, policy: Optional[Any], policy_cls: Type[Policy], policy_name: Text
-    ) -> None:
-        if policy is None:
-            logger.warning(f"Failed to load policy {policy_name}: load returned None")
-        elif not isinstance(policy, policy_cls):
-            raise Exception(
-                "Failed to load policy {}: "
-                "load returned object that is not instance of its own class"
-                "".format(policy_name)
-            )
-
-    @staticmethod
-    def _get_updated_epochs(
-        policy_cls: Type[Policy],
-        config_for_policy: Dict[Text, Any],
-        finetuning_epoch_fraction: float,
-    ) -> Optional[int]:
-        if EPOCHS in config_for_policy:
-            epochs = config_for_policy[EPOCHS]
-        else:
-            try:
-                epochs = policy_cls.defaults[EPOCHS]
-            except (KeyError, AttributeError):
-                return None
-        return math.ceil(epochs * finetuning_epoch_fraction)
-
-    @classmethod
-    def load(
-        cls,
-        path: Union[Text, Path],
-        new_config: Optional[Dict] = None,
-        finetuning_epoch_fraction: float = 1.0,
-    ) -> "PolicyEnsemble":
-        """Loads policy and domain specification from disk."""
-        metadata = cls.load_metadata(path)
-        cls.ensure_model_compatibility(metadata)
-        policies = []
-        for i, policy_name in enumerate(metadata["policy_names"]):
-            policy_cls = registry.policy_from_module_path(policy_name)
-            dir_name = f"policy_{i}_{policy_cls.__name__}"
-            policy_path = os.path.join(path, dir_name)
-
-            context = {}
-            if new_config:
-                context["should_finetune"] = True
-
-                config_for_policy = new_config["policies"][i]
-                epochs = cls._get_updated_epochs(
-                    policy_cls, config_for_policy, finetuning_epoch_fraction
-                )
-                if epochs:
-                    context["epoch_override"] = epochs
-
-            policy = policy_cls.load(policy_path, **context)
-            cls._ensure_loaded_policy(policy, policy_cls, policy_name)
-            if policy is not None:
-                policies.append(policy)
-        ensemble_cls = rasa.shared.utils.common.class_from_module_path(
-            metadata["ensemble_name"]
-        )
-        fingerprints = metadata.get("action_fingerprints", {})
-        ensemble = ensemble_cls(policies, fingerprints)
-        return ensemble
-
-    @classmethod
-    def from_dict(cls, policy_configuration: Dict[Text, Any]) -> List[Policy]:
-        import copy
-
-        policies = policy_configuration.get("policies") or policy_configuration.get(
-            "policy"
-        )
-        if policies is None:
-            raise InvalidPolicyConfig(
-                "You didn't define any policies. "
-                "Please define them under 'policies:' "
-                "in your policy configuration file."
-            )
-        if len(policies) == 0:
-            raise InvalidPolicyConfig(
-                "The policy configuration file has to include at least one policy."
-            )
-
-        policies = copy.deepcopy(policies)  # don't manipulate passed `Dict`
-        parsed_policies = []
-
-        for policy in policies:
-            if policy.get("featurizer"):
-                featurizer_func, featurizer_config = cls.get_featurizer_from_dict(
-                    policy
-                )
-
-                if featurizer_config.get("state_featurizer"):
-                    (
-                        state_featurizer_func,
-                        state_featurizer_config,
-                    ) = cls.get_state_featurizer_from_dict(featurizer_config)
-
-                    # override featurizer's state_featurizer
-                    # with real state_featurizer class
-                    featurizer_config["state_featurizer"] = state_featurizer_func(
-                        **state_featurizer_config
-                    )
-
-                # override policy's featurizer with real featurizer class
-                policy["featurizer"] = featurizer_func(**featurizer_config)
-
-            policy_name = policy.pop("name")
-            try:
-                constr_func = registry.policy_from_module_path(policy_name)
-                try:
-                    policy_object = constr_func(**policy)
-                except TypeError as e:
-                    raise Exception(f"Could not initialize {policy_name}. {e}") from e
-                parsed_policies.append(policy_object)
-            except (ImportError, AttributeError) as e:
-                raise InvalidPolicyConfig(
-                    f"Module for policy '{policy_name}' could not "
-                    f"be loaded. Please make sure the "
-                    f"name is a valid policy."
-                ) from e
-
-        return parsed_policies
-
-    @classmethod
-    def get_featurizer_from_dict(cls, policy: Dict[Text, Any]) -> Tuple[Any, Any]:
-        """Gets the featurizer initializer and its arguments from a policy config."""
-        # policy can have only 1 featurizer
-        if len(policy["featurizer"]) > 1:
-            raise InvalidPolicyConfig(
-                f"Every policy can only have 1 featurizer "
-                f"but '{policy.get('name')}' "
-                f"uses {len(policy['featurizer'])} featurizers."
-            )
-        featurizer_config = policy["featurizer"][0]
-        featurizer_name = featurizer_config.pop("name")
-        featurizer_func = registry.featurizer_from_module_path(featurizer_name)
-
-        return featurizer_func, featurizer_config
-
-    @classmethod
-    def get_state_featurizer_from_dict(
-        cls, featurizer_config: Dict[Text, Any]
-    ) -> Tuple[Callable, Dict[Text, Any]]:
-        # featurizer can have only 1 state featurizer
-        if len(featurizer_config["state_featurizer"]) > 1:
-            raise InvalidPolicyConfig(
-                f"Every featurizer can only have 1 state "
-                f"featurizer but one of the featurizers uses "
-                f"{len(featurizer_config['state_featurizer'])}."
-            )
-        state_featurizer_config = featurizer_config["state_featurizer"][0]
-        state_featurizer_name = state_featurizer_config.pop("name")
-        state_featurizer_func = registry.state_featurizer_from_module_path(
-            state_featurizer_name
-        )
-
-        return state_featurizer_func, state_featurizer_config
-
-
-class SimplePolicyEnsemble(PolicyEnsemble):
-    """Default implementation of a `Policy` ensemble."""
-
-    @staticmethod
-    def is_not_in_training_data(
-        policy_name: Optional[Text], max_confidence: Optional[float] = None
-    ) -> bool:
-        """Checks if the prediction is by a policy which memoized the training data.
+        Note that you might get unexpected results if the priorities are non-unique.
+        Moreover, the order of events in the result is determined by the order of the
+        predictions passed to this method.
 
         Args:
-            policy_name: The name of the policy.
-            max_confidence: The max confidence of the policy's prediction.
-
-        Returns: `True` if it's a `MemoizationPolicy`, `False` otherwise.
-        """
-        if not policy_name:
-            return True
-
-        memorizing_policies = [
-            RulePolicy.__name__,
-            MemoizationPolicy.__name__,
-            AugmentedMemoizationPolicy.__name__,
-        ]
-        is_memorized = any(
-            policy_name.endswith(f"_{memoizing_policy}")
-            for memoizing_policy in memorizing_policies
-        )
-
-        # also check if confidence is 0, than it cannot be count as prediction
-        return not is_memorized or max_confidence == 0.0
-
-    def _pick_best_policy(
-        self, predictions: Dict[Text, PolicyPrediction]
-    ) -> PolicyPrediction:
-        """Picks the best policy prediction based on probabilities and policy priority.
-
-        Args:
-            predictions: the dictionary containing policy name as keys
-                         and predictions as values
+            predictions: a list of policy predictions that include "probabilities"
+              which are non-negative but *do not* necessarily up to 1
+            tracker: dialogue state tracker holding the state of the conversation
 
         Returns:
-            The best prediction.
+            The "best" prediction.
         """
-        best_confidence = (-1, -1)
-        best_policy_name = None
-
-        # different type of predictions have different priorities
-        # No user predictions overrule all other predictions.
-        is_no_user_prediction = any(
-            prediction.is_no_user_prediction for prediction in predictions.values()
-        )
-        # End-to-end predictions overrule all other predictions based on user input.
-        is_end_to_end_prediction = any(
-            prediction.is_end_to_end_prediction for prediction in predictions.values()
-        )
-
-        policy_events = []
-        for policy_name, prediction in predictions.items():
-            policy_events += prediction.events
-
-            # No user predictions (e.g. happy path loop predictions)
-            # overrule all other predictions.
-            if prediction.is_no_user_prediction != is_no_user_prediction:
-                continue
-
-            # End-to-end predictions overrule all other predictions based on user input.
-            if (
-                not is_no_user_prediction
-                and prediction.is_end_to_end_prediction != is_end_to_end_prediction
-            ):
-                continue
-
-            confidence = (prediction.max_confidence, prediction.policy_priority)
-            if confidence > best_confidence:
-                # pick the best policy
-                best_confidence = confidence
-                best_policy_name = policy_name
-
-        best_prediction = predictions.get(best_policy_name)
-
-        if not best_prediction:
+        if not predictions:
             raise InvalidConfigException(
-                f"No prediction for policy '{best_policy_name}' found. Please check "
-                f"your model configuration."
+                "Expected at least one prediction. Please check your model "
+                "configuration."
             )
+        # Reminder: If just a single policy is given, we do *not* just return it because
+        # it is expected that the final prediction contains mandatory and optional
+        # events in the `events` attribute and no optional events.
 
-        policy_events += best_prediction.optional_events
-
-        return PolicyPrediction(
-            best_prediction.probabilities,
-            best_policy_name,
-            best_prediction.policy_priority,
-            policy_events,
-            is_end_to_end_prediction=best_prediction.is_end_to_end_prediction,
-            is_no_user_prediction=best_prediction.is_no_user_prediction,
-            diagnostic_data=best_prediction.diagnostic_data,
-            hide_rule_turn=best_prediction.hide_rule_turn,
+        best_idx = self._choose_best_prediction(predictions)
+        events = self._choose_events(
+            predictions=predictions, best_idx=best_idx, tracker=tracker
         )
 
-    def _best_policy_prediction(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-    ) -> PolicyPrediction:
-        """Finds the best policy prediction.
+        # make a copy and swap out the events - and drop action metadata
+        # (TODO: what is action meta data and why was it ignored?)
+        final = copy.copy(predictions[best_idx])
+        final.events = events
+        final.optional_events = []
+        final.action_metadata = None
+
+        return final
+
+    def _choose_best_prediction(self, predictions: List[PolicyPrediction]) -> int:
+        """Chooses the "best" prediction out of the given predictions.
+
+        Note that this comparison is *not* symmetric if the priorities are allowed to
+        coincide (i.e. if we cannot distinguish two predictions using 1.-4., then
+        the first prediction is considered to be "better").
 
         Args:
-            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
-
+          predictions: all predictions made by an ensemble of policies
         Returns:
-            The winning policy prediction.
+          index of the best prediction
         """
-        # find rejected action before running the policies
-        # because some of them might add events
-        rejected_action_name = None
-        last_action_event = next(
-            (
-                event
-                for event in reversed(tracker.events)
-                if isinstance(event, (ActionExecutionRejected, ActionExecuted))
-            ),
-            None,
+        does_not_contain_no_user_predictions = all(
+            not prediction.is_no_user_prediction for prediction in predictions
         )
 
-        if len(tracker.events) > 0 and isinstance(
-            last_action_event, ActionExecutionRejected
-        ):
-            rejected_action_name = last_action_event.action_name
-
-        predictions = {
-            f"policy_{i}_{type(p).__name__}": p.predict_action_probabilities(
-                tracker, domain, interpreter
+        def criteria(prediction: PolicyPrediction) -> Tuple[float, ...]:
+            """Extracts statistics (larger is better) ordered by importance."""
+            return (
+                prediction.is_no_user_prediction,
+                does_not_contain_no_user_predictions
+                and prediction.is_end_to_end_prediction,
+                prediction.max_probability,
+                prediction.policy_priority,
             )
-            for i, p in enumerate(self.policies)
-        }
 
-        if rejected_action_name:
-            logger.debug(
-                f"Execution of '{rejected_action_name}' was rejected. "
-                f"Setting its confidence to 0.0 in all predictions."
-            )
-            for prediction in predictions.values():
-                prediction.probabilities[
-                    domain.index_for_action(rejected_action_name)
-                ] = 0.0
+        return max(
+            list(range(len(predictions))), key=lambda idx: criteria(predictions[idx])
+        )
 
-        return self._pick_best_policy(predictions)
-
-    def probabilities_using_best_policy(
+    def _choose_events(
         self,
+        predictions: List[PolicyPrediction],
+        best_idx: int,
         tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
-    ) -> PolicyPrediction:
-        """Predicts the next action the bot should take after seeing the tracker.
-
-        Picks the best policy prediction based on probabilities and policy priority.
-        Triggers fallback if `action_listen` is predicted after a user utterance.
+    ) -> List[Event]:
+        """Chooses the events to be added to the final prediction.
 
         Args:
-            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
-
-        Returns:
-            The best policy prediction.
+          predictions: all predictions made by an ensemble of policies
+          best_idx: index of the prediction that is considered to be the "best" one
+          tracker: dialogue state tracker holding the state of the conversation
         """
-        winning_prediction = self._best_policy_prediction(tracker, domain, interpreter)
+        if best_idx < 0 or best_idx >= len(predictions):
+            raise ValueError(
+                f"Expected given index to be pointing towards the best prediction "
+                f"among the given predictions. Received index {best_idx} and a list "
+                f"of predictions of length {len(predictions)}"
+            )
 
+        # combine all mandatory events in the given order
+        events = [event for prediction in predictions for event in prediction.events]
+
+        # append optional events from the "best prediction"
+        best = predictions[best_idx]
+        events += best.optional_events
+
+        # if the sequence of events ends with a user utterance, append an event
+        # defining the featurization
         if tracker.latest_action_name == ACTION_LISTEN_NAME:
-            if winning_prediction.is_end_to_end_prediction:
-                logger.debug("Made e2e prediction using user text.")
-                logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
-                winning_prediction.events.append(
-                    DefinePrevUserUtteredFeaturization(True)
-                )
+            was_end_to_end_prediction = best.is_end_to_end_prediction
+            if was_end_to_end_prediction:
+                logger.debug("Made prediction using user text.")
             else:
-                logger.debug("Made prediction using user intent.")
-                logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
-                winning_prediction.events.append(
-                    DefinePrevUserUtteredFeaturization(False)
-                )
-
-        logger.debug(f"Predicted next action using {winning_prediction.policy_name}.")
-        return winning_prediction
-
-
-def _check_policy_for_forms_available(
-    domain: Domain, ensemble: Optional["PolicyEnsemble"]
-) -> None:
-    if not ensemble:
-        return
-
-    has_policy_for_forms = ensemble is not None and any(
-        isinstance(policy, RulePolicy) for policy in ensemble.policies
-    )
-
-    if domain.form_names and not has_policy_for_forms:
-        raise InvalidDomain(
-            "You have defined a form action, but have not added the "
-            f"'{RulePolicy.__name__}' to your policy ensemble. Either "
-            f"remove all forms from your domain or add the '{RulePolicy.__name__}' "
-            f"to your policy configuration."
-        )
-
-
-class InvalidPolicyConfig(RasaException):
-    """Exception that can be raised when policy config is not valid."""
-
-    pass
+                logger.debug("Made prediction without user text")
+            event = DefinePrevUserUtteredFeaturization(was_end_to_end_prediction)
+            events.append(event)
+            logger.debug(f"Added `{event}` event.")
+        return events
