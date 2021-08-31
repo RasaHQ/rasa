@@ -156,11 +156,11 @@ def test_tracker_store(store, pair):
     assert restored == tracker
 
 
-async def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
+def test_tracker_write_to_story(tmp_path: Path, moodbot_domain: Domain):
     tracker = tracker_from_dialogue(TEST_MOODBOT_DIALOGUE, moodbot_domain)
     p = tmp_path / "export.yml"
     tracker.export_stories_to_file(str(p))
-    trackers = await training.load_data(
+    trackers = training.load_data(
         str(p),
         moodbot_domain,
         use_story_concatenation=False,
@@ -516,10 +516,10 @@ def _load_tracker_from_json(tracker_dump: Text, domain: Domain) -> DialogueState
     )
 
 
-async def test_dump_and_restore_as_json(
+def test_dump_and_restore_as_json(
     default_agent: Agent, tmp_path: Path, stories_path: Text
 ):
-    trackers = await default_agent.load_data(stories_path)
+    trackers = default_agent.load_data(stories_path)
 
     for tracker in trackers:
         out_path = tmp_path / "dumped_tracker.json"
