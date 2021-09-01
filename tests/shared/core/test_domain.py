@@ -6,7 +6,7 @@ from typing import Dict, List, Text, Any, Union, Set, Optional
 
 import pytest
 
-from rasa.shared.exceptions import YamlSyntaxException
+from rasa.shared.exceptions import YamlSyntaxException, YamlException
 import rasa.shared.utils.io
 from rasa.shared.constants import (
     DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
@@ -58,11 +58,9 @@ def test_slots_states_before_user_utterance(domain: Domain):
     assert trackers_as_states == expected_states
 
 
-async def test_create_train_data_no_history(domain: Domain, stories_path: Text):
+def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = await training.load_data(
-        stories_path, domain, augmentation_factor=0
-    )
+    training_trackers = training.load_data(stories_path, domain, augmentation_factor=0)
 
     assert len(training_trackers) == 4
     (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)
@@ -88,11 +86,9 @@ async def test_create_train_data_no_history(domain: Domain, stories_path: Text):
     ]
 
 
-async def test_create_train_data_with_history(domain: Domain, stories_path: Text):
+def test_create_train_data_with_history(domain: Domain, stories_path: Text):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
-    training_trackers = await training.load_data(
-        stories_path, domain, augmentation_factor=0
-    )
+    training_trackers = training.load_data(stories_path, domain, augmentation_factor=0)
     assert len(training_trackers) == 4
     (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)
 
@@ -132,14 +128,12 @@ def check_for_too_many_entities_and_remove_them(state: State) -> State:
     return state
 
 
-async def test_create_train_data_unfeaturized_entities():
+def test_create_train_data_unfeaturized_entities():
     domain_file = "data/test_domains/default_unfeaturized_entities.yml"
     stories_file = "data/test_yaml_stories/stories_unfeaturized_entities.yml"
     domain = Domain.load(domain_file)
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = await training.load_data(
-        stories_file, domain, augmentation_factor=0
-    )
+    training_trackers = training.load_data(stories_file, domain, augmentation_factor=0)
 
     assert len(training_trackers) == 2
     (decoded, _) = featurizer.training_states_and_labels(training_trackers, domain)
@@ -194,19 +188,6 @@ def test_avoid_action_repetition(domain: Domain):
     assert len(domain.action_names_or_texts) == len(DEFAULT_ACTION_NAMES) + 1
 
 
-def test_responses():
-    domain_file = "data/test_moodbot/domain.yml"
-    domain = Domain.load(domain_file)
-    expected_response = {
-        "text": "Hey! How are you?",
-        "buttons": [
-            {"title": "great", "payload": "/mood_great"},
-            {"title": "super sad", "payload": "/mood_unhappy"},
-        ],
-    }
-    assert domain.random_template_for("utter_greet") == expected_response
-
-
 def test_custom_slot_type(tmpdir: Path):
     domain_path = str(tmpdir / "domain.yml")
     rasa.shared.utils.io.write_text_file(
@@ -259,7 +240,7 @@ def test_domain_to_dict():
       store_entities_as_slots: true
     entities: []
     forms:
-      some_form:
+      some_form: {{}}
     intents: []
     responses:
       utter_greet:
@@ -283,7 +264,7 @@ def test_domain_to_dict():
         "actions": ["action_save_world"],
         "config": {"store_entities_as_slots": True},
         "entities": [],
-        "forms": {"some_form": None},
+        "forms": {"some_form": {"required_slots": {}}},
         "intents": [],
         "e2e_actions": [],
         "responses": {"utter_greet": [{"text": "hey there!"}]},
@@ -502,16 +483,21 @@ def test_merge_with_empty_other_domain(other: Optional[Domain]):
 def test_merge_domain_with_forms():
     test_yaml_1 = """
     forms:
-    # Old style form definitions (before RulePolicy)
-    - my_form
-    - my_form2
+      my_form:
+        required_slots:
+            slot1:
+            - type: from_text
+
+      my_form2:
+        required_slots: {}
     """
 
     test_yaml_2 = """
     forms:
       my_form3:
-        slot1:
-        - type: from_text
+        required_slots:
+          slot1:
+          - type: from_text
     """
 
     domain_1 = Domain.from_yaml(test_yaml_1)
@@ -779,16 +765,6 @@ def test_check_domain_sanity_on_invalid_domain():
             forms={},
         )
 
-    with pytest.raises(InvalidDomain):
-        Domain(
-            intents={},
-            entities=[],
-            slots=[],
-            responses={},
-            action_names=[],
-            forms=["random_name", "random_name"],
-        )
-
 
 def test_load_on_invalid_domain_duplicate_intents():
     with pytest.raises(InvalidDomain):
@@ -798,6 +774,29 @@ def test_load_on_invalid_domain_duplicate_intents():
 def test_load_on_invalid_domain_duplicate_actions():
     with pytest.raises(InvalidDomain):
         Domain.load("data/test_domains/duplicate_actions.yml")
+
+
+def test_schema_error_with_forms_as_lists():
+    with pytest.raises(YamlException):
+        Domain.from_yaml(
+            """
+        version: '2.0'
+        forms: []
+        """
+        )
+
+
+def test_schema_error_with_forms_and_slots_but_without_required_slots_key():
+    with pytest.raises(YamlException):
+        Domain.from_yaml(
+            """
+        version: '2.0'
+        forms:
+          my_form:
+            cool_slot:
+            - type: from_text
+        """
+        )
 
 
 def test_load_on_invalid_domain_duplicate_responses():
@@ -949,14 +948,14 @@ def test_add_knowledge_base_slots():
         ("", DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES, True),
         (
             """session_config:
-    carry_over_slots_to_new_session: false""",
+        carry_over_slots_to_new_session: false""",
             DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES,
             False,
         ),
         (
             """session_config:
-    session_expiration_time: 20.2
-    carry_over_slots_to_new_session: False""",
+        session_expiration_time: 20.2
+        carry_over_slots_to_new_session: False""",
             20.2,
             False,
         ),
@@ -1160,8 +1159,6 @@ def test_featurized_entities_ordered_consistently():
     [
         # No forms
         {KEY_FORMS: {}},
-        # Deprecated but still support form syntax
-        {KEY_FORMS: ["my form", "other form"]},
         # No slot mappings
         {KEY_FORMS: {"my_form": None}},
         {KEY_FORMS: {"my_form": {}}},
@@ -1204,21 +1201,51 @@ def test_valid_slot_mappings(domain_as_dict: Dict[Text, Any]):
         {KEY_FORMS: {"my_form": []}},
         {KEY_FORMS: {"my_form": 5}},
         # Slot mappings not defined as list
-        {KEY_FORMS: {"my_form": {"slot1": {}}}},
+        {KEY_FORMS: {"my_form": {"required_slots": {"slot1": {}}}}},
         # Unknown mapping
-        {KEY_FORMS: {"my_form": {"slot1": [{"type": "my slot mapping"}]}}},
+        {
+            KEY_FORMS: {
+                "my_form": {"required_slots": {"slot1": [{"type": "my slot mapping"}]}}
+            }
+        },
         # Mappings with missing keys
         {
             KEY_FORMS: {
-                "my_form": {"slot1": [{"type": "from_entity", "intent": "greet"}]}
+                "my_form": {
+                    "required_slots": {
+                        "slot1": [{"type": "from_entity", "intent": "greet"}]
+                    }
+                }
             }
         },
-        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_intent"}]}}},
-        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_intent", "value": None}]}}},
-        {KEY_FORMS: {"my_form": {"slot1": [{"type": "from_trigger_intent"}]}}},
         {
             KEY_FORMS: {
-                "my_form": {"slot1": [{"type": "from_trigger_intent", "value": None}]}
+                "my_form": {"required_slots": {"slot1": [{"type": "from_intent"}]}}
+            }
+        },
+        {
+            KEY_FORMS: {
+                "my_form": {
+                    "required_slots": {
+                        "slot1": [{"type": "from_intent", "value": None}]
+                    }
+                }
+            }
+        },
+        {
+            KEY_FORMS: {
+                "my_form": {
+                    "required_slots": {"slot1": [{"type": "from_trigger_intent"}]}
+                }
+            }
+        },
+        {
+            KEY_FORMS: {
+                "my_form": {
+                    "required_slots": {
+                        "slot1": [{"type": "from_trigger_intent", "value": None}]
+                    }
+                }
             }
         },
     ],
@@ -1268,7 +1295,6 @@ slots:
 
 
 def test_slot_order_is_preserved_when_merging():
-
     slot_1 = """
   b:
     type: text
@@ -1400,24 +1426,6 @@ def test_ignored_intents_slot_mappings_invalid_domain():
         Domain.from_dict(domain_as_dict)
 
 
-def test_form_with_no_required_slots_keyword():
-    with pytest.warns(FutureWarning):
-        domain = Domain.from_dict(
-            {
-                "forms": {
-                    "some_form": {
-                        "some_slot": [{"type": "from_text", "intent": "some_intent",}],
-                    }
-                }
-            }
-        )
-
-    assert (
-        domain.forms["some_form"]["required_slots"]["some_slot"][0]["type"]
-        == "from_text"
-    )
-
-
 def test_domain_count_conditional_response_variations():
     domain = Domain.from_file(
         path="data/test_domains/conditional_response_variations.yml"
@@ -1431,20 +1439,19 @@ def test_domain_with_no_form_slots():
         """
         version: "2.0"
         forms:
-          contract_form:
+          contract_form: {}
         """
     )
     assert domain.slot_mapping_for_form("contract_form") == {}
 
 
 def test_domain_with_empty_required_slots():
-    with pytest.raises(InvalidDomain):
+    with pytest.raises(YamlException):
         Domain.from_yaml(
             """
             version: "2.0"
             forms:
               contract_form:
-                required_slots:
             """
         )
 
@@ -1455,3 +1462,92 @@ def test_domain_invalid_yml_in_folder():
     """
     with pytest.warns(UserWarning, match="The file .* your file\\."):
         Domain.from_directory("data/test_domains/test_domain_from_directory1/")
+
+
+def test_domain_fingerprint_consistency_across_runs():
+    domain_yaml = """
+         version: "2.0"
+         intents:
+         - greet
+         - goodbye
+         entities:
+         - name
+         slots:
+           name:
+             type: text
+         responses:
+           utter_greet:
+             - text: "Hi"
+         forms:
+          test_form:
+            required_slots:
+               name:
+                - type: from_entity
+                  entity: name
+         actions:
+         - action_test
+    """
+    domain1 = Domain.from_yaml(domain_yaml)
+    domain2 = Domain.from_yaml(domain_yaml)
+
+    f1 = domain1.fingerprint()
+    f2 = domain2.fingerprint()
+    assert f1 == f2
+
+
+def test_domain_fingerprint_uniqueness():
+    domain = Domain.from_yaml(
+        """
+         version: "2.0"
+         intents:
+         - greet
+         - goodbye
+         actions:
+         - action_test
+         """
+    )
+    f1 = domain.fingerprint()
+
+    domain_with_extra_intent = Domain.from_yaml(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - goodbye
+        - test
+        actions:
+        - action_test
+        """
+    )
+    f2 = domain_with_extra_intent.fingerprint()
+    assert f1 != f2
+
+    domain_with_extra_action = Domain.from_yaml(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - goodbye
+        actions:
+        - action_test
+        - action_double_test
+        """
+    )
+    f3 = domain_with_extra_action.fingerprint()
+    assert f1 != f3
+
+    domain_with_extra_responses = Domain.from_yaml(
+        """
+        version: "2.0"
+        intents:
+        - greet
+        - goodbye
+        responses:
+          utter_greet:
+           - text: "Hi!"
+        actions:
+        - action_test
+        """
+    )
+    f4 = domain_with_extra_responses.fingerprint()
+    assert f1 != f4
