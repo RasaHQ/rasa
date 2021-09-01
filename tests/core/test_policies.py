@@ -1,3 +1,5 @@
+import logging
+import re
 import uuid
 from pathlib import Path
 from typing import Type, List, Text, Optional, Dict, Any
@@ -5,6 +7,7 @@ from typing import Type, List, Text, Optional, Dict, Any
 import dataclasses
 import numpy as np
 import pytest
+from _pytest.logging import LogCaptureFixture
 from _pytest.tmpdir import TempPathFactory
 from rasa.core.constants import DEFAULT_POLICY_PRIORITY, POLICY_MAX_HISTORY
 from rasa.engine.graph import ExecutionContext, GraphSchema, GraphComponent
@@ -37,12 +40,14 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     IntentMaxHistoryTrackerFeaturizer,
 )
+from rasa.shared.core.slots import CategoricalSlot
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.policies.policy import SupportedData, Policy, InvalidPolicyConfig
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
 from rasa.shared.core.trackers import DialogueStateTracker
+from tests.core.policies.test_rule_policy import GREET_INTENT_NAME, UTTER_GREET_ACTION
 from tests.dialogues import TEST_DEFAULT_DIALOGUE
 from tests.core.utilities import get_tracker, tracker_from_dialogue
 
@@ -558,6 +563,63 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
             max_history = featurizer.max_history
         return AugmentedMemoizationPolicy(priority=priority, max_history=max_history)
+
+    @pytest.mark.parametrize(
+        "initial_value",
+        ["abc", "ghi"]
+    )
+    def test_no_reorder_slots(self,
+                              initial_value: str,
+                              domain: Domain,
+                              caplog: LogCaptureFixture):
+        slot_key = "thing_slot"
+        cat_slot = CategoricalSlot(
+            name=slot_key,
+            values=["abc", "def", "ghi"],
+            initial_value=initial_value,
+            auto_fill=True,
+            influence_conversation=True
+        )
+        domain.slots = [cat_slot]
+        story = TrackerWithCachedStates.from_events(
+            "story",
+            domain=domain,
+            slots=domain.slots,
+            evts=[
+                ActionExecuted(ACTION_LISTEN_NAME),
+                UserUttered(intent={"name": GREET_INTENT_NAME}),
+                ActionExecuted(UTTER_GREET_ACTION),
+            ],
+            is_rule_tracker=False,
+        )
+        policy = AugmentedMemoizationPolicy()
+        policy.train([story], domain=domain, interpreter=RegexInterpreter())
+
+        events = [SlotSet(key=slot_key, value="def"),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  UserUttered(intent={"name": GREET_INTENT_NAME})]
+        tracker = DialogueStateTracker.from_events(sender_id="sender", evts=events,
+                                                   domain=domain, slots=[cat_slot])
+        # since the mcfly tracker is not returned, we have to rely on debug logs
+        with caplog.at_level(logging.DEBUG):
+            policy.predict_action_probabilities(tracker, domain, RegexInterpreter())
+            before = None
+            after = None
+            for record in caplog.records:
+                if slot_key in record.msg:
+                    m = re.search(fr'\'{slot_key}\': \([\d\., ]+\)', record.msg)
+                    m = re.search(r'\([\d\., ]+\)', m[0])
+                    m = m[0][1:-1].split(",")
+                    features = [float(i) for i in m]
+                    if features and not before:
+                        before = features
+                    elif m:
+                        after = features
+            # slot value has changed
+            assert before != after
+            # slot value has reverted back to the initial value
+            assert after == cat_slot.as_feature()
+            print(f"Features before: {before}, features after: {after}")
 
 
 @pytest.mark.parametrize(
