@@ -57,8 +57,14 @@ def regex_message_handler(
             False,
         ),
         # malformed confidences
-        ("-2", None, 1.0, [], False),  # no confidence string
-        ("abc0.2134345", None, 1.0, [], False),  # no confidence string
+        (
+            "-2",
+            None,
+            1.0,
+            [],
+            True,
+        ),  # no confidence string; some unidentified part left
+        ("abc0.2134345", None, 1.0, [], True),  # same
         ("123", None, 1.0, [], True),  # value extracted by > 1
         ("123?", None, 1.0, [], True),  # value extracted by > 1
         ("1.0.", None, 0.0, [], True),  # confidence string extracted but not a float
@@ -71,8 +77,8 @@ def regex_message_handler(
             "['entity1']",
             1.0,
             [],
-            False,
-        ),  # no entity string extracted, no warning
+            True,
+        ),  # no entity string extracted; some unexpected string left
     ],
 )
 def test_process_unpacks_attributes_from_single_message_and_fallsback_if_needed(
