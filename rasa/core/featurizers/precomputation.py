@@ -105,8 +105,8 @@ class MessageContainerForCoreFeaturization:
 
     def message_iterator(self) -> Iterator[Message]:
         """Returns an iterator over all messages."""
-        for key_attribute in self.KEY_ATTRIBUTES:
-            for message in self._table[key_attribute].values():
+        for key_attribute_table in self._table.values():
+            for message in key_attribute_table.values():
                 yield message
 
     def keys(self, key_attribute: Text) -> KeysView:
@@ -277,9 +277,9 @@ class MessageContainerForCoreFeaturization:
             slice(0, -len(domain.action_texts) if domain.action_texts else None)
         ]
 
-        for tag, actions in [(ACTION_NAME, action_names), (ACTION_TEXT, action_texts)]:
+        for key_attribute, actions in [(ACTION_NAME, action_names), (ACTION_TEXT, action_texts)]:
             for action in actions:
-                self.add(Message({tag: action}))
+                self.add(Message({key_attribute: action}))
 
         for intent in domain.intent_properties.keys():
             self.add(Message({INTENT: intent}))
