@@ -85,6 +85,7 @@ class RegexMessageHandler(GraphComponent):
 
         Args:
           messages: list of messages
+          domain: the domain
         Returns:
            list of messages where the i-th message is equal to the i-th input message
            if that message does not need to be unpacked, and a new message with the
@@ -96,13 +97,12 @@ class RegexMessageHandler(GraphComponent):
         """Unpacks the messsage if `TEXT` contains an encoding of attributes.
 
         Args:
-          messages: some message
+          message: some message
           domain: the domain
         Returns:
            the given message if that message does not need to be unpacked, and a new
            message with the extracted attributes otherwise
         """
-
         user_text = message.get(TEXT).strip()
 
         # If the prefix doesn't match, we don't even need to try to match the pattern.
@@ -176,7 +176,6 @@ class RegexMessageHandler(GraphComponent):
         Returns:
           some list of entities
         """
-
         entities_str = match.group(ENTITIES)
         if entities_str is None:
             return []
@@ -255,7 +254,6 @@ class RegexMessageHandler(GraphComponent):
         Returns:
           some confidence value
         """
-
         confidence_str = match.group(PREDICTED_CONFIDENCE_KEY)
         if confidence_str is None:
             return 1.0
