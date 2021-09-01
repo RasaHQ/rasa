@@ -1,6 +1,6 @@
 from __future__ import annotations
 import typing
-from typing import Optional, Text, Dict, List, Union, Iterable, Any, Iterator
+from typing import Optional, Text, Dict, List, Union, Iterable, Any
 from collections.abc import ValuesView, KeysView
 
 from rasa.engine.graph import GraphComponent
@@ -63,13 +63,7 @@ class MessageContainerForCoreFeaturization:
     KEY_ATTRIBUTES = [ACTION_NAME, ACTION_TEXT, TEXT, INTENT]
 
     def __init__(self) -> None:
-        """Creates an empty container for precomputations.
-
-        Args:
-            handle_collisions: if set to `True`, collisions where one message contains a
-                larger or equal number of attributes and of features than the other
-                message, then the collision will be resolved automatically.
-        """
+        """Creates an empty container for precomputations."""
         self._table: Dict[Text, Dict[Text, Message]] = {
             key: {} for key in self.KEY_ATTRIBUTES
         }
@@ -82,7 +76,7 @@ class MessageContainerForCoreFeaturization:
             hex string as a fingerprint of the container.
         """
         message_fingerprints = [
-            message.fingerprint() for message in self.message_iterator()
+            message.fingerprint() for message in self.all_messages()
         ]
         return rasa.shared.utils.io.deep_container_fingerprint(message_fingerprints)
 
@@ -103,11 +97,13 @@ class MessageContainerForCoreFeaturization:
             )
         return self._table[key_attribute].values()
 
-    def message_iterator(self) -> Iterator[Message]:
-        """Returns an iterator over all messages."""
-        for key_attribute_table in self._table.values():
-            for message in key_attribute_table.values():
-                yield message
+    def all_messages(self) -> List[Message]:
+        """Returns a list containing all messages."""
+        return [
+            message
+            for key_attribute_table in self._table.values()
+            for message in key_attribute_table.values()
+        ]
 
     def keys(self, key_attribute: Text) -> KeysView:
         """Returns a view of the value keys for the given key attribute."""
@@ -182,7 +178,7 @@ class MessageContainerForCoreFeaturization:
 
         There might be be multiple messages in the container that contain features
         relevant for the given substate, e.g. this is the case if `TEXT` and
-        `INTENT` are present in the given message. All of those messages will be
+        `INTENT` are present in the given substate. All of those messages will be
         collected and their features combined.
 
         Args:
@@ -268,8 +264,8 @@ class MessageContainerForCoreFeaturization:
         ):
             raise NotImplementedError(
                 "We assumed that domain's `action_names_or_texts` start with a list of "
-                "all action names, followed by the action texts. Apparently this "
-                "please update the code to grab the action_name and action_texts from "
+                "all action names, followed by the action texts. "
+                "Please update the code to grab the action_name and action_texts from "
                 "the domain correctly."
             )
         action_texts = domain.action_texts
@@ -277,7 +273,10 @@ class MessageContainerForCoreFeaturization:
             slice(0, -len(domain.action_texts) if domain.action_texts else None)
         ]
 
-        for key_attribute, actions in [(ACTION_NAME, action_names), (ACTION_TEXT, action_texts)]:
+        for key_attribute, actions in [
+            (ACTION_NAME, action_names),
+            (ACTION_TEXT, action_texts),
+        ]:
             for action in actions:
                 self.add(Message({key_attribute: action}))
 
@@ -362,7 +361,7 @@ class CoreFeaturizationInputConverter(GraphComponent):
         # to make sure that there is at least one user substate with a TEXT to ensure
         # `CountVectorizer` is trained...
 
-        return TrainingData(training_examples=list(container.message_iterator()))
+        return TrainingData(training_examples=container.all_messages())
 
     def convert_for_inference(self, tracker: DialogueStateTracker) -> List[Message]:
         """Creates a list of messages containing single user and action attributes.
@@ -382,7 +381,7 @@ class CoreFeaturizationInputConverter(GraphComponent):
         # events first and then iterating over results (again).
         container = MessageContainerForCoreFeaturization()
         container.derive_messages_from_events_and_add(tracker.events)
-        return list(container.message_iterator())
+        return container.all_messages()
 
 
 class CoreFeaturizationCollector(GraphComponent):

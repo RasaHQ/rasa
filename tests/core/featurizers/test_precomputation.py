@@ -70,11 +70,11 @@ def test_container_keys():
     assert set(container.keys(TEXT)) == {"3"}
 
 
-def test_container_message_iterator():
+def test_container_all_messages():
     message_data_list = [{INTENT: "1"}, {INTENT: "2", "other": 3}, {TEXT: "3"}]
     container = MessageContainerForCoreFeaturization()
     container.add_all([Message(data=data) for data in message_data_list])
-    assert len(list(container.message_iterator())) == 3
+    assert len(container.all_messages()) == 3
 
 
 def test_container_fingerprints_differ_for_different_containers():
@@ -134,7 +134,7 @@ def test_container_add_message_copies():
         lookup_table.add(message)
     # assert that we have as many entries as unique keys
     assert len(lookup_table) == len(substates_with_unique_key_attribute)
-    assert set(lookup_table.message_iterator()) == set(unique_messages)
+    assert set(lookup_table.all_messages()) == set(unique_messages)
     assert (
         lookup_table.num_collisions_ignored
         == len(substates_with_unique_key_attribute) * num_copies
