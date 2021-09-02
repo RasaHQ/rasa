@@ -1,7 +1,6 @@
 from __future__ import annotations
 import abc
 import copy
-import json
 import logging
 from enum import Enum
 from pathlib import Path
@@ -38,7 +37,11 @@ from rasa.shared.exceptions import RasaException, FileIOException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY, POLICY_PRIORITY
+from rasa.core.constants import (
+    DEFAULT_POLICY_PRIORITY,
+    POLICY_PRIORITY,
+    POLICY_MAX_HISTORY,
+)
 from rasa.shared.core.constants import (
     USER,
     SLOTS,
@@ -123,8 +126,9 @@ class PolicyGraphComponent(GraphComponent):
         featurizer: Optional[TrackerFeaturizer] = None,
     ) -> None:
         """Constructs a new Policy object."""
+        self.config = config
         if featurizer is None:
-            featurizer = self._create_featurizer(config)
+            featurizer = self._create_featurizer()
         self.__featurizer = featurizer
 
         self.priority = config.get(POLICY_PRIORITY, DEFAULT_POLICY_PRIORITY)
@@ -147,18 +151,17 @@ class PolicyGraphComponent(GraphComponent):
         """Creates a new untrained policy (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
-    @classmethod
-    def _create_featurizer(cls, policy_config: Dict[Text, Any]) -> TrackerFeaturizer:
-        policy_config = copy.deepcopy(policy_config)
+    def _create_featurizer(self) -> TrackerFeaturizer:
+        policy_config = copy.deepcopy(self.config)
 
         featurizer_configs = policy_config.get("featurizer")
 
         if not featurizer_configs:
-            return cls._standard_featurizer()
+            return self._standard_featurizer()
 
         featurizer_func = _get_featurizer_from_config(
             featurizer_configs,
-            cls.__name__,
+            self.__class__.__name__,
             lookup_path="rasa.core.featurizers.tracker_featurizers",
         )
         featurizer_config = featurizer_configs[0]
@@ -167,7 +170,7 @@ class PolicyGraphComponent(GraphComponent):
         if state_featurizer_configs:
             state_featurizer_func = _get_featurizer_from_config(
                 state_featurizer_configs,
-                cls.__name__,
+                self.__class__.__name__,
                 lookup_path="rasa.core.featurizers.single_state_featurizer",
             )
             state_featurizer_config = state_featurizer_configs[0]
@@ -176,11 +179,20 @@ class PolicyGraphComponent(GraphComponent):
                 **state_featurizer_config
             )
 
-        return featurizer_func(**featurizer_config)
+        featurizer = featurizer_func(**featurizer_config)
+        if (
+            isinstance(featurizer, MaxHistoryTrackerFeaturizer)
+            and POLICY_MAX_HISTORY in policy_config
+            and POLICY_MAX_HISTORY not in featurizer_config
+        ):
+            featurizer.max_history = policy_config[POLICY_MAX_HISTORY]
+        return featurizer
 
-    @staticmethod
-    def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
+    def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
+        """Initializes the standard featurizer for this policy."""
+        return MaxHistoryTrackerFeaturizer(
+            SingleStateFeaturizer(), self.config.get(POLICY_MAX_HISTORY)
+        )
 
     @property
     def featurizer(self) -> TrackerFeaturizer:
@@ -389,41 +401,6 @@ class PolicyGraphComponent(GraphComponent):
             action_metadata=action_metadata,
         )
 
-    def _metadata(self) -> Optional[Dict[Text, Any]]:
-        """Returns this policy's attributes that should be persisted.
-
-        Policies using the default `persist()` and `load()` implementations must
-        implement the `_metadata()` method."
-
-        Returns:
-            The policy metadata.
-        """
-        pass
-
-    @classmethod
-    def _metadata_filename(cls) -> Text:
-        """Returns the filename of the persisted policy metadata.
-
-        Policies using the default `persist()` and `load()` implementations must
-        implement the `_metadata_filename()` method.
-
-        Returns:
-            The filename of the persisted policy metadata.
-        """
-        pass
-
-    def persist(self) -> None:
-        """Persists the policy to storage."""
-        with self._model_storage.write_to(self._resource) as path:
-            # not all policies have a featurizer
-            if self.featurizer is not None:
-                self.featurizer.persist(path)
-
-            file = Path(path) / self._metadata_filename()
-
-            rasa.shared.utils.io.create_directory_for_file(file)
-            rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
-
     @classmethod
     def load(
         cls,
@@ -434,14 +411,10 @@ class PolicyGraphComponent(GraphComponent):
         **kwargs: Any,
     ) -> "PolicyGraphComponent":
         """Loads a trained policy (see parent class for full docstring)."""
-        config = {}
         featurizer = None
 
         try:
             with model_storage.read_from(resource) as path:
-                metadata_file = Path(path) / cls._metadata_filename()
-                config = json.loads(rasa.shared.utils.io.read_file(metadata_file))
-
                 if (Path(path) / FEATURIZER_FILE).is_file():
                     featurizer = TrackerFeaturizer.load(path)
 
