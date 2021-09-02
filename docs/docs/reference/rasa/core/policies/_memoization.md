@@ -1,11 +1,11 @@
 ---
-sidebar_label: rasa.core.policies.memoization
-title: rasa.core.policies.memoization
+sidebar_label: rasa.core.policies._memoization
+title: rasa.core.policies._memoization
 ---
-## MemoizationPolicyGraphComponent Objects
+## MemoizationPolicy Objects
 
 ```python
-class MemoizationPolicyGraphComponent(PolicyGraphComponent)
+class MemoizationPolicy(Policy)
 ```
 
 A policy that follows exact examples of `max_history` turns in training stories.
@@ -26,22 +26,21 @@ If it is needed to recall turns from training dialogues where
 some slots might not be set during prediction time, and there are
 training stories for this, use AugmentedMemoizationPolicy.
 
-#### get\_default\_config
-
-```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
-```
-
-Returns the default config (see parent class for full docstring).
-
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, featurizer: Optional[TrackerFeaturizer] = None, lookup: Optional[Dict] = None) -> None
+ | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = MEMOIZATION_POLICY_PRIORITY, max_history: Optional[int] = DEFAULT_MAX_HISTORY, lookup: Optional[Dict] = None, **kwargs: Any, ,) -> None
 ```
 
 Initialize the policy.
+
+**Arguments**:
+
+- `featurizer` - tracker featurizer
+- `priority` - the priority of the policy
+- `max_history` - maximum history to take into account when featurizing trackers
+- `lookup` - a dictionary that stores featurized tracker states and
+  predicted actions for them
 
 #### recall
 
@@ -82,30 +81,14 @@ Predicts the next action the bot should take after seeing the tracker.
 
   The policy&#x27;s prediction (e.g. the probabilities for the actions).
 
-#### persist
+## AugmentedMemoizationPolicy Objects
 
 ```python
- | persist() -> None
+class AugmentedMemoizationPolicy(MemoizationPolicy)
 ```
 
-Persists the policy to storage.
-
-#### load
-
-```python
- | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MemoizationPolicyGraphComponent
-```
-
-Loads a trained policy (see parent class for full docstring).
-
-## AugmentedMemoizationPolicyGraphComponent Objects
-
-```python
-class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent)
-```
-
-The policy that remembers examples from training stories for `max_history` turns.
+The policy that remembers examples from training stories
+for `max_history` turns.
 
 If it is needed to recall turns from training dialogues
 where some slots might not be set during prediction time,

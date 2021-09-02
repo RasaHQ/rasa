@@ -130,14 +130,6 @@ Predicts the next action the bot should take after seeing the tracker.
 
   The prediction.
 
-#### persist
-
-```python
- | persist() -> None
-```
-
-Persists the policy to storage.
-
 #### load
 
 ```python
