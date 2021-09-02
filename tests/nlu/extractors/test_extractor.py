@@ -6,7 +6,7 @@ from rasa.shared.nlu.constants import TEXT, SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.extractors.extractor import EntityExtractorMixin as EntityExtractor
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.shared.nlu.training_data.formats import MarkdownReader
+from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLReader
 
 
 @pytest.mark.parametrize(
@@ -419,37 +419,52 @@ def test_split_entities_by_comma(
     "text, warnings",
     [
         (
-            "## intent:test\n"
-            "- I want to fly from [Berlin](location) to [ San Fransisco](location)\n",
+            'version: "2.0"\n'
+            "nlu:\n"
+            "- intent: test\n"
+            "  examples: |\n"
+            "    - I want to fly from [Berlin](location) to [ London](location)\n",
             1,
         ),
         (
-            "## intent:test\n"
-            "- I want to fly from [Berlin ](location) to [San Fransisco](location)\n",
+            'version: "2.0"\n'
+            "nlu:\n"
+            "- intent: test\n"
+            "  examples: |\n"
+            "    - I want to fly from [Berlin ](location) to [London](location)\n",
             1,
         ),
         (
-            "## intent:test\n"
-            "- I want to fly from [Berlin](location) to [San Fransisco.](location)\n"
-            "- I have nothing to say.",
+            'version: "2.0"\n'
+            "nlu:\n"
+            "- intent: test\n"
+            "  examples: |\n"
+            "    - I want to fly from [Berlin](location) to [London.](location)\n"
+            "    - I have nothing to say.\n",
             1,
         ),
         (
-            "## intent:test\n"
-            "- I have nothing to say.\n"
-            "- I want to fly from [Berlin](location) to[San Fransisco](location)\n",
+            'version: "2.0"\n'
+            "nlu:\n"
+            "- intent: test\n"
+            "  examples: |\n"
+            "    - I have nothing to say.\n"
+            "    - I want to fly from [Berlin](location) to[San Fransisco](location)\n",
             1,
         ),
         (
-            "## intent:test\n"
-            "- I want to fly from [Berlin](location) to[San Fransisco](location)\n"
-            "- Book a flight from [London](location) to [Paris.](location)\n",
+            'version: "2.0"\n'
+            "nlu:\n"
+            "- intent: test\n"
+            "  examples: |\n"
+            "    - I want to fly from [Berlin](location) to[San Fransisco](location)\n"
+            "    - Book a flight from [London](location) to [Paris.](location)\n",
             2,
         ),
     ],
 )
-def test_check_check_correct_entity_annotations(text: Text, warnings: int):
-    reader = MarkdownReader()
+def test_check_correct_entity_annotations(text: Text, warnings: int):
+    reader = RasaYAMLReader()
     tokenizer = WhitespaceTokenizer()
 
     training_data = reader.reads(text)
