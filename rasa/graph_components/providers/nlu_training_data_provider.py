@@ -34,7 +34,7 @@ class NLUTrainingDataProvider(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> NLUTrainingDataProvider:
-        """Creates a new NLU training data provider (see parent class for full docstring)."""
+        """Creates a new NLU training data provider."""
         return cls(config, model_storage, resource)
 
     def _persist(self, training_data: TrainingData) -> None:
