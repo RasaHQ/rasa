@@ -6,9 +6,7 @@ from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
 import rasa.shared.utils.common
 import rasa.shared.utils.io
 import rasa.nlu.utils.bilou_utils
-from rasa.shared.constants import (
-    NEXT_MAJOR_VERSION_FOR_DEPRECATIONS,
-)
+from rasa.shared.constants import NEXT_MAJOR_VERSION_FOR_DEPRECATIONS
 from rasa.nlu.constants import NUMBER_OF_SUB_TOKENS
 import rasa.utils.io as io_utils
 from rasa.utils.tensorflow.constants import (
@@ -24,26 +22,15 @@ from rasa.utils.tensorflow.constants import (
     COSINE,
     SEQUENCE,
     CROSS_ENTROPY,
-    TRANSFORMER_SIZE,
-    NUM_TRANSFORMER_LAYERS,
-    DENSE_DIMENSION,
     CONSTRAIN_SIMILARITIES,
     MODEL_CONFIDENCE,
-    CONNECTION_DENSITY,
     TOLERANCE,
     CHECKPOINT_MODEL,
 )
 from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
 from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
 from rasa.utils.tensorflow.model_data import RasaModelData
-from rasa.shared.nlu.constants import (
-    ACTION_NAME,
-    INTENT,
-    ENTITIES,
-    SPLIT_ENTITIES_BY_COMMA,
-)
-from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS
-from rasa.core.constants import DIALOGUE
+from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.exceptions import InvalidConfigException
 
 if TYPE_CHECKING:
@@ -523,7 +510,10 @@ def _check_confidence_setting(component_config: Dict[Text, Any]) -> None:
 
 
 def _check_loss_setting(component_config: Dict[Text, Any]) -> None:
-    if not component_config[CONSTRAIN_SIMILARITIES] and component_config[LOSS_TYPE] == CROSS_ENTROPY:
+    if (
+        not component_config[CONSTRAIN_SIMILARITIES]
+        and component_config[LOSS_TYPE] == CROSS_ENTROPY
+    ):
         rasa.shared.utils.io.raise_warning(
             f"{CONSTRAIN_SIMILARITIES} is set to `False`. It is recommended "
             f"to set it to `True` when using cross-entropy loss. It will be set to "

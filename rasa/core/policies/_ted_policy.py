@@ -390,7 +390,6 @@ class TEDPolicy(Policy):
         self.config = rasa.utils.train_utils.update_similarity_type(self.config)
         self.config = rasa.utils.train_utils.update_evaluation_parameters(self.config)
 
-
     def _create_label_data(
         self, domain: Domain, interpreter: NaturalLanguageInterpreter
     ) -> Tuple[RasaModelData, List[Dict[Text, List["Features"]]]]:
