@@ -40,14 +40,18 @@ def configure_file_logging(
     """
     if not log_file:
         return
-
-    formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-    file_handler = logging.FileHandler(
-        log_file, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
-    )
-    file_handler.setLevel(logger_obj.level)
-    file_handler.setFormatter(formatter)
-    logger_obj.addHandler(file_handler)
+    if log_file == "/dev/log":
+        syslog_handler = logging.handlers.SysLogHandler(address=log_file)
+        syslog_handler.setLevel(logger_obj.level)
+        logger_obj.addHandler(syslog_handler)
+    else:
+        formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
+        file_handler = logging.FileHandler(
+            log_file, encoding=rasa.shared.utils.io.DEFAULT_ENCODING
+        )
+        file_handler.setLevel(logger_obj.level)
+        file_handler.setFormatter(formatter)
+        logger_obj.addHandler(file_handler)
 
 
 def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarray:
