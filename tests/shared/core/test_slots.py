@@ -239,41 +239,9 @@ class TestCategoricalSlot(SlotTestCollection):
     def create_slot(self, influence_conversation: bool) -> Slot:
         return CategoricalSlot(
             "test",
-            values=[1, "two", "小于", {"three": 3}, "nOnE", "None"],
+            values=[1, "two", "小于", {"three": 3}, "nOnE", "None", "null"],
             influence_conversation=influence_conversation,
         )
-
-    # None is a special value reserved for unset slots.
-    @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴", None])
-    def invalid_value(self, request: SubRequest) -> Any:
-        return request.param
-
-    @pytest.fixture(
-        params=[
-            (None, [0, 0, 0, 0, 0, 0]),  # slot is unset
-            (1, [1, 0, 0, 0, 0, 0]),
-            ("two", [0, 1, 0, 0, 0, 0]),
-            ("小于", [0, 0, 1, 0, 0, 0]),
-            ({"three": 3}, [0, 0, 0, 1, 0, 0]),
-            (
-                rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE,
-                [0, 0, 0, 0, 0, 0],
-            ),
-        ]
-    )
-    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
-        return request.param
-
-
-class TestCategoricalSlotDefaultValue(SlotTestCollection):
-    def create_slot(self, influence_conversation: bool) -> Slot:
-        slot = CategoricalSlot(
-            "test",
-            values=[1, "two", "小于", {"three": 3}, "nOnE", "None"],
-            influence_conversation=influence_conversation,
-        )
-        slot.add_default_value()
-        return slot
 
     # None is a special value reserved for unset slots.
     @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴", None])
@@ -287,11 +255,49 @@ class TestCategoricalSlotDefaultValue(SlotTestCollection):
             ("two", [0, 1, 0, 0, 0, 0, 0]),
             ("小于", [0, 0, 1, 0, 0, 0, 0]),
             ({"three": 3}, [0, 0, 0, 1, 0, 0, 0]),
+            ("nOnE", [0, 0, 0, 0, 1, 0, 0]),
+            ("None", [0, 0, 0, 0, 1, 0, 0]),  # same as for 'nOnE' (case insensivity)
+            ("null", [0, 0, 0, 0, 0, 0, 1]),
             (
                 rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE,
-                [0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 0],
             ),
-            ("unseen value", [0, 0, 0, 0, 0, 0, 1]),
+        ]
+    )
+    def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
+        return request.param
+
+
+class TestCategoricalSlotDefaultValue(SlotTestCollection):
+    def create_slot(self, influence_conversation: bool) -> Slot:
+        slot = CategoricalSlot(
+            "test",
+            values=[1, "two", "小于", {"three": 3}, "nOnE", "None", "null"],
+            influence_conversation=influence_conversation,
+        )
+        slot.add_default_value()
+        return slot
+
+    # None is a special value reserved for unset slots.
+    @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴", None])
+    def invalid_value(self, request: SubRequest) -> Any:
+        return request.param
+
+    @pytest.fixture(
+        params=[
+            (None, [0, 0, 0, 0, 0, 0, 0, 0]),  # slot is unset
+            (1, [1, 0, 0, 0, 0, 0, 0, 0]),
+            ("two", [0, 1, 0, 0, 0, 0, 0, 0]),
+            ("小于", [0, 0, 1, 0, 0, 0, 0, 0]),
+            ({"three": 3}, [0, 0, 0, 1, 0, 0, 0, 0]),
+            ("nOnE", [0, 0, 0, 0, 1, 0, 0, 0]),
+            ("None", [0, 0, 0, 0, 1, 0, 0, 0]),  # same as for 'nOnE' (case insensivity)
+            ("null", [0, 0, 0, 0, 0, 0, 1, 0]),
+            (
+                rasa.shared.core.constants.DEFAULT_CATEGORICAL_SLOT_VALUE,
+                [0, 0, 0, 0, 0, 0, 0, 1],
+            ),
+            ("unseen value", [0, 0, 0, 0, 0, 0, 0, 1]),
         ]
     )
     def value_feature_pair(self, request: SubRequest) -> Tuple[Any, List[float]]:
@@ -334,8 +340,5 @@ def test_categorical_slot_ignores_none_value():
 
     assert not ("none" in slot.values)
 
-    message_text = (
-        "Rasa will proceed, not treating `null` as a possible normal value"
-        " for the 'branch' slot."
-    )
+    message_text = "Rasa will ignore `null` as a possible value for the 'branch' slot."
     assert any(message_text in record.message.args[0] for record in records)

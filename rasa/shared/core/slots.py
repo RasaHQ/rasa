@@ -345,11 +345,14 @@ class CategoricalSlot(Slot):
         )
         if values and None in values:
             rasa.shared.utils.io.raise_warning(
-                f"Categorical slot '{self.name}' has `null` listed as a possible value,"
-                f" which translates to `None` in Python. This value is reserved for"
-                f" when a slot is not set and should not be used as a normal value."
-                f" Rasa will proceed, not treating `null` as a possible normal value"
-                f" for the '{self.name}' slot.",
+                f"Categorical slot '{self.name}' has `null` listed as a possible value"
+                f" in the domain file, which translates to `None` in Python. This value"
+                f" is reserved for when the slot is not set, and should not be listed"
+                f" as a value in the slot's definition."
+                f" Rasa will ignore `null` as a possible value for the '{self.name}'"
+                f" slot. Consider changing this value in your domain file to, for"
+                f" example, `unset`, or provide the value explicitly as a string by"
+                f' using quotation marks: "null".',
                 category=UserWarning,
             )
         self.values = (
