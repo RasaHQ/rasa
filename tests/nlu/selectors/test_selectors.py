@@ -337,51 +337,6 @@ async def test_process_gives_diagnostic_data(
 
 
 @pytest.mark.parametrize(
-    "classifier_params, output_length",
-    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "softmax"}, 9)],
-)
-async def test_cross_entropy_with_softmax(
-    component_builder: ComponentBuilder,
-    tmp_path: Path,
-    classifier_params: Dict[Text, Any],
-    output_length: int,
-    monkeypatch: MonkeyPatch,
-):
-    pipeline = as_pipeline(
-        "WhitespaceTokenizer", "CountVectorsFeaturizer", "ResponseSelector"
-    )
-    assert pipeline[2]["name"] == "ResponseSelector"
-    pipeline[2].update(classifier_params)
-
-    _config = RasaNLUModelConfig({"pipeline": pipeline})
-    (trained_model, _, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=str(tmp_path),
-        data="data/test_selectors",
-        component_builder=component_builder,
-    )
-    loaded = Interpreter.load(persisted_path, component_builder)
-
-    mock = Mock()
-    monkeypatch.setattr(train_utils, "normalize", mock.normalize)
-
-    parse_data = loaded.parse("hello")
-    response_ranking = parse_data.get("response_selector").get("default").get("ranking")
-
-    # check that the output was correctly truncated
-    assert len(response_ranking) == output_length
-
-    response_confidences = [response.get("confidence") for response in response_ranking]
-
-    # check whether normalization had the expected effect
-    output_sums_to_1 = sum(response_confidences) == pytest.approx(1)
-    assert output_sums_to_1
-
-    # normalize shouldn't have been called
-    mock.normalize.assert_not_called()
-
-
-@pytest.mark.parametrize(
     "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
 )
 async def test_margin_loss_is_not_normalized(
