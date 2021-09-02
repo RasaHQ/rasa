@@ -47,7 +47,10 @@ class NLUTrainingDataProvider(GraphComponent):
 
     def provide(self, importer: TrainingDataImporter,) -> TrainingData:
         """Provides nlu training data during training."""
-        training_data = importer.get_nlu_data(language=self._config["language"])
+        if "language" in self._config:
+            training_data = importer.get_nlu_data(language=self._config["language"])
+        else:
+            training_data = importer.get_nlu_data()
         if self._config["persist"]:
             self._persist(training_data)
         return training_data
