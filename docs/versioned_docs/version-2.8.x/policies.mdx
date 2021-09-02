@@ -84,10 +84,10 @@ Doing so can lead to unexpected and undesired bot behavior.
 
 The Transformer Embedding Dialogue (TED) Policy is
 a multi-task architecture for next action prediction and entity
-recognition. The architecture several transformer encoders which are shared for both tasks.
+recognition. The architecture consists of several transformer encoders which are shared for both tasks.
 A sequence of entity labels is predicted through a Conditional Random Field (CRF) tagging layer on top of the
 user sequence transformer encoder output corresponding to the input sequence of tokens.
-For the next action prediction the dialogue transformer encoder output and system action labels are embedded into a
+For the next action prediction, the dialogue transformer encoder output and the system action labels are embedded into a
 single semantic vector space. We use the dot-product loss to maximize the similarity with the target label and
 minimize similarities with negative samples.
 
