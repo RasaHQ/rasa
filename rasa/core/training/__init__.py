@@ -7,18 +7,14 @@ if TYPE_CHECKING:
     from rasa.shared.importers.importer import TrainingDataImporter
 
 
-async def extract_story_graph(
-    resource_name: Text,
-    domain: "Domain",
-    use_e2e: bool = False,
-    exclusion_percentage: Optional[int] = None,
+def extract_story_graph(
+    resource_name: Text, domain: "Domain", exclusion_percentage: Optional[int] = None,
 ) -> "StoryGraph":
     """Loads training stories / rules from file or directory.
 
     Args:
         resource_name: Path to file or directory.
         domain: The model domain.
-        use_e2e: `True` if Markdown files should be parsed as conversation test files.
         exclusion_percentage: Percentage of stories which should be dropped. `None`
             if all training data should be used.
 
@@ -28,16 +24,13 @@ async def extract_story_graph(
     from rasa.shared.core.training_data.structures import StoryGraph
     import rasa.shared.core.training_data.loading as core_loading
 
-    story_steps = await core_loading.load_data_from_resource(
-        resource_name,
-        domain,
-        use_e2e=use_e2e,
-        exclusion_percentage=exclusion_percentage,
+    story_steps = core_loading.load_data_from_resource(
+        resource_name, domain, exclusion_percentage=exclusion_percentage,
     )
     return StoryGraph(story_steps)
 
 
-async def load_data(
+def load_data(
     resource_name: Union[Text, "TrainingDataImporter"],
     domain: "Domain",
     remove_duplicates: bool = True,
@@ -76,11 +69,9 @@ async def load_data(
 
     if resource_name:
         if isinstance(resource_name, TrainingDataImporter):
-            graph = await resource_name.get_stories(
-                exclusion_percentage=exclusion_percentage
-            )
+            graph = resource_name.get_stories(exclusion_percentage=exclusion_percentage)
         else:
-            graph = await extract_story_graph(
+            graph = extract_story_graph(
                 resource_name, domain, exclusion_percentage=exclusion_percentage
             )
 

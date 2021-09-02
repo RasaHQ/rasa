@@ -3,6 +3,9 @@ from typing import Union, Text, Optional, List, Any, Tuple
 import numpy as np
 import scipy.sparse
 
+import rasa.shared.utils.io
+import rasa.shared.nlu.training_data.util
+
 
 class Features:
     """Stores the features produced by any featurizer."""
@@ -26,6 +29,11 @@ class Features:
         self.type = feature_type
         self.origin = origin
         self.attribute = attribute
+        if not self.is_dense() and not self.is_sparse():
+            raise ValueError(
+                "Features must either be a numpy array for dense "
+                "features or a scipy sparse matrix for sparse features."
+            )
 
     def is_sparse(self) -> bool:
         """Checks if features are sparse or not.
@@ -41,7 +49,7 @@ class Features:
         Returns:
             True, if features are dense, false otherwise.
         """
-        return not self.is_sparse()
+        return isinstance(self.features, np.ndarray)
 
     def combine_with_features(self, additional_features: Optional["Features"]) -> None:
         """Combine the incoming features with this instance's features.
@@ -95,7 +103,7 @@ class Features:
         Returns:
             Tuple of type, attribute, features, and origin properties.
         """
-        return (self.type, self.attribute, self.features, self.origin)
+        return self.type, self.attribute, self.features, self.origin
 
     def __eq__(self, other: Any) -> bool:
         """Tests if the `self` `Feature` equals to the `other`.
@@ -114,4 +122,17 @@ class Features:
             other.type == self.type
             and other.attribute == self.attribute
             and other.features == self.features
+        )
+
+    def fingerprint(self) -> Text:
+        """Calculate a stable string fingerprint for the features."""
+        if self.is_dense():
+            f_as_text = self.features.tostring()
+        else:
+            f_as_text = rasa.shared.nlu.training_data.util.sparse_matrix_to_string(
+                self.features
+            )
+
+        return rasa.shared.utils.io.deep_container_fingerprint(
+            [self.type, self.origin, self.attribute, f_as_text]
         )

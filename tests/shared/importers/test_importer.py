@@ -15,7 +15,6 @@ import rasa.shared.core.constants
 from rasa.shared.core.events import SlotSet, UserUttered, ActionExecuted
 from rasa.shared.core.training_data.structures import StoryStep, StoryGraph
 from rasa.shared.importers.importer import (
-    CombinedDataImporter,
     TrainingDataImporter,
     NluDataImporter,
     E2EImporter,
@@ -39,7 +38,7 @@ def default_importer(project: Text) -> TrainingDataImporter:
     )
 
 
-async def test_use_of_interface():
+def test_use_of_interface():
     importer = TrainingDataImporter()
 
     functions_to_test = [
@@ -50,35 +49,7 @@ async def test_use_of_interface():
     ]
     for f in functions_to_test:
         with pytest.raises(NotImplementedError):
-            await f()
-
-
-async def test_combined_file_importer_with_single_importer(project: Text):
-    config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
-    domain_path = os.path.join(project, DEFAULT_DOMAIN_PATH)
-    default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
-
-    importer = RasaFileImporter(config_path, domain_path, [default_data_path])
-    combined = CombinedDataImporter([importer])
-
-    assert await importer.get_config() == await combined.get_config()
-    actual_domain = await combined.get_domain()
-    expected_domain = await importer.get_domain()
-    assert hash(actual_domain) == hash(expected_domain)
-
-    actual_training_data = await combined.get_nlu_data()
-    expected_training_data = await importer.get_nlu_data()
-    assert hash(actual_training_data) == hash(expected_training_data)
-
-    expected_stories = await importer.get_stories()
-    actual_stories = await combined.get_stories()
-
-    assert actual_stories.as_story_string() == expected_stories.as_story_string()
-
-    expected_tests = await importer.get_conversation_tests()
-    actual_tests = await combined.get_conversation_tests()
-
-    assert actual_tests.as_story_string() == expected_tests.as_story_string()
+            f()
 
 
 @pytest.mark.parametrize(
@@ -138,7 +109,7 @@ def test_load_from_config(tmpdir: Path):
     assert isinstance(importer.importer._importer._importers[0], MultiProjectImporter)
 
 
-async def test_nlu_only(project: Text):
+def test_nlu_only(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     default_data_path = os.path.join(project, DEFAULT_DATA_PATH)
     actual = TrainingDataImporter.load_nlu_importer_from_config(
@@ -148,23 +119,23 @@ async def test_nlu_only(project: Text):
     assert isinstance(actual, NluDataImporter)
     assert isinstance(actual._importer, ResponsesSyncImporter)
 
-    stories = await actual.get_stories()
+    stories = actual.get_stories()
     assert stories.is_empty()
 
-    conversation_tests = await actual.get_stories()
+    conversation_tests = actual.get_stories()
     assert conversation_tests.is_empty()
 
-    domain = await actual.get_domain()
+    domain = actual.get_domain()
     assert domain.is_empty()
 
-    config = await actual.get_config()
+    config = actual.get_config()
     assert config
 
-    nlu_data = await actual.get_nlu_data()
+    nlu_data = actual.get_nlu_data()
     assert not nlu_data.is_empty()
 
 
-async def test_import_nlu_training_data_from_e2e_stories(
+def test_import_nlu_training_data_from_e2e_stories(
     default_importer: TrainingDataImporter,
 ):
     # The `E2EImporter` correctly wraps the underlying `CombinedDataImporter`
@@ -189,26 +160,24 @@ async def test_import_nlu_training_data_from_e2e_stories(
         ]
     )
 
-    async def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
+    def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
         return stories
 
     # Patch to return our test stories
     importer_without_e2e.get_stories = mocked_stories
 
     # The wrapping `E2EImporter` simply forwards these method calls
-    assert (await importer_without_e2e.get_stories()).fingerprint() == (
-        await default_importer.get_stories()
+    assert (importer_without_e2e.get_stories()).fingerprint() == (
+        default_importer.get_stories()
     ).fingerprint()
-    assert (await importer_without_e2e.get_config()) == (
-        await default_importer.get_config()
-    )
+    assert (importer_without_e2e.get_config()) == (default_importer.get_config())
 
     # Check additional NLU training data from stories was added
-    nlu_data = await default_importer.get_nlu_data()
+    nlu_data = default_importer.get_nlu_data()
 
     # The `E2EImporter` adds NLU training data based on our training stories
     assert len(nlu_data.training_examples) > len(
-        (await importer_without_e2e.get_nlu_data()).training_examples
+        importer_without_e2e.get_nlu_data().training_examples
     )
 
     # Check if the NLU training data was added correctly from the story training data
@@ -222,7 +191,7 @@ async def test_import_nlu_training_data_from_e2e_stories(
     assert all(m in nlu_data.training_examples for m in expected_additional_messages)
 
 
-async def test_different_story_order_doesnt_change_nlu_training_data(
+def test_different_story_order_doesnt_change_nlu_training_data(
     default_importer: E2EImporter,
 ):
     stories = [
@@ -243,13 +212,13 @@ async def test_different_story_order_doesnt_change_nlu_training_data(
         ),
     ]
 
-    async def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
+    def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
         return StoryGraph(stories)
 
     # Patch to return our test stories
     default_importer.importer.get_stories = mocked_stories
 
-    training_data = await default_importer.get_nlu_data()
+    training_data = default_importer.get_nlu_data()
 
     # Pretend the order of  the stories changed. This should have no
     # effect on the NLU training data
@@ -258,25 +227,25 @@ async def test_different_story_order_doesnt_change_nlu_training_data(
     # Make sure importer doesn't cache stories
     default_importer._cached_stories = None
 
-    training_data2 = await default_importer.get_nlu_data()
+    training_data2 = default_importer.get_nlu_data()
 
     assert hash(training_data) == hash(training_data2)
 
 
-async def test_import_nlu_training_data_with_default_actions(
+def test_import_nlu_training_data_with_default_actions(
     default_importer: TrainingDataImporter,
 ):
     assert isinstance(default_importer, E2EImporter)
     importer_without_e2e = default_importer.importer
 
     # Check additional NLU training data from domain was added
-    nlu_data = await default_importer.get_nlu_data()
+    nlu_data = default_importer.get_nlu_data()
 
     assert len(nlu_data.training_examples) > len(
-        (await importer_without_e2e.get_nlu_data()).training_examples
+        importer_without_e2e.get_nlu_data().training_examples
     )
 
-    extended_training_data = await default_importer.get_nlu_data()
+    extended_training_data = default_importer.get_nlu_data()
     assert all(
         Message(data={ACTION_NAME: action_name})
         in extended_training_data.training_examples
@@ -284,7 +253,7 @@ async def test_import_nlu_training_data_with_default_actions(
     )
 
 
-async def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
+def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
     additional_actions = ["Hi Joey.", "it's sunny outside."]
     stories = StoryGraph(
         [
@@ -311,13 +280,13 @@ async def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
         ]
     )
 
-    async def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
+    def mocked_stories(*_: Any, **__: Any) -> StoryGraph:
         return stories
 
     # Patch to return our test stories
     default_importer.importer.get_stories = mocked_stories
 
-    domain = await default_importer.get_domain()
+    domain = default_importer.get_domain()
 
     assert all(
         action_name in domain.action_names_or_texts
@@ -325,7 +294,7 @@ async def test_adding_e2e_actions_to_domain(default_importer: E2EImporter):
     )
 
 
-async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
+def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = "data/test_domains/default_retrieval_intents.yml"
     data_paths = [
@@ -336,8 +305,8 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
         {}, config_path, domain_path, data_paths
     )
 
-    domain = await importer.get_domain()
-    nlu_data = await importer.get_nlu_data()
+    domain = importer.get_domain()
+    nlu_data = importer.get_nlu_data()
 
     assert domain.retrieval_intents == ["chitchat"]
     assert domain.intent_properties["chitchat"].get("is_retrieval_intent")
@@ -346,7 +315,7 @@ async def test_nlu_data_domain_sync_with_retrieval_intents(project: Text):
     assert "utter_chitchat" in domain.action_names_or_texts
 
 
-async def test_nlu_data_domain_sync_responses(project: Text):
+def test_nlu_data_domain_sync_responses(project: Text):
     config_path = os.path.join(project, DEFAULT_CONFIG_PATH)
     domain_path = "data/test_domains/default.yml"
     data_paths = ["data/test_responses/responses_utter_rasa.yml"]
@@ -356,7 +325,7 @@ async def test_nlu_data_domain_sync_responses(project: Text):
     )
 
     with pytest.warns(None):
-        domain = await importer.get_domain()
+        domain = importer.get_domain()
 
     # Responses were sync between "test_responses.yml" and the "domain.yml"
     assert "utter_rasa" in domain.responses.keys()
@@ -371,23 +340,33 @@ def test_importer_with_invalid_model_config(tmp_path: Path):
         TrainingDataImporter.load_from_config(str(config_file))
 
 
-async def test_importer_with_unicode_files():
+def test_importer_with_unicode_files():
     importer = TrainingDataImporter.load_from_dict(
         training_data_paths=["./data/test_nlu_no_responses/nlu_with_unicode.yml"]
     )
 
     # None of these should raise
-    nlu_data = await importer.get_nlu_data()
+    nlu_data = importer.get_nlu_data()
     assert not nlu_data.is_empty()
 
-    await importer.get_stories()
-    await importer.get_domain()
+    importer.get_stories()
+    importer.get_domain()
 
 
-async def test_read_conversation_tests(project: Text):
+def test_read_conversation_tests(project: Text):
     importer = TrainingDataImporter.load_from_dict(
         training_data_paths=[str(Path(project) / DEFAULT_CONVERSATION_TEST_PATH)]
     )
 
-    test_stories = await importer.get_conversation_tests()
+    test_stories = importer.get_conversation_tests()
     assert len(test_stories.story_steps) == 7
+
+
+def test_importer_fingerprint():
+    importer = TrainingDataImporter.load_from_dict(
+        training_data_paths=["./data/test_nlu_no_responses/nlu_with_unicode.yml"]
+    )
+
+    fp1 = importer.fingerprint()
+    fp2 = importer.fingerprint()
+    assert fp1 != fp2

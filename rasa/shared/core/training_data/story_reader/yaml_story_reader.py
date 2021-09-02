@@ -73,13 +73,7 @@ class YAMLStoryReader(StoryReader):
         Returns:
             A new reader instance.
         """
-        return cls(
-            reader.domain,
-            reader.template_variables,
-            reader.use_e2e,
-            reader.source_name,
-            reader._is_used_for_training,
-        )
+        return cls(reader.domain, reader.source_name, reader._is_used_for_training,)
 
     def read_from_file(
         self, filename: Union[Text, Path], skip_validation: bool = False
@@ -437,7 +431,7 @@ class YAMLStoryReader(StoryReader):
     @staticmethod
     def _parse_raw_entities(
         raw_entities: Union[List[Dict[Text, Text]], List[Text]]
-    ) -> List[Dict[Text, Text]]:
+    ) -> List[Dict[Text, Optional[Text]]]:
         final_entities = []
         for entity in raw_entities:
             if isinstance(entity, dict):

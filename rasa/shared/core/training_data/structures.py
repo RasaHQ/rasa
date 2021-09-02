@@ -254,7 +254,7 @@ class StoryStep:
 
     def explicit_events(
         self, domain: Domain, should_append_final_listen: bool = True
-    ) -> List[Union[Event, List[Event]]]:
+    ) -> List[Event]:
         """Returns events contained in the story step including implicit events.
 
         Not all events are always listed in the story dsl. This
@@ -262,8 +262,7 @@ class StoryStep:
         set slots. This functions makes these events explicit and
         returns them with the rest of the steps events.
         """
-
-        events = []
+        events: List[Event] = []
 
         for e in self.events:
             if isinstance(e, UserUttered):
@@ -473,13 +472,11 @@ class StoryGraph:
     def overlapping_checkpoint_names(
         cps: List[Checkpoint], other_cps: List[Checkpoint]
     ) -> Set[Text]:
-        """Find overlapping checkpoints names"""
-
+        """Find overlapping checkpoints names."""
         return {cp.name for cp in cps} & {cp.name for cp in other_cps}
 
     def with_cycles_removed(self) -> "StoryGraph":
         """Create a graph with the cyclic edges removed from this graph."""
-
         story_end_checkpoints = self.story_end_checkpoints.copy()
         cyclic_edge_ids = self.cyclic_edge_ids
         # we need to remove the start steps and replace them with steps ending
@@ -638,9 +635,8 @@ class StoryGraph:
     @staticmethod
     def _find_unused_checkpoints(
         story_steps: ValuesView[StoryStep], story_end_checkpoints: Dict[Text, Text]
-    ) -> Set[Text]:
+    ) -> Set[Optional[Text]]:
         """Finds all unused checkpoints."""
-
         collected_start = {STORY_END, STORY_START}
         collected_end = {STORY_END, STORY_START}
 
@@ -657,14 +653,6 @@ class StoryGraph:
         """Looks a story step up by its id."""
 
         return self.step_lookup.get(step_id)
-
-    def as_story_string(self) -> Text:
-        """Convert the graph into the story file format."""
-
-        story_content = ""
-        for step in self.story_steps:
-            story_content += step.as_story_string(flat=False)
-        return story_content
 
     @staticmethod
     def order_steps(
