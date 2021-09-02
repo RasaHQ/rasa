@@ -1,4 +1,8 @@
-from __future__ import annotations
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt `MemoizationPolicyGraphComponent` from
+#          the regular `rasa.core.policies.memoization` module. This module is a
+#          workaround to defer breaking changes due to the architecture revamp in 3.0.
+# flake8: noqa
 import zlib
 
 import base64
@@ -7,46 +11,26 @@ import logging
 
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
-from pathlib import Path
 
 import rasa.utils.io
 import rasa.shared.utils.io
-from rasa.engine.graph import ExecutionContext
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
-    FEATURIZER_FILE,
 )
-from rasa.shared.exceptions import FileIOException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
-from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
+from rasa.core.policies.policy import Policy, PolicyPrediction
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.utils.io import is_logging_disabled
-from rasa.core.constants import (
-    MEMOIZATION_POLICY_PRIORITY,
-    DEFAULT_MAX_HISTORY,
-    POLICY_MAX_HISTORY,
-    POLICY_PRIORITY,
-)
-from rasa.core.policies._memoization import (
-    MemoizationPolicy,
-    AugmentedMemoizationPolicy,
-)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MemoizationPolicy = MemoizationPolicy
-AugmentedMemoizationPolicy = AugmentedMemoizationPolicy
+from rasa.core.constants import MEMOIZATION_POLICY_PRIORITY, DEFAULT_MAX_HISTORY
 
 logger = logging.getLogger(__name__)
 
 
-class MemoizationPolicyGraphComponent(PolicyGraphComponent):
+class MemoizationPolicy(Policy):
     """A policy that follows exact examples of `max_history` turns in training stories.
 
     Since `slots` that are set some time in the past are
@@ -66,36 +50,44 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
     training stories for this, use AugmentedMemoizationPolicy.
     """
 
-    @staticmethod
-    def get_default_config() -> Dict[Text, Any]:
-        """Returns the default config (see parent class for full docstring)."""
-        # please make sure to update the docs when changing a default parameter
-        return {
-            "enable_feature_string_compression": True,
-            "use_nlu_confidence_as_score": False,
-            POLICY_PRIORITY: MEMOIZATION_POLICY_PRIORITY,
-            POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
-        }
+    ENABLE_FEATURE_STRING_COMPRESSION = True
 
-    def _standard_featurizer(self) -> MaxHistoryTrackerFeaturizer:
+    USE_NLU_CONFIDENCE_AS_SCORE = False
+
+    @staticmethod
+    def _standard_featurizer(
+        max_history: Optional[int] = None,
+    ) -> MaxHistoryTrackerFeaturizer:
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(
-            state_featurizer=None, max_history=self.config[POLICY_MAX_HISTORY]
+            state_featurizer=None, max_history=max_history
         )
 
     def __init__(
         self,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
         featurizer: Optional[TrackerFeaturizer] = None,
+        priority: int = MEMOIZATION_POLICY_PRIORITY,
+        max_history: Optional[int] = DEFAULT_MAX_HISTORY,
         lookup: Optional[Dict] = None,
+        **kwargs: Any,
     ) -> None:
-        """Initialize the policy."""
-        super().__init__(config, model_storage, resource, execution_context, featurizer)
-        self.lookup = lookup or {}
+        """Initialize the policy.
+
+        Args:
+            featurizer: tracker featurizer
+            priority: the priority of the policy
+            max_history: maximum history to take into account when featurizing trackers
+            lookup: a dictionary that stores featurized tracker states and
+                predicted actions for them
+        """
+        if not featurizer:
+            featurizer = self._standard_featurizer(max_history)
+
+        super().__init__(featurizer, priority, **kwargs)
+
+        self.max_history = self.featurizer.max_history
+        self.lookup = lookup if lookup is not None else {}
 
     def _create_lookup_from_states(
         self,
@@ -111,6 +103,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         Returns:
             lookup dictionary
         """
+
         lookup = {}
 
         if not trackers_as_states:
@@ -153,7 +146,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         # represented as dictionaries have the same json strings
         # quotes are removed for aesthetic reasons
         feature_str = json.dumps(states, sort_keys=True).replace('"', "")
-        if self.config["enable_feature_string_compression"]:
+        if self.ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(
                 bytes(feature_str, rasa.shared.utils.io.DEFAULT_ENCODING)
             )
@@ -167,6 +160,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
+        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
     ) -> None:
         # only considers original trackers (no augmented ones)
@@ -183,8 +177,6 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
             trackers_as_states, trackers_as_actions
         )
         logger.debug(f"Memorized {len(self.lookup)} unique examples.")
-
-        self.persist()
 
     def _recall_states(self, states: List[State]) -> Optional[Text]:
         return self.lookup.get(self._create_feature_key(states))
@@ -209,7 +201,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
     ) -> List[float]:
         result = self._default_predictions(domain)
         if action_name:
-            if self.config["use_nlu_confidence_as_score"]:
+            if self.USE_NLU_CONFIDENCE_AS_SCORE:
                 # the memoization will use the confidence of NLU on the latest
                 # user message to set the confidence of the action
                 score = tracker.latest_message.intent.get("confidence", 1.0)
@@ -252,64 +244,20 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         return self._prediction(result)
 
     def _metadata(self) -> Dict[Text, Any]:
-        return {"lookup": self.lookup}
+        return {
+            "priority": self.priority,
+            "max_history": self.max_history,
+            "lookup": self.lookup,
+        }
 
     @classmethod
     def _metadata_filename(cls) -> Text:
         return "memorized_turns.json"
 
-    def persist(self) -> None:
-        """Persists the policy to storage."""
-        with self._model_storage.write_to(self._resource) as path:
-            # not all policies have a featurizer
-            if self.featurizer is not None:
-                self.featurizer.persist(path)
 
-            file = Path(path) / self._metadata_filename()
-
-            rasa.shared.utils.io.create_directory_for_file(file)
-            rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
-
-    @classmethod
-    def load(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        **kwargs: Any,
-    ) -> MemoizationPolicyGraphComponent:
-        """Loads a trained policy (see parent class for full docstring)."""
-        featurizer = None
-        lookup = None
-
-        try:
-            with model_storage.read_from(resource) as path:
-                metadata_file = Path(path) / cls._metadata_filename()
-                metadata = rasa.shared.utils.io.read_json_file(metadata_file)
-                lookup = metadata["lookup"]
-
-                if (Path(path) / FEATURIZER_FILE).is_file():
-                    featurizer = TrackerFeaturizer.load(path)
-
-        except (ValueError, FileNotFoundError, FileIOException):
-            logger.warning(
-                f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
-                f"metadata couldn't be loaded."
-            )
-
-        return cls(
-            config,
-            model_storage,
-            resource,
-            execution_context,
-            featurizer=featurizer,
-            lookup=lookup,
-        )
-
-
-class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
-    """The policy that remembers examples from training stories for `max_history` turns.
+class AugmentedMemoizationPolicy(MemoizationPolicy):
+    """The policy that remembers examples from training stories
+    for `max_history` turns.
 
     If it is needed to recall turns from training dialogues
     where some slots might not be set during prediction time,
@@ -334,10 +282,8 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         idx_of_first_action = None
         idx_of_second_action = None
 
-        applied_events = tracker.applied_events()
-
         # we need to find second executed action
-        for e_i, event in enumerate(applied_events):
+        for e_i, event in enumerate(tracker.applied_events()):
             # find second ActionExecuted
             if isinstance(event, ActionExecuted):
                 if idx_of_first_action is None:
@@ -352,7 +298,7 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
             return None
 
         # make second ActionExecuted the first one
-        events = applied_events[idx_to_use:]
+        events = tracker.applied_events()[idx_to_use:]
         if not events:
             return None
 
@@ -380,11 +326,7 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         """
         logger.debug("Launch DeLorean...")
 
-        # Truncate the tracker based on `max_history`
-        mcfly_tracker = _trim_tracker_by_max_history(
-            tracker, self.config[POLICY_MAX_HISTORY]
-        )
-        mcfly_tracker = self._back_to_the_future(mcfly_tracker)
+        mcfly_tracker = self._back_to_the_future(tracker)
         while mcfly_tracker is not None:
             states = self._prediction_states(mcfly_tracker, domain,)
 
@@ -425,54 +367,3 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
             return self._recall_using_delorean(states, tracker, domain,)
         else:
             return predicted_action_name
-
-
-def _get_max_applied_events_for_max_history(
-    tracker: DialogueStateTracker, max_history: Optional[int],
-) -> Optional[int]:
-    """Computes the number of events in the tracker that correspond to max_history.
-
-    Args:
-        tracker: Some tracker holding the events
-        max_history: The number of actions to count
-
-    Returns:
-        The number of actions, as counted from the end of the event list, that should
-        be taken into accout according to the `max_history` setting. If all events
-        should be taken into account, the return value is `None`.
-    """
-    if not max_history:
-        return None
-    num_events = 0
-    num_actions = 0
-    for event in reversed(tracker.applied_events()):
-        num_events += 1
-        if isinstance(event, ActionExecuted):
-            num_actions += 1
-        if num_actions > max_history:
-            return num_events
-    return None
-
-
-def _trim_tracker_by_max_history(
-    tracker: DialogueStateTracker, max_history: Optional[int],
-) -> DialogueStateTracker:
-    """Removes events from the tracker until it has `max_history` actions.
-
-    Args:
-        tracker: Some tracker.
-        max_history: Number of actions to keep.
-
-    Returns:
-        A new tracker with up to `max_history` actions, or the same tracker if
-        `max_history` is `None`.
-    """
-    max_applied_events = _get_max_applied_events_for_max_history(tracker, max_history)
-    if not max_applied_events:
-        return tracker
-
-    applied_events = tracker.applied_events()[-max_applied_events:]
-    new_tracker = tracker.init_copy()
-    for event in applied_events:
-        new_tracker.update(event)
-    return new_tracker
