@@ -1,6 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Text, Any, Optional
-import os
+from typing import Dict, Text, Any
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -9,27 +8,23 @@ from rasa.shared.nlu.training_data.training_data import (
     TrainingData,
     DEFAULT_TRAINING_DATA_OUTPUT_PATH,
 )
-from rasa.shared.nlu.training_data.loading import load_data
 
 
 class NLUTrainingDataProvider(GraphComponent):
-    """Provides NLU training data during training and inference time."""
+    """Provides NLU training data during training."""
 
     def __init__(
-        self,
-        model_storage: ModelStorage,
-        resource: Resource,
-        training_data: Optional[TrainingData] = None,
+        self, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource,
     ) -> None:
-        """Creates NLU training data provider."""
+        """Creates a new NLU training data provider."""
+        self._config = config
         self._model_storage = model_storage
         self._resource = resource
-        self._training_data = training_data
 
     @classmethod
     def get_default_config(cls) -> Dict[Text, Any]:
-        """Get Default class configuration"""
-        return {"language": "en", "persist": False}
+        """Returns the default config for NLU training data provider."""
+        return {"persist": False}
 
     @classmethod
     def create(
@@ -39,27 +34,8 @@ class NLUTrainingDataProvider(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> NLUTrainingDataProvider:
-        """Creates component (see parent class for full docstring)."""
-        return cls(model_storage, resource)
-
-    @classmethod
-    def load(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        **kwargs: Any,
-    ) -> NLUTrainingDataProvider:
-        """Creates provider using a persisted data."""
-        with model_storage.read_from(resource) as resource_directory:
-            training_data = load_data(
-                resource_name=os.path.join(
-                    str(resource_directory), DEFAULT_TRAINING_DATA_OUTPUT_PATH
-                ),
-                language=config["language"],
-            )
-        return cls(model_storage, resource, training_data)
+        """Creates a new NLU training data provider (see parent class for full docstring)."""
+        return cls(config, model_storage, resource)
 
     def _persist(self, training_data: TrainingData) -> None:
         """Persists NLU training data to model storage."""
@@ -69,16 +45,9 @@ class NLUTrainingDataProvider(GraphComponent):
                 filename=DEFAULT_TRAINING_DATA_OUTPUT_PATH,
             )
 
-    def provide(
-        self, config: Dict[Text, Any], importer: Optional[TrainingDataImporter] = None,
-    ) -> TrainingData:
+    def provide(self, importer: TrainingDataImporter,) -> TrainingData:
         """Provides nlu training data during training."""
-        if config == {}:  # use default config if config is empty
-            config = self.get_default_config()
-        if importer is None:
-            training_data = self._training_data
-        else:
-            training_data = importer.get_nlu_data(language=config["language"])
-        if config["persist"]:
+        training_data = importer.get_nlu_data(language=self._config["language"])
+        if self._config["persist"]:
             self._persist(training_data)
         return training_data
