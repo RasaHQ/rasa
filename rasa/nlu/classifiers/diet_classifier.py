@@ -362,14 +362,6 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
 
         train_utils.validate_configuration_settings(self.component_config)
 
-        self.component_config = train_utils.update_deprecated_loss_type(
-            self.component_config
-        )
-
-        self.component_config = train_utils.update_deprecated_sparsity_to_density(
-            self.component_config
-        )
-
         self.component_config = train_utils.update_similarity_type(
             self.component_config
         )
@@ -1108,7 +1100,6 @@ class DIETClassifierGraphComponent(GraphComponent, EntityExtractorMixin):
 
         config = train_utils.update_confidence_type(config)
         config = train_utils.update_similarity_type(config)
-        config = train_utils.update_deprecated_loss_type(config)
 
         model = cls._load_model(
             entity_tag_specs,

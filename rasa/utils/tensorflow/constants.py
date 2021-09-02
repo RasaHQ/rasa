@@ -43,7 +43,6 @@ DROP_RATE_DIALOGUE = "drop_rate_dialogue"
 DROP_RATE_LABEL = "drop_rate_label"
 CONSTRAIN_SIMILARITIES = "constrain_similarities"
 
-WEIGHT_SPARSITY = "weight_sparsity"  # Deprecated and superseeded by CONNECTION_DENSITY
 CONNECTION_DENSITY = "connection_density"
 
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
@@ -69,7 +68,6 @@ SOFTMAX = "softmax"
 MARGIN = "margin"
 AUTO = "auto"
 INNER = "inner"
-LINEAR_NORM = "linear_norm"
 COSINE = "cosine"
 CROSS_ENTROPY = "cross_entropy"
 
