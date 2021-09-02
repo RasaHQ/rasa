@@ -237,7 +237,7 @@ async def test_train_model_checkpointing(
                 {
                     "name": "ResponseSelector",
                     EPOCHS: 5,
-                    MODEL_CONFIDENCE: "linear_norm",
+                    MODEL_CONFIDENCE: "softmax",
                     CONSTRAIN_SIMILARITIES: True,
                     CHECKPOINT_MODEL: True,
                 },
@@ -338,9 +338,9 @@ async def test_process_gives_diagnostic_data(
 
 @pytest.mark.parametrize(
     "classifier_params, output_length",
-    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "linear_norm"}, 9)],
+    [({RANDOM_SEED: 42, EPOCHS: 1, MODEL_CONFIDENCE: "softmax"}, 9)],
 )
-async def test_cross_entropy_with_linear_norm(
+async def test_cross_entropy_with_softmax(
     component_builder: ComponentBuilder,
     tmp_path: Path,
     classifier_params: Dict[Text, Any],
