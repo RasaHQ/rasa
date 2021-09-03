@@ -5,6 +5,7 @@ from typing import Text
 
 import pytest
 
+from rasa.core import training
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.constants import DEFAULT_MAX_HISTORY
 from rasa.core.policies.rule_policy import RulePolicy
@@ -16,6 +17,13 @@ from rasa.core.agent import Agent
 from rasa.core.policies.ted_policy import TEDPolicy
 
 from rasa.shared.core.training_data.visualization import visualize_stories
+
+
+def test_load_training_data_reader_not_found_throws(tmp_path: Path, domain: Domain):
+    (tmp_path / "file").touch()
+
+    with pytest.raises(Exception):
+        training.load_data(str(tmp_path), domain)
 
 
 async def test_story_visualization(domain: Domain, tmp_path: Path):
