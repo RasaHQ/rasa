@@ -74,6 +74,10 @@ def create(
             None,
             [["upper"], ["digit"], ["low"], ["digit"]],
             [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0],
+            # Note:
+            # 1. we just describe the features for first token here
+            # 2. "123".islower() == "123".isupper() == False, which is why we end
+            #     up with 7 features
         ),
         # with part of speech
         (

@@ -392,7 +392,11 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
             sentence_features = self._map_tokens_to_raw_features(tokens)
             sparse_matrix = self._map_raw_features_to_indices(sentence_features)
             self.add_features_to_message(
-                sequence=sparse_matrix, sentence=None, attribute=TEXT, message=message
+                # FIXME: create sentence feature and make `sentence` non optional
+                sequence=sparse_matrix,
+                sentence=None,
+                attribute=TEXT,
+                message=message,
             )
 
     def _map_raw_features_to_indices(

@@ -103,7 +103,7 @@ class Featurizer2(Generic[FeatureType]):
     def add_features_to_message(
         self,
         sequence: FeatureType,
-        sentence: FeatureType,
+        sentence: Optional[FeatureType],
         attribute: Text,
         message: Message,
     ) -> None:
