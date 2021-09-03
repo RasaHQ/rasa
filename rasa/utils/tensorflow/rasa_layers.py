@@ -833,7 +833,7 @@ class RasaSequenceLayer(RasaCustomLayer):
                     f"layers expect sequential input."
                 )
         # else: note that if transformer_layers is 0 it doesn't matter whether
-        # there are sequence features for the given attribute, because the result
+        # sequence features are present for the given attribute, because the result
         # of prepare_transformer_layer will just pass on the input
         self._tf_layers[self.TRANSFORMER] = prepare_transformer_layer(
             attribute_name=attribute,

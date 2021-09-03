@@ -43,7 +43,7 @@ def test_combine_attribute_features_from_message_filters_correctly(seed: int,):
 
     Note that for (2) we create attributes and origin information at random such that
     there are exactly two attributes and two featurizers used overall and we
-    request exactly of the two attributes and one of the two origins, respectively.
+    request exactly one of the two attributes and one of the two origins, respectively.
     """
     rng = np.random.default_rng(seed=seed)
 
@@ -60,9 +60,9 @@ def test_combine_attribute_features_from_message_filters_correctly(seed: int,):
     attribute_flag = rng.choice(2, size=total_number_of_features)
     featurizer_flag = rng.choice(2, size=total_number_of_features)
     for flags in [attribute_flag, featurizer_flag]:
-        assert (
-            sum(flags) > 0 and sum(flags) < total_number_of_features
-        ), "Fix this test. Choose a different seed."
+        # ensure both appear by flipping first element in case all are equal
+        if sum(flags) == 0 or sum(flags) == total_number_of_features:
+            flags[0] = abs(1 - flags[0])
 
     # choose different dimensions for sparse and dense features (bool = is_sparse)
     last_dimensions = {True: 3, False: 4}
@@ -88,8 +88,7 @@ def test_combine_attribute_features_from_message_filters_correctly(seed: int,):
             message_features.append(feat)
 
     # shuffle them
-    permutation = rng.permutation(len(message_features))
-    message_features = [message_features[idx] for idx in permutation]
+    rng.shuffle(message_features)
 
     # finally, our input message
     message = Message(features=message_features)

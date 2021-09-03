@@ -6,7 +6,7 @@ import numpy as np
 import os
 import tensorflow as tf
 
-from typing import Any, Dict, List, Optional, Text, Tuple, TypeVar, Union, Type
+from typing import Any, Dict, List, Optional, Text, Tuple, Union, Type
 
 import rasa.shared.utils.io
 import rasa.utils.io as io_utils
@@ -707,7 +707,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
            training data that contains features for labels if and only if
            `training` had been set to `True`
         """
-        if training:
+        if training and self.label_attribute is not None:
             # only use those training examples that have the label_attribute set
             messages = [
                 example for example in messages if self.label_attribute in example.data
@@ -798,7 +798,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
             ),
         )
 
-        # NOTE: This check is a last santiy check but it doesn't solve every problem.
+        # NOTE: This check is a last sanity check but it doesn't solve every problem.
         # We need the list of featurizers for this component and need to raise an
         # error if `LexicalSyntacticFeaturizer` is included on it's own - or together
         # with other featurizers. The latter is not checked by the following.
@@ -904,7 +904,7 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
           list of the ids (indices) used to create the features
         """
         if self.label_attribute is None:
-            return
+            return []
         if label_id_dict is None:
             raise ValueError("Expected some label id mapping.")
         if self._label_data is None:
@@ -942,17 +942,20 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
         if self.component_config[BILOU_FLAG]:
             bilou_utils.apply_bilou_schema(training_data)
 
-        label_id_index_mapping = self._create_label_id_to_index_mapping(training_data,)
+        if self.label_attribute is not None:
+            label_id_index_mapping = self._create_label_id_to_index_mapping(
+                training_data,
+            )
 
-        if not label_id_index_mapping:
-            # no labels are present to train
-            return RasaModelData()
+            if not label_id_index_mapping:
+                # no labels are present to train
+                return RasaModelData()
 
-        self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
+            self.index_label_id_mapping = self._invert_mapping(label_id_index_mapping)
 
-        self._label_data = self._create_label_data(
-            training_data, label_id_index_mapping,
-        )
+            self._label_data = self._create_label_data(
+                training_data, label_id_index_mapping,
+            )
 
         self._entity_tag_specs = self._create_entity_tag_specs(training_data)
 
@@ -1196,18 +1199,16 @@ class DIETClassifier(IntentClassifier, EntityExtractor):
 
         return {"file": file_name}
 
-    T = TypeVar("T")
-
     @classmethod
     def load(
-        cls: T,
+        cls,
         meta: Dict[Text, Any],
         model_dir: Text,
         model_metadata: Metadata = None,
         cached_component: Optional["DIETClassifier"] = None,
         should_finetune: bool = False,
         **kwargs: Any,
-    ) -> T:
+    ) -> "DIETClassifier":
         """Loads the trained model from the provided directory."""
         if not meta.get("file"):
             logger.debug(
