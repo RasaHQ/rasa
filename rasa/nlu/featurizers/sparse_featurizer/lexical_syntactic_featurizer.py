@@ -364,7 +364,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
           the given list of messages which have been modified in-place
         """
         for message in messages:
-            self.process(message)
+            self.process_message(message)
         return messages
 
     def process_message(self, message: Message) -> None:

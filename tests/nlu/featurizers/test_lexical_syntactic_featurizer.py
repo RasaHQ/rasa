@@ -181,6 +181,33 @@ def test_only_featurizes_text_attribute(
     assert message.features[0].attribute == TEXT
 
 
+def test_process_multiple_messages(
+    create: Callable[[Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent],
+):
+    # build a message with tokens for lots of attributes
+    multiple_messages = []
+    for sentence in ["hello", "hello there"]:
+        tokens = [
+            Token(text=match[0], start=match.start())
+            for match in re.finditer(r"\w+", sentence)
+        ]
+
+        multiple_messages.append(Message(data={TOKENS_NAMES[TEXT]: tokens}))
+
+    # train and process
+    featurizer = create({"alias": "lsf", "features": [["prefix2"]]})
+    featurizer.train(TrainingData(multiple_messages))
+    featurizer.process(multiple_messages)
+    for message in multiple_messages:
+        assert len(message.features) == 1
+        assert message.features[0].attribute == TEXT
+
+    # we know both texts where used for training if more than one feature has been
+    # extracted e.g. for the first message from which only the prefix "he" can be
+    # extracted
+    assert multiple_messages[0].features[0].features.shape[-1] > 1
+
+
 @pytest.mark.parametrize("feature_config", [(["pos", "BOS"],)])
 def test_create_train_load_and_process(
     create: Callable[[Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent],
