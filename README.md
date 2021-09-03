@@ -20,6 +20,7 @@
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Open Source">
 
+
 Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contextual assistants on:
 - Facebook Messenger
 - Slack
@@ -314,7 +315,7 @@ communicating any issues which might be release relevant. Postponing the release
 
 1. **At the start of the day, post a small message on slack announcing release day!** Communicate you'll be handling
 the release, and the time you're aiming to start releasing (again, no later than 4pm, as issues may arise and
-cause delays). This message should be posted early in the morning and before moving forward with any of the steps of the release, 
+cause delays). This message should be posted early in the morning and before moving forward with any of the steps of the release,
    in order to give enough time to people to check their PRs and issues. That way they can plan any remaining work. A template of the slack message can be found [here](https://rasa-hq.slack.com/archives/C36SS4N8M/p1613032208137500?thread_ts=1612876410.068400&cid=C36SS4N8M).
    The release time should be communicated transparently so that others can plan potentially necessary steps accordingly. If there are bigger changes this should be communicated.
 2. Make sure the milestone is empty (everything has been either merged or moved to the next milestone)
@@ -335,7 +336,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 1. Make sure all dependencies are up to date (**especially Rasa SDK**)
     - For Rasa SDK that means first creating a [new Rasa SDK release](https://github.com/RasaHQ/rasa-sdk#steps-to-release-a-new-version) (make sure the version numbers between the new Rasa and Rasa SDK releases match)
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
-2. In case of a minor release, create a new branch that corresponds to the new release, e.g. 
+2. In case of a minor release, create a new branch that corresponds to the new release, e.g.
    ```bash
     git checkout -b 1.2.x
     git push origin 1.2.x
@@ -360,7 +361,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
     - If the problem persists, check also the log files and try to find the root cause of the issue
     - If you still cannot resolve the error, contact the infrastructure team by providing any helpful information from your investigation
 9.  After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
-    
+
 ### Cutting a Micro release
 
 Micro releases are simpler to cut, since they are meant to contain only bugfixes.
