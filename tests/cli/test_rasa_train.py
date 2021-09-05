@@ -288,7 +288,7 @@ def test_train_nlu(run_in_simple_project: Callable[..., RunResult]):
         "-c",
         "config.yml",
         "--nlu",
-        "data/nlu.md",
+        "data/nlu.yml",
         "--out",
         "train_models",
     )
@@ -315,7 +315,7 @@ def test_train_nlu_persist_nlu_data(
         "-c",
         "config.yml",
         "--nlu",
-        "data/nlu.md",
+        "data/nlu.yml",
         "--out",
         "train_models",
         "--persist-nlu-data",

@@ -24,7 +24,6 @@ from rasa.core.featurizers.tracker_featurizers import (
     TrackerFeaturizer,
     MaxHistoryTrackerFeaturizer,
 )
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.constants import (
     ACTION_TEXT,
@@ -41,7 +40,13 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
-from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY
+from rasa.core.constants import (
+    DIALOGUE,
+    POLICY_MAX_HISTORY,
+    DEFAULT_MAX_HISTORY,
+    DEFAULT_POLICY_PRIORITY,
+    POLICY_PRIORITY,
+)
 from rasa.shared.constants import DIAGNOSTIC_DATA
 from rasa.shared.core.constants import ACTIVE_LOOP, SLOTS, ACTION_LISTEN_NAME
 from rasa.shared.core.trackers import DialogueStateTracker
@@ -332,13 +337,11 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             # ingredients in a recipe, but it doesn't make sense for the parts of
             # an address
             SPLIT_ENTITIES_BY_COMMA: SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
+            # Max history of the policy, unbounded by default
+            POLICY_MAX_HISTORY: DEFAULT_MAX_HISTORY,
+            # Determines the importance of policies, higher values take precedence
+            POLICY_PRIORITY: DEFAULT_POLICY_PRIORITY,
         }
-
-    @staticmethod
-    def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
-        return MaxHistoryTrackerFeaturizer(
-            SingleStateFeaturizer(), max_history=max_history
-        )
 
     def __init__(
         self,
@@ -359,13 +362,6 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         self.split_entities_config = rasa.utils.train_utils.init_split_entities(
             config[SPLIT_ENTITIES_BY_COMMA], SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE
         )
-
-        # TODO: check if this statement can be removed.
-        #  More context here -
-        #  https://github.com/RasaHQ/rasa/issues/5786#issuecomment-840762751
-        max_history = config.get(POLICY_MAX_HISTORY)
-        if isinstance(self.featurizer, MaxHistoryTrackerFeaturizer) and max_history:
-            self.featurizer.max_history = max_history
 
         self._load_params(config)
 

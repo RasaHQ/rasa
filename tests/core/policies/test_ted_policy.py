@@ -6,7 +6,7 @@ import pytest
 import tests.core.test_policies
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
-from rasa.core.constants import POLICY_PRIORITY, POLICY_MAX_HISTORY
+from rasa.core.constants import POLICY_MAX_HISTORY
 
 from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
 from rasa.core.featurizers.tracker_featurizers import (
@@ -120,33 +120,6 @@ class TestTEDPolicy(PolicyTestCollection):
     def _policy_class_to_test() -> Type[TEDPolicy]:
         return TEDPolicy
 
-    def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
-    ) -> Dict[Text, Any]:
-        config_override = config_override or {}
-        return {
-            **TEDPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
-            **config_override,
-        }
-
-    def create_policy(
-        self,
-        featurizer: Optional[TrackerFeaturizer],
-        priority: int,
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        config: Optional[Dict[Text, Any]] = None,
-    ) -> TEDPolicy:
-        return TEDPolicy(
-            self._config(priority, config),
-            featurizer=featurizer,
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
-
     def test_train_model_checkpointing(self, tmp_path: Path):
         checkpoint_dir = get_checkpoint_dir_path(tmp_path)
         assert not checkpoint_dir.is_dir()
@@ -220,7 +193,7 @@ class TestTEDPolicy(PolicyTestCollection):
     ):
         execution_context.is_finetuning = should_finetune
         loaded_policy = trained_policy.__class__.load(
-            {**self._config(trained_policy.priority), EPOCH_OVERRIDE: epoch_override},
+            {**self._config(), EPOCH_OVERRIDE: epoch_override},
             model_storage,
             resource,
             execution_context,
@@ -251,7 +224,6 @@ class TestTEDPolicy(PolicyTestCollection):
     def test_training_with_no_intent(
         self,
         featurizer: Optional[TrackerFeaturizer],
-        priority: int,
         default_domain: Domain,
         tmp_path: Path,
         caplog: LogCaptureFixture,
@@ -271,7 +243,6 @@ class TestTEDPolicy(PolicyTestCollection):
         )
         policy = self.create_policy(
             featurizer=featurizer,
-            priority=priority,
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -571,35 +542,56 @@ class TestTEDPolicy(PolicyTestCollection):
             == prediction_without_action.probabilities
         )
 
+    @pytest.mark.parametrize(
+        "featurizer_config, tracker_featurizer, state_featurizer",
+        [
+            (None, MaxHistoryTrackerFeaturizer(), SingleStateFeaturizer),
+            ([], MaxHistoryTrackerFeaturizer(), SingleStateFeaturizer),
+        ],
+    )
+    def test_empty_featurizer_configs(
+        self,
+        featurizer_config: Optional[Dict[Text, Any]],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        tracker_featurizer: MaxHistoryTrackerFeaturizer,
+        state_featurizer: Type[SingleStateFeaturizer],
+    ):
+        featurizer_config_override = (
+            {"featurizer": featurizer_config} if featurizer_config else {}
+        )
+        policy = self.create_policy(
+            None,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+            config=self._config(featurizer_config_override),
+        )
+
+        featurizer = policy.featurizer
+        assert isinstance(featurizer, tracker_featurizer.__class__)
+
+        if featurizer_config:
+            expected_max_history = featurizer_config[0].get(POLICY_MAX_HISTORY)
+        else:
+            expected_max_history = self._config().get(POLICY_MAX_HISTORY)
+
+        assert featurizer.max_history == expected_max_history
+
+        assert isinstance(featurizer.state_featurizer, state_featurizer)
+
 
 class TestTEDPolicyMargin(TestTEDPolicy):
     def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+        self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
             **TEDPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
             LOSS_TYPE: "margin",
             **config_override,
         }
-
-    def create_policy(
-        self,
-        featurizer: Optional[TrackerFeaturizer],
-        priority: int,
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        config: Optional[Dict[Text, Any]] = None,
-    ) -> Policy:
-        return TEDPolicy(
-            self._config(priority, config),
-            featurizer=featurizer,
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
 
     def test_similarity_type(self, trained_policy: TEDPolicy):
         assert trained_policy.config[SIMILARITY_TYPE] == COSINE
@@ -639,63 +631,27 @@ class TestTEDPolicyMargin(TestTEDPolicy):
 
 class TestTEDPolicyWithEval(TestTEDPolicy):
     def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+        self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
             **TEDPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
             SCALE_LOSS: False,
             EVAL_NUM_EXAMPLES: 4,
             **config_override,
         }
 
-    def create_policy(
-        self,
-        featurizer: Optional[TrackerFeaturizer],
-        priority: int,
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        config: Optional[Dict[Text, Any]] = None,
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer,
-            config=self._config(priority, config),
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
-
 
 class TestTEDPolicyNoNormalization(TestTEDPolicy):
     def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+        self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
             **TEDPolicy.get_default_config(),
             RANKING_LENGTH: 0,
-            POLICY_PRIORITY: priority,
             **config_override,
         }
-
-    def create_policy(
-        self,
-        featurizer: Optional[TrackerFeaturizer],
-        priority: int,
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        config: Optional[Dict[Text, Any]] = None,
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer,
-            config=self._config(priority, config),
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
 
     def test_ranking_length(self, trained_policy: TEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 0
@@ -726,32 +682,14 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
 
 class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
     def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+        self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
             **TEDPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
             MODEL_CONFIDENCE: LINEAR_NORM,
             **config_override,
         }
-
-    def create_policy(
-        self,
-        featurizer: Optional[TrackerFeaturizer],
-        priority: int,
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        config: Optional[Dict[Text, Any]] = None,
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer,
-            config=self._config(priority, config),
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
 
     def test_confidence_type(self, trained_policy: TEDPolicy):
         assert trained_policy.config[MODEL_CONFIDENCE] == LINEAR_NORM
@@ -795,32 +733,14 @@ class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
 
 class TestTEDPolicyLowRankingLength(TestTEDPolicy):
     def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+        self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
             **TEDPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
             RANKING_LENGTH: 3,
             **config_override,
         }
-
-    def create_policy(
-        self,
-        featurizer: Optional[TrackerFeaturizer],
-        priority: int,
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        config: Optional[Dict[Text, Any]] = None,
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer,
-            config=self._config(priority, config),
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
 
     def test_ranking_length(self, trained_policy: TEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 3
@@ -828,32 +748,14 @@ class TestTEDPolicyLowRankingLength(TestTEDPolicy):
 
 class TestTEDPolicyHighRankingLength(TestTEDPolicy):
     def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+        self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
             **TEDPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
             RANKING_LENGTH: 11,
             **config_override,
         }
-
-    def create_policy(
-        self,
-        featurizer: Optional[TrackerFeaturizer],
-        priority: int,
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        config: Optional[Dict[Text, Any]] = None,
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer,
-            config=self._config(priority, config),
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
 
     def test_ranking_length(self, trained_policy: TEDPolicy):
         assert trained_policy.config[RANKING_LENGTH] == 11
@@ -861,19 +763,17 @@ class TestTEDPolicyHighRankingLength(TestTEDPolicy):
 
 class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
     def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+        self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
             **TEDPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
             **config_override,
         }
 
     def create_policy(
         self,
         featurizer: Optional[TrackerFeaturizer],
-        priority: int,
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
@@ -883,7 +783,7 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
         # since it is using MaxHistoryTrackerFeaturizer
         # if max_history is not specified
         return TEDPolicy(
-            config=self._config(priority, config),
+            config=self._config(config),
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
@@ -903,7 +803,7 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
         )
 
         loaded = trained_policy.__class__.load(
-            self._config(trained_policy.priority),
+            self._config(trained_policy.config),
             model_storage,
             resource,
             execution_context,
@@ -915,12 +815,11 @@ class TestTEDPolicyWithStandardFeaturizer(TestTEDPolicy):
 
 class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
     def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+        self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
             **TEDPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
             POLICY_MAX_HISTORY: self.max_history,
             **config_override,
         }
@@ -928,7 +827,6 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
     def create_policy(
         self,
         featurizer: Optional[TrackerFeaturizer],
-        priority: int,
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
@@ -938,68 +836,25 @@ class TestTEDPolicyWithMaxHistory(TestTEDPolicy):
         # since it is using MaxHistoryTrackerFeaturizer
         # if max_history is specified
         return TEDPolicy(
-            config=self._config(priority, config),
+            config=self._config(config),
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
         )
 
-    def test_featurizer(
-        self,
-        trained_policy: Policy,
-        resource: Resource,
-        model_storage: ModelStorage,
-        tmp_path: Path,
-        execution_context: ExecutionContext,
-    ):
-        assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
-        assert trained_policy.featurizer.max_history == self.max_history
-        assert isinstance(
-            trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
-        )
-
-        loaded = trained_policy.__class__.load(
-            self._config(trained_policy.priority),
-            model_storage,
-            resource,
-            execution_context,
-        )
-
-        assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
-        assert loaded.featurizer.max_history == self.max_history
-        assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
-
 
 class TestTEDPolicyWithRelativeAttention(TestTEDPolicy):
     def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+        self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
             **TEDPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
             KEY_RELATIVE_ATTENTION: True,
             VALUE_RELATIVE_ATTENTION: True,
             MAX_RELATIVE_POSITION: 5,
             **config_override,
         }
-
-    def create_policy(
-        self,
-        featurizer: Optional[TrackerFeaturizer],
-        priority: int,
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        config: Optional[Dict[Text, Any]] = None,
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer,
-            config=self._config(priority, config),
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
 
 
 class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
@@ -1007,31 +862,13 @@ class TestTEDPolicyWithRelativeAttentionMaxHistoryOne(TestTEDPolicy):
     max_history = 1
 
     def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+        self, config_override: Optional[Dict[Text, Any]] = None
     ) -> Dict[Text, Any]:
         config_override = config_override or {}
         return {
             **TEDPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
             KEY_RELATIVE_ATTENTION: True,
             VALUE_RELATIVE_ATTENTION: True,
             MAX_RELATIVE_POSITION: 5,
             **config_override,
         }
-
-    def create_policy(
-        self,
-        featurizer: Optional[TrackerFeaturizer],
-        priority: int,
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        config: Optional[Dict[Text, Any]] = None,
-    ) -> Policy:
-        return TEDPolicy(
-            featurizer=featurizer,
-            config=self._config(priority, config),
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
