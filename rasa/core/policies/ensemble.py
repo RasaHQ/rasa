@@ -34,14 +34,14 @@ NOTE: differences to previous version
    --> we do *not* move this to a component that is executed before the policies
    but leave this snippet in the ensemble's predict
 -  refactored the way the "best prediction" is determined because that decision
-   process was a bit scattered and in-explicit and changed PolicyPrediction such that
+   process was a bit scattered and in-explicit and changed PolicyPrediction2 such that
    priority is an int not a tuple (?!)
 - `is_not_in_training_data` has been removed
    -->  can be replaced by an check that determines whether the policy is
         some kind of memoization policy *inside the tests* (via its name...)
 NOTE/FIXME: questions
 -  Where are the events from the (winning) predictions applied? We only add things to
-   the final `PolicyPrediction` here.
+   the final `PolicyPrediction2` here.
 """
 
 from abc import abstractmethod
@@ -59,7 +59,7 @@ from rasa.core.policies.policy import (
     InvalidPolicyConfig,
     Policy,
     SupportedData,
-    PolicyPrediction,
+    PolicyPrediction2,
 )
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies._ensemble import SimplePolicyEnsemble, PolicyEnsemble
@@ -256,10 +256,10 @@ class PolicyPredictionEnsemble:
 
     def predict(
         self,
-        predictions: List[PolicyPrediction],
+        predictions: List[PolicyPrediction2],
         domain: Domain,
         tracker: DialogueStateTracker,
-    ) -> PolicyPrediction:
+    ) -> PolicyPrediction2:
         """Derives a final prediction from the given list of predictions.
 
         Args:
@@ -285,7 +285,7 @@ class PolicyPredictionEnsemble:
     @staticmethod
     def _exclude_last_action_from_predictions_if_it_was_rejected(
         tracker: DialogueStateTracker,
-        predictions: List[PolicyPrediction],
+        predictions: List[PolicyPrediction2],
         domain: Domain,
     ) -> None:
         """Sets the probability for the last action to 0 if it was just rejected.
@@ -321,8 +321,8 @@ class PolicyPredictionEnsemble:
 
     @abstractmethod
     def combine_predictions(
-        self, predictions: List[PolicyPrediction], tracker: DialogueStateTracker
-    ) -> PolicyPrediction:
+        self, predictions: List[PolicyPrediction2], tracker: DialogueStateTracker
+    ) -> PolicyPrediction2:
         """Derives a single prediction from the given list of predictions.
 
         Args:
@@ -422,8 +422,8 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
                 )
 
     def combine_predictions(
-        self, predictions: List[PolicyPrediction], tracker: DialogueStateTracker
-    ) -> PolicyPrediction:
+        self, predictions: List[PolicyPrediction2], tracker: DialogueStateTracker
+    ) -> PolicyPrediction2:
         """Derives a single prediction from the given list of predictions.
 
         Note that you might get unexpected results if the priorities are non-unique.
@@ -461,7 +461,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
 
         return final
 
-    def _choose_best_prediction(self, predictions: List[PolicyPrediction]) -> int:
+    def _choose_best_prediction(self, predictions: List[PolicyPrediction2]) -> int:
         """Chooses the "best" prediction out of the given predictions.
 
         Note that this comparison is *not* symmetric if the priorities are allowed to
@@ -477,7 +477,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
             not prediction.is_no_user_prediction for prediction in predictions
         )
 
-        def criteria(prediction: PolicyPrediction) -> Tuple[float, ...]:
+        def criteria(prediction: PolicyPrediction2) -> Tuple[bool, bool, float, int]:
             """Extracts statistics (larger is better) ordered by importance."""
             return (
                 prediction.is_no_user_prediction,
@@ -493,7 +493,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
 
     def _choose_events(
         self,
-        predictions: List[PolicyPrediction],
+        predictions: List[PolicyPrediction2],
         best_idx: int,
         tracker: DialogueStateTracker,
     ) -> List[Event]:
