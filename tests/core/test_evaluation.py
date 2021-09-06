@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import json
 import logging
-from typing import Any, Text, Dict
+from typing import Any, Text, Dict, Callable
 
 import pytest
 
@@ -27,6 +27,30 @@ from rasa.core.policies.memoization import MemoizationPolicy
 # noinspection PyUnresolvedReferences
 from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
 from rasa.core.agent import Agent
+from rasa.shared.exceptions import RasaException
+
+
+@pytest.fixture(scope="module")
+async def trained_restaurantbot(trained_async: Callable) -> Path:
+    zipped_model = await trained_async(
+        domain="data/test_restaurantbot/domain.yml",
+        config="data/test_restaurantbot/config.yml",
+        training_files=[
+            "data/test_restaurantbot/data/rules.yml",
+            "data/test_restaurantbot/data/stories.yml",
+            "data/test_restaurantbot/data/nlu.yml",
+        ],
+    )
+
+    if not zipped_model:
+        raise RasaException("Model training for formbot failed.")
+
+    return Path(zipped_model)
+
+
+@pytest.fixture(scope="module")
+async def restaurantbot_agent(trained_restaurantbot: Path) -> Agent:
+    return Agent.load_local_model(str(trained_restaurantbot))
 
 
 async def test_evaluation_file_creation(
