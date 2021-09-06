@@ -1,7 +1,11 @@
-from pathlib import Path
-from unittest.mock import patch
+from typing import Dict, Optional
 
-from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
+from _pytest.tmpdir import TempPathFactory
+
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizerGraphComponent
 
 import pytest
 
@@ -9,6 +13,16 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT
+
+
+def create_jieba(config: Optional[Dict] = None) -> JiebaTokenizerGraphComponent:
+    config = config if config else {}
+    return JiebaTokenizerGraphComponent.create(
+        {**JiebaTokenizerGraphComponent.get_default_config(), **config},
+        None,
+        None,
+        None,
+    )
 
 
 @pytest.mark.parametrize(
@@ -27,7 +41,7 @@ from rasa.shared.nlu.constants import TEXT, INTENT
     ],
 )
 def test_jieba(text, expected_tokens, expected_indices):
-    tk = JiebaTokenizer()
+    tk = create_jieba()
 
     tokens = tk.tokenize(Message(data={TEXT: text}), attribute=TEXT)
 
@@ -36,18 +50,62 @@ def test_jieba(text, expected_tokens, expected_indices):
     assert [t.end for t in tokens] == [i[1] for i in expected_indices]
 
 
-def test_jieba_load_dictionary(tmp_path: Path):
-    dictionary_path = str(tmp_path)
+def test_jieba_load_and_persist_dictionary(
+    tmp_path_factory: TempPathFactory,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+):
+    dictionary_directory = tmp_path_factory.mktemp("dictionaries")
+    dictionary_path = dictionary_directory / "dictionary_1"
 
-    component_config = {"dictionary_path": dictionary_path}
+    dictionary_contents = """
+创新办 3 i
+云计算 5
+凱特琳 nz
+台中
+        """
+    dictionary_path.write_text(dictionary_contents)
 
-    with patch.object(
-        JiebaTokenizer, "load_custom_dictionary", return_value=None
-    ) as mock_method:
-        tk = JiebaTokenizer(component_config)
-        tk.tokenize(Message(data={TEXT: ""}), attribute=TEXT)
+    component_config = {"dictionary_path": dictionary_directory}
 
-    mock_method.assert_called_once_with(dictionary_path)
+    resource = Resource("jieba")
+    tk = JiebaTokenizerGraphComponent.create(
+        {**JiebaTokenizerGraphComponent.get_default_config(), **component_config},
+        default_model_storage,
+        resource,
+        default_execution_context,
+    )
+
+    tk.process_training_data(TrainingData([Message(data={TEXT: ""})]))
+
+    # The dictionary has not been persisted yet.
+    with pytest.raises(ValueError):
+        JiebaTokenizerGraphComponent.load(
+            {**JiebaTokenizerGraphComponent.get_default_config(), **component_config},
+            default_model_storage,
+            resource,
+            default_execution_context,
+        )
+
+    tk.persist()
+
+    # Check the persisted dictionary matches the original file.
+    with default_model_storage.read_from(resource) as resource_dir:
+        contents = (resource_dir / "dictionary_1").read_text()
+        assert contents == dictionary_contents
+
+    # Delete original files to show that we read from the model storage.
+    dictionary_path.unlink()
+    dictionary_directory.rmdir()
+
+    JiebaTokenizerGraphComponent.load(
+        {**JiebaTokenizerGraphComponent.get_default_config(), **component_config},
+        default_model_storage,
+        resource,
+        default_execution_context,
+    )
+
+    tk.process([Message(data={TEXT: ""})])
 
 
 @pytest.mark.parametrize(
@@ -60,11 +118,11 @@ def test_jieba_load_dictionary(tmp_path: Path):
 def test_custom_intent_symbol(text, expected_tokens):
     component_config = {"intent_tokenization_flag": True, "intent_split_symbol": "+"}
 
-    tk = JiebaTokenizer(component_config)
+    tk = create_jieba(component_config)
 
     message = Message(data={TEXT: text})
     message.set(INTENT, text)
 
-    tk.train(TrainingData([message]))
+    tk.process_training_data(TrainingData([message]))
 
     assert [t.text for t in message.get(TOKENS_NAMES[INTENT])] == expected_tokens
