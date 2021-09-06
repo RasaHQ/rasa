@@ -65,7 +65,7 @@ Finds the action based on the given states.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization] = None, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -74,9 +74,7 @@ Predicts the next action the bot should take after seeing the tracker.
 
 - `tracker` - the :class:`rasa.core.trackers.DialogueStateTracker`
 - `domain` - the :class:`rasa.shared.core.domain.Domain`
-- `interpreter` - Interpreter which may be used by the policies to create
-  additional features.
-  
+- `precomputations` - unused
 
 **Returns**:
 

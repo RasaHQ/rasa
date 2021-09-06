@@ -74,7 +74,7 @@ Feeds the featurized training data to the model.
 #### train
 
 ```python
- | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter = RegexInterpreter()) -> Resource
+ | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization] = None) -> Resource
 ```
 
 Trains the policy (see parent class for full docstring).
@@ -82,7 +82,7 @@ Trains the policy (see parent class for full docstring).
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), **kwargs: Any, ,) -> PolicyPrediction
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization] = None, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action (see parent class for full docstring).
@@ -130,7 +130,7 @@ TED model architecture from https://arxiv.org/abs/1910.00486.
  | __init__(data_signature: Dict[Text, Dict[Text, List[FeatureSignature]]], config: Dict[Text, Any], max_history_featurizer_is_used: bool, label_data: RasaModelData, entity_tag_specs: Optional[List[EntityTagSpec]]) -> None
 ```
 
-Intializes the TED model.
+Initializes the TED model.
 
 **Arguments**:
 

@@ -73,6 +73,9 @@
         },
         {
           "items": [
+            "reference/rasa/core/featurizers/_single_state_featurizer",
+            "reference/rasa/core/featurizers/_tracker_featurizers",
+            "reference/rasa/core/featurizers/precomputation",
             "reference/rasa/core/featurizers/single_state_featurizer",
             "reference/rasa/core/featurizers/tracker_featurizers"
           ],

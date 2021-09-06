@@ -84,7 +84,7 @@ Feeds the featurized training data to the model.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter = RegexInterpreter(), **kwargs: Any, ,) -> PolicyPrediction
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization], **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -93,8 +93,7 @@ Predicts the next action the bot should take after seeing the tracker.
 
 - `tracker` - Tracker containing past conversation events.
 - `domain` - Domain of the assistant.
-- `interpreter` - Interpreter which may be used by the policies to create
-  additional features.
+- `precomputations` - Contains precomputed features and attributes.
   
 
 **Returns**:

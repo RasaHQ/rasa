@@ -1,6 +1,6 @@
 ---
-sidebar_label: rasa.core.featurizers.tracker_featurizers
-title: rasa.core.featurizers.tracker_featurizers
+sidebar_label: rasa.core.featurizers._tracker_featurizers
+title: rasa.core.featurizers._tracker_featurizers
 ---
 ## InvalidStory Objects
 
@@ -10,22 +10,10 @@ class InvalidStory(RasaException)
 
 Exception that can be raised if story cannot be featurized.
 
-#### \_\_init\_\_
+## TrackerFeaturizer Objects
 
 ```python
- | __init__(message: Text) -> None
-```
-
-Creates an InvalidStory exception.
-
-**Arguments**:
-
-- `message` - a custom exception message.
-
-## TrackerFeaturizer2 Objects
-
-```python
-class TrackerFeaturizer2()
+class TrackerFeaturizer()
 ```
 
 Base class for actual tracker featurizers.
@@ -130,7 +118,7 @@ Transforms trackers to states, labels, and entity data.
 #### prepare\_for\_featurization
 
 ```python
- | prepare_for_featurization(domain: Domain, bilou_tagging: bool = False) -> None
+ | prepare_for_featurization(domain: Domain, interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> None
 ```
 
 Ensures that the featurizer is ready to be called during training.
@@ -141,12 +129,13 @@ for it to be ready to be used during training.
 **Arguments**:
 
 - `domain` - Domain of the assistant.
+- `interpreter` - NLU Interpreter for featurizing states.
 - `bilou_tagging` - Whether to consider bilou tagging.
 
 #### featurize\_trackers
 
 ```python
- | featurize_trackers(trackers: List[DialogueStateTracker], domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization], bilou_tagging: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[
+ | featurize_trackers(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False, ignore_action_unlikely_intent: bool = False) -> Tuple[
  |         List[List[Dict[Text, List[Features]]]],
  |         np.ndarray,
  |         List[List[Dict[Text, List[Features]]]],
@@ -159,7 +148,7 @@ Featurizes the training trackers.
 
 - `trackers` - list of training trackers
 - `domain` - the domain
-- `precomputations` - Contains precomputed features and attributes.
+- `interpreter` - the interpreter
 - `bilou_tagging` - indicates whether BILOU tagging should be used or not
 - `ignore_action_unlikely_intent` - Whether to remove `action_unlikely_intent`
   from training state features.
@@ -205,7 +194,7 @@ Transforms trackers to states for prediction.
 #### create\_state\_features
 
 ```python
- | create_state_features(trackers: List[DialogueStateTracker], domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization], use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None, ignore_action_unlikely_intent: bool = False) -> List[List[Dict[Text, List[Features]]]]
+ | create_state_features(trackers: List[DialogueStateTracker], domain: Domain, interpreter: NaturalLanguageInterpreter, use_text_for_last_user_input: bool = False, ignore_rule_only_turns: bool = False, rule_only_data: Optional[Dict[Text, Any]] = None, ignore_action_unlikely_intent: bool = False) -> List[List[Dict[Text, List[Features]]]]
 ```
 
 Creates state features for prediction.
@@ -214,7 +203,7 @@ Creates state features for prediction.
 
 - `trackers` - A list of state trackers
 - `domain` - The domain
-- `precomputations` - Contains precomputed features and attributes.
+- `interpreter` - The interpreter
 - `use_text_for_last_user_input` - Indicates whether to use text or intent label
   for featurizing last user input.
 - `ignore_rule_only_turns` - If True ignore dialogue turns that are present
@@ -247,7 +236,7 @@ Persists the tracker featurizer to the given path.
 
 ```python
  | @staticmethod
- | load(path: Union[Text, Path]) -> Optional[TrackerFeaturizer2]
+ | load(path: Union[Text, Path]) -> Optional["TrackerFeaturizer"]
 ```
 
 Loads the featurizer from file.
@@ -261,10 +250,10 @@ Loads the featurizer from file.
 
   The loaded tracker featurizer.
 
-## FullDialogueTrackerFeaturizer2 Objects
+## FullDialogueTrackerFeaturizer Objects
 
 ```python
-class FullDialogueTrackerFeaturizer2(TrackerFeaturizer2)
+class FullDialogueTrackerFeaturizer(TrackerFeaturizer)
 ```
 
 Creates full dialogue training data for time distributed architectures.
@@ -320,10 +309,10 @@ Transforms trackers to states for prediction.
 
   Trackers as states for prediction.
 
-## MaxHistoryTrackerFeaturizer2 Objects
+## MaxHistoryTrackerFeaturizer Objects
 
 ```python
-class MaxHistoryTrackerFeaturizer2(TrackerFeaturizer2)
+class MaxHistoryTrackerFeaturizer(TrackerFeaturizer)
 ```
 
 Truncates the tracker history into `max_history` long sequences.
@@ -412,10 +401,10 @@ Transforms trackers to states for prediction.
 
   Trackers as states for prediction.
 
-## IntentMaxHistoryTrackerFeaturizer2 Objects
+## IntentMaxHistoryTrackerFeaturizer Objects
 
 ```python
-class IntentMaxHistoryTrackerFeaturizer2(MaxHistoryTrackerFeaturizer2)
+class IntentMaxHistoryTrackerFeaturizer(MaxHistoryTrackerFeaturizer)
 ```
 
 Truncates the tracker history into `max_history` long sequences.

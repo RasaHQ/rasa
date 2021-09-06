@@ -113,7 +113,7 @@ Trains a policy.
 
 ```python
  | @abc.abstractmethod
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, **kwargs: Any, ,) -> PolicyPrediction
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization] = None, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -122,6 +122,7 @@ Predicts the next action the bot should take after seeing the tracker.
 
 - `tracker` - The tracker containing the conversation history up to now.
 - `domain` - The model&#x27;s domain.
+- `precomputations` - Contains precomputed features and attributes.
 - `**kwargs` - Depending on the specified `needs` section and the resulting
   graph structure the policy can use different input to make predictions.
   

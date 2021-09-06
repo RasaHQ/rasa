@@ -52,7 +52,7 @@ Checks if features are dense or not.
 #### combine\_with\_features
 
 ```python
- | combine_with_features(additional_features: Optional["Features"]) -> None
+ | combine_with_features(additional_features: Optional[Features]) -> None
 ```
 
 Combine the incoming features with this instance&#x27;s features.
@@ -105,4 +105,110 @@ Tests if the `self` `Feature` equals to the `other`.
 ```
 
 Calculate a stable string fingerprint for the features.
+
+#### filter
+
+```python
+ | @staticmethod
+ | filter(features_list: List[Features], attributes: Optional[Iterable[Text]] = None, type: Optional[Text] = None, origin: Optional[List[Text]] = None, is_sparse: Optional[bool] = None) -> List[Features]
+```
+
+Filters the given list of features.
+
+**Arguments**:
+
+- `features_list` - list of features to be filtered
+- `attributes` - List of attributes that we&#x27;re interested in. Set this to `None`
+  to disable this filter.
+- `type` - The type of feature we&#x27;re interested in. Set this to `None`
+  to disable this filter.
+- `origin` - If specified, this method will check that the exact order of origins
+  matches the given list of origins. The reason for this is that if
+  multiple origins are listed for a Feature, this means that this feature
+  has been created by concatenating Features from the listed origins in
+  that particular order.
+- `is_sparse` - Defines whether all features that we&#x27;re interested in should be
+  sparse. Set this to `None` to disable this filter.
+  
+
+**Returns**:
+
+  sub-list of features with the desired properties
+
+#### groupby\_attribute
+
+```python
+ | @staticmethod
+ | groupby_attribute(features_list: List[Features], attributes: Optional[Iterable[Text]] = None) -> Dict[Text, List[Features]]
+```
+
+Groups the given features according to their attribute.
+
+**Arguments**:
+
+- `features_list` - list of features to be grouped
+- `attributes` - If specified, the result will be a grouping with respect to
+  the given attributes. If some specified attribute has no features attached
+  to it, then the resulting dictionary will map it to an empty list.
+  If this is None, the result will be a grouping according to all attributes
+  for which features can be found.
+  
+
+**Returns**:
+
+  a mapping from the requested attributes to the list of correspoding
+  features
+
+#### combine
+
+```python
+ | @staticmethod
+ | combine(features_list: List[Features], expected_origins: Optional[List[Text]] = None) -> Features
+```
+
+Combine features of the same type and level that describe the same attribute.
+
+If sequence features are to be combined, then they must have the same
+sequence dimension.
+
+**Arguments**:
+
+- `features` - Non-empty list of Features  of the same type and level that
+  describe the same attribute.
+- `expected_origins` - The expected origins of the given features. This method
+  will check that the origin information of each feature is as expected, i.e.
+  the origin of the i-th feature in the given list is the i-th origin
+  in this list of origins.
+  
+
+**Raises**:
+
+  `ValueError` will be raised
+  - if the given list is empty
+  - if there are inconsistencies in the given list of `Features`
+  - if the origins aren&#x27;t as expected
+
+#### reduce
+
+```python
+ | @staticmethod
+ | reduce(features_list: List[Features], expected_origins: Optional[List[Text]] = None) -> List[Features]
+```
+
+Combines features of same type and level into one Feature.
+
+**Arguments**:
+
+- `features_list` - list of Features which must all describe the same attribute
+- `expected_origins` - if specified, this list will be used to validate that
+  the features from the right featurizers are combined in the right order
+  (cf. `Features.combine`)
+  
+
+**Returns**:
+
+  a list of the combined Features, i.e. at most 4 Features, where
+  - all the sparse features are listed before the dense features
+  - sequence feature is always listed before the sentence feature with the
+  same sparseness property
 
