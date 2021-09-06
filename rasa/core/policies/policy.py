@@ -51,7 +51,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
 
 # All code outside this module will continue to use the old `Policy` interface
-from rasa.core.policies._policy import Policy, PolicyPrediction2
+from rasa.core.policies._policy import Policy, PolicyPrediction
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -62,7 +62,7 @@ logger = logging.getLogger(__name__)
 # TODO: This is a workaround around until we have all components migrated to
 # `GraphComponent`.
 Policy = Policy
-PolicyPrediction2 = PolicyPrediction2
+PolicyPrediction = PolicyPrediction
 
 
 class SupportedData(Enum):
