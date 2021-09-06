@@ -206,7 +206,7 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 regex_file = model_path / cls.REGEX_FILE_NAME
                 patterns = rasa.shared.utils.io.read_json_file(regex_file)
                 extractor._load(patterns=patterns)
-        except ValueError as e:
+        except ValueError:
             rasa.shared.utils.io.raise_warning(
                 f"Failed to load {cls.__name__} from model storage. "
                 f"This can happen if the model could not be trained because regexes "
