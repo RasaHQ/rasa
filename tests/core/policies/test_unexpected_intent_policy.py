@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, List, Dict, Text, Type, Any
+from typing import Optional, List, Dict, Text, Type
 import tensorflow as tf
 import numpy as np
 import pytest
@@ -7,7 +7,6 @@ from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 import logging
 
-from rasa.core.constants import POLICY_PRIORITY
 from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
@@ -62,33 +61,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     @staticmethod
     def _policy_class_to_test() -> Type[UnexpecTEDIntentPolicy]:
         return UnexpecTEDIntentPolicy
-
-    def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
-    ) -> Dict[Text, Any]:
-        config_override = config_override or {}
-        return {
-            **UnexpecTEDIntentPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
-            **config_override,
-        }
-
-    def create_policy(
-        self,
-        featurizer: Optional[TrackerFeaturizer],
-        priority: int,
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        config: Optional[Dict[Text, Any]] = None,
-    ) -> UnexpecTEDIntentPolicy:
-        return UnexpecTEDIntentPolicy(
-            self._config(priority, config),
-            featurizer=featurizer,
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
 
     @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:
@@ -154,7 +126,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
     def test_training_with_no_intent(
         self,
         featurizer: Optional[TrackerFeaturizer],
-        priority: int,
         default_domain: Domain,
         tmp_path: Path,
         caplog: LogCaptureFixture,
@@ -174,7 +145,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         )
         policy = self.create_policy(
             featurizer=featurizer,
-            priority=priority,
             model_storage=model_storage,
             resource=resource,
             execution_context=execution_context,
