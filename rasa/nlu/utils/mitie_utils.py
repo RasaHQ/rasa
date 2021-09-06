@@ -3,8 +3,6 @@ import typing
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Text
 
-import dataclasses
-
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -19,14 +17,21 @@ if typing.TYPE_CHECKING:
 MitieNLP = rasa.nlu.utils._mitie_utils.MitieNLP
 
 
-@dataclasses.dataclass
 class MitieModel:
     """Wraps `MitieNLPGraphComponent` output to make it fingerprintable."""
 
-    import mitie
+    def __init__(
+        self,
+        model_path: Path,
+        word_feature_extractor: Optional["mitie.total_word_feature_extractor"] = None,
+    ) -> None:
+        """Initializing MitieModel."""
+        import mitie
 
-    word_feature_extractor: mitie.total_word_feature_extractor
-    model_path: Path
+        self.word_feature_extractor = (
+            word_feature_extractor or mitie.total_word_feature_extractor
+        )
+        self.model_path = model_path
 
     def fingerprint(self) -> Text:
         """Fingerprints the model path.
