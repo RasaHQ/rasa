@@ -343,7 +343,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         # Truncate the tracker based on `max_history`
         mcfly_tracker = _trim_tracker_by_max_history(tracker, self.max_history)
-        mcfly_tracker = self._back_to_the_future(tracker)
+        mcfly_tracker = self._back_to_the_future(mcfly_tracker)
         while mcfly_tracker is not None:
             states = self._prediction_states(mcfly_tracker, domain,)
 
