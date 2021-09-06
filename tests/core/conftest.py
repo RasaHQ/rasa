@@ -173,7 +173,8 @@ def moodbot_features(
     Returns:
       A dict containing dicts for mapping action and intent names to features.
     """
-    origin = getattr(request, "param", "SingleStateFeaturizer")
+    # TODO: remove "2" once migration of policies is done
+    origin = getattr(request, "param", "SingleStateFeaturizer") + "2"
     action_shape = (1, len(moodbot_domain.action_names_or_texts))
     actions = {}
     for index, action in enumerate(moodbot_domain.action_names_or_texts):
