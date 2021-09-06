@@ -1,3 +1,4 @@
+import psutil
 import pytest
 
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -23,6 +24,7 @@ from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
     ],
 )
 def test_spacy(text, expected_tokens, expected_indices, spacy_nlp):
+    raise ValueError(f"Memory: {psutil.virtual_memory()}")
     tk = SpacyTokenizer()
 
     message = Message.build(text=text)
