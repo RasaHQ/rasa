@@ -72,5 +72,3 @@ def test_nlu_training_data_provider(
             str(resource_directory), DEFAULT_TRAINING_DATA_OUTPUT_PATH
         )
         assert not os.path.isfile(data_file)
-
-
