@@ -5,11 +5,18 @@ title: rasa.nlu.utils.mitie_utils
 ## MitieModel Objects
 
 ```python
-@dataclasses.dataclass
 class MitieModel()
 ```
 
 Wraps `MitieNLPGraphComponent` output to make it fingerprintable.
+
+#### \_\_init\_\_
+
+```python
+ | __init__(model_path: Path, word_feature_extractor: Optional["mitie.total_word_feature_extractor"] = None) -> None
+```
+
+Initializing MitieModel.
 
 #### fingerprint
 
