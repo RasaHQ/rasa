@@ -8,6 +8,10 @@ on:
   pull_request:
     types: [opened, synchronize, labeled]
 
+concurrency:
+  group: ci-docs-tests-${{ github.ref }}  # branch or tag name
+  cancel-in-progress: true
+
 env:
   DEFAULT_PYTHON_VERSION: '3.7'
 
