@@ -211,6 +211,17 @@ jobs:
         os: [ ubuntu-latest, windows-latest ]
         python-version: [ 3.7, 3.8 ]
 
+    services:
+      datadog-agent:
+        image: datadog/agent:latest
+        ports:
+          - 8126:8126
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_INSIDE_CI: "true"
+          DD_HOSTNAME: "none"
+          DD_SITE: "datadoghq.eu"
+
     steps:
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
@@ -294,11 +305,18 @@ jobs:
       # (tests will still run in other envs, they will just not create annotations)
       run: pip install pytest-github-actions-annotate-failures
 
+    - name: Install ddtrace
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      run: poetry run pip install -U ddtrace
+
     - name: Test Code 🔍
       if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
+        DD_ENV: ${{ matrix.test }}
+        DD_SERVICE: rasa
+        DD_ARGS: --ddtrace
       run: |
         make ${{ matrix.test }}
 
