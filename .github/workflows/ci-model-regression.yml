@@ -21,7 +21,6 @@ env:
 jobs:
   read_test_configuration:
     name: Reads tests configuration
-    needs: cleanup_runs
     if: "github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
     runs-on: ubuntu-latest
     outputs:
