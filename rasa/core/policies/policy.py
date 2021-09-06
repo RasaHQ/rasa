@@ -51,7 +51,7 @@ from rasa.shared.core.constants import (
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
 
 # All code outside this module will continue to use the old `Policy` interface
-from rasa.core.policies._policy import Policy
+from rasa.core.policies._policy import Policy, PolicyPrediction2
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -62,6 +62,7 @@ logger = logging.getLogger(__name__)
 # TODO: This is a workaround around until we have all components migrated to
 # `GraphComponent`.
 Policy = Policy
+PolicyPrediction2 = PolicyPrediction2
 
 
 class SupportedData(Enum):
@@ -365,7 +366,7 @@ class PolicyGraphComponent(GraphComponent):
     @abc.abstractmethod
     def predict_action_probabilities(
         self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
-    ) -> PolicyPrediction:
+    ) -> PolicyPrediction2:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
@@ -388,8 +389,8 @@ class PolicyGraphComponent(GraphComponent):
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
         action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> PolicyPrediction:
-        return PolicyPrediction(
+    ) -> PolicyPrediction2:
+        return PolicyPrediction2(
             probabilities,
             self.__class__.__name__,
             self.priority,
@@ -491,7 +492,7 @@ class PolicyGraphComponent(GraphComponent):
         return "\n".join(formatted_states)
 
 
-class PolicyPrediction:
+class PolicyPrediction2:
     """Stores information about the prediction of a `Policy`."""
 
     def __init__(
@@ -568,7 +569,7 @@ class PolicyPrediction:
         policy_name: Optional[Text] = None,
         confidence: float = 1.0,
         action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> PolicyPrediction:
+    ) -> PolicyPrediction2:
         """Create a prediction for a given action.
 
         Args:
@@ -583,7 +584,7 @@ class PolicyPrediction:
         """
         probabilities = confidence_scores_for(action_name, confidence, domain)
 
-        return PolicyPrediction(
+        return PolicyPrediction2(
             probabilities, policy_name, action_metadata=action_metadata
         )
 
@@ -596,7 +597,7 @@ class PolicyPrediction:
         Returns:
             `True` if other has the same type and the values are the same.
         """
-        if not isinstance(other, PolicyPrediction):
+        if not isinstance(other, PolicyPrediction2):
             return False
 
         return (

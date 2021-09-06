@@ -104,7 +104,7 @@ class PolicyEnsemble:
             RulePolicy,
         ]
         for policy in policies_needing_validation:
-            policy.validate_compatability_with_domain(domain)
+            policy.validate_against_domain(ensemble, domain)
 
         _check_policy_for_forms_available(domain, ensemble)
 

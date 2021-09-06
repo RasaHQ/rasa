@@ -6,7 +6,7 @@ from typing import List, Tuple
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.policies.policy import PolicyPrediction2
 from rasa.core.policies.ensemble import (
     DefaultPolicyPredictionEnsemble,
     PolicyPredictionEnsemble,
@@ -54,7 +54,7 @@ def test_ensemble_predict(default_ensemble: DefaultPolicyPredictionEnsemble):
     tracker = DialogueStateTracker.from_events("test", [UserUttered("hi")], [])
     num_actions = len(domain.action_names_or_texts)
     predictions = [
-        PolicyPrediction(
+        PolicyPrediction2(
             policy_name=str(idx), probabilities=[idx] * num_actions, policy_priority=idx
         )
         for idx in range(2)
@@ -80,7 +80,7 @@ def test_default_predict__excludes_rejected_action(
     )
     num_actions = len(domain.action_names_or_texts)
     predictions = [
-        PolicyPrediction(
+        PolicyPrediction2(
             policy_name=str(idx), probabilities=[1.0] * num_actions, policy_priority=idx
         )
         for idx in range(2)
@@ -99,7 +99,7 @@ def test_default_predict__excludes_rejected_action(
             (
                 # highest probability and highest priority
                 [
-                    PolicyPrediction(
+                    PolicyPrediction2(
                         policy_name=str(idx),
                         probabilities=[idx] * 3,
                         policy_priority=idx,
@@ -111,7 +111,7 @@ def test_default_predict__excludes_rejected_action(
             (
                 # highest probability wins even if priority is low
                 [
-                    PolicyPrediction(
+                    PolicyPrediction2(
                         policy_name=str(idx),
                         probabilities=[idx] * 3,
                         policy_priority=idx,
@@ -123,13 +123,13 @@ def test_default_predict__excludes_rejected_action(
             (
                 # "end to end" prediction supersedes others
                 [
-                    PolicyPrediction(
+                    PolicyPrediction2(
                         policy_name="policy using user text but max prob 0.0 wins",
                         probabilities=[0.0],
                         policy_priority=0,
                         is_end_to_end_prediction=True,
                     ),
-                    PolicyPrediction(
+                    PolicyPrediction2(
                         policy_name="policy not using user text but max prob 1.0",
                         probabilities=[1.0],
                         policy_priority=1,
@@ -141,19 +141,19 @@ def test_default_predict__excludes_rejected_action(
             (
                 # "no user" prediction supsersedes even the end to end ones
                 [
-                    PolicyPrediction(
+                    PolicyPrediction2(
                         policy_name="'no user' with smallest max. prob",
                         probabilities=[0.0],
                         policy_priority=0,
                         is_no_user_prediction=True,
                     ),
-                    PolicyPrediction(
+                    PolicyPrediction2(
                         policy_name="'end2end' with higher prob and priority",
                         probabilities=[1.0],
                         policy_priority=1,
                         is_end_to_end_prediction=True,
                     ),
-                    PolicyPrediction(
+                    PolicyPrediction2(
                         policy_name="highest prob and highest priority",
                         probabilities=[2.0],
                         policy_priority=2,
@@ -167,7 +167,7 @@ def test_default_predict__excludes_rejected_action(
 )
 def test_default_combine_predictions(
     default_ensemble: DefaultPolicyPredictionEnsemble,
-    predictions_and_winner_idx: Tuple[List[PolicyPrediction], int],
+    predictions_and_winner_idx: Tuple[List[PolicyPrediction2], int],
     last_action_was_action_listen: bool,
 ):
     predictions, winner_idx = predictions_and_winner_idx

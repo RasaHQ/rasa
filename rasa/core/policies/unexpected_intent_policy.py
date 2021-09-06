@@ -31,7 +31,7 @@ from rasa.core.featurizers.single_state_featurizer import (
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY
-from rasa.core.policies.policy import PolicyPrediction
+from rasa.core.policies.policy import PolicyPrediction2
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
     LABEL_SUB_KEY,
@@ -564,7 +564,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         # implemented for the graph.
         interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
         **kwargs: Any,
-    ) -> PolicyPrediction:
+    ) -> PolicyPrediction2:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:

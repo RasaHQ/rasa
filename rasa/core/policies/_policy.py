@@ -39,7 +39,7 @@ from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
-    from rasa.core.policies.policy import SupportedData, PolicyPrediction
+    from rasa.core.policies.policy import SupportedData
 
 logger = logging.getLogger(__name__)
 
@@ -428,3 +428,139 @@ class Policy:
                     formatted_states.append(state_formatted)
 
         return "\n".join(formatted_states)
+
+
+class PolicyPrediction:
+    """Stores information about the prediction of a `Policy`."""
+
+    def __init__(
+        self,
+        probabilities: List[float],
+        policy_name: Optional[Text],
+        policy_priority: int = 1,
+        events: Optional[List[Event]] = None,
+        optional_events: Optional[List[Event]] = None,
+        is_end_to_end_prediction: bool = False,
+        is_no_user_prediction: bool = False,
+        diagnostic_data: Optional[Dict[Text, Any]] = None,
+        hide_rule_turn: bool = False,
+        action_metadata: Optional[Dict[Text, Any]] = None,
+    ) -> None:
+        """Creates a `PolicyPrediction`.
+        Args:
+            probabilities: The probabilities for each action.
+            policy_name: Name of the policy which made the prediction.
+            policy_priority: The priority of the policy which made the prediction.
+            events: Events which the `Policy` needs to have applied to the tracker
+                after the prediction. These events are applied independent of whether
+                the policy wins against other policies or not. Be careful which events
+                you return as they can potentially influence the conversation flow.
+            optional_events: Events which the `Policy` needs to have applied to the
+                tracker after the prediction in case it wins. These events are only
+                applied in case the policy's prediction wins. Be careful which events
+                you return as they can potentially influence the conversation flow.
+            is_end_to_end_prediction: `True` if the prediction used the text of the
+                user message instead of the intent.
+            is_no_user_prediction: `True` if the prediction uses neither the text
+                of the user message nor the intent. This is for the example the case
+                for happy loop paths.
+            diagnostic_data: Intermediate results or other information that is not
+                necessary for Rasa to function, but intended for debugging and
+                fine-tuning purposes.
+            hide_rule_turn: `True` if the prediction was made by the rules which
+                do not appear in the stories
+            action_metadata: Specifies additional metadata that can be passed
+                by policies.
+        """
+        self.probabilities = probabilities
+        self.policy_name = policy_name
+        self.policy_priority = (policy_priority,)
+        self.events = events or []
+        self.optional_events = optional_events or []
+        self.is_end_to_end_prediction = is_end_to_end_prediction
+        self.is_no_user_prediction = is_no_user_prediction
+        self.diagnostic_data = diagnostic_data or {}
+        self.hide_rule_turn = hide_rule_turn
+        self.action_metadata = action_metadata
+
+    @staticmethod
+    def for_action_name(
+        domain: Domain,
+        action_name: Text,
+        policy_name: Optional[Text] = None,
+        confidence: float = 1.0,
+        action_metadata: Optional[Dict[Text, Any]] = None,
+    ) -> "PolicyPrediction":
+        """Create a prediction for a given action.
+        Args:
+            domain: The current model domain
+            action_name: The action which should be predicted.
+            policy_name: The policy which did the prediction.
+            confidence: The prediction confidence.
+            action_metadata: Additional metadata to be attached with the prediction.
+        Returns:
+            The prediction.
+        """
+        probabilities = confidence_scores_for(action_name, confidence, domain)
+
+        return PolicyPrediction(
+            probabilities, policy_name, action_metadata=action_metadata
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        """Checks if the two objects are equal.
+        Args:
+            other: Any other object.
+        Returns:
+            `True` if other has the same type and the values are the same.
+        """
+        if not isinstance(other, PolicyPrediction):
+            return False
+
+        return (
+            self.probabilities == other.probabilities
+            and self.policy_name == other.policy_name
+            and self.policy_priority == other.policy_priority
+            and self.events == other.events
+            and self.optional_events == other.events
+            and self.is_end_to_end_prediction == other.is_end_to_end_prediction
+            and self.is_no_user_prediction == other.is_no_user_prediction
+            and self.hide_rule_turn == other.hide_rule_turn
+            and self.action_metadata == other.action_metadata
+            # We do not compare `diagnostic_data`, because it has no effect on the
+            # action prediction.
+        )
+
+    @property
+    def max_confidence_index(self) -> int:
+        """Gets the index of the action prediction with the highest confidence.
+        Returns:
+            The index of the action with the highest confidence.
+        """
+        return self.probabilities.index(self.max_confidence)
+
+    @property
+    def max_confidence(self) -> float:
+        """Gets the highest predicted probability.
+        Returns:
+            The highest predicted probability.
+        """
+        return max(self.probabilities, default=0.0)
+
+
+def confidence_scores_for(
+    action_name: Text, value: float, domain: Domain
+) -> List[float]:
+    """Returns confidence scores if a single action is predicted.
+    Args:
+        action_name: the name of the action for which the score should be set
+        value: the confidence for `action_name`
+        domain: the :class:`rasa.shared.core.domain.Domain`
+    Returns:
+        the list of the length of the number of actions
+    """
+    results = [0.0] * domain.num_actions
+    idx = domain.index_for_action(action_name)
+    results[idx] = value
+
+    return results
