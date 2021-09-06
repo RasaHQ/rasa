@@ -289,15 +289,15 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         """
         sentence_features = []
 
-        for anchor in range(len(tokens)):
+        # in case of an even number we will look at one more word before,
+        # e.g. window size 4 will result in a window range of
+        # [-2, -1, 0, 1] (0 = current word in sentence)
+        window_size = len(self._feature_config)
+        half_window_size = window_size // 2
+        window_range = range(-half_window_size, half_window_size + window_size % 2)
+        assert len(window_range) == window_size
 
-            # in case of an even number we will look at one more word before,
-            # e.g. window size 4 will result in a window range of
-            # [-2, -1, 0, 1] (0 = current word in sentence)
-            window_size = len(self._feature_config)
-            half_window_size = window_size // 2
-            window_range = range(-half_window_size, half_window_size + window_size % 2)
-            assert len(window_range) == window_size
+        for anchor in range(len(tokens)):
 
             token_features: Dict[Tuple[int, Text], Hashable] = {}
 
