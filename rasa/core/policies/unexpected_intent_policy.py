@@ -30,7 +30,7 @@ from rasa.core.featurizers.single_state_featurizer import (
     IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DIALOGUE
+from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.core.policies.ted_policy import (
     LABEL_KEY,
@@ -326,10 +326,10 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
 
         common.mark_as_experimental_feature("UnexpecTED Intent Policy")
 
-    @staticmethod
-    def _standard_featurizer(max_history: Optional[int] = None) -> TrackerFeaturizer:
+    def _standard_featurizer(self) -> TrackerFeaturizer:
         return IntentMaxHistoryTrackerFeaturizer(
-            IntentTokenizerSingleStateFeaturizer(), max_history=max_history
+            IntentTokenizerSingleStateFeaturizer(),
+            max_history=self.config.get(POLICY_MAX_HISTORY),
         )
 
     @staticmethod
