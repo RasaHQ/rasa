@@ -524,24 +524,6 @@ async def trained_response_selector_bot(trained_async: Callable) -> Path:
 
 
 @pytest.fixture(scope="session")
-async def trained_restaurantbot(trained_async: Callable) -> Path:
-    zipped_model = await trained_async(
-        domain="data/test_restaurantbot/domain.yml",
-        config="data/test_restaurantbot/config.yml",
-        training_files=[
-            "data/test_restaurantbot/data/rules.yml",
-            "data/test_restaurantbot/data/stories.yml",
-            "data/test_restaurantbot/data/nlu.yml",
-        ],
-    )
-
-    if not zipped_model:
-        raise RasaException("Model training for formbot failed.")
-
-    return Path(zipped_model)
-
-
-@pytest.fixture(scope="session")
 async def e2e_bot_domain_file() -> Path:
     return Path("data/test_e2ebot/domain.yml")
 
@@ -584,7 +566,7 @@ async def e2e_bot(
     return Path(zipped_model)
 
 
-@pytest.fixture(scope="package")
+@pytest.fixture(scope="module")
 async def response_selector_agent(
     trained_response_selector_bot: Optional[Path],
 ) -> Agent:
@@ -592,11 +574,6 @@ async def response_selector_agent(
 
 
 @pytest.fixture(scope="module")
-async def restaurantbot_agent(trained_restaurantbot: Optional[Path],) -> Agent:
-    return Agent.load_local_model(trained_restaurantbot)
-
-
-@pytest.fixture(scope="package")
 async def response_selector_interpreter(response_selector_agent: Agent,) -> Interpreter:
     return response_selector_agent.interpreter.interpreter
 
