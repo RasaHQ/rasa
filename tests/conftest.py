@@ -266,16 +266,16 @@ async def nlu_agent(trained_nlu_model: Text) -> Agent:
     return await load_agent(model_path=trained_nlu_model)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 async def unexpected_intent_policy_agent(
     trained_unexpected_intent_policy_path: Text,
 ) -> Agent:
     return await load_agent(model_path=trained_unexpected_intent_policy_path)
 
 
-@pytest.fixture(scope="session")
-async def mood_agent(trained_moodbot_path: Text) -> Agent:
-    return await load_agent(model_path=trained_moodbot_path)
+@pytest.fixture(scope="module")
+def mood_agent(trained_moodbot_path: Text) -> Agent:
+    return Agent.load_local_model(model_path=trained_moodbot_path)
 
 
 @pytest.fixture(scope="session")
@@ -571,24 +571,24 @@ async def e2e_bot(
     return Path(zipped_model)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 async def response_selector_agent(
     trained_response_selector_bot: Optional[Path],
 ) -> Agent:
     return Agent.load_local_model(trained_response_selector_bot)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 async def restaurantbot_agent(trained_restaurantbot: Optional[Path],) -> Agent:
     return Agent.load_local_model(trained_restaurantbot)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="package")
 async def response_selector_interpreter(response_selector_agent: Agent,) -> Interpreter:
     return response_selector_agent.interpreter.interpreter
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 async def e2e_bot_agent(e2e_bot: Optional[Path],) -> Agent:
     return Agent.load_local_model(e2e_bot)
 
