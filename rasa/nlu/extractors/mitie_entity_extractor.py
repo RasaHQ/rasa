@@ -1,24 +1,20 @@
 from __future__ import annotations
 import logging
 import os
-from rasa.shared.exceptions import InvalidConfigException
 import typing
-from typing import Any, Dict, List, Optional, Text, Type
+from typing import Any, Dict, List, Text
 
 from rasa.engine.graph import GraphComponent, ModelStorage, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, ENTITIES
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLP
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.components import Component
+from rasa.nlu.utils.mitie_utils import MitieModel
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
-from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
 from rasa.nlu.extractors._mitie_entity_extractor import MitieEntityExtractor
+from rasa.shared.exceptions import InvalidConfigException
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +26,7 @@ MitieEntityExtractor = MitieEntityExtractor
 
 
 class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
+    """A Mitie Entity Extractor (which is a thin wrapper around `Dlib-ml`)."""
 
     MITIE_RESOURCE_FILE = "mitie_ner.dat"
 
@@ -40,8 +37,9 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
+        """The component's default config (see parent class for full docstring)."""
         return {
-            "mitie_file": "absolute/path/to/mitie/file",
+            "mitie_file": None,
             "num_threads": 1,
         }
 
@@ -53,6 +51,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         execution_context: ExecutionContext,
     ) -> None:
         """Creates a new instance.
+
         Args:
             config: The configuration.
             model_storage: Storage which graph components can use to persist and load
@@ -80,9 +79,10 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 f"exist or does not point to a file)."
             )
         num_threads = config.get("num_threads")
-        if num_threads <= 0:
+        if num_threads is not None or num_threads <= 0:
             raise InvalidConfigException(
                 f"Expected `num_threads` to be some value >= 1 (default: 1)."
+                f"but received {num_threads}"
             )
 
     @classmethod
@@ -107,7 +107,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         """
         return cls(config, model_storage, resource, execution_context)
 
-    def _load(self, ner: "mitie.named_entity_extractor"):
+    def _load(self, ner: "mitie.named_entity_extractor") -> None:
         """Sets all attributes that can be persisted, i.e the mitie entity extractor.
 
         Args:
@@ -124,6 +124,8 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
             resource for loading the trained model
         """
         import mitie
+
+        # FIXME: why don't we need the MitieModel during train (but during process)?
 
         trainer = mitie.ner_trainer(self._config["mitie_file"])
         trainer.num_threads = int(self._config.get("num_threads", 1))
@@ -198,16 +200,11 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         Returns:
            the given list of messages that have been modified
         """
-        # NOTE: this is slightly different from before but it is now consistent with
-        # behavior of regex entity extractor, i.e. not trained -> don't tough message;
-        # trained but not entities found -> append or create []
         if not self._ner:
             return messages
 
         for message in messages:
-            entities = self._extract_entities(
-                message.get(TEXT), message.get(TOKENS_NAMES[TEXT]), mitie_model
-            )
+            entities = self._extract_entities(message, mitie_model)
             extracted = self.add_extractor_name(entities)
             message.set(
                 ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True
@@ -215,14 +212,20 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         return messages
 
     def _extract_entities(
-        self, text: Text, tokens: List[Token], mitie_model: MitieModel,
+        self, message: Message, mitie_model: MitieModel,
     ) -> List[Dict[Text, Any]]:
         """Extract entities of the given type from the given user message.
+
         Args:
-            message: a message
+            message: a user message
+            mitie_model: MitieModel containing a `mitie.total_word_feature_extractor`
+
         Returns:
             a list of dictionaries describing the entities
         """
+        text = message.get(TEXT)
+        tokens = message.get(TOKENS_NAMES[TEXT])
+
         entities = []
         token_texts = [token.text for token in tokens]
         entities = self._ner.extract_entities(
@@ -277,7 +280,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
             )
         return graph_component
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self) -> None:
         """Persist this model."""
         if not self.ner:
             return
