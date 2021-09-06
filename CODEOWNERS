@@ -1,5 +1,5 @@
 /docs/docs/prototype-an-assistant.mdx @RasaHQ/enable-squad
-/.github/workflows/ @RasaHQ/infrastructure
+/.github/workflows/ @RasaHQ/infrastructure-squad
 /rasa/ @RasaHQ/enable-squad
 /rasa/core/featurizers/ @RasaHQ/research
 /rasa/core/policies/ @RasaHQ/research
