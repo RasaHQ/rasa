@@ -7,6 +7,11 @@ on:
     tags:
     - '**'
 
+concurrency:
+  # group workflow runs based on the branch or the tag ref
+  group: documentation-${{ github.ref }}
+  cancel-in-progress: true
+
 # SECRETS
 # - GH_DOCS_WRITE_KEY: generated locally, added to github repo (public key)
 #                    `ssh-keygen -t rsa -b 4096 -C "Github CI Docs Key" -N "" -f key`
