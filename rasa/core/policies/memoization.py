@@ -1,4 +1,5 @@
 from __future__ import annotations
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 import zlib
 
 import base64
@@ -225,7 +226,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Any,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
