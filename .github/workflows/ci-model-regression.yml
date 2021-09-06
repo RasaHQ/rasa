@@ -10,27 +10,17 @@ on:
   pull_request:
     types: [opened, synchronize, labeled]
 
+concurrency:
+  group: ci-model-regression-${{ github.ref }}  # branch or tag name
+  cancel-in-progress: true
+
 env:
   GKE_ZONE: us-central1
   GCLOUD_VERSION: "318.0.0"
 
 jobs:
-  cleanup_runs:
-    name: Cancel old branch builds
-    runs-on: ubuntu-latest
-    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/main'"
-
-    steps:
-      - name: Find and cancel old builds of this branch
-        uses: styfle/cancel-workflow-action@a40b8845c0683271d9f53dfcb887a7e181d3918b #0.9.0
-        with:
-          access_token: "${{ secrets.GITHUB_TOKEN }}"
-          all_but_latest: true
-          ignore_sha: true
-
   read_test_configuration:
     name: Reads tests configuration
-    needs: cleanup_runs
     if: "github.repository == 'RasaHQ/rasa' && contains(github.event.pull_request.labels.*.name, 'status:model-regression-tests')"
     runs-on: ubuntu-latest
     outputs:
