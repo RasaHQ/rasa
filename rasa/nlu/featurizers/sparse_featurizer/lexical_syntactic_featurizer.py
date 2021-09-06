@@ -153,21 +153,20 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         self._number_of_features = -1
         # where the negative value indicates that feature_to_idx hasn't been set yet
 
-    def validate_config(self) -> None:
+    def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        super().validate_config()
-        feature_config = self._config.get(self.FEATURES, [])
+        SparseFeaturizer2.validate_config(config)
+        feature_config = config.get(cls.FEATURES, [])
         if not feature_config:
             rasa.shared.utils.io.raise_warning(
-                f"Expected 'features' to be configured for the "
-                f"{self.__class__.__name__} {self._identifier}. ",
+                f"Expected 'features' to be configured for the " f"{cls.__name__} ",
                 doc=DOCS_URL_COMPONENTS,
             )
             feature_config = []  # in case it was None
         message = (
             f"Expected configuration of `features` to be a list of lists that "
             f"that contain names of lexical and syntactic features "
-            f" (i.e. {self.SUPPORTED_FEATURES})."
+            f" (i.e. {cls.SUPPORTED_FEATURES})."
             f"Received {feature_config} instead. "
         )
         try:
@@ -178,7 +177,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
             )
         except TypeError as e:
             raise InvalidConfigException(message) from e
-        if configured_feature_names.difference(self.SUPPORTED_FEATURES):
+        if configured_feature_names.difference(cls.SUPPORTED_FEATURES):
             raise InvalidConfigException(message)
 
     def validate_compatibility_with_tokenizer(self, tokenizer: Tokenizer) -> None:

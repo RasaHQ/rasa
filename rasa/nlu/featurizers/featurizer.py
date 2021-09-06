@@ -40,11 +40,11 @@ class Featurizer2(Generic[FeatureType]):
           config: configuration
         """
         super().__init__()
+        self.validate_config(config)
         self._config = config
         # TODO: we can't use COMPONENT_INDEX anymore to create a unique name
         # on the fly --> take care of that in graph validation
         self._identifier = self._config.get(FEATURIZER_CLASS_ALIAS, None)
-        self.validate_config()
 
     @property
     def identifier(self) -> Text:
@@ -57,13 +57,14 @@ class Featurizer2(Generic[FeatureType]):
 
     # TODO: validate config for this component in the context of a recipe
 
-    @abstractmethod
-    def validate_config(self) -> None:
+    @classmethod
+    def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the featurizer is configured properly."""
-        if not self._identifier:
+        identifier = config.get(FEATURIZER_CLASS_ALIAS, [])
+        if not identifier:
             raise ValueError(
                 f"Expected the config to map key `{FEATURIZER_CLASS_ALIAS}` "
-                f"to some name only found {self._config}"
+                f"to some name only found {config}"
             )
 
     def validate_compatibility_with_tokenizer(self, tokenizer: Tokenizer) -> None:
