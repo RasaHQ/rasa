@@ -145,10 +145,8 @@ def default_tracker(domain: Domain) -> DialogueStateTracker:
 
 
 @pytest.fixture(scope="session")
-async def form_bot_agent(trained_async: Callable) -> Agent:
-    endpoint = EndpointConfig("https://example.com/webhooks/actions")
-
-    zipped_model = await trained_async(
+async def trained_formbot(trained_async: Callable) -> Text:
+    return await trained_async(
         domain="examples/formbot/domain.yml",
         config="examples/formbot/config.yml",
         training_files=[
@@ -157,7 +155,12 @@ async def form_bot_agent(trained_async: Callable) -> Agent:
         ],
     )
 
-    return Agent.load_local_model(zipped_model, action_endpoint=endpoint)
+
+@pytest.fixture(scope="module")
+async def form_bot_agent(trained_formbot: Text) -> Agent:
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+
+    return Agent.load_local_model(trained_formbot, action_endpoint=endpoint)
 
 
 @pytest.fixture
