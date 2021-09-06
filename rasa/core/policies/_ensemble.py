@@ -539,7 +539,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             ):
                 continue
 
-            confidence = (prediction.max_probability, prediction.policy_priority)
+            confidence = (prediction.max_confidence, prediction.policy_priority)
             if confidence > best_confidence:
                 # pick the best policy
                 best_confidence = confidence
