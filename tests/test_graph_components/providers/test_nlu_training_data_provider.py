@@ -31,7 +31,7 @@ def test_nlu_training_data_provider(
     assert "language" not in config_1
     assert config_1["persist"] is False
 
-    # create a provider
+    # create a provider with persist == True
     provider_1 = NLUTrainingDataProvider.create(
         {"language": "en", "persist": True},
         default_model_storage,
@@ -51,4 +51,26 @@ def test_nlu_training_data_provider(
             str(resource_directory), DEFAULT_TRAINING_DATA_OUTPUT_PATH
         )
         data = load_data(resource_name=data_file, language="en")
+        assert os.path.isfile(data_file)
         assert isinstance(data, TrainingData)
+
+        # delete the persisted data
+        os.remove(data_file)
+        assert not os.path.isfile(data_file)
+
+    # create a provider with persist == False
+    provider_2 = NLUTrainingDataProvider.create(
+        {"language": "en", "persist": False},
+        default_model_storage,
+        resource,
+        default_execution_context,
+    )
+
+    # check the data was not persisted
+    with default_model_storage.read_from(resource) as resource_directory:
+        data_file = os.path.join(
+            str(resource_directory), DEFAULT_TRAINING_DATA_OUTPUT_PATH
+        )
+        assert not os.path.isfile(data_file)
+
+
