@@ -59,7 +59,7 @@ def test_nlu_training_data_provider(
         assert not os.path.isfile(data_file)
 
     # create a provider with persist == False
-    provider_2 = NLUTrainingDataProvider.create(
+    NLUTrainingDataProvider.create(
         {"language": "en", "persist": False},
         default_model_storage,
         resource,
