@@ -4,6 +4,7 @@ import copy
 import logging
 from enum import Enum
 from pathlib import Path
+from rasa.shared.core.events import Event
 from typing import (
     Any,
     List,
@@ -16,25 +17,28 @@ from typing import (
     Tuple,
     TYPE_CHECKING,
 )
+
 import numpy as np
+
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-
-from rasa.shared.core.events import Event
-
-import rasa.shared.utils.common
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
+from rasa.core.featurizers.tracker_featurizers import (
+    TrackerFeaturizer2 as TrackerFeaturizer,
+)
+from rasa.core.featurizers.tracker_featurizers import (
+    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
+)
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer2 as SingleStateFeaturizer,
+)
+from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
 import rasa.utils.common
 import rasa.shared.utils.io
-from rasa.shared.core.domain import Domain, State
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
-from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer,
-    FEATURIZER_FILE,
-)
 from rasa.shared.exceptions import RasaException, FileIOException
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
+from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
+from rasa.shared.core.domain import Domain, State
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import (
@@ -48,7 +52,8 @@ from rasa.shared.core.constants import (
     PREVIOUS_ACTION,
     ACTIVE_LOOP,
 )
-from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
+import rasa.shared.utils.common
+
 
 # All code outside this module will continue to use the old `Policy` interface
 from rasa.core.policies._policy import Policy, PolicyPrediction
@@ -227,13 +232,13 @@ class PolicyGraphComponent(GraphComponent):
         self,
         training_trackers: List[DialogueStateTracker],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         bilou_tagging: bool = False,
         **kwargs: Any,
     ) -> Tuple[
-        List[List[Dict[Text, List["Features"]]]],
+        List[List[Dict[Text, List[Features]]]],
         np.ndarray,
-        List[List[Dict[Text, List["Features"]]]],
+        List[List[Dict[Text, List[Features]]]],
     ]:
         """Transform training trackers into a vector representation.
 
@@ -244,7 +249,7 @@ class PolicyGraphComponent(GraphComponent):
             training_trackers:
                 the list of the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: the :class:`rasa.core.interpreter.NaturalLanguageInterpreter`
+            precomputations: Contains precomputed features and attributes.
             bilou_tagging: indicates whether BILOU tagging should be used or not
 
         Returns:
@@ -260,8 +265,8 @@ class PolicyGraphComponent(GraphComponent):
         state_features, label_ids, entity_tags = self.featurizer.featurize_trackers(
             training_trackers,
             domain,
-            interpreter,
-            bilou_tagging,
+            precomputations=precomputations,
+            bilou_tagging=bilou_tagging,
             ignore_action_unlikely_intent=self.supported_data()
             == SupportedData.ML_DATA,
         )
@@ -309,9 +314,9 @@ class PolicyGraphComponent(GraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         use_text_for_last_user_input: bool = False,
-    ) -> List[List[Dict[Text, List["Features"]]]]:
+    ) -> List[List[Dict[Text, List[Features]]]]:
         """Transforms training tracker into a vector representation.
 
         The trackers, consisting of multiple turns, will be transformed
@@ -320,7 +325,7 @@ class PolicyGraphComponent(GraphComponent):
         Args:
             tracker: The tracker to be featurized.
             domain: The Domain.
-            interpreter: The NLU interpreter.
+            precomputations: Contains precomputed features and attributes.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
 
@@ -334,7 +339,7 @@ class PolicyGraphComponent(GraphComponent):
         return self.featurizer.create_state_features(
             [tracker],
             domain,
-            interpreter,
+            precomputations=precomputations,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
             rule_only_data=self._rule_only_data,
@@ -365,13 +370,18 @@ class PolicyGraphComponent(GraphComponent):
 
     @abc.abstractmethod
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
-    ) -> PolicyPrediction2:
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        **kwargs: Any,
+    ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
             tracker: The tracker containing the conversation history up to now.
             domain: The model's domain.
+            precomputations: Contains precomputed features and attributes.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
 

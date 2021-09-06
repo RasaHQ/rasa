@@ -1,4 +1,5 @@
 import logging
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
@@ -12,7 +13,6 @@ from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.constants import SLOTS, ACTIVE_LOOP, ACTION_UNLIKELY_INTENT_NAME
 from rasa.shared.core.events import UserUttered, ActionExecuted
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
 from rasa.shared.nlu.constants import (
     INTENT,
     TEXT,
@@ -23,11 +23,13 @@ from rasa.shared.nlu.constants import (
 )
 from rasa.nlu.extractors.extractor import EntityTagSpec
 from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    IntentMaxHistoryTrackerFeaturizer,
+    TrackerFeaturizer2 as TrackerFeaturizer,
+)
+from rasa.core.featurizers.tracker_featurizers import (
+    IntentMaxHistoryTrackerFeaturizer2 as IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.core.featurizers.single_state_featurizer import (
-    IntentTokenizerSingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer2 as IntentTokenizerSingleStateFeaturizer,
 )
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.constants import DIALOGUE, POLICY_MAX_HISTORY
@@ -560,9 +562,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        # TODO: The default is a workaround until the end-to-end featurization is
-        # implemented for the graph.
-        interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+        precomputations: Optional[MessageContainerForCoreFeaturization],
         **kwargs: Any,
     ) -> PolicyPrediction2:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -570,8 +570,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         Args:
             tracker: Tracker containing past conversation events.
             domain: Domain of the assistant.
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
+            precomputations: Contains precomputed features and attributes.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
@@ -595,7 +594,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
 
         # create model data from tracker
         tracker_state_features = self._featurize_for_prediction(
-            tracker, domain, interpreter
+            tracker, domain, precomputations
         )
 
         model_data = self._create_model_data(tracker_state_features)
@@ -889,7 +888,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-        featurizer: [TrackerFeaturizer],
+        featurizer: TrackerFeaturizer,
         model: "IntentTED",
         model_utilities: Dict[Text, Any],
     ) -> "UnexpecTEDIntentPolicyGraphComponent":
