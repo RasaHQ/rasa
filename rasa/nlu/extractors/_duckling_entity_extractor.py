@@ -1,3 +1,10 @@
+# flake8: noqa
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt
+#          DucklingEntityExtractor from the regular
+#          `rasa.nlu.extractors.duckling_entity_extractor` module.
+#          This module is a workaround to defer
+#          breaking changes due to the architecture revamp in 3.0.
 import time
 import json
 import logging
@@ -13,11 +20,6 @@ from rasa.nlu.extractors.extractor import EntityExtractor
 from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
-from rasa.nlu.extractors._duckling_entity_extractor import DucklingEntityExtractor
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-DucklingEntityExtractor = DucklingEntityExtractor
-
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +58,7 @@ def convert_duckling_format_to_rasa(
     return extracted
 
 
-class DucklingEntityExtractorComponent(EntityExtractor):
+class DucklingEntityExtractor(EntityExtractor):
     """Searches for structured entites, e.g. dates, using a duckling server."""
 
     defaults = {
