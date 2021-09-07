@@ -1,3 +1,4 @@
+from rasa.shared.exceptions import InvalidConfigException
 from typing import Text
 import numpy as np
 
@@ -48,7 +49,7 @@ class DenseFeaturizer2(Featurizer2[np.ndarray]):
         elif pooling_operation == MAX_POOLING:
             return np.max(dense_sequence_features, axis=0, keepdims=True)
         else:
-            raise ValueError(
+            raise InvalidConfigException(
                 f"Invalid pooling operation specified. Available operations are "
                 f"'{MEAN_POOLING}' or '{MAX_POOLING}', but provided value is "
                 f"'{pooling_operation}'."

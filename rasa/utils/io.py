@@ -177,7 +177,7 @@ def json_unpickle(file_name: Union[Text, Path], keys: bool = False) -> Any:
 
     Args:
         file_name: the file to load the object from
-        keys: If set to True then jsonpickle will encode non-string dictionary keys
+        keys: If set to `True` then jsonpickle will encode non-string dictionary keys
           instead of coercing them into strings via `repr()`.
 
     Returns: the object
@@ -197,7 +197,7 @@ def json_pickle(file_name: Union[Text, Path], obj: Any, keys: bool = False) -> N
     Args:
         file_name: the file to store the object to
         obj: the object to store
-        keys: If set to True then jsonpickle will encode non-string dictionary keys
+        keys: If set to `True` then jsonpickle will encode non-string dictionary keys
           instead of coercing them into strings via `repr()`.
     """
     import jsonpickle.ext.numpy as jsonpickle_numpy

@@ -40,6 +40,12 @@ logger = logging.getLogger(__name__)
 LexicalSyntacticFeaturizer = LexicalSyntacticFeaturizer
 
 
+END_OF_SENTENCE = "EOS"
+BEGIN_OF_SENTENCE = "BOS"
+
+FEATURES = "features"
+
+
 class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
     """Extracts and encodes lexical syntactic features.
 
@@ -68,11 +74,6 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
     """
 
     FILENAME_FEATURE_TO_IDX_DICT = "feature_to_idx_dict.pkl"
-
-    END_OF_SENTENCE = "EOS"
-    BEGIN_OF_SENTENCE = "BOS"
-
-    FEATURES = "features"
 
     # NOTE: "suffix5" of the token "is" will be "is". Hence, when combining multiple
     # prefixes, short words will be represented/encoded repeatedly.
@@ -116,9 +117,9 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                 f"Configured feature '{feature_name}' not valid. Please check "
                 f"'{DOCS_URL_COMPONENTS}' for valid configuration parameters."
             )
-        if feature_name == cls.END_OF_SENTENCE:
+        if feature_name == END_OF_SENTENCE:
             return token_position == num_tokens - 1
-        if feature_name == cls.BEGIN_OF_SENTENCE:
+        if feature_name == BEGIN_OF_SENTENCE:
             return token_position == 0
         return cls._FUNCTION_DICT[feature_name](token)
 
@@ -127,7 +128,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         """Returns the component's default config."""
         return {
             **SparseFeaturizer2.get_default_config(),
-            LexicalSyntacticFeaturizerGraphComponent.FEATURES: [
+            FEATURES: [
                 ["low", "title", "upper"],
                 ["BOS", "EOS", "low", "upper", "title", "digit"],
                 ["low", "title", "upper"],
@@ -142,27 +143,23 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         execution_context: ExecutionContext,
     ) -> None:
         """Instantiates a new `LexicalSyntacticFeaturizer` instance."""
-        super().__init__(config)
+        super().__init__(execution_context.node_name, config)
         # graph component
         self._model_storage = model_storage
         self._resource = resource
         self._execution_context = execution_context
         # featurizer specific
-        self._feature_config = self._config.get(self.FEATURES, [])
+        self._feature_config = self._config[FEATURES]
         self._feature_to_idx_dict = {}
         self._number_of_features = -1
         # where the negative value indicates that feature_to_idx hasn't been set yet
 
+    @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        SparseFeaturizer2.validate_config(config)
-        feature_config = config.get(cls.FEATURES, [])
-        if not feature_config:
-            rasa.shared.utils.io.raise_warning(
-                f"Expected 'features' to be configured for the " f"{cls.__name__} ",
-                doc=DOCS_URL_COMPONENTS,
-            )
-            feature_config = []  # in case it was None
+        if FEATURES not in config:
+            return  # will be replaced with default
+        feature_config = config[FEATURES]
         message = (
             f"Expected configuration of `features` to be a list of lists that "
             f"that contain names of lexical and syntactic features "
@@ -180,13 +177,16 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         if configured_feature_names.difference(cls.SUPPORTED_FEATURES):
             raise InvalidConfigException(message)
 
-    def validate_compatibility_with_tokenizer(self, tokenizer: Tokenizer) -> None:
+    @classmethod
+    def validate_compatibility_with_tokenizer(
+        cls, config: Dict[Text, Any], tokenizer: Tokenizer
+    ) -> None:
         """Validate a configuration for this component in the context of a recipe."""
-        # NOTE: this wasn't done before, there was just a comment
-        # TODO: add (something like) this to graph validation
+        # TODO: add (something like) this to recipe validation
+        # TODO: replace tokenizer by config of tokenizer to enable static check
         configured_feature_names = set(
             feature_name
-            for pos_config in self._feature_config
+            for pos_config in config.get(FEATURES, [])
             for feature_name in pos_config
         )
         if any(
@@ -200,7 +200,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                 f"Continuing without the part-of-speech-features."
             )
 
-    def _set(
+    def _load(
         self,
         feature_to_idx_dict: Dict[Text, Dict[Text, Hashable]],
         check_consistency_with_config: bool = False,
@@ -226,13 +226,20 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         if check_consistency_with_config:
             # used during load()
             known_features = set(self._feature_to_idx_dict.keys())
-            not_in_config = known_features.difference(self._config.keys())
+            not_in_config = known_features.difference(
+                (
+                    (window_idx, feature_name)
+                    for window_idx, feature_names in enumerate(self._feature_config)
+                    for feature_name in feature_names
+                )
+            )
             if not_in_config:
                 rasa.shared.utils.io.raise_warning(
                     f"A feature to index mapping has been loaded that does not match "
                     f"the configured features. The given mapping configures "
                     f" (position in window, feature_name): {not_in_config}. "
-                    f" These are not specified in the given config {self._config}. "
+                    f" These are not specified in the given config "
+                    f" {self._feature_config}. "
                     f" Will continue without these features."
                 )
 
@@ -243,7 +250,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
           training_data: the training data
         """
         feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
-        self._set(feature_to_idx_dict=feature_to_idx_dict)
+        self._load(feature_to_idx_dict=feature_to_idx_dict)
         self.persist()
         return self._resource
 
@@ -374,14 +381,14 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         """
         if self._number_of_features < 0:
             rasa.shared.utils.io.raise_warning(
-                f"The {self.__class__.__name__} {self._identifier} has not been "
+                f"The {self.__class__.__name__} {self.identifier} has not been "
                 f"trained yet. "
                 f"Continuing without adding features from this featurizer."
             )
             return
         if not self._feature_to_idx_dict:
             rasa.shared.utils.io.raise_warning(
-                f"The {self.__class__.__name__} {self._identifier} has been "
+                f"The {self.__class__.__name__} {self.identifier} has been "
                 f"trained but no features have been identified. "
                 f"Continuing without adding features from this featurizer."
             )
@@ -457,27 +464,26 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         **kwargs: Any,
     ) -> LexicalSyntacticFeaturizerGraphComponent:
         """Loads trained component (see parent class for full docstring)."""
+        loaded_featurizer = cls(
+            config=config,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+        )
         try:
             with model_storage.read_from(resource) as model_path:
                 feature_to_idx_dict = rasa.utils.io.json_unpickle(
                     model_path / cls.FILENAME_FEATURE_TO_IDX_DICT, keys=True
                 )
-                loaded_featurizer = cls(
-                    config=config,
-                    model_storage=model_storage,
-                    resource=resource,
-                    execution_context=execution_context,
-                )
-                loaded_featurizer._set(
+                loaded_featurizer._load(
                     feature_to_idx_dict, check_consistency_with_config=True
                 )
-                return loaded_featurizer
         except ValueError:
             logger.warning(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
-            return cls(config, model_storage, resource, execution_context)
+        return loaded_featurizer
 
     def persist(self) -> None:
         """Persist this model (see parent class for full docstring)."""

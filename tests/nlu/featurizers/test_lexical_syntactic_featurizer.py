@@ -1,9 +1,7 @@
-from rasa.nlu.tokenizers.tokenizer import Token
 import numpy as np
 import pytest
 import re
 from typing import Text, Dict, Any, Callable, List, Optional
-
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
@@ -16,29 +14,32 @@ from rasa.nlu.constants import (
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizerGraphComponent,
+    FEATURES,
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import FEATURE_TYPE_SEQUENCE, TEXT
+from rasa.shared.exceptions import InvalidConfigException
+from rasa.nlu.tokenizers.tokenizer import Token
 
 
 @pytest.fixture
-def resource() -> Resource:
+def resource_lexical_syntactic_featurizer() -> Resource:
     return Resource("LexicalSyntacticFeaturizerGraphComponent")
 
 
 @pytest.fixture
-def create(
+def create_lexical_syntactic_featurizer(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
-    resource: Resource,
+    resource_lexical_syntactic_featurizer: Resource,
 ) -> Callable[[Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent]:
     def inner(config: Dict[Text, Any]):
         return LexicalSyntacticFeaturizerGraphComponent.create(
             config=config,
             model_storage=default_model_storage,
             execution_context=default_execution_context,
-            resource=resource,
+            resource=resource_lexical_syntactic_featurizer,
         )
 
     return inner
@@ -94,13 +95,17 @@ def create(
     ],
 )
 def test_feature_computation(
-    create: Callable[[Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent],
+    create_lexical_syntactic_featurizer: Callable[
+        [Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent
+    ],
     sentence: Text,
     part_of_speech: Optional[List[Text]],
     feature_config: List[List[Text]],
     expected_features: List[List[int]],
 ):
-    featurizer = create({"alias": "lsf", "features": feature_config})
+    featurizer = create_lexical_syntactic_featurizer(
+        {"alias": "lsf", "features": feature_config}
+    )
 
     # build the message
     tokens = [
@@ -138,7 +143,9 @@ def test_feature_computation(
 
 
 def test_features_for_messages_with_missing_part_of_speech_tags(
-    create: Callable[[Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent],
+    create_lexical_syntactic_featurizer: Callable[
+        [Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent
+    ],
 ):
     # build the message and do NOT add part of speech information
     sentence = "hello goodbye hello"
@@ -151,7 +158,9 @@ def test_features_for_messages_with_missing_part_of_speech_tags(
     message = Message(data=message_data)
 
     # train and process
-    featurizer = create({"alias": "lsf", "features": [["BOS", "pos"]]})
+    featurizer = create_lexical_syntactic_featurizer(
+        {"alias": "lsf", "features": [["BOS", "pos"]]}
+    )
     featurizer.train(TrainingData([message]))
     featurizer.process_message(message)
     feature = message.features[0]
@@ -159,7 +168,9 @@ def test_features_for_messages_with_missing_part_of_speech_tags(
 
 
 def test_only_featurizes_text_attribute(
-    create: Callable[[Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent],
+    create_lexical_syntactic_featurizer: Callable[
+        [Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent
+    ],
 ):
     # build a message with tokens for lots of attributes
     sentence = "hello goodbye hello"
@@ -174,7 +185,9 @@ def test_only_featurizes_text_attribute(
     message = Message(data=message_data)
 
     # train and process
-    featurizer = create({"alias": "lsf", "features": [["BOS"]]})
+    featurizer = create_lexical_syntactic_featurizer(
+        {"alias": "lsf", "features": [["BOS"]]}
+    )
     featurizer.train(TrainingData([message]))
     featurizer.process_message(message)
     assert len(message.features) == 1
@@ -182,7 +195,9 @@ def test_only_featurizes_text_attribute(
 
 
 def test_process_multiple_messages(
-    create: Callable[[Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent],
+    create_lexical_syntactic_featurizer: Callable[
+        [Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent
+    ],
 ):
     # build a message with tokens for lots of attributes
     multiple_messages = []
@@ -195,7 +210,9 @@ def test_process_multiple_messages(
         multiple_messages.append(Message(data={TOKENS_NAMES[TEXT]: tokens}))
 
     # train and process
-    featurizer = create({"alias": "lsf", "features": [["prefix2"]]})
+    featurizer = create_lexical_syntactic_featurizer(
+        {"alias": "lsf", "features": [["prefix2"]]}
+    )
     featurizer.train(TrainingData(multiple_messages))
     featurizer.process(multiple_messages)
     for message in multiple_messages:
@@ -210,15 +227,17 @@ def test_process_multiple_messages(
 
 @pytest.mark.parametrize("feature_config", [(["pos", "BOS"],)])
 def test_create_train_load_and_process(
-    create: Callable[[Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent],
+    create_lexical_syntactic_featurizer: Callable[
+        [Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent
+    ],
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
-    resource: Resource,
+    resource_lexical_syntactic_featurizer: Resource,
     feature_config: List[Text],
 ) -> Callable[..., LexicalSyntacticFeaturizerGraphComponent]:
 
     config = {"alias": "lsf", "features": feature_config}
-    featurizer = create(config)
+    featurizer = create_lexical_syntactic_featurizer(config)
 
     sentence = "Hello how are you"
     tokens = [
@@ -236,7 +255,34 @@ def test_create_train_load_and_process(
         },
         model_storage=default_model_storage,
         execution_context=default_execution_context,
-        resource=resource,
+        resource=resource_lexical_syntactic_featurizer,
     )
 
     assert loaded_featurizer._feature_to_idx_dict == featurizer._feature_to_idx_dict
+
+
+@pytest.mark.parametrize(
+    "config,raises",
+    [
+        # do not raise
+        ({}, False),
+        ({**LexicalSyntacticFeaturizerGraphComponent.get_default_config()}, False),
+        ({FEATURES: [["suffix2"]]}, False),
+        (
+            {
+                "bla": "obviously an unknown extra feature",
+                "faeturizer": "typos are also unknown features",
+            },
+            False,
+        ),
+        # raise
+        ({FEATURES: ["pos", "suffix2"]}, True),
+        ({FEATURES: ["suffix1234"]}, True),
+    ],
+)
+def test_validate_config(config: Dict[Text, Any], raises: bool):
+    if not raises:
+        LexicalSyntacticFeaturizerGraphComponent.validate_config(config)
+    else:
+        with pytest.raises(InvalidConfigException):
+            LexicalSyntacticFeaturizerGraphComponent.validate_config(config)
