@@ -31,7 +31,6 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
-    DOCS_URL_MIGRATION_GUIDE,
 )
 from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -447,14 +446,6 @@ class Agent:
         if hasattr(self.nlg, "responses"):
             self.nlg.responses = domain.responses if domain else {}
 
-        if hasattr(self.nlg, "templates"):
-            rasa.shared.utils.io.raise_deprecation_warning(
-                "Please use the `responses` attribute instead of the `templates` "
-                "attribute to manage responses.",
-                docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
-            )
-            self.nlg.templates = domain.responses if domain else {}
-
         self.model_directory = model_directory
 
     @classmethod
@@ -701,7 +692,7 @@ class Agent:
                 return False
         return True
 
-    async def load_data(
+    def load_data(
         self,
         training_resource: Union[Text, TrainingDataImporter],
         remove_duplicates: bool = True,
@@ -733,7 +724,7 @@ class Agent:
                 f"at least maximum max_history."
             )
 
-        return await training.load_data(
+        return training.load_data(
             training_resource,
             self.domain,
             remove_duplicates,
@@ -832,7 +823,7 @@ class Agent:
         # largest value from any policy
         max_history = max_history or self._max_history()
 
-        story_steps = await loading.load_data_from_resource(resource_name, self.domain)
+        story_steps = loading.load_data_from_resource(resource_name, self.domain)
         await visualize_stories(
             story_steps,
             self.domain,

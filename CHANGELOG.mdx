@@ -16,6 +16,11 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.3] - 2021-08-19
+### Bugfixes
+- [#7695](https://github.com/rasahq/rasa/issues/7695): Ignore checking that intent is in domain for E2E story utterances when running `rasa data validate`. Previously data validation would fail on E2E stories.
+
+
 ## [2.8.2] - 2021-08-04
 ### Bugfixes
 - [#9203](https://github.com/rasahq/rasa/issues/9203): Fixes a bug which caused training of `UnexpecTEDIntentPolicy` to crash when end-to-end training stories were included in the training data.
@@ -163,6 +168,12 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#8241](https://github.com/rasahq/rasa/issues/8241), [#8525](https://github.com/rasahq/rasa/issues/8525), [#8694](https://github.com/rasahq/rasa/issues/8694), [#8704](https://github.com/rasahq/rasa/issues/8704)
+
+
+## [2.7.2] - 2021-08-09
+### Bugfixes
+- [#7695](https://github.com/rasahq/rasa/issues/7695): Ignore checking that intent is in domain for E2E story utterances when running `rasa data validate`. Previously data validation would fail on E2E stories.
+- [#8711](https://github.com/rasahq/rasa/issues/8711): Fix for unnecessary retrain and duplication of folders in the model
 
 
 ## [2.7.1] - 2021-06-16

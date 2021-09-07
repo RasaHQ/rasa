@@ -13,6 +13,7 @@ from rasa.core.constants import (
     SUCCESSFUL_STORIES_FILE,
     STORIES_WITH_WARNINGS_FILE,
 )
+from rasa.core.channels import UserMessage
 from rasa.core.policies.policy import PolicyPrediction
 from rasa.nlu.test import EntityEvaluationResult, evaluate_entities
 from rasa.shared.core.constants import (
@@ -22,7 +23,6 @@ from rasa.shared.core.constants import (
 from rasa.shared.exceptions import RasaException
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
-from rasa.core.channels import UserMessage
 from rasa.shared.core.training_data.story_writer.yaml_story_writer import (
     YAMLStoryWriter,
 )
@@ -405,7 +405,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         )
 
 
-async def _create_data_generator(
+def _create_data_generator(
     resource_name: Text,
     agent: "Agent",
     max_stories: Optional[int] = None,
@@ -428,9 +428,9 @@ async def _create_data_generator(
         training_data_paths=[resource_name], domain_path=domain_path
     )
     if use_conversation_test_files:
-        story_graph = await test_data_importer.get_conversation_tests()
+        story_graph = test_data_importer.get_conversation_tests()
     else:
-        story_graph = await test_data_importer.get_stories()
+        story_graph = test_data_importer.get_stories()
 
     return TrainingDataGenerator(
         story_graph,
@@ -791,7 +791,6 @@ async def _predict_tracker_actions(
                         "confidence": prediction.max_confidence,
                     }
                 )
-
         elif use_e2e and isinstance(event, UserUttered):
             # This means that user utterance didn't have a user message, only intent,
             # so we can skip the NLU part and take the parse data directly.
@@ -930,9 +929,7 @@ async def _collect_story_predictions(
         accuracy = 0
 
     _log_evaluation_table(
-        [1] * len(completed_trackers),
-        "END-TO-END" if use_e2e else "CONVERSATION",
-        accuracy,
+        [1] * len(completed_trackers), "CONVERSATION", accuracy,
     )
 
     return (
@@ -1017,11 +1014,11 @@ async def test(
     """
     from rasa.model_testing import get_evaluation_metrics
 
-    generator = await _create_data_generator(stories, agent, max_stories, e2e)
+    generator = _create_data_generator(stories, agent, max_stories, e2e)
     completed_trackers = generator.generate_story_trackers()
 
     story_evaluation, _, entity_results = await _collect_story_predictions(
-        completed_trackers, agent, fail_on_prediction_errors, e2e
+        completed_trackers, agent, fail_on_prediction_errors, use_e2e=e2e
     )
 
     evaluation_store = story_evaluation.evaluation_store
@@ -1246,7 +1243,7 @@ async def _evaluate_core_model(
     logger.info(f"Evaluating model '{model}'")
 
     agent = Agent.load(model)
-    generator = await _create_data_generator(
+    generator = _create_data_generator(
         stories_file, agent, use_conversation_test_files=use_conversation_test_files
     )
     completed_trackers = generator.generate_story_trackers()

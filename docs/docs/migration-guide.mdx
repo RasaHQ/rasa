@@ -10,6 +10,86 @@ description: |
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+## Rasa 2.x to 3.0
+
+### Markdown Data
+
+Markdown is no longer supported — all the supporting code that was previously deprecated is
+now removed, and the convertors are removed as well.
+
+If you still have training data in Markdown format then the recommended approach is to use Rasa 2.x
+to convert your data from Markdown to YAML. Please use the commands described
+[here](./migration-guide.mdx#training-data-files).
+
+### Training data
+
+`TrainingDataImporter` and all its implementations are updated to contain only synchronous methods.
+If you have a custom data importer or rely on some functions provided by `TrainingDataImporter`, you need
+to update your implementation and function calls.
+
+For example, this is how data loading should look like in Rasa 3.0:
+
+```python
+from typing import Text
+from rasa.shared.importers.importer import TrainingDataImporter
+
+def load_data(domain_path: Text, config_path: Text):
+    file_importer = TrainingDataImporter.load_from_config(
+        config_path, domain_path
+    )
+    # note that all the functions below were async before:
+    config = file_importer.get_config()
+    domain = file_importer.get_domain()
+    stories = file_importer.get_stories()
+    nlu_data = file_importer.get_nlu_data()
+```
+
+Since any custom importer implements `TrainingDataImporter`, you should update your custom
+importer to contain only sync methods as well:
+
+```python
+from typing import Dict
+
+from rasa.shared.core.domain import Domain
+from rasa.shared.importers.importer import TrainingDataImporter
+
+
+class MyImporter(TrainingDataImporter):
+    """Example partial implementation of a custom importer component."""
+
+    # this function was async before
+    def get_domain(self) -> Domain:
+        pass
+
+    # this function was also async before
+    def get_config(self) -> Dict:
+        pass
+
+    # ...
+```
+
+`template_variables` and `e2e` arguments also got removed from `get_stories` method of `TrainingDataImporter`.
+Its new signature looks this way:
+
+```python
+from typing import Optional
+
+from rasa.shared.nlu.interpreter import RegexInterpreter
+from rasa.shared.core.training_data.structures import StoryGraph
+
+class TrainingDataImporter:
+    # ...
+
+    def get_stories(
+        self,
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
+        pass
+
+    # ...
+```
+
 ## Rasa 2.7 to 2.8
 
 :::caution
