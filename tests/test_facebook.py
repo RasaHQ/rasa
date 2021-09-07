@@ -1,38 +1,20 @@
 import logging
-from typing import Dict
-from unittest.mock import patch, MagicMock
 from rasa.core.channels.facebook import MessengerBot
 from fbmessenger import MessengerClient
 
-import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from aiohttp import ClientTimeout
-from aioresponses import aioresponses
-from sanic import Sanic
 
 import rasa.core.run
 from rasa.core import utils
-from rasa.core.channels import RasaChatInput, console
-from rasa.core.channels.channel import UserMessage
-from rasa.core.channels.rasa_chat import (
-    JWT_USERNAME_KEY,
-    CONVERSATION_ID_KEY,
-    INTERACTIVE_LEARNING_PERMISSION,
-)
-from rasa.core.channels.telegram import TelegramOutput
-from rasa.utils.endpoints import EndpointConfig
-from tests.core import utilities
+
 
 # this is needed so that the tests included as code examples look better
 from tests.utilities import json_of_latest_request, latest_request
 
 logger = logging.getLogger(__name__)
 
-# USED FOR DOCS - don't rename without changing in the docs
-
 
 def test_facebook_channel():
-    # START DOC INCLUDE
     from rasa.core.channels.facebook import FacebookInput
 
     input_channel = FacebookInput(
@@ -44,9 +26,7 @@ def test_facebook_channel():
     )
 
     s = rasa.core.run.configure_app([input_channel], port=5004)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
+
     routes_list = utils.list_routes(s)
 
     assert routes_list["fb_webhook.health"].startswith("/webhooks/facebook")
