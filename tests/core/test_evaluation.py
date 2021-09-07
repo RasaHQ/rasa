@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import json
 import logging
-from typing import Any, Text, Dict
+from typing import Any, Text, Dict, Callable
 
 import pytest
 
@@ -27,6 +27,30 @@ from rasa.core.policies.memoization import MemoizationPolicy
 # noinspection PyUnresolvedReferences
 from rasa.nlu.test import evaluate_entities, run_evaluation  # noqa: F401
 from rasa.core.agent import Agent
+from rasa.shared.exceptions import RasaException
+
+
+@pytest.fixture(scope="module")
+async def trained_restaurantbot(trained_async: Callable) -> Path:
+    zipped_model = await trained_async(
+        domain="data/test_restaurantbot/domain.yml",
+        config="data/test_restaurantbot/config.yml",
+        training_files=[
+            "data/test_restaurantbot/data/rules.yml",
+            "data/test_restaurantbot/data/stories.yml",
+            "data/test_restaurantbot/data/nlu.yml",
+        ],
+    )
+
+    if not zipped_model:
+        raise RasaException("Model training for formbot failed.")
+
+    return Path(zipped_model)
+
+
+@pytest.fixture(scope="module")
+async def restaurantbot_agent(trained_restaurantbot: Path) -> Agent:
+    return Agent.load_local_model(str(trained_restaurantbot))
 
 
 async def test_evaluation_file_creation(
@@ -107,7 +131,7 @@ async def test_end_to_end_evaluation_script_unknown_entity(
     completed_trackers = generator.generate_story_trackers()
 
     story_evaluation, num_stories, _ = await _collect_story_predictions(
-        completed_trackers, default_agent, use_e2e=True
+        completed_trackers, default_agent
     )
 
     assert story_evaluation.evaluation_store.has_prediction_target_mismatch()
@@ -125,7 +149,7 @@ async def test_end_to_evaluation_with_forms(form_bot_agent: Agent):
     test_stories = generator.generate_story_trackers()
 
     story_evaluation, num_stories, _ = await _collect_story_predictions(
-        test_stories, form_bot_agent, use_e2e=True
+        test_stories, form_bot_agent
     )
 
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
@@ -170,7 +194,7 @@ async def test_end_to_evaluation_trips_circuit_breaker(
     test_stories = generator.generate_story_trackers()
 
     story_evaluation, num_stories, _ = await _collect_story_predictions(
-        test_stories, agent, use_e2e=True
+        test_stories, agent
     )
 
     circuit_trip_predicted = [
@@ -276,7 +300,7 @@ async def test_retrieval_intent(response_selector_agent: Agent, test_file: Text)
     test_stories = generator.generate_story_trackers()
 
     story_evaluation, num_stories, _ = await _collect_story_predictions(
-        test_stories, response_selector_agent, use_e2e=True
+        test_stories, response_selector_agent
     )
     # check that test story can either specify base intent or full retrieval intent
     assert not story_evaluation.evaluation_store.has_prediction_target_mismatch()
