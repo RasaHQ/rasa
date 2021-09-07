@@ -11,6 +11,7 @@ from rasa.nlu import registry
 from rasa.nlu.classifiers.sklearn_intent_classifier import (
     SklearnIntentClassifierGraphComponent,
 )
+from rasa.nlu.config import RasaNLUModelConfig
 from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
@@ -43,7 +44,9 @@ def test_persist_and_load(
         {"name": "SpacyFeaturizer"},
     ]
     loaded_pipeline = [
-        registry.get_component_class(component.pop("name"))(component)
+        registry.get_component_class(component.pop("name")).create(
+            component, RasaNLUModelConfig()
+        )
         for component in copy.deepcopy(pipeline)
     ]
     for component in loaded_pipeline:
