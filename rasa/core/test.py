@@ -665,7 +665,7 @@ def _collect_action_executed_predictions(
                 expected_action_text,
                 predicted_action,
                 prediction.policy_name,
-                prediction.max_probability,
+                prediction.max_confidence,
                 event.timestamp,
                 metadata=prediction.action_metadata,
             )
@@ -691,7 +691,7 @@ def _collect_action_executed_predictions(
                 expected_action_text,
                 predicted_action,
                 prediction.policy_name,
-                prediction.max_probability,
+                prediction.max_confidence,
                 event.timestamp,
                 metadata=prediction.action_metadata,
                 predicted_action_unlikely_intent=prev_action_unlikely_intent,
@@ -713,7 +713,7 @@ def _collect_action_executed_predictions(
                 ACTION_UNLIKELY_INTENT_NAME,
                 predicted_action,
                 prediction.policy_name,
-                prediction.max_probability,
+                prediction.max_confidence,
                 event.timestamp,
                 prediction.action_metadata,
             )
@@ -723,7 +723,7 @@ def _collect_action_executed_predictions(
             ActionExecuted(
                 predicted_action,
                 prediction.policy_name,
-                prediction.max_probability,
+                prediction.max_confidence,
                 event.timestamp,
                 metadata=prediction.action_metadata,
             )
@@ -788,7 +788,7 @@ async def _predict_tracker_actions(
                         "action": action_executed_result.action_targets[0],
                         "predicted": action_executed_result.action_predictions[0],
                         "policy": prediction.policy_name,
-                        "confidence": prediction.max_probability,
+                        "confidence": prediction.max_confidence,
                     }
                 )
         elif use_e2e and isinstance(event, UserUttered):

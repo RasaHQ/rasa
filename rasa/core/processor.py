@@ -168,7 +168,7 @@ class MessageProcessor:
         return {
             "scores": scores,
             "policy": prediction.policy_name,
-            "confidence": prediction.max_probability,
+            "confidence": prediction.max_confidence,
             "tracker": tracker.current_state(verbosity),
         }
 
@@ -396,12 +396,12 @@ class MessageProcessor:
         prediction = self._get_next_action_probabilities(tracker)
 
         action = rasa.core.actions.action.action_for_index(
-            prediction.max_probability_index, self.domain, self.action_endpoint
+            prediction.max_confidence_index, self.domain, self.action_endpoint
         )
 
         logger.debug(
             f"Predicted next action '{action.name()}' with confidence "
-            f"{prediction.max_probability:.2f}."
+            f"{prediction.max_confidence:.2f}."
         )
 
         return action, prediction
@@ -793,7 +793,7 @@ class MessageProcessor:
         except rasa.core.actions.action.ActionExecutionRejection:
             events = [
                 ActionExecutionRejected(
-                    action.name(), prediction.policy_name, prediction.max_probability
+                    action.name(), prediction.policy_name, prediction.max_confidence
                 )
             ]
             tracker.update(events[0])

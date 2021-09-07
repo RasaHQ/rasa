@@ -1383,7 +1383,7 @@ async def test_form_unhappy_path_from_story():
         domain,
         RegexInterpreter(),
     )
-    assert prediction.max_probability == policy._core_fallback_threshold
+    assert prediction.max_confidence == policy._core_fallback_threshold
 
 
 async def test_form_unhappy_path_no_validation_from_rule():
@@ -1544,7 +1544,7 @@ async def test_form_unhappy_path_no_validation_from_story():
         tracker, domain, RegexInterpreter()
     )
     # there is no rule for next action
-    assert prediction.max_probability == policy._core_fallback_threshold
+    assert prediction.max_confidence == policy._core_fallback_threshold
     # check that RulePolicy entered unhappy path based on the training story
     assert prediction.events == [LoopInterrupted(True)]
 
@@ -1591,7 +1591,7 @@ async def test_form_unhappy_path_without_rule():
         RegexInterpreter(),
     )
 
-    assert prediction.max_probability == policy._core_fallback_threshold
+    assert prediction.max_confidence == policy._core_fallback_threshold
 
 
 async def test_form_activation_rule():
@@ -1671,7 +1671,7 @@ async def test_failing_form_activation_due_to_no_rule():
         RegexInterpreter(),
     )
 
-    assert prediction.max_probability == policy._core_fallback_threshold
+    assert prediction.max_confidence == policy._core_fallback_threshold
 
 
 def test_form_submit_rule():
@@ -2069,7 +2069,7 @@ def test_predict_nothing_if_fallback_disabled():
         new_conversation, domain, RegexInterpreter()
     )
 
-    assert prediction.max_probability == 0
+    assert prediction.max_confidence == 0
 
 
 def test_hide_rule_turn():

@@ -201,8 +201,8 @@ def assert_predicted_action(
     is_end_to_end_prediction: bool = False,
     is_no_user_prediction: bool = False,
 ) -> None:
-    assert prediction.max_probability == confidence
-    index_of_predicted_action = prediction.max_probability_index
+    assert prediction.max_confidence == confidence
+    index_of_predicted_action = prediction.max_confidence_index
     prediction_action_name = domain.action_names_or_texts[index_of_predicted_action]
     assert prediction_action_name == expected_action_name
     assert prediction.is_end_to_end_prediction == is_end_to_end_prediction
