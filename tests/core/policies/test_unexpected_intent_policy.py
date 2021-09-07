@@ -1,7 +1,6 @@
 from pathlib import Path
-from typing import Optional, List, Dict, Text, Type
 from typing import Optional, List, Dict, Text, Type, Any
-from typing import Optional, List, Dict, Text, Type
+
 import tensorflow as tf
 import numpy as np
 import pytest
