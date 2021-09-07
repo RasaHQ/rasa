@@ -264,8 +264,19 @@ def test_train_and_process(
     if test_loading:
         loaded_entity_extractor = create_or_load_extractor(config, load=True)
         loaded_entity_extractor.process([message_copy])
-        entities = message_copy.get(ENTITIES)
-        assert entities == expected_entities
+        loaded_entity_extractor.patterns == entity_extractor.patterns
+
+
+def test_train_process_and_load_with_empty_model(
+    create_or_load_extractor: Callable[..., RegexEntityExtractorGraphComponent],
+):
+    extractor = create_or_load_extractor({})
+    with pytest.warns(UserWarning):
+        extractor.train(TrainingData([]))
+    with pytest.warns(UserWarning):
+        extractor.process(Message(data={TEXT: "arbitrary"}))
+    with pytest.warns(UserWarning):
+        create_or_load_extractor({}, load=True)
 
 
 def test_process_does_not_overwrite_any_entities(

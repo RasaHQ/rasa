@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import re
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Optional, Text
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
@@ -66,14 +66,14 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
 
         Returns: An instantiated `GraphComponent`.
         """
-        return cls(config, model_storage, resource, execution_context)
+        return cls(config, model_storage, resource)
 
     def __init__(
         self,
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
-        execution_context: ExecutionContext,
+        patterns: Optional[List[Dict[Text, Text]]] = None,
     ) -> None:
         """Creates a new instance.
 
@@ -83,7 +83,7 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 themselves.
             resource: Resource locator for this component which can be used to persist
                 and load itself from the `model_storage`.
-            execution_context: Information about the current graph run. Unused.
+            patterns: a list of patterns
         """
         # graph component
         self._config = {**self.get_default_config(), **config}
@@ -91,17 +91,9 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         self._resource = resource
         # extractor
         self.case_sensitive = self._config["case_sensitive"]
-        self.patterns = []
+        self.patterns = patterns or []
 
-    def _load(self, patterns: List[Dict[Text, Text]]) -> None:
-        """Sets all attributes that can be persisted, i.e the patterns.
-
-        Args:
-          patterns: a dictionary of patterns
-        """
-        self.patterns = patterns
-
-    def train(self, training_data: TrainingData,) -> Resource:
+    def train(self, training_data: TrainingData) -> Resource:
         """Extract patterns from the training data.
 
         Args:
@@ -140,7 +132,13 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
            the given list of messages that have been modified
         """
         if not self.patterns:
+            rasa.shared.utils.io.raise_warning(
+                f"The {self.__class__.__name__} has not been "
+                f"trained properly yet. "
+                f"Continuing without extracting entities via this extractor."
+            )
             return messages
+
         for message in messages:
             extracted_entities = self._extract_entities(message)
             extracted_entities = self.add_extractor_name(extracted_entities)
@@ -195,17 +193,16 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         **kwargs: Any,
     ) -> RegexEntityExtractorGraphComponent:
         """Loads trained component (see parent class for full docstring)."""
-        extractor = RegexEntityExtractorGraphComponent(
-            config,
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
         try:
             with model_storage.read_from(resource) as model_path:
                 regex_file = model_path / cls.REGEX_FILE_NAME
                 patterns = rasa.shared.utils.io.read_json_file(regex_file)
-                extractor._load(patterns=patterns)
+                return RegexEntityExtractorGraphComponent(
+                    config,
+                    model_storage=model_storage,
+                    resource=resource,
+                    patterns=patterns,
+                )
         except ValueError:
             rasa.shared.utils.io.raise_warning(
                 f"Failed to load {cls.__name__} from model storage. "
@@ -213,12 +210,14 @@ class RegexEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 f"could not be extracted from the given training data - and hence "
                 f"could not be persisted."
             )
-        return extractor
+            return RegexEntityExtractorGraphComponent(
+                config, model_storage=model_storage, resource=resource,
+            )
 
     def persist(self) -> None:
         """Persist this model."""
-        if self.patterns is None:
-            return None
+        if not self.patterns:
+            return
         with self._model_storage.write_to(self._resource) as model_path:
             regex_file = model_path / self.REGEX_FILE_NAME
             rasa.shared.utils.io.dump_obj_as_json_to_file(regex_file, self.patterns)
