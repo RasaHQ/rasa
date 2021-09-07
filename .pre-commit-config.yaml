@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/ambv/black
-    rev: 19.10b0
+    rev: 21.8b0
     hooks:
     - id: black
 -   repo: https://github.com/thlorenz/doctoc

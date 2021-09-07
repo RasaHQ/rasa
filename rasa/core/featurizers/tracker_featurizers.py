@@ -167,7 +167,9 @@ class TrackerFeaturizer2:
         return [
             [
                 self.state_featurizer.encode_entities(
-                    entity_data, precomputations, bilou_tagging,
+                    entity_data,
+                    precomputations,
+                    bilou_tagging,
                 )
                 for entity_data in trackers_entities
             ]
@@ -329,7 +331,9 @@ class TrackerFeaturizer2:
         )
 
     def prepare_for_featurization(
-        self, domain: Domain, bilou_tagging: bool = False,
+        self,
+        domain: Domain,
+        bilou_tagging: bool = False,
     ) -> None:
         """Ensures that the featurizer is ready to be called during training.
 

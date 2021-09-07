@@ -100,7 +100,10 @@ def test_test_with_no_user_utterance(
     run_in_simple_project_with_model: Callable[..., RunResult]
 ):
     write_yaml(
-        {"pipeline": "KeywordIntentClassifier", "policies": [{"name": "TEDPolicy"}],},
+        {
+            "pipeline": "KeywordIntentClassifier",
+            "policies": [{"name": "TEDPolicy"}],
+        },
         "config.yml",
     )
 
@@ -161,7 +164,12 @@ def test_test_nlu_cross_validation_with_autoconfig(
     nlu_path = str(testdir.tmpdir / "nlu.yml")
     shutil.copy(str(moodbot_nlu_data_path), nlu_path)
     write_yaml(
-        {"language": "en", "pipeline": [], "policies": [],}, config_path,
+        {
+            "language": "en",
+            "pipeline": [],
+            "policies": [],
+        },
+        config_path,
     )
     args = [
         shutil.which("rasa"),

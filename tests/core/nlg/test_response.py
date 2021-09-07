@@ -353,12 +353,26 @@ async def test_nlg_conditional_response_variation_condition_met_channel_mismatch
     "slots,channel,expected_response",
     [
         (
-            [TextSlot("test", "B", influence_conversation=False),],
+            [
+                TextSlot("test", "B", influence_conversation=False),
+            ],
             "app",
             "condition example B no channel",
         ),
-        ([TextSlot("test", "C", influence_conversation=False),], "", "default"),
-        ([TextSlot("test", "D", influence_conversation=False),], "app", "default"),
+        (
+            [
+                TextSlot("test", "C", influence_conversation=False),
+            ],
+            "",
+            "default",
+        ),
+        (
+            [
+                TextSlot("test", "D", influence_conversation=False),
+            ],
+            "app",
+            "default",
+        ),
     ],
 )
 async def test_nlg_conditional_edgecases(slots, channel, expected_response):

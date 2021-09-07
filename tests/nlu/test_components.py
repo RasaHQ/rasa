@@ -197,7 +197,9 @@ async def test_validate_requirements_raises_exception_on_component_without_name(
 
     with pytest.raises(InvalidConfigException):
         await rasa.nlu.train.train(
-            _config, data=nlu_as_json_path, path=str(tmp_path),
+            _config,
+            data=nlu_as_json_path,
+            path=str(tmp_path),
         )
 
 
@@ -211,7 +213,9 @@ async def test_validate_component_keys_raises_warning_on_invalid_key(
 
     with pytest.warns(UserWarning) as record:
         await rasa.nlu.train.train(
-            _config, data=nlu_as_json_path, path=str(tmp_path),
+            _config,
+            data=nlu_as_json_path,
+            path=str(tmp_path),
         )
 
     assert "You have provided an invalid key" in record[0].message.args[0]

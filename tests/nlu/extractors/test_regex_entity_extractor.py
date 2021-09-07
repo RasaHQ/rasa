@@ -114,7 +114,12 @@ def test_process(
     [
         (
             "北京和上海都是大城市。",
-            [{"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],}],
+            [
+                {
+                    "name": "city",
+                    "elements": ["北京", "上海", "广州", "深圳", "杭州"],
+                }
+            ],
             [
                 {
                     "entity": "city",
@@ -135,7 +140,10 @@ def test_process(
         (
             "小明正要去北京拜访老李。",
             [
-                {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
+                {
+                    "name": "city",
+                    "elements": ["北京", "上海", "广州", "深圳", "杭州"],
+                },
                 {"name": "person", "elements": ["小明", "小红", "小王", "小李"]},
             ],
             [
@@ -158,7 +166,10 @@ def test_process(
         (
             "Rasa 真好用。",
             [
-                {"name": "city", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
+                {
+                    "name": "city",
+                    "elements": ["北京", "上海", "广州", "深圳", "杭州"],
+                },
                 {"name": "person", "elements": ["小明", "小红", "小王", "小李"]},
             ],
             [],

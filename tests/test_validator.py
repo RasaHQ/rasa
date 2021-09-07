@@ -38,7 +38,8 @@ def test_verify_nlu_with_e2e_story(tmp_path: Path, nlu_data_path: Path):
 
 def test_verify_intents_does_not_fail_on_valid_data(nlu_data_path: Text):
     importer = RasaFileImporter(
-        domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path],
+        domain_path="data/test_moodbot/domain.yml",
+        training_data_paths=[nlu_data_path],
     )
     validator = Validator.from_importer(importer)
     assert validator.verify_intents()
@@ -80,7 +81,8 @@ def test_verify_valid_responses_in_rules(nlu_data_path: Text):
 
 def test_verify_story_structure(stories_path: Text):
     importer = RasaFileImporter(
-        domain_path="data/test_domains/default.yml", training_data_paths=[stories_path],
+        domain_path="data/test_domains/default.yml",
+        training_data_paths=[stories_path],
     )
     validator = Validator.from_importer(importer)
     assert validator.verify_story_structure(ignore_warnings=False)
@@ -237,7 +239,8 @@ def test_verify_there_is_example_repetition_in_intents(nlu_data_path: Text):
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
     importer = RasaFileImporter(
-        domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path],
+        domain_path="data/test_moodbot/domain.yml",
+        training_data_paths=[nlu_data_path],
     )
     validator = Validator.from_importer(importer)
     assert not validator.verify_example_repetition_in_intents(False)
@@ -247,7 +250,8 @@ def test_verify_logging_message_for_repetition_in_intents(caplog, nlu_data_path:
     # moodbot nlu data already has duplicated example 'good afternoon'
     # for intents greet and goodbye
     importer = RasaFileImporter(
-        domain_path="data/test_moodbot/domain.yml", training_data_paths=[nlu_data_path],
+        domain_path="data/test_moodbot/domain.yml",
+        training_data_paths=[nlu_data_path],
     )
     validator = Validator.from_importer(importer)
     caplog.clear()  # clear caplog to avoid counting earlier debug messages
@@ -299,7 +303,8 @@ def test_verify_actions_in_stories_not_in_domain(tmp_path: Path, domain_path: Te
     )
 
     importer = RasaFileImporter(
-        domain_path=domain_path, training_data_paths=[story_file_name],
+        domain_path=domain_path,
+        training_data_paths=[story_file_name],
     )
     validator = Validator.from_importer(importer)
     with pytest.warns(UserWarning) as warning:
@@ -325,7 +330,8 @@ def test_verify_actions_in_rules_not_in_domain(tmp_path: Path, domain_path: Text
         """
     )
     importer = RasaFileImporter(
-        domain_path=domain_path, training_data_paths=[rules_file_name],
+        domain_path=domain_path,
+        training_data_paths=[rules_file_name],
     )
     validator = Validator.from_importer(importer)
     with pytest.warns(UserWarning) as warning:
@@ -418,7 +424,10 @@ def test_valid_stories_rules_actions_in_domain(
           - action: action_greet
         """
     )
-    importer = RasaFileImporter(domain_path=domain, training_data_paths=[file_name],)
+    importer = RasaFileImporter(
+        domain_path=domain,
+        training_data_paths=[file_name],
+    )
     validator = Validator.from_importer(importer)
     assert validator.verify_actions_in_stories_rules()
 
@@ -448,7 +457,10 @@ def test_valid_stories_rules_default_actions(
               - action: action_restart
             """
     )
-    importer = RasaFileImporter(domain_path=domain, training_data_paths=[file_name],)
+    importer = RasaFileImporter(
+        domain_path=domain,
+        training_data_paths=[file_name],
+    )
     validator = Validator.from_importer(importer)
     assert validator.verify_actions_in_stories_rules()
 

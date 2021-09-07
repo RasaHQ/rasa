@@ -55,7 +55,9 @@ class SpacyModelProvider(GraphComponent):
     """
 
     def __init__(
-        self, model: Optional[Language] = None, model_name: Optional[Text] = None,
+        self,
+        model: Optional[Language] = None,
+        model_name: Optional[Text] = None,
     ) -> None:
         """Initializes a `SpacyModelProvider`."""
         self._model = model

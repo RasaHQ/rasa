@@ -382,7 +382,8 @@ async def test_cross_entropy_with_linear_norm(
 
 
 @pytest.mark.parametrize(
-    "classifier_params", [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
+    "classifier_params",
+    [({LOSS_TYPE: "margin", RANDOM_SEED: 42, EPOCHS: 1})],
 )
 async def test_margin_loss_is_not_normalized(
     monkeypatch: MonkeyPatch,
@@ -538,7 +539,8 @@ def test_warning_when_transformer_and_hidden_layers_enabled(
     ],
 )
 def test_sets_integer_transformer_size_when_needed(
-    config: Dict[Text, Optional[int]], should_set_default_transformer_size: bool,
+    config: Dict[Text, Optional[int]],
+    should_set_default_transformer_size: bool,
 ):
     """ResponseSelector ensures sensible transformer size when transformer enabled."""
     default_transformer_size = 256
@@ -567,12 +569,12 @@ async def test_adjusting_layers_incremental_training(
     component_builder: ComponentBuilder, tmpdir: Path
 ):
     """Tests adjusting sparse layers of `ResponseSelector` to increased sparse
-       feature sizes during incremental training.
+    feature sizes during incremental training.
 
-       Testing is done by checking the layer sizes.
-       Checking if they were replaced correctly is also important
-       and is done in `test_replace_dense_for_sparse_layers`
-       in `test_rasa_layers.py`.
+    Testing is done by checking the layer sizes.
+    Checking if they were replaced correctly is also important
+    and is done in `test_replace_dense_for_sparse_layers`
+    in `test_rasa_layers.py`.
     """
     iter1_data_path = "data/test_incremental_training/iter1/"
     iter2_data_path = "data/test_incremental_training/"
@@ -624,7 +626,11 @@ async def test_adjusting_layers_incremental_training(
         old_sparse_feature_sizes[FEATURE_TYPE_SENTENCE]
     )
 
-    loaded = Interpreter.load(persisted_path, component_builder, new_config=_config,)
+    loaded = Interpreter.load(
+        persisted_path,
+        component_builder,
+        new_config=_config,
+    )
     assert loaded.pipeline
     assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
     (_, trained, _) = await rasa.nlu.train.train(
@@ -757,11 +763,18 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
 
     (_, trained, persisted_path) = await rasa.nlu.train.train(
-        _config, path=str(tmpdir), data=iter1_path, component_builder=component_builder,
+        _config,
+        path=str(tmpdir),
+        data=iter1_path,
+        component_builder=component_builder,
     )
     assert trained.pipeline
 
-    loaded = Interpreter.load(persisted_path, component_builder, new_config=_config,)
+    loaded = Interpreter.load(
+        persisted_path,
+        component_builder,
+        new_config=_config,
+    )
     assert loaded.pipeline
     assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
     if should_raise_exception:

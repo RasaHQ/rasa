@@ -69,7 +69,11 @@ def test_merging_batch_outputs(
 
 @pytest.mark.parametrize(
     "batch_size, number_of_data_points, expected_number_of_batch_iterations",
-    [(2, 3, 2), (1, 3, 3), (5, 3, 1),],
+    [
+        (2, 3, 2),
+        (1, 3, 3),
+        (5, 3, 1),
+    ],
 )
 def test_batch_inference(
     batch_size: int,
@@ -204,7 +208,7 @@ def test_raise_exception_decreased_sparse_feature_sizes(
     raise_exception: bool,
 ):
     """Tests if exception is raised when sparse feature sizes decrease
-       during incremental training."""
+    during incremental training."""
     if raise_exception:
         with pytest.raises(Exception) as exec_info:
             TransformerRasaModel._check_if_sparse_feature_sizes_decreased(

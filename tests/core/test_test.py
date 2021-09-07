@@ -74,9 +74,7 @@ def _probabilities_with_action_unlikely_intent_for(
 
 def _custom_prediction_states_for_rules(
     ignore_action_unlikely_intent: bool = False,
-) -> Callable[
-    [RulePolicy, DialogueStateTracker, Domain, bool], List[State],
-]:
+) -> Callable[[RulePolicy, DialogueStateTracker, Domain, bool], List[State],]:
     """Creates prediction states for `RulePolicy`.
 
     `RulePolicy` does not ignore `action_unlikely_intent` in reality.
@@ -123,7 +121,8 @@ async def test_testing_warns_if_action_unknown(
 
 
 async def test_testing_does_not_warn_if_intent_in_domain(
-    default_agent: Agent, stories_path: Text,
+    default_agent: Agent,
+    stories_path: Text,
 ):
     with pytest.warns(UserWarning) as record:
         await rasa.core.test.test(Path(stories_path), default_agent)
@@ -461,7 +460,9 @@ async def test_action_unlikely_intent_warning_and_story_error(
     )
 
     result = await rasa.core.test.test(
-        str(test_file_name), agent, out_directory=str(tmp_path),
+        str(test_file_name),
+        agent,
+        out_directory=str(tmp_path),
     )
     assert "report" in result.keys()
     assert result["report"]["conversation_accuracy"]["correct"] == 0

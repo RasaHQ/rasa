@@ -775,7 +775,10 @@ async def _predict_tracker_actions(
                 prediction,
                 entity_result,
             ) = _collect_action_executed_predictions(
-                processor, partial_tracker, event, fail_on_prediction_errors,
+                processor,
+                partial_tracker,
+                event,
+                fail_on_prediction_errors,
             )
 
             if entity_result:
@@ -929,7 +932,9 @@ async def _collect_story_predictions(
         accuracy = 0
 
     _log_evaluation_table(
-        [1] * len(completed_trackers), "CONVERSATION", accuracy,
+        [1] * len(completed_trackers),
+        "CONVERSATION",
+        accuracy,
     )
 
     return (

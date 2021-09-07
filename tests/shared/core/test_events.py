@@ -357,19 +357,27 @@ def test_md_format_message_using_short_entity_syntax():
 
 def test_md_format_message_using_short_entity_syntax_no_start_end():
     formatted = format_message(
-        "hello", intent="location", entities=[{"entity": "city", "value": "Berlin"}],
+        "hello",
+        intent="location",
+        entities=[{"entity": "city", "value": "Berlin"}],
     )
     assert formatted == "hello"
 
 
 def test_md_format_message_no_text():
-    formatted = format_message("", intent="location", entities=[],)
+    formatted = format_message(
+        "",
+        intent="location",
+        entities=[],
+    )
     assert formatted == ""
 
 
 def test_md_format_message_using_short_entity_syntax_no_start_end_or_text():
     formatted = format_message(
-        "", intent="location", entities=[{"entity": "city", "value": "Berlin"}],
+        "",
+        intent="location",
+        entities=[{"entity": "city", "value": "Berlin"}],
     )
     assert formatted == ""
 
@@ -401,7 +409,11 @@ def test_md_format_message_using_long_entity_syntax_no_start_end():
         intent="location",
         entities=[
             {"start": 10, "end": 16, "entity": "city", "value": "Berlin"},
-            {"entity": "country", "value": "Germany", "role": "destination",},
+            {
+                "entity": "country",
+                "value": "Germany",
+                "role": "destination",
+            },
         ],
     )
     assert formatted == "I am from [Berlin](city)."
@@ -542,15 +554,25 @@ def test_split_events(
             True,
         ),
         # providing a single `action_listen` is not a session start
-        ([ActionExecuted(ACTION_LISTEN_NAME, timestamp=3)], False,),
+        (
+            [ActionExecuted(ACTION_LISTEN_NAME, timestamp=3)],
+            False,
+        ),
         # providing a single `action_session_start` is not a session start
-        ([ActionExecuted(ACTION_SESSION_START_NAME)], False,),
+        (
+            [ActionExecuted(ACTION_SESSION_START_NAME)],
+            False,
+        ),
         # providing no events is not a session start
-        ([], False,),
+        (
+            [],
+            False,
+        ),
     ],
 )
 def test_events_begin_with_session_start(
-    test_events: List[Event], begin_with_session_start: bool,
+    test_events: List[Event],
+    begin_with_session_start: bool,
 ):
     assert (
         rasa.shared.core.events.do_events_begin_with_session_start(test_events)
@@ -624,7 +646,8 @@ def test_print_end_to_end_events(end_to_end_event: Event):
     ],
 )
 def test_event_executed_comparison(
-    events: List[Event], comparison_result: bool,
+    events: List[Event],
+    comparison_result: bool,
 ):
     result = all(event == events[0] for event in events)
     assert result == comparison_result
@@ -678,7 +701,11 @@ tested_events = [
     UserUttered(
         text="hello",
         parse_data={
-            "intent": {"id": 2, "name": "greet", "confidence": 0.9604260921478271,},
+            "intent": {
+                "id": 2,
+                "name": "greet",
+                "confidence": 0.9604260921478271,
+            },
             "entities": [
                 {"entity": "city", "value": "London"},
                 {"entity": "count", "value": 1},
@@ -687,13 +714,41 @@ tested_events = [
             "message_id": "3f4c04602a4947098c574b107d3ccc50",
             "metadata": {},
             "intent_ranking": [
-                {"id": 2, "name": "greet", "confidence": 0.9604260921478271,},
-                {"id": 1, "name": "goodbye", "confidence": 0.01835782080888748,},
-                {"id": 0, "name": "deny", "confidence": 0.011255578137934208,},
-                {"id": 3, "name": "bot_challenge", "confidence": 0.004019865766167641,},
-                {"id": 4, "name": "affirm", "confidence": 0.002524246694520116,},
-                {"id": 5, "name": "mood_great", "confidence": 0.002214624546468258,},
-                {"id": 6, "name": "chitchat", "confidence": 0.0009614597074687481,},
+                {
+                    "id": 2,
+                    "name": "greet",
+                    "confidence": 0.9604260921478271,
+                },
+                {
+                    "id": 1,
+                    "name": "goodbye",
+                    "confidence": 0.01835782080888748,
+                },
+                {
+                    "id": 0,
+                    "name": "deny",
+                    "confidence": 0.011255578137934208,
+                },
+                {
+                    "id": 3,
+                    "name": "bot_challenge",
+                    "confidence": 0.004019865766167641,
+                },
+                {
+                    "id": 4,
+                    "name": "affirm",
+                    "confidence": 0.002524246694520116,
+                },
+                {
+                    "id": 5,
+                    "name": "mood_great",
+                    "confidence": 0.002214624546468258,
+                },
+                {
+                    "id": 6,
+                    "name": "chitchat",
+                    "confidence": 0.0009614597074687481,
+                },
                 {
                     "id": 7,
                     "name": "mood_unhappy",
@@ -761,7 +816,8 @@ def test_event_subclasses_are_tested(event_class: Type[Event]):
 
 
 @pytest.mark.parametrize(
-    "event", tested_events,
+    "event",
+    tested_events,
 )
 def test_event_fingerprint_uniqueness(event: Event):
     f1 = event.fingerprint()

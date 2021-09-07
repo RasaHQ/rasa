@@ -277,7 +277,8 @@ async def _train_async_internal(
 
     if not old_model or fingerprint_comparison.is_training_required():
         with telemetry.track_model_training(
-            file_importer, model_type="rasa",
+            file_importer,
+            model_type="rasa",
         ):
             await _do_training(
                 file_importer,

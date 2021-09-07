@@ -560,7 +560,8 @@ async def test_update_tracker_session(
 
 
 async def test_update_tracker_session_with_metadata(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch,
+    default_processor: MessageProcessor,
+    monkeypatch: MonkeyPatch,
 ):
     sender_id = uuid.uuid4().hex
     metadata = {"metadataTestKey": "metadataTestValue"}
@@ -907,7 +908,10 @@ def test_get_next_action_probabilities_passes_interpreter_to_policies(
 
 async def test_action_unlikely_intent_metadata(default_processor: MessageProcessor):
     tracker = DialogueStateTracker.from_events(
-        "some-sender", evts=[ActionExecuted(ACTION_LISTEN_NAME),],
+        "some-sender",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
     )
     domain = Domain.empty()
     metadata = {"key1": 1, "key2": "2"}

@@ -45,7 +45,9 @@ def test_graph_trainer_returns_prediction_runner(
                 uses=PersistableTestComponent,
                 fn="train",
                 constructor_name="create",
-                config={"test_value": test_value,},
+                config={
+                    "test_value": test_value,
+                },
                 is_target=True,
             ),
             "load": SchemaNode(

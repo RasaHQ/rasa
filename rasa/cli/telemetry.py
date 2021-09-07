@@ -10,7 +10,8 @@ import rasa.shared.utils.cli
 
 
 def add_subparser(
-    subparsers: SubParsersAction, parents: List[argparse.ArgumentParser],
+    subparsers: SubParsersAction,
+    parents: List[argparse.ArgumentParser],
 ) -> None:
     """Add all telemetry tracking parsers.
 

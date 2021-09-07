@@ -84,7 +84,8 @@ def test_normalize(input_values, ranking_length, output_values):
     ],
 )
 def test_init_split_entities_config(
-    split_entities_config: Any, expected_initialized_config: Dict[(str, bool)],
+    split_entities_config: Any,
+    expected_initialized_config: Dict[(str, bool)],
 ):
     assert (
         train_utils.init_split_entities(
@@ -147,7 +148,10 @@ def test_confidence_similarity_settings(
     [
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: MARGIN}, AUTO),
         ({MODEL_CONFIDENCE: SOFTMAX, LOSS_TYPE: CROSS_ENTROPY}, SOFTMAX),
-        ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY}, LINEAR_NORM,),
+        (
+            {MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: CROSS_ENTROPY},
+            LINEAR_NORM,
+        ),
         ({MODEL_CONFIDENCE: LINEAR_NORM, LOSS_TYPE: MARGIN}, AUTO),
     ],
 )
@@ -178,7 +182,8 @@ def test_warn_deprecated_model_confidences():
     ],
 )
 def test_tolerance_setting(
-    component_config: Dict[Text, float], raises_exception: bool,
+    component_config: Dict[Text, float],
+    raises_exception: bool,
 ):
     if raises_exception:
         with pytest.raises(InvalidConfigException):

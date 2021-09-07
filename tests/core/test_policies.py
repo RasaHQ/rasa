@@ -82,7 +82,9 @@ class PolicyTestCollection:
     max_history = 3  # this is the amount of history we test on
 
     @pytest.fixture(scope="class")
-    def resource(self,) -> Resource:
+    def resource(
+        self,
+    ) -> Resource:
         return Resource(uuid.uuid4().hex)
 
     @pytest.fixture(scope="class")
@@ -200,10 +202,14 @@ class PolicyTestCollection:
         precomputations = None
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
-                tracker, default_domain, precomputations,
+                tracker,
+                default_domain,
+                precomputations,
             )
             actual_probabilities = trained_policy.predict_action_probabilities(
-                tracker, default_domain, precomputations,
+                tracker,
+                default_domain,
+                precomputations,
             )
             assert predicted_probabilities == actual_probabilities
 
@@ -215,7 +221,9 @@ class PolicyTestCollection:
             return
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations=None,
+            tracker,
+            default_domain,
+            precomputations=None,
         )
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions
@@ -233,12 +241,18 @@ class PolicyTestCollection:
     ):
         resource = Resource(uuid.uuid4().hex)
         empty_policy = self.create_policy(
-            None, default_model_storage, resource, execution_context,
+            None,
+            default_model_storage,
+            resource,
+            execution_context,
         )
 
         empty_policy.train([], default_domain)
         loaded = empty_policy.__class__.load(
-            self._config(), default_model_storage, resource, execution_context,
+            self._config(),
+            default_model_storage,
+            resource,
+            execution_context,
         )
 
         assert loaded is not None
@@ -249,7 +263,9 @@ class PolicyTestCollection:
     ) -> Text:
         tracker = get_tracker(events)
         scores = policy.predict_action_probabilities(
-            tracker, domain, precomputations=None,
+            tracker,
+            domain,
+            precomputations=None,
         ).probabilities
         index = scores.index(max(scores))
         return domain.action_names_or_texts[index]
@@ -473,7 +489,8 @@ class TestMemoizationPolicy(PolicyTestCollection):
         )
 
         loaded_policy.train(
-            original_train_data + [new_story], default_domain,
+            original_train_data + [new_story],
+            default_domain,
         )
 
         # Get the hash of the tracker state of new story
@@ -535,10 +552,14 @@ class TestMemoizationPolicy(PolicyTestCollection):
             "test 2", evts=tracker_events_without_action, slots=default_domain.slots
         )
         prediction_with_action = trained_policy.predict_action_probabilities(
-            tracker_with_action, default_domain, precomputations,
+            tracker_with_action,
+            default_domain,
+            precomputations,
         )
         prediction_without_action = trained_policy.predict_action_probabilities(
-            tracker_without_action, default_domain, precomputations,
+            tracker_without_action,
+            default_domain,
+            precomputations,
         )
 
         # Memoization shouldn't be affected with the
@@ -638,10 +659,16 @@ class TestMemoizationPolicy(PolicyTestCollection):
             ActionExecuted(UTTER_BYE_ACTION),
         ]
         training_story = TrackerWithCachedStates.from_events(
-            "training story", evts=events, domain=domain, slots=domain.slots,
+            "training story",
+            evts=events,
+            domain=domain,
+            slots=domain.slots,
         )
         test_story = TrackerWithCachedStates.from_events(
-            "training story", events[:-1], domain=domain, slots=domain.slots,
+            "training story",
+            events[:-1],
+            domain=domain,
+            slots=domain.slots,
         )
         policy.train([training_story], domain)
         prediction = policy.predict_action_probabilities(

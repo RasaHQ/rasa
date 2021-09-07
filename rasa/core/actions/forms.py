@@ -102,7 +102,8 @@ class FormAction(LoopAction):
         """
         requested_slot_mappings = self._to_list(
             domain.slot_mapping_for_form(self.name()).get(
-                slot_to_fill, self.from_entity(slot_to_fill),
+                slot_to_fill,
+                self.from_entity(slot_to_fill),
             )
         )
         # check provided slot mappings
@@ -370,7 +371,10 @@ class FormAction(LoopAction):
         )
 
     def extract_requested_slot(
-        self, tracker: "DialogueStateTracker", domain: Domain, slot_to_fill: Text,
+        self,
+        tracker: "DialogueStateTracker",
+        domain: Domain,
+        slot_to_fill: Text,
     ) -> Dict[Text, Any]:
         """Extract the value of requested slot from a user input else return `None`.
 
@@ -781,22 +785,25 @@ class FormAction(LoopAction):
         # We explicitly check only the last occurrences for each possible termination
         # event instead of doing `return event in events_so_far` to make it possible
         # to override termination events which were returned earlier.
-        return next(
-            (
-                event
-                for event in reversed(events_so_far)
-                if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
-            ),
-            None,
-        ) == SlotSet(REQUESTED_SLOT, None) or next(
-            (
-                event
-                for event in reversed(events_so_far)
-                if isinstance(event, ActiveLoop)
-            ),
-            None,
-        ) == ActiveLoop(
-            None
+        return (
+            next(
+                (
+                    event
+                    for event in reversed(events_so_far)
+                    if isinstance(event, SlotSet) and event.key == REQUESTED_SLOT
+                ),
+                None,
+            )
+            == SlotSet(REQUESTED_SLOT, None)
+            or next(
+                (
+                    event
+                    for event in reversed(events_so_far)
+                    if isinstance(event, ActiveLoop)
+                ),
+                None,
+            )
+            == ActiveLoop(None)
         )
 
     async def deactivate(self, *args: Any, **kwargs: Any) -> List[Event]:

@@ -70,7 +70,8 @@ class LocalModelStorage(ModelStorage):
 
     @staticmethod
     def _extract_archive_to_directory(
-        model_archive_path: Union[Text, Path], temporary_directory: Union[Text, Path],
+        model_archive_path: Union[Text, Path],
+        temporary_directory: Union[Text, Path],
     ) -> None:
         with tarfile.open(model_archive_path, mode="r:gz") as tar:
             tar.extractall(temporary_directory)
@@ -81,7 +82,8 @@ class LocalModelStorage(ModelStorage):
     ) -> None:
         for path in (temporary_directory / MODEL_ARCHIVE_COMPONENTS_DIR).glob("*"):
             shutil.move(
-                str(path), str(storage_path),
+                str(path),
+                str(storage_path),
             )
 
     @staticmethod
@@ -156,7 +158,10 @@ class LocalModelStorage(ModelStorage):
         return model_metadata
 
     @staticmethod
-    def _persist_metadata(metadata: ModelMetadata, temporary_directory: Path,) -> None:
+    def _persist_metadata(
+        metadata: ModelMetadata,
+        temporary_directory: Path,
+    ) -> None:
 
         rasa.shared.utils.io.dump_obj_as_json_to_file(
             temporary_directory / MODEL_ARCHIVE_METADATA_FILE, metadata.as_dict()

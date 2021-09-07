@@ -30,7 +30,11 @@ def test_paired_histogram_specification_bins(
 
 
 @pytest.mark.parametrize(
-    "bad_data", [([[]]), ([[], []]),],
+    "bad_data",
+    [
+        ([[]]),
+        ([[], []]),
+    ],
 )
 def test_paired_histogram_specification_bins_raises(bad_data: List):
     """`_extract_paired_histogram_specification` raises a ValueError on empty data"""
@@ -46,7 +50,11 @@ def test_paired_histogram_specification_bins_raises(bad_data: List):
 
 
 @pytest.mark.parametrize(
-    "bad_data", [([[]]), ([[], []]),],
+    "bad_data",
+    [
+        ([[]]),
+        ([[], []]),
+    ],
 )
 def test_plot_paired_histogram_warns_on_bad_data(bad_data: List):
     """Empty data shouldn't raise an error."""
@@ -94,7 +102,11 @@ def test_paired_histogram_specification_histograms(
     expected_histograms: List[List[float]],
 ):
     _, histograms, _, _, = rasa.utils.plotting._extract_paired_histogram_specification(
-        data, num_bins=num_bins, density=density, x_pad_fraction=0, y_pad_fraction=0,
+        data,
+        num_bins=num_bins,
+        density=density,
+        x_pad_fraction=0,
+        y_pad_fraction=0,
     )
     assert np.all(histograms[0] == expected_histograms[0])
     assert np.all(histograms[1] == expected_histograms[1])

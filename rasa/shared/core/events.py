@@ -80,7 +80,11 @@ if TYPE_CHECKING:
     )
 
     IntentPrediction = TypedDict(
-        "IntentPrediction", {INTENT_NAME_KEY: Text, PREDICTED_CONFIDENCE_KEY: float,},
+        "IntentPrediction",
+        {
+            INTENT_NAME_KEY: Text,
+            PREDICTED_CONFIDENCE_KEY: float,
+        },
     )
     NLUPredictionData = TypedDict(
         "NLUPredictionData",
@@ -543,7 +547,9 @@ class UserUttered(Event):
         )
         return _dict
 
-    def as_sub_state(self,) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
+    def as_sub_state(
+        self,
+    ) -> Dict[Text, Union[None, Text, List[Optional[Text]]]]:
         """Turns a UserUttered event into features.
 
         The substate contains information about entities, intent and text of the

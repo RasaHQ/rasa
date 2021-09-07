@@ -185,7 +185,9 @@ def _trained_default_agent(tmpdir_factory: TempdirFactory, stories_path: Text) -
 
 @pytest.fixture()
 async def empty_agent() -> Agent:
-    agent = Agent("data/test_domains/default_with_slots.yml",)
+    agent = Agent(
+        "data/test_domains/default_with_slots.yml",
+    )
     return agent
 
 
@@ -370,7 +372,9 @@ async def trained_core_model(
     stories_path: Text,
 ) -> Text:
     trained_core_model_path = await trained_async(
-        domain=domain_path, config=stack_config_path, training_files=[stories_path],
+        domain=domain_path,
+        config=stack_config_path,
+        training_files=[stories_path],
     )
 
     return trained_core_model_path
@@ -384,7 +388,9 @@ async def trained_nlu_model(
     stack_config_path: Text,
 ) -> Text:
     trained_nlu_model_path = await trained_async(
-        domain=domain_path, config=stack_config_path, training_files=[nlu_data_path],
+        domain=domain_path,
+        config=stack_config_path,
+        training_files=[nlu_data_path],
     )
 
     return trained_nlu_model_path
@@ -561,12 +567,16 @@ async def response_selector_agent(
 
 
 @pytest.fixture(scope="module")
-async def response_selector_interpreter(response_selector_agent: Agent,) -> Interpreter:
+async def response_selector_interpreter(
+    response_selector_agent: Agent,
+) -> Interpreter:
     return response_selector_agent.interpreter.interpreter
 
 
 @pytest.fixture(scope="module")
-async def e2e_bot_agent(e2e_bot: Optional[Path],) -> Agent:
+async def e2e_bot_agent(
+    e2e_bot: Optional[Path],
+) -> Agent:
     return Agent.load_local_model(e2e_bot)
 
 

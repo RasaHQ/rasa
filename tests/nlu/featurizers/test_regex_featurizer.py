@@ -44,13 +44,23 @@ from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
         ),
         (
             "blah balh random eh",
-            [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0],],
+            [
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+            ],
             [0.0, 0.0, 0.0],
             [],
         ),
         (
             "a 1 digit number",
-            [[0.0, 0.0, 0.0], [1.0, 0.0, 1.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0],],
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 1.0],
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+            ],
             [1.0, 0.0, 1.0],
             [1, 1],
         ),
@@ -148,8 +158,14 @@ def test_lookup_tables_without_use_word_boundaries(
     from rasa.nlu.tokenizers.tokenizer import Token
 
     lookups = [
-        {"name": "cites", "elements": ["北京", "上海", "广州", "深圳", "杭州"],},
-        {"name": "dates", "elements": ["昨天", "今天", "明天", "后天"],},
+        {
+            "name": "cites",
+            "elements": ["北京", "上海", "广州", "深圳", "杭州"],
+        },
+        {
+            "name": "dates",
+            "elements": ["昨天", "今天", "明天", "后天"],
+        },
     ]
     ftr = RegexFeaturizer({"use_word_boundaries": False})
     training_data = TrainingData()
@@ -193,7 +209,14 @@ def test_lookup_tables_without_use_word_boundaries(
         ),
         (
             "Is burrito my favorite food?",
-            [[0.0, 0.0], [0.0, 1.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0],],
+            [
+                [0.0, 0.0],
+                [0.0, 1.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+                [0.0, 0.0],
+            ],
             [0.0, 1.0],
             [1.0],
         ),
@@ -361,7 +384,10 @@ def test_regex_featurizer_case_sensitive(
         {"pattern": "\\bhey*", "name": "hello", "usage": "intent"},
         {"pattern": "[0-1]+", "name": "binary", "usage": "intent"},
     ]
-    ftr = RegexFeaturizer({"case_sensitive": case_sensitive}, known_patterns=patterns,)
+    ftr = RegexFeaturizer(
+        {"case_sensitive": case_sensitive},
+        known_patterns=patterns,
+    )
 
     # adds tokens to the message
     tokenizer = SpacyTokenizer()
@@ -470,7 +496,9 @@ def test_persist_load_for_finetuning(tmp_path: Path):
     assert (tmp_path / "ftr.patterns.pkl").exists()
 
     loaded_featurizer = RegexFeaturizer.load(
-        meta={"file": persist_value["file"],},
+        meta={
+            "file": persist_value["file"],
+        },
         should_finetune=True,
         model_dir=str(tmp_path),
     )
@@ -524,7 +552,9 @@ def test_vocabulary_expand_for_finetuning(tmp_path: Path):
 
     persist_value = featurizer.persist("ftr", str(tmp_path))
     loaded_featurizer = RegexFeaturizer.load(
-        meta={"file": persist_value["file"],},
+        meta={
+            "file": persist_value["file"],
+        },
         should_finetune=True,
         model_dir=str(tmp_path),
     )

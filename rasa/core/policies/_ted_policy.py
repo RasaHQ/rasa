@@ -716,7 +716,10 @@ class TEDPolicy(Policy):
         # the first example in the constructed batch either does not contain user input
         # or uses intent or text based on whether TED is e2e only.
         tracker_state_features = self._featurize_for_prediction(
-            tracker, domain, interpreter, use_text_for_last_user_input=self.only_e2e,
+            tracker,
+            domain,
+            interpreter,
+            use_text_for_last_user_input=self.only_e2e,
         )
         # the second - text, but only after user utterance and if not only e2e
         if (
@@ -725,7 +728,10 @@ class TEDPolicy(Policy):
             and not self.only_e2e
         ):
             tracker_state_features += self._featurize_for_prediction(
-                tracker, domain, interpreter, use_text_for_last_user_input=True,
+                tracker,
+                domain,
+                interpreter,
+                use_text_for_last_user_input=True,
             )
         return tracker_state_features
 
@@ -912,10 +918,12 @@ class TEDPolicy(Policy):
         )
         io_utils.pickle_dump(model_path / f"{model_filename}.meta.pkl", self.config)
         io_utils.pickle_dump(
-            model_path / f"{model_filename}.data_example.pkl", self.data_example,
+            model_path / f"{model_filename}.data_example.pkl",
+            self.data_example,
         )
         io_utils.pickle_dump(
-            model_path / f"{model_filename}.fake_features.pkl", self.fake_features,
+            model_path / f"{model_filename}.fake_features.pkl",
+            self.fake_features,
         )
         io_utils.pickle_dump(
             model_path / f"{model_filename}.label_data.pkl",
@@ -927,7 +935,8 @@ class TEDPolicy(Policy):
             else []
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(
-            model_path / f"{model_filename}.entity_tag_specs.json", entity_tag_specs,
+            model_path / f"{model_filename}.entity_tag_specs.json",
+            entity_tag_specs,
         )
 
     @classmethod

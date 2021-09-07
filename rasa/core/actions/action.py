@@ -875,9 +875,9 @@ class ActionDefaultAskAffirmation(Action):
 
         intent_to_affirm = latest_message.intent.get(INTENT_NAME_KEY)
 
-        intent_ranking: List["IntentPrediction"] = latest_message.parse_data.get(
-            INTENT_RANKING_KEY
-        ) or []
+        intent_ranking: List["IntentPrediction"] = (
+            latest_message.parse_data.get(INTENT_RANKING_KEY) or []
+        )
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1

@@ -584,7 +584,10 @@ def evaluate_intents(
     )
 
     report, precision, f1, accuracy, confusion_matrix, labels = _calculate_report(
-        output_directory, target_intents, predicted_intents, report_as_dict,
+        output_directory,
+        target_intents,
+        predicted_intents,
+        report_as_dict,
     )
     if output_directory:
         _dump_report(output_directory, "intent_report.json", report)
@@ -661,7 +664,10 @@ def _calculate_report(
         report_as_dict = bool(output_directory)
 
     report, precision, f1, accuracy = get_evaluation_metrics(
-        targets, predictions, output_dict=report_as_dict, exclude_label=exclude_label,
+        targets,
+        predictions,
+        output_dict=report_as_dict,
+        exclude_label=exclude_label,
     )
 
     if report_as_dict:
@@ -1372,7 +1378,8 @@ def run_evaluation(
     interpreter = Interpreter.load(model_path, component_builder)
 
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
+        training_data_paths=[data_path],
+        domain_path=DEFAULT_DOMAIN_PATH,
     )
     test_data = test_data_importer.get_nlu_data()
 

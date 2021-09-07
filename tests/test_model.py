@@ -343,7 +343,9 @@ def test_fingerprinting_changing_config_epochs(project: Text, tmp_path):
 
     config3 = {
         "language": "en",
-        "pipeline": [{"name": "WhitespaceTokenizer"},],
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+        ],
         "policies": [
             {"name": "MemoizationPolicy"},
             {"name": "TEDPolicy", "max_history": 5, "epochs": 50},
@@ -364,12 +366,18 @@ def test_fingerprinting_changing_config_epochs(project: Text, tmp_path):
 
 @pytest.mark.parametrize("empty_key", ["pipeline", "policies"])
 def test_fingerprinting_config_epochs_empty_pipeline_or_policies(
-    project: Text, tmp_path: Path, empty_key: Text,
+    project: Text,
+    tmp_path: Path,
+    empty_key: Text,
 ):
     config = {
         "language": "en",
-        "pipeline": [{"name": "WhitespaceTokenizer"},],
-        "policies": [{"name": "MemoizationPolicy"},],
+        "pipeline": [
+            {"name": "WhitespaceTokenizer"},
+        ],
+        "policies": [
+            {"name": "MemoizationPolicy"},
+        ],
     }
 
     config[empty_key] = None
@@ -619,7 +627,11 @@ def test_update_with_new_domain_preserves_domain(
 
 @pytest.mark.parametrize(
     "min_compatible_version, old_model_version, can_tune",
-    [("2.1.0", "2.1.0", True), ("2.0.0", "2.1.0", True), ("2.1.0", "2.0.0", False),],
+    [
+        ("2.1.0", "2.1.0", True),
+        ("2.0.0", "2.1.0", True),
+        ("2.1.0", "2.0.0", False),
+    ],
 )
 def test_can_finetune_min_version(
     project: Text,

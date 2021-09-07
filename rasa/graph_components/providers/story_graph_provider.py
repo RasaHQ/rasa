@@ -33,7 +33,10 @@ class StoryGraphProvider(GraphComponent):
         """Creates component (see parent class for full docstring)."""
         return cls(config)
 
-    def provide(self, importer: TrainingDataImporter,) -> StoryGraph:
+    def provide(
+        self,
+        importer: TrainingDataImporter,
+    ) -> StoryGraph:
         """Provides the story graph from the training data.
 
         Args:

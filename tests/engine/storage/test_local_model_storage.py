@@ -54,7 +54,8 @@ def test_read_from_not_existing_resource(default_model_storage: ModelStorage):
 
 
 def test_create_model_package(
-    tmp_path_factory: TempPathFactory, domain: Domain,
+    tmp_path_factory: TempPathFactory,
+    domain: Domain,
 ):
     train_model_storage = LocalModelStorage(
         tmp_path_factory.mktemp("train model storage")
@@ -110,9 +111,10 @@ def test_create_model_package(
     # Unpack and inspect packaged model
     load_model_storage_dir = tmp_path_factory.mktemp("load model storage")
 
-    (load_model_storage, packaged_metadata,) = LocalModelStorage.from_model_archive(
-        load_model_storage_dir, archive_path
-    )
+    (
+        load_model_storage,
+        packaged_metadata,
+    ) = LocalModelStorage.from_model_archive(load_model_storage_dir, archive_path)
 
     assert packaged_metadata.train_schema == train_schema
     assert packaged_metadata.predict_schema == predict_schema

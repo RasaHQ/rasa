@@ -116,7 +116,10 @@ class DaskGraphRunner(GraphRunner):
             raise GraphRunError("Error running runner.") from e
 
     @staticmethod
-    def _add_inputs_to_graph(inputs: Optional[Dict[Text, Any]], graph: Any,) -> None:
+    def _add_inputs_to_graph(
+        inputs: Optional[Dict[Text, Any]],
+        graph: Any,
+    ) -> None:
         for input_name, input_value in inputs.items():
             if input_value in graph.keys():
                 raise GraphRunError(

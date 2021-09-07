@@ -24,7 +24,8 @@ def training_data(nlu_as_json_path: Text):
 
 @pytest.fixture()
 def default_keyword_intent_classifier(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
 ):
     return KeywordIntentClassifierGraphComponent.create(
         KeywordIntentClassifierGraphComponent.get_default_config(),
@@ -44,12 +45,18 @@ def test_persist_and_load(
     default_execution_context: ExecutionContext,
 ):
     classifier = KeywordIntentClassifierGraphComponent.create(
-        config, default_model_storage, Resource("keyword"), default_execution_context,
+        config,
+        default_model_storage,
+        Resource("keyword"),
+        default_execution_context,
     )
     classifier.train(training_data)
 
     loaded_classifier = KeywordIntentClassifierGraphComponent.load(
-        config, default_model_storage, Resource("keyword"), default_execution_context,
+        config,
+        default_model_storage,
+        Resource("keyword"),
+        default_execution_context,
     )
 
     predicted = copy.copy(training_data)

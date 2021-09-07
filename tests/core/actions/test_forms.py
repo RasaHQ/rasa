@@ -196,7 +196,8 @@ responses:
         DefinePrevUserUtteredFeaturization(False),
     ]
     tracker.update_with_events(
-        next_events, domain,
+        next_events,
+        domain,
     )
     events_expected.extend(next_events)
 
@@ -533,7 +534,10 @@ async def test_request_correct_slots_after_unhappy_path_with_custom_required_slo
             ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, "slot_2"),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered("hello", intent={"name": "greet", "confidence": 1.0},),
+            UserUttered(
+                "hello",
+                intent={"name": "greet", "confidence": 1.0},
+            ),
             ActionExecutionRejected(form_name),
             ActionExecuted("utter_greet"),
         ],
@@ -672,7 +676,8 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
 
 
 @pytest.mark.parametrize(
-    "utterance_name", ["utter_ask_my_form_num_people", "utter_ask_num_people"],
+    "utterance_name",
+    ["utter_ask_my_form_num_people", "utter_ask_num_people"],
 )
 def test_name_of_utterance(utterance_name: Text):
     form_name = "my_form"
@@ -821,7 +826,12 @@ def test_extract_requested_slot_when_mapping_applies(
             ["mushrooms", "kebab"],
         ),
         # Only one entity was extracted for `ListSlot`
-        ([{"entity": "topping", "value": "kebab"},], ["kebab"],),
+        (
+            [
+                {"entity": "topping", "value": "kebab"},
+            ],
+            ["kebab"],
+        ),
     ],
 )
 def test_extract_requested_slot_with_list_slot(
@@ -857,7 +867,9 @@ def test_extract_requested_slot_with_list_slot(
             ActiveLoop(form_name),
             SlotSet(REQUESTED_SLOT, slot_name),
             UserUttered(
-                "bla", intent={"name": "greet", "confidence": 1.0}, entities=entities,
+                "bla",
+                intent={"name": "greet", "confidence": 1.0},
+                entities=entities,
             ),
             ActionExecuted(ACTION_LISTEN_NAME),
         ],
@@ -1373,7 +1385,12 @@ def test_extract_other_slots_with_entity(
             ["mushrooms", "kebab"],
         ),
         # Only one entity was extracted for `ListSlot`
-        ([{"entity": "topping", "value": "kebab"},], ["kebab"],),
+        (
+            [
+                {"entity": "topping", "value": "kebab"},
+            ],
+            ["kebab"],
+        ),
     ],
 )
 def test_extract_other_list_slot_from_entity(
@@ -1530,7 +1547,8 @@ async def test_ask_for_slot_if_not_utter_ask(
     ],
 )
 def test_ignored_intents_with_slot_type_from_entity(
-    ignored_intents: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]],
+    ignored_intents: Union[Text, List[Text]],
+    slot_not_intent: Union[Text, List[Text]],
 ):
     form_name = "some_form"
     entity_name = "some_slot"
@@ -1601,7 +1619,8 @@ def test_ignored_intents_with_slot_type_from_entity(
     ],
 )
 def test_ignored_intents_with_slot_type_from_text(
-    ignored_intents: Union[Text, List[Text]], slot_not_intent: Union[Text, List[Text]],
+    ignored_intents: Union[Text, List[Text]],
+    slot_not_intent: Union[Text, List[Text]],
 ):
     form_name = "some_form"
     entity_name = "some_slot"

@@ -1025,7 +1025,10 @@ slots:
 
     form_conversation = DialogueStateTracker.from_events(
         "slot rule test",
-        evts=[ActionExecuted(ACTION_LISTEN_NAME), UserUttered(intent={"name": "i1"}),],
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered(intent={"name": "i1"}),
+        ],
         domain=domain,
         slots=domain.slots,
     )
@@ -2477,7 +2480,9 @@ def test_do_not_hide_rule_turn_with_loops_in_stories():
 
     policy = RulePolicy()
     policy.train(
-        [form_activation_rule, form_activation_story], domain, RegexInterpreter(),
+        [form_activation_rule, form_activation_story],
+        domain,
+        RegexInterpreter(),
     )
     assert policy.lookup[RULE_ONLY_LOOPS] == []
 
@@ -2939,7 +2944,9 @@ def test_rule_with_multiple_slots():
         evts=[
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": intent_1},),
+            UserUttered(
+                intent={"name": intent_1},
+            ),
             SlotSet(slot_1, value_1),
             SlotSet(slot_2, value_2),
             ActionExecuted(utter_1),
@@ -2953,7 +2960,10 @@ def test_rule_with_multiple_slots():
     # the order of slots set doesn't matter for prediction
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("haha", intent={"name": intent_1},),
+        UserUttered(
+            "haha",
+            intent={"name": intent_1},
+        ),
         SlotSet(slot_2, value_2),
         SlotSet(slot_1, value_1),
     ]
@@ -3005,7 +3015,9 @@ def test_include_action_unlikely_intent():
         evts=[
             ActionExecuted(RULE_SNIPPET_ACTION_NAME),
             ActionExecuted(ACTION_LISTEN_NAME),
-            UserUttered(intent={"name": intent_1},),
+            UserUttered(
+                intent={"name": intent_1},
+            ),
             SlotSet(slot_1, value_1),
             SlotSet(slot_2, value_2),
             ActionExecuted(utter_1),
@@ -3038,7 +3050,10 @@ def test_include_action_unlikely_intent():
     # ignore action_unlikely_intent.
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("haha", intent={"name": intent_1},),
+        UserUttered(
+            "haha",
+            intent={"name": intent_1},
+        ),
         SlotSet(slot_2, value_2),
         SlotSet(slot_1, value_1),
         ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
@@ -3056,7 +3071,10 @@ def test_include_action_unlikely_intent():
     # anywhere else also triggers utter_2
     conversation_events = [
         ActionExecuted(ACTION_LISTEN_NAME),
-        UserUttered("dummy", intent={"name": intent_2},),
+        UserUttered(
+            "dummy",
+            intent={"name": intent_2},
+        ),
         ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
     ]
     prediction = policy.predict_action_probabilities(

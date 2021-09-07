@@ -697,7 +697,9 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             return self._resource
 
         model_data, label_ids = self._prepare_for_training(
-            training_trackers, domain, precomputations,
+            training_trackers,
+            domain,
+            precomputations,
         )
 
         if model_data.is_empty():
@@ -922,10 +924,12 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             model_path / f"{model_filename}.priority.pkl", self.priority
         )
         rasa.utils.io.pickle_dump(
-            model_path / f"{model_filename}.data_example.pkl", self.data_example,
+            model_path / f"{model_filename}.data_example.pkl",
+            self.data_example,
         )
         rasa.utils.io.pickle_dump(
-            model_path / f"{model_filename}.fake_features.pkl", self.fake_features,
+            model_path / f"{model_filename}.fake_features.pkl",
+            self.fake_features,
         )
         rasa.utils.io.pickle_dump(
             model_path / f"{model_filename}.label_data.pkl",
@@ -937,7 +941,8 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
             else []
         )
         rasa.shared.utils.io.dump_obj_as_json_to_file(
-            model_path / f"{model_filename}.entity_tag_specs.json", entity_tag_specs,
+            model_path / f"{model_filename}.entity_tag_specs.json",
+            entity_tag_specs,
         )
 
     @classmethod
@@ -1616,7 +1621,8 @@ class TED(TransformerRasaModel):
             # combined batch dimension and dialogue length x 1 x units
             attribute_features = tf.expand_dims(
                 self._last_token(
-                    attribute_features, combined_sentence_sequence_feature_lengths,
+                    attribute_features,
+                    combined_sentence_sequence_feature_lengths,
                 ),
                 axis=1,
             )

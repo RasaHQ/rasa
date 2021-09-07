@@ -244,7 +244,7 @@ class BooleanSlot(Slot):
 
 
 def bool_from_any(x: Any) -> bool:
-    """ Converts bool/float/int/str to bool or raises error """
+    """Converts bool/float/int/str to bool or raises error"""
 
     if isinstance(x, bool):
         return x

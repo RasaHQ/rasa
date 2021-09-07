@@ -177,7 +177,11 @@ def test_count_vector_featurizer_attribute_featurization(
 def test_count_vector_featurizer_shared_vocab(
     sentence, intent, response, text_features, intent_features, response_features
 ):
-    ftr = CountVectorsFeaturizer({"use_shared_vocab": True,})
+    ftr = CountVectorsFeaturizer(
+        {
+            "use_shared_vocab": True,
+        }
+    )
     tk = WhitespaceTokenizer()
 
     train_message = Message(data={TEXT: sentence})
@@ -252,7 +256,10 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
 )
 def test_count_vector_featurizer_oov_words(sentence, expected):
     ftr = CountVectorsFeaturizer(
-        {"OOV_token": "__oov__", "OOV_words": ["oov_word0", "OOV_word1"],}
+        {
+            "OOV_token": "__oov__",
+            "OOV_words": ["oov_word0", "OOV_word1"],
+        }
     )
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
@@ -323,7 +330,13 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     ],
 )
 def test_count_vector_featurizer_char(sentence, expected):
-    ftr = CountVectorsFeaturizer({"min_ngram": 1, "max_ngram": 2, "analyzer": "char",})
+    ftr = CountVectorsFeaturizer(
+        {
+            "min_ngram": 1,
+            "max_ngram": 2,
+            "analyzer": "char",
+        }
+    )
 
     train_message = Message(data={TEXT: sentence})
     WhitespaceTokenizer().process(train_message)
@@ -535,7 +548,11 @@ def test_count_vector_featurizer_action_attribute_featurization(
     action_name_features: np.ndarray,
     response_features: np.ndarray,
 ):
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b",})
+    ftr = CountVectorsFeaturizer(
+        {
+            "token_pattern": r"(?u)\b\w+\b",
+        }
+    )
     tk = WhitespaceTokenizer()
 
     train_message = Message(data={TEXT: sentence})
@@ -599,7 +616,11 @@ def test_count_vector_featurizer_process_by_attribute(
     action_name_features: np.ndarray,
     response_features: np.ndarray,
 ):
-    ftr = CountVectorsFeaturizer({"token_pattern": r"(?u)\b\w+\b",})
+    ftr = CountVectorsFeaturizer(
+        {
+            "token_pattern": r"(?u)\b\w+\b",
+        }
+    )
     tk = WhitespaceTokenizer()
 
     # add a second example that has some response, so that the vocabulary for
@@ -697,7 +718,10 @@ def test_additional_vocab_size_deprecation():
 
 @pytest.mark.parametrize(
     "initial_train_text, additional_train_text, " "use_shared_vocab",
-    [("am I the coolest person?", "no", True), ("rasa rasa", "sara sara", False),],
+    [
+        ("am I the coolest person?", "no", True),
+        ("rasa rasa", "sara sara", False),
+    ],
 )
 def test_use_shared_vocab_exception(
     initial_train_text: Text,

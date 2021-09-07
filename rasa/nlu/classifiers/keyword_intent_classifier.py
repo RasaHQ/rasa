@@ -61,7 +61,10 @@ class KeywordIntentClassifierGraphComponent(GraphComponent):
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
-    def train(self, training_data: TrainingData,) -> Resource:
+    def train(
+        self,
+        training_data: TrainingData,
+    ) -> Resource:
         """Trains the intent classifier on a data set."""
         duplicate_examples = set()
         for ex in training_data.intent_examples:
@@ -187,5 +190,9 @@ class KeywordIntentClassifierGraphComponent(GraphComponent):
             intent_keyword_map = None
 
         return cls(
-            config, model_storage, resource, execution_context, intent_keyword_map,
+            config,
+            model_storage,
+            resource,
+            execution_context,
+            intent_keyword_map,
         )

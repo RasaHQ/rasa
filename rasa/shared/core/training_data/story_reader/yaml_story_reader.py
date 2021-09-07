@@ -73,7 +73,11 @@ class YAMLStoryReader(StoryReader):
         Returns:
             A new reader instance.
         """
-        return cls(reader.domain, reader.source_name, reader._is_used_for_training,)
+        return cls(
+            reader.domain,
+            reader.source_name,
+            reader._is_used_for_training,
+        )
 
     def read_from_file(
         self, filename: Union[Text, Path], skip_validation: bool = False

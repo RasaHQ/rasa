@@ -1221,7 +1221,9 @@ def create_app(
 
         if nlu_model is None:
             raise ErrorResponse(
-                HTTPStatus.CONFLICT, "Conflict", "Missing NLU model directory.",
+                HTTPStatus.CONFLICT,
+                "Conflict",
+                "Missing NLU model directory.",
             )
 
         return rasa.nlu.test.run_evaluation(

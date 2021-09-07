@@ -217,7 +217,9 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
     )
 
     file_importer = RasaFileImporter(
-        domain_path=args.domain, training_data_paths=args.data, config_file=config,
+        domain_path=args.domain,
+        training_data_paths=args.data,
+        config_file=config,
     )
 
     validator = Validator.from_importer(file_importer)

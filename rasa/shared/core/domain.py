@@ -229,7 +229,8 @@ class Domain:
             session_expiration_time_min = DEFAULT_SESSION_EXPIRATION_TIME_IN_MINUTES
 
         carry_over_slots = session_config.get(
-            CARRY_OVER_SLOTS_KEY, DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
+            CARRY_OVER_SLOTS_KEY,
+            DEFAULT_CARRY_OVER_SLOTS_TO_NEW_SESSION,
         )
 
         return SessionConfig(session_expiration_time_min, carry_over_slots)
@@ -824,7 +825,9 @@ class Domain:
 
     def _add_session_metadata_slot(self) -> None:
         self.slots.append(
-            AnySlot(rasa.shared.core.constants.SESSION_START_METADATA_SLOT,)
+            AnySlot(
+                rasa.shared.core.constants.SESSION_START_METADATA_SLOT,
+            )
         )
 
     def index_for_action(self, action_name: Text) -> int:
@@ -1009,7 +1012,8 @@ class Domain:
 
     @staticmethod
     def _get_slots_sub_state(
-        tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+        tracker: "DialogueStateTracker",
+        omit_unset_slots: bool = False,
     ) -> Dict[Text, Union[Text, Tuple[float]]]:
         """Sets all set slots with the featurization of the stored value.
 
@@ -1076,7 +1080,9 @@ class Domain:
         }
 
     def get_active_state(
-        self, tracker: "DialogueStateTracker", omit_unset_slots: bool = False,
+        self,
+        tracker: "DialogueStateTracker",
+        omit_unset_slots: bool = False,
     ) -> State:
         """Given a dialogue tracker, makes a representation of current dialogue state.
 
@@ -1103,7 +1109,8 @@ class Domain:
 
     @staticmethod
     def _remove_rule_only_features(
-        state: State, rule_only_data: Optional[Dict[Text, Any]],
+        state: State,
+        rule_only_data: Optional[Dict[Text, Any]],
     ) -> None:
         if not rule_only_data:
             return

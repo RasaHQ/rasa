@@ -36,7 +36,11 @@ def _action_unlikely_intent_for(intent_name: Text):
     _original = UnexpecTEDIntentPolicy.predict_action_probabilities
 
     def predict_action_probabilities(
-        self, tracker, domain, interpreter, **kwargs,
+        self,
+        tracker,
+        domain,
+        interpreter,
+        **kwargs,
     ) -> PolicyPrediction:
         latest_event = tracker.events[-1]
         if (

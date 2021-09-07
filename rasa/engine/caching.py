@@ -217,9 +217,9 @@ class LocalTrainingCache(TrainingCache):
     def _find_incompatible_cache_entries(self) -> List[LocalTrainingCache.CacheEntry]:
         with self._sessionmaker() as session:
             query_for_cache_entries = sa.select(self.CacheEntry)
-            all_entries: List[LocalTrainingCache.CacheEntry] = session.execute(
-                query_for_cache_entries
-            ).scalars().all()
+            all_entries: List[LocalTrainingCache.CacheEntry] = (
+                session.execute(query_for_cache_entries).scalars().all()
+            )
 
         return [
             entry

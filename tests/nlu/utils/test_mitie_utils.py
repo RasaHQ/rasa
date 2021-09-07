@@ -54,7 +54,8 @@ def test_provide_different_path(
 
 
 def test_invalid_path(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
 ):
     with pytest.raises(RasaException):
         MitieNLPGraphComponent.create(

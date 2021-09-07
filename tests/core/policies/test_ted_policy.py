@@ -112,7 +112,9 @@ def test_diagnostics(
     precomputations = None
     policy.train([GREET_RULE], domain, precomputations)
     prediction = policy.predict_action_probabilities(
-        GREET_RULE, domain, precomputations,
+        GREET_RULE,
+        domain,
+        precomputations,
     )
 
     assert prediction.diagnostic_data
@@ -278,7 +280,9 @@ class TestTEDPolicy(PolicyTestCollection):
         precomputations = None
         # first check the output is what we expect
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker,
+            default_domain,
+            precomputations,
         )
         assert not prediction.is_end_to_end_prediction
         # count number of non-zero confidences
@@ -293,7 +297,9 @@ class TestTEDPolicy(PolicyTestCollection):
         mock = Mock()
         monkeypatch.setattr(train_utils, "normalize", mock.normalize)
         trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker,
+            default_domain,
+            precomputations,
         )
 
         mock.normalize.assert_called_once()
@@ -319,7 +325,10 @@ class TestTEDPolicy(PolicyTestCollection):
         assert assembled_label_data.num_examples == default_domain.num_actions
         assert list(
             assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"].keys()
-        ) == [MASK, SENTENCE,]
+        ) == [
+            MASK,
+            SENTENCE,
+        ]
         assert list(assembled_label_data_signature[LABEL].keys()) == [IDS]
         assert (
             assembled_label_data_signature[f"{LABEL}_{ACTION_NAME}"][SENTENCE][0].units
@@ -334,7 +343,9 @@ class TestTEDPolicy(PolicyTestCollection):
         )
         precomputations = None
         training_data, label_ids, entity_tags = trained_policy._featurize_for_training(
-            training_trackers, default_domain, precomputations,
+            training_trackers,
+            default_domain,
+            precomputations,
         )
 
         _, all_labels = trained_policy._create_label_data(
@@ -487,14 +498,22 @@ class TestTEDPolicy(PolicyTestCollection):
                 [
                     ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    EntitiesAdded(
+                        entities=[
+                            {"entity": "name", "value": "Peter"},
+                        ]
+                    ),
                     ActionExecuted(ACTION_UNLIKELY_INTENT_NAME),
                     ActionExecuted("utter_greet"),
                 ],
                 [
                     ActionExecuted(ACTION_LISTEN_NAME),
                     UserUttered(text="hello", intent={"name": "greet"}),
-                    EntitiesAdded(entities=[{"entity": "name", "value": "Peter"},]),
+                    EntitiesAdded(
+                        entities=[
+                            {"entity": "name", "value": "Peter"},
+                        ]
+                    ),
                     ActionExecuted("utter_greet"),
                 ],
             ),
@@ -536,10 +555,14 @@ class TestTEDPolicy(PolicyTestCollection):
             "test 2", evts=tracker_events_without_action
         )
         prediction_with_action = trained_policy.predict_action_probabilities(
-            tracker_with_action, default_domain, precomputations,
+            tracker_with_action,
+            default_domain,
+            precomputations,
         )
         prediction_without_action = trained_policy.predict_action_probabilities(
-            tracker_without_action, default_domain, precomputations,
+            tracker_without_action,
+            default_domain,
+            precomputations,
         )
 
         # If the weights didn't change then both trackers
@@ -617,7 +640,9 @@ class TestTEDPolicyMargin(TestTEDPolicy):
         mock = Mock()
         monkeypatch.setattr(train_utils, "normalize", mock.normalize)
         trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations=None,
+            tracker,
+            default_domain,
+            precomputations=None,
         )
 
         # function should not get called for margin loss_type
@@ -628,7 +653,9 @@ class TestTEDPolicyMargin(TestTEDPolicy):
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations=None,
+            tracker,
+            default_domain,
+            precomputations=None,
         )
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions
@@ -673,7 +700,9 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
         precomputations = None
         # first check the output is what we expect
         predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker,
+            default_domain,
+            precomputations,
         ).probabilities
         # there should be no normalization
         assert all([confidence > 0 for confidence in predicted_probabilities])
@@ -682,7 +711,9 @@ class TestTEDPolicyNoNormalization(TestTEDPolicy):
         mock = Mock()
         monkeypatch.setattr(train_utils, "normalize", mock.normalize)
         trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker,
+            default_domain,
+            precomputations,
         )
 
         mock.normalize.assert_not_called()
@@ -712,7 +743,9 @@ class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
         precomputations = None
         # first check the output is what we expect
         predicted_probabilities = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker,
+            default_domain,
+            precomputations,
         ).probabilities
 
         output_sums_to_1 = sum(predicted_probabilities) == pytest.approx(1)
@@ -722,7 +755,9 @@ class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
         mock = Mock()
         monkeypatch.setattr(train_utils, "normalize", mock.normalize)
         trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations,
+            tracker,
+            default_domain,
+            precomputations,
         )
 
         mock.normalize.assert_not_called()
@@ -732,7 +767,9 @@ class TestTEDPolicyLinearNormConfidence(TestTEDPolicy):
     ):
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations=None,
+            tracker,
+            default_domain,
+            precomputations=None,
         )
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions

@@ -92,7 +92,11 @@ def validate(
         _validate_constructor(node_name, node, create_fn_params)
 
         _validate_needs(
-            node_name, node, schema, create_fn_params, run_fn_params,
+            node_name,
+            node,
+            schema,
+            create_fn_params,
+            run_fn_params,
         )
 
 
@@ -289,7 +293,9 @@ def _validate_types_of_reserved_keywords(
 
 
 def _validate_constructor(
-    node_name: Text, node: SchemaNode, create_fn_params: Dict[Text, ParameterInfo],
+    node_name: Text,
+    node: SchemaNode,
+    create_fn_params: Dict[Text, ParameterInfo],
 ) -> None:
     _validate_types_of_reserved_keywords(
         create_fn_params, node_name, node, node.constructor_name

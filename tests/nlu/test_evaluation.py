@@ -940,7 +940,13 @@ async def test_nlu_comparison(
     monkeypatch.setattr(
         sys.modules["rasa.nlu.test"],
         "get_eval_data",
-        Mock(return_value=(1, None, (None,),)),
+        Mock(
+            return_value=(
+                1,
+                None,
+                (None,),
+            )
+        ),
     )
     monkeypatch.setattr(
         sys.modules["rasa.nlu.test"],

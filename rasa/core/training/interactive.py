@@ -667,7 +667,10 @@ async def _request_action_from_user(
     await _print_history(conversation_id, endpoint)
 
     choices = [
-        {"name": f'{a["score"]:03.2f} {a["action"]:40}', "value": a["action"],}
+        {
+            "name": f'{a["score"]:03.2f} {a["action"]:40}',
+            "value": a["action"],
+        }
         for a in predictions
     ]
 
@@ -1629,7 +1632,9 @@ def start_visualization(image_path: Text, port: int) -> None:
 
     # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png(request: Request,) -> HTTPResponse:
+    def visualisation_png(
+        request: Request,
+    ) -> HTTPResponse:
         try:
             headers = {"Cache-Control": "no-cache"}
             return response.file(os.path.abspath(image_path), headers=headers)

@@ -257,7 +257,9 @@ class RegexFeaturizer(SparseFeaturizer):
             known_patterns = rasa.shared.utils.io.read_json_file(patterns_file_name)
 
         return RegexFeaturizer(
-            meta, known_patterns=known_patterns, finetune_mode=should_finetune,
+            meta,
+            known_patterns=known_patterns,
+            finetune_mode=should_finetune,
         )
 
     def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:

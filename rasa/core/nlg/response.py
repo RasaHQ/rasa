@@ -27,7 +27,9 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         self.responses = responses
 
     def _matches_filled_slots(
-        self, filled_slots: Dict[Text, Any], response: Dict[Text, Any],
+        self,
+        filled_slots: Dict[Text, Any],
+        response: Dict[Text, Any],
     ) -> bool:
         """Checks if the conditional response variation matches the filled slots."""
         constraints = response.get(RESPONSE_CONDITION)

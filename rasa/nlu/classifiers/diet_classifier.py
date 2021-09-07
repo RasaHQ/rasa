@@ -1732,7 +1732,8 @@ class DIET(TransformerRasaModel):
             tf_batch_data, TEXT
         )
         sentence_feature_lengths = self._get_sentence_feature_lengths(
-            tf_batch_data, TEXT,
+            tf_batch_data,
+            TEXT,
         )
 
         text_transformed, _, _, _, _, attention_weights = self._tf_layers[

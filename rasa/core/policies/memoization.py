@@ -192,7 +192,10 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         return self.lookup.get(self._create_feature_key(states))
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self,
+        states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -363,7 +366,10 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         return mcfly_tracker
 
     def _recall_using_delorean(
-        self, old_states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self,
+        old_states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
     ) -> Optional[Text]:
         """Applies to the future idea to change the past and get the new future.
 
@@ -386,7 +392,10 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         )
         mcfly_tracker = self._back_to_the_future(mcfly_tracker)
         while mcfly_tracker is not None:
-            states = self._prediction_states(mcfly_tracker, domain,)
+            states = self._prediction_states(
+                mcfly_tracker,
+                domain,
+            )
 
             if old_states != states:
                 # check if we like new futures
@@ -404,7 +413,10 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         return None
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self,
+        states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -422,13 +434,18 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_delorean(states, tracker, domain,)
+            return self._recall_using_delorean(
+                states,
+                tracker,
+                domain,
+            )
         else:
             return predicted_action_name
 
 
 def _get_max_applied_events_for_max_history(
-    tracker: DialogueStateTracker, max_history: Optional[int],
+    tracker: DialogueStateTracker,
+    max_history: Optional[int],
 ) -> Optional[int]:
     """Computes the number of events in the tracker that correspond to max_history.
 
@@ -455,7 +472,8 @@ def _get_max_applied_events_for_max_history(
 
 
 def _trim_tracker_by_max_history(
-    tracker: DialogueStateTracker, max_history: Optional[int],
+    tracker: DialogueStateTracker,
+    max_history: Optional[int],
 ) -> DialogueStateTracker:
     """Removes events from the tracker until it has `max_history` actions.
 

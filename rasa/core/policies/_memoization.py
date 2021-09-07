@@ -182,7 +182,10 @@ class MemoizationPolicy(Policy):
         return self.lookup.get(self._create_feature_key(states))
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self,
+        states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -309,7 +312,10 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         return mcfly_tracker
 
     def _recall_using_delorean(
-        self, old_states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self,
+        old_states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
     ) -> Optional[Text]:
         """Applies to the future idea to change the past and get the new future.
 
@@ -328,7 +334,10 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         mcfly_tracker = self._back_to_the_future(tracker)
         while mcfly_tracker is not None:
-            states = self._prediction_states(mcfly_tracker, domain,)
+            states = self._prediction_states(
+                mcfly_tracker,
+                domain,
+            )
 
             if old_states != states:
                 # check if we like new futures
@@ -346,7 +355,10 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         return None
 
     def recall(
-        self, states: List[State], tracker: DialogueStateTracker, domain: Domain,
+        self,
+        states: List[State],
+        tracker: DialogueStateTracker,
+        domain: Domain,
     ) -> Optional[Text]:
         """Finds the action based on the given states.
 
@@ -364,6 +376,10 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         predicted_action_name = self._recall_states(states)
         if predicted_action_name is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_delorean(states, tracker, domain,)
+            return self._recall_using_delorean(
+                states,
+                tracker,
+                domain,
+            )
         else:
             return predicted_action_name

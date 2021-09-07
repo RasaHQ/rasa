@@ -116,7 +116,9 @@ def test_graph_output_is_not_fingerprintable_None():
         def run(self) -> None:
             pass
 
-    schema = create_test_schema(uses=MyComponent,)
+    schema = create_test_schema(
+        uses=MyComponent,
+    )
 
     with pytest.raises(GraphSchemaValidationException, match="fingerprintable"):
         validation.validate(schema, language=None, is_train_graph=True)
@@ -353,7 +355,9 @@ def test_too_many_supplied_params():
         GraphSchemaValidationException, match="does not accept a parameter"
     ):
         validation.validate(
-            schema, language=None, is_train_graph=True,
+            schema,
+            language=None,
+            is_train_graph=True,
         )
 
 
@@ -403,7 +407,9 @@ def test_matching_params_due_to_constructor():
     )
 
     validation.validate(
-        schema, language=None, is_train_graph=True,
+        schema,
+        language=None,
+        is_train_graph=True,
     )
 
 
@@ -429,7 +435,9 @@ def test_matching_params_due_to_constructor_but_eager():
 
     with pytest.raises(GraphSchemaValidationException, match="lazy mode"):
         validation.validate(
-            schema, language=None, is_train_graph=True,
+            schema,
+            language=None,
+            is_train_graph=True,
         )
 
 
@@ -449,11 +457,17 @@ def test_unsatisfied_constructor(eager: bool, error_message: Text):
         ) -> GraphComponent:
             pass
 
-    schema = create_test_schema(uses=MyComponent, eager=eager, constructor_name="load",)
+    schema = create_test_schema(
+        uses=MyComponent,
+        eager=eager,
+        constructor_name="load",
+    )
 
     with pytest.raises(GraphSchemaValidationException, match=error_message):
         validation.validate(
-            schema, language=None, is_train_graph=True,
+            schema,
+            language=None,
+            is_train_graph=True,
         )
 
 
@@ -467,7 +481,9 @@ def test_parent_supplying_wrong_type():
             pass
 
     schema = create_test_schema(
-        uses=MyComponent, parent=MyUnreliableParent, needs={"training_data": "parent"},
+        uses=MyComponent,
+        parent=MyUnreliableParent,
+        needs={"training_data": "parent"},
     )
 
     with pytest.raises(GraphSchemaValidationException, match="type .* expected"):
@@ -513,7 +529,9 @@ def test_parent_supplying_subtype():
             pass
 
     schema = create_test_schema(
-        uses=MyComponent, parent=Parent, needs={"training_data": "parent"},
+        uses=MyComponent,
+        parent=Parent,
+        needs={"training_data": "parent"},
     )
 
     validation.validate(schema, language=None, is_train_graph=True)
@@ -529,7 +547,9 @@ def test_child_accepting_any_type_from_parent():
             pass
 
     schema = create_test_schema(
-        uses=MyComponent, parent=Parent, needs={"training_data": "parent"},
+        uses=MyComponent,
+        parent=Parent,
+        needs={"training_data": "parent"},
     )
 
     validation.validate(schema, language=None, is_train_graph=True)

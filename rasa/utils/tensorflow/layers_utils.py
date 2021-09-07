@@ -64,7 +64,8 @@ def get_candidate_values(
         ```
     """
     tiled_x = tf.tile(
-        tf.expand_dims(batch_flatten(x), 0), (tf.shape(candidate_ids)[0], 1, 1),
+        tf.expand_dims(batch_flatten(x), 0),
+        (tf.shape(candidate_ids)[0], 1, 1),
     )
     candidate_values = tf.gather(tiled_x, candidate_ids, batch_dims=1)
 

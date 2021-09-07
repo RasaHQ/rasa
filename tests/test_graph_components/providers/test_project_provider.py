@@ -39,7 +39,8 @@ def test_provide_importer(
 
 
 def test_provide_multiproject_importer(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
 ) -> None:
     config_path = "data/test_multiproject/config.yml"
     importer_config = {"importers": [{"name": "MultiProjectImporter"}]}
