@@ -1,4 +1,5 @@
 import pytest
+import typing
 import numpy as np
 
 from typing import Text, Dict, Any, Callable
@@ -12,7 +13,12 @@ from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
-from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizerGraphComponent
+from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import (
+    MitieFeaturizerGraphComponent,
+)
+
+if typing.TYPE_CHECKING:
+    import mitie
 
 
 @pytest.fixture
@@ -28,10 +34,7 @@ def create(
 ) -> Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent]:
     def inner(config: Dict[Text, Any]):
         return MitieFeaturizerGraphComponent.create(
-            config={
-                **MitieFeaturizerGraphComponent.get_default_config(),
-                **config,
-            },
+            config={**MitieFeaturizerGraphComponent.get_default_config(), **config,},
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=resource,
@@ -41,8 +44,8 @@ def create(
 
 
 def test_mitie_featurizer(
-        create: Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent],
-        mitie_feature_extractor
+    create: Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent],
+    mitie_feature_extractor: "mitie.total_word_feature_extractor",
 ):
 
     featurizer = create({"alias": "mitie_featurizer"})
@@ -64,7 +67,10 @@ def test_mitie_featurizer(
     assert np.allclose(sen_vec[-1][:5], expected_cls, atol=1e-5)
 
 
-def test_mitie_featurizer_train(create: Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent], mitie_feature_extractor):
+def test_mitie_featurizer_train(
+    create: Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent],
+    mitie_feature_extractor: "mitie.total_word_feature_extractor",
+):
 
     featurizer = create({"alias": "mitie_featurizer"})
 
@@ -75,8 +81,7 @@ def test_mitie_featurizer_train(create: Callable[[Dict[Text, Any]], MitieFeaturi
     MitieTokenizer().train(TrainingData([message]))
 
     featurizer.train(
-        TrainingData([message]),
-        **{"mitie_feature_extractor": mitie_feature_extractor},
+        TrainingData([message]), **{"mitie_feature_extractor": mitie_feature_extractor},
     )
 
     expected = np.array(
