@@ -279,8 +279,8 @@ class MessengerBot(OutputChannel):
         self, recipient_id: Text, json_message: Dict[Text, Any], **kwargs: Any
     ) -> None:
         """Sends custom json data to the output."""
-
-        recipient_id = json_message.pop("sender", {}).pop("id", None) or recipient_id
+        if isinstance(json_message, dict) and "sender" in json_message.keys():
+            recipient_id = json_message.pop("sender", {}).pop("id") or recipient_id
 
         self.messenger_client.send(json_message, recipient_id, "RESPONSE")
 
