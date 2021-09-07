@@ -195,6 +195,7 @@
           "items": [
             "reference/rasa/graph_components/providers/domain_provider",
             "reference/rasa/graph_components/providers/domain_without_response_provider",
+            "reference/rasa/graph_components/providers/nlu_training_data_provider",
             "reference/rasa/graph_components/providers/project_provider",
             "reference/rasa/graph_components/providers/story_graph_provider",
             "reference/rasa/graph_components/providers/training_tracker_provider"
