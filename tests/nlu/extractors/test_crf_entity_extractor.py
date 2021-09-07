@@ -4,6 +4,9 @@ from typing import Dict, Text, List, Any
 
 import pytest
 
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.components import ComponentBuilder
 import rasa.nlu.train
 from rasa.nlu.config import RasaNLUModelConfig
@@ -13,7 +16,7 @@ from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.constants import SPACY_DOCS
 from rasa.shared.nlu.constants import TEXT, ENTITIES
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractorGraphComponent
 
 
 def pipeline_from_components(*components: Text) -> List[Dict[Text, Text]]:
@@ -93,7 +96,7 @@ async def test_train_persist_with_different_configurations(
     pipeline = [
         {"name": "SpacyNLP", "model": "en_core_web_md"},
         {"name": "SpacyTokenizer"},
-        {"name": "CRFEntityExtractor"},
+        {"name": "CRFEntityExtractorGraphComponent"},
     ]
     pipeline[2].update(config_params)
 
@@ -122,25 +125,33 @@ async def test_train_persist_with_different_configurations(
     assert detected_entities[0]["value"] == "italian"
 
 
-def test_crf_use_dense_features(spacy_nlp: Any):
-    crf_extractor = CRFEntityExtractor(
-        component_config={
-            "features": [
-                ["low", "title", "upper", "pos", "pos2"],
-                [
-                    "low",
-                    "suffix3",
-                    "suffix2",
-                    "upper",
-                    "title",
-                    "digit",
-                    "pos",
-                    "pos2",
-                    "text_dense_features",
-                ],
-                ["low", "title", "upper", "pos", "pos2"],
-            ]
-        }
+def test_crf_use_dense_features(
+    spacy_nlp: Any,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+):
+    component_config = {
+        "features": [
+            ["low", "title", "upper", "pos", "pos2"],
+            [
+                "low",
+                "suffix3",
+                "suffix2",
+                "upper",
+                "title",
+                "digit",
+                "pos",
+                "pos2",
+                "text_dense_features",
+            ],
+            ["low", "title", "upper", "pos", "pos2"],
+        ]
+    }
+    crf_extractor = CRFEntityExtractorGraphComponent.create(
+        {**CRFEntityExtractorGraphComponent.get_default_config(), **component_config},
+        default_model_storage,
+        Resource("CRFEntityExtractor"),
+        default_execution_context,
     )
 
     spacy_featurizer = SpacyFeaturizer()
@@ -179,8 +190,15 @@ def test_most_likely_entity(
     entity_predictions: List[Dict[Text, float]],
     expected_label: Text,
     expected_confidence: float,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
 ):
-    crf_extractor = CRFEntityExtractor({"BILOU_flag": True})
+    crf_extractor = CRFEntityExtractorGraphComponent.create(
+        CRFEntityExtractorGraphComponent.get_default_config(),
+        default_model_storage,
+        Resource("CRFEntityExtractor"),
+        default_execution_context,
+    )
 
     actual_label, actual_confidence = crf_extractor._most_likely_tag(entity_predictions)
 
