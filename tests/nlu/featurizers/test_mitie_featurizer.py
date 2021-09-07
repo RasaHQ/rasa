@@ -12,7 +12,6 @@ from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizerGraphComponent
 
 
@@ -29,7 +28,10 @@ def create(
 ) -> Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent]:
     def inner(config: Dict[Text, Any]):
         return MitieFeaturizerGraphComponent.create(
-            config=config,
+            config={
+                **MitieFeaturizerGraphComponent.get_default_config(),
+                **config,
+            },
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=resource,
@@ -43,7 +45,7 @@ def test_mitie_featurizer(
         mitie_feature_extractor
 ):
 
-    featurizer = create({})
+    featurizer = create({"alias": "mitie_featurizer"})
 
     sentence = "Hey how are you today"
     message = Message(data={TEXT: sentence})
@@ -64,7 +66,7 @@ def test_mitie_featurizer(
 
 def test_mitie_featurizer_train(create: Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent], mitie_feature_extractor):
 
-    featurizer = create({})
+    featurizer = create({"alias": "mitie_featurizer"})
 
     sentence = "Hey how are you today"
     message = Message(data={TEXT: sentence})

@@ -36,9 +36,10 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         return {
+            **DenseFeaturizer2.get_default_config(),
             # Specify what pooling operation should be used to calculate the vector of
             # the complete utterance. Available options: 'mean' and 'max'
-            POOLING: MEAN_POOLING
+            POOLING: MEAN_POOLING,
         }
 
     def __init__(
@@ -65,7 +66,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-    ) -> MitieFeaturizerGraphComponent:
+    ) -> "MitieFeaturizerGraphComponent":
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -77,17 +78,16 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> MitieFeaturizerGraphComponent:
+    ) -> "MitieFeaturizerGraphComponent":
         """Loads trained component (see parent class for full docstring)."""
         try:
-            with model_storage.read_from(resource) as model_path:
-                loaded_featurizer = cls(
-                    config=config,
-                    model_storage=model_storage,
-                    resource=resource,
-                    execution_context=execution_context,
-                )
-                return loaded_featurizer
+            loaded_featurizer = cls(
+                config=config,
+                model_storage=model_storage,
+                resource=resource,
+                execution_context=execution_context,
+            )
+            return loaded_featurizer
         except ValueError:
             logger.warning(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
