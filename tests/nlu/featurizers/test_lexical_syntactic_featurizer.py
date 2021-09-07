@@ -124,7 +124,7 @@ def test_feature_computation(
     assert not message.features
 
     # process
-    featurizer.process_message(message)
+    featurizer.process([message])
     assert len(message.features) == 1
     feature = message.features[0]
     assert feature.attribute == TEXT
@@ -162,7 +162,7 @@ def test_features_for_messages_with_missing_part_of_speech_tags(
         {"alias": "lsf", "features": [["BOS", "pos"]]}
     )
     featurizer.train(TrainingData([message]))
-    featurizer.process_message(message)
+    featurizer.process([message])
     feature = message.features[0]
     assert feature.features.shape[1] == 3  # BOS = True/False, pos = None
 
@@ -189,7 +189,7 @@ def test_only_featurizes_text_attribute(
         {"alias": "lsf", "features": [["BOS"]]}
     )
     featurizer.train(TrainingData([message]))
-    featurizer.process_message(message)
+    featurizer.process([message])
     assert len(message.features) == 1
     assert message.features[0].attribute == TEXT
 

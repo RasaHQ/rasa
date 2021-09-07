@@ -70,7 +70,7 @@ class Featurizer2(Generic[FeatureType]):
         ...
 
     @abstractmethod
-    def process(self, messages: List[Message],) -> List[Message]:
+    def process(self, messages: List[Message]) -> List[Message]:
         """Featurizes all given messages in-place.
 
         Args:

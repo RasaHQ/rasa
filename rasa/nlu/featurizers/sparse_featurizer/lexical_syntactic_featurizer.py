@@ -254,6 +254,12 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         """
         feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
         self._set_feature_to_idx_dict(feature_to_idx_dict=feature_to_idx_dict)
+        if not self._feature_to_idx_dict:
+            rasa.shared.utils.io.raise_warning(
+                "No lexical syntactic features could be extracted from the training"
+                "data. In order for this component to work you need to define "
+                "`features` that can be found in the given training data."
+            )
         self.persist()
         return self._resource
 
@@ -373,10 +379,10 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
           the given list of messages which have been modified in-place
         """
         for message in messages:
-            self.process_message(message)
+            self._process_message(message)
         return messages
 
-    def process_message(self, message: Message) -> None:
+    def _process_message(self, message: Message) -> None:
         """Featurize the given message in-place.
 
         Args:
