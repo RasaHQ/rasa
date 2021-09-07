@@ -13,6 +13,7 @@ from typing import (
     Hashable,
     Callable,
     Set,
+    Optional,
 )
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
@@ -141,6 +142,9 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
+        feature_to_idx_dict: Optional[
+            Dict[Tuple[int, Text], Dict[Text, Hashable]]
+        ] = None,
     ) -> None:
         """Instantiates a new `LexicalSyntacticFeaturizer` instance."""
         super().__init__(execution_context.node_name, config)
@@ -150,9 +154,9 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         self._execution_context = execution_context
         # featurizer specific
         self._feature_config = self._config[FEATURES]
-        self._feature_to_idx_dict = {}
-        self._number_of_features = -1
-        # where the negative value indicates that feature_to_idx hasn't been set yet
+        self._set_feature_to_idx_dict(
+            feature_to_idx_dict or {}, check_consistency_with_config=True
+        )
 
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
@@ -200,9 +204,9 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                 f"Continuing without the part-of-speech-features."
             )
 
-    def _load(
+    def _set_feature_to_idx_dict(
         self,
-        feature_to_idx_dict: Dict[Text, Dict[Text, Hashable]],
+        feature_to_idx_dict: Dict[Tuple[int, Text], Dict[Hashable, int]],
         check_consistency_with_config: bool = False,
     ) -> None:
         """Sets the "feature" to index mapping.
@@ -224,7 +228,6 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
             ]
         )
         if check_consistency_with_config:
-            # used during load()
             known_features = set(self._feature_to_idx_dict.keys())
             not_in_config = known_features.difference(
                 (
@@ -250,7 +253,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
           training_data: the training data
         """
         feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
-        self._load(feature_to_idx_dict=feature_to_idx_dict)
+        self._set_feature_to_idx_dict(feature_to_idx_dict=feature_to_idx_dict)
         self.persist()
         return self._resource
 
@@ -379,17 +382,10 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         Args:
           message: a message to be featurized
         """
-        if self._number_of_features < 0:
-            rasa.shared.utils.io.raise_warning(
-                f"The {self.__class__.__name__} {self.identifier} has not been "
-                f"trained yet. "
-                f"Continuing without adding features from this featurizer."
-            )
-            return
         if not self._feature_to_idx_dict:
             rasa.shared.utils.io.raise_warning(
-                f"The {self.__class__.__name__} {self.identifier} has been "
-                f"trained but no features have been identified. "
+                f"The {self.__class__.__name__} {self.identifier} has not been "
+                f"trained properly yet. "
                 f"Continuing without adding features from this featurizer."
             )
             return
@@ -406,7 +402,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
             )
 
     def _map_raw_features_to_indices(
-        self, sentence_features: List[Dict[Text, Any]]
+        self, sentence_features: List[Dict[Tuple[int, Text], Any]]
     ) -> scipy.sparse.coo_matrix:
         """Converts the raw features to one-hot encodings.
 
@@ -424,8 +420,6 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
            a sparse matrix where the `i`-th row is a multi-hot vector that encodes the
            raw features extracted from the window around the `i`-th token
         """
-        if self._number_of_features < 0:
-            raise RuntimeError("Expected the featurizer to be trained.")
         rows = []
         cols = []
         shape = (len(sentence_features), self._number_of_features)
@@ -464,30 +458,33 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         **kwargs: Any,
     ) -> LexicalSyntacticFeaturizerGraphComponent:
         """Loads trained component (see parent class for full docstring)."""
-        loaded_featurizer = cls(
-            config=config,
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
         try:
             with model_storage.read_from(resource) as model_path:
                 feature_to_idx_dict = rasa.utils.io.json_unpickle(
                     model_path / cls.FILENAME_FEATURE_TO_IDX_DICT, keys=True
                 )
-                loaded_featurizer._load(
-                    feature_to_idx_dict, check_consistency_with_config=True
+                return cls(
+                    config=config,
+                    model_storage=model_storage,
+                    resource=resource,
+                    execution_context=execution_context,
+                    feature_to_idx_dict=feature_to_idx_dict,
                 )
         except ValueError:
             logger.warning(
                 f"Failed to load {cls.__class__.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
-        return loaded_featurizer
+            return cls(
+                config=config,
+                model_storage=model_storage,
+                resource=resource,
+                execution_context=execution_context,
+            )
 
     def persist(self) -> None:
         """Persist this model (see parent class for full docstring)."""
-        if self._number_of_features < 0:  # i.e. was never trained
+        if not self._feature_to_idx_dict:
             return None
 
         with self._model_storage.write_to(self._resource) as model_path:
