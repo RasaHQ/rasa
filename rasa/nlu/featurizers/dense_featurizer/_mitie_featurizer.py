@@ -1,9 +1,9 @@
+# flake8: noqa
 # WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
 #          Please don't do any changes in this module and rather adapt
 #          `MitieFeaturizerGraphComponent` from the regular
 #          `rasa.nlu.featurizers.dense_featurizer.MitieFeaturizer` module. This module is a
 #          workaround to defer breaking changes due to the architecture revamp in 3.0.
-# flake8: noqa
 import numpy as np
 import typing
 from typing import Any, List, Text, Optional, Dict, Type, Tuple

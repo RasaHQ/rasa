@@ -1,13 +1,13 @@
 import numpy as np
+import logging
 import typing
 from typing import Any, List, Text, Optional, Dict, Type, Tuple
 
-from rasa.engine.graph import ExecutionContext
+from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizerGraphComponent
+from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
@@ -25,49 +25,14 @@ from rasa.nlu.featurizers.dense_featurizer._mitie_featurizer import MitieFeaturi
 if typing.TYPE_CHECKING:
     import mitie
 
+logger = logging.getLogger(__name__)
+
 # TODO: This is a workaround around until we have all components migrated to
 # `GraphComponent`.
 MitieFeaturizer = MitieFeaturizer
 
 
-class MitieFeaturizerGraphComponent(DenseFeaturizerGraphComponent):
-    @classmethod
-    def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        **kwargs: Any,
-    ) -> GraphComponent:
-        """Creates a new untrained policy (see parent class for full docstring)."""
-        return cls(config, model_storage, resource, execution_context)
-
-    @classmethod
-    def load(
-            cls,
-            config: Dict[Text, Any],
-            model_storage: ModelStorage,
-            resource: Resource,
-            execution_context: ExecutionContext,
-            **kwargs: Any,
-    ) -> MitieFeaturizerGraphComponent:
-        pass
-
-    def __init__(
-        self,
-        config: Optional[Dict[Text, Any]],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext
-    ) -> None:
-        self.config = config
-
-        self._model_storage = model_storage
-        self._resource = resource
-
-        self.pooling_operation = self.config["pooling"]
-
+class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
         return {
@@ -75,6 +40,60 @@ class MitieFeaturizerGraphComponent(DenseFeaturizerGraphComponent):
             # the complete utterance. Available options: 'mean' and 'max'
             POOLING: MEAN_POOLING
         }
+
+    def __init__(
+        self,
+        config: Optional[Dict[Text, Any]],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> None:
+        super().__init__(config)
+        self.config = config
+
+        # graph component
+        self._model_storage = model_storage
+        self._resource = resource
+        self._execution_context = execution_context
+
+        self.pooling_operation = self.config["pooling"]
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> MitieFeaturizerGraphComponent:
+        """Creates a new untrained component (see parent class for full docstring)."""
+        return cls(config, model_storage, resource, execution_context)
+
+    @classmethod
+    def load(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
+    ) -> MitieFeaturizerGraphComponent:
+        """Loads trained component (see parent class for full docstring)."""
+        try:
+            with model_storage.read_from(resource) as model_path:
+                loaded_featurizer = cls(
+                    config=config,
+                    model_storage=model_storage,
+                    resource=resource,
+                    execution_context=execution_context,
+                )
+                return loaded_featurizer
+        except ValueError:
+            logger.warning(
+                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
+                f"'{resource.name}' doesn't exist."
+            )
+            return cls(config, model_storage, resource, execution_context)
 
     @staticmethod
     def required_packages() -> List[Text]:
@@ -88,13 +107,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizerGraphComponent):
     def ndim(self, feature_extractor: "mitie.total_word_feature_extractor") -> int:
         return feature_extractor.num_dimensions
 
-    def train(
-        self,
-        training_data: TrainingData,
-        config: Optional[RasaNLUModelConfig] = None,
-        **kwargs: Any,
-    ) -> None:
-
+    def train(self, training_data: TrainingData, **kwargs: Any,) -> None:
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for example in training_data.training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
@@ -138,7 +151,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizerGraphComponent):
             sequence_features,
             FEATURE_TYPE_SEQUENCE,
             attribute,
-            self.component_config[FEATURIZER_CLASS_ALIAS],
+            self.config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sequence_features)
 
@@ -146,7 +159,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizerGraphComponent):
             sentence_features,
             FEATURE_TYPE_SENTENCE,
             attribute,
-            self.component_config[FEATURIZER_CLASS_ALIAS],
+            self.config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sentence_features)
 
@@ -173,7 +186,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizerGraphComponent):
             sequence_features.append(feature_extractor.get_feature_vector(token.text))
         sequence_features = np.array(sequence_features)
 
-        sentence_fetaures = self._calculate_sentence_features(
+        sentence_fetaures = self.aggregate_sequence_features(
             sequence_features, self.pooling_operation
         )
 
