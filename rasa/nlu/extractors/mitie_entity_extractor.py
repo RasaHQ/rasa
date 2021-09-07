@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 import os
 import typing
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Optional, Text
 
 from rasa.engine.graph import GraphComponent, ModelStorage, ExecutionContext
 from rasa.engine.storage.resource import Resource
@@ -48,7 +48,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
-        execution_context: ExecutionContext,
+        ner: Optional["mitie.named_entity_extractor"],
     ) -> None:
         """Creates a new instance.
 
@@ -66,10 +66,14 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         self._resource = resource
         self.validate_config(self._config)
         # extractor
-        self._ner = None
+        self._ner = ner
 
     def validate_config(cls, config: Dict[Text, Any]) -> None:
-        """Checks whether the given configuration is valid."""
+        """Checks whether the given configuration is valid.
+
+        Args:
+          config: a configuration for a Mitie entity extractor component
+        """
         model_file = config.get("mitie_file")
         if not model_file or not os.path.isfile(model_file):
             raise InvalidConfigException(
@@ -101,19 +105,11 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 themselves.
             resource: Resource locator for this component which can be used to persist
                 and load itself from the `model_storage`.
-            execution_context: Information about the current graph run.
+            execution_context: Information about the current graph run. Unused.
 
         Returns: An instantiated `MitieEntityExtractorGraphComponent`.
         """
-        return cls(config, model_storage, resource, execution_context)
-
-    def _load(self, ner: "mitie.named_entity_extractor") -> None:
-        """Sets all attributes that can be persisted, i.e the mitie entity extractor.
-
-        Args:
-           ner: a mitie entity extractor
-        """
-        self._ner = ner
+        return cls(config, model_storage, resource)
 
     def train(self, training_data: TrainingData,) -> Resource:
         """Trains a MITIE named entity recognizer.
@@ -146,7 +142,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
 
         # Mitie will fail to train if there is not a single entity tagged
         if found_one_entity:
-            self.ner = trainer.train()
+            self._ner = trainer.train()
 
         self.persist()
         return self._resource
@@ -282,8 +278,8 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
 
     def persist(self) -> None:
         """Persist this model."""
-        if not self.ner:
+        if not self._ner:
             return
         with self._model_storage.write_to(self._resource) as model_path:
             ner_file = model_path / self.MITIE_RESOURCE_FILE
-            self.ner.save_to_disk(ner_file, pure_model=True)
+            self._ner.save_to_disk(ner_file, pure_model=True)
