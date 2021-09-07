@@ -1,3 +1,5 @@
+from __future__ import annotations
+import abc
 import copy
 import json
 import logging
@@ -16,6 +18,9 @@ from typing import (
     TYPE_CHECKING,
 )
 import numpy as np
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 
 from rasa.shared.core.events import Event
 
@@ -29,10 +34,11 @@ from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     FEATURIZER_FILE,
 )
+from rasa.shared.exceptions import RasaException, FileIOException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
-from rasa.core.constants import DEFAULT_POLICY_PRIORITY
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY, POLICY_PRIORITY
 from rasa.shared.core.constants import (
     USER,
     SLOTS,
@@ -41,11 +47,18 @@ from rasa.shared.core.constants import (
 )
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT, ACTION_TEXT, ACTION_NAME
 
+# All code outside this module will continue to use the old `Policy` interface
+from rasa.core.policies._policy import Policy
+
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
 
 
 logger = logging.getLogger(__name__)
+
+# TODO: This is a workaround around until we have all components migrated to
+# `GraphComponent`.
+Policy = Policy
 
 
 class SupportedData(Enum):
@@ -62,7 +75,7 @@ class SupportedData(Enum):
 
     @staticmethod
     def trackers_for_policy(
-        policy: Union["Policy", Type["Policy"]],
+        policy: Union[Policy, Type[Policy]],
         trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]],
     ) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]:
         """Return trackers for a given policy.
@@ -86,7 +99,9 @@ class SupportedData(Enum):
         return trackers
 
 
-class Policy:
+class PolicyGraphComponent(GraphComponent):
+    """Common parent class for all dialogue policies."""
+
     @staticmethod
     def supported_data() -> SupportedData:
         """The type of data supported by this policy.
@@ -99,31 +114,73 @@ class Policy:
         """
         return SupportedData.ML_DATA
 
+    def __init__(
+        self,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        featurizer: Optional[TrackerFeaturizer] = None,
+    ) -> None:
+        """Constructs a new Policy object."""
+        if featurizer is None:
+            featurizer = self._create_featurizer(config)
+        self.__featurizer = featurizer
+
+        self.priority = config.get(POLICY_PRIORITY, DEFAULT_POLICY_PRIORITY)
+        self.finetune_mode = execution_context.is_finetuning
+
+        self._rule_only_data = {}
+
+        self._model_storage = model_storage
+        self._resource = resource
+
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
+    ) -> GraphComponent:
+        """Creates a new untrained policy (see parent class for full docstring)."""
+        return cls(config, model_storage, resource, execution_context)
+
+    @classmethod
+    def _create_featurizer(cls, policy_config: Dict[Text, Any]) -> TrackerFeaturizer:
+        policy_config = copy.deepcopy(policy_config)
+
+        featurizer_configs = policy_config.get("featurizer")
+
+        if not featurizer_configs:
+            return cls._standard_featurizer()
+
+        featurizer_func = _get_featurizer_from_config(
+            featurizer_configs,
+            cls.__name__,
+            lookup_path="rasa.core.featurizers.tracker_featurizers",
+        )
+        featurizer_config = featurizer_configs[0]
+
+        state_featurizer_configs = featurizer_config.pop("state_featurizer", None)
+        if state_featurizer_configs:
+            state_featurizer_func = _get_featurizer_from_config(
+                state_featurizer_configs,
+                cls.__name__,
+                lookup_path="rasa.core.featurizers.single_state_featurizer",
+            )
+            state_featurizer_config = state_featurizer_configs[0]
+
+            featurizer_config["state_featurizer"] = state_featurizer_func(
+                **state_featurizer_config
+            )
+
+        return featurizer_func(**featurizer_config)
+
     @staticmethod
     def _standard_featurizer() -> MaxHistoryTrackerFeaturizer:
         return MaxHistoryTrackerFeaturizer(SingleStateFeaturizer())
-
-    @classmethod
-    def _create_featurizer(
-        cls, featurizer: Optional[TrackerFeaturizer] = None
-    ) -> TrackerFeaturizer:
-        if featurizer:
-            return copy.deepcopy(featurizer)
-        else:
-            return cls._standard_featurizer()
-
-    def __init__(
-        self,
-        featurizer: Optional[TrackerFeaturizer] = None,
-        priority: int = DEFAULT_POLICY_PRIORITY,
-        should_finetune: bool = False,
-        **kwargs: Any,
-    ) -> None:
-        """Constructs a new Policy object."""
-        self.__featurizer = self._create_featurizer(featurizer)
-        self.priority = priority
-        self.finetune_mode = should_finetune
-        self._rule_only_data = {}
 
     @property
     def featurizer(self) -> TrackerFeaturizer:
@@ -272,40 +329,41 @@ class Policy:
             == SupportedData.ML_DATA,
         )
 
+    @abc.abstractmethod
     def train(
         self,
         training_trackers: List[TrackerWithCachedStates],
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
         **kwargs: Any,
-    ) -> None:
-        """Trains the policy on given training trackers.
+    ) -> Resource:
+        """Trains a policy.
 
         Args:
-            training_trackers:
-                the list of the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which can be used by the polices for featurization.
+            training_trackers: The story and rules trackers from the training data.
+            domain: The model's domain.
+            **kwargs: Depending on the specified `needs` section and the resulting
+                graph structure the policy can use different input to train itself.
+
+        Returns:
+            A policy must return its resource locator so that potential children nodes
+            can load the policy from the resource.
         """
         raise NotImplementedError("Policy must have the capacity to train.")
 
+    @abc.abstractmethod
     def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
-        **kwargs: Any,
-    ) -> "PolicyPrediction":
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
+    ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
-            tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
-            domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
+            tracker: The tracker containing the conversation history up to now.
+            domain: The model's domain.
+            **kwargs: Depending on the specified `needs` section and the resulting
+                graph structure the policy can use different input to make predictions.
 
         Returns:
-             The policy's prediction (e.g. the probabilities for the actions).
+             The prediction.
         """
         raise NotImplementedError("Policy must have the capacity to predict.")
 
@@ -318,7 +376,7 @@ class Policy:
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
         action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> "PolicyPrediction":
+    ) -> PolicyPrediction:
         return PolicyPrediction(
             probabilities,
             self.__class__.__name__,
@@ -354,49 +412,50 @@ class Policy:
         """
         pass
 
-    def persist(self, path: Union[Text, Path]) -> None:
-        """Persists the policy to storage.
+    def persist(self) -> None:
+        """Persists the policy to storage."""
+        with self._model_storage.write_to(self._resource) as path:
+            # not all policies have a featurizer
+            if self.featurizer is not None:
+                self.featurizer.persist(path)
 
-        Args:
-            path: Path to persist policy to.
-        """
-        # not all policies have a featurizer
-        if self.featurizer is not None:
-            self.featurizer.persist(path)
+            file = Path(path) / self._metadata_filename()
 
-        file = Path(path) / self._metadata_filename()
-
-        rasa.shared.utils.io.create_directory_for_file(file)
-        rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
+            rasa.shared.utils.io.create_directory_for_file(file)
+            rasa.shared.utils.io.dump_obj_as_json_to_file(file, self._metadata())
 
     @classmethod
-    def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy":
-        """Loads a policy from path.
+    def load(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
+    ) -> "PolicyGraphComponent":
+        """Loads a trained policy (see parent class for full docstring)."""
+        config = {}
+        featurizer = None
 
-        Args:
-            path: Path to load policy from.
+        try:
+            with model_storage.read_from(resource) as path:
+                metadata_file = Path(path) / cls._metadata_filename()
+                config = json.loads(rasa.shared.utils.io.read_file(metadata_file))
 
-        Returns:
-            An instance of `Policy`.
-        """
-        metadata_file = Path(path) / cls._metadata_filename()
+                if (Path(path) / FEATURIZER_FILE).is_file():
+                    featurizer = TrackerFeaturizer.load(path)
 
-        if metadata_file.is_file():
-            data = json.loads(rasa.shared.utils.io.read_file(metadata_file))
+                config.update(kwargs)
 
-            if (Path(path) / FEATURIZER_FILE).is_file():
-                featurizer = TrackerFeaturizer.load(path)
-                data["featurizer"] = featurizer
+        except (ValueError, FileNotFoundError, FileIOException):
+            logger.info(
+                f"Couldn't load metadata for policy '{cls.__name__}' as the persisted "
+                f"metadata couldn't be loaded."
+            )
 
-            data.update(kwargs)
-
-            return cls(**data)
-
-        logger.info(
-            f"Couldn't load metadata for policy '{cls.__name__}'. "
-            f"File '{metadata_file}' doesn't exist."
+        return cls(
+            config, model_storage, resource, execution_context, featurizer=featurizer,
         )
-        return cls()
 
     def _default_predictions(self, domain: Domain) -> List[float]:
         """Creates a list of zeros.
@@ -520,7 +579,7 @@ class PolicyPrediction:
         policy_name: Optional[Text] = None,
         confidence: float = 1.0,
         action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> "PolicyPrediction":
+    ) -> PolicyPrediction:
         """Create a prediction for a given action.
 
         Args:
@@ -602,3 +661,30 @@ def confidence_scores_for(
     results[idx] = value
 
     return results
+
+
+class InvalidPolicyConfig(RasaException):
+    """Exception that can be raised when policy config is not valid."""
+
+
+def _get_featurizer_from_config(
+    config: List[Dict[Text, Any]], policy_name: Text, lookup_path: Text
+) -> Callable[..., TrackerFeaturizer]:
+    """Gets the featurizer initializer and its arguments from a policy config."""
+    # Only 1 featurizer is allowed
+    if len(config) > 1:
+        featurizer_names = [
+            featurizer_config.get("name") for featurizer_config in config
+        ]
+        raise InvalidPolicyConfig(
+            f"Every policy can only have 1 featurizer but '{policy_name}' "
+            f"uses {len(config)} featurizers ('{', '.join(featurizer_names)}')."
+        )
+
+    featurizer_config = config[0]
+    featurizer_name = featurizer_config.pop("name")
+    featurizer_func = rasa.shared.utils.common.class_from_module_path(
+        featurizer_name, lookup_path=lookup_path
+    )
+
+    return featurizer_func

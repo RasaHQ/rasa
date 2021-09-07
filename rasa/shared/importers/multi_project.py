@@ -168,38 +168,38 @@ class MultiProjectImporter(TrainingDataImporter):
             [rasa.shared.utils.io.is_subdirectory(path, i) for i in self._imports]
         )
 
-    async def get_domain(self) -> Domain:
+    def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
         domains = [Domain.load(path) for path in self._domain_paths]
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
-    async def get_stories(
+    def get_stories(
         self,
         template_variables: Optional[Dict] = None,
         use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
-        return await utils.story_graph_from_paths(
+        return utils.story_graph_from_paths(
             self._story_paths,
-            await self.get_domain(),
+            self.get_domain(),
             template_variables,
             use_e2e,
             exclusion_percentage,
         )
 
-    async def get_conversation_tests(self) -> StoryGraph:
+    def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
-        return await utils.story_graph_from_paths(
-            self._e2e_story_paths, await self.get_domain(), use_e2e=True,
+        return utils.story_graph_from_paths(
+            self._e2e_story_paths, self.get_domain(), use_e2e=True,
         )
 
-    async def get_config(self) -> Dict:
+    def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
         return self.config
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
         return utils.training_data_from_paths(self._nlu_paths, language)

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, List, Dict, Text, Type
+from typing import Optional, List, Dict, Text, Type, Any
 import tensorflow as tf
 import numpy as np
 import pytest
@@ -17,6 +17,9 @@ from rasa.core.featurizers.tracker_featurizers import (
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.core.policies.ted_policy import PREDICTION_FEATURES, TEDPolicy
 from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.constants import ACTION_UNLIKELY_INTENT_NAME, ACTION_LISTEN_NAME
 from rasa.shared.core.domain import Domain
 from rasa.shared.core.events import (
@@ -44,6 +47,7 @@ from rasa.utils.tensorflow.constants import (
     QUERY_INTENT_KEY,
     NAME,
     RANKING_LENGTH,
+    EPOCHS,
 )
 from rasa.shared.nlu.constants import INTENT
 from rasa.shared.core.events import Event
@@ -58,9 +62,17 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         return UnexpecTEDIntentPolicy
 
     def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
+        self,
+        featurizer: Optional[TrackerFeaturizer],
+        priority: int,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> UnexpecTEDIntentPolicy:
-        return UnexpecTEDIntentPolicy(featurizer=featurizer, priority=priority)
+        return UnexpecTEDIntentPolicy(
+            featurizer=featurizer, priority=priority, config=config or {}
+        )
 
     @pytest.fixture(scope="class")
     def featurizer(self) -> TrackerFeaturizer:
@@ -117,13 +129,16 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
             0
         ].units == len(default_domain.intents)
 
-    async def test_training_with_no_intent(
+    def test_training_with_no_intent(
         self,
         featurizer: Optional[TrackerFeaturizer],
         priority: int,
         default_domain: Domain,
         tmp_path: Path,
         caplog: LogCaptureFixture,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ):
         stories = tmp_path / "stories.yml"
         stories.write_text(
@@ -135,23 +150,29 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
               - action: utter_greet
             """
         )
-        policy = self.create_policy(featurizer=featurizer, priority=priority)
+        policy = self.create_policy(
+            featurizer=featurizer,
+            priority=priority,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+        )
         import tests.core.test_policies
 
-        training_trackers = await tests.core.test_policies.train_trackers(
+        training_trackers = tests.core.test_policies.train_trackers(
             default_domain, str(stories), augmentation_factor=20
         )
 
         with pytest.warns(UserWarning):
             policy.train(training_trackers, default_domain, RegexInterpreter())
 
-    async def test_prepared_data_for_threshold_prediction(
+    def test_prepared_data_for_threshold_prediction(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         stories_path: Path,
     ):
-        training_trackers = await train_trackers(
+        training_trackers = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
         interpreter = RegexInterpreter()
@@ -288,13 +309,13 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         for label_id, tolerance_thresholds in thresholds.items():
             assert expected_thresholds[label_id] == tolerance_thresholds
 
-    async def test_post_training_threshold_computation(
+    def test_post_training_threshold_computation(
         self,
         trained_policy: UnexpecTEDIntentPolicy,
         default_domain: Domain,
         stories_path: Path,
     ):
-        training_trackers = await train_trackers(
+        training_trackers = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
         interpreter = RegexInterpreter()
@@ -1011,6 +1032,35 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         ):
             collected_tracker_events = list(collected_tracker.events)
             assert collected_tracker_events == expected_tracker_events
+
+    # TODO: This test can be dropped in favor of the implementation
+    # `TestTEDPolicy` once this policy has been migrated to `GraphComponent`.
+    @pytest.mark.parametrize(
+        "should_finetune, epoch_override, expected_epoch_value",
+        [
+            (True, TEDPolicy.defaults[EPOCHS] + 1, TEDPolicy.defaults[EPOCHS] + 1),
+            (
+                False,
+                TEDPolicy.defaults[EPOCHS] + 1,
+                TEDPolicy.defaults[EPOCHS],
+            ),  # trained_policy uses default epochs during training
+        ],
+    )
+    def test_epoch_override_when_loaded(
+        self,
+        trained_policy: TEDPolicy,
+        should_finetune: bool,
+        epoch_override: int,
+        expected_epoch_value: int,
+        tmp_path: Path,
+    ):
+        # persist and load in appropriate mode
+        trained_policy.persist(tmp_path)
+        loaded_policy = self._policy_class_to_test().load(
+            tmp_path, should_finetune=should_finetune, epoch_override=epoch_override
+        )
+
+        assert loaded_policy.config[EPOCHS] == expected_epoch_value
 
 
 @pytest.mark.parametrize(

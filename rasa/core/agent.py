@@ -701,7 +701,7 @@ class Agent:
                 return False
         return True
 
-    async def load_data(
+    def load_data(
         self,
         training_resource: Union[Text, TrainingDataImporter],
         remove_duplicates: bool = True,
@@ -733,7 +733,7 @@ class Agent:
                 f"at least maximum max_history."
             )
 
-        return await training.load_data(
+        return training.load_data(
             training_resource,
             self.domain,
             remove_duplicates,
@@ -832,7 +832,7 @@ class Agent:
         # largest value from any policy
         max_history = max_history or self._max_history()
 
-        story_steps = await loading.load_data_from_resource(resource_name, self.domain)
+        story_steps = loading.load_data_from_resource(resource_name, self.domain)
         await visualize_stories(
             story_steps,
             self.domain,

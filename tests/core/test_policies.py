@@ -1,8 +1,16 @@
+import uuid
 from pathlib import Path
-from typing import Type, List, Text, Optional
+from typing import Type, List, Text, Optional, Dict, Any
 
+import dataclasses
 import numpy as np
 import pytest
+from _pytest.tmpdir import TempPathFactory
+from rasa.core.constants import DEFAULT_POLICY_PRIORITY, POLICY_MAX_HISTORY
+from rasa.engine.graph import ExecutionContext, GraphSchema, GraphComponent
+from rasa.engine.storage.local_model_storage import LocalModelStorage
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 
 from rasa.shared.core.generator import TrackerWithCachedStates
 
@@ -20,13 +28,17 @@ from rasa.shared.core.events import (
     EntitiesAdded,
     SlotSet,
 )
-from rasa.core.featurizers.single_state_featurizer import SingleStateFeaturizer
+from rasa.core.featurizers.single_state_featurizer import (
+    SingleStateFeaturizer,
+    IntentTokenizerSingleStateFeaturizer,
+)
 from rasa.core.featurizers.tracker_featurizers import (
     MaxHistoryTrackerFeaturizer,
     TrackerFeaturizer,
+    IntentMaxHistoryTrackerFeaturizer,
 )
 from rasa.shared.nlu.interpreter import RegexInterpreter
-from rasa.core.policies.policy import SupportedData, Policy
+from rasa.core.policies.policy import SupportedData, Policy, InvalidPolicyConfig
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy, MemoizationPolicy
@@ -35,10 +47,10 @@ from tests.dialogues import TEST_DEFAULT_DIALOGUE
 from tests.core.utilities import get_tracker, tracker_from_dialogue
 
 
-async def train_trackers(
+def train_trackers(
     domain: Domain, stories_file: Text, augmentation_factor: int = 20
 ) -> List[TrackerWithCachedStates]:
-    return await training.load_data(
+    return training.load_data(
         stories_file, domain, augmentation_factor=augmentation_factor
     )
 
@@ -57,8 +69,31 @@ class PolicyTestCollection:
 
     max_history = 3  # this is the amount of history we test on
 
+    @pytest.fixture(scope="class")
+    def resource(self,) -> Resource:
+        return Resource(uuid.uuid4().hex)
+
+    @pytest.fixture(scope="class")
+    def model_storage(self, tmp_path_factory: TempPathFactory) -> ModelStorage:
+        return LocalModelStorage(tmp_path_factory.mktemp(uuid.uuid4().hex))
+
+    @pytest.fixture(scope="class")
+    def execution_context(self) -> ExecutionContext:
+        return ExecutionContext(GraphSchema({}), uuid.uuid4().hex)
+
+    def _config(
+        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
+    ) -> Dict[Text, Any]:
+        raise NotImplementedError
+
     def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: Optional[int]
+        self,
+        featurizer: Optional[TrackerFeaturizer],
+        priority: Optional[int],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         raise NotImplementedError
 
@@ -82,50 +117,83 @@ class PolicyTestCollection:
         return DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
 
     @pytest.fixture(scope="class")
-    async def trained_policy(
+    def trained_policy(
         self,
         featurizer: Optional[TrackerFeaturizer],
         priority: int,
         stories_path: Text,
         default_domain: Domain,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ) -> Policy:
-        policy = self.create_policy(featurizer, priority)
-        training_trackers = await train_trackers(
+        policy = self.create_policy(
+            featurizer, priority, model_storage, resource, execution_context
+        )
+        training_trackers = train_trackers(
             default_domain, stories_path, augmentation_factor=20
         )
         policy.train(training_trackers, default_domain, RegexInterpreter())
         return policy
 
-    def test_featurizer(self, trained_policy: Policy, tmp_path: Path):
+    def test_featurizer(
+        self,
+        trained_policy: Policy,
+        resource: Resource,
+        model_storage: ModelStorage,
+        tmp_path: Path,
+        execution_context: ExecutionContext,
+    ):
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.max_history == self.max_history
         assert isinstance(
             trained_policy.featurizer.state_featurizer, SingleStateFeaturizer
         )
-        trained_policy.persist(str(tmp_path))
-        loaded = trained_policy.__class__.load(str(tmp_path))
+
+        if isinstance(trained_policy, GraphComponent):
+            loaded = trained_policy.__class__.load(
+                self._config(trained_policy.priority),
+                model_storage,
+                resource,
+                execution_context,
+            )
+        else:
+            # TODO: Drop after all policies are migrated to `GraphComponent`
+            trained_policy.persist(str(tmp_path))
+            loaded = trained_policy.__class__.load(str(tmp_path))
+
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.max_history == self.max_history
         assert isinstance(loaded.featurizer.state_featurizer, SingleStateFeaturizer)
 
     @pytest.mark.parametrize("should_finetune", [False, True])
-    async def test_persist_and_load(
+    def test_persist_and_load(
         self,
         trained_policy: Policy,
         default_domain: Domain,
         tmp_path: Path,
         should_finetune: bool,
         stories_path: Text,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
     ):
-        trained_policy.persist(str(tmp_path))
-        loaded = trained_policy.__class__.load(
-            str(tmp_path), should_finetune=should_finetune
-        )
+        if isinstance(trained_policy, GraphComponent):
+            loaded = trained_policy.__class__.load(
+                self._config(trained_policy.priority),
+                model_storage,
+                resource,
+                dataclasses.replace(execution_context, is_finetuning=should_finetune),
+            )
+        else:
+            # TODO: Drop after all policies are migrated to `GraphComponent`
+            trained_policy.persist(str(tmp_path))
+            loaded = trained_policy.__class__.load(
+                str(tmp_path), should_finetune=should_finetune
+            )
         assert loaded.finetune_mode == should_finetune
 
-        trackers = await train_trackers(
-            default_domain, stories_path, augmentation_factor=20
-        )
+        trackers = train_trackers(default_domain, stories_path, augmentation_factor=20)
 
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
@@ -151,10 +219,35 @@ class PolicyTestCollection:
     @pytest.mark.filterwarnings(
         "ignore:.*without a trained model present.*:UserWarning"
     )
-    def test_persist_and_load_empty_policy(self, tmp_path: Path):
-        empty_policy = self.create_policy(None, None)
-        empty_policy.persist(str(tmp_path))
-        loaded = empty_policy.__class__.load(str(tmp_path))
+    def test_persist_and_load_empty_policy(
+        self,
+        tmp_path: Path,
+        default_domain: Domain,
+        default_model_storage: ModelStorage,
+        execution_context: ExecutionContext,
+    ):
+        resource = Resource(uuid.uuid4().hex)
+        empty_policy = self.create_policy(
+            DEFAULT_POLICY_PRIORITY,
+            None,
+            default_model_storage,
+            resource,
+            execution_context,
+        )
+        empty_policy.train([], default_domain, RegexInterpreter())
+
+        if isinstance(empty_policy, GraphComponent):
+            loaded = empty_policy.__class__.load(
+                self._config(DEFAULT_POLICY_PRIORITY),
+                default_model_storage,
+                resource,
+                execution_context,
+            )
+        else:
+            # TODO: Drop after all policies are migrated to `GraphComponent`
+            empty_policy.persist(str(tmp_path))
+            loaded = empty_policy.__class__.load(str(tmp_path))
+
         assert loaded is not None
 
     @staticmethod
@@ -167,10 +260,125 @@ class PolicyTestCollection:
         index = scores.index(max(scores))
         return domain.action_names_or_texts[index]
 
+    @pytest.mark.parametrize(
+        "featurizer_config, tracker_featurizer, state_featurizer",
+        [
+            (None, MaxHistoryTrackerFeaturizer(), SingleStateFeaturizer),
+            ([], MaxHistoryTrackerFeaturizer(), SingleStateFeaturizer),
+            (
+                [
+                    {
+                        "name": "MaxHistoryTrackerFeaturizer",
+                        "max_history": 12,
+                        "state_featurizer": [],
+                    }
+                ],
+                MaxHistoryTrackerFeaturizer(max_history=12),
+                type(None),
+            ),
+            (
+                [{"name": "MaxHistoryTrackerFeaturizer", "max_history": 12}],
+                MaxHistoryTrackerFeaturizer(max_history=12),
+                type(None),
+            ),
+            (
+                [
+                    {
+                        "name": "IntentMaxHistoryTrackerFeaturizer",
+                        "max_history": 12,
+                        "state_featurizer": [
+                            {"name": "IntentTokenizerSingleStateFeaturizer"}
+                        ],
+                    }
+                ],
+                IntentMaxHistoryTrackerFeaturizer(max_history=12),
+                IntentTokenizerSingleStateFeaturizer,
+            ),
+        ],
+    )
+    def test_different_featurizer_configs(
+        self,
+        featurizer_config: Optional[Dict[Text, Any]],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        tracker_featurizer: MaxHistoryTrackerFeaturizer,
+        state_featurizer: Type[SingleStateFeaturizer],
+    ):
+        policy = self.create_policy(
+            None,
+            priority=1,
+            model_storage=model_storage,
+            resource=resource,
+            execution_context=execution_context,
+            config={"featurizer": featurizer_config},
+        )
+
+        if not isinstance(policy, GraphComponent):
+            # TODO: Drop this after all policies have been migration to graph components
+            return
+
+        featurizer = policy.featurizer
+        assert isinstance(featurizer, tracker_featurizer.__class__)
+
+        expected_max_history = self._config(DEFAULT_POLICY_PRIORITY).get(
+            POLICY_MAX_HISTORY, tracker_featurizer.max_history
+        )
+        assert featurizer.max_history == expected_max_history
+
+        assert isinstance(featurizer.state_featurizer, state_featurizer)
+
+    @pytest.mark.parametrize(
+        "featurizer_config",
+        [
+            [
+                {"name": "MaxHistoryTrackerFeaturizer", "max_history": 12},
+                {"name": "MaxHistoryTrackerFeaturizer", "max_history": 12},
+            ],
+            [
+                {
+                    "name": "IntentMaxHistoryTrackerFeaturizer",
+                    "max_history": 12,
+                    "state_featurizer": [
+                        {"name": "IntentTokenizerSingleStateFeaturizer"},
+                        {"name": "IntentTokenizerSingleStateFeaturizer"},
+                    ],
+                }
+            ],
+        ],
+    )
+    def test_different_invalid_featurizer_configs(
+        self,
+        trained_policy: Policy,
+        featurizer_config: Optional[Dict[Text, Any]],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ):
+        if not isinstance(trained_policy, GraphComponent):
+            # TODO: Drop this after all policies have been migration to graph components
+            return
+
+        with pytest.raises(InvalidPolicyConfig):
+            self.create_policy(
+                None,
+                priority=1,
+                model_storage=model_storage,
+                resource=resource,
+                execution_context=execution_context,
+                config={"featurizer": featurizer_config},
+            )
+
 
 class TestMemoizationPolicy(PolicyTestCollection):
     def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
+        self,
+        featurizer: Optional[TrackerFeaturizer],
+        priority: int,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         max_history = None
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
@@ -185,15 +393,13 @@ class TestMemoizationPolicy(PolicyTestCollection):
         assert isinstance(loaded.featurizer, MaxHistoryTrackerFeaturizer)
         assert loaded.featurizer.state_featurizer is None
 
-    async def test_memorise(
+    def test_memorise(
         self,
         trained_policy: MemoizationPolicy,
         default_domain: Domain,
         stories_path: Text,
     ):
-        trackers = await train_trackers(
-            default_domain, stories_path, augmentation_factor=20
-        )
+        trackers = train_trackers(default_domain, stories_path, augmentation_factor=20)
         trained_policy.train(trackers, default_domain, RegexInterpreter())
         lookup_with_augmentation = trained_policy.lookup
 
@@ -217,7 +423,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         assert trained_policy._recall_states(random_states) is None
 
         # compare augmentation for augmentation_factor of 0 and 20:
-        trackers_no_augmentation = await train_trackers(
+        trackers_no_augmentation = train_trackers(
             default_domain, stories_path, augmentation_factor=0
         )
         trained_policy.train(
@@ -236,7 +442,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         recalled = trained_policy.recall(states, tracker, default_domain)
         assert recalled is not None
 
-    async def test_finetune_after_load(
+    def test_finetune_after_load(
         self,
         trained_policy: MemoizationPolicy,
         default_domain: Domain,
@@ -261,7 +467,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
                 ActionExecuted(ACTION_LISTEN_NAME),
             ],
         )
-        original_train_data = await train_trackers(
+        original_train_data = train_trackers(
             default_domain, stories_path, augmentation_factor=20
         )
         loaded_policy.train(
@@ -340,7 +546,13 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
 class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
     def create_policy(
-        self, featurizer: Optional[TrackerFeaturizer], priority: int
+        self,
+        featurizer: Optional[TrackerFeaturizer],
+        priority: int,
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        config: Optional[Dict[Text, Any]] = None,
     ) -> Policy:
         max_history = None
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):

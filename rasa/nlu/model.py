@@ -8,10 +8,11 @@ from typing import Any, Dict, List, Optional, Text
 import rasa.nlu
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
+import rasa.shared.utils.common
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.nlu import components, utils
+from rasa.nlu import components
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component, ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
@@ -24,6 +25,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    TEXT_TOKENS,
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -260,7 +262,9 @@ class Trainer:
             component_meta = component.component_config
             if update:
                 component_meta.update(update)
-            component_meta["class"] = utils.module_path_from_object(component)
+            component_meta[
+                "class"
+            ] = rasa.shared.utils.common.module_path_from_instance(component)
 
             metadata["pipeline"].append(component_meta)
 
@@ -464,7 +468,7 @@ class Interpreter:
         data = self.default_output_attributes()
         data[TEXT] = text
 
-        message = Message(data=data, time=timestamp)
+        message = Message(data=data, time=timestamp, output_properties={TEXT_TOKENS})
 
         for component in self.pipeline:
             component.process(message, **self.context)
