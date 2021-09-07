@@ -72,6 +72,14 @@ Verifies usage of utterances in stories.
 Checks whether utterances used in the stories are valid,
 and whether all valid utterances are used in stories.
 
+#### verify\_forms\_in\_stories\_rules
+
+```python
+ | verify_forms_in_stories_rules() -> bool
+```
+
+Verifies that forms referenced in active_loop directives are present.
+
 #### verify\_actions\_in\_stories\_rules
 
 ```python
