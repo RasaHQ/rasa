@@ -1,13 +1,16 @@
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt
+#          `MitieFeaturizerGraphComponent` from the regular
+#          `rasa.nlu.featurizers.dense_featurizer.MitieFeaturizer` module. This module is a
+#          workaround to defer breaking changes due to the architecture revamp in 3.0.
+# flake8: noqa
 import numpy as np
 import typing
 from typing import Any, List, Text, Optional, Dict, Type, Tuple
 
-from rasa.engine.graph import ExecutionContext
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component
-from rasa.nlu.featurizers.featurizer import DenseFeaturizerGraphComponent
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.shared.nlu.training_data.features import Features
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.nlu.utils.mitie_utils import MitieNLP
@@ -20,70 +23,30 @@ from rasa.nlu.constants import (
 )
 from rasa.shared.nlu.constants import FEATURE_TYPE_SENTENCE, FEATURE_TYPE_SEQUENCE
 from rasa.utils.tensorflow.constants import MEAN_POOLING, POOLING
-from rasa.nlu.featurizers.dense_featurizer._mitie_featurizer import MitieFeaturizer
 
 if typing.TYPE_CHECKING:
     import mitie
 
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-MitieFeaturizer = MitieFeaturizer
 
-
-class MitieFeaturizerGraphComponent(DenseFeaturizerGraphComponent):
-    @classmethod
-    def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        **kwargs: Any,
-    ) -> GraphComponent:
-        """Creates a new untrained policy (see parent class for full docstring)."""
-        return cls(config, model_storage, resource, execution_context)
-
-    @classmethod
-    def load(
-            cls,
-            config: Dict[Text, Any],
-            model_storage: ModelStorage,
-            resource: Resource,
-            execution_context: ExecutionContext,
-            **kwargs: Any,
-    ) -> MitieFeaturizerGraphComponent:
-        pass
-
-    def __init__(
-        self,
-        config: Optional[Dict[Text, Any]],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext
-    ) -> None:
-        self.config = config
-
-        self._model_storage = model_storage
-        self._resource = resource
-
-        self.pooling_operation = self.config["pooling"]
-
-    @staticmethod
-    def get_default_config() -> Dict[Text, Any]:
-        return {
-            # Specify what pooling operation should be used to calculate the vector of
-            # the complete utterance. Available options: 'mean' and 'max'
-            POOLING: MEAN_POOLING
-        }
-
-    @staticmethod
-    def required_packages() -> List[Text]:
-        """Any extra python dependencies required for this component to run."""
-        return ["mitie", "numpy"]
-
+class MitieFeaturizer(DenseFeaturizer):
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [MitieNLP, Tokenizer]
+
+    defaults = {
+        # Specify what pooling operation should be used to calculate the vector of
+        # the complete utterance. Available options: 'mean' and 'max'
+        POOLING: MEAN_POOLING
+    }
+
+    def __init__(self, component_config: Optional[Dict[Text, Any]] = None) -> None:
+        super().__init__(component_config)
+
+        self.pooling_operation = self.component_config["pooling"]
+
+    @classmethod
+    def required_packages(cls) -> List[Text]:
+        return ["mitie", "numpy"]
 
     def ndim(self, feature_extractor: "mitie.total_word_feature_extractor") -> int:
         return feature_extractor.num_dimensions

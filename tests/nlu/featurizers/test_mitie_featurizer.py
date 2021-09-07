@@ -6,7 +6,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
+from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizerGraphComponent as MitieFeaturizer
 
 
 def test_mitie_featurizer(mitie_feature_extractor):
