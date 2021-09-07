@@ -65,7 +65,7 @@ def test_ensemble_predict(default_ensemble: DefaultPolicyPredictionEnsemble):
     assert prediction
 
 
-def test_default_predict__excludes_rejected_action(
+def test_default_predict_excludes_rejected_action(
     default_ensemble: DefaultPolicyPredictionEnsemble,
 ):
     domain = Domain.load("data/test_domains/default.yml")

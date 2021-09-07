@@ -101,12 +101,8 @@ InvalidPolicyConfig = InvalidPolicyConfig
 def propagate_specification_of_rule_only_data(ensemble: List[Policy]) -> None:
     """Extracts information on rule only data and propagates it to all policies.
 
-    NOTE: *previously* this was called `set_rule_only_data` and used during
-    initialization (where it can be replaced by initializing rule_only_data with
-    an empty dict, cf. `RulePolicy`/`.lookup`) and again as final step of train
-
-    FIXME: previous (and this) implementation  effectively just grab
-    `rule_only_data` from the *first* rule policy -> check for multiple rule policies?
+    TODO: remove this once there's a corresponding new graph component taking
+    care of this
     """
     rule_policy = next(
         (policy for policy in ensemble if isinstance(policy, RulePolicy)), None
@@ -119,12 +115,12 @@ def propagate_specification_of_rule_only_data(ensemble: List[Policy]) -> None:
         policy.set_shared_policy_states(rule_only_data=rule_only_data)
 
 
-def warn_rule_based_data_unused_or_missing(
+def validate_warn_rule_based_data_unused_or_missing(
     ensemble: List[Policy], training_trackers: List[DialogueStateTracker]
 ) -> None:
     """Emit `UserWarning`s about missing or unused rule-based data.
 
-    NOTE: this was used at the start of train
+    TODO: remove this once there's a corresponding check in `RulePolicy`
 
     Args:
         ensemble: a list of policies
@@ -183,8 +179,13 @@ class PolicyPredictionEnsemble:
     actions but also decides which events are passed on.
     """
 
-    def validate(self, ensemble: List[Policy], domain: Domain) -> None:
+    @staticmethod
+    def validate_ensemble_valid(cls, ensemble: List[Policy], domain: Domain) -> None:
         """Checks that predictions of the given policy ensemble can be used as input.
+
+        # TODO: replace the ensemble (List[Policy]) with a list of policy classes and
+        # their configurations
+        # TODO: add tests once all policies have been migrated
 
         Args:
           ensemble: a list of policies
@@ -194,18 +195,19 @@ class PolicyPredictionEnsemble:
           `InvalidPolicyEnsembleConfig`: if this ensemble cannot be applied to
             the given ensemble of policies
         """
-        self.warn_rule_policy_not_contained(ensemble=ensemble)
-        self.assert_compatibility_with_domain(ensemble=ensemble, domain=domain)
+        cls.warn_rule_policy_not_contained(ensemble=ensemble)
+        cls.assert_compatibility_with_domain(ensemble=ensemble, domain=domain)
 
     @staticmethod
     def warn_rule_policy_not_contained(ensemble: List[Policy]) -> None:
         """Checks that a rule policy is present.
 
+        # TODO: replace the ensemble (List[Policy]) with a list of policy classes and
+        # their configurations
+        # TODO: add tests once all policies have been migrated
+
         Args:
           ensemble: list of policies
-
-        Raises:
-           `InvalidDomain` exception if no rule policy is present
         """
         if not any(isinstance(policy, RulePolicy) for policy in ensemble):
             rasa.shared.utils.io.raise_warning(
@@ -223,11 +225,11 @@ class PolicyPredictionEnsemble:
     ) -> None:
         """Check for elements that only work with certain policy/domain combinations.
 
-        NOTE: is used in `agent.py`
-
-        TODO: Seems this check should also be done if we just use a single policy
-        and drop the "ensemble" component (because of the form check below)? (Or we
-        *always* add an ensemble)
+        # TODO: replace the ensemble (List[Policy]) with a list of policy classes and
+        # their configurations
+        # TODO: add tests once all policies have been migrated
+        # TODO: make sure this check is also called if there is just a single policy
+        # and *no* ensemble node in the graph
 
         Args:
             ensemble: list of policies
@@ -239,9 +241,9 @@ class PolicyPredictionEnsemble:
         """
         for policy in ensemble:
             if isinstance(policy, RulePolicy):
-                # TODO: does it make sense to add `validate_compatibility_with_domain`
+                # TODO: does it make sense to add `validate_against_domain`
                 # to other policies?
-                policy.validate_compatibility_with_domain(domain)
+                policy.validate_against_domain(domain)
 
         contains_rule_policy = any(
             isinstance(policy, RulePolicy) for policy in ensemble
@@ -461,7 +463,8 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
 
         return final
 
-    def _choose_best_prediction(self, predictions: List[PolicyPrediction2]) -> int:
+    @staticmethod
+    def _choose_best_prediction(predictions: List[PolicyPrediction2]) -> int:
         """Chooses the "best" prediction out of the given predictions.
 
         Note that this comparison is *not* symmetric if the priorities are allowed to
@@ -473,26 +476,28 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         Returns:
           index of the best prediction
         """
-        does_not_contain_no_user_predictions = all(
+        contains_no_form_predictions = all(
             not prediction.is_no_user_prediction for prediction in predictions
         )
 
-        def criteria(prediction: PolicyPrediction2) -> Tuple[bool, bool, float, int]:
-            """Extracts statistics (larger is better) ordered by importance."""
+        def scores(prediction: PolicyPrediction2) -> Tuple[bool, bool, float, int]:
+            """Extracts scores (larger is better) ordered by importance."""
             return (
                 prediction.is_no_user_prediction,
-                does_not_contain_no_user_predictions
-                and prediction.is_end_to_end_prediction,
+                contains_no_form_predictions and prediction.is_end_to_end_prediction,
                 prediction.max_probability,
                 prediction.policy_priority,
             )
 
-        return max(
-            list(range(len(predictions))), key=lambda idx: criteria(predictions[idx])
+        # grab the index of the prediction whose tuple of scores is >= the
+        # tuples of scores for any other prediction
+        arg_max = max(
+            list(range(len(predictions))), key=lambda idx: scores(predictions[idx])
         )
+        return arg_max
 
+    @staticmethod
     def _choose_events(
-        self,
         predictions: List[PolicyPrediction2],
         best_idx: int,
         tracker: DialogueStateTracker,
