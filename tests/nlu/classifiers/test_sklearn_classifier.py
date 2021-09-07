@@ -39,7 +39,7 @@ def test_persist_and_load(
     default_execution_context: ExecutionContext,
 ):
     pipeline = [
-        {"name": "SpacyNLP", "model": "en_core_web_sm"},
+        {"name": "SpacyNLP", "model": "en_core_web_md"},
         {"name": "SpacyTokenizer"},
         {"name": "SpacyFeaturizer"},
     ]
