@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import typing
 import logging
 from typing import Any, Dict, List, Optional, Text, Tuple
@@ -27,16 +28,15 @@ if typing.TYPE_CHECKING:
 SpacyNLP = rasa.nlu.utils._spacy_utils.SpacyNLP
 
 
+@dataclasses.dataclass
 class SpacyModel:
     """Wraps `SpacyModelProvider` output to make it fingerprintable."""
 
-    def __init__(self, model: Language, model_name: Text) -> None:
-        """Initializing SpacyModel."""
-        self.model = model
-        self.model_name = model_name
+    model: Language
+    model_name: Text
 
     def fingerprint(self) -> Text:
-        """Fingerprints the model path.
+        """Fingerprints the model name.
 
         Use a static fingerprint as we assume this only changes if the model name
         changes and want to avoid investigating the model in greater detail for now.
@@ -54,7 +54,9 @@ class SpacyModelProvider(GraphComponent):
     model is only loaded once and then shared by depending components.
     """
 
-    def __init__(self, model: Language = None, model_name: Text = None,) -> None:
+    def __init__(
+        self, model: Optional[Language] = None, model_name: Optional[Text] = None,
+    ) -> None:
         """Initializes a `SpacyModelProvider`."""
         self._model = model
         self._model_name = model_name
@@ -86,6 +88,7 @@ class SpacyModelProvider(GraphComponent):
 
     @classmethod
     def required_packages(cls) -> List[Text]:
+        """Lists required dependencies (see parent class for full docstring)."""
         return ["spacy"]
 
     @classmethod
@@ -99,7 +102,7 @@ class SpacyModelProvider(GraphComponent):
         """Creates component (see parent class for full docstring)."""
         spacy_model_name = config.get("model")
 
-        logger.info(f"Trying to load SpaCy model with name '{spacy_model_name}'")
+        logger.info(f"Trying to load SpaCy model with name '{spacy_model_name}'.")
 
         model = cls.load_model(spacy_model_name)
 
@@ -148,9 +151,7 @@ class SpacyPreprocessor(GraphComponent):
             "case_sensitive": False,
         }
 
-    def __init__(
-        self, config: Dict[Text, Any]
-    ) -> None:
+    def __init__(self, config: Dict[Text, Any]) -> None:
         """Initializes a `SpacyPreprocessor`."""
         self._config = config
 
@@ -197,7 +198,7 @@ class SpacyPreprocessor(GraphComponent):
     ) -> List[Tuple[int, Doc]]:
         """Merge lists with processed Docs back into their original order."""
         dct = dict(indexed_training_samples)
-        dct.update(dict(doc_lists))
+        dct.update(doc_lists)
         return sorted(dct.items())
 
     @staticmethod

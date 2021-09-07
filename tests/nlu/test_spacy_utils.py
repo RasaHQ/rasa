@@ -1,4 +1,4 @@
-from typing import Text
+from typing import Optional, Text
 
 import pytest
 
@@ -19,7 +19,7 @@ def create_provider_component(
     return component
 
 
-def create_preprocessor(case_sensitive: bool = None):
+def create_preprocessor(case_sensitive: Optional[bool] = None) -> SpacyPreprocessor:
     preprocessor = SpacyPreprocessor.create(
         {"case_sensitive": case_sensitive}, None, None, None
     )
@@ -91,7 +91,6 @@ def test_spacy_preprocessor_process_training_data():
         for attr in DENSE_FEATURIZABLE_ATTRIBUTES:
             attr_text = message.data.get(attr)
             if attr_text:
-                print(attr, attr_text)
                 doc = message.data[SPACY_DOCS[attr]]
                 assert isinstance(doc, spacy.tokens.doc.Doc)
                 assert doc.text == attr_text.lower()
