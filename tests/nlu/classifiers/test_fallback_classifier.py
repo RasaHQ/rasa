@@ -24,6 +24,21 @@ from rasa.shared.nlu.constants import (
 )
 
 
+def create_fallback_classifier(
+    component_config: Dict[Text, Any],
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+):
+    classifier = FallbackClassifierGraphComponent.create(
+        {**FallbackClassifierGraphComponent.get_default_config(), **component_config},
+        default_model_storage,
+        Resource("fallback"),
+        default_execution_context,
+    )
+
+    return classifier
+
+
 @pytest.mark.parametrize(
     "message, component_config",
     [
@@ -92,11 +107,8 @@ def test_predict_fallback_intent(
     old_message_state = copy.deepcopy(message)
     expected_confidence = component_config[THRESHOLD_KEY]
 
-    classifier = FallbackClassifierGraphComponent.create(
-        {**FallbackClassifierGraphComponent.get_default_config(), **component_config},
-        default_model_storage,
-        Resource("fallback"),
-        default_execution_context,
+    classifier = create_fallback_classifier(
+        component_config, default_model_storage, default_execution_context
     )
     processed_messages = classifier.process([message])
     processed_msg = processed_messages[0]
@@ -163,11 +175,8 @@ def test_not_predict_fallback_intent(
 ):
     old_message_state = copy.deepcopy(message)
 
-    classifier = FallbackClassifierGraphComponent.create(
-        {**FallbackClassifierGraphComponent.get_default_config(), **component_config},
-        default_model_storage,
-        Resource("fallback"),
-        default_execution_context,
+    classifier = create_fallback_classifier(
+        component_config, default_model_storage, default_execution_context
     )
     processed_messages = classifier.process([message])
     processed_msg = processed_messages[0]
@@ -178,11 +187,8 @@ def test_not_predict_fallback_intent(
 def test_defaults(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
 ):
-    classifier = FallbackClassifierGraphComponent.create(
-        FallbackClassifierGraphComponent.get_default_config(),
-        default_model_storage,
-        Resource("fallback"),
-        default_execution_context,
+    classifier = create_fallback_classifier(
+        {}, default_model_storage, default_execution_context
     )
 
     assert classifier.component_config[THRESHOLD_KEY] == DEFAULT_NLU_FALLBACK_THRESHOLD
