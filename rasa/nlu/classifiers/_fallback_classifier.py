@@ -2,7 +2,7 @@
 # WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
 #          Please don't do any changes in this module and rather adapt
 #          FallbackClassifierGraphComponent from the regular
-#          `rasa.nlu.classifiers.sk_learn_intent_classifier` module.
+#          `rasa.nlu.classifiers.fallback_classifier.py` module.
 #          This module is a workaround to defer breaking changes due to the architecture
 #          revamp in 3.0.
 import copy

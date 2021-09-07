@@ -47,18 +47,9 @@ class FallbackClassifierGraphComponent(GraphComponent):
             AMBIGUITY_THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
         }
 
-    def __init__(
-        self,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> None:
+    def __init__(self, config: Dict[Text, Any],) -> None:
         """Constructs a new fallback classifier."""
         self.component_config = config
-        self._model_storage = model_storage
-        self._resource = resource
-        self._execution_context = execution_context
 
     @classmethod
     def create(
@@ -69,7 +60,7 @@ class FallbackClassifierGraphComponent(GraphComponent):
         execution_context: ExecutionContext,
     ) -> FallbackClassifierGraphComponent:
         """Creates a new component (see parent class for full docstring)."""
-        return cls(config, model_storage, resource, execution_context)
+        return cls(config)
 
     def process(self, messages: List[Message]) -> List[Message]:
         """Process a list of incoming messages.
