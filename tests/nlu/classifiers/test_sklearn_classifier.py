@@ -63,8 +63,8 @@ def test_persist_and_load(
         default_execution_context,
     )
 
-    predicted = copy.copy(training_data)
-    actual = copy.copy(training_data)
+    predicted = copy.deepcopy(training_data)
+    actual = copy.deepcopy(training_data)
     loaded_messages = loaded.process(predicted.training_examples)
     trained_messages = default_sklearn_intent_classifier.process(
         actual.training_examples
