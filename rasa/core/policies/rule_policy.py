@@ -1,6 +1,7 @@
+from __future__ import annotations
 import functools
 import logging
-from typing import Any, List, Dict, Text, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Any, List, Dict, Text, Optional, Set, Tuple
 
 from tqdm import tqdm
 import numpy as np
@@ -19,7 +20,6 @@ from rasa.shared.core.events import (
     ActionExecuted,
 )
 from rasa.core.featurizers.tracker_featurizers import TrackerFeaturizer
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.memoization import MemoizationPolicyGraphComponent
 from rasa.core.policies.policy import SupportedData, PolicyPrediction
 from rasa.shared.core.trackers import (
@@ -58,9 +58,6 @@ from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
 import rasa.core.training.training
 from rasa.core.policies._rule_policy import RulePolicy
-
-if TYPE_CHECKING:
-    from rasa.core.policies.ensemble import PolicyEnsemble
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +99,7 @@ class InvalidRule(RasaException):
 
 
 class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
-    """Policy which handles all the rules"""
+    """Policy which handles all the rules."""
 
     # rules use explicit json strings
     ENABLE_FEATURE_STRING_COMPRESSION = False
@@ -121,6 +118,7 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
+        """Returns the default config (see parent class for full docstring)."""
         return {
             # Priority of the policy which is used if multiple policies predict
             # actions with the same confidence.
@@ -158,7 +156,7 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         config[POLICY_MAX_HISTORY] = None
 
         super().__init__(
-            config, model_storage, resource, execution_context, featurizer, lookup
+            config, model_storage, resource, execution_context, featurizer, lookup,
         )
 
         self._fallback_action_name = config["core_fallback_action_name"]
@@ -991,7 +989,12 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
             # the text or the intent
             return None, None, False
 
-        states = self._prediction_states(tracker, domain, use_text_for_last_user_input)
+        states = self._prediction_states(
+            tracker,
+            domain,
+            use_text_for_last_user_input,
+            rule_only_data=self._get_rule_only_data(),
+        )
 
         current_states = self.format_tracker_states(states)
         logger.debug(f"Current tracker state:{current_states}")
@@ -1072,7 +1075,11 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
         )
 
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        **kwargs: Any,
     ) -> "PolicyPrediction":
         """Predicts the next action (see parent class for more information)."""
         prediction, _ = self._predict(tracker, domain)
@@ -1205,6 +1212,15 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
             ]
         return result
 
+    def persist(self) -> None:
+        """Persists trained `RulePolicy`."""
+        super().persist()
+        with self._model_storage.write_to(self._resource) as directory:
+            rule_only_data = self._get_rule_only_data()
+            rasa.shared.utils.io.dump_obj_as_json_to_file(
+                directory / "rule_only_data.json", rule_only_data
+            )
+
     def _metadata(self) -> Dict[Text, Any]:
         return {
             "lookup": self.lookup,
@@ -1214,7 +1230,7 @@ class RulePolicyGraphComponent(MemoizationPolicyGraphComponent):
     def _metadata_filename(cls) -> Text:
         return "rule_policy.json"
 
-    def get_rule_only_data(self) -> Dict[Text, Any]:
+    def _get_rule_only_data(self) -> Dict[Text, Any]:
         """Gets the slots and loops that are used only in rule data.
 
         Returns:

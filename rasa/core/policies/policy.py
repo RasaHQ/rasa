@@ -139,8 +139,6 @@ class PolicyGraphComponent(GraphComponent):
         self.priority = config.get(POLICY_PRIORITY, DEFAULT_POLICY_PRIORITY)
         self.finetune_mode = execution_context.is_finetuning
 
-        self._rule_only_data = {}
-
         self._model_storage = model_storage
         self._resource = resource
 
@@ -203,10 +201,6 @@ class PolicyGraphComponent(GraphComponent):
     def featurizer(self) -> TrackerFeaturizer:
         """Returns the policy's featurizer."""
         return self.__featurizer
-
-    def set_shared_policy_states(self, **kwargs: Any) -> None:
-        """Sets policy's shared states for correct featurization."""
-        self._rule_only_data = kwargs.get("rule_only_data", {})
 
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
@@ -287,6 +281,7 @@ class PolicyGraphComponent(GraphComponent):
         tracker: DialogueStateTracker,
         domain: Domain,
         use_text_for_last_user_input: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
         """Transforms tracker to states for prediction.
 
@@ -295,6 +290,8 @@ class PolicyGraphComponent(GraphComponent):
             domain: The Domain.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be excluded from during the featurization.
 
         Returns:
             A list of states.
@@ -304,7 +301,7 @@ class PolicyGraphComponent(GraphComponent):
             domain,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_data=self._rule_only_data,
+            rule_only_data=rule_only_data,
             ignore_action_unlikely_intent=self.supported_data()
             == SupportedData.ML_DATA,
         )[0]
@@ -314,6 +311,7 @@ class PolicyGraphComponent(GraphComponent):
         tracker: DialogueStateTracker,
         domain: Domain,
         precomputations: Optional[MessageContainerForCoreFeaturization],
+        rule_only_data: Optional[Dict[Text, Any]],
         use_text_for_last_user_input: bool = False,
     ) -> List[List[Dict[Text, List[Features]]]]:
         """Transforms training tracker into a vector representation.
@@ -327,6 +325,8 @@ class PolicyGraphComponent(GraphComponent):
             precomputations: Contains precomputed features and attributes.
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be excluded from during the featurization.
 
         Returns:
             A list (corresponds to the list of trackers)
@@ -341,7 +341,7 @@ class PolicyGraphComponent(GraphComponent):
             precomputations=precomputations,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_data=self._rule_only_data,
+            rule_only_data=rule_only_data,
             ignore_action_unlikely_intent=self.supported_data()
             == SupportedData.ML_DATA,
         )
@@ -369,13 +369,19 @@ class PolicyGraphComponent(GraphComponent):
 
     @abc.abstractmethod
     def predict_action_probabilities(
-        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
+        self,
+        tracker: DialogueStateTracker,
+        domain: Domain,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
+        **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
             tracker: The tracker containing the conversation history up to now.
             domain: The model's domain.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be excluded from during the featurization.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
 

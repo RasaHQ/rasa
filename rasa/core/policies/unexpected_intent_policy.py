@@ -562,7 +562,8 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization],
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -571,6 +572,8 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             tracker: Tracker containing past conversation events.
             domain: Domain of the assistant.
             precomputations: Contains precomputed features and attributes.
+            rule_only_data: Slots and loops which are specific to rules and hence
+                should be excluded from during the featurization.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
@@ -594,7 +597,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
 
         # create model data from tracker
         tracker_state_features = self._featurize_for_prediction(
-            tracker, domain, precomputations
+            tracker, domain, precomputations, rule_only_data=rule_only_data
         )
 
         model_data = self._create_model_data(tracker_state_features)

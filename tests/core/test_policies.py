@@ -7,12 +7,11 @@ import numpy as np
 import pytest
 from _pytest.tmpdir import TempPathFactory
 
-from rasa.engine.graph import ExecutionContext, GraphSchema, GraphComponent
+from rasa.engine.graph import ExecutionContext, GraphSchema
 from rasa.engine.storage.local_model_storage import LocalModelStorage
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DEFAULT_SENDER_ID
-from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.shared.core.constants import (
     ACTION_LISTEN_NAME,
     ACTION_UNLIKELY_INTENT_NAME,
@@ -413,7 +412,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         )
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
-            recalled = trained_policy.recall(states, tracker, default_domain)
+            recalled = trained_policy.recall(states, tracker, default_domain, None)
             assert recalled == actions[0]
 
         nums = np.random.randn(default_domain.num_states)
@@ -436,7 +435,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         tracker = tracker_from_dialogue(TEST_DEFAULT_DIALOGUE, default_domain)
         states = trained_policy._prediction_states(tracker, default_domain)
 
-        recalled = trained_policy.recall(states, tracker, default_domain)
+        recalled = trained_policy.recall(states, tracker, default_domain, None)
         assert recalled is not None
 
     def test_finetune_after_load(

@@ -48,6 +48,7 @@ from rasa.core.policies.rule_policy import (
     InvalidRule,
     RULES,
 )
+from rasa.graph_components.providers.rule_only_provider import RuleOnlyDataProvider
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from tests.core import test_utils
@@ -262,9 +263,9 @@ def test_potential_contradiction_resolved_by_conversation_start_when_slot_initia
     )
 
 
-def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value_explicit(
+def test_potential_contradiction_resolved_by_conversation_start_when_slot_initial_value_explicit(  # noqa: E501
     policy: RulePolicy,
-):  # noqa: E501
+):
     # Two rules that contradict each other except that one of them applies only at
     # conversation start -> ensure that this isn't flagged as a contradiction.
     # Specifically, this checks that the conversation-start-checking logic doesn't
@@ -2119,7 +2120,12 @@ def test_hide_rule_turn(policy: RulePolicy):
     ]
 
 
-def test_hide_rule_turn_with_slots(policy: RulePolicy):
+def test_hide_rule_turn_with_slots(
+    policy: RulePolicy,
+    default_model_storage: ModelStorage,
+    resource: Resource,
+    default_execution_context: ExecutionContext,
+):
     some_action = "some_action"
     some_other_action = "some_other_action"
     some_intent = "some_intent"
@@ -2226,8 +2232,11 @@ def test_hide_rule_turn_with_slots(policy: RulePolicy):
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
+    provider = RuleOnlyDataProvider.create(
+        {}, default_model_storage, resource, default_execution_context
+    )
     states = tracker.past_states(
-        domain, ignore_rule_only_turns=True, rule_only_data=policy.get_rule_only_data()
+        domain, ignore_rule_only_turns=True, rule_only_data=provider.provide()
     )
     assert states == [
         {},
@@ -2238,7 +2247,12 @@ def test_hide_rule_turn_with_slots(policy: RulePolicy):
     ]
 
 
-def test_hide_rule_turn_no_last_action_listen(policy: RulePolicy):
+def test_hide_rule_turn_no_last_action_listen(
+    policy: RulePolicy,
+    default_model_storage: ModelStorage,
+    resource: Resource,
+    default_execution_context: ExecutionContext,
+):
     action_after_chitchat = "action_after_chitchat"
     chitchat = "chitchat"
     action_chitchat = "action_chitchat"
@@ -2304,8 +2318,11 @@ def test_hide_rule_turn_no_last_action_listen(policy: RulePolicy):
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
+    provider = RuleOnlyDataProvider.create(
+        {}, default_model_storage, resource, default_execution_context
+    )
     states = tracker.past_states(
-        domain, ignore_rule_only_turns=True, rule_only_data=policy.get_rule_only_data()
+        domain, ignore_rule_only_turns=True, rule_only_data=provider.provide()
     )
     assert states == [
         {},
@@ -2314,7 +2331,12 @@ def test_hide_rule_turn_no_last_action_listen(policy: RulePolicy):
     ]
 
 
-def test_hide_rule_turn_with_loops(policy: RulePolicy):
+def test_hide_rule_turn_with_loops(
+    policy: RulePolicy,
+    default_model_storage: ModelStorage,
+    resource: Resource,
+    default_execution_context: ExecutionContext,
+):
     form_name = "some_form"
     another_form_name = "another_form"
     activate_form = "activate_form"
@@ -2406,8 +2428,12 @@ def test_hide_rule_turn_with_loops(policy: RulePolicy):
     tracker = DialogueStateTracker.from_events(
         "casd", evts=conversation_events, slots=domain.slots
     )
+
+    provider = RuleOnlyDataProvider.create(
+        {}, default_model_storage, resource, default_execution_context
+    )
     states = tracker.past_states(
-        domain, ignore_rule_only_turns=True, rule_only_data=policy.get_rule_only_data()
+        domain, ignore_rule_only_turns=True, rule_only_data=provider.provide()
     )
     assert states == [
         {},
