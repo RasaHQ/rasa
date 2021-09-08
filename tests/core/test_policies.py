@@ -197,13 +197,12 @@ class PolicyTestCollection:
 
         trackers = train_trackers(default_domain, stories_path, augmentation_factor=20)
 
-        precomputations = None
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
-                tracker, default_domain, precomputations,
+                tracker, default_domain
             )
             actual_probabilities = trained_policy.predict_action_probabilities(
-                tracker, default_domain, precomputations,
+                tracker, default_domain
             )
             assert predicted_probabilities == actual_probabilities
 
@@ -379,7 +378,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         model_storage: ModelStorage,
         tmp_path: Path,
         execution_context: ExecutionContext,
-    ) -> Policy:
+    ) -> None:
         assert isinstance(trained_policy.featurizer, MaxHistoryTrackerFeaturizer)
         assert trained_policy.featurizer.state_featurizer is None
         loaded = trained_policy.__class__.load(
@@ -524,10 +523,6 @@ class TestMemoizationPolicy(PolicyTestCollection):
         tracker_events_with_action: List[Event],
         tracker_events_without_action: List[Event],
     ):
-        # TODO: drop when policies are migrated
-        precomputations = (
-            None if isinstance(trained_policy, GraphComponent) else RegexInterpreter()
-        )
         tracker_with_action = DialogueStateTracker.from_events(
             "test 1", evts=tracker_events_with_action, slots=default_domain.slots
         )
@@ -535,10 +530,10 @@ class TestMemoizationPolicy(PolicyTestCollection):
             "test 2", evts=tracker_events_without_action, slots=default_domain.slots
         )
         prediction_with_action = trained_policy.predict_action_probabilities(
-            tracker_with_action, default_domain, precomputations,
+            tracker_with_action, default_domain,
         )
         prediction_without_action = trained_policy.predict_action_probabilities(
-            tracker_without_action, default_domain, precomputations,
+            tracker_without_action, default_domain,
         )
 
         # Memoization shouldn't be affected with the
@@ -644,9 +639,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             "training story", events[:-1], domain=domain, slots=domain.slots,
         )
         policy.train([training_story], domain)
-        prediction = policy.predict_action_probabilities(
-            test_story, domain, RegexInterpreter()
-        )
+        prediction = policy.predict_action_probabilities(test_story, domain)
         assert (
             domain.action_names_or_texts[
                 prediction.probabilities.index(max(prediction.probabilities))
@@ -730,9 +723,7 @@ class TestAugmentedMemoizationPolicy(TestMemoizationPolicy):
             slots=domain.slots,
         )
         policy.train([training_story], domain)
-        prediction = policy.predict_action_probabilities(
-            test_story, domain, RegexInterpreter()
-        )
+        prediction = policy.predict_action_probabilities(test_story, domain)
         assert (
             domain.action_names_or_texts[
                 prediction.probabilities.index(max(prediction.probabilities))

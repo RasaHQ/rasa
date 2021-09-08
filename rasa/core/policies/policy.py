@@ -152,7 +152,7 @@ class PolicyGraphComponent(GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
         **kwargs: Any,
-    ) -> GraphComponent:
+    ) -> PolicyGraphComponent:
         """Creates a new untrained policy (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
@@ -369,18 +369,13 @@ class PolicyGraphComponent(GraphComponent):
 
     @abc.abstractmethod
     def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
-        **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
             tracker: The tracker containing the conversation history up to now.
             domain: The model's domain.
-            precomputations: Contains precomputed features and attributes.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
 

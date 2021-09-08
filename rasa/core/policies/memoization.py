@@ -223,18 +223,14 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         return result
 
     def predict_action_probabilities(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
-        **kwargs: Any,
+        self, tracker: DialogueStateTracker, domain: Domain, **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
 
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            precomputations: unused
+
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
         """
