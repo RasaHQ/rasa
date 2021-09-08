@@ -100,7 +100,7 @@ class PolicyPredictionEnsemble:
         # necessarily sum up to one anymore)
         final_prediction = self.combine_predictions(predictions, tracker)
 
-        logger.debug(f"Predicted next action using {final_prediction.policy_name}.")
+        logger.debug(f"Predicted next action using '{final_prediction.policy_name}'.")
         return final_prediction
 
     @staticmethod
