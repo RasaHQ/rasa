@@ -115,7 +115,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
           the raw feature value as text
         """
         if feature_name not in cls.SUPPORTED_FEATURES:
-            raise ValueError(
+            raise InvalidConfigException(
                 f"Configured feature '{feature_name}' not valid. Please check "
                 f"'{DOCS_URL_COMPONENTS}' for valid configuration parameters."
             )
@@ -166,7 +166,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         message = (
             f"Expected configuration of `features` to be a list of lists that "
             f"that contain names of lexical and syntactic features "
-            f" (i.e. {cls.SUPPORTED_FEATURES}). "
+            f"(i.e. {cls.SUPPORTED_FEATURES}). "
             f"Received {feature_config} instead. "
         )
         try:
@@ -488,7 +488,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                 )
         except ValueError:
             logger.warning(
-                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
+                f"Failed to load `{cls.__class__.__name__}` from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
             return cls(

@@ -57,7 +57,7 @@ class Featurizer2(Generic[FeatureType], ABC):
     def validate_compatibility_with_tokenizer(
         cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
     ) -> None:
-        """Validate that the featurizer is compatible with the given tokenizer."""
+        """Validates that the featurizer is compatible with the given tokenizer."""
         # TODO: add (something like) this to recipe validation
         # TODO: replace tokenizer by config of tokenizer to enable static check
         ...
