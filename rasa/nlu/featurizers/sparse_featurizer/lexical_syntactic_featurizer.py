@@ -254,6 +254,9 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
 
         Args:
           training_data: the training data
+
+        Returns:
+           the resource from which this trained component can be loaded
         """
         feature_to_idx_dict = self._create_feature_to_idx_dict(training_data)
         self._set_feature_to_idx_dict(feature_to_idx_dict=feature_to_idx_dict)
@@ -488,8 +491,8 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                 )
         except ValueError:
             logger.warning(
-                f"Failed to load `{cls.__class__.__name__}` from model storage. Resource "
-                f"'{resource.name}' doesn't exist."
+                f"Failed to load `{cls.__class__.__name__}` from model storage. "
+                f"Resource '{resource.name}' doesn't exist."
             )
             return cls(
                 config=config,
