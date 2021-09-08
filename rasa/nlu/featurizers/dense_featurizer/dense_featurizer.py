@@ -6,7 +6,7 @@ from rasa.nlu.featurizers.featurizer import Featurizer2
 from rasa.utils.tensorflow.constants import MEAN_POOLING, MAX_POOLING
 
 
-class DenseFeaturizer2(Featurizer2[np.ndarray]):
+class DenseFeaturizer2(Featurizer2[np.ndarray], abc.ABC):
     """Base class for all dense featurizers."""
 
     @staticmethod

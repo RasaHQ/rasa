@@ -85,6 +85,7 @@ class Featurizer2(Generic[FeatureType]):
 
         Args:
           training_data: the training data
+
         Returns:
           same training data after processing
         """
