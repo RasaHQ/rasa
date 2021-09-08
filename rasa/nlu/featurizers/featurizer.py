@@ -39,12 +39,12 @@ class Featurizer2(Generic[FeatureType], ABC):
         Args:
           config: configuration
           name: a name that can be used as identifier, in case the configuration does
-            not specify an `alias`
+            not specify an `alias` (or this `alias` is None)
         """
         super().__init__()
         self.validate_config(config)
         self._config = {**self.get_default_config(), **config}
-        self._identifier = self._config.get(FEATURIZER_CLASS_ALIAS, name)
+        self._identifier = self._config[FEATURIZER_CLASS_ALIAS] or name
 
     @classmethod
     @abstractmethod

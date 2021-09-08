@@ -12,12 +12,20 @@ from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturiz
 @pytest.mark.parametrize(
     "pooling, features, only_non_zero_vectors, expected",
     [
+        # "mean"
         (
             "mean",
             np.array([[0.5, 3, 0.4, 0.1], [0, 0, 0, 0], [0.5, 3, 0.4, 0.1]]),
             True,
             np.array([[0.5, 3, 0.4, 0.1]]),
         ),
+        (
+            "mean",
+            np.array([[1.5, 3, 4.5, 6], [0, 0, 0, 0], [1.5, 3, 4.5, 6]]),
+            False,
+            np.array([[1, 2, 3, 4]]),
+        ),
+        # "max"
         (
             "max",
             np.array([[1.0, 3.0, 0.0, 2.0], [4.0, 3.0, 1.0, 0.0]]),
@@ -30,6 +38,7 @@ from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturiz
             True,
             np.array([[0.0, 0.0, 0.0, 0.0]]),
         ),
+        # "max" - special cases to be aware of
         ("max", np.array([[-1.0], [0.0]]), False, np.array([[0.0]]),),
         ("max", np.array([[-1.0], [0.0]]), True, np.array([[-1.0]]),),
     ],
