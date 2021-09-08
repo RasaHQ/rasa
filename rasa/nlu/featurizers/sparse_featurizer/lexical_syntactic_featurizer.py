@@ -354,12 +354,17 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         """
         # Note that this will only sort the top level keys - and we keep
         # doing it to ensure consistently with what was done before)
-        feature_vocabulary = OrderedDict(sorted(feature_vocabulary.items()))
+        ordered_feature_vocabulary: OrderedDict[
+            Tuple[int, Text], Set[Text]
+        ] = OrderedDict(sorted(feature_vocabulary.items()))
 
         # create the nested mapping
         feature_to_idx_dict: Dict[Tuple[int, Text], Dict[Text, int]] = {}
         offset = 0
-        for position_and_feature_name, feature_values in feature_vocabulary.items():
+        for (
+            position_and_feature_name,
+            feature_values,
+        ) in ordered_feature_vocabulary.items():
             sorted_feature_values = sorted(feature_values)
             feature_to_idx_dict[position_and_feature_name] = {
                 feature_value: feature_idx
