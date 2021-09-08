@@ -18,15 +18,15 @@ from rasa.shared.core.events import ActionExecuted, DefinePrevUserUtteredFeaturi
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
 
 
-def test_warn_warn_rule_policy_not_contained():
+def test_warn_if_rule_policy_not_contained():
     with pytest.warns(UserWarning, match="'RulePolicy' is not included"):
-        PolicyPredictionEnsemble.warn_rule_policy_not_contained(ensemble=[])
+        PolicyPredictionEnsemble.warn_if_rule_policy_not_contained(ensemble=[])
 
 
-def test_warn_priorities_not_unique():
+def test_warn_if_priorities_not_unique():
     ensemble = [RulePolicy(), RulePolicy()]
     with pytest.warns(UserWarning, match="Found policies .* with same priority"):
-        DefaultPolicyPredictionEnsemble.warn_priorities_not_unique(ensemble=ensemble)
+        DefaultPolicyPredictionEnsemble.warn_if_priorities_not_unique(ensemble=ensemble)
 
 
 @pytest.fixture

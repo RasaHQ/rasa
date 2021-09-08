@@ -114,7 +114,7 @@ def propagate_specification_of_rule_only_data(ensemble: List[Policy]) -> None:
         policy.set_shared_policy_states(rule_only_data=rule_only_data)
 
 
-def validate_warn_rule_based_data_unused_or_missing(
+def validate_warn_if_rule_based_data_unused_or_missing(
     ensemble: List[Policy], training_trackers: List[DialogueStateTracker]
 ) -> None:
     """Emit `UserWarning`s about missing or unused rule-based data.
@@ -192,11 +192,11 @@ class PolicyPredictionEnsemble:
           `InvalidPolicyEnsembleConfig`: if this ensemble cannot be applied to
             the given ensemble of policies
         """
-        cls.warn_rule_policy_not_contained(ensemble=ensemble)
+        cls.warn_if_rule_policy_not_contained(ensemble=ensemble)
         cls.assert_compatibility_with_domain(ensemble=ensemble, domain=domain)
 
     @staticmethod
-    def warn_rule_policy_not_contained(ensemble: List[Policy]) -> None:
+    def warn_if_rule_policy_not_contained(ensemble: List[Policy]) -> None:
         """Checks that a rule policy is present.
 
         # TODO: replace the ensemble (List[Policy]) with a list of policy classes and
@@ -389,11 +389,11 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         super().validate(ensemble=ensemble, domain=domain)
         # TODO: shouldn't we raise in case priorities are not unique since this might
         # lead to unexpected results in edge cases (swap order in your config)
-        self.warn_priorities_not_unique(ensemble=ensemble)
+        self.warn_if_priorities_not_unique(ensemble=ensemble)
         # TODO: shouldn't we assert that there's at most one rule policy here?
 
     @staticmethod
-    def warn_priorities_not_unique(ensemble: List[Policy]) -> None:
+    def warn_if_priorities_not_unique(ensemble: List[Policy]) -> None:
         """Checks for duplicate policy priorities.
 
         Only raises a warning if two policies have the same priority.
