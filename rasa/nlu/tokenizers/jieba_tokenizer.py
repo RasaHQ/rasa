@@ -49,7 +49,6 @@ class JiebaTokenizerGraphComponent(TokenizerGraphComponent):
     ) -> None:
         """Initialize the tokenizer."""
         super().__init__(config)
-        self._config = config
         self._model_storage = model_storage
         self._resource = resource
 
@@ -110,14 +109,19 @@ class JiebaTokenizerGraphComponent(TokenizerGraphComponent):
         **kwargs: Any,
     ) -> JiebaTokenizerGraphComponent:
         """Loads a custom dictionary from model storage."""
-        relative_dictionary_path = config["dictionary_path"]
+        dictionary_path = config["dictionary_path"]
 
         # If a custom dictionary path is in the config we know that it should have
         # been saved to the model storage.
-        if relative_dictionary_path is not None:
-            with model_storage.read_from(resource) as resource_directory:
-                cls._load_custom_dictionary(str(resource_directory))
-
+        if dictionary_path is not None:
+            try:
+                with model_storage.read_from(resource) as resource_directory:
+                    cls._load_custom_dictionary(str(resource_directory))
+            except ValueError:
+                logger.warning(
+                    f"Failed to load {cls.__name__} from model storage. "
+                    f"Resource '{resource.name}' doesn't exist."
+                )
         return cls(config, model_storage, resource)
 
     @staticmethod

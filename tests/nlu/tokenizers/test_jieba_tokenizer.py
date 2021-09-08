@@ -1,5 +1,7 @@
+import logging
 from typing import Dict, Optional
 
+from _pytest.logging import LogCaptureFixture
 from _pytest.tmpdir import TempPathFactory
 
 from rasa.engine.graph import ExecutionContext
@@ -54,6 +56,7 @@ def test_jieba_load_and_persist_dictionary(
     tmp_path_factory: TempPathFactory,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
+    caplog: LogCaptureFixture,
 ):
     dictionary_directory = tmp_path_factory.mktemp("dictionaries")
     dictionary_path = dictionary_directory / "dictionary_1"
@@ -79,12 +82,16 @@ def test_jieba_load_and_persist_dictionary(
     tk.process_training_data(TrainingData([Message(data={TEXT: ""})]))
 
     # The dictionary has not been persisted yet.
-    with pytest.raises(ValueError):
+    with caplog.at_level(logging.WARN):
         JiebaTokenizerGraphComponent.load(
             {**JiebaTokenizerGraphComponent.get_default_config(), **component_config},
             default_model_storage,
             resource,
             default_execution_context,
+        )
+        assert any(
+            "Failed to load JiebaTokenizerGraphComponent from model storage." in message
+            for message in caplog.messages
         )
 
     tk.persist()

@@ -29,6 +29,7 @@ class TokenizerGraphComponent(GraphComponent, abc.ABC):
 
     def __init__(self, config: Dict[Text, Any]) -> None:
         """Construct a new tokenizer."""
+        self._config = config
         # flag to check whether to split intents
         self.intent_tokenization_flag = config["intent_tokenization_flag"]
         # split symbol for intents
