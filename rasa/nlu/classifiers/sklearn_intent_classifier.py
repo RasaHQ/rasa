@@ -56,7 +56,6 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
-        execution_context: ExecutionContext,
         clf: "sklearn.model_selection.GridSearchCV" = None,
         le: Optional["sklearn.preprocessing.LabelEncoder"] = None,
     ) -> None:
@@ -82,7 +81,7 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
         execution_context: ExecutionContext,
     ) -> SklearnIntentClassifierGraphComponent:
         """Creates a new untrained component (see parent class for full docstring)."""
-        return cls(config, model_storage, resource, execution_context)
+        return cls(config, model_storage, resource)
 
     @classmethod
     def required_packages(cls) -> List[Text]:
@@ -92,8 +91,8 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
     def transform_labels_str2num(self, labels: List[Text]) -> np.ndarray:
         """Transforms a list of strings into numeric label representation.
 
-        :param labels: List of labels to convert to numeric representation"""
-
+        :param labels: List of labels to convert to numeric representation
+        """
         return self.le.fit_transform(labels)
 
     def transform_labels_num2str(self, y: np.ndarray) -> np.ndarray:
@@ -236,8 +235,8 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
 
         :param X: bow of input text
         :return: tuple of first, the most probable label and second,
-                 its probability."""
-
+                 its probability.
+        """
         pred_result = self.predict_prob(X)
         # sort the probabilities retrieving the indices of
         # the elements in sorted order
@@ -272,7 +271,7 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
                 file_name = cls.__name__
                 classifier_file = model_dir / f"{file_name}_classifier.pkl"
 
-                if classifier_file:
+                if classifier_file.exists():
                     classifier = io_utils.json_unpickle(classifier_file)
 
                     encoder_file = model_dir / f"{file_name}_encoder.pkl"
@@ -280,17 +279,10 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
                     encoder = LabelEncoder()
                     encoder.classes_ = classes
 
-                    return cls(
-                        config,
-                        model_storage,
-                        resource,
-                        execution_context,
-                        classifier,
-                        encoder,
-                    )
+                    return cls(config, model_storage, resource, classifier, encoder,)
         except ValueError:
             logger.warning(
-                f"Failed to load {cls.__name__} from model storage. Resource "
+                f"Failed to load '{cls.__name__}' from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
-        return cls(config, model_storage, resource, execution_context)
+        return cls(config, model_storage, resource)
