@@ -254,7 +254,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         self._set_feature_to_idx_dict(feature_to_idx_dict=feature_to_idx_dict)
         if not self._feature_to_idx_dict:
             rasa.shared.utils.io.raise_warning(
-                "No lexical syntactic features could be extracted from the training"
+                "No lexical syntactic features could be extracted from the training "
                 "data. In order for this component to work you need to define "
                 "`features` that can be found in the given training data."
             )
