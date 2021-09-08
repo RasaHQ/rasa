@@ -32,11 +32,11 @@ class NLUPredictionToHistoryAdder(GraphComponent):
 
     def add(
         self,
-        predictions: List["Message"],
-        tracker: "DialogueStateTracker",
+        predictions: List[Message],
+        tracker: DialogueStateTracker,
         domain: Domain,
         original_message: UserMessage,
-    ) -> "DialogueStateTracker":
+    ) -> DialogueStateTracker:
         """Adds NLU predictions to the tracker.
 
         Args:
@@ -58,9 +58,17 @@ class NLUPredictionToHistoryAdder(GraphComponent):
                 None,
                 original_message.input_channel,
                 message.data.get("message_id"),
-                message.data.get("metadata"),
+                original_message.metadata,
             )
             tracker.update(user_utterance, domain)
+
+            if user_utterance.entities:
+                # Log currently set slots
+                slot_values = "\n".join(
+                    [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]
+                )
+                if slot_values.strip():
+                    logger.debug(f"Current slot values: \n{slot_values}")
 
         logger.debug(
             f"Logged {len(predictions)} UserUtterance(s) - \
