@@ -212,6 +212,7 @@
         {
           "items": [
             "reference/rasa/nlu/classifiers/_diet_classifier",
+            "reference/rasa/nlu/classifiers/_fallback_classifier",
             "reference/rasa/nlu/classifiers/_keyword_intent_classifier",
             "reference/rasa/nlu/classifiers/_mitie_intent_classifier",
             "reference/rasa/nlu/classifiers/diet_classifier",
