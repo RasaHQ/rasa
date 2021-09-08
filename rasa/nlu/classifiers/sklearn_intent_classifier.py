@@ -273,7 +273,6 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
                 classifier_file = list(model_dir.glob(f"**/{file_name}_classifier.pkl"))
 
                 if classifier_file:
-                    assert len(classifier_file) == 1
                     classifier = io_utils.json_unpickle(classifier_file[0])
 
                     encoder_file = list(model_dir.glob(f"**/{file_name}_encoder.pkl"))
