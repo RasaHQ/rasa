@@ -179,7 +179,7 @@ class PolicyPredictionEnsemble:
     actions but also decides which events are passed on.
     """
 
-    @staticmethod
+    @classmethod
     def validate_ensemble_valid(cls, ensemble: List[Policy], domain: Domain) -> None:
         """Checks that predictions of the given policy ensemble can be used as input.
 
@@ -239,11 +239,9 @@ class PolicyPredictionEnsemble:
             `InvalidDomain` exception if the given domain is incompatible with the
             given ensemble
         """
-        for policy in ensemble:
-            if isinstance(policy, RulePolicy):
-                # TODO: does it make sense to add `validate_against_domain`
-                # to other policies?
-                policy.validate_against_domain(domain)
+        # TODO: does it make sense to add `validate_against_domain`
+        # to other policies?
+        RulePolicy.validate_against_domain(ensemble, domain)
 
         contains_rule_policy = any(
             isinstance(policy, RulePolicy) for policy in ensemble
