@@ -1,4 +1,5 @@
 from __future__ import annotations
+from rasa.core.featurizers.precomputation import MessageContainerForCoreFeaturization
 import zlib
 
 import base64
@@ -17,12 +18,13 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.core.domain import State, Domain
 from rasa.shared.core.events import ActionExecuted
 from rasa.core.featurizers.tracker_featurizers import (
-    TrackerFeaturizer,
-    MaxHistoryTrackerFeaturizer,
-    FEATURIZER_FILE,
+    TrackerFeaturizer2 as TrackerFeaturizer,
 )
+from rasa.core.featurizers.tracker_featurizers import (
+    MaxHistoryTrackerFeaturizer2 as MaxHistoryTrackerFeaturizer,
+)
+from rasa.core.featurizers.tracker_featurizers import FEATURIZER_FILE
 from rasa.shared.exceptions import FileIOException
-from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter
 from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
@@ -224,7 +226,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         self,
         tracker: DialogueStateTracker,
         domain: Domain,
-        interpreter: NaturalLanguageInterpreter,
+        precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         **kwargs: Any,
     ) -> PolicyPrediction:
         """Predicts the next action the bot should take after seeing the tracker.
@@ -232,9 +234,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
         Args:
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
-            interpreter: Interpreter which may be used by the policies to create
-                additional features.
-
+            precomputations: unused
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
         """

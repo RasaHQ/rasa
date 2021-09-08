@@ -8,6 +8,10 @@ on:
     - '*'
   pull_request:
 
+concurrency:
+  group: continous-integration-${{ github.ref }}  # branch or tag name
+  cancel-in-progress: true
+
 # SECRETS
 # - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
 #                           (login for account in 1pw)
