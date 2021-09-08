@@ -24,13 +24,11 @@ from rasa.graph_components.adders.nlu_prediction_to_history_adder import (
                 Message(
                     {TEXT: "message 1", INTENT: {}, ENTITIES: [{}], "message_id": "1",}
                 ),
-                Message(
-                    {TEXT: "message 2", INTENT: {}, "message_id": "2", "metadata": {}}
-                ),
             ],
             [
-                UserUttered("message 1", {}, [{}], None, None, "slack", "1"),
-                UserUttered("message 2", {}, None, None, None, "slack", "2", {}),
+                UserUttered(
+                    "message 1", {}, [{}], None, None, "slack", "1", {"meta": "meta"}
+                ),
             ],
             "slack",
         ),
@@ -53,11 +51,13 @@ def test_prediction_adder_add_message(
     )
 
     tracker = DialogueStateTracker("test", None)
-    original_message = UserMessage(text="hello", input_channel=input_channel)
+    original_message = UserMessage(
+        text="hello", input_channel=input_channel, metadata={"meta": "meta"}
+    )
     tracker = component.add(messages, tracker, moodbot_domain, original_message)
 
     assert len(tracker.events) == len(messages)
-    for i, message in enumerate(messages):
+    for i, _ in enumerate(messages):
         assert isinstance(tracker.events[i], UserUttered)
         assert tracker.events[i].text == expected[i].text
         assert tracker.events[i].intent == expected[i].intent
