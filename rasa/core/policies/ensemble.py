@@ -425,13 +425,15 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
             not prediction.is_no_user_prediction for prediction in predictions
         )
 
-        def scores(prediction: PolicyPrediction) -> Tuple[bool, bool, float, int]:
+        def scores(
+            prediction: PolicyPrediction,
+        ) -> Tuple[bool, bool, float, Tuple[int, ...]]:
             """Extracts scores ordered by importance where larger is better."""
             return (
                 prediction.is_no_user_prediction,
                 contains_no_form_predictions and prediction.is_end_to_end_prediction,
                 prediction.max_confidence,
-                prediction.policy_priority[0],  # because this is a tuple.
+                prediction.policy_priority,  # Note: this is a tuple.
             )
 
         # grab the index of a prediction whose tuple of scores is >= all the
