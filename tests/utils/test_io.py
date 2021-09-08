@@ -72,7 +72,10 @@ def test_create_validator_from_callable():
 
 @pytest.mark.parametrize(
     "input,kwargs,expected",
-    [({(1, 2): 3}, {}, {repr((1, 2)): 3}), ({(1, 2): 3}, {"keys": True}, {(1, 2): 3}),],
+    [
+        ({(1, 2): 3}, {}, {repr((1, 2)): 3}),
+        ({(1, 2): 3}, {"encode_non_string_keys": True}, {(1, 2): 3}),
+    ],
 )
 def test_write_and_load_dict_via_jsonpickle(
     tmp_path: Path, input: Dict, kwargs: Dict[Text, bool], expected: Dict

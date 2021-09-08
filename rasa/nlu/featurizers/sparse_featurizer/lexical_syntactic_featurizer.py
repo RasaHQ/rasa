@@ -466,7 +466,8 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         try:
             with model_storage.read_from(resource) as model_path:
                 feature_to_idx_dict = rasa.utils.io.json_unpickle(
-                    model_path / cls.FILENAME_FEATURE_TO_IDX_DICT, keys=True
+                    model_path / cls.FILENAME_FEATURE_TO_IDX_DICT,
+                    encode_non_string_keys=True,
                 )
                 return cls(
                     config=config,
@@ -496,5 +497,5 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
             rasa.utils.io.json_pickle(
                 model_path / self.FILENAME_FEATURE_TO_IDX_DICT,
                 self._feature_to_idx_dict,
-                keys=True,
+                encode_non_string_keys=True,
             )
