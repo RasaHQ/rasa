@@ -14,6 +14,7 @@ from typing import (
     Set,
     Optional,
     Union,
+    Type,
 )
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
@@ -181,7 +182,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
 
     @classmethod
     def validate_compatibility_with_tokenizer(
-        cls, config: Dict[Text, Any], tokenizer: Tokenizer
+        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
     ) -> None:
         """Validate a configuration for this component in the context of a recipe."""
         # TODO: add (something like) this to recipe validation
@@ -191,9 +192,13 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
             for pos_config in config.get(FEATURES, [])
             for feature_name in pos_config
         )
-        if any(
-            feature_name in configured_feature_names for feature_name in ["pos", "pos2"]
-        ) and not isinstance(tokenizer, SpacyTokenizer):
+        if (
+            any(
+                feature_name in configured_feature_names
+                for feature_name in ["pos", "pos2"]
+            )
+            and tokenizer_type != SpacyTokenizer
+        ):
             rasa.shared.utils.io.raise_warning(
                 f"Expected tokenizer to be {SpacyTokenizer.__name__} "
                 f"because the given configuration includes part-of-speech features "

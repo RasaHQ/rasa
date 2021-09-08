@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 from collections import Counter
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from typing import Generic, Iterable, List, Text, Optional, Dict, Any, TypeVar
+from typing import Generic, Iterable, List, Text, Optional, Dict, Any, TypeVar, Type
 
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.shared.nlu.training_data.features import Features
@@ -54,7 +54,9 @@ class Featurizer2(Generic[FeatureType], ABC):
 
     @classmethod
     @abstractmethod
-    def validate_compatibility_with_tokenizer(cls, tokenizer: Tokenizer) -> None:
+    def validate_compatibility_with_tokenizer(
+        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
+    ) -> None:
         """Validate that the featurizer is compatible with the given tokenizer."""
         # TODO: add (something like) this to recipe validation
         # TODO: replace tokenizer by config of tokenizer to enable static check
