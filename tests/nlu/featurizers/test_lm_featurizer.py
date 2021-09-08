@@ -14,7 +14,7 @@ from rasa.nlu.constants import (
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
+from rasa.nlu.featurizers.dense_featurizer._lm_featurizer import LanguageModelFeaturizer
 from rasa.shared.nlu.constants import TEXT, INTENT
 
 
