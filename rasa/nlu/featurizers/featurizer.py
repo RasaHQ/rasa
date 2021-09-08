@@ -1,8 +1,8 @@
 from __future__ import annotations
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from collections import Counter
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from typing import Generic, Iterable, List, Text, Optional, Dict, Any, TypeVar
+from typing import Generic, Iterable, List, Text, Optional, Dict, Any, TypeVar, Type
 
 from rasa.nlu.constants import FEATURIZER_CLASS_ALIAS
 from rasa.shared.nlu.training_data.features import Features
@@ -25,7 +25,7 @@ DenseFeaturizer = DenseFeaturizer
 FeatureType = TypeVar("FeatureType")
 
 
-class Featurizer2(Generic[FeatureType]):
+class Featurizer2(Generic[FeatureType], ABC):
     """Base class for all featurizers."""
 
     @staticmethod
@@ -39,21 +39,12 @@ class Featurizer2(Generic[FeatureType]):
         Args:
           config: configuration
           name: a name that can be used as identifier, in case the configuration does
-            not specify an `alias`
+            not specify an `alias` (or this `alias` is None)
         """
         super().__init__()
         self.validate_config(config)
         self._config = {**self.get_default_config(), **config}
-        self._identifier = self._config.get(FEATURIZER_CLASS_ALIAS, name)
-
-    @property
-    def identifier(self) -> Text:
-        """Returns the name of this featurizer.
-
-        Every feature created by this featurizer will contain this identifier as
-        `origin` information.
-        """
-        return self._identifier
+        self._identifier = self._config[FEATURIZER_CLASS_ALIAS] or name
 
     @classmethod
     @abstractmethod
@@ -63,7 +54,9 @@ class Featurizer2(Generic[FeatureType]):
 
     @classmethod
     @abstractmethod
-    def validate_compatibility_with_tokenizer(cls, tokenizer: Tokenizer) -> None:
+    def validate_compatibility_with_tokenizer(
+        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
+    ) -> None:
         """Validate that the featurizer is compatible with the given tokenizer."""
         # TODO: add (something like) this to recipe validation
         # TODO: replace tokenizer by config of tokenizer to enable static check
@@ -85,6 +78,7 @@ class Featurizer2(Generic[FeatureType]):
 
         Args:
           training_data: the training data
+
         Returns:
           same training data after processing
         """
@@ -111,7 +105,7 @@ class Featurizer2(Generic[FeatureType]):
             (FEATURE_TYPE_SENTENCE, sentence),
         ]:
             if features is not None:
-                wrapped_feature = Features(features, type, attribute, self.identifier,)
+                wrapped_feature = Features(features, type, attribute, self._identifier,)
                 message.add_features(wrapped_feature)
 
     @staticmethod
@@ -136,6 +130,6 @@ class Featurizer2(Generic[FeatureType]):
             raise InvalidConfigException(
                 f"Expected the featurizers to have unique names but found "
                 f" (name, count): {alias_counter.most_common()}. "
-                f"Please update your recipe such that each featurizer has a unique "
+                f"Please update your config such that each featurizer has a unique "
                 f"alias."
             )

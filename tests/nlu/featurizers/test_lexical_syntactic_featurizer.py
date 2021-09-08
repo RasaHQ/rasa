@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 import re
-from typing import Text, Dict, Any, Callable, List, Optional
+from typing import Text, Dict, Any, Callable, List, Optional, Type
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
@@ -11,7 +11,8 @@ from rasa.nlu.constants import (
     MESSAGE_ATTRIBUTES,
     TOKENS_NAMES,
 )
-from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY, SpacyTokenizer
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizerGraphComponent,
     FEATURES,
@@ -20,7 +21,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import FEATURE_TYPE_SEQUENCE, TEXT
 from rasa.shared.exceptions import InvalidConfigException
-from rasa.nlu.tokenizers.tokenizer import Token
+from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 
 
 @pytest.fixture
@@ -286,3 +287,25 @@ def test_validate_config(config: Dict[Text, Any], raises: bool):
     else:
         with pytest.raises(InvalidConfigException):
             LexicalSyntacticFeaturizerGraphComponent.validate_config(config)
+
+
+@pytest.mark.parametrize(
+    "config,tokenizer_type,warns",
+    [
+        ({FEATURES: [["pos"],]}, SpacyTokenizer, False),
+        ({FEATURES: [["pos"],]}, WhitespaceTokenizer, True),
+        ({FEATURES: [["suffix2"],]}, WhitespaceTokenizer, False),
+    ],
+)
+def test_validate_compatibility_with_tokenizer(
+    config: Dict[Text, Any], tokenizer_type: Type[Tokenizer], warns: bool
+):
+    if warns:
+        with pytest.warns(UserWarning):
+            LexicalSyntacticFeaturizerGraphComponent.validate_compatibility_with_tokenizer(
+                config=config, tokenizer_type=tokenizer_type
+            )
+    else:
+        LexicalSyntacticFeaturizerGraphComponent.validate_compatibility_with_tokenizer(
+            config=config, tokenizer_type=tokenizer_type
+        )

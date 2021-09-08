@@ -172,13 +172,15 @@ def create_validator(
     return FunctionValidator
 
 
-def json_unpickle(file_name: Union[Text, Path], keys: bool = False) -> Any:
+def json_unpickle(
+    file_name: Union[Text, Path], encode_non_string_keys: bool = False
+) -> Any:
     """Unpickle an object from file using json.
 
     Args:
         file_name: the file to load the object from
-        keys: If set to `True` then jsonpickle will encode non-string dictionary keys
-          instead of coercing them into strings via `repr()`.
+        encode_non_string_keys: If set to `True` then jsonpickle will encode non-string
+          dictionary keys instead of coercing them into strings via `repr()`.
 
     Returns: the object
     """
@@ -188,24 +190,28 @@ def json_unpickle(file_name: Union[Text, Path], keys: bool = False) -> Any:
     jsonpickle_numpy.register_handlers()
 
     file_content = rasa.shared.utils.io.read_file(file_name)
-    return jsonpickle.loads(file_content, keys=keys)
+    return jsonpickle.loads(file_content, keys=encode_non_string_keys)
 
 
-def json_pickle(file_name: Union[Text, Path], obj: Any, keys: bool = False) -> None:
+def json_pickle(
+    file_name: Union[Text, Path], obj: Any, encode_non_string_keys: bool = False
+) -> None:
     """Pickle an object to a file using json.
 
     Args:
         file_name: the file to store the object to
         obj: the object to store
-        keys: If set to `True` then jsonpickle will encode non-string dictionary keys
-          instead of coercing them into strings via `repr()`.
+        encode_non_string_keys: If set to `True` then jsonpickle will encode non-string
+          dictionary keys instead of coercing them into strings via `repr()`.
     """
     import jsonpickle.ext.numpy as jsonpickle_numpy
     import jsonpickle
 
     jsonpickle_numpy.register_handlers()
 
-    rasa.shared.utils.io.write_text_file(jsonpickle.dumps(obj, keys=keys), file_name)
+    rasa.shared.utils.io.write_text_file(
+        jsonpickle.dumps(obj, keys=encode_non_string_keys), file_name
+    )
 
 
 def get_emoji_regex() -> Pattern:
