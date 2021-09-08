@@ -38,7 +38,7 @@ from rasa.shared.nlu.constants import (
     SPLIT_ENTITIES_BY_COMMA,
     SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE,
 )
-from rasa.core.policies.policy import PolicyPrediction2, PolicyGraphComponent
+from rasa.core.policies.policy import PolicyPrediction, PolicyGraphComponent
 from rasa.core.constants import (
     DIALOGUE,
     POLICY_MAX_HISTORY,
@@ -795,7 +795,7 @@ class TEDPolicyGraphComponent(PolicyGraphComponent):
         domain: Domain,
         precomputations: Optional[MessageContainerForCoreFeaturization] = None,
         **kwargs: Any,
-    ) -> PolicyPrediction2:
+    ) -> PolicyPrediction:
         """Predicts the next action (see parent class for full docstring)."""
         if self.model is None:
             return self._prediction(self._default_predictions(domain))

@@ -34,14 +34,14 @@ NOTE: differences to previous version
    --> we do *not* move this to a component that is executed before the policies
    but leave this snippet in the ensemble's predict
 -  refactored the way the "best prediction" is determined because that decision
-   process was a bit scattered and in-explicit and changed PolicyPrediction2 such that
+   process was a bit scattered and in-explicit and changed PolicyPrediction such that
    priority is an int not a tuple (?!)
 - `is_not_in_training_data` has been removed
    -->  can be replaced by an check that determines whether the policy is
         some kind of memoization policy *inside the tests* (via its name...)
 NOTE/FIXME: questions
 -  Where are the events from the (winning) predictions applied? We only add things to
-   the final `PolicyPrediction2` here.
+   the final `PolicyPrediction` here.
 """
 
 from abc import abstractmethod
@@ -59,7 +59,7 @@ from rasa.core.policies.policy import (
     InvalidPolicyConfig,
     Policy,
     SupportedData,
-    PolicyPrediction2,
+    PolicyPrediction,
 )
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.core.policies._ensemble import SimplePolicyEnsemble, PolicyEnsemble
@@ -95,7 +95,6 @@ logger = logging.getLogger(__name__)
 # `GraphComponent`.
 SimplePolicyEnsemble = SimplePolicyEnsemble
 PolicyEnsemble = PolicyEnsemble
-InvalidPolicyConfig = InvalidPolicyConfig
 
 
 def propagate_specification_of_rule_only_data(ensemble: List[Policy]) -> None:
@@ -237,9 +236,8 @@ class PolicyPredictionEnsemble:
             `InvalidDomain` exception if the given domain is incompatible with the
             given ensemble
         """
-        # TODO: does it make sense to add `validate_against_domain`
-        # to other policies?
-        RulePolicy.validate_against_domain(ensemble, domain)
+        # TODO: adapt validate_against_domain to work with list of policies/configs
+        # RulePolicy.validate_against_domain(ensemble, domain)
 
         contains_rule_policy = any(
             isinstance(policy, RulePolicy) for policy in ensemble
@@ -254,10 +252,10 @@ class PolicyPredictionEnsemble:
 
     def predict(
         self,
-        predictions: List[PolicyPrediction2],
+        predictions: List[PolicyPrediction],
         domain: Domain,
         tracker: DialogueStateTracker,
-    ) -> PolicyPrediction2:
+    ) -> PolicyPrediction:
         """Derives a final prediction from the given list of predictions.
 
         Args:
@@ -283,7 +281,7 @@ class PolicyPredictionEnsemble:
     @staticmethod
     def _exclude_last_action_from_predictions_if_it_was_rejected(
         tracker: DialogueStateTracker,
-        predictions: List[PolicyPrediction2],
+        predictions: List[PolicyPrediction],
         domain: Domain,
     ) -> None:
         """Sets the probability for the last action to 0 if it was just rejected.
@@ -319,8 +317,8 @@ class PolicyPredictionEnsemble:
 
     @abstractmethod
     def combine_predictions(
-        self, predictions: List[PolicyPrediction2], tracker: DialogueStateTracker
-    ) -> PolicyPrediction2:
+        self, predictions: List[PolicyPrediction], tracker: DialogueStateTracker
+    ) -> PolicyPrediction:
         """Derives a single prediction from the given list of predictions.
 
         Args:
@@ -420,8 +418,8 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
                 )
 
     def combine_predictions(
-        self, predictions: List[PolicyPrediction2], tracker: DialogueStateTracker
-    ) -> PolicyPrediction2:
+        self, predictions: List[PolicyPrediction], tracker: DialogueStateTracker
+    ) -> PolicyPrediction:
         """Derives a single prediction from the given list of predictions.
 
         Note that you might get unexpected results if the priorities are non-unique.
@@ -460,7 +458,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         return final
 
     @staticmethod
-    def _choose_best_prediction(predictions: List[PolicyPrediction2]) -> int:
+    def _choose_best_prediction(predictions: List[PolicyPrediction]) -> int:
         """Chooses the "best" prediction out of the given predictions.
 
         Note that this comparison is *not* symmetric if the priorities are allowed to
@@ -476,13 +474,13 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
             not prediction.is_no_user_prediction for prediction in predictions
         )
 
-        def scores(prediction: PolicyPrediction2) -> Tuple[bool, bool, float, int]:
+        def scores(prediction: PolicyPrediction) -> Tuple[bool, bool, float, int]:
             """Extracts scores ordered by importance where larger is better."""
             return (
                 prediction.is_no_user_prediction,
                 contains_no_form_predictions and prediction.is_end_to_end_prediction,
-                prediction.max_probability,
-                prediction.policy_priority,
+                prediction.max_confidence,
+                prediction.policy_priority[0],  # because this is a tuple.
             )
 
         # grab the index of a prediction whose tuple of scores is >= all the
@@ -494,7 +492,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
 
     @staticmethod
     def _choose_events(
-        predictions: List[PolicyPrediction2],
+        predictions: List[PolicyPrediction],
         best_idx: int,
         tracker: DialogueStateTracker,
     ) -> List[Event]:

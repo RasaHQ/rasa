@@ -56,7 +56,7 @@ import rasa.shared.utils.common
 
 
 # All code outside this module will continue to use the old `Policy` interface
-from rasa.core.policies._policy import Policy, PolicyPrediction
+from rasa.core.policies._policy import Policy
 
 if TYPE_CHECKING:
     from rasa.shared.nlu.training_data.features import Features
@@ -67,7 +67,6 @@ logger = logging.getLogger(__name__)
 # TODO: This is a workaround around until we have all components migrated to
 # `GraphComponent`.
 Policy = Policy
-PolicyPrediction = PolicyPrediction
 
 
 class SupportedData(Enum):
@@ -399,8 +398,8 @@ class PolicyGraphComponent(GraphComponent):
         is_no_user_prediction: bool = False,
         diagnostic_data: Optional[Dict[Text, Any]] = None,
         action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> PolicyPrediction2:
-        return PolicyPrediction2(
+    ) -> PolicyPrediction:
+        return PolicyPrediction(
             probabilities,
             self.__class__.__name__,
             self.priority,
@@ -502,7 +501,7 @@ class PolicyGraphComponent(GraphComponent):
         return "\n".join(formatted_states)
 
 
-class PolicyPrediction2:
+class PolicyPrediction:
     """Stores information about the prediction of a `Policy`."""
 
     def __init__(
@@ -519,7 +518,6 @@ class PolicyPrediction2:
         action_metadata: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Creates a `PolicyPrediction`.
-
         Args:
             probabilities: The probabilities for each action.
             policy_name: Name of the policy which made the prediction.
@@ -547,7 +545,7 @@ class PolicyPrediction2:
         """
         self.probabilities = probabilities
         self.policy_name = policy_name
-        self.policy_priority = policy_priority
+        self.policy_priority = (policy_priority,)
         self.events = events or []
         self.optional_events = optional_events or []
         self.is_end_to_end_prediction = is_end_to_end_prediction
@@ -556,22 +554,6 @@ class PolicyPrediction2:
         self.hide_rule_turn = hide_rule_turn
         self.action_metadata = action_metadata
 
-    def __repr__(self) -> Text:
-        return (
-            f"{self.__class__.__name__}("
-            f"probabilities={self.probabilities}, "
-            f"policy_name={self.policy_name}, "
-            f"policy_priority={self.policy_priority}, "
-            f"events={self.events}, "
-            f"optional_events={self.optional_events}, "
-            f"is_end_to_end_prediction={self.is_end_to_end_prediction}, "
-            f"is_no_user_prediction={self.is_no_user_prediction}, "
-            f"diagnostic_data={self.diagnostic_data}, "
-            f"hide_rule_turn={self.hide_rule_turn}, "
-            f"action_metadata={self.action_metadata}, "
-            f")"
-        )
-
     @staticmethod
     def for_action_name(
         domain: Domain,
@@ -579,35 +561,31 @@ class PolicyPrediction2:
         policy_name: Optional[Text] = None,
         confidence: float = 1.0,
         action_metadata: Optional[Dict[Text, Any]] = None,
-    ) -> PolicyPrediction2:
+    ) -> "PolicyPrediction":
         """Create a prediction for a given action.
-
         Args:
             domain: The current model domain
             action_name: The action which should be predicted.
             policy_name: The policy which did the prediction.
             confidence: The prediction confidence.
             action_metadata: Additional metadata to be attached with the prediction.
-
         Returns:
             The prediction.
         """
         probabilities = confidence_scores_for(action_name, confidence, domain)
 
-        return PolicyPrediction2(
+        return PolicyPrediction(
             probabilities, policy_name, action_metadata=action_metadata
         )
 
     def __eq__(self, other: Any) -> bool:
         """Checks if the two objects are equal.
-
         Args:
             other: Any other object.
-
         Returns:
             `True` if other has the same type and the values are the same.
         """
-        if not isinstance(other, PolicyPrediction2):
+        if not isinstance(other, PolicyPrediction):
             return False
 
         return (
@@ -615,7 +593,7 @@ class PolicyPrediction2:
             and self.policy_name == other.policy_name
             and self.policy_priority == other.policy_priority
             and self.events == other.events
-            and self.optional_events == other.events
+            and self.optional_events == other.optional_events
             and self.is_end_to_end_prediction == other.is_end_to_end_prediction
             and self.is_no_user_prediction == other.is_no_user_prediction
             and self.hide_rule_turn == other.hide_rule_turn
@@ -625,20 +603,18 @@ class PolicyPrediction2:
         )
 
     @property
-    def max_probability_index(self) -> int:
-        """Gets the index of the action with the highest predicted probability.
-
+    def max_confidence_index(self) -> int:
+        """Gets the index of the action prediction with the highest confidence.
         Returns:
-            The index of the action with the highest predicted probability.
+            The index of the action with the highest confidence.
         """
-        return self.probabilities.index(self.max_probability)
+        return self.probabilities.index(self.max_confidence)
 
     @property
-    def max_probability(self) -> float:
-        """Gets the highest predicted probability.
-
+    def max_confidence(self) -> float:
+        """Gets the highest predicted confidence.
         Returns:
-            The highest predicted probability.
+            The highest predicted confidence.
         """
         return max(self.probabilities, default=0.0)
 
@@ -647,12 +623,10 @@ def confidence_scores_for(
     action_name: Text, value: float, domain: Domain
 ) -> List[float]:
     """Returns confidence scores if a single action is predicted.
-
     Args:
         action_name: the name of the action for which the score should be set
         value: the confidence for `action_name`
         domain: the :class:`rasa.shared.core.domain.Domain`
-
     Returns:
         the list of the length of the number of actions
     """
@@ -665,26 +639,3 @@ def confidence_scores_for(
 
 class InvalidPolicyConfig(RasaException):
     """Exception that can be raised when policy config is not valid."""
-
-
-def _get_featurizer_from_config(
-    config: List[Dict[Text, Any]], policy_name: Text, lookup_path: Text
-) -> Callable[..., TrackerFeaturizer]:
-    """Gets the featurizer initializer and its arguments from a policy config."""
-    # Only 1 featurizer is allowed
-    if len(config) > 1:
-        featurizer_names = [
-            featurizer_config.get("name") for featurizer_config in config
-        ]
-        raise InvalidPolicyConfig(
-            f"Every policy can only have 1 featurizer but '{policy_name}' "
-            f"uses {len(config)} featurizers ('{', '.join(featurizer_names)}')."
-        )
-
-    featurizer_config = config[0]
-    featurizer_name = featurizer_config.pop("name")
-    featurizer_func = rasa.shared.utils.common.class_from_module_path(
-        featurizer_name, lookup_path=lookup_path
-    )
-
-    return featurizer_func
