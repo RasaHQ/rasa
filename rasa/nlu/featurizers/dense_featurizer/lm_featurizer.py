@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from typing import Any, Optional, Text, List, Type, Dict, Tuple, cast
+from typing import Any, Optional, Text, List, Type, Dict, Tuple
 
 import rasa.core.utils
 from rasa.engine.graph import ExecutionContext, GraphComponent
@@ -62,7 +62,8 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> None:
-        """ Initializes LanguageModelFeaturizer with the specified model."""
+        """Initializes LanguageModelFeaturizer with the model
+        specified in the config."""
         super(LanguageModelFeaturizerGraphComponent, self).__init__(
             execution_context.node_name, config
         )
@@ -75,7 +76,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
-        """Returns LanguageModelFeaturizer's default config"""
+        """Returns LanguageModelFeaturizer's default config."""
         return {
             **DenseFeaturizer2.get_default_config(),
             # name of the language model to load.
@@ -96,20 +97,19 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> "LanguageModelFeaturizerGraphComponent":
-        """Creates a LanguageModelFeaturizer by loading the model specified in the config"""
+        """Creates a LanguageModelFeaturizer by loading the model
+        specified in the config."""
         language = config["language"]
-        if not cls.supported_languages() or language not in cls.supported_languages():
-            # check failed
+        if not cls.supported_languages() and language not in cls.supported_languages():
             raise UnsupportedLanguageError(cls.__name__, language)
         return cls(config, model_storage, resource, execution_context)
 
     @staticmethod
     def supported_languages() -> Optional[List[Text]]:
-        """Determines which languages this component can work with.
-
-        Returns: A list of supported languages, or `None` to signify all are supported.
-        """
-        return ["en"]
+        """Returns list of supported languages."""
+        # return ["en"]
+        # None means all languages are supported
+        return None  # TODO: check which language are supported
 
     @staticmethod
     def required_packages() -> List[Text]:
@@ -122,7 +122,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         return [Tokenizer]
 
     def _load_model_metadata(self) -> None:
-        """Loads the metadata for the specified model and sets as properties.
+        """Loads the metadata for the specified model and set them as properties.
         This includes the model name, model weights, cache directory and the
         maximum sequence length the model can handle.
         """
@@ -189,7 +189,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def cache_key(
         cls, component_meta: Dict[Text, Any], model_metadata: Metadata
     ) -> Optional[Text]:
-        """Cache the component for future use.
+        """Caches the component for future use.
 
         Args:
             component_meta: configuration for the component.
@@ -205,7 +205,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         )
 
     def _lm_tokenize(self, text: Text) -> Tuple[List[int], List[Text]]:
-        """Pass the text through the tokenizer of the language model.
+        """Passes the text through the tokenizer of the language model.
 
         Args:
             text: Text to be tokenized.
@@ -221,7 +221,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _add_lm_specific_special_tokens(
         self, token_ids: List[List[int]]
     ) -> List[List[int]]:
-        """Add language model specific special tokens which were used during
+        """Adds language special model-specific tokens which were used during
         their training.
 
         Args:
@@ -242,7 +242,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _lm_specific_token_cleanup(
         self, split_token_ids: List[int], token_strings: List[Text]
     ) -> Tuple[List[int], List[Text]]:
-        """Clean up special chars added by tokenizers of language models.
+        """Cleans up special chars added by tokenizers of language models.
 
         Many language models add a special char in front/back of (some) words. We clean
         up those chars as they are not
@@ -263,7 +263,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _post_process_sequence_embeddings(
         self, sequence_embeddings: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """Compute sentence and sequence level representations for relevant tokens.
+        """Computes sentence and sequence level representations for relevant tokens.
 
         Args:
             sequence_embeddings: Sequence level dense features received as output from
@@ -295,7 +295,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _tokenize_example(
         self, message: Message, attribute: Text
     ) -> Tuple[List[Token], List[int]]:
-        """Tokenize a single message example.
+        """Tokenizes a single message example.
 
         Many language models add a special char in front of (some) words and split
         words into sub-words. To ensure the entity start and end values matches the
@@ -342,7 +342,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _get_token_ids_for_batch(
         self, batch_examples: List[Message], attribute: Text
     ) -> Tuple[List[List[Token]], List[List[int]]]:
-        """Compute token ids and token strings for each example in batch.
+        """Computes token ids and token strings for each example in batch.
 
         A token id is the id of that token in the vocabulary of the language model.
 
@@ -370,7 +370,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _compute_attention_mask(
         actual_sequence_lengths: List[int], max_input_sequence_length: int
     ) -> np.ndarray:
-        """Compute a mask for padding tokens.
+        """Computes a mask for padding tokens.
 
         This mask will be used by the language model so that it does not attend to
         padding tokens.
@@ -440,7 +440,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _add_padding_to_batch(
         self, batch_token_ids: List[List[int]], max_sequence_length_model: int
     ) -> List[List[int]]:
-        """Add padding so that all examples in the batch are of the same length.
+        """Adds padding so that all examples in the batch are of the same length.
 
         Args:
             batch_token_ids: Batch of examples where each example is a non-padded list
@@ -474,7 +474,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _extract_nonpadded_embeddings(
         embeddings: np.ndarray, actual_sequence_lengths: List[int]
     ) -> np.ndarray:
-        """Extract embeddings for actual tokens.
+        """Extracts embeddings for actual tokens.
 
         Use pre-computed non-padded lengths of each example to extract embeddings
         for non-padding tokens.
@@ -496,7 +496,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _compute_batch_sequence_features(
         self, batch_attention_mask: np.ndarray, padded_token_ids: List[List[int]]
     ) -> np.ndarray:
-        """Feed the padded batch to the language model.
+        """Feeds the padded batch to the language model.
 
         Args:
             batch_attention_mask: Mask of 0s and 1s which indicate whether the token
@@ -524,7 +524,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         attribute: Text,
         inference_mode: bool = False,
     ) -> None:
-        """Validate if sequence lengths of all inputs are less the max sequence
+        """Validates if sequence lengths of all inputs are less the max sequence
         length the model can handle.
 
         This method should throw an error during training, whereas log a debug
@@ -563,7 +563,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _add_extra_padding(
         self, sequence_embeddings: np.ndarray, actual_sequence_lengths: List[int]
     ) -> np.ndarray:
-        """Add extra zero padding to match the original sequence length.
+        """Adds extra zero padding to match the original sequence length.
 
         This is only done if the input was truncated during the batch
         preparation of input for the model.
@@ -608,7 +608,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         attribute: Text,
         inference_mode: bool = False,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """Compute dense features of each example in the batch.
+        """Computes dense features of each example in the batch.
 
         We first add the special tokens corresponding to each language model. Next, we
         add appropriate padding and compute a mask for that padding so that it doesn't
@@ -704,7 +704,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         attribute: Text,
         inference_mode: bool = False,
     ) -> List[Dict[Text, Any]]:
-        """Compute language model docs for all examples in the batch.
+        """Computes language model docs for all examples in the batch.
 
         Args:
             batch_examples: Batch of message objects for which language model docs
@@ -746,7 +746,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
     ) -> None:
-        """Compute tokens and dense features for each message in training data.
+        """Computes tokens and dense features for each message in training data.
 
         Args:
             training_data: NLU training data to be tokenized and featurized
@@ -779,14 +779,16 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
                 batch_start_index += batch_size
 
     def process(self, messages: List[Message]) -> None:
-        """Processes a list of incoming message by computing their tokens and dense features."""
+        """Processes a list of incoming message by computing their
+        tokens and dense features."""
         for message in messages:
             if message:
                 self._process_message(message)
 
     def _process_message(self, message: Message, **kwargs: Any) -> None:
         """
-        Processes an incoming message by computing its tokens and dense features.
+        Processes an incoming message by computing its
+        tokens and dense features.
         """
         # processing featurizers operates only on TEXT and ACTION_TEXT attributes,
         # because all other attributes are labels which are featurized during training
