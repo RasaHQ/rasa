@@ -1,49 +1,22 @@
 ---
-sidebar_label: rasa.nlu.classifiers.sklearn_intent_classifier
-title: rasa.nlu.classifiers.sklearn_intent_classifier
+sidebar_label: rasa.nlu.classifiers._sklearn_intent_classifier
+title: rasa.nlu.classifiers._sklearn_intent_classifier
 ---
-## SklearnIntentClassifierGraphComponent Objects
+## SklearnIntentClassifier Objects
 
 ```python
-class SklearnIntentClassifierGraphComponent(GraphComponent)
+class SklearnIntentClassifier(IntentClassifier)
 ```
 
-Intent classifier using the sklearn framework.
-
-#### get\_default\_config
-
-```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
-```
-
-The component&#x27;s default config (see parent class for full docstring).
+Intent classifier using the sklearn framework
 
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, clf: "sklearn.model_selection.GridSearchCV" = None, le: Optional["sklearn.preprocessing.LabelEncoder"] = None) -> None
+ | __init__(component_config: Optional[Dict[Text, Any]] = None, clf: "sklearn.model_selection.GridSearchCV" = None, le: Optional["sklearn.preprocessing.LabelEncoder"] = None) -> None
 ```
 
 Construct a new intent classifier using the sklearn framework.
-
-#### create
-
-```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> SklearnIntentClassifierGraphComponent
-```
-
-Creates a new untrained component (see parent class for full docstring).
-
-#### required\_packages
-
-```python
- | @classmethod
- | required_packages(cls) -> List[Text]
-```
-
-Any extra python dependencies required for this component to run.
 
 #### transform\_labels\_str2num
 
@@ -72,7 +45,7 @@ Transforms a list of strings into numeric label representation.
 #### train
 
 ```python
- | train(training_data: TrainingData) -> Resource
+ | train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
 ```
 
 Train the intent classifier on a data set.
@@ -80,7 +53,7 @@ Train the intent classifier on a data set.
 #### process
 
 ```python
- | process(messages: List[Message]) -> List[Message]
+ | process(message: Message, **kwargs: Any) -> None
 ```
 
 Return the most likely intent and its probability for a message.
@@ -101,7 +74,7 @@ Return probabilities for all labels.
 
 **Returns**:
 
-vector of probabilities containing one entry for each label.
+vector of probabilities containing one entry for each label
 
 #### predict
 
@@ -124,7 +97,7 @@ tuple of first, the most probable label and second,
 #### persist
 
 ```python
- | persist() -> None
+ | persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
 ```
 
 Persist this model into the passed directory.
@@ -133,7 +106,7 @@ Persist this model into the passed directory.
 
 ```python
  | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> SklearnIntentClassifierGraphComponent
+ | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["SklearnIntentClassifier"] = None, **kwargs: Any, ,) -> "SklearnIntentClassifier"
 ```
 
 Loads trained component (see parent class for full docstring).
