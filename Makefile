@@ -172,7 +172,6 @@ endif
 
 test-cli: PYTEST_MARKER=category_cli
 test-cli: DD_ARGS := $(or $(DD_ARGS),)
-test-cli: DD_RUN := ddtrace-run
 test-cli: test-marker
 
 test-core-featurizers: PYTEST_MARKER=category_core_featurizers
@@ -206,7 +205,7 @@ test-performance: test-marker
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
 	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
-	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run $(DD_RUN) pytest tests -n $(JOBS) --cov rasa -m "$(PYTEST_MARKER)" --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --cov rasa -m "$(PYTEST_MARKER)" --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"

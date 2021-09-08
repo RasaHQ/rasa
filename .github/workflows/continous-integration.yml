@@ -313,7 +313,6 @@ jobs:
         DD_ENV: ${{ matrix.test }}
         DD_SERVICE: rasa
         DD_ARGS: --ddtrace
-        DD_PROFILING_ENABLED: true
       run: |
         make ${{ matrix.test }}
 
