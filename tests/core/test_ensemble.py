@@ -93,7 +93,7 @@ def test_default_predict_excludes_rejected_action(
 
 
 @pytest.mark.parametrize(
-    "predictions_and_winner_idx,last_action_was_action_listen",
+    "predictions_and_expected_winner_idx,last_action_was_action_listen",
     itertools.product(
         [
             (
@@ -167,10 +167,10 @@ def test_default_predict_excludes_rejected_action(
 )
 def test_default_combine_predictions(
     default_ensemble: DefaultPolicyPredictionEnsemble,
-    predictions_and_winner_idx: Tuple[List[PolicyPrediction2], int],
+    predictions_and_expected_winner_idx: Tuple[List[PolicyPrediction2], int],
     last_action_was_action_listen: bool,
 ):
-    predictions, winner_idx = predictions_and_winner_idx
+    predictions, expected_winner_idx = predictions_and_expected_winner_idx
 
     # add mandatory and optional events to every prediction
     for prediction in predictions:
@@ -179,6 +179,19 @@ def test_default_combine_predictions(
             ActionExecuted(action_name=f"optional-{prediction.policy_name}")
         ]
 
+    # expected events
+    expected_events = set(
+        event for prediction in predictions for event in prediction.events
+    )
+    expected_events.update(predictions[expected_winner_idx].optional_events)
+    if last_action_was_action_listen:
+        expected_events.add(
+            DefinePrevUserUtteredFeaturization(
+                predictions[expected_winner_idx].is_end_to_end_prediction
+            )
+        )
+
+    # construct tracker
     evts = (
         [ActionExecuted(action_name=ACTION_LISTEN_NAME)]
         if last_action_was_action_listen
@@ -186,27 +199,16 @@ def test_default_combine_predictions(
     )
     tracker = DialogueStateTracker.from_events(sender_id="arbitrary", evts=evts)
 
+    # get the best prediction!
     best_prediction = default_ensemble.combine_predictions(predictions, tracker)
 
-    # expected events
-    expected_events = set(
-        event for prediction in predictions for event in prediction.events
-    )
-    expected_events.update(predictions[winner_idx].optional_events)
-    if last_action_was_action_listen:
-        expected_events.add(
-            DefinePrevUserUtteredFeaturization(
-                predictions[winner_idx].is_end_to_end_prediction
-            )
-        )
-
-    # comparison
+    # compare events first ...
     assert set(best_prediction.events) == expected_events
     assert not best_prediction.optional_events
 
-    # drop events and compare the rest
+    # ... then drop events and compare the rest
     best_prediction.events = []
     best_prediction.optional_events = []
-    predictions[winner_idx].events = []
-    predictions[winner_idx].optional_events = []
-    assert best_prediction == predictions[winner_idx]
+    predictions[expected_winner_idx].events = []
+    predictions[expected_winner_idx].optional_events = []
+    assert best_prediction == predictions[expected_winner_idx]
