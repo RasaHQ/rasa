@@ -48,6 +48,7 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
             # Scoring function used for evaluating the hyper parameters
             # This can be a name or a function (cfr GridSearchCV doc for more info)
             "scoring_function": "f1_weighted",
+            "num_threads": 1,
         }
 
     def __init__(
@@ -65,7 +66,6 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
         self.component_config = config
         self._model_storage = model_storage
         self._resource = resource
-        self._execution_context = execution_context
 
         if le is not None:
             self.le = le
@@ -103,9 +103,9 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
 
         return self.le.inverse_transform(y)
 
-    def train(self, training_data: TrainingData, **kwargs: Any,) -> Resource:
+    def train(self, training_data: TrainingData) -> Resource:
         """Train the intent classifier on a data set."""
-        num_threads = kwargs.get("num_threads", 1)
+        num_threads = self.component_config["num_threads"]
 
         labels = [e.get("intent") for e in training_data.intent_examples]
 
@@ -277,10 +277,10 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
                     classifier = io_utils.json_unpickle(classifier_file[0])
 
                     encoder_file = list(model_dir.glob(f"**/{file_name}_encoder.pkl"))
-                    assert len(encoder_file) == 1
                     classes = io_utils.json_unpickle(encoder_file[0])
                     encoder = LabelEncoder()
                     encoder.classes_ = classes
+
                     return cls(
                         config,
                         model_storage,
