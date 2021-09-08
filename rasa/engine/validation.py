@@ -133,6 +133,7 @@ def _validate_interface_usage(node_name: Text, node: SchemaNode) -> None:
 def _validate_supported_languages(
     language: Optional[Text], node: SchemaNode, node_name: Text
 ) -> None:
+    # TODO(alwx): not supported language
     supported_languages = node.uses.supported_languages()
     if (
         language

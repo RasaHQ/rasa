@@ -1,4 +1,5 @@
 import pytest
+from typing import Dict, Optional
 
 import rasa.shared.utils.io
 from rasa.nlu.components import UnsupportedLanguageError
@@ -7,7 +8,18 @@ from rasa.nlu.constants import TOKENS_NAMES
 from rasa.shared.nlu.constants import TEXT, INTENT, ACTION_TEXT, ACTION_NAME
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
+
+
+def create_whitespace_tokenizer(config: Optional[Dict] = None) -> WhitespaceTokenizerGraphComponent:
+    config = config if config else {}
+    return WhitespaceTokenizerGraphComponent.create(
+        {**WhitespaceTokenizerGraphComponent.get_default_config(), **config},
+        None,
+        None,
+        None,
+    )
+
 
 
 @pytest.mark.parametrize(
