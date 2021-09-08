@@ -1,39 +1,48 @@
 import typing
-from typing import Text, List, Any, Type, Optional
+from typing import Dict, Text, List, Any, Optional
 
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.components import Component
-from rasa.nlu.utils.spacy_utils import SpacyNLP
+from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.nlu.training_data.message import Message
 
 from rasa.nlu.constants import SPACY_DOCS
 
+from rasa.nlu.tokenizers._spacy_tokenizer import SpacyTokenizer
+
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc
 
+# This is a workaround around until we have all components migrated to `GraphComponent`.
+SpacyTokenizer = SpacyTokenizer
 
 POS_TAG_KEY = "pos"
 
 
-class SpacyTokenizer(Tokenizer):
+class SpacyTokenizerGraphComponent(TokenizerGraphComponent):
+    """Tokenizer that uses SpaCy."""
+
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """The component's default config (see parent class for full docstring)."""
+        return {
+            # Flag to check whether to split intents
+            "intent_tokenization_flag": False,
+            # Symbol on which intent should be split
+            "intent_split_symbol": "_",
+            # Regular expression to detect tokens
+            "token_pattern": None,
+        }
+
     @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        return [SpacyNLP]
+    def required_packages(cls) -> List[Text]:
+        """Any extra python dependencies required for this component to run."""
+        return ["spacy"]
 
-    defaults = {
-        # Flag to check whether to split intents
-        "intent_tokenization_flag": False,
-        # Symbol on which intent should be split
-        "intent_split_symbol": "_",
-        # Regular expression to detect tokens
-        "token_pattern": None,
-    }
-
-    def get_doc(self, message: Message, attribute: Text) -> Optional["Doc"]:
+    def _get_doc(self, message: Message, attribute: Text) -> Optional["Doc"]:
         return message.get(SPACY_DOCS[attribute])
 
     def tokenize(self, message: Message, attribute: Text) -> List[Token]:
-        doc = self.get_doc(message, attribute)
+        """Tokenizes the text of the provided attribute of the incoming message."""
+        doc = self._get_doc(message, attribute)
         if not doc:
             return []
 
