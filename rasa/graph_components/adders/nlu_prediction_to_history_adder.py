@@ -50,19 +50,17 @@ class NLUPredictionToHistoryAdder(GraphComponent):
             The original tracker updated with events created from the predictions
         """
         for message in predictions:
-            user_utterance = UserUttered(
+            user_event = UserUttered(
                 message.data.get(TEXT),
                 message.data.get(INTENT),
                 message.data.get(ENTITIES),
-                message.data,
-                None,
-                original_message.input_channel,
-                message.data.get("message_id"),
-                original_message.metadata,
+                input_channel=original_message.input_channel,
+                message_id=message.data.get("message_id"),
+                metadata=original_message.metadata,
             )
-            tracker.update(user_utterance, domain)
+            tracker.update(user_event, domain)
 
-            if user_utterance.entities:
+            if user_event.entities:
                 # Log currently set slots
                 slot_values = "\n".join(
                     [f"\t{s.name}: {s.value}" for s in tracker.slots.values()]

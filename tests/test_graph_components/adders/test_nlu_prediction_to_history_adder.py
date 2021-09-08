@@ -38,6 +38,7 @@ from rasa.graph_components.adders.nlu_prediction_to_history_adder import (
 def test_prediction_adder_add_message(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
+    moodbot_domain: Domain,
     messages: List[Message],
     expected: List[UserUttered],
     input_channel: Text,
@@ -50,9 +51,8 @@ def test_prediction_adder_add_message(
     )
 
     tracker = DialogueStateTracker("test", None)
-    domain = Domain.from_file(path="data/test_domains/travel_form.yml")
     original_message = UserMessage(text="hello", input_channel=input_channel)
-    tracker = component.add(messages, tracker, domain, original_message)
+    tracker = component.add(messages, tracker, moodbot_domain, original_message)
 
     assert len(tracker.events) == len(messages)
     for i, message in enumerate(messages):
