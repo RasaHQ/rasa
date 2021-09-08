@@ -1,49 +1,3 @@
-"""Notes.
-
-NOTE: *not* covered here / other changes required
--  `validate` contains checks that where previously done during intialisation of
-    the ensemble
-    --> trigger in graph validation
-    --> see: `validate` functions in ensembles
--  `set_rule_data` was done during intialisation and as last step of train
-    --> e.g. persist rule_only_data separately during RulePolicy persist and
-        create a graph component to the prediction graph that loads this specific
-        resource during prediction and has access to all policies and can modify those
-        graph components after they've been loaded, or maybe add a component that
-        after training loads the rule data and adds that resource to all policies
-        by persisting it to each policy resource (?) (FIXME)
-    --> see: `propagate_specification_of_rule_only_data` below
--  final prediction requires access to domain
-   --> add domain provider in predict graph
--  final prediction needs to add events to the tracker if and only if the sequence of
-   events seen so far ends with a `UserUttered` event
-   --> add tracker provider to predict graph
-- specific unit tests related to action unlikely intent which basically test whether the
-  *semantic* / idea behind the simple ensemble makes sense
-   --> should replace this with some test in unexpecTEDintentPolicy which test that
-       the probability, priority, ... whatever is chosen such that the tests that were
-       previously here would pass (there is no real need to actually use the ensemble
-       in these tests if no one decides to change the meaning of the simple policy
-       instead of parametrising it's behavior)
-NOTE: differences to previous version
--  previously there was a comment there saying
-    # find rejected action before running the policies
-    # because some of them might add events
-   this seems to be outdated because the policy prediction contains the event lists
-   and because I could not find policies adding events while they predict
-   --> we do *not* move this to a component that is executed before the policies
-   but leave this snippet in the ensemble's predict
--  refactored the way the "best prediction" is determined because that decision
-   process was a bit scattered and in-explicit and changed PolicyPrediction such that
-   priority is an int not a tuple (?!)
-- `is_not_in_training_data` has been removed
-   -->  can be replaced by an check that determines whether the policy is
-        some kind of memoization policy *inside the tests* (via its name...)
-NOTE/FIXME: questions
--  Where are the events from the (winning) predictions applied? We only add things to
-   the final `PolicyPrediction` here.
-"""
-
 from abc import abstractmethod
 from typing import Text, Optional, Tuple, List, Dict, Any
 import logging
@@ -387,10 +341,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
             the given ensemble of policies
         """
         super().validate(ensemble=ensemble, domain=domain)
-        # TODO: shouldn't we raise in case priorities are not unique since this might
-        # lead to unexpected results in edge cases (swap order in your config)
         self.warn_if_priorities_not_unique(ensemble=ensemble)
-        # TODO: shouldn't we assert that there's at most one rule policy here?
 
     @staticmethod
     def warn_if_priorities_not_unique(ensemble: List[Policy]) -> None:
