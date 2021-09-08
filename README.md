@@ -163,9 +163,7 @@ make install
 ```
 
 *Note for macOS users*: under macOS Big Sur we've seen some compiler issues for 
-dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped.
-Also, this [macOS support guide](macOS-support.md) lists common problems encountered
-by other users and possible solutions.
+dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped. 
 
 ### Running and changing the documentation
 
