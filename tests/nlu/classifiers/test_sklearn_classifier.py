@@ -16,7 +16,7 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 
 
 @pytest.fixture()
-def training_data(nlu_data_path: Text):
+def training_data(nlu_data_path: Text) -> TrainingData:
     return rasa.shared.nlu.training_data.loading.load_data(nlu_data_path)
 
 
@@ -70,3 +70,18 @@ def test_persist_and_load(
 
     for m1, m2 in zip(loaded_messages, trained_messages):
         assert m1.get("intent") == m2.get("intent")
+
+
+def test_loading_from_storage_fail(
+    training_data: TrainingData,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
+):
+    with pytest.raises(ValueError):
+        loaded = SklearnIntentClassifierGraphComponent.load(
+            SklearnIntentClassifierGraphComponent.get_default_config(),
+            default_model_storage,
+            Resource("test"),
+            default_execution_context,
+        )
+        assert isinstance(loaded, SklearnIntentClassifierGraphComponent)
