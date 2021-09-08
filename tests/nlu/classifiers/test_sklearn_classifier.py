@@ -1,7 +1,9 @@
 import copy
+import logging
 from typing import Text
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 
 import rasa.shared.nlu.training_data.loading
 from rasa.engine.graph import ExecutionContext
@@ -76,13 +78,17 @@ def test_loading_from_storage_fail(
     training_data: TrainingData,
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
+    caplog: LogCaptureFixture,
 ):
-    with pytest.warns(Warning) as warning:
+    with caplog.at_level(logging.WARNING):
         loaded = SklearnIntentClassifierGraphComponent.load(
             SklearnIntentClassifierGraphComponent.get_default_config(),
             default_model_storage,
             Resource("test"),
             default_execution_context,
         )
-        assert "Resource 'test' doesn't exist." in warning[0].message.args[0]
         assert isinstance(loaded, SklearnIntentClassifierGraphComponent)
+
+    assert any(
+        "Resource 'test' doesn't exist." in message for message in caplog.messages
+    )
