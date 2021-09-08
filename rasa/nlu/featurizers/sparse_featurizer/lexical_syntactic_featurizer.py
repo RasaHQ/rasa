@@ -382,7 +382,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         return messages
 
     def _process_message(self, message: Message) -> None:
-        """Featurize the given message in-place.
+        """Featurizes the given message in-place.
 
         Args:
           message: a message to be featurized
