@@ -186,6 +186,13 @@
       "items": [
         {
           "items": [
+            "reference/rasa/graph_components/adders/nlu_prediction_to_history_adder"
+          ],
+          "label": "rasa.graph_components.adders",
+          "type": "category"
+        },
+        {
+          "items": [
             "reference/rasa/graph_components/converters/nlu_message_converter"
           ],
           "label": "rasa.graph_components.converters",
