@@ -1,6 +1,5 @@
 from pathlib import Path
-from typing import Optional, List, Dict, Text, Type, Any
-
+from typing import Optional, List, Dict, Text, Type
 import tensorflow as tf
 import numpy as np
 import pytest
@@ -1058,35 +1057,6 @@ class TestUnexpecTEDIntentPolicy(TestTEDPolicy):
         ):
             collected_tracker_events = list(collected_tracker.events)
             assert collected_tracker_events == expected_tracker_events
-
-    # TODO: This test can be dropped in favor of the implementation
-    # `TestTEDPolicy` once this policy has been migrated to `GraphComponent`.
-    @pytest.mark.parametrize(
-        "should_finetune, epoch_override, expected_epoch_value",
-        [
-            (True, TEDPolicy.defaults[EPOCHS] + 1, TEDPolicy.defaults[EPOCHS] + 1),
-            (
-                False,
-                TEDPolicy.defaults[EPOCHS] + 1,
-                TEDPolicy.defaults[EPOCHS],
-            ),  # trained_policy uses default epochs during training
-        ],
-    )
-    def test_epoch_override_when_loaded(
-        self,
-        trained_policy: TEDPolicy,
-        should_finetune: bool,
-        epoch_override: int,
-        expected_epoch_value: int,
-        tmp_path: Path,
-    ):
-        # persist and load in appropriate mode
-        trained_policy.persist(tmp_path)
-        loaded_policy = self._policy_class_to_test().load(
-            tmp_path, should_finetune=should_finetune, epoch_override=epoch_override
-        )
-
-        assert loaded_policy.config[EPOCHS] == expected_epoch_value
 
 
 @pytest.mark.parametrize(
