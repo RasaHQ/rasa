@@ -2,6 +2,7 @@ from rasa.shared.core.events import UserUttered
 from rasa.shared.nlu.constants import ENTITIES, INTENT, TEXT
 from rasa.core.channels.channel import UserMessage
 import pytest
+import freezegun
 from typing import Text, List
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.nlu.training_data.message import Message
@@ -35,6 +36,7 @@ from rasa.graph_components.adders.nlu_prediction_to_history_adder import (
         ),
     ],
 )
+@freezegun.freeze_time("2018-01-01")
 def test_prediction_adder_add_message(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
@@ -63,3 +65,4 @@ def test_prediction_adder_add_message(
         assert tracker.events[i].input_channel == expected[i].input_channel
         assert tracker.events[i].message_id == expected[i].message_id
         assert tracker.events[i].metadata == expected[i].metadata
+        assert tracker.events[i] == expected[i]
