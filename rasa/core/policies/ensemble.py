@@ -233,7 +233,6 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         )
 
         # make a copy and swap out the events - and drop action metadata
-        # (TODO: what is action meta data and why was it ignored?)
         final = copy.copy(predictions[best_idx])
         final.events = events
         final.optional_events = []
