@@ -244,7 +244,8 @@
             "reference/rasa/nlu/extractors/entity_synonyms",
             "reference/rasa/nlu/extractors/extractor",
             "reference/rasa/nlu/extractors/mitie_entity_extractor",
-            "reference/rasa/nlu/extractors/regex_entity_extractor"
+            "reference/rasa/nlu/extractors/regex_entity_extractor",
+            "reference/rasa/nlu/extractors/spacy_entity_extractor"
           ],
           "label": "rasa.nlu.extractors",
           "type": "category"
