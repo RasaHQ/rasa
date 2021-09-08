@@ -30,6 +30,7 @@ from rasa.engine.graph import (
 )
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.shared.exceptions import RasaException
 
 
 TypeAnnotation = Union[TypeVar, Text, Type]
@@ -133,12 +134,29 @@ def _validate_interface_usage(node_name: Text, node: SchemaNode) -> None:
 def _validate_supported_languages(
     language: Optional[Text], node: SchemaNode, node_name: Text
 ) -> None:
-    # TODO(alwx): not supported language
     supported_languages = node.uses.supported_languages()
+    not_supported_languages = node.uses.not_supported_languages()
+
+    if supported_languages and not_supported_languages:
+        raise RasaException(
+            "Only one of `supported_languages` and"
+            "`not_supported_languages` can return a value different from `None`"
+        )
+
     if (
         language
         and supported_languages is not None
         and language not in supported_languages
+    ):
+        raise GraphSchemaValidationException(
+            f"Node '{node_name}' does not support the currently specified "
+            f"language '{language}'."
+        )
+
+    if (
+        language
+        and not_supported_languages is not None
+        and language in not_supported_languages
     ):
         raise GraphSchemaValidationException(
             f"Node '{node_name}' does not support the currently specified "

@@ -183,7 +183,7 @@ def test_whitespace_does_not_throw_error():
 
 
 @pytest.mark.parametrize("language, error", [("en", False), ("zh", True)])
-def test_whitespace_language_suuport(language, error, component_builder):
+def test_whitespace_language_support(language, error, component_builder):
     config = RasaNLUModelConfig(
         {"language": language, "pipeline": [{"name": "WhitespaceTokenizer"}]}
     )
