@@ -11,7 +11,9 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizerGraphComponent
 
 
-def create_whitespace_tokenizer(config: Optional[Dict] = None) -> WhitespaceTokenizerGraphComponent:
+def create_whitespace_tokenizer(
+    config: Optional[Dict] = None,
+) -> WhitespaceTokenizerGraphComponent:
     config = config if config else {}
     return WhitespaceTokenizerGraphComponent.create(
         {**WhitespaceTokenizerGraphComponent.get_default_config(), **config},

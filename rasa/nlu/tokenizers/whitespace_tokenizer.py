@@ -20,7 +20,6 @@ WhitespaceTokenizer = WhitespaceTokenizer
 
 
 class WhitespaceTokenizerGraphComponent(TokenizerGraphComponent):
-
     @staticmethod
     def not_supported_languages() -> Optional[List[Text]]:
         """The languages that are not supported (see parent class for full docstring)."""
@@ -68,12 +67,12 @@ class WhitespaceTokenizerGraphComponent(TokenizerGraphComponent):
 
     @classmethod
     def load(
-            cls,
-            config: Dict[Text, Any],
-            model_storage: ModelStorage,
-            resource: Resource,
-            execution_context: ExecutionContext,
-            **kwargs: Any,
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+        **kwargs: Any,
     ) -> "WhitespaceTokenizerGraphComponent":
         """Loads a custom dictionary from model storage."""
         return cls(config, model_storage, resource)
