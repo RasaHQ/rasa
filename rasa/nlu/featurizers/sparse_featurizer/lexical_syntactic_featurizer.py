@@ -165,7 +165,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         message = (
             f"Expected configuration of `features` to be a list of lists that "
             f"that contain names of lexical and syntactic features "
-            f" (i.e. {cls.SUPPORTED_FEATURES})."
+            f" (i.e. {cls.SUPPORTED_FEATURES}). "
             f"Received {feature_config} instead. "
         )
         try:
