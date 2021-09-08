@@ -1,3 +1,9 @@
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt
+#          `RulePolicyComponent` from the regular `rasa.core.policies.rule_policy`
+#          module. This module is a workaround to defer breaking changes due to the
+#          architecture revamp in 3.0.
+# flake8: noqa
 import functools
 import logging
 from typing import Any, List, Dict, Text, Optional, Set, Tuple, TYPE_CHECKING
@@ -49,16 +55,12 @@ from rasa.shared.core.domain import InvalidDomain, State, Domain
 from rasa.shared.nlu.constants import ACTION_NAME, INTENT_NAME_KEY
 import rasa.core.test
 import rasa.core.training.training
-from rasa.core.policies._rule_policy import RulePolicy
+
 
 if TYPE_CHECKING:
     from rasa.core.policies.ensemble import PolicyEnsemble
 
 logger = logging.getLogger(__name__)
-
-# TODO: This is a workaround around until we have all components migrated to
-# `GraphComponent`.
-RulePolicy = RulePolicy
 
 # These are Rasa Open Source default actions and overrule everything at any time.
 DEFAULT_ACTION_MAPPINGS = {
@@ -93,7 +95,7 @@ class InvalidRule(RasaException):
         )
 
 
-class RulePolicyGraphComponent(MemoizationPolicy):
+class RulePolicy(MemoizationPolicy):
     """Policy which handles all the rules"""
 
     # rules use explicit json strings
