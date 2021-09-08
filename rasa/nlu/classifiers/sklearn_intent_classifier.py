@@ -291,7 +291,7 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
                     )
         except ValueError:
             logger.warning(
-                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
+                f"Failed to load {cls.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
         return cls(config, model_storage, resource, execution_context)
