@@ -270,13 +270,13 @@ class SklearnIntentClassifierGraphComponent(GraphComponent):
         try:
             with model_storage.read_from(resource) as model_dir:
                 file_name = cls.__name__
-                classifier_file = list(model_dir.glob(f"**/{file_name}_classifier.pkl"))
+                classifier_file = model_dir / f"{file_name}_classifier.pkl"
 
                 if classifier_file:
-                    classifier = io_utils.json_unpickle(classifier_file[0])
+                    classifier = io_utils.json_unpickle(classifier_file)
 
-                    encoder_file = list(model_dir.glob(f"**/{file_name}_encoder.pkl"))
-                    classes = io_utils.json_unpickle(encoder_file[0])
+                    encoder_file = model_dir / f"{file_name}_encoder.pkl"
+                    classes = io_utils.json_unpickle(encoder_file)
                     encoder = LabelEncoder()
                     encoder.classes_ = classes
 
