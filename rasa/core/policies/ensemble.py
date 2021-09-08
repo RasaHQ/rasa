@@ -51,61 +51,6 @@ SimplePolicyEnsemble = SimplePolicyEnsemble
 PolicyEnsemble = PolicyEnsemble
 
 
-def propagate_specification_of_rule_only_data(ensemble: List[Policy]) -> None:
-    """Extracts information on rule only data and propagates it to all policies.
-
-    TODO: remove this once there's a corresponding new graph component taking
-    care of this
-    """
-    rule_policy = next(
-        (policy for policy in ensemble if isinstance(policy, RulePolicy)), None
-    )
-    if rule_policy:
-        rule_only_data = rule_policy.get_rule_only_data()
-    else:
-        rule_only_data = dict()
-    for policy in ensemble:
-        policy.set_shared_policy_states(rule_only_data=rule_only_data)
-
-
-def validate_warn_if_rule_based_data_unused_or_missing(
-    ensemble: List[Policy], training_trackers: List[DialogueStateTracker]
-) -> None:
-    """Emit `UserWarning`s about missing or unused rule-based data.
-
-    TODO: remove this once there's a corresponding check in `RulePolicy`
-
-    Args:
-        ensemble: a list of policies
-        training_trackers: trackers to be used for training
-    """
-    consuming_rule_data = any(
-        policy.supported_data()
-        in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
-        for policy in ensemble
-    )
-    contains_rule_tracker = any(
-        tracker.is_rule_tracker for tracker in training_trackers
-    )
-
-    if consuming_rule_data and not contains_rule_tracker:
-        rasa.shared.utils.io.raise_warning(
-            f"Found a rule-based policy in your pipeline but "
-            f"no rule-based training data. Please add rule-based "
-            f"stories to your training data or "
-            f"remove the rule-based policy (`{RulePolicy.__name__}`) from your "
-            f"your pipeline.",
-            docs=DOCS_URL_RULES,
-        )
-    elif not consuming_rule_data and contains_rule_tracker:
-        rasa.shared.utils.io.raise_warning(
-            f"Found rule-based training data but no policy supporting rule-based "
-            f"data. Please add `{RulePolicy.__name__}` or another rule-supporting "
-            f"policy to the `policies` section in `{DEFAULT_CONFIG_PATH}`.",
-            docs=DOCS_URL_RULES,
-        )
-
-
 class InvalidPolicyEnsembleConfig(RasaException):
     """Exception that can be raised when the policy ensemble is not valid."""
 
@@ -129,80 +74,6 @@ class PolicyPredictionEnsemble:
     events. The ensemble decides which of the optional events should
     be passed on.
     """
-
-    @classmethod
-    def validate_ensemble_valid(cls, ensemble: List[Policy], domain: Domain) -> None:
-        """Checks that predictions of the given policy ensemble can be used as input.
-
-        # TODO: replace the ensemble (List[Policy]) with a list of policy classes and
-        # their configurations
-        # TODO: add tests once all policies have been migrated
-
-        Args:
-          ensemble: a list of policies
-          domain: the common domain
-
-        Raises:
-          `InvalidPolicyEnsembleConfig`: if this ensemble cannot be applied to
-            the given ensemble of policies
-        """
-        cls.warn_if_rule_policy_not_contained(ensemble=ensemble)
-        cls.assert_compatibility_with_domain(ensemble=ensemble, domain=domain)
-
-    @staticmethod
-    def warn_if_rule_policy_not_contained(ensemble: List[Policy]) -> None:
-        """Checks that a rule policy is present.
-
-        # TODO: replace the ensemble (List[Policy]) with a list of policy classes and
-        # their configurations
-        # TODO: add tests once all policies have been migrated
-
-        Args:
-          ensemble: list of policies
-        """
-        if not any(isinstance(policy, RulePolicy) for policy in ensemble):
-            rasa.shared.utils.io.raise_warning(
-                f"'{RulePolicy.__name__}' is not included in the model's "
-                f"policy configuration. Default intents such as "
-                f"'{USER_INTENT_RESTART}' and '{USER_INTENT_BACK}' will "
-                f"not trigger actions '{ACTION_RESTART_NAME}' and "
-                f"'{ACTION_BACK_NAME}'.",
-                docs=DOCS_URL_DEFAULT_ACTIONS,
-            )
-
-    @staticmethod
-    def assert_compatibility_with_domain(
-        ensemble: List[Policy], domain: Optional[Domain]
-    ) -> None:
-        """Check for elements that only work with certain policy/domain combinations.
-
-        # TODO: replace the ensemble (List[Policy]) with a list of policy classes and
-        # their configurations
-        # TODO: add tests once all policies have been migrated
-        # TODO: make sure this check is also called if there is just a single policy
-        # and *no* ensemble node in the graph
-
-        Args:
-            ensemble: list of policies
-            domain: a domain
-
-        Raises:
-            `InvalidDomain` exception if the given domain is incompatible with the
-            given ensemble
-        """
-        # TODO: adapt validate_against_domain to work with list of policies/configs
-        # RulePolicy.validate_against_domain(ensemble, domain)
-
-        contains_rule_policy = any(
-            isinstance(policy, RulePolicy) for policy in ensemble
-        )
-        if domain.form_names and not contains_rule_policy:
-            raise InvalidDomain(
-                "You have defined a form action, but have not added the "
-                f"'{RulePolicy.__name__}' to your policy ensemble. Either "
-                f"remove all forms from your domain or add the '{RulePolicy.__name__}' "
-                f"to your policy configuration."
-            )
 
     def predict(
         self,
@@ -329,44 +200,6 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
 
     def __str__(self) -> Text:
         return f"{self.__class__.__name__}()"
-
-    def validate(self, ensemble: List[Policy], domain: Domain) -> None:
-        """Checks whether this ensemble can be applied to the given policies.
-
-        Args:
-          ensemble: a list of policies
-          domain: the common domain
-        Raises:
-          `InvalidPolicyEnsembleConfig`: if this ensemble cannot be applied to
-            the given ensemble of policies
-        """
-        super().validate(ensemble=ensemble, domain=domain)
-        self.warn_if_priorities_not_unique(ensemble=ensemble)
-
-    @staticmethod
-    def warn_if_priorities_not_unique(ensemble: List[Policy]) -> None:
-        """Checks for duplicate policy priorities.
-
-        Only raises a warning if two policies have the same priority.
-
-        Args:
-          ensemble: list of policies
-
-        Raises:
-           nothing
-        """
-        priority_dict: Dict[int, List[Text]] = dict()
-        for p in ensemble:
-            priority_dict.setdefault(p.priority, []).append(type(p).__name__)
-        for k, v in priority_dict.items():
-            if len(v) > 1:
-                rasa.shared.utils.io.raise_warning(
-                    f"Found policies {v} with same priority {k} "
-                    f"in PolicyEnsemble. When personalizing "
-                    f"priorities, be sure to give all policies "
-                    f"different priorities.",
-                    docs=DOCS_URL_POLICIES,
-                )
 
     def combine_predictions(
         self, predictions: List[PolicyPrediction], tracker: DialogueStateTracker

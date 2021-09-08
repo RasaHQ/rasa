@@ -7,26 +7,12 @@ from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.core.policies.policy import PolicyPrediction
-from rasa.core.policies.ensemble import (
-    DefaultPolicyPredictionEnsemble,
-    PolicyPredictionEnsemble,
-)
-from rasa.shared.core.domain import Domain, InvalidDomain
+from rasa.core.policies.ensemble import DefaultPolicyPredictionEnsemble
+from rasa.shared.core.domain import Domain
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.events import ActionExecutionRejected, UserUttered
 from rasa.shared.core.events import ActionExecuted, DefinePrevUserUtteredFeaturization
 from rasa.shared.core.constants import ACTION_LISTEN_NAME
-
-
-def test_warn_if_rule_policy_not_contained():
-    with pytest.warns(UserWarning, match="'RulePolicy' is not included"):
-        PolicyPredictionEnsemble.warn_if_rule_policy_not_contained(ensemble=[])
-
-
-def test_warn_if_priorities_not_unique():
-    ensemble = [RulePolicy(), RulePolicy()]
-    with pytest.warns(UserWarning, match="Found policies .* with same priority"):
-        DefaultPolicyPredictionEnsemble.warn_if_priorities_not_unique(ensemble=ensemble)
 
 
 @pytest.fixture
