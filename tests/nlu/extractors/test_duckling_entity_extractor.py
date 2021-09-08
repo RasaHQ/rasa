@@ -1,3 +1,6 @@
+from typing import Callable, Dict, Text, Any
+
+import pytest
 import responses
 
 from rasa.engine.graph import ExecutionContext
@@ -10,18 +13,29 @@ from rasa.shared.nlu.constants import TEXT
 from rasa.shared.nlu.training_data.message import Message
 
 
+@pytest.fixture()
+def create_duckling(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+) -> Callable[[Dict[Text, Any]], DucklingEntityExtractorComponent]:
+    def inner(config: Dict[Text, Any]) -> DucklingEntityExtractorComponent:
+        return DucklingEntityExtractorComponent.create(
+            config={
+                **DucklingEntityExtractorComponent.get_default_config(),
+                "url": "http://localhost:8000",
+                **config,
+            },
+            model_storage=default_model_storage,
+            execution_context=default_execution_context,
+            resource=Resource("duckling"),
+        )
+
+    return inner
+
+
 def test_duckling_entity_extractor_with_multiple_extracted_dates(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractorComponent]
 ):
-    config = {
-        **DucklingEntityExtractorComponent.get_default_config(),
-        "dimensions": ["time"],
-        "timezone": "UTC",
-        "url": "http://localhost:8000",
-    }
-    duckling = DucklingEntityExtractorComponent.create(
-        config, default_model_storage, Resource("duckling"), default_execution_context,
-    )
+    duckling = create_duckling({"dimensions": ["time"], "timezone": "UTC"})
 
     with responses.RequestsMock() as rsps:
         rsps.add(
@@ -138,17 +152,9 @@ def test_duckling_entity_extractor_with_multiple_extracted_dates(
 
 
 def test_duckling_entity_extractor_with_one_extracted_date(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractorComponent]
 ):
-    config = {
-        **DucklingEntityExtractorComponent.get_default_config(),
-        "dimensions": ["time"],
-        "timezone": "UTC",
-        "url": "http://localhost:8000",
-    }
-    duckling = DucklingEntityExtractorComponent.create(
-        config, default_model_storage, Resource("duckling"), default_execution_context,
-    )
+    duckling = create_duckling({"dimensions": ["time"], "timezone": "UTC"})
 
     with responses.RequestsMock() as rsps:
         rsps.add(
@@ -189,16 +195,9 @@ def test_duckling_entity_extractor_with_one_extracted_date(
 
 
 def test_duckling_entity_extractor_dimension_filtering(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
+    create_duckling: Callable[[Dict[Text, Any]], DucklingEntityExtractorComponent]
 ):
-    config = {
-        **DucklingEntityExtractorComponent.get_default_config(),
-        "dimensions": ["number"],
-        "url": "http://localhost:8000",
-    }
-    duckling_number = DucklingEntityExtractorComponent.create(
-        config, default_model_storage, Resource("duckling"), default_execution_context
-    )
+    duckling_number = create_duckling({"dimensions": ["number"]})
 
     with responses.RequestsMock() as rsps:
         rsps.add(
