@@ -161,8 +161,8 @@ class PolicyPredictionEnsemble:
     """Interface for any policy prediction ensemble.
 
     Given a list of predictions from policies, which include some meta data about the
-    policies themselves, an "ensemble" decides who the final prediction looks like as
-    follows:
+    policies themselves, an "ensemble" decides what the final prediction should be, in
+    the following way:
     1. If the previously predicted action was rejected, then the ensemble sets the
        probability for this action to 0.0 (in all given predictions).
     2. It combines the information from the single predictions, which include some
@@ -172,11 +172,9 @@ class PolicyPredictionEnsemble:
        the final prediction that indicates whether the final prediction was made based
        on the actual text of that user utterance.
 
-    Observe that the final prediction (as well as the given predictions by the
-    predictions of the single policies) includes "mandatory" as well as "optional"
-    events. Which is why in step 3. we add that event to the final prediction.
-    It also means that the ensemble not just assigns probabilities to all possible
-    actions but also decides which events are passed on.
+    Observe that policies predict "mandatory" as well as "optional"
+    events. The ensemble decides which of the optional events should
+    be passed on.
     """
 
     @classmethod
@@ -326,7 +324,7 @@ class PolicyPredictionEnsemble:
         """Derives a single prediction from the given list of predictions.
 
         Args:
-            predictions: a list of policy predictions that include "probabilities"
+            predictions: a list of policy predictions that include "confidence scores"
               which are non-negative but *do not* necessarily up to 1
             tracker: dialogue state tracker holding the state of the conversation,
               which may influence the combination of predictions as well
@@ -347,9 +345,9 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         user input - if and only if *no* "no user" prediction is present in the
         given ensemble.
 
-    3. Given two predictions, if the maximum probability of one prediction is
+    3. Given two predictions, if the maximum confidence of one prediction is
         strictly larger than that of the other, then the prediction with the
-        strictly larger maximum probability is considered to be "better".
+        strictly larger maximum confidence is considered to be "better".
         The priorities of the policies that made these predictions does not matter.
 
     4. Given two predictions of policies that are equally confident, the
