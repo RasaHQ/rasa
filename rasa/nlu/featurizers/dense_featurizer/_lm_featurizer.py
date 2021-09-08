@@ -1,15 +1,18 @@
+# flake8: noqa
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please do not make changes to this module, and instead makes changes to
+#          `LanguageModelFeaturizerGraphComponent`
+#          This module is a workaround to defer breaking changes due to the architecture
+#          revamp in 3.0.
 import numpy as np
 import logging
 
-from typing import Any, Optional, Text, List, Type, Dict, Tuple, cast
+from typing import Any, Optional, Text, List, Type, Dict, Tuple
 
 import rasa.core.utils
-from rasa.engine.graph import ExecutionContext, GraphComponent
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.components import Component, UnsupportedLanguageError
-from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
+from rasa.nlu.featurizers.featurizer import DenseFeaturizer
 from rasa.nlu.model import Metadata
 import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.features import Features
@@ -45,84 +48,58 @@ MAX_SEQUENCE_LENGTHS = {
 logger = logging.getLogger(__name__)
 
 
-class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
-    """A featurizer that uses transformer-based language models.
+class LanguageModelFeaturizer(DenseFeaturizer):
+    """Featurizer using transformer-based language models.
 
-    This component loads a pre-trained language model
-    from the Transformers library (https://github.com/huggingface/transformers)
-    including BERT, GPT, GPT-2, xlnet, distilbert, and roberta.
-    It also tokenizes and featurizes the featurizable dense attributes of
+    The transformers(https://github.com/huggingface/transformers) library
+    is used to load pre-trained language models like BERT, GPT-2, etc.
+    The component also tokenizes and featurizes dense featurizable attributes of
     each message.
     """
 
+    defaults = {
+        # name of the language model to load.
+        "model_name": "bert",
+        # Pre-Trained weights to be loaded(string)
+        "model_weights": None,
+        # an optional path to a specific directory to download
+        # and cache the pre-trained model weights.
+        "cache_dir": None,
+    }
+
+    @classmethod
+    def required_components(cls) -> List[Type[Component]]:
+        """Packages needed to be installed."""
+        return [Tokenizer]
+
     def __init__(
         self,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
+        component_config: Optional[Dict[Text, Any]] = None,
+        skip_model_load: bool = False,
     ) -> None:
-        """ Initializes LanguageModelFeaturizer with the specified model."""
-        super(LanguageModelFeaturizerGraphComponent, self).__init__(
-            execution_context.node_name, config
-        )
-        self._config = config
-        self._model_storage = model_storage
-        self._resource = resource
-        self._execution_context = execution_context
-        self._load_model_metadata()
-        self._load_model_instance(config["skip_model_load"])
+        """Initializes LanguageModelFeaturizer with the specified model.
 
-    @staticmethod
-    def get_default_config() -> Dict[Text, Any]:
-        """Returns LanguageModelFeaturizer's default config"""
-        return {
-            **DenseFeaturizer2.get_default_config(),
-            # name of the language model to load.
-            "model_name": "bert",
-            # Pre-Trained weights to be loaded(string)
-            "model_weights": None,
-            # an optional path to a specific directory to download
-            # and cache the pre-trained model weights.
-            "cache_dir": None,
-            "skip_model_load": False,
-        }
+        Args:
+            component_config: Configuration for the component.
+            skip_model_load: Skip loading the model for pytests.
+        """
+        super(LanguageModelFeaturizer, self).__init__(component_config)
+        self._load_model_metadata()
+        self._load_model_instance(skip_model_load)
 
     @classmethod
     def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> "LanguageModelFeaturizerGraphComponent":
-        """Creates a LanguageModelFeaturizer by loading the model specified in the config"""
-        language = config["language"]
-        if not cls.supported_languages() or language not in cls.supported_languages():
+        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+    ) -> "DenseFeaturizer":
+        language = config.language
+        if not cls.can_handle_language(language):
             # check failed
-            raise UnsupportedLanguageError(cls.__name__, language)
-        return cls(config, model_storage, resource, execution_context)
-
-    @staticmethod
-    def supported_languages() -> Optional[List[Text]]:
-        """Determines which languages this component can work with.
-
-        Returns: A list of supported languages, or `None` to signify all are supported.
-        """
-        return ["en"]
-
-    @staticmethod
-    def required_packages() -> List[Text]:
-        """Returns the extra python dependencies required for LanguageModelFeaturizer."""
-        return ["transformers"]
-
-    @staticmethod
-    def required_components(cls) -> List[Type[Component]]:
-        """Returns packages to be installed."""
-        return [Tokenizer]
+            raise UnsupportedLanguageError(cls.name, language)
+        return cls(component_config)
 
     def _load_model_metadata(self) -> None:
-        """Loads the metadata for the specified model and sets as properties.
+        """Load the metadata for the specified model and sets these properties.
+
         This includes the model name, model weights, cache directory and the
         maximum sequence length the model can handle.
         """
@@ -131,7 +108,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             model_weights_defaults,
         )
 
-        self.model_name = self._config["model_name"]
+        self.model_name = self.component_config["model_name"]
 
         if self.model_name not in model_class_dict:
             raise KeyError(
@@ -140,8 +117,8 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
                 f"a new class inheriting from this class to support your model."
             )
 
-        self.model_weights = self._config["model_weights"]
-        self.cache_dir = self._config["cache_dir"]
+        self.model_weights = self.component_config["model_weights"]
+        self.cache_dir = self.component_config["cache_dir"]
 
         if not self.model_weights:
             logger.info(
@@ -153,7 +130,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         self.max_model_sequence_length = MAX_SEQUENCE_LENGTHS[self.model_name]
 
     def _load_model_instance(self, skip_model_load: bool) -> None:
-        """Tries to load the model instance.
+        """Try loading the model instance.
 
         Args:
             skip_model_load: Skip loading the model instances to save time. This
@@ -200,9 +177,14 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         weights = component_meta.get("model_weights", {})
 
         return (
-            f"{cls.__name__}-{component_meta.get('model_name')}-"
+            f"{cls.name}-{component_meta.get('model_name')}-"
             f"{rasa.shared.utils.io.deep_container_fingerprint(weights)}"
         )
+
+    @classmethod
+    def required_packages(cls) -> List[Text]:
+        """Packages needed to be installed."""
+        return ["transformers"]
 
     def _lm_tokenize(self, text: Text) -> Tuple[List[int], List[Text]]:
         """Pass the text through the tokenizer of the language model.
@@ -740,7 +722,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
 
         return batch_docs
 
-    def process_training_data(
+    def train(
         self,
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
@@ -778,17 +760,13 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
                     self._set_lm_features(batch_docs[index], ex, attribute)
                 batch_start_index += batch_size
 
-    def process(self, messages: List[Message]) -> None:
-        """Processes a list of incoming message by computing their tokens and dense features."""
-        for message in messages:
-            if message:
-                self._process_message(message)
+    def process(self, message: Message, **kwargs: Any) -> None:
+        """Process an incoming message by computing its tokens and dense features.
 
-    def _process_message(self, message: Message, **kwargs: Any) -> None:
+        Args:
+            message: Incoming message object
         """
-        Processes an incoming message by computing its tokens and dense features.
-        """
-        # processing featurizers operates only on TEXT and ACTION_TEXT attributes,
+        # process of all featurizers operates only on TEXT and ACTION_TEXT attributes,
         # because all other attributes are labels which are featurized during training
         # and their features are stored by the model itself.
         for attribute in {TEXT, ACTION_TEXT}:
@@ -812,13 +790,13 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             sequence_features,
             FEATURE_TYPE_SEQUENCE,
             attribute,
-            self._config[FEATURIZER_CLASS_ALIAS],
+            self.component_config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sequence_features)
         final_sentence_features = Features(
             sentence_features,
             FEATURE_TYPE_SENTENCE,
             attribute,
-            self._config[FEATURIZER_CLASS_ALIAS],
+            self.component_config[FEATURIZER_CLASS_ALIAS],
         )
         message.add_features(final_sentence_features)
