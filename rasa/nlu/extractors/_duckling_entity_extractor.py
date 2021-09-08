@@ -1,4 +1,10 @@
-from __future__ import annotations
+# flake8: noqa
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt
+#          DucklingEntityExtractor from the regular
+#          `rasa.nlu.extractors.duckling_entity_extractor` module.
+#          This module is a workaround to defer
+#          breaking changes due to the architecture revamp in 3.0.
 import time
 import json
 import logging
@@ -7,19 +13,13 @@ import requests
 from typing import Any, List, Optional, Text, Dict
 
 import rasa.utils.endpoints as endpoints_utils
-from rasa.engine.graph import GraphComponent, ExecutionContext
-from rasa.engine.storage.resource import Resource
-from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.constants import ENTITIES, TEXT
-from rasa.nlu.extractors.extractor import EntityExtractorMixin
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.extractors.extractor import EntityExtractor
+from rasa.nlu.model import Metadata
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
-from rasa.nlu.extractors._duckling_entity_extractor import DucklingEntityExtractor
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-DucklingEntityExtractor = DucklingEntityExtractor
-
 
 logger = logging.getLogger(__name__)
 
@@ -58,48 +58,50 @@ def convert_duckling_format_to_rasa(
     return extracted
 
 
-class DucklingEntityExtractorComponent(GraphComponent, EntityExtractorMixin):
-    """Searches for structured entities, e.g. dates, using a duckling server."""
+class DucklingEntityExtractor(EntityExtractor):
+    """Searches for structured entites, e.g. dates, using a duckling server."""
 
-    @staticmethod
-    def get_default_config() -> Dict[Text, Any]:
-        """The component's default config (see parent class for full docstring)."""
-        return {
-            # by default all dimensions recognized by duckling are returned
-            # dimensions can be configured to contain an array of strings
-            # with the names of the dimensions to filter for
-            "dimensions": None,
-            # http url of the running duckling server
-            "url": None,
-            # locale - if not set, we will use the language of the model
-            "locale": None,
-            # timezone like Europe/Berlin
-            # if not set the default timezone of Duckling is going to be used
-            "timezone": None,
-            # Timeout for receiving response from HTTP URL of the running
-            # duckling server. If not set the default timeout of duckling HTTP URL
-            # is set to 3 seconds.
-            "timeout": 3,
-        }
+    defaults = {
+        # by default all dimensions recognized by duckling are returned
+        # dimensions can be configured to contain an array of strings
+        # with the names of the dimensions to filter for
+        "dimensions": None,
+        # http url of the running duckling server
+        "url": None,
+        # locale - if not set, we will use the language of the model
+        "locale": None,
+        # timezone like Europe/Berlin
+        # if not set the default timezone of Duckling is going to be used
+        "timezone": None,
+        # Timeout for receiving response from http url of the running duckling server
+        # if not set the default timeout of duckling http url is set to 3 seconds.
+        "timeout": 3,
+    }
 
-    def __init__(self, config: Dict[Text, Any]) -> None:
-        """Creates the extractor.
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        language: Optional[Text] = None,
+    ) -> None:
 
-        Args:
-            config: The extractor's config.
-        """
-        self.component_config = config
+        super().__init__(component_config)
+        self.language = language
 
     @classmethod
     def create(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-    ) -> DucklingEntityExtractorComponent:
-        """Creates component (see parent class for full docstring)."""
-        return cls(config)
+        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+    ) -> "DucklingEntityExtractor":
+
+        return cls(component_config, config.language)
+
+    def _locale(self) -> Optional[Text]:
+        if not self.component_config.get("locale"):
+            # this is king of a quick fix to generate a proper locale
+            # works most of the time
+            language = self.language or ""
+            locale_fix = "{}_{}".format(language, language.upper())
+            self.component_config["locale"] = locale_fix
+        return self.component_config.get("locale")
 
     def _url(self) -> Optional[Text]:
         """Return url of the duckling service. Environment var will override."""
@@ -112,7 +114,7 @@ class DucklingEntityExtractorComponent(GraphComponent, EntityExtractorMixin):
         dimensions = self.component_config["dimensions"]
         return {
             "text": text,
-            "locale": self.component_config["locale"],
+            "locale": self._locale(),
             "tz": self.component_config.get("timezone"),
             "dims": json.dumps(dimensions),
             "reftime": reference_time,
@@ -177,12 +179,21 @@ class DucklingEntityExtractorComponent(GraphComponent, EntityExtractorMixin):
                     "duckling. Error: {}".format(message.time, e)
                 )
         # fallbacks to current time, multiplied by 1000 because duckling
-        # requires the reftime in milliseconds
+        # requires the reftime in miliseconds
         return int(time.time()) * 1000
 
-    def process(self, messages: List[Message]) -> List[Message]:
-        """Augments the message with potentially extracted entities."""
-        if self._url() is None:
+    def process(self, message: Message, **kwargs: Any) -> None:
+
+        if self._url() is not None:
+            reference_time = self._reference_time_from_message(message)
+            matches = self._duckling_parse(message.get(TEXT), reference_time)
+            all_extracted = convert_duckling_format_to_rasa(matches)
+            dimensions = self.component_config["dimensions"]
+            extracted = DucklingEntityExtractor.filter_irrelevant_entities(
+                all_extracted, dimensions
+            )
+        else:
+            extracted = []
             rasa.shared.utils.io.raise_warning(
                 "Duckling HTTP component in pipeline, but no "
                 "`url` configuration in the config "
@@ -190,17 +201,19 @@ class DucklingEntityExtractorComponent(GraphComponent, EntityExtractorMixin):
                 "set as an environment variable. No entities will be extracted!",
                 docs=DOCS_URL_COMPONENTS + "#DucklingEntityExtractor",
             )
-            return messages
 
-        for message in messages:
-            reference_time = self._reference_time_from_message(message)
-            matches = self._duckling_parse(message.get(TEXT), reference_time)
-            all_extracted = convert_duckling_format_to_rasa(matches)
-            dimensions = self.component_config["dimensions"]
-            extracted = self.filter_irrelevant_entities(all_extracted, dimensions)
-            extracted = self.add_extractor_name(extracted)
-            message.set(
-                ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True
-            )
+        extracted = self.add_extractor_name(extracted)
+        message.set(ENTITIES, message.get(ENTITIES, []) + extracted, add_to_output=True)
 
-        return messages
+    @classmethod
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Text,
+        model_metadata: Optional[Metadata] = None,
+        cached_component: Optional["DucklingEntityExtractor"] = None,
+        **kwargs: Any,
+    ) -> "DucklingEntityExtractor":
+        """Loads trained component (see parent class for full docstring)."""
+        language = model_metadata.get("language") if model_metadata else None
+        return cls(meta, language)
