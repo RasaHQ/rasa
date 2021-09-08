@@ -1,7 +1,5 @@
 from pathlib import Path
-from typing import Optional, List, Type
 from typing import Optional, List, Type, Dict, Text, Any
-
 
 from unittest.mock import Mock
 import numpy as np
@@ -126,33 +124,6 @@ class TestTEDPolicy(PolicyTestCollection):
     @staticmethod
     def _policy_class_to_test() -> Type[TEDPolicy]:
         return TEDPolicy
-
-    def _config(
-        self, priority: int, config_override: Optional[Dict[Text, Any]] = None
-    ) -> Dict[Text, Any]:
-        config_override = config_override or {}
-        return {
-            **TEDPolicy.get_default_config(),
-            POLICY_PRIORITY: priority,
-            **config_override,
-        }
-
-    def create_policy(
-        self,
-        featurizer: Optional[TrackerFeaturizer],
-        priority: int,
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        config: Optional[Dict[Text, Any]] = None,
-    ) -> TEDPolicy:
-        return TEDPolicy(
-            self._config(priority, config),
-            featurizer=featurizer,
-            model_storage=model_storage,
-            resource=resource,
-            execution_context=execution_context,
-        )
 
     def test_train_model_checkpointing(self, tmp_path: Path):
         checkpoint_dir = get_checkpoint_dir_path(tmp_path)
