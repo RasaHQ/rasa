@@ -77,11 +77,12 @@ def test_loading_from_storage_fail(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
 ):
-    with pytest.raises(ValueError):
+    with pytest.warns(Warning) as warning:
         loaded = SklearnIntentClassifierGraphComponent.load(
             SklearnIntentClassifierGraphComponent.get_default_config(),
             default_model_storage,
             Resource("test"),
             default_execution_context,
         )
+        assert "Resource 'test' doesn't exist." in warning[0].message.args[0]
         assert isinstance(loaded, SklearnIntentClassifierGraphComponent)
