@@ -128,6 +128,6 @@ class Featurizer2(Generic[FeatureType], ABC):
             raise InvalidConfigException(
                 f"Expected the featurizers to have unique names but found "
                 f" (name, count): {alias_counter.most_common()}. "
-                f"Please update your recipe such that each featurizer has a unique "
+                f"Please update your config such that each featurizer has a unique "
                 f"alias."
             )
