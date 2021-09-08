@@ -1,5 +1,5 @@
 from __future__ import annotations
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from collections import Counter
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from typing import Generic, Iterable, List, Text, Optional, Dict, Any, TypeVar
@@ -25,7 +25,7 @@ DenseFeaturizer = DenseFeaturizer
 FeatureType = TypeVar("FeatureType")
 
 
-class Featurizer2(Generic[FeatureType]):
+class Featurizer2(Generic[FeatureType], ABC):
     """Base class for all featurizers."""
 
     @staticmethod
@@ -45,15 +45,6 @@ class Featurizer2(Generic[FeatureType]):
         self.validate_config(config)
         self._config = {**self.get_default_config(), **config}
         self._identifier = self._config.get(FEATURIZER_CLASS_ALIAS, name)
-
-    @property
-    def identifier(self) -> Text:
-        """Returns the name of this featurizer.
-
-        Every feature created by this featurizer will contain this identifier as
-        `origin` information.
-        """
-        return self._identifier
 
     @classmethod
     @abstractmethod
@@ -112,7 +103,7 @@ class Featurizer2(Generic[FeatureType]):
             (FEATURE_TYPE_SENTENCE, sentence),
         ]:
             if features is not None:
-                wrapped_feature = Features(features, type, attribute, self.identifier,)
+                wrapped_feature = Features(features, type, attribute, self._identifier,)
                 message.add_features(wrapped_feature)
 
     @staticmethod

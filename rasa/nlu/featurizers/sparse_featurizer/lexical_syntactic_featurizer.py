@@ -10,10 +10,10 @@ from typing import (
     Text,
     List,
     Tuple,
-    Hashable,
     Callable,
     Set,
     Optional,
+    Union,
 )
 
 from rasa.engine.graph import ExecutionContext, GraphComponent
@@ -68,7 +68,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
     It will then combine all these features into one feature for position `t`.
 
     Example:
-      If we specify [['low'], ['upper'], ['prefix2']], then for each position `t`
+      If we specify `[['low'], ['upper'], ['prefix2']]`, then for each position `t`
       the `t`-th feature will encode whether the token at position `t` is upper case,
       where the token at position `t-1` is lower case and the first two characters
       of the token at position `t+1`.
@@ -78,7 +78,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
 
     # NOTE: "suffix5" of the token "is" will be "is". Hence, when combining multiple
     # prefixes, short words will be represented/encoded repeatedly.
-    _FUNCTION_DICT: Dict[Text, Callable[[Token], Hashable]] = {
+    _FUNCTION_DICT: Dict[Text, Callable[[Token], Union[Text, bool, None]]] = {
         "low": lambda token: token.text.islower(),
         "title": lambda token: token.text.istitle(),
         "prefix5": lambda token: token.text[:5],
@@ -102,7 +102,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
     @classmethod
     def _extract_raw_features_from_token(
         cls, feature_name: Text, token: Token, token_position: int, num_tokens: int,
-    ) -> Hashable:
+    ) -> Text:
         """Extracts a raw feature from the token at the given position.
 
         Args:
@@ -111,7 +111,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
           token_position: the position of the token inside the tokenized text
           num_tokens: the total number of tokens in the tokenized text
         Returns:
-          the raw feature value
+          the raw feature value as text
         """
         if feature_name not in cls.SUPPORTED_FEATURES:
             raise ValueError(
@@ -119,10 +119,10 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                 f"'{DOCS_URL_COMPONENTS}' for valid configuration parameters."
             )
         if feature_name == END_OF_SENTENCE:
-            return token_position == num_tokens - 1
+            return str(token_position == num_tokens - 1)
         if feature_name == BEGIN_OF_SENTENCE:
-            return token_position == 0
-        return cls._FUNCTION_DICT[feature_name](token)
+            return str(token_position == 0)
+        return str(cls._FUNCTION_DICT[feature_name](token))
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
@@ -142,9 +142,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
-        feature_to_idx_dict: Optional[
-            Dict[Tuple[int, Text], Dict[Text, Hashable]]
-        ] = None,
+        feature_to_idx_dict: Optional[Dict[Tuple[int, Text], Dict[Text, int]]] = None,
     ) -> None:
         """Instantiates a new `LexicalSyntacticFeaturizer` instance."""
         super().__init__(execution_context.node_name, config)
@@ -206,7 +204,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
 
     def _set_feature_to_idx_dict(
         self,
-        feature_to_idx_dict: Dict[Tuple[int, Text], Dict[Hashable, int]],
+        feature_to_idx_dict: Dict[Tuple[int, Text], Dict[Text, int]],
         check_consistency_with_config: bool = False,
     ) -> None:
         """Sets the "feature" to index mapping.
@@ -246,7 +244,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
                     f" Will continue without these features."
                 )
 
-    def train(self, training_data: TrainingData,) -> Resource:
+    def train(self, training_data: TrainingData) -> Resource:
         """Trains the featurizer.
 
         Args:
@@ -265,7 +263,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
 
     def _create_feature_to_idx_dict(
         self, training_data: TrainingData
-    ) -> Dict[Tuple[int, Text], Dict[Hashable, int]]:
+    ) -> Dict[Tuple[int, Text], Dict[Text, int]]:
         """Create a nested dictionary of all feature values.
 
         Returns:
@@ -276,7 +274,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
            *nested* mapping)
         """
         # collect all raw feature values
-        feature_vocabulary: Dict[Text, Set[Hashable]] = dict()
+        feature_vocabulary: Dict[Tuple[int, Text], Set[Text]] = dict()
         for example in training_data.training_examples:
             tokens = example.get(TOKENS_NAMES[TEXT], [])
             sentence_features = self._map_tokens_to_raw_features(tokens)
@@ -290,7 +288,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
 
     def _map_tokens_to_raw_features(
         self, tokens: List[Token]
-    ) -> List[Dict[Tuple[int, Text], Hashable]]:
+    ) -> List[Dict[Tuple[int, Text], Text]]:
         """Extracts the raw feature values.
 
         Args:
@@ -314,7 +312,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
 
         for anchor in range(len(tokens)):
 
-            token_features: Dict[Tuple[int, Text], Hashable] = {}
+            token_features: Dict[Tuple[int, Text], Text] = {}
 
             for window_position, relative_position in enumerate(window_range):
                 absolute_position = anchor + relative_position
@@ -341,7 +339,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
     @staticmethod
     def _build_feature_to_index_map(
         feature_vocabulary: Dict[Tuple[int, Text], Set[Text]]
-    ) -> Dict[Tuple[int, Text], Dict[Hashable, int]]:
+    ) -> Dict[Tuple[int, Text], Dict[Text, int]]:
         """Creates a nested dictionary for mapping raw features to indices.
 
         Args:
@@ -359,13 +357,14 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         feature_vocabulary = OrderedDict(sorted(feature_vocabulary.items()))
 
         # create the nested mapping
-        feature_to_idx_dict: Dict[Tuple[int, Text], Dict[Hashable, int]] = {}
+        feature_to_idx_dict: Dict[Tuple[int, Text], Dict[Text, int]] = {}
         offset = 0
         for position_and_feature_name, feature_values in feature_vocabulary.items():
+            sorted_feature_values = sorted(feature_values)
             feature_to_idx_dict[position_and_feature_name] = {
                 feature_value: feature_idx
                 for feature_idx, feature_value in enumerate(
-                    sorted(feature_values), start=offset
+                    sorted_feature_values, start=offset
                 )
             }
             offset += len(feature_values)
@@ -390,7 +389,7 @@ class LexicalSyntacticFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent
         """
         if not self._feature_to_idx_dict:
             rasa.shared.utils.io.raise_warning(
-                f"The {self.__class__.__name__} {self.identifier} has not been "
+                f"The {self.__class__.__name__} {self._identifier} has not been "
                 f"trained properly yet. "
                 f"Continuing without adding features from this featurizer."
             )
