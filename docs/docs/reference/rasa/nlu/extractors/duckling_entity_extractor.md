@@ -2,20 +2,49 @@
 sidebar_label: rasa.nlu.extractors.duckling_entity_extractor
 title: rasa.nlu.extractors.duckling_entity_extractor
 ---
-## DucklingEntityExtractor Objects
+## DucklingEntityExtractorComponent Objects
 
 ```python
-class DucklingEntityExtractor(EntityExtractor)
+class DucklingEntityExtractorComponent(GraphComponent,  EntityExtractorMixin)
 ```
 
-Searches for structured entites, e.g. dates, using a duckling server.
+Searches for structured entities, e.g. dates, using a duckling server.
 
-#### load
+#### get\_default\_config
+
+```python
+ | @staticmethod
+ | get_default_config() -> Dict[Text, Any]
+```
+
+The component&#x27;s default config (see parent class for full docstring).
+
+#### \_\_init\_\_
+
+```python
+ | __init__(config: Dict[Text, Any]) -> None
+```
+
+Creates the extractor.
+
+**Arguments**:
+
+- `config` - The extractor&#x27;s config.
+
+#### create
 
 ```python
  | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["DucklingEntityExtractor"] = None, **kwargs: Any, ,) -> "DucklingEntityExtractor"
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DucklingEntityExtractorComponent
 ```
 
-Loads trained component (see parent class for full docstring).
+Creates component (see parent class for full docstring).
+
+#### process
+
+```python
+ | process(messages: List[Message]) -> List[Message]
+```
+
+Augments the message with potentially extracted entities.
 

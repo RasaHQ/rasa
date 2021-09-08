@@ -237,6 +237,7 @@
         },
         {
           "items": [
+            "reference/rasa/nlu/extractors/_duckling_entity_extractor",
             "reference/rasa/nlu/extractors/_extractor",
             "reference/rasa/nlu/extractors/crf_entity_extractor",
             "reference/rasa/nlu/extractors/duckling_entity_extractor",
