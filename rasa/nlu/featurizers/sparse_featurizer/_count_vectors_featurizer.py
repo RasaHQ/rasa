@@ -1,3 +1,7 @@
+# flake8: noqa
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          This module is a workaround to defer breaking changes due to the architecture
+#          revamp in 3.0.
 import logging
 import os
 import re
@@ -33,19 +37,13 @@ from rasa.shared.nlu.constants import (
     FEATURE_TYPE_SEQUENCE,
     ACTION_NAME,
 )
-from rasa.nlu.featurizers.sparse_featurizer._count_vectors_featurizer import (
-    CountVectorsFeaturizer,
-)
-
-# TODO: remove after all references to old featurizer have been removed
-CountVectorsFeaturizer = CountVectorsFeaturizer
 
 BUFFER_SLOTS_PREFIX = "buf_"
 
 logger = logging.getLogger(__name__)
 
 
-class CountVectorsFeaturizerGraphComponent(SparseFeaturizer):
+class CountVectorsFeaturizer(SparseFeaturizer):
     """Creates a sequence of token counts features based on sklearn's `CountVectorizer`.
 
     All tokens which consist only of digits (e.g. 123 and 99
