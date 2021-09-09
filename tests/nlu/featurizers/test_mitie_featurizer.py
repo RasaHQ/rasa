@@ -1,5 +1,4 @@
 import pytest
-import typing
 import numpy as np
 
 from typing import Text, Dict, Any, Callable
@@ -17,9 +16,6 @@ from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import (
     MitieFeaturizerGraphComponent,
 )
 from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
-
-if typing.TYPE_CHECKING:
-    import mitie
 
 
 @pytest.fixture
@@ -46,15 +42,10 @@ def create(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     resource: Resource,
-    mitie_model: MitieModel,
 ) -> Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent]:
     def inner(config: Dict[Text, Any]):
         return MitieFeaturizerGraphComponent.create(
-            config={
-                **MitieFeaturizerGraphComponent.get_default_config(),
-                "mitie_model": mitie_model,
-                **config,
-            },
+            config={**MitieFeaturizerGraphComponent.get_default_config(), **config,},
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=resource,
@@ -65,7 +56,7 @@ def create(
 
 def test_mitie_featurizer(
     create: Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent],
-    mitie_feature_extractor: "mitie.total_word_feature_extractor",
+    mitie_model: MitieModel,
 ):
 
     featurizer = create({"alias": "mitie_featurizer"})
@@ -75,7 +66,9 @@ def test_mitie_featurizer(
     MitieTokenizer().process(message)
     tokens = message.get(TOKENS_NAMES[TEXT])
 
-    seq_vec, sen_vec = featurizer.features_for_tokens(tokens, mitie_feature_extractor)
+    seq_vec, sen_vec = featurizer.features_for_tokens(
+        tokens, mitie_model.word_feature_extractor
+    )
 
     expected = np.array(
         [0.00000000e00, -5.12735510e00, 4.39929873e-01, -5.60760403e00, -8.26445103e00]
@@ -89,7 +82,7 @@ def test_mitie_featurizer(
 
 def test_mitie_featurizer_train(
     create: Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent],
-    mitie_feature_extractor: "mitie.total_word_feature_extractor",
+    mitie_model: MitieModel,
 ):
 
     featurizer = create({"alias": "mitie_featurizer"})
@@ -100,7 +93,7 @@ def test_mitie_featurizer_train(
     message.set(INTENT, "intent")
     MitieTokenizer().train(TrainingData([message]))
 
-    featurizer.process_training_data(TrainingData([message]))
+    featurizer.process_training_data(TrainingData([message]), mitie_model)
 
     expected = np.array(
         [0.00000000e00, -5.12735510e00, 4.39929873e-01, -5.60760403e00, -8.26445103e00]
