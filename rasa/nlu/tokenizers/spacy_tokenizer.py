@@ -32,8 +32,8 @@ class SpacyTokenizerGraphComponent(TokenizerGraphComponent):
             "token_pattern": None,
         }
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
         """Any extra python dependencies required for this component to run."""
         return ["spacy"]
 
