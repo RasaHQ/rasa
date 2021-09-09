@@ -295,11 +295,10 @@ def test_graph_constructor_execution_supported_language(
 
 
 @pytest.mark.parametrize(
-    "current_language, not_supported_languages",
-    [("de", ["de", "en"]), ("en", ["en"])],
+    "current_language, not_supported_languages", [("de", ["de", "en"]), ("en", ["en"])],
 )
 def test_graph_constructor_execution_exclusive_list_not_supported_language(
-        current_language: Text, not_supported_languages: Optional[List[Text]]
+    current_language: Text, not_supported_languages: Optional[List[Text]]
 ):
     class MyComponent(TestComponentWithRun):
         @staticmethod
@@ -309,7 +308,7 @@ def test_graph_constructor_execution_exclusive_list_not_supported_language(
     schema = create_test_schema(uses=MyComponent)
 
     with pytest.raises(
-            GraphSchemaValidationException, match="does not support .* language"
+        GraphSchemaValidationException, match="does not support .* language"
     ):
         validation.validate(schema, language=current_language, is_train_graph=False)
 
