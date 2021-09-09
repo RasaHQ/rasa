@@ -67,7 +67,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         super(LanguageModelFeaturizerGraphComponent, self).__init__(
             execution_context.node_name, config
         )
-        self._config = config
+        self._config = {**self.get_default_config(), **config}
         self._model_storage = model_storage
         self._resource = resource
         self._execution_context = execution_context
@@ -87,7 +87,20 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             # and cache the pre-trained model weights.
             "cache_dir": None,
             "skip_model_load": False,
+            "language": None,
         }
+
+    @classmethod
+    def validate_config(cls, config: Dict[Text, Any]) -> None:
+        """Validates that the component is configured properly."""
+        pass
+
+    @classmethod
+    def validate_compatibility_with_tokenizer(
+        cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
+    ) -> None:
+        """Validates that the featurizer is compatible with the given tokenizer."""
+        pass
 
     @classmethod
     def create(
@@ -99,9 +112,10 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     ) -> "LanguageModelFeaturizerGraphComponent":
         """Creates a LanguageModelFeaturizer by loading the model
         specified in the config."""
-        language = config["language"]
-        if not cls.supported_languages() and language not in cls.supported_languages():
-            raise UnsupportedLanguageError(cls.__name__, language)
+        if "language" in config:
+            language = config["language"]
+            if cls.supported_languages() is not None and language not in cls.supported_languages():
+                raise UnsupportedLanguageError(cls.__name__, language)
         return cls(config, model_storage, resource, execution_context)
 
     @staticmethod
