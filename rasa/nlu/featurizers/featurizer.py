@@ -43,7 +43,7 @@ class Featurizer2(Generic[FeatureType], ABC):
         """
         super().__init__()
         self.validate_config(config)
-        self._config = {**self.get_default_config(), **config}
+        self._config = config
         self._identifier = self._config[FEATURIZER_CLASS_ALIAS] or name
 
     @classmethod
