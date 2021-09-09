@@ -18,7 +18,6 @@ from rasa.shared.importers.rasa import RasaFileImporter
 from rasa.shared.nlu.training_data import util
 from rasa.nlu.config import RasaNLUModelConfig
 import rasa.shared.nlu.training_data.loading
-from rasa.nlu.train import Interpreter
 from rasa.utils.tensorflow.constants import (
     EPOCHS,
     MASKED_LM,
@@ -368,28 +367,57 @@ def test_train_persist_load(
 
 
 async def test_process_gives_diagnostic_data(
-    response_selector_interpreter: Interpreter,
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
 ):
     """Tests if processing a message returns attention weights as numpy array."""
-    interpreter = response_selector_interpreter
+    pipeline = [
+        {"name": "WhitespaceTokenizer"},
+        {"name": "CountVectorsFeaturizer"},
+    ]
+    config_params = {EPOCHS: 1}
+
+    loaded_pipeline = [
+        registry.get_component_class(component.pop("name"))(component)
+        for component in copy.deepcopy(pipeline)
+    ]
+
+    importer = RasaFileImporter(
+        config_file="data/test_response_selector_bot/config.yml",
+        domain_path="data/test_response_selector_bot/domain.yml",
+        training_data_paths=[
+            "data/test_response_selector_bot/data/rules.yml",
+            "data/test_response_selector_bot/data/stories.yml",
+            "data/test_response_selector_bot/data/nlu.yml",
+        ],
+    )
+    training_data = importer.get_nlu_data()
+
+    for component in loaded_pipeline:
+        component.train(training_data)
+
+    response_selector = create_response_selector(
+        config_params, default_model_storage, default_execution_context
+    )
+    response_selector.train(training_data=training_data)
 
     message = Message(data={TEXT: "hello"})
-    for component in interpreter.pipeline:
+
+    for component in loaded_pipeline:
         component.process(message)
 
-    diagnostic_data = message.get(DIAGNOSTIC_DATA)
+    classified_message = response_selector.process([message])[0]
+    diagnostic_data = classified_message.get(DIAGNOSTIC_DATA)
 
-    # The last component is ResponseSelector, which should add diagnostic data
-    name = f"component_{len(interpreter.pipeline) - 1}_ResponseSelector"
     assert isinstance(diagnostic_data, dict)
-    assert name in diagnostic_data
-    assert "text_transformed" in diagnostic_data[name]
-    assert isinstance(diagnostic_data[name].get("text_transformed"), np.ndarray)
-    # The `attention_weights` key should exist, regardless of there being a transformer
-    assert "attention_weights" in diagnostic_data[name]
-    # By default, ResponseSelector has `number_of_transformer_layers = 0`
-    # in which case the attention weights should be None.
-    assert diagnostic_data[name].get("attention_weights") is None
+    for _, values in diagnostic_data.items():
+        assert "text_transformed" in values
+        assert isinstance(values.get("text_transformed"), np.ndarray)
+        # The `attention_weights` key should exist, regardless of there
+        # being a transformer
+        assert "attention_weights" in values
+        # By default, ResponseSelector has `number_of_transformer_layers = 0`
+        # in which case the attention weights should be None.
+        assert values.get("attention_weights") is None
 
 
 @pytest.mark.parametrize(
@@ -868,8 +896,8 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
     iter1_path: Text,
     iter2_path: Text,
     should_raise_exception: bool,
-    component_builder: ComponentBuilder,
-    tmpdir: Path,
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
 ):
     pipeline = [
         {"name": "WhitespaceTokenizer"},
@@ -882,34 +910,57 @@ async def test_sparse_feature_sizes_decreased_incremental_training(
             "min_ngram": 1,
             "max_ngram": 4,
         },
-        {"name": "ResponseSelector", EPOCHS: 1},
     ]
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+    loaded_pipeline = [
+        registry.get_component_class(component.pop("name"))(component)
+        for component in copy.deepcopy(pipeline)
+    ]
 
-    (_, trained, persisted_path) = await rasa.nlu.train.train(
-        _config, path=str(tmpdir), data=iter1_path, component_builder=component_builder,
+    importer = RasaFileImporter(training_data_paths=[iter1_path])
+    training_data = importer.get_nlu_data()
+
+    for component in loaded_pipeline:
+        component.train(training_data)
+
+    response_selector = create_response_selector(
+        {EPOCHS: 1}, default_model_storage, default_execution_context
     )
-    assert trained.pipeline
+    response_selector.train(training_data=training_data)
 
-    loaded = Interpreter.load(persisted_path, component_builder, new_config=_config,)
-    assert loaded.pipeline
-    assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
-    if should_raise_exception:
-        with pytest.raises(Exception) as exec_info:
-            (_, trained, _) = await rasa.nlu.train.train(
-                _config,
-                path=str(tmpdir),
-                data=iter2_path,
-                component_builder=component_builder,
-                model_to_finetune=loaded,
-            )
-        assert "Sparse feature sizes have decreased" in str(exec_info.value)
-    else:
-        (_, trained, _) = await rasa.nlu.train.train(
-            _config,
-            path=str(tmpdir),
-            data=iter2_path,
-            component_builder=component_builder,
-            model_to_finetune=loaded,
-        )
-        assert trained.pipeline
+    message = Message(data={TEXT: "Rasa is great!"})
+
+    for component in loaded_pipeline:
+        component.process(message)
+
+    message2 = copy.deepcopy(message)
+
+    classified_message = response_selector.process([message])[0]
+
+    loaded_selector = ResponseSelectorGraphComponent.load(
+        {**ResponseSelectorGraphComponent.get_default_config(), **{EPOCHS: 1}},
+        default_model_storage,
+        Resource("response_selector"),
+        default_execution_context,
+    )
+
+    classified_message2 = loaded_selector.process([message2])[0]
+
+    assert classified_message2.fingerprint() == classified_message.fingerprint()
+
+    # if should_raise_exception:
+    #     with pytest.raises(Exception) as exec_info:
+    #         importer2 = RasaFileImporter(training_data_paths=[iter2_path])
+    #         training_data2 = importer2.get_nlu_data()
+    #
+    #         for component in loaded_pipeline:
+    #             component.train(training_data2)
+    #         response_selector.train(training_data=training_data2)
+    #     assert "Sparse feature sizes have decreased" in str(exec_info.value)
+    # else:
+    #     importer2 = RasaFileImporter(training_data_paths=[iter2_path])
+    #     training_data2 = importer2.get_nlu_data()
+    #
+    #     for component in loaded_pipeline:
+    #         component.train(training_data2)
+    #     response_selector.train(training_data=training_data2)
+    #     assert response_selector.model
