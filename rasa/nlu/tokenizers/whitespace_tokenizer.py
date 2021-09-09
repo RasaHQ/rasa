@@ -44,9 +44,6 @@ class WhitespaceTokenizerGraphComponent(TokenizerGraphComponent):
     ) -> None:
         """Initialize the tokenizer."""
         super().__init__(config)
-
-        self._model_storage = model_storage
-        self._resource = resource
         self.emoji_pattern = rasa.utils.io.get_emoji_regex()
 
         if "case_sensitive" in self._config:
@@ -66,18 +63,6 @@ class WhitespaceTokenizerGraphComponent(TokenizerGraphComponent):
     ) -> "WhitespaceTokenizerGraphComponent":
         """Creates a new component (see parent class for full docstring)."""
         # Path to the dictionaries on the local filesystem.
-        return cls(config, model_storage, resource)
-
-    @classmethod
-    def load(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        **kwargs: Any,
-    ) -> "WhitespaceTokenizerGraphComponent":
-        """Loads a custom dictionary from model storage."""
         return cls(config, model_storage, resource)
 
     def remove_emoji(self, text: Text) -> Text:
