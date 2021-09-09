@@ -45,7 +45,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
 
     def __init__(
         self,
-        config: Optional[Dict[Text, Any]],
+        config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
         execution_context: ExecutionContext,
