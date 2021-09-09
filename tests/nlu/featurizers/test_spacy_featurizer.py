@@ -15,7 +15,7 @@ from rasa.nlu.constants import SPACY_DOCS
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def spacy_model(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext
 ) -> SpacyModel:
