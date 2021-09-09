@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 import typing
-from typing import Any, List, Text, Optional, Dict, Tuple
+from typing import Any, List, Text, Dict, Tuple
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
