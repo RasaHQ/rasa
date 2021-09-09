@@ -156,6 +156,18 @@ Determines which languages this component can work with.
 
 Returns: A list of supported languages, or `None` to signify all are supported.
 
+#### not\_supported\_languages
+
+```python
+ | @staticmethod
+ | not_supported_languages() -> Optional[List[Text]]
+```
+
+Determines which languages this component cannot work with.
+
+Returns: A list of not supported languages, or
+`None` to signify all are supported.
+
 #### required\_packages
 
 ```python
