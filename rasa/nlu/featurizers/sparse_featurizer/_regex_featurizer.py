@@ -1,3 +1,7 @@
+# flake8: noqa
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          This module is a workaround to defer breaking changes due to the architecture
+#          revamp in 3.0.
 import logging
 import re
 from typing import Any, Dict, List, Optional, Text, Type, Tuple
@@ -28,15 +32,11 @@ from rasa.nlu.model import Metadata
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
-from rasa.nlu.featurizers.sparse_featurizer._regex_featurizer import RegexFeaturizer
 
 logger = logging.getLogger(__name__)
 
-# TODO: remove after all references to old featurizer have been removed
-RegexFeaturizer = RegexFeaturizer
 
-
-class RegexFeaturizerGraphComponent(SparseFeaturizer):
+class RegexFeaturizer(SparseFeaturizer):
     @classmethod
     def required_components(cls) -> List[Type[Component]]:
         return [Tokenizer]
