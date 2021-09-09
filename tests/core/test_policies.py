@@ -208,9 +208,6 @@ class PolicyTestCollection:
     def test_prediction_on_empty_tracker(
         self, trained_policy: Policy, default_domain: Domain
     ):
-        # TODO: remove after all graph components have been migrated
-        if not isinstance(trained_policy, PolicyGraphComponent):
-            return
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
             tracker, default_domain,
