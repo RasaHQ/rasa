@@ -95,13 +95,14 @@ def _custom_prediction_states_for_rules(
         tracker: DialogueStateTracker,
         domain: Domain,
         use_text_for_last_user_input: bool = False,
+        rule_only_data: Optional[Dict[Text, Any]] = None,
     ) -> List[State]:
         return self.featurizer.prediction_states(
             [tracker],
             domain,
             use_text_for_last_user_input=use_text_for_last_user_input,
             ignore_rule_only_turns=self.supported_data() == SupportedData.ML_DATA,
-            rule_only_data=self._rule_only_data,
+            rule_only_data=rule_only_data,
             ignore_action_unlikely_intent=ignore_action_unlikely_intent,
         )[0]
 
