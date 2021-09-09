@@ -21,7 +21,6 @@ from rasa.nlu.constants import (
     NO_LENGTH_RESTRICTION,
     NUMBER_OF_SUB_TOKENS,
     TOKENS_NAMES,
-    LANGUAGE_MODEL_DOCS,
 )
 from rasa.shared.nlu.constants import (
     TEXT,
@@ -71,19 +70,14 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         self,
         component_config: Optional[Dict[Text, Any]] = None,
         skip_model_load: bool = False,
-        hf_transformers_loaded: bool = False,
     ) -> None:
         """Initializes LanguageModelFeaturizer with the specified model.
 
         Args:
             component_config: Configuration for the component.
             skip_model_load: Skip loading the model for pytests.
-            hf_transformers_loaded: Skip loading of model and metadata, use
-            HFTransformers output instead.
         """
         super(LanguageModelFeaturizer, self).__init__(component_config)
-        if hf_transformers_loaded:
-            return
         self._load_model_metadata()
         self._load_model_instance(skip_model_load)
 
@@ -95,52 +89,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         if not cls.can_handle_language(language):
             # check failed
             raise UnsupportedLanguageError(cls.name, language)
-        # TODO: remove this when HFTransformersNLP is removed for good
-        if isinstance(config, Metadata):
-            hf_transformers_loaded = "HFTransformersNLP" in [
-                c["name"] for c in config.metadata["pipeline"]
-            ]
-        else:
-            hf_transformers_loaded = "HFTransformersNLP" in config.component_names
-        return cls(component_config, hf_transformers_loaded=hf_transformers_loaded)
-
-    @classmethod
-    def load(
-        cls,
-        meta: Dict[Text, Any],
-        model_dir: Text,
-        model_metadata: Optional["Metadata"] = None,
-        cached_component: Optional["Component"] = None,
-        **kwargs: Any,
-    ) -> "Component":
-        """Load this component from file.
-
-        After a component has been trained, it will be persisted by
-        calling `persist`. When the pipeline gets loaded again,
-        this component needs to be able to restore itself.
-        Components can rely on any context attributes that are
-        created by :meth:`components.Component.create`
-        calls to components previous to this one.
-
-        This method differs from the parent method only in that it calls create
-        rather than the constructor if the component is not found. This is to
-        trigger the check for HFTransformersNLP and the method can be removed
-        when HFTRansformersNLP is removed.
-
-        Args:
-                meta: Any configuration parameter related to the model.
-                model_dir: The directory to load the component from.
-                model_metadata: The model's :class:`rasa.nlu.model.Metadata`.
-                cached_component: The cached component.
-
-        Returns:
-                the loaded component
-        """
-        # TODO: remove this when HFTransformersNLP is removed for good
-        if cached_component:
-            return cached_component
-
-        return cls.create(meta, model_metadata)
+        return cls(component_config)
 
     def _load_model_metadata(self) -> None:
         """Load the metadata for the specified model and sets these properties.
@@ -219,7 +168,7 @@ class LanguageModelFeaturizer(DenseFeaturizer):
 
         Returns: key of the cache for future retrievals.
         """
-        weights = component_meta.get("model_weights") or {}
+        weights = component_meta.get("model_weights", {})
 
         return (
             f"{cls.name}-{component_meta.get('model_name')}-"
@@ -744,19 +693,6 @@ class LanguageModelFeaturizer(DenseFeaturizer):
         Returns:
             List of language model docs for each message in batch.
         """
-        hf_transformers_doc = batch_examples[0].get(LANGUAGE_MODEL_DOCS[attribute])
-        if hf_transformers_doc:
-            # This should only be the case if the deprecated
-            # HFTransformersNLP component is used in the pipeline
-            # TODO: remove this when HFTransformersNLP is removed for good
-            logging.debug(
-                f"'{LANGUAGE_MODEL_DOCS[attribute]}' set: this "
-                f"indicates you're using the deprecated component "
-                f"HFTransformersNLP, please remove it from your "
-                f"pipeline."
-            )
-            return [ex.get(LANGUAGE_MODEL_DOCS[attribute]) for ex in batch_examples]
-
         batch_tokens, batch_token_ids = self._get_token_ids_for_batch(
             batch_examples, attribute
         )

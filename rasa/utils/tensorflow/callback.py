@@ -56,7 +56,7 @@ class RasaModelCheckpoint(tf.keras.callbacks.Callback):
         super().__init__()
 
         self.checkpoint_file = checkpoint_dir / "checkpoint.tf_model"
-        self.best_metrics_so_far: Optional[Dict[Text, Any]] = {}
+        self.best_metrics_so_far: Dict[Text, Any] = {}
 
     def on_epoch_end(self, epoch: int, logs: Optional[Dict[Text, Any]] = None) -> None:
         """Save the model on epoch end if the model has improved.

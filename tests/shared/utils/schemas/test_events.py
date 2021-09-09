@@ -22,8 +22,9 @@ def test_remote_action_validate_all_event_subclasses(event_class: Type[Event]):
         response = {"events": [{"event": event_class.type_name}], "responses": []}
 
     # ignore the below events since these are not sent or received outside Rasa
-    if (
-        event_class.type_name != "wrong_utterance"
-        and event_class.type_name != "wrong_action"
-    ):
+    if event_class.type_name not in [
+        "wrong_utterance",
+        "wrong_action",
+        "warning_predicted",
+    ]:
         jsonschema.validate(response, RemoteAction.action_response_format_spec())

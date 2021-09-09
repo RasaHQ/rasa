@@ -12,12 +12,12 @@ from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
     CountVectorsFeaturizer,
 )
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.shared.nlu.training_data.formats.markdown import INTENT
 from rasa.utils.tensorflow import model_data_utils
 from rasa.shared.nlu.training_data.features import Features
 from rasa.shared.nlu.constants import (
     ACTION_NAME,
     TEXT,
+    INTENT,
     ENTITIES,
     FEATURE_TYPE_SENTENCE,
     FEATURE_TYPE_SEQUENCE,
@@ -177,15 +177,31 @@ def test_extract_features():
 
 
 @pytest.mark.parametrize(
-    "text, intent, entities, attributes",
+    "text, intent, entities, attributes, real_sparse_feature_sizes",
     [
-        ("Hello!", "greet", None, [TEXT]),
-        ("Hello!", "greet", None, [TEXT, INTENT]),
+        (
+            "Hello!",
+            "greet",
+            None,
+            [TEXT],
+            {"text": {"sequence": [1], "sentence": [1]}},
+        ),
+        (
+            "Hello!",
+            "greet",
+            None,
+            [TEXT, INTENT],
+            {
+                "intent": {"sentence": [], "sequence": [1]},
+                "text": {"sequence": [1], "sentence": [1]},
+            },
+        ),
         (
             "Hello Max!",
             "greet",
             [{"entity": "name", "value": "Max", "start": 6, "end": 9}],
             [TEXT, ENTITIES],
+            {"text": {"sequence": [2], "sentence": [2]}},
         ),
     ],
 )
@@ -195,6 +211,7 @@ def test_convert_training_examples(
     intent: Optional[Text],
     entities: Optional[List[Dict[Text, Any]]],
     attributes: List[Text],
+    real_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
 ):
     message = Message(data={TEXT: text, INTENT: intent, ENTITIES: entities})
 
@@ -217,8 +234,8 @@ def test_convert_training_examples(
             3,
         )
     ]
-    output = model_data_utils.featurize_training_examples(
-        [message], attributes=attributes, entity_tag_specs=entity_tag_spec
+    output, sparse_feature_sizes = model_data_utils.featurize_training_examples(
+        [message], attributes=attributes, entity_tag_specs=entity_tag_spec,
     )
 
     assert len(output) == 1
@@ -235,6 +252,8 @@ def test_convert_training_examples(
     if ENTITIES in attributes:
         # we will just have space sentence features
         assert len(output[0][ENTITIES]) == len(entity_tag_spec)
+    # check that it calculates sparse_feature_sizes correctly
+    assert sparse_feature_sizes == real_sparse_feature_sizes
 
 
 @pytest.mark.parametrize(

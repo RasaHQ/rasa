@@ -12,7 +12,6 @@ from typing import Any, Dict, List, Tuple, Text, Union
 COMPONENTS_TEST_PARAMS = {
     "DIETClassifier": {EPOCHS: 1},
     "ResponseSelector": {EPOCHS: 1},
-    "HFTransformersNLP": {"model_name": "bert", "model_weights": "bert-base-uncased"},
     "LanguageModelFeaturizer": {
         "model_name": "bert",
         "model_weights": "bert-base-uncased",
@@ -73,10 +72,7 @@ def pipelines_for_tests() -> List[Tuple[Text, List[Dict[Text, Any]]]]:
         (
             "en",
             as_pipeline(
-                "HFTransformersNLP",
-                "LanguageModelTokenizer",
-                "LanguageModelFeaturizer",
-                "DIETClassifier",
+                "WhitespaceTokenizer", "LanguageModelFeaturizer", "DIETClassifier",
             ),
         ),
         ("fallback", as_pipeline("KeywordIntentClassifier", "FallbackClassifier")),
@@ -130,7 +126,7 @@ def test_all_components_are_in_at_least_one_test_pipeline():
     for cls in registry.component_classes:
         if "convert" in cls.name.lower():
             # TODO
-            #   skip ConveRTTokenizer and ConveRTFeaturizer as the ConveRT model is not
+            #   skip ConveRTFeaturizer as the ConveRT model is not
             #   publicly available anymore
             #   (see https://github.com/RasaHQ/rasa/issues/6806)
             continue
