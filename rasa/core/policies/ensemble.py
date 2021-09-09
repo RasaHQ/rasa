@@ -75,74 +75,12 @@ class PolicyPredictionEnsemble:
     be passed on.
     """
 
-    def predict(
-        self,
-        predictions: List[PolicyPrediction],
-        domain: Domain,
-        tracker: DialogueStateTracker,
-    ) -> PolicyPrediction:
-        """Derives a final prediction from the given list of predictions.
-
-        Args:
-            predictions: a list of predictions made by policies
-            tracker: dialogue state tracker holding the state of the conversation
-            domain: the common domain
-
-        Returns:
-            a single prediction
-        """
-        # apply side constraints and modify the given predictions accordingly
-        self._exclude_last_action_from_predictions_if_it_was_rejected(
-            tracker, predictions, domain
-        )
-
-        # combine the resulting predictions (with probabilities that do not
-        # necessarily sum up to one anymore)
-        final_prediction = self.combine_predictions(predictions, tracker)
-
-        logger.debug(f"Predicted next action using '{final_prediction.policy_name}'.")
-        return final_prediction
-
-    @staticmethod
-    def _exclude_last_action_from_predictions_if_it_was_rejected(
-        tracker: DialogueStateTracker,
-        predictions: List[PolicyPrediction],
-        domain: Domain,
-    ) -> None:
-        """Sets the probability for the last action to 0 if it was just rejected.
-
-        Args:
-          tracker:  dialogue state tracker holding the state of the conversation
-          predictions: a list of predictions from policies
-          domain: the common domain
-        """
-        last_action_event = next(
-            (
-                event
-                for event in reversed(tracker.events)
-                if isinstance(event, (ActionExecutionRejected, ActionExecuted))
-            ),
-            None,
-        )
-
-        rejected_action_name = None
-        if len(tracker.events) > 0 and isinstance(
-            last_action_event, ActionExecutionRejected
-        ):
-            rejected_action_name = last_action_event.action_name
-
-        if rejected_action_name:
-            logger.debug(
-                f"Execution of '{rejected_action_name}' was rejected. "
-                f"Setting its confidence to 0.0 in all predictions."
-            )
-            index_of_rejected_action = domain.index_for_action(rejected_action_name)
-            for prediction in predictions:
-                prediction.probabilities[index_of_rejected_action] = 0.0
-
     @abstractmethod
     def combine_predictions(
-        self, predictions: List[PolicyPrediction], tracker: DialogueStateTracker
+        self,
+        predictions: List[PolicyPrediction],
+        tracker: DialogueStateTracker,
+        domain: Domain,
     ) -> PolicyPrediction:
         """Derives a single prediction from the given list of predictions.
 
@@ -151,6 +89,7 @@ class PolicyPredictionEnsemble:
               which are non-negative but *do not* necessarily up to 1
             tracker: dialogue state tracker holding the state of the conversation,
               which may influence the combination of predictions as well
+            domain: the common domain
 
         Returns:
             a single prediction
@@ -201,8 +140,130 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
     def __str__(self) -> Text:
         return f"{self.__class__.__name__}()"
 
+    @staticmethod
+    def _pick_best_policy(predictions: List[PolicyPrediction]) -> PolicyPrediction:
+        """Picks the best policy prediction based on probabilities and policy priority.
+
+        Args:
+            predictions: a list containing policy predictions
+
+        Returns:
+            The index of the best prediction
+        """
+        best_confidence = (-1, -1)
+        best_index = -1
+
+        # different type of predictions have different priorities
+        # No user predictions overrule all other predictions.
+        is_no_user_prediction = any(
+            prediction.is_no_user_prediction for prediction in predictions
+        )
+        # End-to-end predictions overrule all other predictions based on user input.
+        is_end_to_end_prediction = any(
+            prediction.is_end_to_end_prediction for prediction in predictions
+        )
+
+        policy_events = []
+        for idx, prediction in enumerate(predictions):
+            policy_events += prediction.events
+
+            # No user predictions (e.g. happy path loop predictions)
+            # overrule all other predictions.
+            if prediction.is_no_user_prediction != is_no_user_prediction:
+                continue
+
+            # End-to-end predictions overrule all other predictions based on user input.
+            if (
+                not is_no_user_prediction
+                and prediction.is_end_to_end_prediction != is_end_to_end_prediction
+            ):
+                continue
+
+            confidence = (prediction.max_confidence, prediction.policy_priority)
+            if confidence > best_confidence:
+                # pick the best policy
+                best_confidence = confidence
+                best_index = idx
+
+        if best_index < 0:
+            raise InvalidConfigException(
+                f"No best prediction found. Please check " f"your model configuration."
+            )
+
+        best_prediction = predictions[best_index]
+        policy_events += best_prediction.optional_events
+
+        return PolicyPrediction(
+            best_prediction.probabilities,
+            best_prediction.policy_name,
+            best_prediction.policy_priority,
+            policy_events,
+            is_end_to_end_prediction=best_prediction.is_end_to_end_prediction,
+            is_no_user_prediction=best_prediction.is_no_user_prediction,
+            diagnostic_data=best_prediction.diagnostic_data,
+            hide_rule_turn=best_prediction.hide_rule_turn,
+            action_metadata=best_prediction.action_metadata,
+        )
+
+    @staticmethod
+    def _best_policy_prediction(
+        predictions: List[PolicyPrediction],
+        tracker: DialogueStateTracker,
+        domain: Domain,
+    ) -> PolicyPrediction:
+        """Finds the best policy prediction.
+
+        Args:
+            predictions: a list of policy predictions that include "confidence scores"
+              which are non-negative but *do not* necessarily up to 1
+            tracker: dialogue state tracker holding the state of the conversation,
+              which may influence the combination of predictions as well
+            domain: the common domain
+
+        Returns:
+            The winning policy prediction.
+        """
+        # NOTE: previously this method did find rejected action before running the
+        # policies "because some of them might add events"
+        # - if this comment is obsolete and no prediction modifies trackers during
+        #   predictions, then the following is fine
+        # - if this comment is not obsolete then we have to invent a new
+        #   GraphComponent/node that runs before the policies predict -- and the
+        #   we need to make sure policies are run in the exact same order as before
+        #   since otherwise they modify the tracker in different order than in the
+        #   old version
+
+        last_action_event = next(
+            (
+                event
+                for event in reversed(tracker.events)
+                if isinstance(event, (ActionExecutionRejected, ActionExecuted))
+            ),
+            None,
+        )
+
+        rejected_action_name = None
+        if len(tracker.events) > 0 and isinstance(
+            last_action_event, ActionExecutionRejected
+        ):
+            rejected_action_name = last_action_event.action_name
+
+        if rejected_action_name:
+            logger.debug(
+                f"Execution of '{rejected_action_name}' was rejected. "
+                f"Setting its confidence to 0.0 in all predictions."
+            )
+            index_of_rejected_action = domain.index_for_action(rejected_action_name)
+            for prediction in predictions:
+                prediction.probabilities[index_of_rejected_action] = 0.0
+
+        return DefaultPolicyPredictionEnsemble._pick_best_policy(predictions)
+
     def combine_predictions(
-        self, predictions: List[PolicyPrediction], tracker: DialogueStateTracker
+        self,
+        predictions: List[PolicyPrediction],
+        tracker: DialogueStateTracker,
+        domain: Domain,
     ) -> PolicyPrediction:
         """Derives a single prediction from the given list of predictions.
 
@@ -214,6 +275,7 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
             predictions: a list of policy predictions that include "probabilities"
               which are non-negative but *do not* necessarily up to 1
             tracker: dialogue state tracker holding the state of the conversation
+            domain: the common domain
 
         Returns:
             The "best" prediction.
@@ -227,90 +289,23 @@ class DefaultPolicyPredictionEnsemble(PolicyPredictionEnsemble, GraphComponent):
         # it is expected that the final prediction contains mandatory and optional
         # events in the `events` attribute and no optional events.
 
-        best_idx = self._choose_best_prediction(predictions)
-        events = self._choose_events(
-            predictions=predictions, best_idx=best_idx, tracker=tracker
+        winning_prediction = self._best_policy_prediction(
+            predictions=predictions, domain=domain, tracker=tracker
         )
 
-        # make a copy and swap out the events - and drop action metadata
-        final = copy.copy(predictions[best_idx])
-        final.events = events
-        final.optional_events = []
-        final.action_metadata = None
-
-        return final
-
-    @staticmethod
-    def _choose_best_prediction(predictions: List[PolicyPrediction]) -> int:
-        """Chooses the "best" prediction out of the given predictions.
-
-        Note that this comparison is *not* symmetric if the priorities are allowed to
-        coincide (i.e. if we cannot distinguish two predictions using 1.-4., then
-        the first prediction is considered to be "better").
-
-        Args:
-          predictions: all predictions made by an ensemble of policies
-        Returns:
-          index of the best prediction
-        """
-        contains_no_form_predictions = all(
-            not prediction.is_no_user_prediction for prediction in predictions
-        )
-
-        def scores(
-            prediction: PolicyPrediction,
-        ) -> Tuple[bool, bool, float, Tuple[int, ...]]:
-            """Extracts scores ordered by importance where larger is better."""
-            return (
-                prediction.is_no_user_prediction,
-                contains_no_form_predictions and prediction.is_end_to_end_prediction,
-                prediction.max_confidence,
-                prediction.policy_priority,  # Note: this is a tuple.
-            )
-
-        # grab the index of a prediction whose tuple of scores is >= all the
-        # tuples of scores for any other prediction
-        arg_max = max(
-            list(range(len(predictions))), key=lambda idx: scores(predictions[idx])
-        )
-        return arg_max
-
-    @staticmethod
-    def _choose_events(
-        predictions: List[PolicyPrediction],
-        best_idx: int,
-        tracker: DialogueStateTracker,
-    ) -> List[Event]:
-        """Chooses the events to be added to the final prediction.
-
-        Args:
-          predictions: all predictions made by an ensemble of policies
-          best_idx: index of the prediction that is considered to be the "best" one
-          tracker: dialogue state tracker holding the state of the conversation
-        """
-        if best_idx < 0 or best_idx >= len(predictions):
-            raise ValueError(
-                f"Expected given index to be pointing towards the best prediction "
-                f"among the given predictions. Received index {best_idx} and a list "
-                f"of predictions of length {len(predictions)}"
-            )
-
-        # combine all mandatory events in the given order
-        events = [event for prediction in predictions for event in prediction.events]
-
-        # append optional events from the "best prediction"
-        best = predictions[best_idx]
-        events += best.optional_events
-
-        # if the sequence of events ends with a user utterance, append an event
-        # defining the featurization
         if tracker.latest_action_name == ACTION_LISTEN_NAME:
-            was_end_to_end_prediction = best.is_end_to_end_prediction
-            if was_end_to_end_prediction:
-                logger.debug("Made prediction using user text.")
+            if winning_prediction.is_end_to_end_prediction:
+                logger.debug("Made e2e prediction using user text.")
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(True)` event.")
+                winning_prediction.events.append(
+                    DefinePrevUserUtteredFeaturization(True)
+                )
             else:
-                logger.debug("Made prediction without user text")
-            event = DefinePrevUserUtteredFeaturization(was_end_to_end_prediction)
-            events.append(event)
-            logger.debug(f"Added `{event}` event.")
-        return events
+                logger.debug("Made prediction using user intent.")
+                logger.debug("Added `DefinePrevUserUtteredFeaturization(False)` event.")
+                winning_prediction.events.append(
+                    DefinePrevUserUtteredFeaturization(False)
+                )
+
+        logger.debug(f"Predicted next action using {winning_prediction.policy_name}.")
+        return winning_prediction

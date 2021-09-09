@@ -554,6 +554,9 @@ class PolicyPrediction:
         self.hide_rule_turn = hide_rule_turn
         self.action_metadata = action_metadata
 
+    def __repr__(self):
+        return f"[{self.policy_name}, nouser= {self.is_no_user_prediction}, e2e={self.is_end_to_end_prediction}, probs= {self.probabilities}, prio={self.policy_priority}]"
+
     @staticmethod
     def for_action_name(
         domain: Domain,

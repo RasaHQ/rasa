@@ -37,7 +37,7 @@ def test_ensemble_predict(default_ensemble: DefaultPolicyPredictionEnsemble):
         )
         for idx in range(2)
     ]
-    prediction = default_ensemble.predict(
+    prediction = default_ensemble.combine_predictions(
         predictions=predictions, domain=domain, tracker=tracker
     )
     assert prediction
@@ -64,7 +64,7 @@ def test_default_predict_excludes_rejected_action(
         for idx in range(2)
     ]
     index_of_excluded_action = domain.index_for_action(excluded_action)
-    prediction = default_ensemble.predict(
+    prediction = default_ensemble.combine_predictions(
         predictions=predictions, domain=domain, tracker=tracker
     )
     assert prediction.probabilities[index_of_excluded_action] == 0.0
@@ -148,6 +148,7 @@ def test_default_combine_predictions(
     predictions_and_expected_winner_idx: Tuple[List[PolicyPrediction], int],
     last_action_was_action_listen: bool,
 ):
+    domain = Domain.load("data/test_domains/default.yml")
     predictions, expected_winner_idx = predictions_and_expected_winner_idx
 
     # add mandatory and optional events to every prediction
@@ -178,7 +179,9 @@ def test_default_combine_predictions(
     tracker = DialogueStateTracker.from_events(sender_id="arbitrary", evts=evts)
 
     # get the best prediction!
-    best_prediction = default_ensemble.combine_predictions(predictions, tracker)
+    best_prediction = default_ensemble.combine_predictions(
+        predictions, tracker, domain=domain
+    )
 
     # compare events first ...
     assert set(best_prediction.events) == expected_events
@@ -189,4 +192,13 @@ def test_default_combine_predictions(
     best_prediction.optional_events = []
     predictions[expected_winner_idx].events = []
     predictions[expected_winner_idx].optional_events = []
+
+    # ... not quite there yet, because old implementation creates a policy with
+    # best_policy.priority as priority and the first one is a tuple which then
+    # becomes a tuple with a tuple with an int, so...
+    predictions[expected_winner_idx].policy_priority = (
+        predictions[expected_winner_idx].policy_priority,
+    )
+
+    # now, we can compare:
     assert best_prediction == predictions[expected_winner_idx]
