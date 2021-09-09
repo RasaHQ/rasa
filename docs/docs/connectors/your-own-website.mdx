@@ -10,7 +10,7 @@ is usually the chat interface that ships with Rasa X, where you can [invite user
 to test your bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#share-your-bot).
 
 If you already have an existing website and want to add a Rasa assistant to it,
-you can use [Chatroom](https://github.com/scalableminds/chatroom), a widget which you can incorporate into your existing webpage by adding a HTML snippet.
+you can use the [Rasa Chat Widget](#chat-widget) a widget which you can incorporate into your existing webpage by adding a HTML snippet.
 Alternatively, you can also build your own chat widget.
 
 ## REST Channels
@@ -155,3 +155,18 @@ as a JSON object under the key `token`:
 }
 ```
 
+### Chat Widget
+
+Once you've set up your SocketIO channel, you can use the official Rasa Chat Widget on any webpage.
+Just paste the following into your site HTML and paste the URL of your Rasa instance into
+the `data-websocket-url` attribute
+
+```html
+<div id="rasa-chat-widget" data-websocket-url="https://your-rasa-url-here/"></div>
+<script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"></script>
+```
+
+For more information, including how to fully customize the widget for your website, you can check out the [full documentation](https://chat-widget-docs.rasa.com/).
+
+Alternatively, if you want to embed the widget in a React app, there is
+[a library in the NPM package repository](https://www.npmjs.com/package/@rasahq/rasa-chat).

@@ -295,8 +295,10 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         idx_of_first_action = None
         idx_of_second_action = None
 
+        applied_events = tracker.applied_events()
+
         # we need to find second executed action
-        for e_i, event in enumerate(tracker.applied_events()):
+        for e_i, event in enumerate(applied_events):
             # find second ActionExecuted
             if isinstance(event, ActionExecuted):
                 if idx_of_first_action is None:
@@ -308,12 +310,12 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         # use first action, if we went first time and second action, if we went again
         idx_to_use = idx_of_second_action if again else idx_of_first_action
         if idx_to_use is None:
-            return
+            return None
 
         # make second ActionExecuted the first one
-        events = tracker.applied_events()[idx_to_use:]
+        events = applied_events[idx_to_use:]
         if not events:
-            return
+            return None
 
         mcfly_tracker = tracker.init_copy()
         for e in events:
@@ -339,7 +341,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         """
         logger.debug("Launch DeLorean...")
 
-        mcfly_tracker = self._back_to_the_future(tracker)
+        # Truncate the tracker based on `max_history`
+        mcfly_tracker = _trim_tracker_by_max_history(tracker, self.max_history)
+        mcfly_tracker = self._back_to_the_future(mcfly_tracker)
         while mcfly_tracker is not None:
             states = self._prediction_states(mcfly_tracker, domain,)
 
@@ -380,3 +384,54 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             return self._recall_using_delorean(states, tracker, domain,)
         else:
             return predicted_action_name
+
+
+def _get_max_applied_events_for_max_history(
+    tracker: DialogueStateTracker, max_history: Optional[int],
+) -> Optional[int]:
+    """Computes the number of events in the tracker that correspond to max_history.
+
+    Args:
+        tracker: Some tracker holding the events
+        max_history: The number of actions to count
+
+    Returns:
+        The number of actions, as counted from the end of the event list, that should
+        be taken into accout according to the `max_history` setting. If all events
+        should be taken into account, the return value is `None`.
+    """
+    if not max_history:
+        return None
+    num_events = 0
+    num_actions = 0
+    for event in reversed(tracker.applied_events()):
+        num_events += 1
+        if isinstance(event, ActionExecuted):
+            num_actions += 1
+        if num_actions > max_history:
+            return num_events
+    return None
+
+
+def _trim_tracker_by_max_history(
+    tracker: DialogueStateTracker, max_history: Optional[int],
+) -> DialogueStateTracker:
+    """Removes events from the tracker until it has `max_history` actions.
+
+    Args:
+        tracker: Some tracker.
+        max_history: Number of actions to keep.
+
+    Returns:
+        A new tracker with up to `max_history` actions, or the same tracker if
+        `max_history` is `None`.
+    """
+    max_applied_events = _get_max_applied_events_for_max_history(tracker, max_history)
+    if not max_applied_events:
+        return tracker
+
+    applied_events = tracker.applied_events()[-max_applied_events:]
+    new_tracker = tracker.init_copy()
+    for event in applied_events:
+        new_tracker.update(event)
+    return new_tracker

@@ -567,6 +567,44 @@ def toggle_telemetry_reporting(is_enabled: bool) -> None:
     rasa_utils.write_global_config_value(CONFIG_FILE_TELEMETRY_KEY, configuration)
 
 
+def filter_errors(
+    event: Dict[Text, Any], hint: Optional[Dict[Text, Any]] = None
+) -> Optional[Dict[Text, Any]]:
+    """Filter errors.
+
+    Args:
+        event: event to be logged to sentry
+        hint: some hinting information sent alongside of the event
+
+    Returns:
+        the event without any sensitive / PII data or `None` if the event constitutes
+        an `ImportError` which should be discarded.
+    """
+    if "exc_info" in hint:
+        exc_type, exc_value, tb = hint.get("exc_info")
+        if isinstance(exc_value, ImportError):
+            return None
+    return event
+
+
+def before_send(
+    event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
+) -> Optional[Dict[Text, Any]]:
+    """Strips the sensitive data and filters errors before sending to sentry.
+
+    Args:
+        event: event to be logged to sentry
+        _unused_hint: some hinting information sent alongside of the event
+
+    Returns:
+        the event without any sensitive / PII data or `None` if the event should
+        be discarded.
+    """
+    event = strip_sensitive_data_from_sentry_event(event, _unused_hint)
+    event = filter_errors(event, _unused_hint)
+    return event
+
+
 def strip_sensitive_data_from_sentry_event(
     event: Dict[Text, Any], _unused_hint: Optional[Dict[Text, Any]] = None
 ) -> Optional[Dict[Text, Any]]:
@@ -635,7 +673,7 @@ def initialize_error_reporting() -> None:
     # and line numbers).
     sentry_sdk.init(
         f"https://{key}.ingest.sentry.io/2801673",
-        before_send=strip_sensitive_data_from_sentry_event,
+        before_send=before_send,
         integrations=[
             ExcepthookIntegration(),
             DedupeIntegration(),
