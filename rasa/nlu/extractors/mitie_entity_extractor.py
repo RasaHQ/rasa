@@ -287,7 +287,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 f"could not be extracted from the given training data - and hence "
                 f"could not be persisted. Error: {e}."
             )
-            return MitieEntityExtractorGraphComponent(config, model_storage, resource)
+            return cls(config, model_storage, resource)
 
     def persist(self) -> None:
         """Persist this model."""
