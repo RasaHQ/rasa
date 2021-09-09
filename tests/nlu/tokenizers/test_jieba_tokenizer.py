@@ -67,7 +67,7 @@ def test_jieba_load_and_persist_dictionary(
 凱特琳 nz
 台中
         """
-    dictionary_path.write_text(dictionary_contents)
+    dictionary_path.write_text(dictionary_contents, encoding="utf-8")
 
     component_config = {"dictionary_path": dictionary_directory}
 
