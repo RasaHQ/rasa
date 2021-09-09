@@ -1,16 +1,18 @@
+# flake8: noqa
+# WARNING: This module will be dropped before Rasa Open Source 3.0 is released.
+#          Please don't do any changes in this module and rather adapt
+#          MitieTokenizerGraphComponent from the regular
+#          `rasa.nlu.tokenizers.mitie_tokenizer` module. This module is a workaround to
+#          defer breaking changes due to the architecture revamp in 3.0.
 from typing import List, Text
 
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.message import Message
 
 from rasa.shared.utils.io import DEFAULT_ENCODING
-from rasa.nlu.tokenizers._mitie_tokenizer import MitieTokenizer
-
-# This is a workaround around until we have all components migrated to `GraphComponent`.
-MitieTokenizer = MitieTokenizer
 
 
-class MitieTokenizerGraphComponent(Tokenizer):
+class MitieTokenizer(Tokenizer):
 
     defaults = {
         # Flag to check whether to split intents
