@@ -129,94 +129,6 @@ word vectors in your pipeline.
   In addition to SpaCy's pretrained language models, you can also use this component to
   attach spaCy models that you've trained yourself.
 
-:::caution Fallback
-Rasa Open Source will try to fallback to a common model on your behalf if you don't pass a `model` setting. This is a
-temporary feature we've introduced as part of the spaCy 3.0 migration but the fallback will be removed in Rasa Open Source 3.0.0.
-:::
-
-### HFTransformersNLP
-
-:::caution Deprecated
-The `HFTransformersNLP` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
-now implements its behavior.
-:::
-
-* **Short**
-
-  HuggingFace's Transformers based pre-trained language model initializer
-
-
-
-* **Outputs**
-
-  Nothing
-
-
-
-* **Requires**
-
-  Nothing
-
-
-
-* **Description**
-
-  Initializes specified pre-trained language model from HuggingFace's [Transformers library](https://huggingface.co/transformers/).  The component applies language model specific tokenization and
-  featurization to compute sequence and sentence level representations for each example in the training data.
-  Include [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) to utilize the output of this
-  component for downstream NLU models.
-
-  :::note
-  To use `HFTransformersNLP` component, install Rasa Open Source with `pip3 install rasa[transformers]`.
-
-  :::
-
-
-
-* **Configuration**
-
-  You should specify what language model to load via the parameter `model_name`. See the below table for the
-  available language models.
-  Additionally, you can also specify the architecture variation of the chosen language model by specifying the
-  parameter `model_weights`.
-  The full list of supported architectures can be found in the
-  [HuggingFace documentation](https://huggingface.co/transformers/pretrained_models.html).
-  If left empty, it uses the default model architecture that original Transformers library loads (see table below).
-
-  ```
-  +----------------+--------------+-------------------------+
-  | Language Model | Parameter    | Default value for       |
-  |                | "model_name" | "model_weights"         |
-  +----------------+--------------+-------------------------+
-  | BERT           | bert         | rasa/LaBSE              |
-  +----------------+--------------+-------------------------+
-  | GPT            | gpt          | openai-gpt              |
-  +----------------+--------------+-------------------------+
-  | GPT-2          | gpt2         | gpt2                    |
-  +----------------+--------------+-------------------------+
-  | XLNet          | xlnet        | xlnet-base-cased        |
-  +----------------+--------------+-------------------------+
-  | DistilBERT     | distilbert   | distilbert-base-uncased |
-  +----------------+--------------+-------------------------+
-  | RoBERTa        | roberta      | roberta-base            |
-  +----------------+--------------+-------------------------+
-  ```
-
-  The following configuration loads the language model BERT:
-
-  ```yaml-rasa
-  pipeline:
-    - name: HFTransformersNLP
-      # Name of the language model to use
-      model_name: "bert"
-      # Pre-Trained weights to be loaded
-      model_weights: "rasa/LaBSE"
-
-      # An optional path to a specific directory to download and cache the pre-trained model weights.
-      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
-      cache_dir: null
-  ```
-
 
   ## Tokenizers
 
@@ -423,109 +335,6 @@ now implements its behavior.
       # Regular expression to detect tokens
       "token_pattern": None
     ```
-
-
-  ### ConveRTTokenizer
-
-:::caution Deprecated
-The `ConveRTTokenizer` is deprecated and will be removed in a future release. The [ConveRTFeaturizer](./components.mdx#convertfeaturizer)
-now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
-:::
-
-  * **Short**
-
-    Tokenizer using [ConveRT](https://github.com/PolyAI-LDN/polyai-models#convert) model.
-
-
-
-  * **Outputs**
-
-    `tokens` for user messages, responses (if present), and intents (if specified)
-
-
-
-  * **Requires**
-
-    Nothing
-
-
-
-  * **Description**
-
-    Creates tokens using the ConveRT tokenizer. Must be used whenever the [ConveRTFeaturizer](./components.mdx#convertfeaturizer) is used.
-
-    :::note
-    Since `ConveRT` model is trained only on an English corpus of conversations, this tokenizer should only
-    be used if your training data is in English language.
-
-    :::
-
-    :::note
-    To use `ConveRTTokenizer`, install Rasa Open Source with `pip3 install rasa[convert]`.
-
-    :::
-
-
-
-  * **Configuration**
-
-    ```yaml-rasa
-    pipeline:
-    - name: "ConveRTTokenizer"
-      # Flag to check whether to split intents
-      "intent_tokenization_flag": False
-      # Symbol on which intent should be split
-      "intent_split_symbol": "_"
-      # Regular expression to detect tokens
-      "token_pattern": None
-      # Remote URL/Local directory of model files(Required)
-      "model_url": None
-    ```
-
-
-
-  ### LanguageModelTokenizer
-
-:::caution Deprecated
-The `LanguageModelTokenizer` is deprecated and will be removed in a future release. The [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer)
-now implements its behavior. Any [tokenizer](./components.mdx#tokenizers) can be used in its place.
-:::
-
-* **Short**
-
-Tokenizer from pre-trained language models
-
-
-
-* **Outputs**
-
-`tokens` for user messages, responses (if present), and intents (if specified)
-
-
-
-* **Requires**
-
-[HFTransformersNLP](./components.mdx#hftransformersnlp)
-
-
-
-* **Description**
-
-Creates tokens using the pre-trained language model specified in upstream [HFTransformersNLP](./components.mdx#hftransformersnlp) component.
-Must be used whenever the [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) is used.
-
-
-
-* **Configuration**
-
-```yaml-rasa
-pipeline:
-- name: "LanguageModelTokenizer"
-  # Flag to check whether to split intents
-  "intent_tokenization_flag": False
-  # Symbol on which intent should be split
-  "intent_split_symbol": "_"
-```
 
 
 ## Featurizers
@@ -793,8 +602,15 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
       # Pre-Trained weights to be loaded
       model_weights: "rasa/LaBSE"
 
-      # An optional path to a specific directory to download and cache the pre-trained model weights.
-      # The `default` cache_dir is the same as https://huggingface.co/transformers/serialization.html#cache-directory .
+      # An optional path to a directory from which
+      # to load pre-trained model weights.
+      # If the requested model is not found in the
+      # directory, it will be downloaded and
+      # cached in this directory for future use.
+      # The default value of `cache_dir` can be
+      # set using the environment variable
+      # `TRANSFORMERS_CACHE`, as per the
+      # Transformers library.
       cache_dir: null
   ```
 
@@ -854,29 +670,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     # use match word boundaries for lookup table
     "use_word_boundaries": True
   ```
-
-  **Configuring for incremental training**
-
-  To ensure that `sparse_features` are of fixed size during
-  [incremental training](./command-line-interface.mdx#incremental-training), the
-  component should be configured to account for additional patterns that may be
-  added to the training data in future. To do so, configure the `number_additional_patterns`
-  parameter while training the base model from scratch:
-
-  ```yaml-rasa {3}
-  pipeline:
-  - name: RegexFeaturizer
-    number_additional_patterns: 10
-  ```
-
-  If not configured by the user, the component will use twice the number of
-  patterns currently present in the training data (including lookup tables and regex patterns)
-  as the default value for `number_additional_patterns`.
-  This number is kept at a minimum of 10 in order to avoid running out of additional
-  slots for new patterns too frequently during incremental training.
-  Once the component runs out of additional pattern slots, the new patterns are dropped
-  and not considered during featurization. At this point, it is advisable
-  to retrain a new model from scratch.
 
 
 ### CountVectorsFeaturizer
@@ -1002,35 +795,6 @@ Note: The `feature-dimension` for sequence and sentence features does not have t
     "use_shared_vocab": False
   ```
 
-  **Configuring for incremental training**
-
-  To ensure that `sparse_features` are of fixed size during
-  [incremental training](./command-line-interface.mdx#incremental-training), the
-  component should be configured to account for additional vocabulary tokens
-  that may be added as part of new training examples in the future.
-  To do so, configure the `additional_vocabulary_size` parameter while training the base model from scratch:
-
-  ```yaml-rasa {3-6}
-  pipeline:
-  - name: CountVectorsFeaturizer
-    additional_vocabulary_size:
-      text: 1000
-      response: 1000
-      action_text: 1000
-  ```
-
-  As in the above example, you can define additional vocabulary size for each of
-  `text` (user messages), `response` (bot responses used by `ResponseSelector`) and
-  `action_text` (bot responses not used by `ResponseSelector`). If you are building a shared
-  vocabulary (`use_shared_vocab=True`), you only need to define a value for the `text` attribute.
-  If any of the attribute is not configured by the user, the component takes half of the current
-  vocabulary size as the default value for the attribute's `additional_vocabulary_size`.
-  This number is kept at a minimum of 1000 in order to avoid running out of additional vocabulary
-  slots too frequently during incremental training. Once the component runs out of additional vocabulary slots,
-  the new vocabulary tokens are dropped and not considered during featurization. At this point,
-  it is advisable to retrain a new model from scratch.
-
-
 The above configuration parameters are the ones you should configure to fit your model to your data.
 However, additional parameters exist that can be adapted.
 
@@ -1082,10 +846,6 @@ However, additional parameters exist that can be adapted.
 | alias                     | CountVectorFeaturizer   | Alias name of featurizer.                                    |
 +---------------------------+-------------------------+--------------------------------------------------------------+
 | use_lemma                 | True                    | Use the lemma of words for featurization.                    |
-+---------------------------+-------------------------+--------------------------------------------------------------+
-| additional_vocabulary_size| text: 1000              | Size of additional vocabulary to account for incremental     |
-|                           | response: 1000          | training while training a model from scratch                 |
-|                           | action_text: 1000       |                                                              |
 +---------------------------+-------------------------+--------------------------------------------------------------+
 ```
 
@@ -1497,13 +1257,6 @@ Intent classifiers assign one of the intents defined in the domain file to incom
     This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
     This helps in keeping similarities between input and negative labels to smaller values.
     This should help in better generalization of the model to real world test sets.
-
-  * `model_confidence`:
-    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
-    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
-    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
-
-    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
 
 
 The above configuration parameters are the ones you should configure to fit your model to your data.
@@ -2769,13 +2522,6 @@ Selectors predict a bot response from a set of candidate responses.
     This parameter when set to `True` applies a sigmoid cross entropy loss over all similarity terms.
     This helps in keeping similarities between input and negative labels to smaller values.
     This should help in better generalization of the model to real world test sets.
-
-  * `model_confidence`:
-    This parameter allows the user to configure how confidences are computed during inference. It can take two values:
-    * `softmax`: Confidences are in the range `[0, 1]` (old behavior and current default). Computed similarities are normalized with the `softmax` activation function.
-    * `linear_norm`: Confidences are in the range `[0, 1]`. Computed dot product similarities are normalized with a linear function.
-
-    Please try using `linear_norm` as the value for `model_confidence`. This should make it easier to tune fallback thresholds for the [FallbackClassifier](./components.mdx#fallbackclassifier).
 
   The component can also be configured to train a response selector for a particular retrieval intent.
   The parameter `retrieval_intent` sets the name of the retrieval intent for which this response selector model is trained.

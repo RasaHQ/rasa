@@ -33,6 +33,7 @@ from rasa.shared.core.constants import (
     ACTION_REVERT_FALLBACK_EVENTS_NAME,
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
     ACTION_BACK_NAME,
     REQUESTED_SLOT,
 )
@@ -58,6 +59,7 @@ if TYPE_CHECKING:
     from rasa.shared.core.trackers import DialogueStateTracker
     from rasa.core.nlg import NaturalLanguageGenerator
     from rasa.core.channels.channel import OutputChannel
+    from rasa.shared.core.events import IntentPrediction
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +78,7 @@ def default_actions(action_endpoint: Optional[EndpointConfig] = None) -> List["A
         ActionDefaultAskAffirmation(),
         ActionDefaultAskRephrase(),
         TwoStageFallbackAction(action_endpoint),
+        ActionUnlikelyIntent(),
         ActionBack(),
     ]
 
@@ -251,6 +254,7 @@ class Action:
             prediction.policy_name,
             prediction.max_confidence,
             hide_rule_turn=prediction.hide_rule_turn,
+            metadata=prediction.action_metadata,
         )
 
 
@@ -337,6 +341,7 @@ class ActionEndToEndResponse(Action):
             confidence=prediction.max_confidence,
             action_text=self.action_text,
             hide_rule_turn=prediction.hide_rule_turn,
+            metadata=prediction.action_metadata,
         )
 
 
@@ -505,7 +510,7 @@ class ActionSessionStart(Action):
         domain: "Domain",
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        _events = [SessionStarted(metadata=self.metadata)]
+        _events: List[Event] = [SessionStarted(metadata=self.metadata)]
 
         if domain.session_config.carry_over_slots:
             _events.extend(self._slot_set_events_from_tracker(tracker))
@@ -621,17 +626,6 @@ class RemoteAction(Action):
         bot_messages = []
         for response in responses:
             generated_response = response.pop("response", None)
-            generated_template = response.pop("template", None)
-            if generated_template and not generated_response:
-                generated_response = generated_template
-                rasa.shared.utils.io.raise_deprecation_warning(
-                    "The terminology 'template' is deprecated and replaced by "
-                    "'response', use the `response` parameter instead of "
-                    "`template` in `dispatcher.utter_message`. You can do that "
-                    "by upgrading to Rasa SDK 2.4.1 or adapting your custom SDK.",
-                    docs=f"{rasa.shared.constants.DOCS_BASE_URL_ACTION_SERVER}"
-                    f"/sdk-dispatcher",
-                )
             if generated_response:
                 draft = await nlg.generate(
                     generated_response, tracker, output_channel.name(), **response
@@ -685,7 +679,7 @@ class RemoteAction(Action):
 
             events_json = response.get("events", [])
             responses = response.get("responses", [])
-            bot_messages = await self._utter_responses(
+            bot_messages: List[Event] = await self._utter_responses(
                 responses, output_channel, nlg, tracker
             )
 
@@ -777,7 +771,29 @@ class ActionRevertFallbackEvents(Action):
             return []
 
 
+class ActionUnlikelyIntent(Action):
+    """An action that indicates that the intent predicted by NLU is unexpected.
+
+    This action can be predicted by `UnexpecTEDIntentPolicy`.
+    """
+
+    def name(self) -> Text:
+        """Returns the name of the action."""
+        return ACTION_UNLIKELY_INTENT_NAME
+
+    async def run(
+        self,
+        output_channel: "OutputChannel",
+        nlg: "NaturalLanguageGenerator",
+        tracker: "DialogueStateTracker",
+        domain: "Domain",
+    ) -> List[Event]:
+        """Runs action. Please see parent class for the full docstring."""
+        return []
+
+
 def has_user_affirmed(tracker: "DialogueStateTracker") -> bool:
+    """Indicates if the last executed action is `action_default_ask_affirmation`."""
     return tracker.last_executed_action_has(ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
 
 
@@ -851,9 +867,17 @@ class ActionDefaultAskAffirmation(Action):
         domain: "Domain",
     ) -> List[Event]:
         """Runs action. Please see parent class for the full docstring."""
-        intent_to_affirm = tracker.latest_message.intent.get(INTENT_NAME_KEY)
+        latest_message = tracker.latest_message
+        if latest_message is None:
+            raise TypeError(
+                "Cannot find last user message for detecting fallback affirmation."
+            )
 
-        intent_ranking = tracker.latest_message.parse_data.get(INTENT_RANKING_KEY, [])
+        intent_to_affirm = latest_message.intent.get(INTENT_NAME_KEY)
+
+        intent_ranking: List["IntentPrediction"] = latest_message.parse_data.get(
+            INTENT_RANKING_KEY
+        ) or []
         if (
             intent_to_affirm == DEFAULT_NLU_FALLBACK_INTENT_NAME
             and len(intent_ranking) > 1

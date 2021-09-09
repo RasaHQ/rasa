@@ -1,13 +1,21 @@
 import pytest
-from typing import Dict, Text, Union, Tuple
+from typing import Dict, Text, Union, Tuple, List
 import numpy as np
 import tensorflow as tf
 
-from rasa.utils.tensorflow.models import RasaModel
+from rasa.utils.tensorflow.models import RasaModel, TransformerRasaModel
 from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.utils.tensorflow.model_data import FeatureArray
-from rasa.utils.tensorflow.constants import LABEL, IDS, SENTENCE
-from rasa.shared.nlu.constants import TEXT
+from rasa.utils.tensorflow.constants import (
+    LABEL,
+    IDS,
+    SENTENCE,
+)
+from rasa.shared.nlu.constants import (
+    TEXT,
+    FEATURE_TYPE_SENTENCE,
+    FEATURE_TYPE_SEQUENCE,
+)
 
 
 @pytest.mark.parametrize(
@@ -115,3 +123,166 @@ def test_batch_inference(
         expected_number_of_batch_iterations,
         2,
     )
+
+
+@pytest.mark.parametrize(
+    "new_sparse_feature_sizes, old_sparse_feature_sizes, raise_exception",
+    [
+        (
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [], FEATURE_TYPE_SENTENCE: [1]},
+            },
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [], FEATURE_TYPE_SENTENCE: [2]},
+            },
+            True,
+        ),
+        (
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 1, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+            True,
+        ),
+        (
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+            False,
+        ),
+        (
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [10, 2],
+                    FEATURE_TYPE_SEQUENCE: [18, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [3], FEATURE_TYPE_SENTENCE: []},
+            },
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+            False,
+        ),
+    ],
+)
+def test_raise_exception_decreased_sparse_feature_sizes(
+    new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    raise_exception: bool,
+):
+    """Tests if exception is raised when sparse feature sizes decrease
+       during incremental training."""
+    if raise_exception:
+        with pytest.raises(Exception) as exec_info:
+            TransformerRasaModel._check_if_sparse_feature_sizes_decreased(
+                new_sparse_feature_sizes=new_sparse_feature_sizes,
+                old_sparse_feature_sizes=old_sparse_feature_sizes,
+            )
+        assert "Sparse feature sizes have decreased" in str(exec_info.value)
+    else:
+        TransformerRasaModel._check_if_sparse_feature_sizes_decreased(
+            new_sparse_feature_sizes=new_sparse_feature_sizes,
+            old_sparse_feature_sizes=old_sparse_feature_sizes,
+        )
+
+
+@pytest.mark.parametrize(
+    "new_sparse_feature_sizes, old_sparse_feature_sizes, expected_output",
+    [
+        (
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [], FEATURE_TYPE_SENTENCE: [5]},
+            },
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [], FEATURE_TYPE_SENTENCE: [2]},
+            },
+            True,
+        ),
+        (
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 10],
+                    FEATURE_TYPE_SEQUENCE: [3, 10, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+            True,
+        ),
+        (
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+            {
+                TEXT: {
+                    FEATURE_TYPE_SENTENCE: [5, 2],
+                    FEATURE_TYPE_SEQUENCE: [3, 5, 10],
+                },
+                LABEL: {FEATURE_TYPE_SEQUENCE: [2], FEATURE_TYPE_SENTENCE: []},
+            },
+            False,
+        ),
+    ],
+)
+def test_if_sparse_feature_sizes_have_increased(
+    new_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    old_sparse_feature_sizes: Dict[Text, Dict[Text, List[int]]],
+    expected_output: bool,
+):
+    """Tests if any of the sparse feature sizes has increased."""
+    output = TransformerRasaModel._sparse_feature_sizes_have_increased(
+        new_sparse_feature_sizes=new_sparse_feature_sizes,
+        old_sparse_feature_sizes=old_sparse_feature_sizes,
+    )
+    assert output == expected_output

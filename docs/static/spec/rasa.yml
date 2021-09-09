@@ -480,8 +480,7 @@ paths:
       requestBody:
         required: true
         description: >-
-          The training data can either be in YAML format or a JSON
-          which contains Rasa training data in YAML format for each required key.
+          The training data should be in YAML format.
         content:
           application/json:
             schema:
@@ -1758,22 +1757,36 @@ components:
             model loaded at evaluation time.
           example: 0.8571428571428571
         report:
-          type: string
+          type: object
           description: >-
-            Sklearn classification report, see
-            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
-          example:  >-
-            # classification report
-                                   precision    recall  f1-score   support
-                    action_listen       1.00      1.00      1.00         3
-                            greet       1.00      1.00      1.00         1
-                           inform       1.00      1.00      1.00         2
-             utter_ask_howcanhelp       1.00      1.00      1.00         1
-               utter_ask_location       1.00      1.00      1.00         1
-              utter_ask_numpeople       0.00      0.00      0.00         0
-                      utter_on_it       1.00      0.50      0.67         2
+            Sklearn classification reported extended with information about conversation accuracy.
+          additionalProperties:
+            type: object
+            properties:
+              intent_name:
+                type: string
+              classification_report:
+                $ref: '#/components/schemas/EvaluationReport'
+          properties:
+            conversation_accuracy:
+              $ref: '#/components/schemas/ConversationAccuracyReport'
 
-                      avg / total       1.00      0.90      0.93        10
+
+    ConversationAccuracyReport:
+      type: object
+      properties:
+        accuracy:
+          type: number
+          example: 0.19047619047619047
+        correct:
+          type: number
+          example: 18
+        with_warnings:
+          type: number
+          example: 1
+        total:
+          type: number
+          example: 20
 
     Slot:
       type: object

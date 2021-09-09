@@ -5,23 +5,31 @@ from typing import Text
 
 import pytest
 
-from rasa.core.policies.memoization import MemoizationPolicy, OLD_DEFAULT_MAX_HISTORY
+from rasa.core import training
+from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.constants import DEFAULT_MAX_HISTORY
 from rasa.core.policies.rule_policy import RulePolicy
 from rasa.shared.core.domain import Domain
 from rasa.core.interpreter import RasaNLUInterpreter
 from rasa.shared.nlu.interpreter import RegexInterpreter
 from rasa.core.train import train
 from rasa.core.agent import Agent
-from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ted_policy import TEDPolicy
 
 from rasa.shared.core.training_data.visualization import visualize_stories
 
 
+def test_load_training_data_reader_not_found_throws(tmp_path: Path, domain: Domain):
+    (tmp_path / "file").touch()
+
+    with pytest.raises(Exception):
+        training.load_data(str(tmp_path), domain)
+
+
 async def test_story_visualization(domain: Domain, tmp_path: Path):
     import rasa.shared.core.training_data.loading as core_loading
 
-    story_steps = await core_loading.load_data_from_resource(
+    story_steps = core_loading.load_data_from_resource(
         "data/test_yaml_stories/stories.yml", domain
     )
     out_file = str(tmp_path / "graph.html")
@@ -41,7 +49,7 @@ async def test_story_visualization(domain: Domain, tmp_path: Path):
 async def test_story_visualization_with_merging(domain: Domain):
     import rasa.shared.core.training_data.loading as core_loading
 
-    story_steps = await core_loading.load_data_from_resource(
+    story_steps = core_loading.load_data_from_resource(
         "data/test_yaml_stories/stories.yml", domain
     )
     generated_graph = await visualize_stories(
@@ -52,12 +60,12 @@ async def test_story_visualization_with_merging(domain: Domain):
     assert 20 < len(generated_graph.edges()) < 33
 
 
-async def test_training_script_without_max_history_set(
+def test_training_script_without_max_history_set(
     tmp_path: Path, domain_path: Text, stories_path: Text
 ):
     tmpdir = str(tmp_path)
 
-    await train(
+    train(
         domain_path,
         stories_path,
         tmpdir,
@@ -69,23 +77,18 @@ async def test_training_script_without_max_history_set(
     agent = Agent.load(tmpdir)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, "max_history"):
-            if type(policy) == FormPolicy:
-                assert policy.featurizer.max_history == 2
-            elif type(policy) == MemoizationPolicy:
-                assert policy.featurizer.max_history == OLD_DEFAULT_MAX_HISTORY
+            if type(policy) == MemoizationPolicy:
+                assert policy.featurizer.max_history == DEFAULT_MAX_HISTORY
             else:
                 assert policy.featurizer.max_history is None
 
 
-async def test_training_script_with_max_history_set(
-    tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
+def test_training_script_with_max_history_set(
+    tmp_path: Path, domain_path: Text, stories_path: Text
 ):
     tmpdir = str(tmp_path)
 
-    policy_train = Mock()
-    monkeypatch.setattr(TEDPolicy, "train", policy_train)
-
-    await train(
+    train(
         domain_path,
         stories_path,
         tmpdir,
@@ -95,15 +98,15 @@ async def test_training_script_with_max_history_set(
     )
     agent = Agent.load(tmpdir)
 
-    expected_max_history = {FormPolicy: 2, RulePolicy: None}
+    expected_max_history = {RulePolicy: None}
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, "max_history"):
             expected_history = expected_max_history.get(type(policy), 5)
             assert policy.featurizer.max_history == expected_history
 
 
-async def test_training_script_with_restart_stories(tmp_path: Path, domain_path: Text):
-    await train(
+def test_training_script_with_restart_stories(tmp_path: Path, domain_path: Text):
+    train(
         domain_path,
         "data/test_yaml_stories/stories_restart.yml",
         str(tmp_path),
@@ -125,10 +128,7 @@ async def test_random_seed(
         ]
     }
 
-    # policy_train = Mock()
-    # monkeypatch.setattr(TED, "fit", policy_train)
-
-    agent_1 = await train(
+    agent_1 = train(
         domain_path,
         stories_path,
         str(tmp_path),
@@ -137,7 +137,7 @@ async def test_random_seed(
         additional_arguments={},
     )
 
-    agent_2 = await train(
+    agent_2 = train(
         domain_path,
         stories_path,
         str(tmp_path),
@@ -154,7 +154,7 @@ async def test_random_seed(
     assert probs_1["confidence"] == probs_2["confidence"]
 
 
-async def test_trained_interpreter_passed_to_policies(
+def test_trained_interpreter_passed_to_policies(
     tmp_path: Path, monkeypatch: MonkeyPatch, domain_path: Text, stories_path: Text
 ):
     policies_config = {
@@ -166,7 +166,7 @@ async def test_trained_interpreter_passed_to_policies(
 
     interpreter = Mock(spec=RasaNLUInterpreter)
 
-    await train(
+    train(
         domain_path,
         stories_path,
         str(tmp_path),

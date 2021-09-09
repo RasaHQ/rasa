@@ -1,4 +1,5 @@
 TEXT = "text"
+TEXT_TOKENS = "text_tokens"
 INTENT = "intent"
 RESPONSE = "response"
 RESPONSE_SELECTOR = "response_selector"
@@ -23,7 +24,6 @@ EXTRACTOR = "extractor"
 PRETRAINED_EXTRACTORS = {
     "DucklingEntityExtractor",
     "SpacyEntityExtractor",
-    "DucklingHTTPExtractor",  # for backwards compatibility when dumping Markdown
 }
 TRAINABLE_EXTRACTORS = {"MitieEntityExtractor", "CRFEntityExtractor", "DIETClassifier"}
 
@@ -35,6 +35,8 @@ ENTITY_ATTRIBUTE_ROLE = "role"
 ENTITY_ATTRIBUTE_VALUE = "value"
 ENTITY_ATTRIBUTE_START = "start"
 ENTITY_ATTRIBUTE_END = "end"
+ENTITY_ATTRIBUTE_TEXT = "text"
+ENTITY_ATTRIBUTE_CONFIDENCE = "confidence"
 NO_ENTITY_TAG = "O"
 SPLIT_ENTITIES_BY_COMMA = "split_entities_by_comma"
 SPLIT_ENTITIES_BY_COMMA_DEFAULT_VALUE = True

@@ -129,15 +129,6 @@ from scratch.
 
 3. The model to be finetuned is trained with `MINIMUM_COMPATIBLE_VERSION` of the currently installed rasa version.
 
-Checkout the docs for [`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer) and
-[`RegexFeaturizer`](./components.mdx#regexfeaturizer) to understand how to configure them appropriately for incremental training.
-
-:::note
-Finetuned models are expected to be on-par with performance of models trained from scratch. However,
-make sure to train your pipelines from scratch frequently to avoid running out of additional
-vocabulary slots for the models.
-:::
-
 ## rasa interactive
 
 You can [use Rasa X in local mode](https://rasa.com/docs/rasa-x) to do interactive learning in a UI,
@@ -152,6 +143,20 @@ rasa interactive
 
 This will first train a model and then start an interactive shell session.
 You can then correct your assistants predictions as you talk to it.
+If [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy) is
+included in the pipeline, [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent)
+can be triggered at any conversation turn. Subsequently, the following message will be displayed:
+
+```
+ The bot wants to run 'action_unlikely_intent' to indicate that the last user message was unexpected
+ at this point in the conversation. Check out UnexpecTEDIntentPolicy docs to learn more.
+```
+
+ As the message states, this is an indication that you have explored a conversation path
+ which is unexpected according to the current set of training stories and hence adding this
+ path to training stories is recommended. Like other bot actions, you can choose to confirm
+ or deny running this action.
+
 
 If you provide a trained model using the `--model` argument, training is skipped
 and that model will be loaded instead.
@@ -224,6 +229,13 @@ you need to add the `--ssl-password` as well.
 
 ```bash
 rasa run --ssl-certificate myssl.crt --ssl-keyfile myssl.key --ssl-password mypassword
+```
+
+Rasa by default listens on each available network interface. You can limit this to a specific 
+network interface using the `-i` command line option.
+
+```bash
+rasa run -i 192.168.69.150
 ```
 
 The following arguments can be used to configure your Rasa server:
@@ -324,14 +336,12 @@ ls train_test_split
 You can convert NLU data from
 - LUIS data format,
 - WIT data format,
-- Dialogflow data format,
-- JSON, or
-- Markdown
+- Dialogflow data format, or
+- JSON
 
 to
 - YAML or
-- JSON or
-- Markdown.
+- JSON
 
 You can start the converter by running:
 
@@ -342,26 +352,6 @@ rasa data convert nlu
 You can specify the input file or directory, output file or directory, and the output format with the following arguments:
 
 ```text [rasa data convert nlu --help]
-```
-
-## rasa data convert core
-
-You can convert Core data from Markdown to YAML.
-
-You can specify the input file or directory, output directory with the following arguments:
-
-```bash
-rasa data convert core --help
-```
-
-## rasa data convert nlg
-
-You can convert NLG data from Markdown to YAML.
-
-You can specify the input file or directory, output directory with the following arguments:
-
-```bash
-rasa data convert nlg --help
 ```
 
 ## rasa data validate
@@ -401,13 +391,6 @@ To interrupt validation even for minor issues such as unused intents or response
 
 :::caution check your story names
 The `rasa data validate stories` command assumes that all your story names are unique!
-:::
-
-:::caution experimental feature
-The `rasa data validate stories` command is an experimental feature. We introduce experimental 
-features to get feedback from our community, so we encourage you to try it out! However, the functionality 
-might be changed or removed in the future. If you have feedback (positive or negative) please share 
-it with us on the [Rasa Forum](https://forum.rasa.com/).
 :::
 
 You can use `rasa data validate` with additional arguments, e.g. to specify the location of your data and 

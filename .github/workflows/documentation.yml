@@ -7,6 +7,11 @@ on:
     tags:
     - '**'
 
+concurrency:
+  # group workflow runs based on the branch or the tag ref
+  group: documentation-${{ github.ref }}
+  cancel-in-progress: true
+
 # SECRETS
 # - GH_DOCS_WRITE_KEY: generated locally, added to github repo (public key)
 #                    `ssh-keygen -t rsa -b 4096 -C "Github CI Docs Key" -N "" -f key`
@@ -32,7 +37,7 @@ jobs:
         python-version: 3.7
 
     - name: Set up Node 12.x 🦙
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v2.3.0
       with:
         node-version: '12.x'
 
@@ -42,7 +47,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -50,8 +55,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.cache/pypoetry/virtualenvs
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.6-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
-        restore-keys: ${{ runner.os }}-poetry-3.6-non-full
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-3.7-non-full-${{ hashFiles('**/poetry.lock') }}-${{ secrets.POETRY_CACHE_VERSION }}
+        restore-keys: ${{ runner.os }}-poetry-3.7-non-full
 
     - name: Load Yarn Cached Packages ⬇
       uses: actions/cache@v1

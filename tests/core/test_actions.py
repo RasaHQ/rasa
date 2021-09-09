@@ -24,7 +24,7 @@ from rasa.core.actions.action import (
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.shared.constants import UTTER_PREFIX
+from rasa.shared.constants import UTTER_PREFIX, REQUIRED_SLOTS_KEY
 from rasa.shared.core.domain import (
     ActionNotFoundException,
     SessionConfig,
@@ -71,6 +71,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
     RULE_SNIPPET_ACTION_NAME,
     ACTIVE_LOOP,
     FOLLOWUP_ACTION,
@@ -123,7 +124,7 @@ def test_domain_action_instantiation():
         for action_name in domain.action_names_or_texts
     ]
 
-    assert len(instantiated_actions) == 14
+    assert len(instantiated_actions) == 15
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -133,11 +134,12 @@ def test_domain_action_instantiation():
     assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
     assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
     assert instantiated_actions[8].name() == ACTION_TWO_STAGE_FALLBACK_NAME
-    assert instantiated_actions[9].name() == ACTION_BACK_NAME
-    assert instantiated_actions[10].name() == RULE_SNIPPET_ACTION_NAME
-    assert instantiated_actions[11].name() == "my_module.ActionTest"
-    assert instantiated_actions[12].name() == "utter_test"
-    assert instantiated_actions[13].name() == "utter_chitchat"
+    assert instantiated_actions[9].name() == ACTION_UNLIKELY_INTENT_NAME
+    assert instantiated_actions[10].name() == ACTION_BACK_NAME
+    assert instantiated_actions[11].name() == RULE_SNIPPET_ACTION_NAME
+    assert instantiated_actions[12].name() == "my_module.ActionTest"
+    assert instantiated_actions[13].name() == "utter_test"
+    assert instantiated_actions[14].name() == "utter_chitchat"
 
 
 async def test_remote_action_runs(
@@ -301,57 +303,6 @@ async def test_remote_action_utterances_with_none_values(
         mocked.post("https://example.com/webhooks/actions", payload=response)
 
         events = await remote_action.run(default_channel, nlg, default_tracker, domain)
-
-    assert events == [
-        BotUttered(
-            "what dou want to eat?", metadata={"utter_action": "utter_ask_cuisine"}
-        ),
-        ActiveLoop("restaurant_form"),
-        SlotSet("requested_slot", "cuisine"),
-    ]
-
-
-async def test_remote_action_with_template_param(
-    default_channel: OutputChannel,
-    default_tracker: DialogueStateTracker,
-    domain: Domain,
-):
-    endpoint = EndpointConfig("https://example.com/webhooks/actions")
-    remote_action = action.RemoteAction("my_action", endpoint)
-
-    response = {
-        "events": [
-            {"event": "form", "name": "restaurant_form", "timestamp": None},
-            {
-                "event": "slot",
-                "timestamp": None,
-                "name": "requested_slot",
-                "value": "cuisine",
-            },
-        ],
-        "responses": [
-            {
-                "text": None,
-                "buttons": [],
-                "elements": [],
-                "custom": {},
-                "template": "utter_ask_cuisine",
-                "image": None,
-                "attachment": None,
-            }
-        ],
-    }
-
-    nlg = TemplatedNaturalLanguageGenerator(
-        {"utter_ask_cuisine": [{"text": "what dou want to eat?"}]}
-    )
-    with aioresponses() as mocked:
-        mocked.post("https://example.com/webhooks/actions", payload=response)
-
-        with pytest.warns(FutureWarning):
-            events = await remote_action.run(
-                default_channel, nlg, default_tracker, domain
-            )
 
     assert events == [
         BotUttered(
@@ -1044,15 +995,15 @@ async def test_action_default_ask_rephrase(
 @pytest.mark.parametrize(
     "slot_mapping",
     [
-        """
-    my_slot:
-    - type:from_text
-    """,
-        "",
+        """my_slot:
+          - type: from_text
+        """,
+        "{}",
     ],
 )
 def test_get_form_action(slot_mapping: Text):
     form_action_name = "my_business_logic"
+
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
@@ -1060,31 +1011,14 @@ def test_get_form_action(slot_mapping: Text):
     - my_action
     forms:
       {form_action_name}:
-        {slot_mapping}
+        {REQUIRED_SLOTS_KEY}:
+          {slot_mapping}
     """
         )
     )
 
     actual = action.action_for_name_or_text(form_action_name, domain, None)
     assert isinstance(actual, FormAction)
-
-
-def test_get_form_action_with_rasa_open_source_1_forms():
-    form_action_name = "my_business_logic"
-    with pytest.warns(FutureWarning):
-        domain = Domain.from_yaml(
-            textwrap.dedent(
-                f"""
-        actions:
-        - my_action
-        forms:
-        - {form_action_name}
-        """
-            )
-        )
-
-    actual = action.action_for_name_or_text(form_action_name, domain, None)
-    assert isinstance(actual, RemoteAction)
 
 
 def test_overridden_form_action():
@@ -1096,7 +1030,7 @@ def test_overridden_form_action():
     - my_action
     - {form_action_name}
     forms:
-        {form_action_name}:
+        {form_action_name}: {{}}
     """
         )
     )

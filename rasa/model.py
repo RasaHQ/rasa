@@ -8,7 +8,16 @@ from subprocess import CalledProcessError, DEVNULL, check_output  # skipcq:BAN-B
 import tempfile
 import typing
 from pathlib import Path
-from typing import Any, Text, Tuple, Union, Optional, List, Dict, NamedTuple
+from typing import (
+    Any,
+    Text,
+    Tuple,
+    Union,
+    Optional,
+    List,
+    Dict,
+    NamedTuple,
+)
 
 from packaging import version
 
@@ -320,7 +329,7 @@ def project_fingerprint() -> Optional[Text]:
         return None
 
 
-async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
+def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprint:
     """Create a model fingerprint from its used configuration and training data.
 
     Args:
@@ -332,10 +341,10 @@ async def model_fingerprint(file_importer: "TrainingDataImporter") -> Fingerprin
     """
     import time
 
-    config = await file_importer.get_config()
-    domain = await file_importer.get_domain()
-    stories = await file_importer.get_stories()
-    nlu_data = await file_importer.get_nlu_data()
+    config = file_importer.get_config()
+    domain = file_importer.get_domain()
+    stories = file_importer.get_stories()
+    nlu_data = file_importer.get_nlu_data()
 
     responses = domain.responses
 
@@ -377,7 +386,8 @@ def _get_fingerprint_of_config(
     if not config:
         return ""
 
-    keys = include_keys or list(filter(lambda k: k not in exclude_keys, config.keys()))
+    exclude_keys = exclude_keys or []
+    keys = include_keys or [k for k in config.keys() if k not in exclude_keys]
 
     sub_config = {k: config[k] for k in keys if k in config}
 
@@ -605,7 +615,7 @@ def package_model(
     return output_directory
 
 
-async def update_model_with_new_domain(
+def update_model_with_new_domain(
     importer: "TrainingDataImporter", unpacked_model_path: Union[Path, Text]
 ) -> None:
     """Overwrites the domain of an unpacked model with a new domain.
@@ -615,13 +625,13 @@ async def update_model_with_new_domain(
         unpacked_model_path: Path to the unpacked model.
     """
     model_path = Path(unpacked_model_path) / DEFAULT_CORE_SUBDIRECTORY_NAME
-    domain = await importer.get_domain()
+    domain = importer.get_domain()
     domain.persist(model_path / DEFAULT_DOMAIN_PATH)
 
 
 def get_model_for_finetuning(
     previous_model_file: Optional[Union[Path, Text]]
-) -> Optional[Text]:
+) -> Optional[Union[Path, Text]]:
     """Gets validated path for model to finetune.
 
     Args:
