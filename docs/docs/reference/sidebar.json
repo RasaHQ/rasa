@@ -264,6 +264,7 @@
             {
               "items": [
                 "reference/rasa/nlu/featurizers/dense_featurizer/convert_featurizer",
+                "reference/rasa/nlu/featurizers/dense_featurizer/dense_featurizer",
                 "reference/rasa/nlu/featurizers/dense_featurizer/lm_featurizer"
               ],
               "label": "rasa.nlu.featurizers.dense_featurizer",
@@ -271,13 +272,16 @@
             },
             {
               "items": [
+                "reference/rasa/nlu/featurizers/sparse_featurizer/_lexical_syntactic_featurizer",
                 "reference/rasa/nlu/featurizers/sparse_featurizer/count_vectors_featurizer",
                 "reference/rasa/nlu/featurizers/sparse_featurizer/lexical_syntactic_featurizer",
-                "reference/rasa/nlu/featurizers/sparse_featurizer/regex_featurizer"
+                "reference/rasa/nlu/featurizers/sparse_featurizer/regex_featurizer",
+                "reference/rasa/nlu/featurizers/sparse_featurizer/sparse_featurizer"
               ],
               "label": "rasa.nlu.featurizers.sparse_featurizer",
               "type": "category"
-            }
+            },
+            "reference/rasa/nlu/featurizers/featurizer"
           ],
           "label": "rasa.nlu.featurizers",
           "type": "category"

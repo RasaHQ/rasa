@@ -95,7 +95,7 @@ removed when questionary supports `Validator` objects.
 #### json\_unpickle
 
 ```python
-json_unpickle(file_name: Union[Text, Path]) -> Any
+json_unpickle(file_name: Union[Text, Path], encode_non_string_keys: bool = False) -> Any
 ```
 
 Unpickle an object from file using json.
@@ -103,13 +103,15 @@ Unpickle an object from file using json.
 **Arguments**:
 
 - `file_name` - the file to load the object from
+- `encode_non_string_keys` - If set to `True` then jsonpickle will encode non-string
+  dictionary keys instead of coercing them into strings via `repr()`.
   
 - `Returns` - the object
 
 #### json\_pickle
 
 ```python
-json_pickle(file_name: Union[Text, Path], obj: Any) -> None
+json_pickle(file_name: Union[Text, Path], obj: Any, encode_non_string_keys: bool = False) -> None
 ```
 
 Pickle an object to a file using json.
@@ -118,6 +120,8 @@ Pickle an object to a file using json.
 
 - `file_name` - the file to store the object to
 - `obj` - the object to store
+- `encode_non_string_keys` - If set to `True` then jsonpickle will encode non-string
+  dictionary keys instead of coercing them into strings via `repr()`.
 
 #### get\_emoji\_regex
 
