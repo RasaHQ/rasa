@@ -12,6 +12,15 @@ how you can migrate from one version to another.
 
 ## Rasa 2.x to 3.0
 
+### Markdown Data
+
+Markdown is no longer supported — all the supporting code that was previously deprecated is
+now removed, and the convertors are removed as well.
+
+If you still have training data in Markdown format then the recommended approach is to use Rasa 2.x
+to convert your data from Markdown to YAML. Please use the commands described
+[here](./migration-guide.mdx#training-data-files).
+
 ### Training data
 
 `TrainingDataImporter` and all its implementations are updated to contain only synchronous methods.
@@ -54,6 +63,28 @@ class MyImporter(TrainingDataImporter):
 
     # this function was also async before
     def get_config(self) -> Dict:
+        pass
+
+    # ...
+```
+
+`template_variables` and `e2e` arguments also got removed from `get_stories` method of `TrainingDataImporter`.
+Its new signature looks this way:
+
+```python
+from typing import Optional
+
+from rasa.shared.nlu.interpreter import RegexInterpreter
+from rasa.shared.core.training_data.structures import StoryGraph
+
+class TrainingDataImporter:
+    # ...
+
+    def get_stories(
+        self,
+        interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
+        exclusion_percentage: Optional[int] = None,
+    ) -> StoryGraph:
         pass
 
     # ...

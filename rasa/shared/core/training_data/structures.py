@@ -654,14 +654,6 @@ class StoryGraph:
 
         return self.step_lookup.get(step_id)
 
-    def as_story_string(self) -> Text:
-        """Convert the graph into the story file format."""
-
-        story_content = ""
-        for step in self.story_steps:
-            story_content += step.as_story_string(flat=False)
-        return story_content
-
     @staticmethod
     def order_steps(
         story_steps: List[StoryStep],

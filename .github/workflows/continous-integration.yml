@@ -8,6 +8,10 @@ on:
     - '*'
   pull_request:
 
+concurrency:
+  group: continous-integration-${{ github.ref }}  # branch or tag name
+  cancel-in-progress: true
+
 # SECRETS
 # - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
 #                           (login for account in 1pw)
@@ -540,7 +544,7 @@ jobs:
         echo "::set-output name=base_poetry_exists::${BASE_IMAGE_POETRY_EXISTS}"
 
         # Base builder image
-        BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}
+        BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
         echo "::set-output name=base_builder_image_hash::${BASE_IMAGE_BUILDER_HASH}"
 
         BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)

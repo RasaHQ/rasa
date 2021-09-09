@@ -67,7 +67,7 @@ class TrainingData:
         Checks if the specified lookup table contains a filename in
         `elements` and replaces it with actual elements from the file.
         Returns the unchanged lookup table otherwise.
-        It works with Markdown and JSON training data.
+        It works with JSON training data.
 
         Params:
             lookup_table: A lookup table.
@@ -358,14 +358,6 @@ class TrainingData:
 
         return RasaWriter().dumps(self, **kwargs)
 
-    def nlg_as_markdown(self) -> Text:
-        """Generates the markdown representation of the response phrases (NLG) of
-        TrainingData."""
-
-        from rasa.shared.nlu.training_data.formats import NLGMarkdownWriter
-
-        return NLGMarkdownWriter().dumps(self)
-
     def nlg_as_yaml(self) -> Text:
         """Generates yaml representation of the response phrases (NLG) of TrainingData.
 
@@ -379,13 +371,12 @@ class TrainingData:
         # can't do that until after we remove markdown support.
         return RasaYAMLWriter().dumps(TrainingData(responses=self.responses))
 
-    def nlu_as_markdown(self) -> Text:
-        """Generates the markdown representation of the NLU part of TrainingData."""
-        from rasa.shared.nlu.training_data.formats import MarkdownWriter
-
-        return MarkdownWriter().dumps(self)
-
     def nlu_as_yaml(self) -> Text:
+        """Generates YAML representation of NLU of TrainingData.
+
+        Returns:
+            data in YAML format as a string
+        """
         from rasa.shared.nlu.training_data.formats.rasa_yaml import RasaYAMLWriter
 
         # avoid dumping NLG data (responses). this is a workaround until we
@@ -397,10 +388,9 @@ class TrainingData:
         return RasaYAMLWriter().dumps(no_responses_training_data)
 
     def persist_nlu(self, filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH) -> None:
+        """Saves NLU to a file."""
         if rasa.shared.data.is_likely_json_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_json(indent=2), filename)
-        elif rasa.shared.data.is_likely_markdown_file(filename):
-            rasa.shared.utils.io.write_text_file(self.nlu_as_markdown(), filename)
         elif rasa.shared.data.is_likely_yaml_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlu_as_yaml(), filename)
         else:
@@ -411,29 +401,26 @@ class TrainingData:
             )
 
     def persist_nlg(self, filename: Text) -> None:
+        """Saves NLG to a file."""
         if rasa.shared.data.is_likely_yaml_file(filename):
             rasa.shared.utils.io.write_text_file(self.nlg_as_yaml(), filename)
-        elif rasa.shared.data.is_likely_markdown_file(filename):
-            nlg_serialized_data = self.nlg_as_markdown()
-            if nlg_serialized_data:
-                rasa.shared.utils.io.write_text_file(nlg_serialized_data, filename)
         else:
             raise ValueError(
-                "Unsupported file format detected. Supported file formats are 'md' "
-                "and 'yml'."
+                "Unsupported file format detected. 'yml' is the only "
+                "supported file format."
             )
 
     @staticmethod
     def get_nlg_persist_filename(nlu_filename: Text) -> Text:
-
+        """Returns the full filename to persist NLG data."""
         extension = Path(nlu_filename).suffix
         if rasa.shared.data.is_likely_json_file(nlu_filename):
             # backwards compatibility: previously NLG was always dumped as md. now
             # we are going to dump in the same format as the NLU data. unfortunately
             # there is a special case: NLU is in json format, in this case we use
-            # md as we do not have a NLG json format
-            extension = rasa.shared.data.markdown_file_extension()
-        # Add nlg_ as prefix and change extension to .md
+            # YAML as we do not have a NLG json format
+            extension = rasa.shared.data.yaml_file_extension()
+        # Add nlg_ as prefix and change extension to the correct one
         filename = (
             Path(nlu_filename)
             .with_name("nlg_" + Path(nlu_filename).name)
