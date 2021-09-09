@@ -146,7 +146,7 @@ class PolicyTestCollection:
         training_trackers = train_trackers(
             default_domain, stories_path, augmentation_factor=20
         )
-        policy.train(training_trackers, default_domain, precomputations=None)
+        policy.train(training_trackers, default_domain)
         return policy
 
     def test_featurizer(
@@ -213,7 +213,7 @@ class PolicyTestCollection:
             return
         tracker = DialogueStateTracker(DEFAULT_SENDER_ID, default_domain.slots)
         prediction = trained_policy.predict_action_probabilities(
-            tracker, default_domain, precomputations=None,
+            tracker, default_domain,
         )
         assert not prediction.is_end_to_end_prediction
         assert len(prediction.probabilities) == default_domain.num_actions
@@ -246,9 +246,7 @@ class PolicyTestCollection:
         policy: PolicyGraphComponent, events: List[Event], domain: Domain
     ) -> Text:
         tracker = get_tracker(events)
-        scores = policy.predict_action_probabilities(
-            tracker, domain, precomputations=None,
-        ).probabilities
+        scores = policy.predict_action_probabilities(tracker, domain,).probabilities
         index = scores.index(max(scores))
         return domain.action_names_or_texts[index]
 
