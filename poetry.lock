@@ -1390,27 +1390,18 @@ python-versions = "*"
 
 [[package]]
 name = "networkx"
-version = "2.5.1"
+version = "2.6.2"
 description = "Python package for creating and manipulating graphs and networks"
 category = "main"
 optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-decorator = ">=4.3,<5"
+python-versions = ">=3.7"
 
 [package.extras]
-all = ["numpy", "scipy", "pandas", "matplotlib", "pygraphviz", "pydot", "pyyaml", "lxml", "pytest"]
-gdal = ["gdal"]
-lxml = ["lxml"]
-matplotlib = ["matplotlib"]
-numpy = ["numpy"]
-pandas = ["pandas"]
-pydot = ["pydot"]
-pygraphviz = ["pygraphviz"]
-pytest = ["pytest"]
-pyyaml = ["pyyaml"]
-scipy = ["scipy"]
+default = ["numpy (>=1.19)", "scipy (>=1.5,!=1.6.1)", "matplotlib (>=3.3)", "pandas (>=1.1)"]
+developer = ["black (==21.5b1)", "pre-commit (>=2.12)"]
+doc = ["sphinx (>=4.0,<5.0)", "pydata-sphinx-theme (>=0.6,<1.0)", "sphinx-gallery (>=0.9,<1.0)", "numpydoc (>=1.1)", "pillow (>=8.2)", "nb2plots (>=0.6)", "texext (>=0.6.6)"]
+extra = ["lxml (>=4.5)", "pygraphviz (>=1.7)", "pydot (>=1.4.1)"]
+test = ["pytest (>=6.2)", "pytest-cov (>=2.12)", "codecov (>=2.1)"]
 
 [[package]]
 name = "nr.fs"
@@ -3166,7 +3157,7 @@ transformers = ["transformers"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.9"
-content-hash = "a7bf43057fd1901cf38ddbaa6888b23392c9df6bb08521e7f22caa8239061879"
+content-hash = "7ebe6191e74da79507d4189c667eba1e625b736956455fd43420d87fa0830100"
 
 [metadata.files]
 absl-py = [
@@ -4138,8 +4129,8 @@ mypy-extensions = [
     {file = "mypy_extensions-0.4.3.tar.gz", hash = "sha256:2d82818f5bb3e369420cb3c4060a7970edba416647068eb4c5343488a6c604a8"},
 ]
 networkx = [
-    {file = "networkx-2.5.1-py3-none-any.whl", hash = "sha256:0635858ed7e989f4c574c2328380b452df892ae85084144c73d8cd819f0c4e06"},
-    {file = "networkx-2.5.1.tar.gz", hash = "sha256:109cd585cac41297f71103c3c42ac6ef7379f29788eb54cb751be5a663bb235a"},
+    {file = "networkx-2.6.2-py3-none-any.whl", hash = "sha256:5fcb7004be69e8fbdf07dcb502efa5c77cadcaad6982164134eeb9721f826c2e"},
+    {file = "networkx-2.6.2.tar.gz", hash = "sha256:2306f1950ce772c5a59a57f5486d59bb9cab98497c45fc49cbc45ac0dec119bb"},
 ]
 "nr.fs" = [
     {file = "nr.fs-1.6.3-py2.py3-none-any.whl", hash = "sha256:64108c168ea2e8077fdf5f0c5417459d1a145fe34cb305fe90faeb75b4e8b421"},
