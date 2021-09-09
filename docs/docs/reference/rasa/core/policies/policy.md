@@ -65,7 +65,7 @@ Constructs a new Policy object.
 
 ```python
  | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> GraphComponent
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> PolicyGraphComponent
 ```
 
 Creates a new untrained policy (see parent class for full docstring).
@@ -78,14 +78,6 @@ Creates a new untrained policy (see parent class for full docstring).
 ```
 
 Returns the policy&#x27;s featurizer.
-
-#### set\_shared\_policy\_states
-
-```python
- | set_shared_policy_states(**kwargs: Any) -> None
-```
-
-Sets policy&#x27;s shared states for correct featurization.
 
 #### train
 
@@ -113,7 +105,7 @@ Trains a policy.
 
 ```python
  | @abc.abstractmethod
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization] = None, **kwargs: Any, ,) -> PolicyPrediction
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -122,7 +114,8 @@ Predicts the next action the bot should take after seeing the tracker.
 
 - `tracker` - The tracker containing the conversation history up to now.
 - `domain` - The model&#x27;s domain.
-- `precomputations` - Contains precomputed features and attributes.
+- `rule_only_data` - Slots and loops which are specific to rules and hence
+  should be ignored by this policy.
 - `**kwargs` - Depending on the specified `needs` section and the resulting
   graph structure the policy can use different input to make predictions.
   

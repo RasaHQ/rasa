@@ -96,6 +96,7 @@
           "items": [
             "reference/rasa/core/policies/_memoization",
             "reference/rasa/core/policies/_policy",
+            "reference/rasa/core/policies/_rule_policy",
             "reference/rasa/core/policies/_ted_policy",
             "reference/rasa/core/policies/_unexpected_intent_policy",
             "reference/rasa/core/policies/ensemble",
@@ -204,6 +205,7 @@
             "reference/rasa/graph_components/providers/domain_without_response_provider",
             "reference/rasa/graph_components/providers/nlu_training_data_provider",
             "reference/rasa/graph_components/providers/project_provider",
+            "reference/rasa/graph_components/providers/rule_only_provider",
             "reference/rasa/graph_components/providers/story_graph_provider",
             "reference/rasa/graph_components/providers/training_tracker_provider"
           ],

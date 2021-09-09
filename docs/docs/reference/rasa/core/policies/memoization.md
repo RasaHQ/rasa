@@ -46,7 +46,7 @@ Initialize the policy.
 #### recall
 
 ```python
- | recall(states: List[State], tracker: DialogueStateTracker, domain: Domain) -> Optional[Text]
+ | recall(states: List[State], tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]]) -> Optional[Text]
 ```
 
 Finds the action based on the given states.
@@ -56,6 +56,8 @@ Finds the action based on the given states.
 - `states` - List of states.
 - `tracker` - The tracker.
 - `domain` - The Domain.
+- `rule_only_data` - Slots and loops which are specific to rules and hence
+  should be ignored by this policy.
   
 
 **Returns**:
@@ -65,7 +67,7 @@ Finds the action based on the given states.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization] = None, **kwargs: Any, ,) -> PolicyPrediction
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -74,7 +76,9 @@ Predicts the next action the bot should take after seeing the tracker.
 
 - `tracker` - the :class:`rasa.core.trackers.DialogueStateTracker`
 - `domain` - the :class:`rasa.shared.core.domain.Domain`
-- `precomputations` - unused
+- `rule_only_data` - Slots and loops which are specific to rules and hence
+  should be ignored by this policy.
+  
 
 **Returns**:
 
@@ -120,7 +124,7 @@ for current dialogue.
 #### recall
 
 ```python
- | recall(states: List[State], tracker: DialogueStateTracker, domain: Domain) -> Optional[Text]
+ | recall(states: List[State], tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]]) -> Optional[Text]
 ```
 
 Finds the action based on the given states.
@@ -133,6 +137,8 @@ can be used to recall the action.
 - `states` - List of states.
 - `tracker` - The tracker.
 - `domain` - The Domain.
+- `rule_only_data` - Slots and loops which are specific to rules and hence
+  should be ignored by this policy.
   
 
 **Returns**:

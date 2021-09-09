@@ -84,7 +84,7 @@ Feeds the featurized training data to the model.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization], **kwargs: Any, ,) -> PolicyPrediction
+ | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, precomputations: Optional[MessageContainerForCoreFeaturization] = None, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -94,6 +94,8 @@ Predicts the next action the bot should take after seeing the tracker.
 - `tracker` - Tracker containing past conversation events.
 - `domain` - Domain of the assistant.
 - `precomputations` - Contains precomputed features and attributes.
+- `rule_only_data` - Slots and loops which are specific to rules and hence
+  should be ignored by this policy.
   
 
 **Returns**:
