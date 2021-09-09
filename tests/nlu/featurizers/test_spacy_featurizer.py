@@ -1,9 +1,15 @@
+from typing import Any, Dict, Text, Type
+
 import numpy as np
 import pytest
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.nlu.tokenizers.tokenizer import Tokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyModelProvider, SpacyPreprocessor
 from rasa.shared.nlu.training_data import loading
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -27,7 +33,7 @@ def spacy_model(
     ).provide()
 
 
-def create_spacy_featurizer(config) -> SpacyFeaturizerGraphComponent:
+def create_spacy_featurizer(config: Dict[Text, Any]) -> SpacyFeaturizerGraphComponent:
     return SpacyFeaturizerGraphComponent(
         {**SpacyFeaturizerGraphComponent.get_default_config(), **config},
         "spacy_featurizer",
@@ -240,3 +246,18 @@ def test_spacy_featurizer_using_empty_model():
 
     assert seq_vecs is None
     assert sen_vecs is None
+
+
+@pytest.mark.parametrize(
+    "tokenizer_class, should_raise",
+    [(WhitespaceTokenizer, True), (MitieTokenizer, True), (SpacyTokenizer, False)],
+)
+def test_spacy_featurizer_validate_compatibility_with_tokenizer(
+    tokenizer_class: Type[Tokenizer], should_raise: bool
+):
+    with pytest.warns(UserWarning if should_raise else None) as record:
+        SpacyFeaturizerGraphComponent.validate_compatibility_with_tokenizer(
+            {}, tokenizer_class
+        )
+        if not should_raise:
+            assert len(record) == 0

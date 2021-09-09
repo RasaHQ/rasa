@@ -116,5 +116,5 @@ class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         """Validates that the featurizer is compatible with the given tokenizer."""
         if tokenizer_type != SpacyTokenizer:
             rasa.shared.utils.io.raise_warning(
-                f"Expected {SpacyTokenizer.__name__} to be present."
+                f"Expected '{SpacyTokenizer.__name__}' to be present."
             )
