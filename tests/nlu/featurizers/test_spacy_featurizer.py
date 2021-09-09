@@ -1,6 +1,9 @@
 import numpy as np
 import pytest
 
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.utils.spacy_utils import SpacyModel, SpacyModelProvider, SpacyPreprocessor
 from rasa.shared.nlu.training_data import loading
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -13,13 +16,18 @@ from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE
 
 
 @pytest.fixture(scope="module")
-def spacy_model() -> SpacyModel:
+def spacy_model(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
+) -> SpacyModel:
     return SpacyModelProvider.create(
-        {"model": "en_core_web_md"}, None, None, None
+        {"model": "en_core_web_md"},
+        default_model_storage,
+        Resource("spacy_model_provider"),
+        default_execution_context,
     ).provide()
 
 
-def create_spacy_featurizer(config):
+def create_spacy_featurizer(config) -> SpacyFeaturizerGraphComponent:
     return SpacyFeaturizerGraphComponent(
         {**SpacyFeaturizerGraphComponent.get_default_config(), **config},
         "spacy_featurizer",
@@ -62,7 +70,7 @@ def test_spacy_featurizer(sentence, spacy_nlp):
     assert np.allclose(vecs, expected, atol=1e-5)
 
 
-def test_spacy_training_sample_alignment(spacy_model):
+def test_spacy_training_sample_alignment(spacy_model: SpacyModel):
     from spacy.tokens import Doc
 
     m1 = Message.build(text="I have a feeling", intent="feeling")
@@ -89,7 +97,7 @@ def test_spacy_training_sample_alignment(spacy_model):
     ]
 
 
-def test_spacy_intent_featurizer(spacy_model):
+def test_spacy_intent_featurizer(spacy_model: SpacyModel):
     td = loading.load_data("data/examples/rasa/demo-rasa.json")
     SpacyPreprocessor({}).process_training_data(td, spacy_model)
     spacy_featurizer = create_spacy_featurizer({})

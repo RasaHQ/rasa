@@ -3,6 +3,8 @@ import typing
 import logging
 from typing import Any, Text, Dict, List, Type
 
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+import rasa.shared.utils.io
 from rasa.engine.graph import ExecutionContext, GraphComponent
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
@@ -40,9 +42,7 @@ class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             POOLING: MEAN_POOLING,
         }
 
-    def __init__(
-        self, config: Dict[Text, Any], name: Text,
-    ):
+    def __init__(self, config: Dict[Text, Any], name: Text,) -> None:
         """Initializes SpacyFeaturizerGraphComponent."""
         super().__init__(name, config)
         self.pooling_operation = self._config[POOLING]
@@ -65,8 +65,8 @@ class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def _get_doc(self, message: Message, attribute: Text) -> Any:
         return message.get(SPACY_DOCS[attribute])
 
-    def process(self, messages: List[Message], **kwargs: Any) -> List[Message]:
-        """Process incoming messages and compute and set features."""
+    def process(self, messages: List[Message]) -> List[Message]:
+        """Processes incoming messages and computes and sets features."""
         for message in messages:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
                 self._set_spacy_features(message, attribute)
@@ -114,4 +114,7 @@ class SpacyFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         cls, config: Dict[Text, Any], tokenizer_type: Type[Tokenizer]
     ) -> None:
         """Validates that the featurizer is compatible with the given tokenizer."""
-        pass
+        if tokenizer_type != SpacyTokenizer:
+            rasa.shared.utils.io.raise_warning(
+                f"Expected {SpacyTokenizer.__name__} to be present."
+            )
