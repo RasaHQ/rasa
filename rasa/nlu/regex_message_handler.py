@@ -64,7 +64,7 @@ class RegexMessageHandler(GraphComponent):
         """Builds the pattern that matches `TEXT`s of messages that need to be unpacked.
 
         Returns:
-           pattern with named groups
+            pattern with named groups
         """
         return re.compile(
             f"^{re.escape(RegexMessageHandler._get_prefix())}"
@@ -84,12 +84,12 @@ class RegexMessageHandler(GraphComponent):
         does not contain real text but the regex we expect here.
 
         Args:
-          messages: list of messages
-          domain: the domain
+            messages: list of messages
+            domain: the domain
         Returns:
-           list of messages where the i-th message is equal to the i-th input message
-           if that message does not need to be unpacked, and a new message with the
-           extracted attributes otherwise
+            list of messages where the i-th message is equal to the i-th input message
+            if that message does not need to be unpacked, and a new message with the
+            extracted attributes otherwise
         """
         return [self._unpack(message, domain) for message in messages]
 
@@ -97,11 +97,11 @@ class RegexMessageHandler(GraphComponent):
         """Unpacks the messsage if `TEXT` contains an encoding of attributes.
 
         Args:
-          message: some message
-          domain: the domain
+            message: some message
+            domain: the domain
         Returns:
-           the given message if that message does not need to be unpacked, and a new
-           message with the extracted attributes otherwise
+            the given message if that message does not need to be unpacked, and a new
+            message with the extracted attributes otherwise
         """
         user_text = message.get(TEXT).strip()
 
@@ -138,16 +138,12 @@ class RegexMessageHandler(GraphComponent):
             )
 
         # Add the results to the message.
-        # NOTE: In the original implementation the message TEXT was set to the
-        # text from which the regex was extracted. However, if the regex matches
-        # then we know there is *no* text included in that "TEXT".
-        # TODO: .. is `output_properties` (cf. Message) even used anywhere?
         message_data = {INTENT: {INTENT_NAME_KEY: intent_name}}
         message_data[INTENT][INTENT_RANKING_KEY] = [
             {INTENT_NAME_KEY: intent_name, PREDICTED_CONFIDENCE_KEY: confidence}
         ]
         message_data[ENTITIES] = entities
-        return Message(message_data)
+        return Message(message_data, output_properties={INTENT, ENTITIES})
 
     @staticmethod
     def _parse_intent_name(match: Match, domain: Domain) -> Optional[Text]:
@@ -171,10 +167,10 @@ class RegexMessageHandler(GraphComponent):
         is returned.
 
         Args:
-          match: a match produced by `self.pattern`
-          domain: the domain
+            match: a match produced by `self.pattern`
+            domain: the domain
         Returns:
-          some list of entities
+            some list of entities
         """
         entities_str = match.group(ENTITIES)
         if entities_str is None:
@@ -224,16 +220,6 @@ class RegexMessageHandler(GraphComponent):
                 entities.append(
                     {
                         ENTITY_ATTRIBUTE_TYPE: entity_type,
-                        # TODO: in the original implementation these are start and
-                        # end indices of the *substring that matches the entity regex*
-                        # ... but it should be indices of tokens to which these
-                        # entities belong. There are no such tokens. Hence, I think we
-                        # should just skip those indices. But can we, or will something
-                        # complain? If something expects indices (despite not being
-                        # able to use them because there's no text), then we could
-                        # instead use more explicit "unknown" indicators (e.g. -1)
-                        # ENTITY_ATTRIBUTE_START: sidx,
-                        # ENTITY_ATTRIBUTE_END: eidx,  # can't be more specific
                         ENTITY_ATTRIBUTE_VALUE: entity_value,
                     }
                 )
@@ -249,10 +235,11 @@ class RegexMessageHandler(GraphComponent):
         to a confidence of `0.0`.
 
         Args:
-          match: a match produced by `self.pattern`
-          domain: the domain
+            match: a match produced by `self.pattern`
+            domain: the domain
+
         Returns:
-          some confidence value
+            some confidence value
         """
         confidence_str = match.group(PREDICTED_CONFIDENCE_KEY)
         if confidence_str is None:
@@ -267,8 +254,6 @@ class RegexMessageHandler(GraphComponent):
                     f"Expected confidence to be a non-negative decimal number but "
                     f"found {confidence}. Continuing with 0.0 instead."
                 )
-            # NOTE: This is new. Before, we would've just passed on this value,
-            # whatever it was.
             if confidence > 1.0:
                 # Due to the pattern we know that this cannot be a negative number.
                 original_confidence = confidence
