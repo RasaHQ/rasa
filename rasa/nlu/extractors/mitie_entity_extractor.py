@@ -268,7 +268,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                         f"Expected a MITIE extractor file at {ner_file}."
                     )
                 ner = mitie.named_entity_extractor(str(ner_file))
-                return MitieEntityExtractorGraphComponent(
+                return cls(
                     config, model_storage, resource, ner=ner
                 )
         except (FileNotFoundError, ValueError, Exception) as e:
