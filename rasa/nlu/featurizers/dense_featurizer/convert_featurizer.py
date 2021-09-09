@@ -73,8 +73,8 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             "language": "en",
         }
 
-    @classmethod
-    def required_packages(cls) -> List[Text]:
+    @staticmethod
+    def required_packages() -> List[Text]:
         """Packages needed to be installed."""
         return ["tensorflow_text", "tensorflow_hub"]
 
