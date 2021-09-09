@@ -37,7 +37,10 @@ def create_lexical_syntactic_featurizer(
 ) -> Callable[[Dict[Text, Any]], LexicalSyntacticFeaturizerGraphComponent]:
     def inner(config: Dict[Text, Any]):
         return LexicalSyntacticFeaturizerGraphComponent.create(
-            config=config,
+            config={
+                **LexicalSyntacticFeaturizerGraphComponent.get_default_config(),
+                **config,
+            },
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=resource_lexical_syntactic_featurizer,
