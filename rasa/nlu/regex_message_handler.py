@@ -121,8 +121,8 @@ class RegexMessageHandler(GraphComponent):
 
         # Extract attributes from the match - and validate it via the domain.
         intent_name = self._parse_intent_name(match, domain)
-        confidence = RegexMessageHandler._parse_optional_confidences(match)
-        entities = RegexMessageHandler._parse_optional_entities(match, domain)
+        confidence = self._parse_optional_confidences(match)
+        entities = self._parse_optional_entities(match, domain)
 
         # The intent name is *not* optional, but during parsing we might find out
         # that the given intent is unknown (and warn). In this case, stop here.
@@ -138,12 +138,17 @@ class RegexMessageHandler(GraphComponent):
             )
 
         # Add the results to the message.
-        message_data = {INTENT: {INTENT_NAME_KEY: intent_name}}
-        message_data[INTENT][INTENT_RANKING_KEY] = [
-            {INTENT_NAME_KEY: intent_name, PREDICTED_CONFIDENCE_KEY: confidence}
-        ]
+        intent_data = {
+            INTENT_NAME_KEY: intent_name,
+            INTENT_RANKING_KEY: {
+                INTENT_NAME_KEY: intent_name,
+                PREDICTED_CONFIDENCE_KEY: confidence,
+            },
+        }
+        message_data = {}
+        message_data[INTENT] = intent_data
         message_data[ENTITIES] = entities
-        return Message(message_data, output_properties={INTENT, ENTITIES})
+        return Message(message_data, output_properties=set(message_data.keys()))
 
     @staticmethod
     def _parse_intent_name(match: Match, domain: Domain) -> Optional[Text]:
