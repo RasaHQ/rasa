@@ -241,11 +241,8 @@ class RegexFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
         try:
             with model_storage.read_from(resource) as model_dir:
                 patterns_file_name = model_dir / "patterns.pkl"
-                if patterns_file_name.exists():
-                    known_patterns = rasa.shared.utils.io.read_json_file(
-                        patterns_file_name
-                    )
-        except ValueError:
+                known_patterns = rasa.shared.utils.io.read_json_file(patterns_file_name)
+        except (ValueError, FileNotFoundError):
             logger.warning(
                 f"Failed to load `{cls.__class__.__name__}` from model storage. "
                 f"Resource '{resource.name}' doesn't exist."
