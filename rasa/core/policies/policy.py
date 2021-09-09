@@ -291,7 +291,7 @@ class PolicyGraphComponent(GraphComponent):
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
             rule_only_data: Slots and loops which are specific to rules and hence
-                should be excluded from during the featurization.
+                should be ignored by this policy.
 
         Returns:
             A list of states.
@@ -326,7 +326,7 @@ class PolicyGraphComponent(GraphComponent):
             use_text_for_last_user_input: Indicates whether to use text or intent label
                 for featurizing last user input.
             rule_only_data: Slots and loops which are specific to rules and hence
-                should be excluded from during the featurization.
+                should be ignored by this policy.
 
         Returns:
             A list (corresponds to the list of trackers)
@@ -381,7 +381,7 @@ class PolicyGraphComponent(GraphComponent):
             tracker: The tracker containing the conversation history up to now.
             domain: The model's domain.
             rule_only_data: Slots and loops which are specific to rules and hence
-                should be excluded from during the featurization.
+                should be ignored by this policy.
             **kwargs: Depending on the specified `needs` section and the resulting
                 graph structure the policy can use different input to make predictions.
 

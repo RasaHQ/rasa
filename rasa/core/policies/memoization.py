@@ -206,7 +206,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
             tracker: The tracker.
             domain: The Domain.
             rule_only_data: Slots and loops which are specific to rules and hence
-                should be excluded from during the featurization.
+                should be ignored by this policy.
 
         Returns:
             The name of the action.
@@ -242,7 +242,7 @@ class MemoizationPolicyGraphComponent(PolicyGraphComponent):
             tracker: the :class:`rasa.core.trackers.DialogueStateTracker`
             domain: the :class:`rasa.shared.core.domain.Domain`
             rule_only_data: Slots and loops which are specific to rules and hence
-                should be excluded from during the featurization.
+                should be ignored by this policy.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
@@ -390,7 +390,7 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
             tracker: The tracker.
             domain: The Domain.
             rule_only_data: Slots and loops which are specific to rules and hence
-                should be excluded from during the featurization.
+                should be ignored by this policy.
 
         Returns:
             The name of the action.
@@ -439,7 +439,7 @@ class AugmentedMemoizationPolicyGraphComponent(MemoizationPolicyGraphComponent):
             tracker: The tracker.
             domain: The Domain.
             rule_only_data: Slots and loops which are specific to rules and hence
-                should be excluded from during the featurization.
+                should be ignored by this policy.
 
         Returns:
             The name of the action.

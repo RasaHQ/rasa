@@ -573,7 +573,7 @@ class UnexpecTEDIntentPolicyGraphComponent(TEDPolicy):
             domain: Domain of the assistant.
             precomputations: Contains precomputed features and attributes.
             rule_only_data: Slots and loops which are specific to rules and hence
-                should be excluded from during the featurization.
+                should be ignored by this policy.
 
         Returns:
              The policy's prediction (e.g. the probabilities for the actions).
