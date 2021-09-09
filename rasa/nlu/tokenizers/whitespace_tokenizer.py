@@ -20,13 +20,16 @@ WhitespaceTokenizer = WhitespaceTokenizer
 
 
 class WhitespaceTokenizerGraphComponent(TokenizerGraphComponent):
+    """Creates features for entity extraction."""
+
     @staticmethod
     def not_supported_languages() -> Optional[List[Text]]:
-        """The languages that are not supported (see parent class for full docstring)."""
+        """The languages that are not supported."""
         return ["zh", "ja", "th"]
 
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
+        """Returns the component's default config."""
         return {
             # Flag to check whether to split intents
             "intent_tokenization_flag": False,
