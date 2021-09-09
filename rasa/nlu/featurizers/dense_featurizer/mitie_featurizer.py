@@ -52,13 +52,10 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def __init__(
         self,
         config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
         execution_context: ExecutionContext,
     ) -> None:
         """Instantiates a new `MitieFeaturizerGraphComponent` instance."""
         super().__init__(execution_context.node_name, config)
-        self.config = config
         self.pooling_operation = self.config["pooling"]
 
     @classmethod
@@ -70,7 +67,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         execution_context: ExecutionContext,
     ) -> "MitieFeaturizerGraphComponent":
         """Creates a new untrained component (see parent class for full docstring)."""
-        return cls(config, model_storage, resource, execution_context)
+        return cls(config, execution_context)
 
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
