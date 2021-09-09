@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 import re
-from typing import Text, Dict, Any, Callable, List, Optional, Type
+from typing import Text, Dict, Any, Callable, List, Optional, Type, Union
 
 from rasa.engine.graph import ExecutionContext
 from rasa.engine.storage.storage import ModelStorage
