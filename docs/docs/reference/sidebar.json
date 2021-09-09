@@ -300,6 +300,7 @@
             "reference/rasa/nlu/tokenizers/_jieba_tokenizer",
             "reference/rasa/nlu/tokenizers/_tokenizer",
             "reference/rasa/nlu/tokenizers/jieba_tokenizer",
+            "reference/rasa/nlu/tokenizers/mitie_tokenizer",
             "reference/rasa/nlu/tokenizers/tokenizer",
             "reference/rasa/nlu/tokenizers/whitespace_tokenizer"
           ],
