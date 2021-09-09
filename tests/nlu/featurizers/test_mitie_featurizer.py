@@ -16,6 +16,7 @@ from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import (
     MitieFeaturizerGraphComponent,
 )
+from rasa.nlu.utils.mitie_utils import MitieModel, MitieNLPGraphComponent
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -27,14 +28,33 @@ def resource() -> Resource:
 
 
 @pytest.fixture
+def mitie_model(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
+) -> MitieModel:
+    component = MitieNLPGraphComponent.create(
+        MitieNLPGraphComponent.get_default_config(),
+        default_model_storage,
+        Resource("mitie"),
+        default_execution_context,
+    )
+
+    return component.provide()
+
+
+@pytest.fixture
 def create(
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
     resource: Resource,
+    mitie_model: MitieModel,
 ) -> Callable[[Dict[Text, Any]], MitieFeaturizerGraphComponent]:
     def inner(config: Dict[Text, Any]):
         return MitieFeaturizerGraphComponent.create(
-            config={**MitieFeaturizerGraphComponent.get_default_config(), **config,},
+            config={
+                **MitieFeaturizerGraphComponent.get_default_config(),
+                "mitie_model": mitie_model,
+                **config,
+            },
             model_storage=default_model_storage,
             execution_context=default_execution_context,
             resource=resource,
@@ -80,9 +100,7 @@ def test_mitie_featurizer_train(
     message.set(INTENT, "intent")
     MitieTokenizer().train(TrainingData([message]))
 
-    featurizer.train_process(
-        TrainingData([message]), **{"mitie_feature_extractor": mitie_feature_extractor},
-    )
+    featurizer.process_training_data(TrainingData([message]))
 
     expected = np.array(
         [0.00000000e00, -5.12735510e00, 4.39929873e-01, -5.60760403e00, -8.26445103e00]
