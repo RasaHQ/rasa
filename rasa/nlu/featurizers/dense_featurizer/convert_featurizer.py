@@ -127,7 +127,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         language = config.get("language", None)
         if language is not None and language != "en":
             rasa.shared.utils.io.raise_warning(
-                f"Since ``ConveRT`` model is trained only on an english "
+                f"Since 'ConveRT' model is trained only on an english "
                 f"corpus of conversations, this featurizer should only be "
                 f"used if your training data is in english language. "
                 f"However, you specified '{language}' as language. ",
