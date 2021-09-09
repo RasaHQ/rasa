@@ -271,7 +271,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 return MitieEntityExtractorGraphComponent(
                     config, model_storage, resource, ner=ner
                 )
-        except (FileNotFoundError, Exception) as e:
+        except (FileNotFoundError, ValueError, Exception) as e:
             if not isinstance(e, FileNotFoundError):
                 is_mitie_exception = not (
                     len(e.args) == 1
