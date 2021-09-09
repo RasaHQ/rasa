@@ -80,7 +80,7 @@ def test_mitie_featurizer_train(
     message.set(INTENT, "intent")
     MitieTokenizer().train(TrainingData([message]))
 
-    featurizer.train(
+    featurizer.train_process(
         TrainingData([message]), **{"mitie_feature_extractor": mitie_feature_extractor},
     )
 

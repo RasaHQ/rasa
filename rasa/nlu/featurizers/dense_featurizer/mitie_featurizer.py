@@ -1,16 +1,14 @@
 import numpy as np
 import logging
 import typing
-from typing import Any, List, Text, Optional, Dict, Type, Tuple
+from typing import Any, List, Text, Optional, Dict, Tuple
 
 from rasa.engine.graph import GraphComponent, ExecutionContext
 from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
-from rasa.nlu.components import Component
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.shared.nlu.training_data.features import Features
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.utils.mitie_utils import MitieNLP
+from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.constants import (
@@ -33,8 +31,11 @@ MitieFeaturizer = MitieFeaturizer
 
 
 class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
+    """A class that featurizes using Mitie."""
+
     @staticmethod
     def get_default_config() -> Dict[Text, Any]:
+        """Returns the component's default config."""
         return {
             **DenseFeaturizer2.get_default_config(),
             # Specify what pooling operation should be used to calculate the vector of
@@ -49,14 +50,9 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         resource: Resource,
         execution_context: ExecutionContext,
     ) -> None:
+        """Instantiates a new `MitieFeaturizerGraphComponent` instance."""
         super().__init__(config)
         self.config = config
-
-        # graph component
-        self._model_storage = model_storage
-        self._resource = resource
-        self._execution_context = execution_context
-
         self.pooling_operation = self.config["pooling"]
 
     @classmethod
@@ -70,44 +66,17 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         """Creates a new untrained component (see parent class for full docstring)."""
         return cls(config, model_storage, resource, execution_context)
 
-    @classmethod
-    def load(
-        cls,
-        config: Dict[Text, Any],
-        model_storage: ModelStorage,
-        resource: Resource,
-        execution_context: ExecutionContext,
-        **kwargs: Any,
-    ) -> "MitieFeaturizerGraphComponent":
-        """Loads trained component (see parent class for full docstring)."""
-        try:
-            loaded_featurizer = cls(
-                config=config,
-                model_storage=model_storage,
-                resource=resource,
-                execution_context=execution_context,
-            )
-            return loaded_featurizer
-        except ValueError:
-            logger.warning(
-                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
-                f"'{resource.name}' doesn't exist."
-            )
-            return cls(config, model_storage, resource, execution_context)
-
     @staticmethod
     def required_packages() -> List[Text]:
         """Any extra python dependencies required for this component to run."""
         return ["mitie", "numpy"]
 
-    @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        return [MitieNLP, Tokenizer]
-
     def ndim(self, feature_extractor: "mitie.total_word_feature_extractor") -> int:
+        """Returns the number of dimensions."""
         return feature_extractor.num_dimensions
 
-    def train(self, training_data: TrainingData, **kwargs: Any,) -> None:
+    def train_process(self, training_data: TrainingData, **kwargs: Any,) -> None:
+        """Trains the featurizer."""
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for example in training_data.training_examples:
             for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
@@ -118,6 +87,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     def process_training_example(
         self, example: Message, attribute: Text, mitie_feature_extractor: Any
     ) -> None:
+        """Processes training examples."""
         tokens = example.get(TOKENS_NAMES[attribute])
 
         if tokens is not None:
@@ -128,6 +98,7 @@ class MitieFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             self._set_features(example, sequence_features, sentence_features, attribute)
 
     def process(self, message: Message, **kwargs: Any) -> None:
+        """Processes a message."""
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for attribute in DENSE_FEATURIZABLE_ATTRIBUTES:
             tokens = message.get(TOKENS_NAMES[attribute])
