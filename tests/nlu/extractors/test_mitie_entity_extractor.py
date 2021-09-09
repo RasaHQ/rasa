@@ -107,7 +107,6 @@ def test_train_extract_load(
 
     # turn them into training data
     training_data = TrainingData(messages_with_entities)
-    training_data.training_examples = messages_with_entities
 
     # train the extractor
     mitie_entity_extractor = create_or_load_mitie_extractor(config={}, load=False)

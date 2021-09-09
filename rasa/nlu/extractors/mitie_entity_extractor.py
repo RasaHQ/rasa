@@ -67,12 +67,10 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                 and load itself from the `model_storage`.
             ner: Mitie named entity extractor
         """
-        # graph component
-        self._config = {**self.get_default_config(), **config}
+        self._config = config
         self._model_storage = model_storage
         self._resource = resource
         self.validate_config(self._config)
-        # extractor
         self._ner = ner
 
     def validate_config(cls, config: Dict[Text, Any]) -> None:
@@ -263,7 +261,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         import mitie
 
         try:
-            with model_storage.write_to(resource) as model_path:
+            with model_storage.read_from(resource) as model_path:
                 ner_file = model_path / cls.MITIE_RESOURCE_FILE
                 if not ner_file.exists():
                     raise FileNotFoundError(
