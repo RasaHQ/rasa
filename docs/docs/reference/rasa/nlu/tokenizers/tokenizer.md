@@ -18,6 +18,15 @@ Base class for tokenizers.
 
 Construct a new tokenizer.
 
+#### create
+
+```python
+ | @classmethod
+ | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+```
+
+Creates a new component (see parent class for full docstring).
+
 #### tokenize
 
 ```python
