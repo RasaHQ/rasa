@@ -669,7 +669,7 @@ def test_sets_integer_transformer_size_when_needed(
 
 @pytest.mark.timeout(120)
 async def test_adjusting_layers_incremental_training(
-    component_builder: ComponentBuilder, tmpdir: Path
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
 ):
     """Tests adjusting sparse layers of `ResponseSelector` to increased sparse
        feature sizes during incremental training.
@@ -692,27 +692,42 @@ async def test_adjusting_layers_incremental_training(
             "min_ngram": 1,
             "max_ngram": 4,
         },
-        {"name": "ResponseSelector", EPOCHS: 1},
     ]
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": "en"})
+    loaded_pipeline = [
+        registry.get_component_class(component.pop("name"))(component)
+        for component in copy.deepcopy(pipeline)
+    ]
 
-    (_, trained, persisted_path) = await rasa.nlu.train.train(
-        _config,
-        path=str(tmpdir),
-        data=iter1_data_path,
-        component_builder=component_builder,
+    importer = RasaFileImporter(training_data_paths=[iter1_data_path])
+    training_data = importer.get_nlu_data()
+
+    for component in loaded_pipeline:
+        component.train(training_data)
+
+    response_selector = create_response_selector(
+        {EPOCHS: 1}, default_model_storage, default_execution_context
     )
-    assert trained.pipeline
-    old_data_signature = trained.pipeline[-1].model.data_signature
-    old_predict_data_signature = trained.pipeline[-1].model.predict_data_signature
-    message = Message.build(text="Rasa is great!")
-    trained.featurize_message(message)
-    old_sparse_feature_sizes = message.get_sparse_feature_sizes(attribute=TEXT)
-    initial_rs_layers = (
-        trained.pipeline[-1]
-        .model._tf_layers["sequence_layer.text"]
-        ._tf_layers["feature_combining"]
+    response_selector.train(training_data=training_data)
+
+    old_data_signature = response_selector.model.data_signature
+    old_predict_data_signature = response_selector.model.predict_data_signature
+
+    message = Message(data={TEXT: "Rasa is great!"})
+
+    for component in loaded_pipeline:
+        component.process(message)
+
+    message2 = copy.deepcopy(message)
+
+    classified_message = response_selector.process([message])[0]
+
+    old_sparse_feature_sizes = classified_message.get_sparse_feature_sizes(
+        attribute=TEXT
     )
+
+    initial_rs_layers = response_selector.model._tf_layers[
+        "sequence_layer.text"
+    ]._tf_layers["feature_combining"]
     initial_rs_sequence_layer = initial_rs_layers._tf_layers[
         "sparse_dense.sequence"
     ]._tf_layers["sparse_to_dense"]
@@ -729,26 +744,36 @@ async def test_adjusting_layers_incremental_training(
         old_sparse_feature_sizes[FEATURE_TYPE_SENTENCE]
     )
 
-    loaded = Interpreter.load(persisted_path, component_builder, new_config=_config,)
-    assert loaded.pipeline
-    assert loaded.parse("Rasa is great!") == trained.parse("Rasa is great!")
-    (_, trained, _) = await rasa.nlu.train.train(
-        _config,
-        path=str(tmpdir),
-        data=iter2_data_path,
-        component_builder=component_builder,
-        model_to_finetune=loaded,
+    loaded_selector = ResponseSelectorGraphComponent.load(
+        {**ResponseSelectorGraphComponent.get_default_config(), **{EPOCHS: 1}},
+        default_model_storage,
+        Resource("response_selector"),
+        default_execution_context,
     )
-    assert trained.pipeline
-    message = Message.build(text="Rasa is great!")
-    trained.featurize_message(message)
-    new_sparse_feature_sizes = message.get_sparse_feature_sizes(attribute=TEXT)
 
-    final_rs_layers = (
-        trained.pipeline[-1]
-        .model._tf_layers["sequence_layer.text"]
-        ._tf_layers["feature_combining"]
+    classified_message2 = loaded_selector.process([message2])[0]
+
+    assert classified_message2.fingerprint() == classified_message.fingerprint()
+
+    importer2 = RasaFileImporter(training_data_paths=[iter2_data_path])
+    training_data2 = importer2.get_nlu_data()
+
+    for component in loaded_pipeline:
+        component.train(training_data2)
+    response_selector.train(training_data=training_data2)
+
+    new_message = Message.build(text="Rasa is great!")
+    for component in loaded_pipeline:
+        component.process(new_message)
+
+    classified_new_message = response_selector.process([new_message])[0]
+    new_sparse_feature_sizes = classified_new_message.get_sparse_feature_sizes(
+        attribute=TEXT
     )
+
+    final_rs_layers = response_selector.model._tf_layers[
+        "sequence_layer.text"
+    ]._tf_layers["feature_combining"]
     final_rs_sequence_layer = final_rs_layers._tf_layers[
         "sparse_dense.sequence"
     ]._tf_layers["sparse_to_dense"]
@@ -765,8 +790,8 @@ async def test_adjusting_layers_incremental_training(
         new_sparse_feature_sizes[FEATURE_TYPE_SENTENCE]
     )
     # check if the data signatures were correctly updated
-    new_data_signature = trained.pipeline[-1].model.data_signature
-    new_predict_data_signature = trained.pipeline[-1].model.predict_data_signature
+    new_data_signature = response_selector.model.data_signature
+    new_predict_data_signature = response_selector.model.predict_data_signature
     iter2_data = load_data(iter2_data_path)
     expected_sequence_lengths = len(
         [
