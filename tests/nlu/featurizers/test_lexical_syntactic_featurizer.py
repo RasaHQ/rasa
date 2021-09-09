@@ -102,7 +102,7 @@ def test_feature_computation(
     sentence: Text,
     part_of_speech: Optional[List[Text]],
     feature_config: List[List[Text]],
-    expected_features: List[List[int]],
+    expected_features: List[Union[int, List[int]]],
 ):
     featurizer = create_lexical_syntactic_featurizer(
         {"alias": "lsf", "features": feature_config}
