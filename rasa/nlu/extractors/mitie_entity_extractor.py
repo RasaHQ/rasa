@@ -267,20 +267,26 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                     raise FileNotFoundError(
                         f"Expected a MITIE extractor file at {ner_file}."
                     )
-                ner = mitie.named_entity_extractor(str(ner_file))
-                return cls(
-                    config, model_storage, resource, ner=ner
-                )
-        except (FileNotFoundError, ValueError, Exception) as e:
-            if not isinstance(e, FileNotFoundError):
-                is_mitie_exception = not (
-                    len(e.args) == 1
-                    and isinstance(e.args, Text)
-                    and e.args.startswith("Unable to load named entity extractor")
-                )
-                if not is_mitie_exception:
-                    raise
 
+                try:
+                    ner = mitie.named_entity_extractor(str(ner_file))
+                except Exception as e:
+                    if (
+                        len(e.args) == 1
+                        and isinstance(e.args[0], Text)
+                        and e.args.startswith("Unable to load named entity extractor")
+                    ):
+                        rasa.shared.utils.io.raise_warning(
+                            f"Mitie wasn't able to load the MITIE extractor from "
+                            f"{ner_file}."
+                        )
+                        raise ValueError from e
+                    else:
+                        raise
+
+                return cls(config, model_storage, resource, ner=ner)
+
+        except (FileNotFoundError, ValueError) as e:
             rasa.shared.utils.io.raise_warning(
                 f"Failed to load {cls.__name__} from model storage. "
                 f"This can happen if the model could not be trained because regexes "
