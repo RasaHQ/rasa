@@ -13,10 +13,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.engine.storage.resource import Resource
 import rasa.shared.utils.io
 import rasa.core.utils
-from rasa.utils import common
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
-from rasa.nlu.model import Metadata
-from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.nlu.featurizers.dense_featurizer.dense_featurizer import DenseFeaturizer2
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -69,8 +66,6 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
             FEATURIZER_CLASS_ALIAS: None,
             # Remote URL/Local path to model files
             "model_url": None,
-            # Language (only one allowed)
-            "language": "en",
         }
 
     @staticmethod
@@ -98,7 +93,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         return cls(name=execution_context.node_name, config=config)
 
     def __init__(self, name: Text, config: Dict[Text, Any]) -> None:
-        """Initializes ConveRTFeaturizerGraphComponent.
+        """Initializes a `ConveRTFeaturizer`.
 
         Args:
             name: An identifier for this featurizer.
@@ -123,16 +118,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        # Note: this is replacing a check previously done in train
-        language = config.get("language", None)
-        if language is not None and language != "en":
-            rasa.shared.utils.io.raise_warning(
-                f"Since 'ConveRT' model is trained only on an english "
-                f"corpus of conversations, this featurizer should only be "
-                f"used if your training data is in english language. "
-                f"However, you specified '{language}' as language. ",
-                docs=DOCS_URL_COMPONENTS + "#convertfeaturizer",
-            )
+        pass
 
     @classmethod
     def validate_compatibility_with_tokenizer(
@@ -244,9 +230,9 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         """Retrieve a signature from a (hopefully loaded) TF model."""
         if not module:
             raise Exception(
-                "ConveRTFeaturizerGraphComponent needs a proper loaded tensorflow "
-                "module when used. "
-                "Make sure to pass a module when training and using the component."
+                f"{ConveRTFeaturizerGraphComponent.__name__} needs "
+                f"a proper loaded tensorflow module when used. "
+                f"Make sure to pass a module when training and using the component."
             )
 
         return module.signatures[signature]
@@ -427,25 +413,6 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
                 message=example,
                 attribute=attribute,
             )
-
-    @classmethod
-    def cache_key(
-        cls, component_meta: Dict[Text, Any], model_metadata: Metadata
-    ) -> Optional[Text]:
-        """Cache the component for future use.
-
-        Args:
-            component_meta: configuration for the component.
-            model_metadata: configuration for the whole pipeline.
-
-        Returns: key of the cache for future retrievals.
-        """
-        _config = common.update_existing_keys(cls.defaults, component_meta)
-        return f"{cls.name}-{rasa.shared.utils.io.deep_container_fingerprint(_config)}"
-
-    def provide_context(self) -> Dict[Text, Any]:
-        """Store the model in pipeline context for future use."""
-        return {"tf_hub_module": self.module}
 
     def _tokenize(self, sentence: Text) -> Any:
 
