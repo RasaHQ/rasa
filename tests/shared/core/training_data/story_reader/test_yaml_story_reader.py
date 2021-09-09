@@ -634,6 +634,13 @@ def test_or_statement_with_slot_was_set_is_used_for_training():
     assert slot.value == "bob"
 
 
+def test_or_statement_trackers_length(domain: Domain):
+    training_trackers = training.load_data(
+        "data/test_yaml_stories/story_with_or_slot_was_set.yml", domain
+    )
+    assert len(training_trackers) == 2
+
+
 @pytest.mark.parametrize(
     "file,warning",
     [

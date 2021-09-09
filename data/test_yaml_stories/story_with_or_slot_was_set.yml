@@ -1,0 +1,11 @@
+stories:
+  - story: tell name bob or joe
+    steps:
+      - intent: greet
+      - action: utter_greet
+      - intent: tell_name
+      - or:
+          - slot_was_set:
+              - name: joe
+          - slot_was_set:
+              - name: bob
