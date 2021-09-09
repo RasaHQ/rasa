@@ -1,4 +1,3 @@
-import asyncio
 from functools import reduce
 from typing import Text, Optional, List, Dict, Set, Any, Tuple
 import logging
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 class TrainingDataImporter:
     """Common interface for different mechanisms to load training data."""
 
-    async def get_domain(self) -> Domain:
+    def get_domain(self) -> Domain:
         """Retrieves the domain of the bot.
 
         Returns:
@@ -31,35 +30,26 @@ class TrainingDataImporter:
         """
         raise NotImplementedError()
 
-    async def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
         Args:
-            template_variables: Values of templates that should be replaced while
-                                reading the story files.
-            use_e2e: Specifies whether to parse end to end learning annotations.
             exclusion_percentage: Amount of training data that should be excluded.
 
         Returns:
             `StoryGraph` containing all loaded stories.
         """
-        # TODO: Drop `use_e2e` in Rasa Open Source 3.0.0 when removing Markdown support
         raise NotImplementedError()
 
-    async def get_conversation_tests(self) -> StoryGraph:
+    def get_conversation_tests(self) -> StoryGraph:
         """Retrieves end-to-end conversation stories for testing.
 
         Returns:
             `StoryGraph` containing all loaded stories.
         """
-        return await self.get_stories(use_e2e=True)
+        return self.get_stories()
 
-    async def get_config(self) -> Dict:
+    def get_config(self) -> Dict:
         """Retrieves the configuration that should be used for the training.
 
         Returns:
@@ -67,7 +57,7 @@ class TrainingDataImporter:
         """
         raise NotImplementedError()
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves the NLU training data that should be used for training.
 
         Args:
@@ -76,7 +66,6 @@ class TrainingDataImporter:
         Returns:
             Loaded NLU `TrainingData`.
         """
-
         raise NotImplementedError()
 
     @staticmethod
@@ -196,37 +185,37 @@ class TrainingDataImporter:
             config_path, domain_path, training_data_paths, **constructor_arguments
         )
 
+    def fingerprint(self) -> Text:
+        """Returns a random fingerprint as data shouldn't be cached."""
+        return rasa.shared.utils.io.random_string(25)
+
 
 class NluDataImporter(TrainingDataImporter):
     """Importer that skips any Core-related file reading."""
 
     def __init__(self, actual_importer: TrainingDataImporter):
+        """Initializes the NLUDataImporter."""
         self._importer = actual_importer
 
-    async def get_domain(self) -> Domain:
+    def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
         return Domain.empty()
 
-    async def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         return StoryGraph([])
 
-    async def get_conversation_tests(self) -> StoryGraph:
+    def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
         return StoryGraph([])
 
-    async def get_config(self) -> Dict:
+    def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
-        return await self._importer.get_config()
+        return self._importer.get_config()
 
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
-        return await self._importer.get_nlu_data(language)
+        return self._importer.get_nlu_data(language)
 
 
 class CombinedDataImporter(TrainingDataImporter):
@@ -240,56 +229,45 @@ class CombinedDataImporter(TrainingDataImporter):
         self._importers = importers
 
     @rasa.shared.utils.common.cached_method
-    async def get_config(self) -> Dict:
+    def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
         configs = [importer.get_config() for importer in self._importers]
-        configs = await asyncio.gather(*configs)
 
         return reduce(lambda merged, other: {**merged, **(other or {})}, configs, {})
 
     @rasa.shared.utils.common.cached_method
-    async def get_domain(self) -> Domain:
+    def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
         domains = [importer.get_domain() for importer in self._importers]
-        domains = await asyncio.gather(*domains)
 
         return reduce(
             lambda merged, other: merged.merge(other), domains, Domain.empty()
         )
 
     @rasa.shared.utils.common.cached_method
-    async def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
         stories = [
-            importer.get_stories(template_variables, use_e2e, exclusion_percentage)
-            for importer in self._importers
+            importer.get_stories(exclusion_percentage) for importer in self._importers
         ]
-        stories = await asyncio.gather(*stories)
 
         return reduce(
             lambda merged, other: merged.merge(other), stories, StoryGraph([])
         )
 
     @rasa.shared.utils.common.cached_method
-    async def get_conversation_tests(self) -> StoryGraph:
+    def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
         stories = [importer.get_conversation_tests() for importer in self._importers]
-        stories = await asyncio.gather(*stories)
 
         return reduce(
             lambda merged, other: merged.merge(other), stories, StoryGraph([])
         )
 
     @rasa.shared.utils.common.cached_method
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
         nlu_data = [importer.get_nlu_data(language) for importer in self._importers]
-        nlu_data = await asyncio.gather(*nlu_data)
 
         return reduce(
             lambda merged, other: merged.merge(other), nlu_data, TrainingData()
@@ -305,18 +283,18 @@ class ResponsesSyncImporter(TrainingDataImporter):
     """
 
     def __init__(self, importer: TrainingDataImporter):
+        """Initializes the ResponsesSyncImporter."""
         self._importer = importer
 
-    async def get_config(self) -> Dict:
+    def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
-        return await self._importer.get_config()
+        return self._importer.get_config()
 
     @rasa.shared.utils.common.cached_method
-    async def get_domain(self) -> Domain:
+    def get_domain(self) -> Domain:
         """Merge existing domain with properties of retrieval intents in NLU data."""
-
-        existing_domain = await self._importer.get_domain()
-        existing_nlu_data = await self._importer.get_nlu_data()
+        existing_domain = self._importer.get_domain()
+        existing_nlu_data = self._importer.get_nlu_data()
 
         # Merge responses from NLU data with responses in the domain.
         # If NLU data has any retrieval intents, then add corresponding
@@ -389,26 +367,19 @@ class ResponsesSyncImporter(TrainingDataImporter):
             {},
         )
 
-    async def get_stories(
-        self,
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
-        exclusion_percentage: Optional[int] = None,
-    ) -> StoryGraph:
+    def get_stories(self, exclusion_percentage: Optional[int] = None,) -> StoryGraph:
         """Retrieves training stories / rules (see parent class for full docstring)."""
-        return await self._importer.get_stories(
-            template_variables, use_e2e, exclusion_percentage
-        )
+        return self._importer.get_stories(exclusion_percentage)
 
-    async def get_conversation_tests(self) -> StoryGraph:
+    def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
-        return await self._importer.get_conversation_tests()
+        return self._importer.get_conversation_tests()
 
     @rasa.shared.utils.common.cached_method
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Updates NLU data with responses for retrieval intents from domain."""
-        existing_nlu_data = await self._importer.get_nlu_data(language)
-        existing_domain = await self._importer.get_domain()
+        existing_nlu_data = self._importer.get_nlu_data(language)
+        existing_domain = self._importer.get_domain()
 
         return existing_nlu_data.merge(
             self._get_nlu_data_with_responses(
@@ -440,19 +411,19 @@ class E2EImporter(TrainingDataImporter):
     """
 
     def __init__(self, importer: TrainingDataImporter) -> None:
+        """Initializes the E2EImporter."""
         self.importer = importer
 
     @rasa.shared.utils.common.cached_method
-    async def get_domain(self) -> Domain:
+    def get_domain(self) -> Domain:
         """Retrieves model domain (see parent class for full docstring)."""
-        original, e2e_domain = await asyncio.gather(
-            self.importer.get_domain(), self._get_domain_with_e2e_actions()
-        )
+        original = self.importer.get_domain()
+        e2e_domain = self._get_domain_with_e2e_actions()
         return original.merge(e2e_domain)
 
-    async def _get_domain_with_e2e_actions(self) -> Domain:
+    def _get_domain_with_e2e_actions(self) -> Domain:
 
-        stories = await self.get_stories()
+        stories = self.get_stories()
 
         additional_e2e_action_names = set()
         for story_step in stories.story_steps:
@@ -476,45 +447,40 @@ class E2EImporter(TrainingDataImporter):
             action_texts=additional_e2e_action_names,
         )
 
-    async def get_stories(
+    def get_stories(
         self,
         interpreter: "NaturalLanguageInterpreter" = RegexInterpreter(),
-        template_variables: Optional[Dict] = None,
-        use_e2e: bool = False,
         exclusion_percentage: Optional[int] = None,
     ) -> StoryGraph:
         """Retrieves the stories that should be used for training.
 
         See parent class for details.
         """
-        return await self.importer.get_stories(
-            template_variables, use_e2e, exclusion_percentage
-        )
+        return self.importer.get_stories(exclusion_percentage)
 
-    async def get_conversation_tests(self) -> StoryGraph:
+    def get_conversation_tests(self) -> StoryGraph:
         """Retrieves conversation test stories (see parent class for full docstring)."""
-        return await self.importer.get_conversation_tests()
+        return self.importer.get_conversation_tests()
 
-    async def get_config(self) -> Dict:
+    def get_config(self) -> Dict:
         """Retrieves model config (see parent class for full docstring)."""
-        return await self.importer.get_config()
+        return self.importer.get_config()
 
     @rasa.shared.utils.common.cached_method
-    async def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
+    def get_nlu_data(self, language: Optional[Text] = "en") -> TrainingData:
         """Retrieves NLU training data (see parent class for full docstring)."""
-        training_datasets = [_additional_training_data_from_default_actions()]
-
-        training_datasets += await asyncio.gather(
+        training_datasets = [
+            _additional_training_data_from_default_actions(),
             self.importer.get_nlu_data(language),
             self._additional_training_data_from_stories(),
-        )
+        ]
 
         return reduce(
             lambda merged, other: merged.merge(other), training_datasets, TrainingData()
         )
 
-    async def _additional_training_data_from_stories(self) -> TrainingData:
-        stories = await self.get_stories()
+    def _additional_training_data_from_stories(self) -> TrainingData:
+        stories = self.get_stories()
 
         utterances, actions = _unique_events_from_stories(stories)
 
@@ -522,10 +488,10 @@ class E2EImporter(TrainingDataImporter):
         # model has to be retrained due to changes in the event order within
         # the stories.
         sorted_utterances = sorted(
-            utterances, key=lambda user: user.intent_name or user.text
+            utterances, key=lambda user: user.intent_name or user.text or ""
         )
         sorted_actions = sorted(
-            actions, key=lambda action: action.action_name or action.action_text
+            actions, key=lambda action: action.action_name or action.action_text or ""
         )
 
         additional_messages_from_stories = [

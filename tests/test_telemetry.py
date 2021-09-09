@@ -47,15 +47,12 @@ async def test_events_schema(
 
     with open(TELEMETRY_EVENTS_JSON) as f:
         schemas = json.load(f)["events"]
-    # fallback for python 3.6, which doesn't have asyncio.all_tasks
-    try:
-        initial = asyncio.all_tasks()
-    except AttributeError:
-        initial = asyncio.Task.all_tasks()
+    initial = asyncio.all_tasks()
     # Generate all known backend telemetry events, and then use events.json to
     # validate their schema.
     training_data = TrainingDataImporter.load_from_config(config_path)
-    async with telemetry.track_model_training(training_data, "rasa"):
+
+    with telemetry.track_model_training(training_data, "rasa"):
         await asyncio.sleep(1)
 
     telemetry.track_telemetry_disabled()
@@ -84,11 +81,7 @@ async def test_events_schema(
 
     telemetry.track_nlu_model_test(TrainingData())
 
-    # fallback for python 3.6, which doesn't have asyncio.all_tasks
-    try:
-        pending = asyncio.all_tasks() - initial
-    except AttributeError:
-        pending = asyncio.Task.all_tasks() - initial
+    pending = asyncio.all_tasks() - initial
     await asyncio.gather(*pending)
 
     assert mock.call_count == 15

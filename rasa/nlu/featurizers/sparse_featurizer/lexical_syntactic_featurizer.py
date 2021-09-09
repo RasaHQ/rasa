@@ -3,7 +3,16 @@ from collections import defaultdict, OrderedDict
 from pathlib import Path
 
 import numpy as np
-from typing import Any, Dict, Optional, Text, List, Type, Union, Callable
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Text,
+    List,
+    Type,
+    Union,
+    Callable,
+)
 
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.shared.constants import DOCS_URL_COMPONENTS
@@ -145,9 +154,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         return feature_to_idx_dict
 
     @staticmethod
-    def _build_feature_vocabulary(
-        features: List[List[Dict[Text, Any]]]
-    ) -> Dict[Text, List[Text]]:
+    def _build_feature_vocabulary(features: List[List[Dict[Text, Any]]]) -> OrderedDict:
         feature_vocabulary = defaultdict(set)
 
         for sentence_features in features:
@@ -156,13 +163,12 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
                     feature_vocabulary[feature_name].add(feature_value)
 
         # sort items to ensure same order every time (for tests)
-        feature_vocabulary = OrderedDict(sorted(feature_vocabulary.items()))
+        ordered_feature_vocabulary = OrderedDict(sorted(feature_vocabulary.items()))
 
-        return feature_vocabulary
+        return ordered_feature_vocabulary
 
     def _create_sparse_features(self, message: Message) -> None:
-        """Convert incoming messages into sparse features using the configured
-        features."""
+        """Convert incoming messages into sparse features."""
         import scipy.sparse
 
         tokens = message.get(TOKENS_NAMES[TEXT])
@@ -254,7 +260,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         token_idx: int,
         pointer_position: int,
         token_length: int,
-    ) -> Union[bool, int, Text]:
+    ) -> Union[bool, int, Text, None]:
         if feature == END_OF_SENTENCE:
             return token_idx + pointer_position == token_length - 1
 
@@ -273,6 +279,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
                 f"Invalid value '{value}' for feature '{feature}'."
                 f" Feature is ignored."
             )
+
         return value
 
     @classmethod
@@ -285,7 +292,7 @@ class LexicalSyntacticFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> "LexicalSyntacticFeaturizer":
         """Loads trained component (see parent class for full docstring)."""
-        file_name = meta.get("file")
+        file_name = meta["file"]
 
         feature_to_idx_file = Path(model_dir) / f"{file_name}.feature_to_idx_dict.pkl"
         feature_to_idx_dict = io_utils.json_unpickle(feature_to_idx_file)

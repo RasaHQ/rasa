@@ -1,12 +1,12 @@
 import asyncio
-from typing import Any, Collection, List, Optional, Text
+from typing import Collection, List, Optional, Text
 from unittest.mock import Mock
 
 import pytest
-from _pytest.recwarn import WarningsRecorder
 
 import rasa.shared.core.domain
 import rasa.shared.utils.common
+from rasa.shared.exceptions import RasaException
 
 
 def test_all_subclasses():
@@ -175,17 +175,7 @@ def test_class_from_module_path_not_found(
         rasa.shared.utils.common.class_from_module_path(module_path, lookup_path)
 
 
-@pytest.mark.parametrize(
-    "module_path, result, outcome",
-    [
-        ("rasa.shared.core.domain.Domain", rasa.shared.core.domain.Domain, True),
-        ("rasa.shared.core.domain.logger", rasa.shared.core.domain.logger, False),
-    ],
-)
-def test_class_from_module_path_ensure_class(
-    module_path: Text, outcome: bool, result: Any, recwarn: WarningsRecorder
-):
-    klass = rasa.shared.utils.common.class_from_module_path(module_path)
-    assert klass is result
-
-    assert bool(len(recwarn)) is not outcome
+def test_class_from_module_path_fails():
+    module_path = "rasa.shared.core.domain.logger"
+    with pytest.raises(RasaException):
+        rasa.shared.utils.common.class_from_module_path(module_path)

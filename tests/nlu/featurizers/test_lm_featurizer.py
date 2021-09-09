@@ -10,16 +10,11 @@ from _pytest.logging import LogCaptureFixture
 from rasa.nlu.constants import (
     TOKENS_NAMES,
     NUMBER_OF_SUB_TOKENS,
-    SEQUENCE_FEATURES,
-    SENTENCE_FEATURES,
-    LANGUAGE_MODEL_DOCS,
 )
-from rasa.nlu.tokenizers.lm_tokenizer import LanguageModelTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
-from rasa.nlu.utils.hugging_face.hf_transformers import HFTransformersNLP
 from rasa.shared.nlu.constants import TEXT, INTENT
 
 
@@ -653,52 +648,6 @@ def test_attention_mask(
 
     assert np.all(mask_ones == 1)
     assert np.all(mask_zeros == 0)
-
-
-def test_log_deprecation_warning_with_old_config(caplog: LogCaptureFixture):
-    message = Message.build("hi there")
-
-    transformers_nlp = HFTransformersNLP(
-        {"model_name": "bert", "model_weights": "bert-base-uncased"}
-    )
-    transformers_nlp.process(message)
-
-    caplog.set_level(logging.DEBUG)
-    lm_tokenizer = LanguageModelTokenizer()
-    lm_tokenizer.process(message)
-    lm_featurizer = LanguageModelFeaturizer(skip_model_load=True)
-    caplog.clear()
-    with caplog.at_level(logging.DEBUG):
-        lm_featurizer.process(message)
-
-    assert "deprecated component HFTransformersNLP" in caplog.text
-
-
-def test_preserve_sentence_and_sequence_features_old_config():
-    attribute = TEXT
-    message = Message.build("hi there")
-
-    transformers_nlp = HFTransformersNLP(
-        {"model_name": "bert", "model_weights": "bert-base-uncased"}
-    )
-    transformers_nlp.process(message)
-    lm_tokenizer = LanguageModelTokenizer()
-    lm_tokenizer.process(message)
-
-    lm_featurizer = LanguageModelFeaturizer({"model_name": "gpt2"})
-    lm_featurizer.process(message)
-
-    message.set(LANGUAGE_MODEL_DOCS[attribute], None)
-    lm_docs = lm_featurizer._get_docs_for_batch(
-        [message], attribute=attribute, inference_mode=True
-    )[0]
-    hf_docs = transformers_nlp._get_docs_for_batch(
-        [message], attribute=attribute, inference_mode=True
-    )[0]
-    assert not (message.features[0].features == lm_docs[SEQUENCE_FEATURES]).any()
-    assert not (message.features[1].features == lm_docs[SENTENCE_FEATURES]).any()
-    assert (message.features[0].features == hf_docs[SEQUENCE_FEATURES]).all()
-    assert (message.features[1].features == hf_docs[SENTENCE_FEATURES]).all()
 
 
 @pytest.mark.parametrize(

@@ -104,7 +104,8 @@ class TwoStageFallbackAction(LoopAction):
             return await self._give_up(output_channel, nlg, tracker, domain)
 
         # revert fallback events
-        return [UserUtteranceReverted()] + _message_clarification(tracker)
+        reverted_event: List[Event] = [UserUtteranceReverted()]
+        return reverted_event + _message_clarification(tracker)
 
     async def _give_up(
         self,
@@ -137,7 +138,7 @@ def _two_fallbacks_in_a_row(tracker: DialogueStateTracker) -> bool:
 
 def _last_n_intent_names(
     tracker: DialogueStateTracker, number_of_last_intent_names: int
-) -> List[Text]:
+) -> List[Optional[Text]]:
     intent_names = []
     for i in range(number_of_last_intent_names):
         message = tracker.get_last_event_for(

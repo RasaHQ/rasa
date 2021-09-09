@@ -901,6 +901,8 @@ class RasaSequenceLayer(RasaCustomLayer):
                     self._tf_layers[self.SPARSE_TO_DENSE_FOR_TOKEN_IDS](f)
                 )
 
+        return None
+
     def _create_mlm_tensors(
         self,
         sequence_features: List[Union[tf.Tensor, tf.SparseTensor]],

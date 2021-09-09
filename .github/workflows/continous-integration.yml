@@ -8,6 +8,10 @@ on:
     - '*'
   pull_request:
 
+concurrency:
+  group: continous-integration-${{ github.ref }}  # branch or tag name
+  cancel-in-progress: true
+
 # SECRETS
 # - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
 #                           (login for account in 1pw)
@@ -116,7 +120,7 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -209,7 +213,7 @@ jobs:
         - test-other-unit-tests
         - test-performance
         os: [ ubuntu-latest, windows-latest ]
-        python-version: [ 3.6, 3.7, 3.8 ]
+        python-version: [ 3.7, 3.8 ]
 
     steps:
     - name: Checkout git repository 🕝
@@ -230,7 +234,7 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -287,7 +291,7 @@ jobs:
         make prepare-tests-windows-gha
 
     - name: Add github workflow problem matchers
-      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os == 'ubuntu-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-latest'
       # only annotate based on test runs on ubuntu: otherwise
       # all errors will be duplicated for each python / os combination
       # therefore, we only enable for the one where most tests are run
@@ -303,7 +307,7 @@ jobs:
         make ${{ matrix.test }}
 
     - name: Send Coverage Report 📊
-      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os != 'windows-latest'
       continue-on-error: true
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -396,7 +400,7 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -540,7 +544,7 @@ jobs:
         echo "::set-output name=base_poetry_exists::${BASE_IMAGE_POETRY_EXISTS}"
 
         # Base builder image
-        BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}
+        BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
         echo "::set-output name=base_builder_image_hash::${BASE_IMAGE_BUILDER_HASH}"
 
         BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
@@ -718,10 +722,10 @@ jobs:
     - name: Checkout git repository 🕝
       uses: actions/checkout@v2
 
-    - name: Set up Python 3.6 🐍
+    - name: Set up Python 3.7 🐍
       uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
-        python-version: 3.6
+        python-version: 3.7
 
     - name: Read Poetry Version 🔢
       run: |
@@ -729,7 +733,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 

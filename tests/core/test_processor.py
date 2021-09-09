@@ -8,7 +8,7 @@ import json
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.logging import LogCaptureFixture
 from aioresponses import aioresponses
-from typing import Optional, Text, List, Callable, Type, Any, Tuple
+from typing import Optional, Text, List, Callable, Type, Any
 from unittest.mock import patch, Mock
 
 from rasa.core.policies.rule_policy import RulePolicy
@@ -18,7 +18,6 @@ from rasa.core.actions.action import (
     ActionExecutionRejection,
     ActionUnlikelyIntent,
 )
-import rasa.core.policies.policy
 from rasa.core.nlg import NaturalLanguageGenerator, TemplatedNaturalLanguageGenerator
 from rasa.core.policies.policy import PolicyPrediction
 import tests.utilities
@@ -30,6 +29,8 @@ from rasa.core.channels.channel import (
     UserMessage,
     OutputChannel,
 )
+from rasa.exceptions import ActionLimitReached
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.shared.core.domain import SessionConfig, Domain, KEY_ACTIONS
 from rasa.shared.core.events import (
     ActionExecuted,
@@ -57,6 +58,7 @@ from rasa.core.lock_store import InMemoryLockStore
 from rasa.shared.core.trackers import DialogueStateTracker
 from rasa.shared.core.generator import TrackerWithCachedStates
 from rasa.shared.nlu.constants import INTENT_NAME_KEY
+from rasa.shared.nlu.training_data.message import Message
 from rasa.utils.endpoints import EndpointConfig
 from rasa.shared.core.constants import (
     ACTION_RESTART_NAME,
@@ -926,41 +928,6 @@ async def test_action_unlikely_intent_metadata(default_processor: MessageProcess
     assert applied_events[1].metadata == metadata
 
 
-@pytest.mark.parametrize(
-    "predict_function",
-    [
-        lambda tracker, domain, _: PolicyPrediction([1, 0, 2, 3], "some-policy"),
-        lambda tracker, domain, _=True: PolicyPrediction([1, 0], "some-policy"),
-    ],
-)
-def test_get_next_action_probabilities_pass_policy_predictions_without_interpreter_arg(
-    predict_function: Callable,
-):
-    policy = TEDPolicy()
-
-    policy.predict_action_probabilities = predict_function
-
-    ensemble = SimplePolicyEnsemble(policies=[policy])
-    interpreter = Mock()
-    domain = Domain.empty()
-
-    processor = MessageProcessor(
-        interpreter,
-        ensemble,
-        domain,
-        InMemoryTrackerStore(domain),
-        InMemoryLockStore(),
-        Mock(),
-    )
-
-    with pytest.warns(DeprecationWarning):
-        processor._get_next_action_probabilities(
-            DialogueStateTracker.from_events(
-                "lala", [ActionExecuted(ACTION_LISTEN_NAME)]
-            )
-        )
-
-
 async def test_restart_triggers_session_start(
     default_channel: CollectingOutputChannel,
     default_processor: MessageProcessor,
@@ -1047,39 +1014,6 @@ async def test_handle_message_if_action_manually_rejects(
 
     assert ActionExecuted("utter_greet") not in logged_events
     assert all(event in logged_events for event in rejection_events)
-
-
-def test_predict_next_action_with_deprecated_ensemble(
-    default_processor: MessageProcessor, monkeypatch: MonkeyPatch
-):
-    expected_confidence = 2.0
-    expected_action = "utter_greet"
-    expected_probabilities = rasa.core.policies.policy.confidence_scores_for(
-        expected_action, expected_confidence, default_processor.domain
-    )
-    expected_policy_name = "deprecated ensemble"
-
-    class DeprecatedEnsemble(PolicyEnsemble):
-        def probabilities_using_best_policy(
-            self,
-            tracker: DialogueStateTracker,
-            domain: Domain,
-            interpreter: NaturalLanguageInterpreter,
-            **kwargs: Any,
-        ) -> Tuple[List[float], Optional[Text]]:
-            return expected_probabilities, expected_policy_name
-
-    monkeypatch.setattr(default_processor, "policy_ensemble", DeprecatedEnsemble([]))
-
-    tracker = DialogueStateTracker.from_events(
-        "some sender", [ActionExecuted(ACTION_LISTEN_NAME)]
-    )
-
-    with pytest.warns(FutureWarning):
-        action, prediction = default_processor.predict_next_action(tracker)
-
-    assert action.name() == expected_action
-    assert prediction == PolicyPrediction(expected_probabilities, expected_policy_name)
 
 
 async def test_policy_events_are_applied_to_tracker(
@@ -1327,7 +1261,7 @@ def test_predict_next_action_with_hidden_rules():
         domain,
         tracker_store,
         lock_store,
-        TemplatedNaturalLanguageGenerator(domain.templates),
+        TemplatedNaturalLanguageGenerator(domain.responses),
     )
 
     tracker = DialogueStateTracker.from_events(
@@ -1366,3 +1300,57 @@ def test_predict_next_action_with_hidden_rules():
     action, prediction = processor.predict_next_action(tracker)
     assert isinstance(action, ActionListen)
     assert not prediction.hide_rule_turn
+
+
+def test_predict_next_action_raises_limit_reached_exception(domain: Domain):
+    interpreter = RegexInterpreter()
+    ensemble = SimplePolicyEnsemble(policies=[RulePolicy(), MemoizationPolicy()])
+    tracker_store = InMemoryTrackerStore(domain)
+    lock_store = InMemoryLockStore()
+
+    processor = MessageProcessor(
+        interpreter,
+        ensemble,
+        domain,
+        tracker_store,
+        lock_store,
+        TemplatedNaturalLanguageGenerator(domain.responses),
+        max_number_of_predictions=1,
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "test",
+        evts=[
+            ActionExecuted(ACTION_LISTEN_NAME),
+            UserUttered("Hi!"),
+            ActionExecuted("test_action"),
+        ],
+    )
+    tracker.set_latest_action({"action_name": "test_action"})
+
+    with pytest.raises(ActionLimitReached):
+        processor.predict_next_action(tracker)
+
+
+async def test_processor_logs_text_tokens_in_tracker(mood_agent: Agent):
+    text = "Hello there"
+    tokenizer = WhitespaceTokenizer()
+    tokens = tokenizer.tokenize(Message(data={"text": text}), "text")
+    indices = [(t.start, t.end) for t in tokens]
+
+    message = UserMessage(text)
+    tracker_store = InMemoryTrackerStore(mood_agent.domain)
+    lock_store = InMemoryLockStore()
+    processor = MessageProcessor(
+        mood_agent.interpreter,
+        mood_agent.policy_ensemble,
+        mood_agent.domain,
+        tracker_store,
+        lock_store,
+        TemplatedNaturalLanguageGenerator(mood_agent.domain.responses),
+    )
+    tracker = await processor.log_message(message)
+    event = tracker.get_last_event_for(event_type=UserUttered)
+    event_tokens = event.as_dict().get("parse_data").get("text_tokens")
+
+    assert event_tokens == indices

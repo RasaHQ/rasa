@@ -58,7 +58,7 @@ def interactive(args: argparse.Namespace) -> None:
     )
 
     if args.model is None:
-        story_graph = rasa.utils.common.run_in_loop(file_importer.get_stories())
+        story_graph = file_importer.get_stories()
         if not story_graph or story_graph.is_empty():
             rasa.shared.utils.cli.print_error_and_exit(
                 "Could not run interactive learning without either core "

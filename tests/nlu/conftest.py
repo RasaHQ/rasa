@@ -6,12 +6,6 @@ from rasa.utils.tensorflow.constants import EPOCHS, RANDOM_SEED
 
 
 @pytest.fixture(scope="session")
-def spacy_nlp_component(component_builder, blank_config):
-    spacy_nlp_config = {"name": "SpacyNLP", "model": "en_core_web_md"}
-    return component_builder.create_component(spacy_nlp_config, blank_config)
-
-
-@pytest.fixture(scope="session")
 def mitie_feature_extractor(component_builder: ComponentBuilder, blank_config):
     mitie_nlp_config = {"name": "MitieNLP"}
     return component_builder.create_component(mitie_nlp_config, blank_config).extractor
@@ -69,7 +63,7 @@ def pretrained_embeddings_convert_config() -> RasaNLUModelConfig:
         {
             "language": "en",
             "pipeline": [
-                {"name": "ConveRTTokenizer"},
+                {"name": "WhitespaceTokenizer"},
                 {"name": "ConveRTFeaturizer"},
                 {"name": "DIETClassifier", EPOCHS: 1, RANDOM_SEED: 42},
             ],

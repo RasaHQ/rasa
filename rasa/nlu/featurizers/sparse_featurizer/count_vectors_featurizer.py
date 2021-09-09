@@ -165,28 +165,11 @@ class CountVectorsFeaturizer(SparseFeaturizer):
                 f"`additional_vocabulary_size` in future runs."
             )
 
-    def _check_attribute_vocabulary(self, attribute: Text) -> bool:
-        """Checks if trained vocabulary exists in attribute's count vectorizer."""
-        try:
-            return hasattr(self.vectorizers[attribute], "vocabulary_")
-        except (AttributeError, KeyError):
-            return False
-
     def _get_attribute_vocabulary(self, attribute: Text) -> Optional[Dict[Text, int]]:
-        """Get trained vocabulary from attribute's count vectorizer"""
-
+        """Gets trained vocabulary from attribute's count vectorizer."""
         try:
             return self.vectorizers[attribute].vocabulary_
-        except (AttributeError, TypeError):
-            return None
-
-    def _get_attribute_vocabulary_tokens(self, attribute: Text) -> Optional[List[Text]]:
-        """Get all keys of vocabulary of an attribute"""
-
-        attribute_vocabulary = self._get_attribute_vocabulary(attribute)
-        try:
-            return list(attribute_vocabulary.keys())
-        except TypeError:
+        except (AttributeError, TypeError, KeyError):
             return None
 
     def _check_analyzer(self) -> None:
@@ -275,18 +258,14 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     def _replace_with_oov_token(
         self, tokens: List[Text], attribute: Text
     ) -> List[Text]:
-        """Replace OOV words with OOV token"""
-
+        """Replace OOV words with OOV token."""
         if self.OOV_token and self.analyzer == "word":
-            vocabulary_exists = self._check_attribute_vocabulary(attribute)
-            if vocabulary_exists and self.OOV_token in self._get_attribute_vocabulary(
-                attribute
-            ):
+            attribute_vocab = self._get_attribute_vocabulary(attribute)
+            if attribute_vocab is not None and self.OOV_token in attribute_vocab:
                 # CountVectorizer is trained, process for prediction
+                attribute_vocabulary_tokens = set(attribute_vocab.keys())
                 tokens = [
-                    t
-                    if t in self._get_attribute_vocabulary_tokens(attribute)
-                    else self.OOV_token
+                    t if t in attribute_vocabulary_tokens else self.OOV_token
                     for t in tokens
                 ]
             elif self.OOV_words:
@@ -607,9 +586,8 @@ class CountVectorsFeaturizer(SparseFeaturizer):
     ) -> Tuple[
         List[Optional[scipy.sparse.spmatrix]], List[Optional[scipy.sparse.spmatrix]]
     ]:
-        """Return features of a particular attribute for complete data"""
-
-        if self._check_attribute_vocabulary(attribute):
+        """Returns features of a particular attribute for complete data."""
+        if self._get_attribute_vocabulary(attribute) is not None:
             # count vectorizer was trained
             return self._create_features(attribute, all_tokens)
         else:
@@ -828,7 +806,7 @@ class CountVectorsFeaturizer(SparseFeaturizer):
         **kwargs: Any,
     ) -> "CountVectorsFeaturizer":
         """Loads trained component (see parent class for full docstring)."""
-        file_name = meta.get("file")
+        file_name = meta["file"]
         featurizer_file = os.path.join(model_dir, file_name)
 
         if not os.path.exists(featurizer_file):
