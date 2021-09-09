@@ -120,7 +120,7 @@ class RegexMessageHandler(GraphComponent):
             return message
 
         # Extract attributes from the match - and validate it via the domain.
-        intent_name = RegexMessageHandler._parse_intent_name(match, domain)
+        intent_name = self._parse_intent_name(match, domain)
         confidence = RegexMessageHandler._parse_optional_confidences(match)
         entities = RegexMessageHandler._parse_optional_entities(match, domain)
 
