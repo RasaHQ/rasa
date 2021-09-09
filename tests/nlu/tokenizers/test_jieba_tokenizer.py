@@ -98,7 +98,7 @@ def test_jieba_load_and_persist_dictionary(
 
     # Check the persisted dictionary matches the original file.
     with default_model_storage.read_from(resource) as resource_dir:
-        contents = (resource_dir / "dictionary_1").read_text()
+        contents = (resource_dir / "dictionary_1").read_text(encoding="utf-8")
         assert contents == dictionary_contents
 
     # Delete original files to show that we read from the model storage.
