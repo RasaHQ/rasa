@@ -94,9 +94,31 @@ Trains the featurizer.
 
 Featurizes all given messages in-place.
 
+**Arguments**:
+
+- `messages` - messages to be featurized.
+  
+
 **Returns**:
 
-  the given list of messages which have been modified in-place
+  The same list with the same messages after featurization.
+
+#### process\_training\_data
+
+```python
+ | process_training_data(training_data: TrainingData) -> TrainingData
+```
+
+Processes the training examples in the given training data in-place.
+
+**Arguments**:
+
+- `training_data` - the training data
+  
+
+**Returns**:
+
+  same training data after processing
 
 #### create
 

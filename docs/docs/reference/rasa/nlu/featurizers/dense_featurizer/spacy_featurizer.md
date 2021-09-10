@@ -44,6 +44,24 @@ Creates a new component (see parent class for full docstring).
 
 Processes incoming messages and computes and sets features.
 
+#### process\_training\_data
+
+```python
+ | process_training_data(training_data: TrainingData) -> TrainingData
+```
+
+Processes the training examples in the given training data in-place.
+
+**Arguments**:
+
+- `training_data` - Training data.
+- `model` - A Mitie model.
+  
+
+**Returns**:
+
+  Same training data after processing.
+
 #### validate\_config
 
 ```python

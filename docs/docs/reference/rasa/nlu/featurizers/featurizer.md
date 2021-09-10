@@ -53,40 +53,6 @@ Validates that the component is configured properly.
 
 Validates that the featurizer is compatible with the given tokenizer.
 
-#### process
-
-```python
- | @abstractmethod
- | process(messages: List[Message]) -> List[Message]
-```
-
-Featurizes all given messages in-place.
-
-**Arguments**:
-
-- `messages` - messages to be featurized
-
-**Returns**:
-
-  the same list with the same messages after featurization
-
-#### process\_training\_data
-
-```python
- | process_training_data(training_data: TrainingData) -> TrainingData
-```
-
-Processes the training examples in the given training data in-place.
-
-**Arguments**:
-
-- `training_data` - the training data
-  
-
-**Returns**:
-
-  same training data after processing
-
 #### add\_features\_to\_message
 
 ```python
