@@ -5,7 +5,7 @@ title: rasa.cli.interactive
 #### add\_subparser
 
 ```python
-add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
+def add_subparser(subparsers: SubParsersAction, parents: List[argparse.ArgumentParser]) -> None
 ```
 
 Add all interactive cli parsers.
@@ -18,7 +18,7 @@ Add all interactive cli parsers.
 #### perform\_interactive\_learning
 
 ```python
-perform_interactive_learning(args: argparse.Namespace, zipped_model: Text, file_importer: TrainingDataImporter) -> None
+def perform_interactive_learning(args: argparse.Namespace, zipped_model: Text, file_importer: TrainingDataImporter) -> None
 ```
 
 Performs interactive learning.

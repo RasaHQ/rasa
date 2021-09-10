@@ -26,7 +26,7 @@ This currently happens if
 #### \_\_init\_\_
 
 ```python
- | __init__(name: Text, conditions: Optional[Dict[Text, Any]] = None) -> None
+def __init__(name: Text, conditions: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates `Checkpoint`.
@@ -39,7 +39,7 @@ Creates `Checkpoint`.
 #### filter\_trackers
 
 ```python
- | filter_trackers(trackers: List[DialogueStateTracker]) -> List[DialogueStateTracker]
+def filter_trackers(trackers: List[DialogueStateTracker]) -> List[DialogueStateTracker]
 ```
 
 Filters out all trackers that do not satisfy the conditions.
@@ -59,8 +59,8 @@ multiple intents are separated in one line by chaining them with &quot;OR&quot;s
 #### is\_action\_unlikely\_intent
 
 ```python
- | @staticmethod
- | is_action_unlikely_intent(event: Event) -> bool
+@staticmethod
+def is_action_unlikely_intent(event: Event) -> bool
 ```
 
 Checks if the executed action is a `action_unlikely_intent`.
@@ -68,8 +68,8 @@ Checks if the executed action is a `action_unlikely_intent`.
 #### is\_action\_session\_start
 
 ```python
- | @staticmethod
- | is_action_session_start(event: Event) -> bool
+@staticmethod
+def is_action_session_start(event: Event) -> bool
 ```
 
 Checks if the executed action is a `action_session_start`.
@@ -77,7 +77,7 @@ Checks if the executed action is a `action_session_start`.
 #### explicit\_events
 
 ```python
- | explicit_events(domain: Domain, should_append_final_listen: bool = True) -> List[Event]
+def explicit_events(domain: Domain, should_append_final_listen: bool = True) -> List[Event]
 ```
 
 Returns events contained in the story step including implicit events.
@@ -98,7 +98,7 @@ A Special type of StoryStep representing a Rule.
 #### get\_rules\_condition
 
 ```python
- | get_rules_condition() -> List[Event]
+def get_rules_condition() -> List[Event]
 ```
 
 Returns a list of events forming a condition of the Rule.
@@ -106,7 +106,7 @@ Returns a list of events forming a condition of the Rule.
 #### get\_rules\_events
 
 ```python
- | get_rules_events() -> List[Event]
+def get_rules_events() -> List[Event]
 ```
 
 Returns a list of events forming the Rule, that are not conditions.
@@ -114,7 +114,7 @@ Returns a list of events forming the Rule, that are not conditions.
 #### add\_event\_as\_condition
 
 ```python
- | add_event_as_condition(event: Event) -> None
+def add_event_as_condition(event: Event) -> None
 ```
 
 Adds event to the Rule as part of its condition.
@@ -132,8 +132,8 @@ class Story()
 #### from\_events
 
 ```python
- | @staticmethod
- | from_events(events: List[Event], story_name: Optional[Text] = None) -> "Story"
+@staticmethod
+def from_events(events: List[Event], story_name: Optional[Text] = None) -> "Story"
 ```
 
 Create a story from a list of events.
@@ -149,7 +149,7 @@ Graph of the story-steps pooled from all stories in the training data.
 #### \_\_hash\_\_
 
 ```python
- | __hash__() -> int
+def __hash__() -> int
 ```
 
 Return hash for the story step.
@@ -161,7 +161,7 @@ Return hash for the story step.
 #### fingerprint
 
 ```python
- | fingerprint() -> Text
+def fingerprint() -> Text
 ```
 
 Returns a unique hash for the stories which is stable across python runs.
@@ -173,7 +173,7 @@ Returns a unique hash for the stories which is stable across python runs.
 #### ordered\_steps
 
 ```python
- | ordered_steps() -> List[StoryStep]
+def ordered_steps() -> List[StoryStep]
 ```
 
 Returns the story steps ordered by topological order of the DAG.
@@ -181,7 +181,7 @@ Returns the story steps ordered by topological order of the DAG.
 #### cyclic\_edges
 
 ```python
- | cyclic_edges() -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]
+def cyclic_edges() -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]
 ```
 
 Returns the story steps ordered by topological order of the DAG.
@@ -189,8 +189,8 @@ Returns the story steps ordered by topological order of the DAG.
 #### overlapping\_checkpoint\_names
 
 ```python
- | @staticmethod
- | overlapping_checkpoint_names(cps: List[Checkpoint], other_cps: List[Checkpoint]) -> Set[Text]
+@staticmethod
+def overlapping_checkpoint_names(cps: List[Checkpoint], other_cps: List[Checkpoint]) -> Set[Text]
 ```
 
 Find overlapping checkpoints names.
@@ -198,7 +198,7 @@ Find overlapping checkpoints names.
 #### with\_cycles\_removed
 
 ```python
- | with_cycles_removed() -> "StoryGraph"
+def with_cycles_removed() -> "StoryGraph"
 ```
 
 Create a graph with the cyclic edges removed from this graph.
@@ -206,7 +206,7 @@ Create a graph with the cyclic edges removed from this graph.
 #### get
 
 ```python
- | get(step_id: Text) -> Optional[StoryStep]
+def get(step_id: Text) -> Optional[StoryStep]
 ```
 
 Looks a story step up by its id.
@@ -214,8 +214,8 @@ Looks a story step up by its id.
 #### order\_steps
 
 ```python
- | @staticmethod
- | order_steps(story_steps: List[StoryStep]) -> Tuple[deque, List[Tuple[Text, Text]]]
+@staticmethod
+def order_steps(story_steps: List[StoryStep]) -> Tuple[deque, List[Tuple[Text, Text]]]
 ```
 
 Topological sort of the steps returning the ids of the steps.
@@ -223,8 +223,8 @@ Topological sort of the steps returning the ids of the steps.
 #### topological\_sort
 
 ```python
- | @staticmethod
- | topological_sort(graph: Dict[Text, Set[Text]]) -> Tuple[deque, List[Tuple[Text, Text]]]
+@staticmethod
+def topological_sort(graph: Dict[Text, Set[Text]]) -> Tuple[deque, List[Tuple[Text, Text]]]
 ```
 
 Creates a top sort of a directed graph. This is an unstable sorting!
@@ -247,7 +247,7 @@ The graph should be represented as a dictionary, e.g.:
 #### is\_empty
 
 ```python
- | is_empty() -> bool
+def is_empty() -> bool
 ```
 
 Checks if `StoryGraph` is empty.
@@ -255,7 +255,7 @@ Checks if `StoryGraph` is empty.
 #### generate\_id
 
 ```python
-generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text
+def generate_id(prefix: Text = "", max_chars: Optional[int] = None) -> Text
 ```
 
 Generate a random UUID.

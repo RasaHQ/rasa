@@ -5,7 +5,7 @@ title: rasa.nlu.persistor
 #### get\_persistor
 
 ```python
-get_persistor(name: Text) -> Optional["Persistor"]
+def get_persistor(name: Text) -> Optional["Persistor"]
 ```
 
 Returns an instance of the requested persistor.
@@ -24,7 +24,7 @@ Store models in cloud and fetch them when needed.
 #### persist
 
 ```python
- | persist(model_directory: Text, model_name: Text) -> None
+def persist(model_directory: Text, model_name: Text) -> None
 ```
 
 Uploads a model persisted in the `target_dir` to cloud storage.
@@ -32,7 +32,7 @@ Uploads a model persisted in the `target_dir` to cloud storage.
 #### retrieve
 
 ```python
- | retrieve(model_name: Text, target_path: Text) -> None
+def retrieve(model_name: Text, target_path: Text) -> None
 ```
 
 Downloads a model that has been persisted to cloud storage.

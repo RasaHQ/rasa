@@ -13,8 +13,8 @@ This tokenizer is a wrapper for Jieba (https://github.com/fxsjy/jieba).
 #### supported\_languages
 
 ```python
- | @staticmethod
- | supported_languages() -> Optional[List[Text]]
+@staticmethod
+def supported_languages() -> Optional[List[Text]]
 ```
 
 Supported languages (see parent class for full docstring).
@@ -22,8 +22,8 @@ Supported languages (see parent class for full docstring).
 #### get\_default\_config
 
 ```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
 Returns default config (see parent class for full docstring).
@@ -31,7 +31,7 @@ Returns default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource) -> None
 ```
 
 Initialize the tokenizer.
@@ -39,8 +39,8 @@ Initialize the tokenizer.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> JiebaTokenizerGraphComponent
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> JiebaTokenizerGraphComponent
 ```
 
 Creates a new component (see parent class for full docstring).
@@ -48,8 +48,8 @@ Creates a new component (see parent class for full docstring).
 #### required\_packages
 
 ```python
- | @classmethod
- | required_packages(cls) -> List[Text]
+@classmethod
+def required_packages(cls) -> List[Text]
 ```
 
 Any extra python dependencies required for this component to run.
@@ -57,7 +57,7 @@ Any extra python dependencies required for this component to run.
 #### tokenize
 
 ```python
- | tokenize(message: Message, attribute: Text) -> List[Token]
+def tokenize(message: Message, attribute: Text) -> List[Token]
 ```
 
 Tokenizes the text of the provided attribute of the incoming message.
@@ -65,8 +65,8 @@ Tokenizes the text of the provided attribute of the incoming message.
 #### load
 
 ```python
- | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> JiebaTokenizerGraphComponent
+@classmethod
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> JiebaTokenizerGraphComponent
 ```
 
 Loads a custom dictionary from model storage.
@@ -74,7 +74,7 @@ Loads a custom dictionary from model storage.
 #### persist
 
 ```python
- | persist() -> None
+def persist() -> None
 ```
 
 Persist the custom dictionaries.

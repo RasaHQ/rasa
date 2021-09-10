@@ -17,8 +17,8 @@ featurization.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RuleOnlyDataProvider
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> RuleOnlyDataProvider
 ```
 
 Creates component (see parent class for docstring).
@@ -26,7 +26,7 @@ Creates component (see parent class for docstring).
 #### provide
 
 ```python
- | provide() -> Dict[Text, Any]
+def provide() -> Dict[Text, Any]
 ```
 
 Provides data to other graph component.

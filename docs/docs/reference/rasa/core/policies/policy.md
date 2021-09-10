@@ -13,8 +13,8 @@ Enumeration of a policy&#x27;s supported training data type.
 #### trackers\_for\_policy
 
 ```python
- | @staticmethod
- | trackers_for_policy(policy: Union[Policy, Type[Policy]], trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]
+@staticmethod
+def trackers_for_policy(policy: Union[Policy, Type[Policy]], trackers: Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]) -> Union[List[DialogueStateTracker], List[TrackerWithCachedStates]]
 ```
 
 Return trackers for a given policy.
@@ -40,8 +40,8 @@ Common parent class for all dialogue policies.
 #### supported\_data
 
 ```python
- | @staticmethod
- | supported_data() -> SupportedData
+@staticmethod
+def supported_data() -> SupportedData
 ```
 
 The type of data supported by this policy.
@@ -56,7 +56,7 @@ or both ML-based data and rule data, they need to override this method.
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, featurizer: Optional[TrackerFeaturizer] = None) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, featurizer: Optional[TrackerFeaturizer] = None) -> None
 ```
 
 Constructs a new Policy object.
@@ -64,8 +64,8 @@ Constructs a new Policy object.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> PolicyGraphComponent
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> PolicyGraphComponent
 ```
 
 Creates a new untrained policy (see parent class for full docstring).
@@ -73,8 +73,8 @@ Creates a new untrained policy (see parent class for full docstring).
 #### featurizer
 
 ```python
- | @property
- | featurizer() -> TrackerFeaturizer
+@property
+def featurizer() -> TrackerFeaturizer
 ```
 
 Returns the policy&#x27;s featurizer.
@@ -82,8 +82,8 @@ Returns the policy&#x27;s featurizer.
 #### train
 
 ```python
- | @abc.abstractmethod
- | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, **kwargs: Any, ,) -> Resource
+@abc.abstractmethod
+def train(training_trackers: List[TrackerWithCachedStates], domain: Domain, **kwargs: Any, ,) -> Resource
 ```
 
 Trains a policy.
@@ -104,8 +104,8 @@ Trains a policy.
 #### predict\_action\_probabilities
 
 ```python
- | @abc.abstractmethod
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
+@abc.abstractmethod
+def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -127,8 +127,8 @@ Predicts the next action the bot should take after seeing the tracker.
 #### load
 
 ```python
- | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> "PolicyGraphComponent"
+@classmethod
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> "PolicyGraphComponent"
 ```
 
 Loads a trained policy (see parent class for full docstring).
@@ -136,8 +136,8 @@ Loads a trained policy (see parent class for full docstring).
 #### format\_tracker\_states
 
 ```python
- | @staticmethod
- | format_tracker_states(states: List[Dict]) -> Text
+@staticmethod
+def format_tracker_states(states: List[Dict]) -> Text
 ```
 
 Format tracker states to human readable format on debug log.
@@ -162,7 +162,7 @@ Stores information about the prediction of a `Policy`.
 #### \_\_init\_\_
 
 ```python
- | __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False, is_no_user_prediction: bool = False, diagnostic_data: Optional[Dict[Text, Any]] = None, hide_rule_turn: bool = False, action_metadata: Optional[Dict[Text, Any]] = None) -> None
+def __init__(probabilities: List[float], policy_name: Optional[Text], policy_priority: int = 1, events: Optional[List[Event]] = None, optional_events: Optional[List[Event]] = None, is_end_to_end_prediction: bool = False, is_no_user_prediction: bool = False, diagnostic_data: Optional[Dict[Text, Any]] = None, hide_rule_turn: bool = False, action_metadata: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Creates a `PolicyPrediction`.
@@ -196,8 +196,8 @@ Creates a `PolicyPrediction`.
 #### for\_action\_name
 
 ```python
- | @staticmethod
- | for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0, action_metadata: Optional[Dict[Text, Any]] = None) -> PolicyPrediction
+@staticmethod
+def for_action_name(domain: Domain, action_name: Text, policy_name: Optional[Text] = None, confidence: float = 1.0, action_metadata: Optional[Dict[Text, Any]] = None) -> PolicyPrediction
 ```
 
 Create a prediction for a given action.
@@ -218,7 +218,7 @@ Create a prediction for a given action.
 #### \_\_eq\_\_
 
 ```python
- | __eq__(other: Any) -> bool
+def __eq__(other: Any) -> bool
 ```
 
 Checks if the two objects are equal.
@@ -235,8 +235,8 @@ Checks if the two objects are equal.
 #### max\_confidence\_index
 
 ```python
- | @property
- | max_confidence_index() -> int
+@property
+def max_confidence_index() -> int
 ```
 
 Gets the index of the action prediction with the highest confidence.
@@ -248,8 +248,8 @@ Gets the index of the action prediction with the highest confidence.
 #### max\_confidence
 
 ```python
- | @property
- | max_confidence() -> float
+@property
+def max_confidence() -> float
 ```
 
 Gets the highest predicted probability.
@@ -261,7 +261,7 @@ Gets the highest predicted probability.
 #### confidence\_scores\_for
 
 ```python
-confidence_scores_for(action_name: Text, value: float, domain: Domain) -> List[float]
+def confidence_scores_for(action_name: Text, value: float, domain: Domain) -> List[float]
 ```
 
 Returns confidence scores if a single action is predicted.

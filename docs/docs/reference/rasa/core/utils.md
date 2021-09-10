@@ -5,7 +5,7 @@ title: rasa.core.utils
 #### configure\_file\_logging
 
 ```python
-configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text]) -> None
+def configure_file_logging(logger_obj: logging.Logger, log_file: Optional[Text]) -> None
 ```
 
 Configure logging to a file.
@@ -18,7 +18,7 @@ Configure logging to a file.
 #### one\_hot
 
 ```python
-one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarray
+def one_hot(hot_idx: int, length: int, dtype: Optional[Text] = None) -> np.ndarray
 ```
 
 Create a one-hot array.
@@ -37,7 +37,7 @@ Create a one-hot array.
 #### dump\_obj\_as\_yaml\_to\_file
 
 ```python
-dump_obj_as_yaml_to_file(filename: Union[Text, Path], obj: Any, should_preserve_key_order: bool = False) -> None
+def dump_obj_as_yaml_to_file(filename: Union[Text, Path], obj: Any, should_preserve_key_order: bool = False) -> None
 ```
 
 Writes `obj` to the filename in YAML repr.
@@ -51,7 +51,7 @@ Writes `obj` to the filename in YAML repr.
 #### list\_routes
 
 ```python
-list_routes(app: Sanic) -> Dict[Text, Text]
+def list_routes(app: Sanic) -> Dict[Text, Text]
 ```
 
 List all the routes of a sanic application. Mainly used for debugging.
@@ -59,7 +59,7 @@ List all the routes of a sanic application. Mainly used for debugging.
 #### extract\_args
 
 ```python
-extract_args(kwargs: Dict[Text, Any], keys_to_extract: Set[Text]) -> Tuple[Dict[Text, Any], Dict[Text, Any]]
+def extract_args(kwargs: Dict[Text, Any], keys_to_extract: Set[Text]) -> Tuple[Dict[Text, Any], Dict[Text, Any]]
 ```
 
 Go through the kwargs and filter out the specified keys.
@@ -69,7 +69,7 @@ Return both, the filtered kwargs as well as the remaining kwargs.
 #### is\_limit\_reached
 
 ```python
-is_limit_reached(num_messages: int, limit: Optional[int]) -> bool
+def is_limit_reached(num_messages: int, limit: Optional[int]) -> bool
 ```
 
 Determine whether the number of messages has reached a limit.
@@ -87,7 +87,7 @@ Determine whether the number of messages has reached a limit.
 #### file\_as\_bytes
 
 ```python
-file_as_bytes(path: Text) -> bytes
+def file_as_bytes(path: Text) -> bytes
 ```
 
 Read in a file as a byte array.
@@ -103,7 +103,7 @@ Collection of configured endpoints.
 #### read\_endpoints\_from\_path
 
 ```python
-read_endpoints_from_path(endpoints_path: Union[Path, Text, None] = None) -> AvailableEndpoints
+def read_endpoints_from_path(endpoints_path: Union[Path, Text, None] = None) -> AvailableEndpoints
 ```
 
 Get `AvailableEndpoints` object from specified path.
@@ -121,7 +121,7 @@ Get `AvailableEndpoints` object from specified path.
 #### replace\_floats\_with\_decimals
 
 ```python
-replace_floats_with_decimals(obj: Any, round_digits: int = 9) -> Any
+def replace_floats_with_decimals(obj: Any, round_digits: int = 9) -> Any
 ```
 
 Convert all instances in `obj` of `float` to `Decimal`.
@@ -148,7 +148,7 @@ class DecimalEncoder(json.JSONEncoder)
 #### default
 
 ```python
- | default(obj: Any) -> Any
+def default(obj: Any) -> Any
 ```
 
 Get serializable object for `o`.
@@ -166,7 +166,7 @@ Get serializable object for `o`.
 #### replace\_decimals\_with\_floats
 
 ```python
-replace_decimals_with_floats(obj: Any) -> Any
+def replace_decimals_with_floats(obj: Any) -> Any
 ```
 
 Convert all instances in `obj` of `Decimal` to `float`.
@@ -183,7 +183,7 @@ Convert all instances in `obj` of `Decimal` to `float`.
 #### number\_of\_sanic\_workers
 
 ```python
-number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) -> int
+def number_of_sanic_workers(lock_store: Union[EndpointConfig, LockStore, None]) -> int
 ```
 
 Get the number of Sanic workers to use in `app.run()`.

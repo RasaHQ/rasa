@@ -13,8 +13,8 @@ A Mitie Entity Extractor (which is a thin wrapper around `Dlib-ml`).
 #### required\_packages
 
 ```python
- | @staticmethod
- | required_packages() -> List[Text]
+@staticmethod
+def required_packages() -> List[Text]
 ```
 
 Any extra python dependencies required for this component to run.
@@ -22,8 +22,8 @@ Any extra python dependencies required for this component to run.
 #### get\_default\_config
 
 ```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -31,7 +31,7 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, ner: Optional["mitie.named_entity_extractor"] = None) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, ner: Optional["mitie.named_entity_extractor"] = None) -> None
 ```
 
 Creates a new instance.
@@ -48,7 +48,7 @@ Creates a new instance.
 #### validate\_config
 
 ```python
- | validate_config(cls, config: Dict[Text, Any]) -> None
+def validate_config(cls, config: Dict[Text, Any]) -> None
 ```
 
 Checks whether the given configuration is valid.
@@ -60,8 +60,8 @@ Checks whether the given configuration is valid.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
 ```
 
 Creates a new `MitieEntityExtractorGraphComponent`.
@@ -80,7 +80,7 @@ Creates a new `MitieEntityExtractorGraphComponent`.
 #### train
 
 ```python
- | train(training_data: TrainingData, mitie_model: MitieModel) -> Resource
+def train(training_data: TrainingData, mitie_model: MitieModel) -> Resource
 ```
 
 Trains a MITIE named entity recognizer.
@@ -97,7 +97,7 @@ Trains a MITIE named entity recognizer.
 #### process
 
 ```python
- | process(messages: List[Message], mitie_model: MitieModel) -> List[Message]
+def process(messages: List[Message], mitie_model: MitieModel) -> List[Message]
 ```
 
 Extracts entities from messages and appends them to the attribute.
@@ -117,8 +117,8 @@ exists yet, then an `ENTITIES` attribute will be created.
 #### load
 
 ```python
- | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MitieEntityExtractorGraphComponent
+@classmethod
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MitieEntityExtractorGraphComponent
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -126,7 +126,7 @@ Loads trained component (see parent class for full docstring).
 #### persist
 
 ```python
- | persist() -> None
+def persist() -> None
 ```
 
 Persist this model.

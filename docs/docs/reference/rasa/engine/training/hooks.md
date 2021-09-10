@@ -13,7 +13,7 @@ Caches fingerprints and outputs of nodes during model training.
 #### \_\_init\_\_
 
 ```python
- | __init__(cache: TrainingCache, model_storage: ModelStorage)
+def __init__(cache: TrainingCache, model_storage: ModelStorage)
 ```
 
 Initializes a `TrainingHook`.
@@ -26,7 +26,7 @@ Initializes a `TrainingHook`.
 #### on\_before\_node
 
 ```python
- | on_before_node(node_name: Text, execution_context: ExecutionContext, config: Dict[Text, Any], received_inputs: Dict[Text, Any]) -> Dict
+def on_before_node(node_name: Text, execution_context: ExecutionContext, config: Dict[Text, Any], received_inputs: Dict[Text, Any]) -> Dict
 ```
 
 Calculates the run fingerprint for use in `on_after_node`.
@@ -34,7 +34,7 @@ Calculates the run fingerprint for use in `on_after_node`.
 #### on\_after\_node
 
 ```python
- | on_after_node(node_name: Text, execution_context: ExecutionContext, config: Dict[Text, Any], output: Any, input_hook_data: Dict) -> None
+def on_after_node(node_name: Text, execution_context: ExecutionContext, config: Dict[Text, Any], output: Any, input_hook_data: Dict) -> None
 ```
 
 Stores the fingerprints and caches the output of the node.

@@ -13,7 +13,7 @@ This tokenizer is a wrapper for Jieba (https://github.com/fxsjy/jieba).
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Dict[Text, Any] = None) -> None
+def __init__(component_config: Dict[Text, Any] = None) -> None
 ```
 
 Construct a new intent classifier using the MITIE framework.
@@ -21,8 +21,8 @@ Construct a new intent classifier using the MITIE framework.
 #### load\_custom\_dictionary
 
 ```python
- | @staticmethod
- | load_custom_dictionary(path: Text) -> None
+@staticmethod
+def load_custom_dictionary(path: Text) -> None
 ```
 
 Load all the custom dictionaries stored in the path.
@@ -34,8 +34,8 @@ https://github.com/fxsjy/jieba#load-dictionary
 #### load
 
 ```python
- | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional["Metadata"] = None, cached_component: Optional[Component] = None, **kwargs: Any, ,) -> "JiebaTokenizer"
+@classmethod
+def load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional["Metadata"] = None, cached_component: Optional[Component] = None, **kwargs: Any, ,) -> "JiebaTokenizer"
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -43,7 +43,7 @@ Loads trained component (see parent class for full docstring).
 #### persist
 
 ```python
- | persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
+def persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
 ```
 
 Persist this model into the passed directory.

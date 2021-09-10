@@ -28,7 +28,7 @@ and additional hidden layers are added together with dropout.
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None, index_label_id_mapping: Optional[Dict[int, Text]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, model: Optional[RasaModel] = None, all_retrieval_intents: Optional[List[Text]] = None, responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None, finetune_mode: bool = False, sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None) -> None
+def __init__(component_config: Optional[Dict[Text, Any]] = None, index_label_id_mapping: Optional[Dict[int, Text]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, model: Optional[RasaModel] = None, all_retrieval_intents: Optional[List[Text]] = None, responses: Optional[Dict[Text, List[Dict[Text, Any]]]] = None, finetune_mode: bool = False, sparse_feature_sizes: Optional[Dict[Text, Dict[Text, List[int]]]] = None) -> None
 ```
 
 Declare instance variables with default values.
@@ -48,7 +48,7 @@ Declare instance variables with default values.
 #### preprocess\_train\_data
 
 ```python
- | preprocess_train_data(training_data: TrainingData) -> RasaModelData
+def preprocess_train_data(training_data: TrainingData) -> RasaModelData
 ```
 
 Prepares data for training.
@@ -62,7 +62,7 @@ Performs sanity checks on training data, extracts encodings for labels.
 #### process
 
 ```python
- | process(message: Message, **kwargs: Any) -> None
+def process(message: Message, **kwargs: Any) -> None
 ```
 
 Selects most like response for message.
@@ -81,7 +81,7 @@ Selects most like response for message.
 #### persist
 
 ```python
- | persist(file_name: Text, model_dir: Text) -> Dict[Text, Any]
+def persist(file_name: Text, model_dir: Text) -> Dict[Text, Any]
 ```
 
 Persist this model into the passed directory.
@@ -91,8 +91,8 @@ Return the metadata necessary to load the model again.
 #### load
 
 ```python
- | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Metadata = None, cached_component: Optional["ResponseSelector"] = None, **kwargs: Any, ,) -> "ResponseSelector"
+@classmethod
+def load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Metadata = None, cached_component: Optional["ResponseSelector"] = None, **kwargs: Any, ,) -> "ResponseSelector"
 ```
 
 Loads the trained model from the provided directory.
@@ -108,7 +108,7 @@ Diet 2 Diet transformer implementation.
 #### batch\_loss
 
 ```python
- | batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
+def batch_loss(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> tf.Tensor
 ```
 
 Calculates the loss for the given batch.
@@ -125,7 +125,7 @@ Calculates the loss for the given batch.
 #### batch\_predict
 
 ```python
- | batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
+def batch_predict(batch_in: Union[Tuple[tf.Tensor], Tuple[np.ndarray]]) -> Dict[Text, Union[tf.Tensor, Dict[Text, tf.Tensor]]]
 ```
 
 Predicts the output of the given batch.

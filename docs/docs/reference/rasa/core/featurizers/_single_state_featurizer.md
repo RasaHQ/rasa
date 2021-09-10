@@ -19,7 +19,7 @@ featurized into a list of `rasa.utils.features.Features`.
 #### \_\_init\_\_
 
 ```python
- | __init__() -> None
+def __init__() -> None
 ```
 
 Initialize the single state featurizer.
@@ -27,7 +27,7 @@ Initialize the single state featurizer.
 #### prepare\_for\_training
 
 ```python
- | prepare_for_training(domain: Domain, interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> None
+def prepare_for_training(domain: Domain, interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> None
 ```
 
 Gets necessary information for featurization from domain.
@@ -41,7 +41,7 @@ Gets necessary information for featurization from domain.
 #### encode\_state
 
 ```python
- | encode_state(state: State, interpreter: NaturalLanguageInterpreter) -> Dict[Text, List[Features]]
+def encode_state(state: State, interpreter: NaturalLanguageInterpreter) -> Dict[Text, List[Features]]
 ```
 
 Encodes the given state with the help of the given interpreter.
@@ -59,7 +59,7 @@ Encodes the given state with the help of the given interpreter.
 #### encode\_entities
 
 ```python
- | encode_entities(entity_data: Dict[Text, Any], interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> Dict[Text, List[Features]]
+def encode_entities(entity_data: Dict[Text, Any], interpreter: NaturalLanguageInterpreter, bilou_tagging: bool = False) -> Dict[Text, List[Features]]
 ```
 
 Encodes the given entity data with the help of the given interpreter.
@@ -80,7 +80,7 @@ Produce numeric entity tags for tokens.
 #### encode\_all\_labels
 
 ```python
- | encode_all_labels(domain: Domain, interpreter: NaturalLanguageInterpreter) -> List[Dict[Text, List[Features]]]
+def encode_all_labels(domain: Domain, interpreter: NaturalLanguageInterpreter) -> List[Dict[Text, List[Features]]]
 ```
 
 Encodes all labels from the domain using the given interpreter.
@@ -106,7 +106,7 @@ A SingleStateFeaturizer for use with policies that predict intent labels.
 #### encode\_all\_labels
 
 ```python
- | encode_all_labels(domain: Domain, interpreter: NaturalLanguageInterpreter) -> List[Dict[Text, List[Features]]]
+def encode_all_labels(domain: Domain, interpreter: NaturalLanguageInterpreter) -> List[Dict[Text, List[Features]]]
 ```
 
 Encodes all relevant labels from the domain using the given interpreter.

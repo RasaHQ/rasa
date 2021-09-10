@@ -20,7 +20,7 @@ from https://arxiv.org/abs/1810.07150.
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None, vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None, finetune_mode: bool = False) -> None
+def __init__(component_config: Optional[Dict[Text, Any]] = None, vectorizers: Optional[Dict[Text, "CountVectorizer"]] = None, finetune_mode: bool = False) -> None
 ```
 
 Construct a new count vectorizer using the sklearn framework.
@@ -28,7 +28,7 @@ Construct a new count vectorizer using the sklearn framework.
 #### train
 
 ```python
- | train(training_data: TrainingData, cfg: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
+def train(training_data: TrainingData, cfg: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
 ```
 
 Train the featurizer.
@@ -39,7 +39,7 @@ construct a new count vectorizer using the sklearn framework.
 #### process
 
 ```python
- | process(message: Message, **kwargs: Any) -> None
+def process(message: Message, **kwargs: Any) -> None
 ```
 
 Process incoming message and compute and set features
@@ -47,7 +47,7 @@ Process incoming message and compute and set features
 #### persist
 
 ```python
- | persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
+def persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
 ```
 
 Persist this model into the passed directory.
@@ -57,8 +57,8 @@ Returns the metadata necessary to load the model again.
 #### load
 
 ```python
- | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["CountVectorsFeaturizer"] = None, should_finetune: bool = False, **kwargs: Any, ,) -> "CountVectorsFeaturizer"
+@classmethod
+def load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["CountVectorsFeaturizer"] = None, should_finetune: bool = False, **kwargs: Any, ,) -> "CountVectorsFeaturizer"
 ```
 
 Loads trained component (see parent class for full docstring).

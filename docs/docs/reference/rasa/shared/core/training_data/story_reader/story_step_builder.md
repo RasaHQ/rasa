@@ -11,7 +11,7 @@ class StoryStepBuilder()
 #### add\_user\_messages
 
 ```python
- | add_user_messages(messages: List[UserUttered], is_used_for_training: bool = True) -> None
+def add_user_messages(messages: List[UserUttered], is_used_for_training: bool = True) -> None
 ```
 
 Adds next story steps with the user&#x27;s utterances.

@@ -13,8 +13,8 @@ Provides domain without information about responses.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DomainWithoutResponsesProvider
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> DomainWithoutResponsesProvider
 ```
 
 Creates component (see parent class for full docstring).
@@ -22,7 +22,7 @@ Creates component (see parent class for full docstring).
 #### provide
 
 ```python
- | provide(domain: Domain) -> Domain
+def provide(domain: Domain) -> Domain
 ```
 
 Recreates the given domain but acts as if responses have not been specified.

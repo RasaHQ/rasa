@@ -14,7 +14,7 @@ Stores metadata about a function parameter.
 #### validate
 
 ```python
-validate(schema: GraphSchema, language: Optional[Text], is_train_graph: bool) -> None
+def validate(schema: GraphSchema, language: Optional[Text], is_train_graph: bool) -> None
 ```
 
 Validates a graph schema.

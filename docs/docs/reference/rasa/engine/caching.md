@@ -16,8 +16,8 @@ training runs.
 #### cache\_output
 
 ```python
- | @abc.abstractmethod
- | cache_output(fingerprint_key: Text, output: Any, output_fingerprint: Text, model_storage: ModelStorage) -> None
+@abc.abstractmethod
+def cache_output(fingerprint_key: Text, output: Any, output_fingerprint: Text, model_storage: ModelStorage) -> None
 ```
 
 Adds the output to the cache.
@@ -40,8 +40,8 @@ to its fingerprint.
 #### get\_cached\_output\_fingerprint
 
 ```python
- | @abc.abstractmethod
- | get_cached_output_fingerprint(fingerprint_key: Text) -> Optional[Text]
+@abc.abstractmethod
+def get_cached_output_fingerprint(fingerprint_key: Text) -> Optional[Text]
 ```
 
 Retrieves fingerprint of output based on fingerprint key.
@@ -60,8 +60,8 @@ Retrieves fingerprint of output based on fingerprint key.
 #### get\_cached\_result
 
 ```python
- | @abc.abstractmethod
- | get_cached_result(output_fingerprint_key: Text, node_name: Text, model_storage: ModelStorage) -> Optional[Cacheable]
+@abc.abstractmethod
+def get_cached_result(output_fingerprint_key: Text, node_name: Text, model_storage: ModelStorage) -> Optional[Cacheable]
 ```
 
 Returns a potentially cached output result.
@@ -94,7 +94,7 @@ output fingerprint for everything else.
 #### to\_cache
 
 ```python
- | to_cache(directory: Path, model_storage: ModelStorage) -> None
+def to_cache(directory: Path, model_storage: ModelStorage) -> None
 ```
 
 Persists `Cacheable` to disk.
@@ -108,8 +108,8 @@ Persists `Cacheable` to disk.
 #### from\_cache
 
 ```python
- | @classmethod
- | from_cache(cls, node_name: Text, directory: Path, model_storage: ModelStorage) -> Cacheable
+@classmethod
+def from_cache(cls, node_name: Text, directory: Path, model_storage: ModelStorage) -> Cacheable
 ```
 
 Loads `Cacheable` from cache.
@@ -145,7 +145,7 @@ Stores metadata about a single cache entry.
 #### \_\_init\_\_
 
 ```python
- | __init__() -> None
+def __init__() -> None
 ```
 
 Creates cache.
@@ -155,7 +155,7 @@ The `Cache` setting can be configured via environment variables.
 #### cache\_output
 
 ```python
- | cache_output(fingerprint_key: Text, output: Any, output_fingerprint: Text, model_storage: ModelStorage) -> None
+def cache_output(fingerprint_key: Text, output: Any, output_fingerprint: Text, model_storage: ModelStorage) -> None
 ```
 
 Adds the output to the cache (see parent class for full docstring).
@@ -163,7 +163,7 @@ Adds the output to the cache (see parent class for full docstring).
 #### get\_cached\_output\_fingerprint
 
 ```python
- | get_cached_output_fingerprint(fingerprint_key: Text) -> Optional[Text]
+def get_cached_output_fingerprint(fingerprint_key: Text) -> Optional[Text]
 ```
 
 Returns cached output fingerprint (see parent class for full docstring).
@@ -171,7 +171,7 @@ Returns cached output fingerprint (see parent class for full docstring).
 #### get\_cached\_result
 
 ```python
- | get_cached_result(output_fingerprint_key: Text, node_name: Text, model_storage: ModelStorage) -> Optional[Cacheable]
+def get_cached_result(output_fingerprint_key: Text, node_name: Text, model_storage: ModelStorage) -> Optional[Cacheable]
 ```
 
 Returns a potentially cached output (see parent class for full docstring).

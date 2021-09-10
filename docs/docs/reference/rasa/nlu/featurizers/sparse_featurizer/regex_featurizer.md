@@ -11,7 +11,7 @@ class RegexFeaturizer(SparseFeaturizer)
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None, known_patterns: Optional[List[Dict[Text, Text]]] = None, finetune_mode: bool = False) -> None
+def __init__(component_config: Optional[Dict[Text, Any]] = None, known_patterns: Optional[List[Dict[Text, Text]]] = None, finetune_mode: bool = False) -> None
 ```
 
 Constructs new features for regexes and lookup table using regex expressions.
@@ -25,7 +25,7 @@ Constructs new features for regexes and lookup table using regex expressions.
 #### train
 
 ```python
- | train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
+def train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
 ```
 
 Trains the component with all patterns extracted from training data.
@@ -40,8 +40,8 @@ Trains the component with all patterns extracted from training data.
 #### load
 
 ```python
- | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["RegexFeaturizer"] = None, should_finetune: bool = False, **kwargs: Any, ,) -> "RegexFeaturizer"
+@classmethod
+def load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["RegexFeaturizer"] = None, should_finetune: bool = False, **kwargs: Any, ,) -> "RegexFeaturizer"
 ```
 
 Loads a previously trained component.
@@ -59,7 +59,7 @@ Loads a previously trained component.
 #### persist
 
 ```python
- | persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
+def persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
 ```
 
 Persist this model into the passed directory.

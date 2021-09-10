@@ -11,7 +11,7 @@ class FallbackClassifier(IntentClassifier)
 #### process
 
 ```python
- | process(message: Message, **kwargs: Any) -> None
+def process(message: Message, **kwargs: Any) -> None
 ```
 
 Process an incoming message.
@@ -33,7 +33,7 @@ of components previous to this one.
 #### is\_fallback\_classifier\_prediction
 
 ```python
-is_fallback_classifier_prediction(prediction: Dict[Text, Any]) -> bool
+def is_fallback_classifier_prediction(prediction: Dict[Text, Any]) -> bool
 ```
 
 Checks if the intent was predicted by the `FallbackClassifier`.
@@ -50,7 +50,7 @@ Checks if the intent was predicted by the `FallbackClassifier`.
 #### undo\_fallback\_prediction
 
 ```python
-undo_fallback_prediction(prediction: Dict[Text, Any]) -> Dict[Text, Any]
+def undo_fallback_prediction(prediction: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
 Undo the prediction of the fallback intent.

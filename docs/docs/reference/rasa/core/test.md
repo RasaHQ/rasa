@@ -21,7 +21,7 @@ The model predicted the correct action with warning.
 #### \_\_init\_\_
 
 ```python
- | __init__(action_name_prediction: Text, action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None)
+def __init__(action_name_prediction: Text, action_name: Optional[Text] = None, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None)
 ```
 
 Creates event `action_unlikely_intent` predicted as warning.
@@ -31,7 +31,7 @@ See the docstring of the parent class for more information.
 #### inline\_comment
 
 ```python
- | inline_comment() -> Text
+def inline_comment() -> Text
 ```
 
 A comment attached to this event. Used during dumping.
@@ -50,7 +50,7 @@ dump them as stories.
 #### \_\_init\_\_
 
 ```python
- | __init__(action_name_target: Text, action_text_target: Text, action_name_prediction: Text, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, predicted_action_unlikely_intent: bool = False) -> None
+def __init__(action_name_target: Text, action_text_target: Text, action_name_prediction: Text, policy: Optional[Text] = None, confidence: Optional[float] = None, timestamp: Optional[float] = None, metadata: Optional[Dict] = None, predicted_action_unlikely_intent: bool = False) -> None
 ```
 
 Creates event for a successful event execution.
@@ -60,7 +60,7 @@ See the docstring of the parent class `ActionExecuted` for more information.
 #### inline\_comment
 
 ```python
- | inline_comment() -> Text
+def inline_comment() -> Text
 ```
 
 A comment attached to this event. Used during dumping.
@@ -68,7 +68,7 @@ A comment attached to this event. Used during dumping.
 #### as\_story\_string
 
 ```python
- | as_story_string() -> Text
+def as_story_string() -> Text
 ```
 
 Returns the story equivalent representation.
@@ -76,7 +76,7 @@ Returns the story equivalent representation.
 #### \_\_repr\_\_
 
 ```python
- | __repr__() -> Text
+def __repr__() -> Text
 ```
 
 Returns event as string for debugging.
@@ -92,7 +92,7 @@ Class storing action, intent and entity predictions and targets.
 #### \_\_init\_\_
 
 ```python
- | __init__(action_predictions: Optional[PredictionList] = None, action_targets: Optional[PredictionList] = None, intent_predictions: Optional[PredictionList] = None, intent_targets: Optional[PredictionList] = None, entity_predictions: Optional[List["EntityPrediction"]] = None, entity_targets: Optional[List["EntityPrediction"]] = None) -> None
+def __init__(action_predictions: Optional[PredictionList] = None, action_targets: Optional[PredictionList] = None, intent_predictions: Optional[PredictionList] = None, intent_targets: Optional[PredictionList] = None, entity_predictions: Optional[List["EntityPrediction"]] = None, entity_targets: Optional[List["EntityPrediction"]] = None) -> None
 ```
 
 Initialize store attributes.
@@ -100,7 +100,7 @@ Initialize store attributes.
 #### add\_to\_store
 
 ```python
- | add_to_store(action_predictions: Optional[PredictionList] = None, action_targets: Optional[PredictionList] = None, intent_predictions: Optional[PredictionList] = None, intent_targets: Optional[PredictionList] = None, entity_predictions: Optional[List["EntityPrediction"]] = None, entity_targets: Optional[List["EntityPrediction"]] = None) -> None
+def add_to_store(action_predictions: Optional[PredictionList] = None, action_targets: Optional[PredictionList] = None, intent_predictions: Optional[PredictionList] = None, intent_targets: Optional[PredictionList] = None, entity_predictions: Optional[List["EntityPrediction"]] = None, entity_targets: Optional[List["EntityPrediction"]] = None) -> None
 ```
 
 Add items or lists of items to the store.
@@ -108,7 +108,7 @@ Add items or lists of items to the store.
 #### merge\_store
 
 ```python
- | merge_store(other: "EvaluationStore") -> None
+def merge_store(other: "EvaluationStore") -> None
 ```
 
 Add the contents of other to self.
@@ -116,7 +116,7 @@ Add the contents of other to self.
 #### serialise
 
 ```python
- | serialise() -> Tuple[PredictionList, PredictionList]
+def serialise() -> Tuple[PredictionList, PredictionList]
 ```
 
 Turn targets and predictions to lists of equal size for sklearn.
@@ -135,7 +135,7 @@ Mostly used to print the full end-to-end user message in the
 #### as\_story\_string
 
 ```python
- | as_story_string(e2e: bool = True) -> Text
+def as_story_string(e2e: bool = True) -> Text
 ```
 
 Returns the story equivalent representation.
@@ -154,7 +154,7 @@ dump them as stories.
 #### \_\_init\_\_
 
 ```python
- | __init__(event: UserUttered, eval_store: EvaluationStore) -> None
+def __init__(event: UserUttered, eval_store: EvaluationStore) -> None
 ```
 
 Set `predicted_intent` and `predicted_entities` attributes.
@@ -162,7 +162,7 @@ Set `predicted_intent` and `predicted_entities` attributes.
 #### inline\_comment
 
 ```python
- | inline_comment() -> Optional[Text]
+def inline_comment() -> Optional[Text]
 ```
 
 A comment attached to this event. Used during dumping.
@@ -170,8 +170,8 @@ A comment attached to this event. Used during dumping.
 #### inline\_comment\_for\_entity
 
 ```python
- | @staticmethod
- | inline_comment_for_entity(predicted: Dict[Text, Any], entity: Dict[Text, Any]) -> Optional[Text]
+@staticmethod
+def inline_comment_for_entity(predicted: Dict[Text, Any], entity: Dict[Text, Any]) -> Optional[Text]
 ```
 
 Returns the predicted entity which is then printed as a comment.
@@ -179,7 +179,7 @@ Returns the predicted entity which is then printed as a comment.
 #### as\_story\_string
 
 ```python
- | as_story_string(e2e: bool = True) -> Text
+def as_story_string(e2e: bool = True) -> Text
 ```
 
 Returns text representation of event.
@@ -187,7 +187,7 @@ Returns text representation of event.
 #### emulate\_loop\_rejection
 
 ```python
-emulate_loop_rejection(partial_tracker: DialogueStateTracker) -> None
+def emulate_loop_rejection(partial_tracker: DialogueStateTracker) -> None
 ```
 
 Add `ActionExecutionRejected` event to the tracker.
@@ -202,7 +202,7 @@ test unhappy paths of the loops, we need to emulate loop rejection.
 #### test
 
 ```python
-async test(stories: Text, agent: "Agent", max_stories: Optional[int] = None, out_directory: Optional[Text] = None, fail_on_prediction_errors: bool = False, e2e: bool = False, disable_plotting: bool = False, successes: bool = False, errors: bool = True, warnings: bool = True) -> Dict[Text, Any]
+async def test(stories: Text, agent: "Agent", max_stories: Optional[int] = None, out_directory: Optional[Text] = None, fail_on_prediction_errors: bool = False, e2e: bool = False, disable_plotting: bool = False, successes: bool = False, errors: bool = True, warnings: bool = True) -> Dict[Text, Any]
 ```
 
 Run the evaluation of the stories, optionally plot the results.
@@ -230,7 +230,7 @@ Run the evaluation of the stories, optionally plot the results.
 #### compare\_models\_in\_dir
 
 ```python
-async compare_models_in_dir(model_dir: Text, stories_file: Text, output: Text, use_conversation_test_files: bool = False) -> None
+async def compare_models_in_dir(model_dir: Text, stories_file: Text, output: Text, use_conversation_test_files: bool = False) -> None
 ```
 
 Evaluates multiple trained models in a directory on a test set.
@@ -246,7 +246,7 @@ Evaluates multiple trained models in a directory on a test set.
 #### compare\_models
 
 ```python
-async compare_models(models: List[Text], stories_file: Text, output: Text, use_conversation_test_files: bool = False) -> None
+async def compare_models(models: List[Text], stories_file: Text, output: Text, use_conversation_test_files: bool = False) -> None
 ```
 
 Evaluates multiple trained models on a test set.

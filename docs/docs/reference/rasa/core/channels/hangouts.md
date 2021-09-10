@@ -13,8 +13,8 @@ A Hangouts communication channel.
 #### name
 
 ```python
- | @classmethod
- | name(cls) -> Text
+@classmethod
+def name(cls) -> Text
 ```
 
 Return channel name.
@@ -22,7 +22,7 @@ Return channel name.
 #### \_\_init\_\_
 
 ```python
- | __init__() -> None
+def __init__() -> None
 ```
 
 Starts messages as empty dictionary.
@@ -30,7 +30,7 @@ Starts messages as empty dictionary.
 #### send\_custom\_json
 
 ```python
- | async send_custom_json(recipient_id: Text, json_message: Dict, **kwargs: Any) -> None
+async def send_custom_json(recipient_id: Text, json_message: Dict, **kwargs: Any) -> None
 ```
 
 Custom json payload is simply forwarded to Google Hangouts without

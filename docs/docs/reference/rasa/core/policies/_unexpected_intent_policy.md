@@ -18,7 +18,7 @@ according to the training stories and conversation context.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = UNLIKELY_INTENT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, fake_features: Optional[Dict[Text, List["Features"]]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, should_finetune: bool = False, label_quantiles: Optional[Dict[int, List[float]]] = None, **kwargs: Any, ,) -> None
+def __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = UNLIKELY_INTENT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, fake_features: Optional[Dict[Text, List["Features"]]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, should_finetune: bool = False, label_quantiles: Optional[Dict[int, List[float]]] = None, **kwargs: Any, ,) -> None
 ```
 
 Declares instance variables with default values.
@@ -26,8 +26,8 @@ Declares instance variables with default values.
 #### model\_class
 
 ```python
- | @staticmethod
- | model_class() -> Type["IntentTED"]
+@staticmethod
+def model_class() -> Type["IntentTED"]
 ```
 
 Gets the class of the model architecture to be used by the policy.
@@ -39,7 +39,7 @@ Gets the class of the model architecture to be used by the policy.
 #### compute\_label\_quantiles\_post\_training
 
 ```python
- | compute_label_quantiles_post_training(model_data: RasaModelData, label_ids: np.ndarray) -> None
+def compute_label_quantiles_post_training(model_data: RasaModelData, label_ids: np.ndarray) -> None
 ```
 
 Computes quantile scores for prediction of `action_unlikely_intent`.
@@ -56,7 +56,7 @@ inference time according to the `tolerance` value specified.
 #### run\_training
 
 ```python
- | run_training(model_data: RasaModelData, label_ids: Optional[np.ndarray] = None) -> None
+def run_training(model_data: RasaModelData, label_ids: Optional[np.ndarray] = None) -> None
 ```
 
 Feeds the featurized training data to the model.
@@ -75,7 +75,7 @@ Feeds the featurized training data to the model.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
+def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -95,7 +95,7 @@ Predicts the next action the bot should take after seeing the tracker.
 #### persist\_model\_utilities
 
 ```python
- | persist_model_utilities(model_path: Path) -> None
+def persist_model_utilities(model_path: Path) -> None
 ```
 
 Persists model&#x27;s utility attributes like model weights, etc.
@@ -118,8 +118,8 @@ labels (intents) instead of a single label (action).
 #### dot\_product\_loss\_layer
 
 ```python
- | @property
- | dot_product_loss_layer() -> tf.keras.layers.Layer
+@property
+def dot_product_loss_layer() -> tf.keras.layers.Layer
 ```
 
 Returns the dot-product loss layer to use.
@@ -134,7 +134,7 @@ Multiple intents can be valid simultaneously, so `IntentTED` uses the
 #### run\_bulk\_inference
 
 ```python
- | run_bulk_inference(model_data: RasaModelData) -> Dict[Text, np.ndarray]
+def run_bulk_inference(model_data: RasaModelData) -> Dict[Text, np.ndarray]
 ```
 
 Computes model&#x27;s predictions for input data.

@@ -15,8 +15,8 @@ There will be one event per line and each event is stored as json.
 #### from\_endpoint\_config
 
 ```python
- | @classmethod
- | async from_endpoint_config(cls, broker_config: Optional["EndpointConfig"], event_loop: Optional[AbstractEventLoop] = None) -> Optional["FileEventBroker"]
+@classmethod
+async def from_endpoint_config(cls, broker_config: Optional["EndpointConfig"], event_loop: Optional[AbstractEventLoop] = None) -> Optional["FileEventBroker"]
 ```
 
 Creates broker. See the parent class for more information.
@@ -24,7 +24,7 @@ Creates broker. See the parent class for more information.
 #### publish
 
 ```python
- | publish(event: Dict) -> None
+def publish(event: Dict) -> None
 ```
 
 Write event to file.

@@ -21,8 +21,8 @@ Policy which handles all the rules
 #### supported\_data
 
 ```python
- | @staticmethod
- | supported_data() -> SupportedData
+@staticmethod
+def supported_data() -> SupportedData
 ```
 
 The type of data supported by this policy.
@@ -34,7 +34,7 @@ The type of data supported by this policy.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = RULE_POLICY_PRIORITY, lookup: Optional[Dict] = None, core_fallback_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD, core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, enable_fallback_prediction: bool = True, restrict_rules: bool = True, check_for_contradictions: bool = True, **kwargs: Any, ,) -> None
+def __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = RULE_POLICY_PRIORITY, lookup: Optional[Dict] = None, core_fallback_threshold: float = DEFAULT_CORE_FALLBACK_THRESHOLD, core_fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME, enable_fallback_prediction: bool = True, restrict_rules: bool = True, check_for_contradictions: bool = True, **kwargs: Any, ,) -> None
 ```
 
 Create a `RulePolicy` object.
@@ -61,7 +61,7 @@ Create a `RulePolicy` object.
 #### train
 
 ```python
- | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
+def train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
 ```
 
 Trains the policy on given training trackers.
@@ -75,7 +75,7 @@ Trains the policy on given training trackers.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> "PolicyPrediction"
+def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> "PolicyPrediction"
 ```
 
 Predicts the next action (see parent class for more information).
@@ -83,7 +83,7 @@ Predicts the next action (see parent class for more information).
 #### get\_rule\_only\_data
 
 ```python
- | get_rule_only_data() -> Dict[Text, Any]
+def get_rule_only_data() -> Dict[Text, Any]
 ```
 
 Gets the slots and loops that are used only in rule data.

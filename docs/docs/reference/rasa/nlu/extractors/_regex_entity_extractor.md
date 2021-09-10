@@ -14,7 +14,7 @@ defined in the training data.
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None, patterns: Optional[List[Dict[Text, Text]]] = None)
+def __init__(component_config: Optional[Dict[Text, Any]] = None, patterns: Optional[List[Dict[Text, Text]]] = None)
 ```
 
 Extracts entities using the lookup tables and/or regexes defined.
@@ -22,8 +22,8 @@ Extracts entities using the lookup tables and/or regexes defined.
 #### load
 
 ```python
- | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["RegexEntityExtractor"] = None, **kwargs: Any, ,) -> "RegexEntityExtractor"
+@classmethod
+def load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["RegexEntityExtractor"] = None, **kwargs: Any, ,) -> "RegexEntityExtractor"
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -31,7 +31,7 @@ Loads trained component (see parent class for full docstring).
 #### persist
 
 ```python
- | persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
+def persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
 ```
 
 Persist this model into the passed directory.

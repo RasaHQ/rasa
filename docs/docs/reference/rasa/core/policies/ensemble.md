@@ -11,8 +11,8 @@ class PolicyEnsemble()
 #### check\_domain\_ensemble\_compatibility
 
 ```python
- | @staticmethod
- | check_domain_ensemble_compatibility(ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]) -> None
+@staticmethod
+def check_domain_ensemble_compatibility(ensemble: Optional["PolicyEnsemble"], domain: Optional[Domain]) -> None
 ```
 
 Check for elements that only work with certain policy/domain combinations.
@@ -20,7 +20,7 @@ Check for elements that only work with certain policy/domain combinations.
 #### persist
 
 ```python
- | persist(path: Union[Text, Path]) -> None
+def persist(path: Union[Text, Path]) -> None
 ```
 
 Persists the policy to storage.
@@ -28,8 +28,8 @@ Persists the policy to storage.
 #### load
 
 ```python
- | @classmethod
- | load(cls, path: Union[Text, Path], new_config: Optional[Dict] = None, finetuning_epoch_fraction: float = 1.0) -> "PolicyEnsemble"
+@classmethod
+def load(cls, path: Union[Text, Path], new_config: Optional[Dict] = None, finetuning_epoch_fraction: float = 1.0) -> "PolicyEnsemble"
 ```
 
 Loads policy and domain specification from disk.
@@ -37,8 +37,8 @@ Loads policy and domain specification from disk.
 #### get\_featurizer\_from\_dict
 
 ```python
- | @classmethod
- | get_featurizer_from_dict(cls, policy: Dict[Text, Any]) -> Tuple[Any, Any]
+@classmethod
+def get_featurizer_from_dict(cls, policy: Dict[Text, Any]) -> Tuple[Any, Any]
 ```
 
 Gets the featurizer initializer and its arguments from a policy config.
@@ -54,8 +54,8 @@ Default implementation of a `Policy` ensemble.
 #### is\_not\_in\_training\_data
 
 ```python
- | @staticmethod
- | is_not_in_training_data(policy_name: Optional[Text], max_confidence: Optional[float] = None) -> bool
+@staticmethod
+def is_not_in_training_data(policy_name: Optional[Text], max_confidence: Optional[float] = None) -> bool
 ```
 
 Checks if the prediction is by a policy which memoized the training data.
@@ -70,7 +70,7 @@ Checks if the prediction is by a policy which memoized the training data.
 #### probabilities\_using\_best\_policy
 
 ```python
- | probabilities_using_best_policy(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
+def probabilities_using_best_policy(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.

@@ -13,8 +13,8 @@ Handles incoming messages with low NLU confidence.
 #### get\_default\_config
 
 ```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -22,7 +22,7 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any]) -> None
+def __init__(config: Dict[Text, Any]) -> None
 ```
 
 Constructs a new fallback classifier.
@@ -30,8 +30,8 @@ Constructs a new fallback classifier.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FallbackClassifierGraphComponent
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> FallbackClassifierGraphComponent
 ```
 
 Creates a new component (see parent class for full docstring).
@@ -39,7 +39,7 @@ Creates a new component (see parent class for full docstring).
 #### process
 
 ```python
- | process(messages: List[Message]) -> List[Message]
+def process(messages: List[Message]) -> List[Message]
 ```
 
 Process a list of incoming messages.
@@ -61,7 +61,7 @@ of components previous to this one.
 #### is\_fallback\_classifier\_prediction
 
 ```python
-is_fallback_classifier_prediction(prediction: Dict[Text, Any]) -> bool
+def is_fallback_classifier_prediction(prediction: Dict[Text, Any]) -> bool
 ```
 
 Checks if the intent was predicted by the `FallbackClassifier`.
@@ -78,7 +78,7 @@ Checks if the intent was predicted by the `FallbackClassifier`.
 #### undo\_fallback\_prediction
 
 ```python
-undo_fallback_prediction(prediction: Dict[Text, Any]) -> Dict[Text, Any]
+def undo_fallback_prediction(prediction: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
 Undo the prediction of the fallback intent.

@@ -13,8 +13,8 @@ Adds NLU predictions to DialogueStateTracker.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> NLUPredictionToHistoryAdder
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> NLUPredictionToHistoryAdder
 ```
 
 Creates component (see parent class for full docstring).
@@ -22,7 +22,7 @@ Creates component (see parent class for full docstring).
 #### add
 
 ```python
- | add(predictions: List[Message], tracker: DialogueStateTracker, domain: Domain, original_message: UserMessage) -> DialogueStateTracker
+def add(predictions: List[Message], tracker: DialogueStateTracker, domain: Domain, original_message: UserMessage) -> DialogueStateTracker
 ```
 
 Adds NLU predictions to the tracker.

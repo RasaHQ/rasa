@@ -5,7 +5,7 @@ title: rasa.utils.io
 #### pickle\_dump
 
 ```python
-pickle_dump(filename: Union[Text, Path], obj: Any) -> None
+def pickle_dump(filename: Union[Text, Path], obj: Any) -> None
 ```
 
 Saves object to file.
@@ -18,7 +18,7 @@ Saves object to file.
 #### pickle\_load
 
 ```python
-pickle_load(filename: Union[Text, Path]) -> Any
+def pickle_load(filename: Union[Text, Path]) -> Any
 ```
 
 Loads an object from a file.
@@ -32,7 +32,7 @@ Loads an object from a file.
 #### unarchive
 
 ```python
-unarchive(byte_array: bytes, directory: Text) -> Text
+def unarchive(byte_array: bytes, directory: Text) -> Text
 ```
 
 Tries to unpack a byte array interpreting it as an archive.
@@ -42,7 +42,7 @@ Tries to use tar first to unpack, if that fails, zip will be used.
 #### create\_temporary\_file
 
 ```python
-create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text
+def create_temporary_file(data: Any, suffix: Text = "", mode: Text = "w+") -> Text
 ```
 
 Creates a tempfile.NamedTemporaryFile object for data.
@@ -52,7 +52,7 @@ mode defines NamedTemporaryFile&#x27;s  mode parameter in py3.
 #### create\_temporary\_directory
 
 ```python
-create_temporary_directory() -> Text
+def create_temporary_directory() -> Text
 ```
 
 Creates a tempfile.TemporaryDirectory.
@@ -60,7 +60,7 @@ Creates a tempfile.TemporaryDirectory.
 #### create\_path
 
 ```python
-create_path(file_path: Text) -> None
+def create_path(file_path: Text) -> None
 ```
 
 Makes sure all directories in the &#x27;file_path&#x27; exists.
@@ -68,7 +68,7 @@ Makes sure all directories in the &#x27;file_path&#x27; exists.
 #### file\_type\_validator
 
 ```python
-file_type_validator(valid_file_types: List[Text], error_message: Text) -> Type["Validator"]
+def file_type_validator(valid_file_types: List[Text], error_message: Text) -> Type["Validator"]
 ```
 
 Creates a `Validator` class which can be used with `questionary` to validate
@@ -77,7 +77,7 @@ file paths.
 #### not\_empty\_validator
 
 ```python
-not_empty_validator(error_message: Text) -> Type["Validator"]
+def not_empty_validator(error_message: Text) -> Type["Validator"]
 ```
 
 Creates a `Validator` class which can be used with `questionary` to validate
@@ -86,7 +86,7 @@ that the user entered something other than whitespace.
 #### create\_validator
 
 ```python
-create_validator(function: Callable[[Text], bool], error_message: Text) -> Type["Validator"]
+def create_validator(function: Callable[[Text], bool], error_message: Text) -> Type["Validator"]
 ```
 
 Helper method to create `Validator` classes from callable functions. Should be
@@ -95,7 +95,7 @@ removed when questionary supports `Validator` objects.
 #### json\_unpickle
 
 ```python
-json_unpickle(file_name: Union[Text, Path], encode_non_string_keys: bool = False) -> Any
+def json_unpickle(file_name: Union[Text, Path], encode_non_string_keys: bool = False) -> Any
 ```
 
 Unpickle an object from file using json.
@@ -111,7 +111,7 @@ Unpickle an object from file using json.
 #### json\_pickle
 
 ```python
-json_pickle(file_name: Union[Text, Path], obj: Any, encode_non_string_keys: bool = False) -> None
+def json_pickle(file_name: Union[Text, Path], obj: Any, encode_non_string_keys: bool = False) -> None
 ```
 
 Pickle an object to a file using json.
@@ -126,7 +126,7 @@ Pickle an object to a file using json.
 #### get\_emoji\_regex
 
 ```python
-get_emoji_regex() -> Pattern
+def get_emoji_regex() -> Pattern
 ```
 
 Returns regex to identify emojis.

@@ -13,7 +13,7 @@ Chat input channel for Rasa X
 #### \_\_init\_\_
 
 ```python
- | __init__(url: Optional[Text]) -> None
+def __init__(url: Optional[Text]) -> None
 ```
 
 Initialise the channel with attributes.

@@ -5,7 +5,7 @@ title: rasa.core.interpreter
 #### create\_interpreter
 
 ```python
-create_interpreter(obj: Union[
+def create_interpreter(obj: Union[
         rasa.shared.nlu.interpreter.NaturalLanguageInterpreter,
         EndpointConfig,
         Text,
@@ -24,7 +24,7 @@ class RasaNLUHttpInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpre
 #### parse
 
 ```python
- | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None, metadata: Optional[Dict] = None) -> Dict[Text, Any]
+async def parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None, metadata: Optional[Dict] = None) -> Dict[Text, Any]
 ```
 
 Parse a text message.
@@ -40,7 +40,7 @@ class RasaNLUInterpreter(rasa.shared.nlu.interpreter.NaturalLanguageInterpreter)
 #### parse
 
 ```python
- | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None, metadata: Optional[Dict] = None) -> Dict[Text, Any]
+async def parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None, metadata: Optional[Dict] = None) -> Dict[Text, Any]
 ```
 
 Parse a text message.
@@ -50,7 +50,7 @@ Return a default value if the parsing of the text failed.
 #### featurize\_message
 
 ```python
- | featurize_message(message: Message) -> Optional[Message]
+def featurize_message(message: Message) -> Optional[Message]
 ```
 
 Featurize message using a trained NLU pipeline.

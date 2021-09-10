@@ -29,7 +29,7 @@ training stories for this, use AugmentedMemoizationPolicy.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = MEMOIZATION_POLICY_PRIORITY, max_history: Optional[int] = DEFAULT_MAX_HISTORY, lookup: Optional[Dict] = None, **kwargs: Any, ,) -> None
+def __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = MEMOIZATION_POLICY_PRIORITY, max_history: Optional[int] = DEFAULT_MAX_HISTORY, lookup: Optional[Dict] = None, **kwargs: Any, ,) -> None
 ```
 
 Initialize the policy.
@@ -45,7 +45,7 @@ Initialize the policy.
 #### recall
 
 ```python
- | recall(states: List[State], tracker: DialogueStateTracker, domain: Domain) -> Optional[Text]
+def recall(states: List[State], tracker: DialogueStateTracker, domain: Domain) -> Optional[Text]
 ```
 
 Finds the action based on the given states.
@@ -64,7 +64,7 @@ Finds the action based on the given states.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
+def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -105,7 +105,7 @@ for current dialogue.
 #### recall
 
 ```python
- | recall(states: List[State], tracker: DialogueStateTracker, domain: Domain) -> Optional[Text]
+def recall(states: List[State], tracker: DialogueStateTracker, domain: Domain) -> Optional[Text]
 ```
 
 Finds the action based on the given states.

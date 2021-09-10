@@ -13,8 +13,8 @@ Common parent class for all dialogue policies.
 #### supported\_data
 
 ```python
- | @staticmethod
- | supported_data() -> "SupportedData"
+@staticmethod
+def supported_data() -> "SupportedData"
 ```
 
 The type of data supported by this policy.
@@ -29,7 +29,7 @@ or both ML-based data and rule data, they need to override this method.
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, should_finetune: bool = False, **kwargs: Any, ,) -> None
+def __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, should_finetune: bool = False, **kwargs: Any, ,) -> None
 ```
 
 Constructs a new Policy object.
@@ -37,8 +37,8 @@ Constructs a new Policy object.
 #### featurizer
 
 ```python
- | @property
- | featurizer() -> TrackerFeaturizer
+@property
+def featurizer() -> TrackerFeaturizer
 ```
 
 Returns the policy&#x27;s featurizer.
@@ -46,7 +46,7 @@ Returns the policy&#x27;s featurizer.
 #### set\_shared\_policy\_states
 
 ```python
- | set_shared_policy_states(**kwargs: Any) -> None
+def set_shared_policy_states(**kwargs: Any) -> None
 ```
 
 Sets policy&#x27;s shared states for correct featurization.
@@ -54,7 +54,7 @@ Sets policy&#x27;s shared states for correct featurization.
 #### train
 
 ```python
- | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
+def train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
 ```
 
 Trains the policy on given training trackers.
@@ -70,7 +70,7 @@ Trains the policy on given training trackers.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> "PolicyPrediction"
+def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> "PolicyPrediction"
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -90,7 +90,7 @@ Predicts the next action the bot should take after seeing the tracker.
 #### persist
 
 ```python
- | persist(path: Union[Text, Path]) -> None
+def persist(path: Union[Text, Path]) -> None
 ```
 
 Persists the policy to storage.
@@ -102,8 +102,8 @@ Persists the policy to storage.
 #### load
 
 ```python
- | @classmethod
- | load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy"
+@classmethod
+def load(cls, path: Union[Text, Path], **kwargs: Any) -> "Policy"
 ```
 
 Loads a policy from path.
@@ -120,8 +120,8 @@ Loads a policy from path.
 #### format\_tracker\_states
 
 ```python
- | @staticmethod
- | format_tracker_states(states: List[Dict]) -> Text
+@staticmethod
+def format_tracker_states(states: List[Dict]) -> Text
 ```
 
 Format tracker states to human readable format on debug log.

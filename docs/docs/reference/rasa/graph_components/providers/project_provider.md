@@ -13,8 +13,8 @@ Provides domain and training data during training and inference time.
 #### get\_default\_config
 
 ```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
 Default config for ProjectProvider.
@@ -22,7 +22,7 @@ Default config for ProjectProvider.
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any]) -> None
+def __init__(config: Dict[Text, Any]) -> None
 ```
 
 Initializes the ProjectProvider.
@@ -30,8 +30,8 @@ Initializes the ProjectProvider.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> ProjectProvider
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> ProjectProvider
 ```
 
 Creates component (see parent class for full docstring).
@@ -39,7 +39,7 @@ Creates component (see parent class for full docstring).
 #### provide
 
 ```python
- | provide() -> TrainingDataImporter
+def provide() -> TrainingDataImporter
 ```
 
 Provides the TrainingDataImporter.

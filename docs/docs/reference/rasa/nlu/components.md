@@ -5,7 +5,7 @@ title: rasa.nlu.components
 #### validate\_requirements
 
 ```python
-validate_requirements(component_names: List[Optional[Text]]) -> None
+def validate_requirements(component_names: List[Optional[Text]]) -> None
 ```
 
 Validates that all required importable python packages are installed.
@@ -25,7 +25,7 @@ Validates that all required importable python packages are installed.
 #### validate\_component\_keys
 
 ```python
-validate_component_keys(component: "Component", component_config: Dict[Text, Any]) -> None
+def validate_component_keys(component: "Component", component_config: Dict[Text, Any]) -> None
 ```
 
 Validates that all keys for a component are valid.
@@ -38,7 +38,7 @@ Validates that all keys for a component are valid.
 #### validate\_empty\_pipeline
 
 ```python
-validate_empty_pipeline(pipeline: List["Component"]) -> None
+def validate_empty_pipeline(pipeline: List["Component"]) -> None
 ```
 
 Ensures the pipeline is not empty.
@@ -50,7 +50,7 @@ Ensures the pipeline is not empty.
 #### validate\_only\_one\_tokenizer\_is\_used
 
 ```python
-validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None
+def validate_only_one_tokenizer_is_used(pipeline: List["Component"]) -> None
 ```
 
 Validates that only one tokenizer is present in the pipeline.
@@ -62,7 +62,7 @@ Validates that only one tokenizer is present in the pipeline.
 #### validate\_required\_components
 
 ```python
-validate_required_components(pipeline: List["Component"]) -> None
+def validate_required_components(pipeline: List["Component"]) -> None
 ```
 
 Validates that all required components are present in the pipeline.
@@ -74,7 +74,7 @@ Validates that all required components are present in the pipeline.
 #### validate\_pipeline
 
 ```python
-validate_pipeline(pipeline: List["Component"]) -> None
+def validate_pipeline(pipeline: List["Component"]) -> None
 ```
 
 Validates the pipeline.
@@ -86,7 +86,7 @@ Validates the pipeline.
 #### any\_components\_in\_pipeline
 
 ```python
-any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]) -> bool
+def any_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]) -> bool
 ```
 
 Check if any of the provided components are listed in the pipeline.
@@ -104,7 +104,7 @@ Check if any of the provided components are listed in the pipeline.
 #### find\_components\_in\_pipeline
 
 ```python
-find_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]) -> Set[Text]
+def find_components_in_pipeline(components: Iterable[Text], pipeline: List["Component"]) -> Set[Text]
 ```
 
 Finds those of the given components that are present in the pipeline.
@@ -122,7 +122,7 @@ Finds those of the given components that are present in the pipeline.
 #### validate\_required\_components\_from\_data
 
 ```python
-validate_required_components_from_data(pipeline: List["Component"], data: TrainingData) -> None
+def validate_required_components_from_data(pipeline: List["Component"], data: TrainingData) -> None
 ```
 
 Validates that all components are present in the pipeline based on data.
@@ -135,7 +135,7 @@ Validates that all components are present in the pipeline based on data.
 #### warn\_of\_competing\_extractors
 
 ```python
-warn_of_competing_extractors(pipeline: List["Component"]) -> None
+def warn_of_competing_extractors(pipeline: List["Component"]) -> None
 ```
 
 Warns the user when using competing extractors.
@@ -151,7 +151,7 @@ leading to ambiguity in the results.
 #### warn\_of\_competition\_with\_regex\_extractor
 
 ```python
-warn_of_competition_with_regex_extractor(pipeline: List["Component"], data: TrainingData) -> None
+def warn_of_competition_with_regex_extractor(pipeline: List["Component"], data: TrainingData) -> None
 ```
 
 Warns when regex entity extractor is competing with a general one.
@@ -202,8 +202,8 @@ Metaclass with `name` class property.
 #### name
 
 ```python
- | @property
- | name(cls) -> Text
+@property
+def name(cls) -> Text
 ```
 
 The name property is a function of the class - its __name__.
@@ -237,8 +237,8 @@ the pipeline to do intent classification.
 #### name
 
 ```python
- | @property
- | name() -> Text
+@property
+def name() -> Text
 ```
 
 Returns the name of the component to be used in the model configuration.
@@ -251,8 +251,8 @@ is the name of the first component of the pipeline.
 #### unique\_name
 
 ```python
- | @property
- | unique_name() -> Text
+@property
+def unique_name() -> Text
 ```
 
 Gets a unique name for the component in the pipeline.
@@ -264,8 +264,8 @@ featurizers of the same type.
 #### required\_components
 
 ```python
- | @classmethod
- | required_components(cls) -> List[Type["Component"]]
+@classmethod
+def required_components(cls) -> List[Type["Component"]]
 ```
 
 Specifies which components need to be present in the pipeline.
@@ -280,8 +280,8 @@ Listed components should appear before the component itself in the pipeline.
 #### required\_packages
 
 ```python
- | @classmethod
- | required_packages(cls) -> List[Text]
+@classmethod
+def required_packages(cls) -> List[Text]
 ```
 
 Specifies which python packages need to be installed.
@@ -300,8 +300,8 @@ if a required package is not installed.
 #### load
 
 ```python
- | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional["Metadata"] = None, cached_component: Optional["Component"] = None, **kwargs: Any, ,) -> "Component"
+@classmethod
+def load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional["Metadata"] = None, cached_component: Optional["Component"] = None, **kwargs: Any, ,) -> "Component"
 ```
 
 Loads this component from file.
@@ -328,8 +328,8 @@ calls to components previous to this one.
 #### create
 
 ```python
- | @classmethod
- | create(cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig) -> "Component"
+@classmethod
+def create(cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig) -> "Component"
 ```
 
 Creates this component (e.g. before a training is started).
@@ -349,7 +349,7 @@ Method can access all configuration parameters.
 #### provide\_context
 
 ```python
- | provide_context() -> Optional[Dict[Text, Any]]
+def provide_context() -> Optional[Dict[Text, Any]]
 ```
 
 Initializes this component for a new pipeline.
@@ -371,7 +371,7 @@ like MITIE and spacy
 #### train
 
 ```python
- | train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
+def train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
 ```
 
 Trains this component.
@@ -394,7 +394,7 @@ of components previous to this one.
 #### process
 
 ```python
- | process(message: Message, **kwargs: Any) -> None
+def process(message: Message, **kwargs: Any) -> None
 ```
 
 Processes an incoming message.
@@ -416,7 +416,7 @@ of components previous to this one.
 #### persist
 
 ```python
- | persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
+def persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
 ```
 
 Persists this component to disk for future loading.
@@ -434,8 +434,8 @@ Persists this component to disk for future loading.
 #### cache\_key
 
 ```python
- | @classmethod
- | cache_key(cls, component_meta: Dict[Text, Any], model_metadata: "Metadata") -> Optional[Text]
+@classmethod
+def cache_key(cls, component_meta: Dict[Text, Any], model_metadata: "Metadata") -> Optional[Text]
 ```
 
 This key is used to cache components.
@@ -458,7 +458,7 @@ metadata creates the same key.
 #### \_\_getstate\_\_
 
 ```python
- | __getstate__() -> Any
+def __getstate__() -> Any
 ```
 
 Gets a copy of picklable parts of the component.
@@ -466,7 +466,7 @@ Gets a copy of picklable parts of the component.
 #### prepare\_partial\_processing
 
 ```python
- | prepare_partial_processing(pipeline: List["Component"], context: Dict[Text, Any]) -> None
+def prepare_partial_processing(pipeline: List["Component"], context: Dict[Text, Any]) -> None
 ```
 
 Sets the pipeline and context used for partial processing.
@@ -484,7 +484,7 @@ be safely used to process messages).
 #### partially\_process
 
 ```python
- | partially_process(message: Message) -> Message
+def partially_process(message: Message) -> Message
 ```
 
 Allows the component to process messages during
@@ -506,8 +506,8 @@ previous to this one in the pipeline.
 #### can\_handle\_language
 
 ```python
- | @classmethod
- | can_handle_language(cls, language: Hashable) -> bool
+@classmethod
+def can_handle_language(cls, language: Hashable) -> bool
 ```
 
 Check if component supports a specific language.
@@ -537,7 +537,7 @@ Caches components for reuse.
 #### load\_component
 
 ```python
- | load_component(component_meta: Dict[Text, Any], model_dir: Text, model_metadata: "Metadata", **context: Any, ,) -> Optional[Component]
+def load_component(component_meta: Dict[Text, Any], model_dir: Text, model_metadata: "Metadata", **context: Any, ,) -> Optional[Component]
 ```
 
 Loads a component.
@@ -562,7 +562,7 @@ Tries to retrieve a component from the cache, else calls
 #### create\_component
 
 ```python
- | create_component(component_config: Dict[Text, Any], cfg: RasaNLUModelConfig) -> Component
+def create_component(component_config: Dict[Text, Any], cfg: RasaNLUModelConfig) -> Component
 ```
 
 Creates a component.

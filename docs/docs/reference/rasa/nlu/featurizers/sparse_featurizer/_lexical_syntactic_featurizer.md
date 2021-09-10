@@ -16,8 +16,8 @@ features according to the configuration.
 #### load
 
 ```python
- | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["LexicalSyntacticFeaturizer"] = None, **kwargs: Any, ,) -> "LexicalSyntacticFeaturizer"
+@classmethod
+def load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Optional[Metadata] = None, cached_component: Optional["LexicalSyntacticFeaturizer"] = None, **kwargs: Any, ,) -> "LexicalSyntacticFeaturizer"
 ```
 
 Loads trained component (see parent class for full docstring).
@@ -25,7 +25,7 @@ Loads trained component (see parent class for full docstring).
 #### persist
 
 ```python
- | persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
+def persist(file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]
 ```
 
 Persist this model into the passed directory.

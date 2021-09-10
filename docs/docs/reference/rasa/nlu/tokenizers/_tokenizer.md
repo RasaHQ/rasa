@@ -11,7 +11,7 @@ class Token()
 #### set
 
 ```python
- | set(prop: Text, info: Any) -> None
+def set(prop: Text, info: Any) -> None
 ```
 
 Set property value.
@@ -19,7 +19,7 @@ Set property value.
 #### get
 
 ```python
- | get(prop: Text, default: Optional[Any] = None) -> Any
+def get(prop: Text, default: Optional[Any] = None) -> Any
 ```
 
 Returns token value.
@@ -27,7 +27,7 @@ Returns token value.
 #### fingerprint
 
 ```python
- | fingerprint() -> Text
+def fingerprint() -> Text
 ```
 
 Returns a stable hash for this Token.
@@ -43,7 +43,7 @@ Base class for tokenizers.
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Dict[Text, Any] = None) -> None
+def __init__(component_config: Dict[Text, Any] = None) -> None
 ```
 
 Construct a new tokenizer using the WhitespaceTokenizer framework.
@@ -51,7 +51,7 @@ Construct a new tokenizer using the WhitespaceTokenizer framework.
 #### tokenize
 
 ```python
- | tokenize(message: Message, attribute: Text) -> List[Token]
+def tokenize(message: Message, attribute: Text) -> List[Token]
 ```
 
 Tokenizes the text of the provided attribute of the incoming message.
@@ -59,7 +59,7 @@ Tokenizes the text of the provided attribute of the incoming message.
 #### train
 
 ```python
- | train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
+def train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
 ```
 
 Tokenize all training data.
@@ -67,7 +67,7 @@ Tokenize all training data.
 #### process
 
 ```python
- | process(message: Message, **kwargs: Any) -> None
+def process(message: Message, **kwargs: Any) -> None
 ```
 
 Tokenize the incoming message.

@@ -23,8 +23,8 @@ class LockStore()
 #### create
 
 ```python
- | @staticmethod
- | create(obj: Union["LockStore", EndpointConfig, None]) -> "LockStore"
+@staticmethod
+def create(obj: Union["LockStore", EndpointConfig, None]) -> "LockStore"
 ```
 
 Factory to create a lock store.
@@ -32,8 +32,8 @@ Factory to create a lock store.
 #### create\_lock
 
 ```python
- | @staticmethod
- | create_lock(conversation_id: Text) -> TicketLock
+@staticmethod
+def create_lock(conversation_id: Text) -> TicketLock
 ```
 
 Create a new `TicketLock` for `conversation_id`.
@@ -41,7 +41,7 @@ Create a new `TicketLock` for `conversation_id`.
 #### get\_lock
 
 ```python
- | get_lock(conversation_id: Text) -> Optional[TicketLock]
+def get_lock(conversation_id: Text) -> Optional[TicketLock]
 ```
 
 Fetch lock for `conversation_id` from storage.
@@ -49,7 +49,7 @@ Fetch lock for `conversation_id` from storage.
 #### delete\_lock
 
 ```python
- | delete_lock(conversation_id: Text) -> None
+def delete_lock(conversation_id: Text) -> None
 ```
 
 Delete lock for `conversation_id` from storage.
@@ -57,7 +57,7 @@ Delete lock for `conversation_id` from storage.
 #### save\_lock
 
 ```python
- | save_lock(lock: TicketLock) -> None
+def save_lock(lock: TicketLock) -> None
 ```
 
 Commit `lock` to storage.
@@ -65,7 +65,7 @@ Commit `lock` to storage.
 #### issue\_ticket
 
 ```python
- | issue_ticket(conversation_id: Text, lock_lifetime: float = LOCK_LIFETIME) -> int
+def issue_ticket(conversation_id: Text, lock_lifetime: float = LOCK_LIFETIME) -> int
 ```
 
 Issue new ticket with `lock_lifetime` for lock associated with
@@ -76,8 +76,8 @@ Creates a new lock if none is found.
 #### lock
 
 ```python
- | @asynccontextmanager
- | async lock(conversation_id: Text, lock_lifetime: float = LOCK_LIFETIME, wait_time_in_seconds: float = 1) -> AsyncGenerator[TicketLock, None]
+@asynccontextmanager
+async def lock(conversation_id: Text, lock_lifetime: float = LOCK_LIFETIME, wait_time_in_seconds: float = 1) -> AsyncGenerator[TicketLock, None]
 ```
 
 Acquire lock with lifetime `lock_lifetime`for `conversation_id`.
@@ -88,7 +88,7 @@ between attempts. Raise a `LockError` if lock has expired.
 #### update\_lock
 
 ```python
- | update_lock(conversation_id: Text) -> None
+def update_lock(conversation_id: Text) -> None
 ```
 
 Fetch lock for `conversation_id`, remove expired tickets and save lock.
@@ -96,7 +96,7 @@ Fetch lock for `conversation_id`, remove expired tickets and save lock.
 #### get\_or\_create\_lock
 
 ```python
- | get_or_create_lock(conversation_id: Text) -> TicketLock
+def get_or_create_lock(conversation_id: Text) -> TicketLock
 ```
 
 Fetch existing lock for `conversation_id` or create a new one if
@@ -105,7 +105,7 @@ it doesn&#x27;t exist.
 #### is\_someone\_waiting
 
 ```python
- | is_someone_waiting(conversation_id: Text) -> bool
+def is_someone_waiting(conversation_id: Text) -> bool
 ```
 
 Return whether someone is waiting for lock associated with
@@ -114,7 +114,7 @@ Return whether someone is waiting for lock associated with
 #### finish\_serving
 
 ```python
- | finish_serving(conversation_id: Text, ticket_number: int) -> None
+def finish_serving(conversation_id: Text, ticket_number: int) -> None
 ```
 
 Finish serving ticket with `ticket_number` for `conversation_id`.
@@ -124,7 +124,7 @@ Removes ticket from lock and saves lock.
 #### cleanup
 
 ```python
- | cleanup(conversation_id: Text, ticket_number: int) -> None
+def cleanup(conversation_id: Text, ticket_number: int) -> None
 ```
 
 Remove lock for `conversation_id` if no one is waiting.
@@ -140,7 +140,7 @@ Redis store for ticket locks.
 #### \_\_init\_\_
 
 ```python
- | __init__(host: Text = "localhost", port: int = 6379, db: int = 1, password: Optional[Text] = None, use_ssl: bool = False, key_prefix: Optional[Text] = None, socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS) -> None
+def __init__(host: Text = "localhost", port: int = 6379, db: int = 1, password: Optional[Text] = None, use_ssl: bool = False, key_prefix: Optional[Text] = None, socket_timeout: float = DEFAULT_SOCKET_TIMEOUT_IN_SECONDS) -> None
 ```
 
 Create a lock store which uses Redis for persistence.
@@ -162,7 +162,7 @@ Create a lock store which uses Redis for persistence.
 #### get\_lock
 
 ```python
- | get_lock(conversation_id: Text) -> Optional[TicketLock]
+def get_lock(conversation_id: Text) -> Optional[TicketLock]
 ```
 
 Retrieves lock (see parent docstring for more information).
@@ -170,7 +170,7 @@ Retrieves lock (see parent docstring for more information).
 #### delete\_lock
 
 ```python
- | delete_lock(conversation_id: Text) -> None
+def delete_lock(conversation_id: Text) -> None
 ```
 
 Deletes lock for conversation ID.

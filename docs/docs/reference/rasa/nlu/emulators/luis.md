@@ -16,7 +16,7 @@ https://docs.microsoft.com/en-us/azure/cognitive-services/LUIS/luis-concept-data
 #### normalise\_response\_json
 
 ```python
- | normalise_response_json(data: Dict[Text, Any]) -> Dict[Text, Any]
+def normalise_response_json(data: Dict[Text, Any]) -> Dict[Text, Any]
 ```
 
 Transform response JSON to LUIS format.

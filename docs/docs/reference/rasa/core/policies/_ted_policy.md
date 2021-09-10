@@ -29,7 +29,7 @@ following steps:
 #### \_\_init\_\_
 
 ```python
- | __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, fake_features: Optional[Dict[Text, List["Features"]]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, should_finetune: bool = False, **kwargs: Any, ,) -> None
+def __init__(featurizer: Optional[TrackerFeaturizer] = None, priority: int = DEFAULT_POLICY_PRIORITY, max_history: Optional[int] = None, model: Optional[RasaModel] = None, fake_features: Optional[Dict[Text, List["Features"]]] = None, entity_tag_specs: Optional[List[EntityTagSpec]] = None, should_finetune: bool = False, **kwargs: Any, ,) -> None
 ```
 
 Declares instance variables with default values.
@@ -37,8 +37,8 @@ Declares instance variables with default values.
 #### model\_class
 
 ```python
- | @staticmethod
- | model_class() -> Type["TED"]
+@staticmethod
+def model_class() -> Type["TED"]
 ```
 
 Gets the class of the model architecture to be used by the policy.
@@ -50,7 +50,7 @@ Gets the class of the model architecture to be used by the policy.
 #### run\_training
 
 ```python
- | run_training(model_data: RasaModelData, label_ids: Optional[np.ndarray] = None) -> None
+def run_training(model_data: RasaModelData, label_ids: Optional[np.ndarray] = None) -> None
 ```
 
 Feeds the featurized training data to the model.
@@ -65,7 +65,7 @@ Feeds the featurized training data to the model.
 #### train
 
 ```python
- | train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
+def train(training_trackers: List[TrackerWithCachedStates], domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> None
 ```
 
 Trains the policy on given training trackers.
@@ -81,7 +81,7 @@ Trains the policy on given training trackers.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
+def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, interpreter: NaturalLanguageInterpreter, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -101,7 +101,7 @@ Predicts the next action the bot should take after seeing the tracker.
 #### persist
 
 ```python
- | persist(path: Union[Text, Path]) -> None
+def persist(path: Union[Text, Path]) -> None
 ```
 
 Persists the policy to a storage.
@@ -109,7 +109,7 @@ Persists the policy to a storage.
 #### persist\_model\_utilities
 
 ```python
- | persist_model_utilities(model_path: Path) -> None
+def persist_model_utilities(model_path: Path) -> None
 ```
 
 Persists model&#x27;s utility attributes like model weights, etc.
@@ -121,8 +121,8 @@ Persists model&#x27;s utility attributes like model weights, etc.
 #### load
 
 ```python
- | @classmethod
- | load(cls, path: Union[Text, Path], should_finetune: bool = False, epoch_override: int = defaults[EPOCHS], **kwargs: Any, ,) -> "TEDPolicy"
+@classmethod
+def load(cls, path: Union[Text, Path], should_finetune: bool = False, epoch_override: int = defaults[EPOCHS], **kwargs: Any, ,) -> "TEDPolicy"
 ```
 
 Loads a policy from the storage.

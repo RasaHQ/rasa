@@ -29,8 +29,8 @@ training stories for this, use AugmentedMemoizationPolicy.
 #### get\_default\_config
 
 ```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
 Returns the default config (see parent class for full docstring).
@@ -38,7 +38,7 @@ Returns the default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, featurizer: Optional[TrackerFeaturizer] = None, lookup: Optional[Dict] = None) -> None
+def __init__(config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, featurizer: Optional[TrackerFeaturizer] = None, lookup: Optional[Dict] = None) -> None
 ```
 
 Initialize the policy.
@@ -46,7 +46,7 @@ Initialize the policy.
 #### recall
 
 ```python
- | recall(states: List[State], tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]]) -> Optional[Text]
+def recall(states: List[State], tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]]) -> Optional[Text]
 ```
 
 Finds the action based on the given states.
@@ -67,7 +67,7 @@ Finds the action based on the given states.
 #### predict\_action\_probabilities
 
 ```python
- | predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
+def predict_action_probabilities(tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]] = None, **kwargs: Any, ,) -> PolicyPrediction
 ```
 
 Predicts the next action the bot should take after seeing the tracker.
@@ -87,7 +87,7 @@ Predicts the next action the bot should take after seeing the tracker.
 #### persist
 
 ```python
- | persist() -> None
+def persist() -> None
 ```
 
 Persists the policy to storage.
@@ -95,8 +95,8 @@ Persists the policy to storage.
 #### load
 
 ```python
- | @classmethod
- | load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MemoizationPolicyGraphComponent
+@classmethod
+def load(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext, **kwargs: Any, ,) -> MemoizationPolicyGraphComponent
 ```
 
 Loads a trained policy (see parent class for full docstring).
@@ -124,7 +124,7 @@ for current dialogue.
 #### recall
 
 ```python
- | recall(states: List[State], tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]]) -> Optional[Text]
+def recall(states: List[State], tracker: DialogueStateTracker, domain: Domain, rule_only_data: Optional[Dict[Text, Any]]) -> Optional[Text]
 ```
 
 Finds the action based on the given states.

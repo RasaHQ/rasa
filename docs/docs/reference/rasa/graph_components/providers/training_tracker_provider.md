@@ -13,7 +13,7 @@ Provides training trackers to policies based on training stories.
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any]) -> None
+def __init__(config: Dict[Text, Any]) -> None
 ```
 
 Creates provider from config.
@@ -21,8 +21,8 @@ Creates provider from config.
 #### get\_default\_config
 
 ```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
 Returns default configuration (see parent class for full docstring).
@@ -30,8 +30,8 @@ Returns default configuration (see parent class for full docstring).
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> TrainingTrackerProvider
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> TrainingTrackerProvider
 ```
 
 Creates component (see parent class for full docstring).
@@ -39,7 +39,7 @@ Creates component (see parent class for full docstring).
 #### generate\_trackers
 
 ```python
- | generate_trackers(story_graph: StoryGraph, domain: Domain) -> List[TrackerWithCachedStates]
+def generate_trackers(story_graph: StoryGraph, domain: Domain) -> List[TrackerWithCachedStates]
 ```
 
 Generates the training trackers from the training data.

@@ -13,7 +13,7 @@ Trains a model using a graph schema.
 #### \_\_init\_\_
 
 ```python
- | __init__(model_storage: ModelStorage, cache: TrainingCache, graph_runner_class: Type[GraphRunner]) -> None
+def __init__(model_storage: ModelStorage, cache: TrainingCache, graph_runner_class: Type[GraphRunner]) -> None
 ```
 
 Initializes a `GraphTrainer`.
@@ -28,7 +28,7 @@ Initializes a `GraphTrainer`.
 #### train
 
 ```python
- | train(train_schema: GraphSchema, predict_schema: GraphSchema, domain_path: Path, output_filename: Path) -> GraphRunner
+def train(train_schema: GraphSchema, predict_schema: GraphSchema, domain_path: Path, output_filename: Path) -> GraphRunner
 ```
 
 Trains and packages a model and returns the prediction graph runner.

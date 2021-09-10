@@ -11,8 +11,8 @@ class RegexInterpreter(NaturalLanguageInterpreter)
 #### extract\_intent\_and\_entities
 
 ```python
- | @staticmethod
- | extract_intent_and_entities(user_input: Text) -> Tuple[Optional[Text], float, List[Dict[Text, Any]]]
+@staticmethod
+def extract_intent_and_entities(user_input: Text) -> Tuple[Optional[Text], float, List[Dict[Text, Any]]]
 ```
 
 Parse the user input using regexes to extract intent &amp; entities.
@@ -20,7 +20,7 @@ Parse the user input using regexes to extract intent &amp; entities.
 #### parse
 
 ```python
- | async parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None, metadata: Optional[Dict] = None) -> Dict[Text, Any]
+async def parse(text: Text, message_id: Optional[Text] = None, tracker: Optional[DialogueStateTracker] = None, metadata: Optional[Dict] = None) -> Dict[Text, Any]
 ```
 
 Parse a text message.
@@ -28,7 +28,7 @@ Parse a text message.
 #### synchronous\_parse
 
 ```python
- | synchronous_parse(text: Text) -> Dict[Text, Any]
+def synchronous_parse(text: Text) -> Dict[Text, Any]
 ```
 
 Parse a text message.

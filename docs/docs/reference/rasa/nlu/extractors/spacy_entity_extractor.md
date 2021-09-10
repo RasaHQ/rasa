@@ -13,8 +13,8 @@ Entity extractor which uses SpaCy.
 #### get\_default\_config
 
 ```python
- | @staticmethod
- | get_default_config() -> Dict[Text, Any]
+@staticmethod
+def get_default_config() -> Dict[Text, Any]
 ```
 
 The component&#x27;s default config (see parent class for full docstring).
@@ -22,7 +22,7 @@ The component&#x27;s default config (see parent class for full docstring).
 #### \_\_init\_\_
 
 ```python
- | __init__(config: Dict[Text, Any]) -> None
+def __init__(config: Dict[Text, Any]) -> None
 ```
 
 Initialize SpacyEntityExtractorGraphComponent.
@@ -30,8 +30,8 @@ Initialize SpacyEntityExtractorGraphComponent.
 #### create
 
 ```python
- | @classmethod
- | create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
+@classmethod
+def create(cls, config: Dict[Text, Any], model_storage: ModelStorage, resource: Resource, execution_context: ExecutionContext) -> GraphComponent
 ```
 
 Creates a new component (see parent class for full docstring).
@@ -39,8 +39,8 @@ Creates a new component (see parent class for full docstring).
 #### required\_packages
 
 ```python
- | @classmethod
- | required_packages(cls) -> List[Text]
+@classmethod
+def required_packages(cls) -> List[Text]
 ```
 
 Lists required dependencies (see parent class for full docstring).
@@ -48,7 +48,7 @@ Lists required dependencies (see parent class for full docstring).
 #### process
 
 ```python
- | process(messages: List[Message], model: SpacyModel) -> List[Message]
+def process(messages: List[Message], model: SpacyModel) -> List[Message]
 ```
 
 Extract entities using SpaCy.

@@ -13,12 +13,12 @@ Temporary solution. Keras model that uses a custom data adapter inside fit.
 #### fit
 
 ```python
- | @training.enable_multi_worker
- | fit(x: Optional[
- |             Union[np.ndarray, tf.Tensor, tf.data.Dataset, tf.keras.utils.Sequence]
- |         ] = None, y: Optional[
- |             Union[np.ndarray, tf.Tensor, tf.data.Dataset, tf.keras.utils.Sequence]
- |         ] = None, batch_size: Optional[int] = None, epochs: int = 1, verbose: int = 1, callbacks: Optional[List[Callback]] = None, validation_split: float = 0.0, validation_data: Optional[Any] = None, shuffle: bool = True, class_weight: Optional[Dict[int, float]] = None, sample_weight: Optional[np.ndarray] = None, initial_epoch: int = 0, steps_per_epoch: Optional[int] = None, validation_steps: Optional[int] = None, validation_batch_size: Optional[int] = None, validation_freq: int = 1, max_queue_size: int = 10, workers: int = 1, use_multiprocessing: bool = False) -> History
+@training.enable_multi_worker
+def fit(x: Optional[
+            Union[np.ndarray, tf.Tensor, tf.data.Dataset, tf.keras.utils.Sequence]
+        ] = None, y: Optional[
+            Union[np.ndarray, tf.Tensor, tf.data.Dataset, tf.keras.utils.Sequence]
+        ] = None, batch_size: Optional[int] = None, epochs: int = 1, verbose: int = 1, callbacks: Optional[List[Callback]] = None, validation_split: float = 0.0, validation_data: Optional[Any] = None, shuffle: bool = True, class_weight: Optional[Dict[int, float]] = None, sample_weight: Optional[np.ndarray] = None, initial_epoch: int = 0, steps_per_epoch: Optional[int] = None, validation_steps: Optional[int] = None, validation_batch_size: Optional[int] = None, validation_freq: int = 1, max_queue_size: int = 10, workers: int = 1, use_multiprocessing: bool = False) -> History
 ```
 
 Trains the model for a fixed number of epochs (iterations on a dataset).
@@ -86,7 +86,7 @@ Handles iterating over epoch-level `tf.data.Iterator` objects.
 #### enumerate\_epochs
 
 ```python
- | enumerate_epochs() -> Generator[Tuple[int, Iterator], None, None]
+def enumerate_epochs() -> Generator[Tuple[int, Iterator], None, None]
 ```
 
 Yields `(epoch, tf.data.Iterator)`.

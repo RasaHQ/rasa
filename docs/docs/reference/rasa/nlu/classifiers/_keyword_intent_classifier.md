@@ -17,7 +17,7 @@ An input sentence is checked for the keywords and the intent is returned.
 #### process
 
 ```python
- | process(message: Message, **kwargs: Any) -> None
+def process(message: Message, **kwargs: Any) -> None
 ```
 
 Set the message intent and add it to the output is it exists.
@@ -25,7 +25,7 @@ Set the message intent and add it to the output is it exists.
 #### persist
 
 ```python
- | persist(file_name: Text, model_dir: Text) -> Dict[Text, Any]
+def persist(file_name: Text, model_dir: Text) -> Dict[Text, Any]
 ```
 
 Persist this model into the passed directory.
@@ -35,8 +35,8 @@ Return the metadata necessary to load the model again.
 #### load
 
 ```python
- | @classmethod
- | load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Metadata = None, cached_component: Optional["KeywordIntentClassifier"] = None, **kwargs: Any, ,) -> "KeywordIntentClassifier"
+@classmethod
+def load(cls, meta: Dict[Text, Any], model_dir: Text, model_metadata: Metadata = None, cached_component: Optional["KeywordIntentClassifier"] = None, **kwargs: Any, ,) -> "KeywordIntentClassifier"
 ```
 
 Loads trained component (see parent class for full docstring).

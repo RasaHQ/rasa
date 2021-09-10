@@ -13,7 +13,7 @@ Abstract data generator.
 #### \_\_init\_\_
 
 ```python
- | __init__(model_data: RasaModelData, batch_size: Union[int, List[int]], batch_strategy: Text = SEQUENCE, shuffle: bool = True)
+def __init__(model_data: RasaModelData, batch_size: Union[int, List[int]], batch_strategy: Text = SEQUENCE, shuffle: bool = True)
 ```
 
 Initializes the data generator.
@@ -28,7 +28,7 @@ Initializes the data generator.
 #### \_\_len\_\_
 
 ```python
- | __len__() -> int
+def __len__() -> int
 ```
 
 Number of batches in the Sequence.
@@ -40,7 +40,7 @@ Number of batches in the Sequence.
 #### \_\_getitem\_\_
 
 ```python
- | __getitem__(index: int) -> Tuple[Any, Any]
+def __getitem__(index: int) -> Tuple[Any, Any]
 ```
 
 Gets batch at position `index`.
@@ -57,7 +57,7 @@ Gets batch at position `index`.
 #### on\_epoch\_end
 
 ```python
- | on_epoch_end() -> None
+def on_epoch_end() -> None
 ```
 
 Update the data after every epoch.
@@ -65,8 +65,8 @@ Update the data after every epoch.
 #### prepare\_batch
 
 ```python
- | @staticmethod
- | prepare_batch(data: Data, start: Optional[int] = None, end: Optional[int] = None, tuple_sizes: Optional[Dict[Text, int]] = None) -> Tuple[Optional[np.ndarray], ...]
+@staticmethod
+def prepare_batch(data: Data, start: Optional[int] = None, end: Optional[int] = None, tuple_sizes: Optional[Dict[Text, int]] = None) -> Tuple[Optional[np.ndarray], ...]
 ```
 
 Slices model data into batch using given start and end value.
@@ -96,7 +96,7 @@ Data generator with an optional increasing batch size.
 #### \_\_init\_\_
 
 ```python
- | __init__(model_data: RasaModelData, batch_size: Union[List[int], int], epochs: int = 1, batch_strategy: Text = SEQUENCE, shuffle: bool = True)
+def __init__(model_data: RasaModelData, batch_size: Union[List[int], int], epochs: int = 1, batch_strategy: Text = SEQUENCE, shuffle: bool = True)
 ```
 
 Initializes the increasing batch size data generator.
@@ -112,7 +112,7 @@ Initializes the increasing batch size data generator.
 #### \_\_len\_\_
 
 ```python
- | __len__() -> int
+def __len__() -> int
 ```
 
 Number of batches in the Sequence.
@@ -124,7 +124,7 @@ Number of batches in the Sequence.
 #### \_\_getitem\_\_
 
 ```python
- | __getitem__(index: int) -> Tuple[Any, Any]
+def __getitem__(index: int) -> Tuple[Any, Any]
 ```
 
 Gets batch at position `index`.
@@ -141,7 +141,7 @@ Gets batch at position `index`.
 #### on\_epoch\_end
 
 ```python
- | on_epoch_end() -> None
+def on_epoch_end() -> None
 ```
 
 Update the data after every epoch.

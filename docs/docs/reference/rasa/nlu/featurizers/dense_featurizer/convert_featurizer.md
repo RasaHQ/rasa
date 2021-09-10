@@ -17,8 +17,8 @@ for dense featurizable attributes of each message object.
 #### required\_components
 
 ```python
- | @classmethod
- | required_components(cls) -> List[Type[Component]]
+@classmethod
+def required_components(cls) -> List[Type[Component]]
 ```
 
 Components that should be included in the pipeline before this component.
@@ -26,8 +26,8 @@ Components that should be included in the pipeline before this component.
 #### required\_packages
 
 ```python
- | @classmethod
- | required_packages(cls) -> List[Text]
+@classmethod
+def required_packages(cls) -> List[Text]
 ```
 
 Packages needed to be installed.
@@ -35,7 +35,7 @@ Packages needed to be installed.
 #### \_\_init\_\_
 
 ```python
- | __init__(component_config: Optional[Dict[Text, Any]] = None) -> None
+def __init__(component_config: Optional[Dict[Text, Any]] = None) -> None
 ```
 
 Initializes ConveRTFeaturizer with the model and different
@@ -48,7 +48,7 @@ encoding signatures.
 #### train
 
 ```python
- | train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
+def train(training_data: TrainingData, config: Optional[RasaNLUModelConfig] = None, **kwargs: Any, ,) -> None
 ```
 
 Featurize all message attributes in the training data with the ConveRT model.
@@ -62,7 +62,7 @@ Featurize all message attributes in the training data with the ConveRT model.
 #### process
 
 ```python
- | process(message: Message, **kwargs: Any) -> None
+def process(message: Message, **kwargs: Any) -> None
 ```
 
 Featurize an incoming message with the ConveRT model.
@@ -75,8 +75,8 @@ Featurize an incoming message with the ConveRT model.
 #### cache\_key
 
 ```python
- | @classmethod
- | cache_key(cls, component_meta: Dict[Text, Any], model_metadata: Metadata) -> Optional[Text]
+@classmethod
+def cache_key(cls, component_meta: Dict[Text, Any], model_metadata: Metadata) -> Optional[Text]
 ```
 
 Cache the component for future use.
@@ -91,7 +91,7 @@ Cache the component for future use.
 #### provide\_context
 
 ```python
- | provide_context() -> Dict[Text, Any]
+def provide_context() -> Dict[Text, Any]
 ```
 
 Store the model in pipeline context for future use.
@@ -99,7 +99,7 @@ Store the model in pipeline context for future use.
 #### tokenize
 
 ```python
- | tokenize(message: Message, attribute: Text) -> List[Token]
+def tokenize(message: Message, attribute: Text) -> List[Token]
 ```
 
 Tokenize the text using the ConveRT model.

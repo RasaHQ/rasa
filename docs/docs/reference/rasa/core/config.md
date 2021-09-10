@@ -5,7 +5,7 @@ title: rasa.core.config
 #### load
 
 ```python
-load(config_file: Union[Text, Dict]) -> List["Policy"]
+def load(config_file: Union[Text, Dict]) -> List["Policy"]
 ```
 
 Load policy data stored in the specified file.
@@ -13,7 +13,7 @@ Load policy data stored in the specified file.
 #### migrate\_fallback\_policies
 
 ```python
-migrate_fallback_policies(config: Dict) -> Tuple[Dict, Optional["StoryStep"]]
+def migrate_fallback_policies(config: Dict) -> Tuple[Dict, Optional["StoryStep"]]
 ```
 
 Migrate the deprecated fallback policies to their `RulePolicy` counterpart.
@@ -30,7 +30,7 @@ Migrate the deprecated fallback policies to their `RulePolicy` counterpart.
 #### migrate\_mapping\_policy\_to\_rules
 
 ```python
-migrate_mapping_policy_to_rules(config: Dict[Text, Any], domain: "Domain") -> Tuple[Dict[Text, Any], "Domain", List["StoryStep"]]
+def migrate_mapping_policy_to_rules(config: Dict[Text, Any], domain: "Domain") -> Tuple[Dict[Text, Any], "Domain", List["StoryStep"]]
 ```
 
 Migrate `MappingPolicy` to its `RulePolicy` counterparts.

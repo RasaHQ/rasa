@@ -5,7 +5,7 @@ title: rasa.utils.tensorflow.layers_utils
 #### random\_indices
 
 ```python
-random_indices(batch_size: Union[Tensor, int], n: Union[Tensor, int], n_max: Union[Tensor, int]) -> Tensor
+def random_indices(batch_size: Union[Tensor, int], n: Union[Tensor, int], n_max: Union[Tensor, int]) -> Tensor
 ```
 
 Creates `batch_size * n` random indices that run from `0` to `n_max`.
@@ -24,7 +24,7 @@ Creates `batch_size * n` random indices that run from `0` to `n_max`.
 #### batch\_flatten
 
 ```python
-batch_flatten(x: Tensor) -> Tensor
+def batch_flatten(x: Tensor) -> Tensor
 ```
 
 Flattens all but last dimension of `x` so it becomes 2D.
@@ -42,7 +42,7 @@ Flattens all but last dimension of `x` so it becomes 2D.
 #### get\_candidate\_values
 
 ```python
-get_candidate_values(x: tf.Tensor, candidate_ids: tf.Tensor) -> tf.Tensor
+def get_candidate_values(x: tf.Tensor, candidate_ids: tf.Tensor) -> tf.Tensor
 ```
 
 Gathers candidate values according to IDs.
@@ -78,7 +78,7 @@ Gathers candidate values according to IDs.
 #### reduce\_mean\_equal
 
 ```python
-reduce_mean_equal(x: tf.Tensor, y: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor
+def reduce_mean_equal(x: tf.Tensor, y: tf.Tensor, mask: Optional[tf.Tensor] = None) -> tf.Tensor
 ```
 
 Computes the mean number of matches between x and y.
