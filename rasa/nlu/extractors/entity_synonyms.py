@@ -73,7 +73,15 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
             self._persist()
 
     def process(self, messages: List[Message]) -> List[Message]:
-        """Modifies entities attached to message to resolve synonyms."""
+        """Modifies entities attached to message to resolve synonyms.
+
+        Args:
+            messages: List containing the latest user message
+
+        Returns:
+            List containing the latest user message with entities resolved to
+            synonyms if there is a match.
+        """
         for message in messages:
             updated_entities = message.get(ENTITIES, [])[:]
             self.replace_synonyms(updated_entities)
