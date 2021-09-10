@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 from typing import Any, Dict, List, Optional, Text
 
@@ -25,9 +26,9 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
 
     def __init__(
         self,
-        config: Optional[Dict[Text, Any]] = None,
-        model_storage: ModelStorage = None,
-        resource: Resource = None,
+        config: Optional[Dict[Text, Any]],
+        model_storage: ModelStorage,
+        resource: Resource,
         synonyms: Optional[Dict[Text, Any]] = None,
     ) -> None:
         """Creates the mapper.
@@ -44,7 +45,7 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
         self._model_storage = model_storage
         self._resource = resource
 
-        self._synonyms = synonyms if synonyms else {}
+        self.synonyms = synonyms if synonyms else {}
 
     @classmethod
     def create(
@@ -61,32 +62,35 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
     def train(self, training_data: TrainingData,) -> None:
         """Trains the synonym lookup table."""
         for key, value in list(training_data.entity_synonyms.items()):
-            self.add_entities_if_synonyms(key, value)
+            self._add_entities_if_synonyms(key, value)
 
         for example in training_data.entity_examples:
             for entity in example.get(ENTITIES, []):
                 entity_val = example.get(TEXT)[entity["start"] : entity["end"]]
-                self.add_entities_if_synonyms(entity_val, str(entity.get("value")))
+                self._add_entities_if_synonyms(entity_val, str(entity.get("value")))
 
         if self._resource:
             self._persist()
 
-    def process(self, messages: List[Message]) -> None:
+    def process(self, messages: List[Message]) -> List[Message]:
         """Modifies entities attached to message to resolve synonyms."""
         for message in messages:
             updated_entities = message.get(ENTITIES, [])[:]
             self.replace_synonyms(updated_entities)
             message.set(ENTITIES, updated_entities, add_to_output=True)
 
+        return messages
+
     def _persist(self) -> None:
 
-        if self._synonyms:
+        if self.synonyms:
             with self._model_storage.write_to(self._resource) as storage:
-                entity_synonyms_file = os.path.join(
-                    storage, EntitySynonymMapperComponent.SYNONYM_FILENAME
+                entity_synonyms_file = (
+                    storage / EntitySynonymMapperComponent.SYNONYM_FILENAME
                 )
+
                 write_json_to_file(
-                    entity_synonyms_file, self._synonyms, separators=(",", ": ")
+                    entity_synonyms_file, self.synonyms, separators=(",", ": ")
                 )
 
     # Adapt to get path from model storage and resource
@@ -101,9 +105,10 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
     ) -> EntitySynonymMapperComponent:
         """Loads trained component (see parent class for full docstring)."""
         with model_storage.read_from(resource) as storage:
-            entity_synonyms_file = os.path.join(
-                storage, EntitySynonymMapperComponent.SYNONYM_FILENAME
+            entity_synonyms_file = (
+                storage / EntitySynonymMapperComponent.SYNONYM_FILENAME
             )
+
             if os.path.isfile(entity_synonyms_file):
                 synonyms = rasa.shared.utils.io.read_json_file(entity_synonyms_file)
             else:
@@ -119,8 +124,8 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
         for entity in entities:
             # need to wrap in `str` to handle e.g. entity values of type int
             entity_value = str(entity["value"])
-            if entity_value.lower() in self._synonyms:
-                entity["value"] = self._synonyms[entity_value.lower()]
+            if entity_value.lower() in self.synonyms:
+                entity["value"] = self.synonyms[entity_value.lower()]
                 self.add_processor_name(entity)
 
     def _add_entities_if_synonyms(
@@ -132,14 +137,11 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
 
             if original != replacement:
                 original = original.lower()
-                if (
-                    original in self._synonyms
-                    and self._synonyms[original] != replacement
-                ):
+                if original in self.synonyms and self.synonyms[original] != replacement:
                     rasa.shared.utils.io.raise_warning(
                         f"Found conflicting synonym definitions "
                         f"for {repr(original)}. Overwriting target "
-                        f"{repr(self._synonyms[original])} with "
+                        f"{repr(self.synonyms[original])} with "
                         f"{repr(replacement)}. "
                         f"Check your training data and remove "
                         f"conflicting synonym definitions to "
@@ -147,4 +149,4 @@ class EntitySynonymMapperComponent(GraphComponent, EntityExtractorMixin):
                         docs=DOCS_URL_TRAINING_DATA + "#synonyms",
                     )
 
-                self._synonyms[original] = replacement
+                self.synonyms[original] = replacement
