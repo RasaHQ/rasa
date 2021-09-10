@@ -29,7 +29,9 @@ from rasa.engine.storage.resource import Resource
 def create_or_load_convert_featurizer(
     default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
 ) -> Callable[[Dict[Text, Any], bool], ConveRTFeaturizerGraphComponent]:
-    def inner(config: Dict[Text, Any], load: bool =False) -> Callable[[Dict[Text, Any], bool], ConveRTFeaturizerGraphComponent]::
+    def inner(
+        config: Dict[Text, Any], load: bool = False
+    ) -> Callable[[Dict[Text, Any], bool], ConveRTFeaturizerGraphComponent]:
         if load:
             constructor = ConveRTFeaturizerGraphComponent.load
         else:
@@ -55,7 +57,7 @@ def test_convert_featurizer_process(
 
     monkeypatch.setattr(
         ConveRTFeaturizerGraphComponent,
-        "_get_validated_model_url",
+        "_validate_model_url",
         lambda _: RESTRICTED_ACCESS_URL,
     )
     component_config = {
@@ -99,9 +101,7 @@ def test_convert_featurizer_train(
     tokenizer = WhitespaceTokenizer()
 
     monkeypatch.setattr(
-        ConveRTFeaturizerGraphComponent,
-        "_get_validated_model_url",
-        lambda x: RESTRICTED_ACCESS_URL,
+        ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
     )
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -174,9 +174,7 @@ def test_convert_featurizer_tokens_to_text(
     tokenizer = WhitespaceTokenizer()
 
     monkeypatch.setattr(
-        ConveRTFeaturizerGraphComponent,
-        "_get_validated_model_url",
-        lambda x: RESTRICTED_ACCESS_URL,
+        ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
     )
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -221,9 +219,7 @@ def test_convert_featurizer_token_edge_cases(
     tokenizer = WhitespaceTokenizer()
 
     monkeypatch.setattr(
-        ConveRTFeaturizerGraphComponent,
-        "_get_validated_model_url",
-        lambda x: RESTRICTED_ACCESS_URL,
+        ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
     )
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",
@@ -256,9 +252,7 @@ def test_convert_featurizer_number_of_sub_tokens(
     tokenizer = WhitespaceTokenizer()
 
     monkeypatch.setattr(
-        ConveRTFeaturizerGraphComponent,
-        "_get_validated_model_url",
-        lambda x: RESTRICTED_ACCESS_URL,
+        ConveRTFeaturizerGraphComponent, "_validate_model_url", lambda _: None,
     )
     component_config = {
         FEATURIZER_CLASS_ALIAS: "alias",

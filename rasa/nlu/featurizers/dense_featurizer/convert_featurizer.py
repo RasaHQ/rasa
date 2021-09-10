@@ -101,7 +101,12 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         """
         super().__init__(name=name, config=config)
 
-        self.model_url = self._get_validated_model_url()
+        model_url = self._config["model_url"]
+        self.model_url = (
+            model_url
+            if rasa.nlu.utils.is_url(model_url)
+            else os.path.abspath(model_url)
+        )
 
         self.module = train_utils.load_tf_hub_model(self.model_url)
 
@@ -118,7 +123,7 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
     @classmethod
     def validate_config(cls, config: Dict[Text, Any]) -> None:
         """Validates that the component is configured properly."""
-        pass
+        cls._validate_model_url(config)
 
     @classmethod
     def validate_compatibility_with_tokenizer(
@@ -150,17 +155,18 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
                     f"files - [{', '.join(files_to_check)}]"
                 )
 
-    def _get_validated_model_url(self) -> Text:
+    @classmethod
+    def _validate_model_url(cls, config: Dict[Text, Any]) -> None:
         """Validates the specified `model_url` parameter.
 
         The `model_url` parameter cannot be left empty. It can either
         be set to a remote URL where the model is hosted or it can be
         a path to a local directory.
 
-        Returns:
-            Validated path to model
+        Args:
+            config: a configuration for this graph component
         """
-        model_url = self._config.get("model_url", None)
+        model_url = config.get("model_url", None)
 
         if not model_url:
             raise RasaException(
@@ -207,23 +213,18 @@ class ConveRTFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
                 f"containing the model files."
             )
 
-        if rasa.nlu.utils.is_url(model_url):
-            return model_url
+        if not rasa.nlu.utils.is_url(model_url) and not os.path.isdir(model_url):
+            raise RasaException(
+                f"{model_url} is neither a valid remote URL nor a local directory. "
+                f"You can either use a community hosted URL or if you have a "
+                f"local copy of the model, pass the path to "
+                f"the directory containing the model files."
+            )
 
         if os.path.isdir(model_url):
             # Looks like a local directory. Inspect the directory
             # to see if model files exist.
-            self._validate_model_files_exist(model_url)
-            # Convert the path to an absolute one since
-            # TFHUB doesn't like relative paths
-            return os.path.abspath(model_url)
-
-        raise RasaException(
-            f"{model_url} is neither a valid remote URL nor a local directory. "
-            f"You can either use a community hosted URL or if you have a "
-            f"local copy of the model, pass the path to "
-            f"the directory containing the model files."
-        )
+            cls._validate_model_files_exist(model_url)
 
     @staticmethod
     def _get_signature(signature: Text, module: Any) -> NoReturn:
