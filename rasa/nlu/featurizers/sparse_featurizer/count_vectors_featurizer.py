@@ -718,6 +718,12 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
 
                 io_utils.json_pickle(featurizer_file, vocab)
 
+                # Dump OOV words separately as they might have been modified during
+                # training
+                rasa.shared.utils.io.dump_obj_as_json_to_file(
+                    model_dir / "oov_words.json", self.OOV_words
+                )
+
     @classmethod
     def _create_shared_vocab_vectorizers(
         cls, parameters: Dict[Text, Any], vocabulary: Optional[Any] = None
@@ -799,6 +805,11 @@ class CountVectorsFeaturizerGraphComponent(SparseFeaturizer2, GraphComponent):
                     vectorizers = cls._create_independent_vocab_vectorizers(
                         config, vocabulary=vocabulary
                     )
+
+                oov_words = rasa.shared.utils.io.read_json_file(
+                    model_dir / "oov_words.json"
+                )
+                config["OOV_words"] = oov_words
 
                 ftr = cls(
                     config,

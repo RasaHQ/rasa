@@ -11,6 +11,7 @@ from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa.nlu.constants import TOKENS_NAMES, SPACY_DOCS
+from rasa.nlu.utils.spacy_utils import SpacyModel
 from rasa.shared.nlu.constants import TEXT, INTENT, RESPONSE, ACTION_TEXT, ACTION_NAME
 from rasa.nlu.tokenizers.tokenizer import Token
 from rasa.shared.nlu.training_data.training_data import TrainingData
@@ -564,8 +565,10 @@ def test_count_vector_featurizer_use_lemma(
     sentence_features: List[List[int]],
     use_lemma: bool,
     create_featurizer: Callable[..., CountVectorsFeaturizer],
+    load_featurizer: Callable[..., CountVectorsFeaturizer],
 ):
-    ftr = create_featurizer({"use_lemma": use_lemma})
+    config = {"use_lemma": use_lemma, "OOV_words": ["drinks"], "OOV_token": "OOV"}
+    ftr = create_featurizer(config)
 
     train_message = Message(data={TEXT: sentence})
     train_message.set(SPACY_DOCS[TEXT], spacy_nlp(sentence))
@@ -575,7 +578,7 @@ def test_count_vector_featurizer_use_lemma(
     SpacyTokenizer().process(train_message)
     SpacyTokenizer().process(test_message)
 
-    ftr.train(TrainingData([train_message]))
+    ftr.train(TrainingData([train_message]), spacy_nlp=SpacyModel(spacy_nlp, "en"))
 
     ftr.process([test_message])
 
@@ -589,6 +592,9 @@ def test_count_vector_featurizer_use_lemma(
 
     assert np.all(actual_seq_vecs[0] == sequence_features)
     assert np.all(actual_sen_vecs[-1] == sentence_features)
+
+    loaded = load_featurizer(config)
+    assert loaded.OOV_words == ftr.OOV_words
 
 
 @pytest.mark.parametrize(
