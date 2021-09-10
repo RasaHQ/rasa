@@ -1,6 +1,6 @@
 import copy
 
-from typing import Dict, Text, List, Any
+from typing import Dict, Text, List, Any, Callable
 
 import pytest
 
@@ -19,8 +19,25 @@ from rasa.shared.nlu.training_data.message import Message
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractorGraphComponent
 
 
+@pytest.fixture()
+def crf_entity_extractor(
+    default_model_storage: ModelStorage, default_execution_context: ExecutionContext
+) -> Callable[[Dict[Text, Any]], CRFEntityExtractorGraphComponent]:
+    def inner(config: Dict[Text, Any]) -> CRFEntityExtractorGraphComponent:
+        return CRFEntityExtractorGraphComponent.create(
+            {**CRFEntityExtractorGraphComponent.get_default_config(), **config},
+            default_model_storage,
+            Resource("CRFEntityExtractor"),
+            default_execution_context,
+        )
+
+    return inner
+
+
 async def test_train_persist_load_with_composite_entities(
-    default_model_storage: ModelStorage, default_execution_context: ExecutionContext,
+    crf_entity_extractor: Callable[[Dict[Text, Any]], CRFEntityExtractorGraphComponent],
+    default_model_storage: ModelStorage,
+    default_execution_context: ExecutionContext,
 ):
     importer = RasaFileImporter(
         training_data_paths=["data/test/demo-rasa-composite-entities.yml"]
@@ -30,12 +47,7 @@ async def test_train_persist_load_with_composite_entities(
     tokenizer = WhitespaceTokenizer()
     tokenizer.train(training_data)
 
-    crf_extractor = CRFEntityExtractorGraphComponent.create(
-        CRFEntityExtractorGraphComponent.get_default_config(),
-        default_model_storage,
-        Resource("CRFEntityExtractor"),
-        default_execution_context,
-    )
+    crf_extractor = crf_entity_extractor({})
     crf_extractor.train(training_data)
 
     message = Message(data={TEXT: "I am looking for an italian restaurant"})
@@ -101,6 +113,7 @@ async def test_train_persist_load_with_composite_entities(
     ],
 )
 async def test_train_persist_with_different_configurations(
+    crf_entity_extractor: Callable[[Dict[Text, Any]], CRFEntityExtractorGraphComponent],
     config_params: Dict[Text, Any],
     default_model_storage: ModelStorage,
     default_execution_context: ExecutionContext,
@@ -117,12 +130,7 @@ async def test_train_persist_with_different_configurations(
         for component in copy.deepcopy(pipeline)
     ]
 
-    crf_extractor = CRFEntityExtractorGraphComponent.create(
-        {**CRFEntityExtractorGraphComponent.get_default_config(), **config_params},
-        default_model_storage,
-        Resource("CRFEntityExtractor"),
-        default_execution_context,
-    )
+    crf_extractor = crf_entity_extractor(config_params)
 
     importer = RasaFileImporter(training_data_paths=["data/examples/rasa"])
     training_data = importer.get_nlu_data()
@@ -160,9 +168,8 @@ async def test_train_persist_with_different_configurations(
 
 
 def test_crf_use_dense_features(
+    crf_entity_extractor: Callable[[Dict[Text, Any]], CRFEntityExtractorGraphComponent],
     spacy_nlp: Any,
-    default_model_storage: ModelStorage,
-    default_execution_context: ExecutionContext,
 ):
     component_config = {
         "features": [
@@ -181,12 +188,7 @@ def test_crf_use_dense_features(
             ["low", "title", "upper", "pos", "pos2"],
         ]
     }
-    crf_extractor = CRFEntityExtractorGraphComponent.create(
-        {**CRFEntityExtractorGraphComponent.get_default_config(), **component_config},
-        default_model_storage,
-        Resource("CRFEntityExtractor"),
-        default_execution_context,
-    )
+    crf_extractor = crf_entity_extractor(component_config)
 
     spacy_featurizer = SpacyFeaturizer()
     spacy_tokenizer = SpacyTokenizer()
@@ -221,18 +223,12 @@ def test_crf_use_dense_features(
     ],
 )
 def test_most_likely_entity(
+    crf_entity_extractor: Callable[[Dict[Text, Any]], CRFEntityExtractorGraphComponent],
     entity_predictions: List[Dict[Text, float]],
     expected_label: Text,
     expected_confidence: float,
-    default_model_storage: ModelStorage,
-    default_execution_context: ExecutionContext,
 ):
-    crf_extractor = CRFEntityExtractorGraphComponent.create(
-        CRFEntityExtractorGraphComponent.get_default_config(),
-        default_model_storage,
-        Resource("CRFEntityExtractor"),
-        default_execution_context,
-    )
+    crf_extractor = crf_entity_extractor({})
 
     actual_label, actual_confidence = crf_extractor._most_likely_tag(entity_predictions)
 

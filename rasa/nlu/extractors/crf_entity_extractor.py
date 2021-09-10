@@ -83,7 +83,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         "digit": lambda crf_token: crf_token.text.isdigit(),
         "pattern": lambda crf_token: crf_token.pattern,
         "text_dense_features": (
-            lambda crf_token: CRFEntityExtractorGraphComponent._convert_dense_features_for_crfsuite(
+            lambda crf_token: CRFEntityExtractorGraphComponent._convert_dense_features_for_crfsuite(  # noqa: E501
                 crf_token
             )
         ),
@@ -140,13 +140,12 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         config: Dict[Text, Any],
         model_storage: ModelStorage,
         resource: Resource,
-        execution_context: ExecutionContext,
         entity_taggers: Optional[Dict[Text, "CRF"]] = None,
     ) -> None:
+        """Declare instance variables with default values."""
         self.component_config = config
         self._model_storage = model_storage
         self._resource = resource
-        self._execution_context = execution_context
 
         self.entity_taggers = entity_taggers
 
@@ -177,7 +176,7 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         execution_context: ExecutionContext,
     ) -> CRFEntityExtractorGraphComponent:
         """Creates a new untrained component (see parent class for full docstring)."""
-        return cls(config, model_storage, resource, execution_context)
+        return cls(config, model_storage, resource)
 
     @staticmethod
     def required_packages() -> List[Text]:
@@ -203,8 +202,8 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
 
         return dataset
 
-    def train(self, training_data: TrainingData,) -> Resource:
-        """Train the extractor on a data set."""
+    def train(self, training_data: TrainingData) -> Resource:
+        """Trains the extractor on a data set."""
         # checks whether there is at least one
         # example with an entity annotation
         if not training_data.entity_examples:
@@ -249,7 +248,6 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
 
     def extract_entities(self, message: Message) -> List[Dict[Text, Any]]:
         """Extract entities from the given message using the trained model(s)."""
-
         if self.entity_taggers is None:
             return []
 
@@ -365,21 +363,19 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                         "Maybe you did not provide enough training data and "
                         "no model was trained."
                     )
-                    return cls(config, model_storage, resource, execution_context)
+                    return cls(config, model_storage, resource)
 
                 for file_name in file_names:
-                    name = file_name.name.split(".")[-2]
+                    name = file_name.stem
                     entity_taggers[name] = joblib.load(file_name)
 
-                return cls(
-                    config, model_storage, resource, execution_context, entity_taggers
-                )
+                return cls(config, model_storage, resource, entity_taggers)
         except ValueError:
             logger.warning(
-                f"Failed to load {cls.__class__.__name__} from model storage. Resource "
+                f"Failed to load {cls.__name__} from model storage. Resource "
                 f"'{resource.name}' doesn't exist."
             )
-            return cls(config, model_storage, resource, execution_context)
+            return cls(config, model_storage, resource)
 
     def persist(self) -> None:
         """Persist this model into the passed directory."""
@@ -388,15 +384,13 @@ class CRFEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
         with self._model_storage.write_to(self._resource) as model_dir:
             if self.entity_taggers:
                 for name, entity_tagger in self.entity_taggers.items():
-                    file_name = self.__class__.__name__
-                    model_file_name = model_dir / f"{file_name}.{name}.pkl"
+                    model_file_name = model_dir / f"{name}.pkl"
                     joblib.dump(entity_tagger, model_file_name)
 
     def _crf_tokens_to_features(
         self, crf_tokens: List[CRFToken], include_tag_features: bool = False
     ) -> List[Dict[Text, Any]]:
         """Convert the list of tokens into discrete features."""
-
         configured_features = self.component_config["features"]
         sentence_features = []
 
