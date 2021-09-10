@@ -721,7 +721,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
         training_data: TrainingData,
         config: Optional[RasaNLUModelConfig] = None,
         **kwargs: Any,
-    ) -> None:
+    ) -> TrainingData:
         """Computes tokens and dense features for each message in training data.
 
         Args:
@@ -754,16 +754,19 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
                     self._set_lm_features(batch_docs[index], ex, attribute)
                 batch_start_index += batch_size
 
-    def process(self, messages: List[Message]) -> None:
+        return training_data
+
+    def process(self, messages: List[Message]) -> List[Message]:
         """Processes a list of incoming message by computing their
-        tokens and dense features."""
+        tokens and dense features.
+        """
         for message in messages:
             if message:
                 self._process_message(message)
+        return messages
 
-    def _process_message(self, message: Message) -> None:
-        """
-        Processes an incoming message by computing its
+    def _process_message(self, message: Message) -> Message:
+        """Processes an incoming message by computing its
         tokens and dense features.
         """
         # processing featurizers operates only on TEXT and ACTION_TEXT attributes,
@@ -778,6 +781,7 @@ class LanguageModelFeaturizerGraphComponent(DenseFeaturizer2, GraphComponent):
                     message,
                     attribute,
                 )
+        return message
 
     def _set_lm_features(
         self, doc: Dict[Text, Any], message: Message, attribute: Text = TEXT
