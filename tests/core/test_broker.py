@@ -1,11 +1,12 @@
 import json
 import logging
 import textwrap
-from asyncio.events import AbstractEventLoop
 from pathlib import Path
-from typing import Union, Text, List, Optional, Type, Dict, Any
+from typing import Union, Text, List, Optional, Type
 
 import aio_pika.exceptions
+import aiormq.exceptions
+import pamqp.exceptions
 import kafka
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -19,11 +20,11 @@ import rasa.shared.utils.io
 import rasa.utils.io
 from rasa.core.brokers.broker import EventBroker
 from rasa.core.brokers.file import FileEventBroker
-from rasa.core.brokers.kafka import KafkaEventBroker
+from rasa.core.brokers.kafka import KafkaEventBroker, KafkaProducerInitializationError
 from rasa.core.brokers.pika import PikaEventBroker, DEFAULT_QUEUE_NAME
 from rasa.core.brokers.sql import SQLEventBroker
 from rasa.shared.core.events import Event, Restarted, SlotSet, UserUttered
-from rasa.shared.exceptions import ConnectionException
+from rasa.shared.exceptions import ConnectionException, RasaException
 from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 
 TEST_EVENTS = [
@@ -102,6 +103,30 @@ async def test_pika_raise_connection_exception(monkeypatch: MonkeyPatch):
     monkeypatch.setattr(
         PikaEventBroker, "connect", AsyncMock(side_effect=ChannelNotFoundEntity())
     )
+
+    with pytest.raises(ConnectionException):
+        await EventBroker.create(
+            EndpointConfig(username="username", password="password", type="pika")
+        )
+
+
+@pytest.mark.parametrize(
+    "exception",
+    (
+        RuntimeError,
+        ConnectionError,
+        OSError,
+        aiormq.exceptions.AMQPError,
+        pamqp.exceptions.PAMQPException,
+        pamqp.specification.AMQPConnectionForced,
+        pamqp.specification.AMQPNotFound,
+        pamqp.specification.AMQPInternalError,
+    ),
+)
+async def test_aio_pika_exceptions_caught(
+    exception: Exception, monkeypatch: MonkeyPatch
+):
+    monkeypatch.setattr(PikaEventBroker, "connect", AsyncMock(side_effect=exception))
 
     with pytest.raises(ConnectionException):
         await EventBroker.create(
@@ -216,30 +241,6 @@ async def test_load_custom_broker_name(tmp_path: Path):
     assert broker
 
 
-class CustomEventBrokerWithoutAsync(EventBroker):
-    @classmethod
-    def from_endpoint_config(
-        cls, _: EndpointConfig, __: Optional[AbstractEventLoop] = None,
-    ) -> "EventBroker":
-        return FileEventBroker()
-
-    def publish(self, event: Dict[Text, Any]) -> None:
-        pass
-
-
-async def test_load_custom_broker_without_async_support(tmp_path: Path):
-    config = EndpointConfig(
-        **{
-            "type": f"{CustomEventBrokerWithoutAsync.__module__}."
-            f"{CustomEventBrokerWithoutAsync.__name__}",
-            "path": str(tmp_path / "rasa_event.log"),
-        }
-    )
-
-    with pytest.warns(FutureWarning):
-        assert isinstance(await EventBroker.create(config), FileEventBroker)
-
-
 async def test_load_non_existent_custom_broker_name():
     config = EndpointConfig(**{"type": "rasa.core.brokers.my.MyProducer"})
     assert await EventBroker.create(config) is None
@@ -257,16 +258,67 @@ async def test_kafka_broker_from_config():
         "localhost",
         sasl_username="username",
         sasl_password="password",
+        sasl_mechanism="PLAIN",
         topic="topic",
         partition_by_sender=True,
         security_protocol="SASL_PLAINTEXT",
+        convert_intent_id_to_string=True,
     )
 
     assert actual.url == expected.url
     assert actual.sasl_username == expected.sasl_username
     assert actual.sasl_password == expected.sasl_password
+    assert actual.sasl_mechanism == expected.sasl_mechanism
     assert actual.topic == expected.topic
     assert actual.partition_by_sender == expected.partition_by_sender
+    assert actual.convert_intent_id_to_string == expected.convert_intent_id_to_string
+
+
+async def test_kafka_broker_convert_intent_id_to_string():
+    user_event = {
+        "timestamp": 1517821726.200036,
+        "metadata": {},
+        "parse_data": {
+            "entities": [],
+            "intent": {"confidence": 0.54, "name": "greet", "id": 7703045398849936579},
+            "message_id": "987654321",
+            "metadata": {},
+            "text": "/greet",
+            "intent_ranking": [
+                {"confidence": 0.54, "name": "greet", "id": 7703045398849936579},
+                {"confidence": 0.31, "name": "goodbye", "id": -5127945386715371244},
+                {"confidence": 0.15, "name": "default", "id": 1699173715362944540},
+            ],
+        },
+        "event": "user",
+        "text": "/greet",
+        "input_channel": "rest",
+        "message_id": "987654321",
+    }
+    actual = KafkaEventBroker(
+        "localhost",
+        sasl_username="username",
+        sasl_password="password",
+        sasl_mechanism="PLAIN",
+        topic="topic",
+        partition_by_sender=True,
+        security_protocol="SASL_PLAINTEXT",
+        convert_intent_id_to_string=True,
+    )
+
+    converted_user_event = actual._convert_intent_id_to_string(user_event)
+    intent_ranking = user_event["parse_data"]["intent_ranking"]
+    converted_intent_ranking = converted_user_event["parse_data"]["intent_ranking"]
+
+    assert converted_user_event["parse_data"]["intent"]["id"] == str(
+        user_event["parse_data"]["intent"]["id"]
+    )
+    assert all(
+        converted_parse_data["id"] == str(parse_data["id"])
+        for parse_data, converted_parse_data in zip(
+            intent_ranking, converted_intent_ranking
+        )
+    )
 
 
 @pytest.mark.parametrize(
@@ -283,6 +335,9 @@ async def test_kafka_broker_from_config():
         ("kafka_invalid_security_protocol.yml", ValueError),
         # `TypeError` exception is raised when there is no `url` specified
         ("kafka_plaintext_endpoint_no_url.yml", TypeError),
+        # `KafkaProducerInitializationError` is raised when an invalid
+        # `sasl_mechanism` is provided
+        ("kafka_invalid_sasl_mechanism.yml", KafkaProducerInitializationError),
     ],
 )
 async def test_kafka_broker_security_protocols(file: Text, exception: Exception):
@@ -309,6 +364,16 @@ async def test_no_pika_logs_if_no_debug_mode(caplog: LogCaptureFixture):
         record.name in ["rasa.core.brokers.pika", "asyncio"]
         for record in caplog.records
     )
+
+
+async def test_create_pika_invalid_port():
+
+    cfg = EndpointConfig(
+        username="username", password="password", type="pika", port="PORT"
+    )
+    with pytest.raises(RasaException) as e:
+        await EventBroker.create(cfg)
+        assert "Port could not be converted to integer." in str(e.value)
 
 
 def test_warning_if_unsupported_ssl_env_variables(monkeypatch: MonkeyPatch):

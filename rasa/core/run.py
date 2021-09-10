@@ -148,6 +148,7 @@ def configure_app(
 def serve_application(
     model_path: Optional[Text] = None,
     channel: Optional[Text] = None,
+    interface: Optional[Text] = constants.DEFAULT_SERVER_INTERFACE,
     port: int = constants.DEFAULT_SERVER_PORT,
     credentials: Optional[Text] = None,
     cors: Optional[Union[Text, List[Text]]] = None,
@@ -191,9 +192,7 @@ def serve_application(
     )
     protocol = "https" if ssl_context else "http"
 
-    logger.info(
-        f"Starting Rasa server on {constants.DEFAULT_SERVER_FORMAT.format(protocol, port)}"
-    )
+    logger.info(f"Starting Rasa server on {protocol}://{interface}:{port}")
 
     app.register_listener(
         partial(load_agent_on_start, model_path, endpoints, remote_storage),
@@ -218,7 +217,7 @@ def serve_application(
 
     rasa.utils.common.update_sanic_log_level(log_file)
     app.run(
-        host="0.0.0.0",
+        host=interface,
         port=port,
         ssl=ssl_context,
         backlog=int(os.environ.get(ENV_SANIC_BACKLOG, "100")),
@@ -306,13 +305,4 @@ async def close_resources(app: Sanic, _: AbstractEventLoop) -> None:
 
     event_broker = current_agent.tracker_store.event_broker
     if event_broker:
-        if not asyncio.iscoroutinefunction(event_broker.close):
-            rasa.shared.utils.io.raise_deprecation_warning(
-                f"The method '{EventBroker.__name__}.{EventBroker.close.__name__}' was "
-                f"changed to be asynchronous. Please adapt your custom event broker "
-                f"accordingly. Support for synchronous implementations will be removed "
-                f"in Rasa Open Source 3.0.0."
-            )
-            event_broker.close()
-        else:
-            await event_broker.close()
+        await event_broker.close()

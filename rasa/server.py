@@ -24,6 +24,7 @@ from typing import (
 )
 
 import aiohttp
+import jsonschema
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic.response import HTTPResponse
@@ -32,6 +33,7 @@ from sanic_jwt import Initialize, exceptions
 
 import rasa
 import rasa.core.utils
+from rasa.nlu.emulators.emulator import Emulator
 import rasa.utils.common
 import rasa.shared.utils.common
 import rasa.shared.utils.io
@@ -48,9 +50,7 @@ from rasa.shared.constants import (
     DOCS_URL_TRAINING_DATA,
     DOCS_BASE_URL,
     DEFAULT_SENDER_ID,
-    DEFAULT_DOMAIN_PATH,
     DEFAULT_MODELS_PATH,
-    DEFAULT_CONVERSATION_TEST_PATH,
     TEST_STORIES_FILE_PREFIX,
 )
 from rasa.shared.core.domain import InvalidDomain, Domain
@@ -71,14 +71,18 @@ from rasa.core.utils import AvailableEndpoints
 from rasa.nlu.emulators.no_emulator import NoEmulator
 import rasa.nlu.test
 from rasa.nlu.test import CVEvaluationResult
+from rasa.shared.utils.schemas.events import EVENTS_SCHEMA
 from rasa.utils.endpoints import EndpointConfig
 
 if TYPE_CHECKING:
     from ssl import SSLContext  # noqa: F401
     from rasa.core.processor import MessageProcessor
-    from mypy_extensions import VarArg, KwArg
+    from mypy_extensions import Arg, VarArg, KwArg
 
-    SanicView = Callable[[Request, VarArg(), KwArg()], response.BaseHTTPResponse]
+    SanicView = Callable[
+        [Arg(Request, "request"), VarArg(), KwArg()],  # noqa: F821
+        response.BaseHTTPResponse,
+    ]
 
 
 logger = logging.getLogger(__name__)
@@ -163,10 +167,10 @@ def ensure_loaded_agent(
     return decorator
 
 
-def ensure_conversation_exists() -> "SanicView":
+def ensure_conversation_exists() -> Callable[["SanicView"], "SanicView"]:
     """Wraps a request handler ensuring the conversation exists."""
 
-    def decorator(f: "SanicView") -> HTTPResponse:
+    def decorator(f: "SanicView") -> "SanicView":
         @wraps(f)
         def decorated(request: Request, *args: Any, **kwargs: Any) -> HTTPResponse:
             conversation_id = kwargs["conversation_id"]
@@ -377,6 +381,25 @@ def validate_request_body(request: Request, error_message: Text) -> None:
         raise ErrorResponse(HTTPStatus.BAD_REQUEST, "BadRequest", error_message)
 
 
+def validate_events_in_request_body(request: Request) -> None:
+    """Validates events format in request body."""
+    if not isinstance(request.json, list):
+        events = [request.json]
+    else:
+        events = request.json
+
+    try:
+        jsonschema.validate(events, EVENTS_SCHEMA)
+    except jsonschema.ValidationError as error:
+        raise ErrorResponse(
+            HTTPStatus.BAD_REQUEST,
+            "BadRequest",
+            f"Failed to validate the events format. "
+            f"For more information about the format visit the docs. Error: {error}",
+            help_url=_docs("/pages/http-api"),
+        ) from error
+
+
 async def authenticate(_: Request) -> NoReturn:
     """Callback for authentication failed."""
     raise exceptions.AuthenticationFailed(
@@ -419,10 +442,11 @@ def create_ssl_context(
         return None
 
 
-def _create_emulator(mode: Optional[Text]) -> NoEmulator:
+def _create_emulator(mode: Optional[Text]) -> Emulator:
     """Create emulator for specified mode.
-    If no emulator is specified, we will use the Rasa NLU format."""
 
+    If no emulator is specified, we will use the Rasa NLU format.
+    """
     if mode is None:
         return NoEmulator()
     elif mode.lower() == "wit":
@@ -737,12 +761,8 @@ def create_app(
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
     async def append_events(request: Request, conversation_id: Text) -> HTTPResponse:
-        """Append a list of events to the state of a conversation"""
-        validate_request_body(
-            request,
-            "You must provide events in the request body in order to append them"
-            "to the state of a conversation.",
-        )
+        """Append a list of events to the state of a conversation."""
+        validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
@@ -803,11 +823,7 @@ def create_app(
     @ensure_loaded_agent(app)
     async def replace_events(request: Request, conversation_id: Text) -> HTTPResponse:
         """Use a list of events to set a conversations tracker to a state."""
-        validate_request_body(
-            request,
-            "You must provide events in the request body to set the sate of the "
-            "conversation tracker.",
-        )
+        validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
 
@@ -879,8 +895,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
-                    conversation_id
+                tracker = await (
+                    app.agent.create_processor().fetch_tracker_and_update_session(
+                        conversation_id
+                    )
                 )
 
                 output_channel = _get_output_channel(request, tracker)
@@ -930,8 +948,10 @@ def create_app(
 
         try:
             async with app.agent.lock_store.lock(conversation_id):
-                tracker = await app.agent.create_processor().fetch_tracker_and_update_session(
-                    conversation_id
+                tracker = await (
+                    app.agent.create_processor().fetch_tracker_and_update_session(
+                        conversation_id
+                    )
                 )
                 output_channel = _get_output_channel(request, tracker)
                 if intent_to_trigger not in app.agent.domain.intents:
@@ -1040,10 +1060,7 @@ def create_app(
             "train your model.",
         )
 
-        if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-            training_payload = _training_payload_from_yaml(request, temporary_directory)
-        else:
-            training_payload = _training_payload_from_json(request, temporary_directory)
+        training_payload = _training_payload_from_yaml(request, temporary_directory)
 
         try:
             with app.active_training_processes.get_lock():
@@ -1101,13 +1118,13 @@ def create_app(
             "evaluate your model.",
         )
 
-        test_data = _test_data_file_from_payload(request, temporary_directory, ".md")
+        test_data = _test_data_file_from_payload(request, temporary_directory)
 
-        use_e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
+        e2e = rasa.utils.endpoints.bool_arg(request, "e2e", default=False)
 
         try:
             evaluation = await test(
-                test_data, app.agent, e2e=use_e2e, disable_plotting=True
+                test_data, app.agent, e2e=e2e, disable_plotting=True
             )
             return response.json(evaluation)
         except Exception as e:
@@ -1207,7 +1224,7 @@ def create_app(
                 HTTPStatus.CONFLICT, "Conflict", "Missing NLU model directory.",
             )
 
-        return await rasa.nlu.test.run_evaluation(
+        return rasa.nlu.test.run_evaluation(
             data_path, nlu_model, disable_plotting=True, report_as_dict=True
         )
 
@@ -1216,8 +1233,8 @@ def create_app(
         importer = TrainingDataImporter.load_from_dict(
             config=None, config_path=config_file, training_data_paths=[data_file]
         )
-        config = await importer.get_config()
-        nlu_data = await importer.get_nlu_data()
+        config = importer.get_config()
+        nlu_data = importer.get_nlu_data()
 
         evaluations = rasa.nlu.test.cross_validate(
             data=nlu_data,
@@ -1258,11 +1275,7 @@ def create_app(
     @ensure_loaded_agent(app, require_core_is_ready=True)
     async def tracker_predict(request: Request) -> HTTPResponse:
         """Given a list of events, predicts the next action."""
-        validate_request_body(
-            request,
-            "No events defined in request_body. Add events to request body in order to "
-            "predict the next action.",
-        )
+        validate_events_in_request_body(request)
 
         verbosity = event_verbosity_parameter(request, EventVerbosity.AFTER_RESTART)
         request_params = request.json
@@ -1437,75 +1450,14 @@ def _get_output_channel(
     )
 
 
-def _test_data_file_from_payload(
-    request: Request, temporary_directory: Path, suffix: Text = ".tmp"
-) -> Text:
-    if request.headers.get("Content-type") == YAML_CONTENT_TYPE:
-        return str(
-            _training_payload_from_yaml(
-                request,
-                temporary_directory,
-                # test stories have to prefixed with `test_`
-                file_name=f"{TEST_STORIES_FILE_PREFIX}data.yml",
-            )["training_files"]
-        )
-    else:
-        # MD test stories have to be in the `tests` directory
-        test_dir = temporary_directory / DEFAULT_CONVERSATION_TEST_PATH
-        test_dir.mkdir()
-        test_file = test_dir / f"tests{suffix}"
-        test_file.write_bytes(request.body)
-        return str(test_file)
-
-
-def _training_payload_from_json(request: Request, temp_dir: Path) -> Dict[Text, Any]:
-    logger.debug(
-        "Extracting JSON payload with Markdown training data from request body."
-    )
-
-    request_payload = request.json
-    _validate_json_training_payload(request_payload)
-
-    config_path = os.path.join(temp_dir, "config.yml")
-
-    rasa.shared.utils.io.write_text_file(request_payload["config"], config_path)
-
-    if "nlu" in request_payload:
-        nlu_path = os.path.join(temp_dir, "nlu.md")
-        rasa.shared.utils.io.write_text_file(request_payload["nlu"], nlu_path)
-
-    if "stories" in request_payload:
-        stories_path = os.path.join(temp_dir, "stories.md")
-        rasa.shared.utils.io.write_text_file(request_payload["stories"], stories_path)
-
-    if "responses" in request_payload:
-        responses_path = os.path.join(temp_dir, "responses.md")
-        rasa.shared.utils.io.write_text_file(
-            request_payload["responses"], responses_path
-        )
-
-    domain_path = DEFAULT_DOMAIN_PATH
-    if "domain" in request_payload:
-        domain_path = os.path.join(temp_dir, "domain.yml")
-        rasa.shared.utils.io.write_text_file(request_payload["domain"], domain_path)
-
-    model_output_directory = str(temp_dir)
-    if request_payload.get(
-        "save_to_default_model_directory",
-        rasa.utils.endpoints.bool_arg(request, "save_to_default_model_directory", True),
-    ):
-        model_output_directory = DEFAULT_MODELS_PATH
-
-    return dict(
-        domain=domain_path,
-        config=config_path,
-        training_files=str(temp_dir),
-        output=model_output_directory,
-        force_training=request_payload.get(
-            "force", rasa.utils.endpoints.bool_arg(request, "force_training", False)
-        ),
-        core_additional_arguments=_extract_core_additional_arguments(request),
-        nlu_additional_arguments=_extract_nlu_additional_arguments(request),
+def _test_data_file_from_payload(request: Request, temporary_directory: Path) -> Text:
+    return str(
+        _training_payload_from_yaml(
+            request,
+            temporary_directory,
+            # test stories have to prefixed with `test_`
+            file_name=f"{TEST_STORIES_FILE_PREFIX}data.yml",
+        )["training_files"]
     )
 
 
@@ -1534,14 +1486,6 @@ def _validate_json_training_payload(rjs: Dict) -> None:
             "To train a Rasa model with story training data, you also need to "
             "specify the `domain`.",
             {"parameter": "domain", "in": "body"},
-        )
-
-    if "force" in rjs or "save_to_default_model_directory" in rjs:
-        rasa.shared.utils.io.raise_deprecation_warning(
-            "Specifying 'force' and 'save_to_default_model_directory' as part of the "
-            "JSON payload is deprecated. Please use the header arguments "
-            "'force_training' and 'save_to_default_model_directory'.",
-            docs=_docs("/api/http-api"),
         )
 
 

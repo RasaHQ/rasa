@@ -1,58 +1,67 @@
-from typing import Any, Dict, List, Text, Pattern
+from typing import Any, Dict, List, Optional, Text
 
 import regex
-import re
 
 import rasa.shared.utils.io
+import rasa.utils.io
+
+from rasa.engine.graph import ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
+from rasa.nlu.tokenizers.tokenizer import Token, TokenizerGraphComponent
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
 from rasa.shared.nlu.training_data.message import Message
 
+from rasa.nlu.tokenizers._whitespace_tokenizer import WhitespaceTokenizer
 
-class WhitespaceTokenizer(Tokenizer):
 
-    defaults = {
-        # Flag to check whether to split intents
-        "intent_tokenization_flag": False,
-        # Symbol on which intent should be split
-        "intent_split_symbol": "_",
-        # Regular expression to detect tokens
-        "token_pattern": None,
-    }
+# This is a workaround around until we have all components migrated to `GraphComponent`.
+WhitespaceTokenizer = WhitespaceTokenizer
 
-    # the following language should not be tokenized using the WhitespaceTokenizer
-    not_supported_language_list = ["zh", "ja", "th"]
 
-    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
-        """Construct a new tokenizer using the WhitespaceTokenizer framework."""
+class WhitespaceTokenizerGraphComponent(TokenizerGraphComponent):
+    """Creates features for entity extraction."""
 
-        super().__init__(component_config)
+    @staticmethod
+    def not_supported_languages() -> Optional[List[Text]]:
+        """The languages that are not supported."""
+        return ["zh", "ja", "th"]
 
-        self.emoji_pattern = self.get_emoji_regex()
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """Returns the component's default config."""
+        return {
+            # Flag to check whether to split intents
+            "intent_tokenization_flag": False,
+            # Symbol on which intent should be split
+            "intent_split_symbol": "_",
+            # Regular expression to detect tokens
+            "token_pattern": None,
+        }
 
-        if "case_sensitive" in self.component_config:
+    def __init__(self, config: Dict[Text, Any]) -> None:
+        """Initialize the tokenizer."""
+        super().__init__(config)
+        self.emoji_pattern = rasa.utils.io.get_emoji_regex()
+
+        if "case_sensitive" in self._config:
             rasa.shared.utils.io.raise_warning(
                 "The option 'case_sensitive' was moved from the tokenizers to the "
                 "featurizers.",
                 docs=DOCS_URL_COMPONENTS,
             )
 
-    @staticmethod
-    def get_emoji_regex() -> Pattern:
-        """Gets regex to detect emojis in the training data."""
-        return re.compile(
-            "["
-            "\U0001F600-\U0001F64F"  # emoticons
-            "\U0001F300-\U0001F5FF"  # symbols & pictographs
-            "\U0001F680-\U0001F6FF"  # transport & map symbols
-            "\U0001F1E0-\U0001F1FF"  # flags (iOS)
-            "\U00002702-\U000027B0"
-            "\U000024C2-\U0001F251"
-            "\u200d"  # zero width joiner
-            "\u200c"  # zero width non-joiner
-            "]+",
-            flags=re.UNICODE,
-        )
+    @classmethod
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> "WhitespaceTokenizerGraphComponent":
+        """Creates a new component (see parent class for full docstring)."""
+        # Path to the dictionaries on the local filesystem.
+        return cls(config)
 
     def remove_emoji(self, text: Text) -> Text:
         """Remove emoji if the full text, aka token, matches the emoji regex."""

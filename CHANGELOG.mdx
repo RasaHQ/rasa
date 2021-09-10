@@ -16,6 +16,331 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 <!-- TOWNCRIER -->
 
+## [2.8.3] - 2021-08-19
+### Bugfixes
+- [#7695](https://github.com/rasahq/rasa/issues/7695): Ignore checking that intent is in domain for E2E story utterances when running `rasa data validate`. Previously data validation would fail on E2E stories.
+
+
+## [2.8.2] - 2021-08-04
+### Bugfixes
+- [#9203](https://github.com/rasahq/rasa/issues/9203): Fixes a bug which caused training of `UnexpecTEDIntentPolicy` to crash when end-to-end training stories were included in the training data.
+
+  Stories with end-to-end training data will now be skipped for the training of `UnexpecTEDIntentPolicy`.
+
+### Improved Documentation
+- [#8024](https://github.com/rasahq/rasa/issues/8024): Removing the experimental feature warning for the `story validation` tool from the rasa docs. 
+  The behaviour of the feature remains unchanged.
+- [#8791](https://github.com/rasahq/rasa/issues/8791): Removing the experimental feature warning for `entity roles and groups` from the rasa docs, 
+  and from the code where it previously appeared as a print statement. 
+  The behaviour of the feature remains otherwise unchanged.
+
+
+## [2.8.1] - 2021-07-22
+### Improvements
+- [#9085](https://github.com/rasahq/rasa/issues/9085): Add support for `cafile` parameter in `endpoints.yaml`.
+  This will load a custom local certificate file and use it when making requests to that endpoint.
+
+  For example:
+
+  ```yaml
+  action_endpoint:
+    url: https://localhost:5055/webhook
+    cafile: ./cert.pem
+  ```
+
+  This means that requests to the action server `localhost:5055` will use the certificate `cert.pem` located in the current working directory.
+
+### Bugfixes
+- [#9182](https://github.com/rasahq/rasa/issues/9182): Fixes wrong overriding of `epochs` parameter when `TEDPolicy` or `UnexpecTEDIntentPolicy` is not loaded in finetune mode.
+
+
+## [2.8.0] - 2021-07-12
+### Deprecations and Removals
+- [#9045](https://github.com/rasahq/rasa/issues/9045): The option `model_confidence=linear_norm` is deprecated and will be removed in Rasa Open Source `3.0.0`.
+
+  Rasa Open Source `2.3.0` introduced `linear_norm` as a possible value for `model_confidence`
+  parameter in machine learning components such as `DIETClassifier`, `ResponseSelector` and `TEDPolicy`.
+  Based on user feedback, we have identified multiple problems with this option.
+  Therefore, `model_confidence=linear_norm` is now deprecated and
+  will be removed in Rasa Open Source `3.0.0`. If you were using `model_confidence=linear_norm` for any of the mentioned components,
+  we recommend to revert it back to `model_confidence=softmax` and re-train the assistant. After re-training,
+  we also recommend to [re-tune the thresholds for fallback components](./fallback-handoff.mdx#fallbacks).
+- [#9091](https://github.com/rasahq/rasa/issues/9091): The fallback mechanism for spaCy models has now been removed in Rasa `3.0.0`. 
+
+  Rasa Open Source `2.5.0` introduced support for spaCy 3.0. This introduced a 
+  breaking feature because models would no longer be manually linked. To make
+  the transition smooth Rasa would rely on the `language` parameter in the
+  `config.yml` to fallback to a medium spaCy model if no model was configured
+  for the `SpacyNLP` component. In Rasa Open Source `3.0.0` and onwards the 
+  `SpacyNLP` component will require the model name (like `"en_core_web_md"`) 
+  to be passed explicitly.
+
+### Features
+- [#8724](https://github.com/rasahq/rasa/issues/8724): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
+- [#8913](https://github.com/rasahq/rasa/issues/8913): Introduces a new policy called [`UnexpecTEDIntentPolicy`](./policies.mdx#unexpected-intent-policy).
+
+  `UnexpecTEDIntentPolicy` helps you [review conversations](./conversation-driven-development.mdx#review)
+   and also allows your bot to react to unexpected user turns in conversations.
+   It is an auxiliary policy that should only be used in conjunction with
+   at least one other policy, as the only action that it can trigger
+   is the special and newly introduced
+   [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent) action.
+
+   The auto-configuration will include `UnexpecTEDIntentPolicy` in your
+   configuration automatically, but you can also include it yourself
+   in the `policies` section of the configuration:
+
+   ```
+   policies:
+     - name: UnexpecTEDIntentPolicy
+       epochs: 200
+       max_history: 5
+   ```
+
+  As part of the feature, it also introduces:
+
+  - [`IntentMaxHistoryTrackerFeaturizer`](./policies.mdx#3-intent-max-history)
+    to featurize the trackers for `UnexpecTEDIntentPolicy`.
+  - `MultiLabelDotProductLoss` to support `UnexpecTEDIntentPolicy`'s multi-label training objective.
+  - A new default action called [`action_unlikely_intent`](./default-actions.mdx#action_unlikely_intent).
+
+
+  `rasa test` command has also been adapted to `UnexpecTEDIntentPolicy`:
+
+  - If a test story contains `action_unlikely_intent` and the policy ensemble does not trigger it, this leads to
+    a test error (wrongly predicted action) and the corresponding story will be logged in `failed_test_stories.yml`.
+  - If the story does not contain `action_unlikely_intent` and Rasa Open Source does predict it then
+    the prediction of `action_unlikely_intent` will be ignored for the evaluation (and hence not lead
+    to a prediction error) but the story will be logged in a file called `stories_with_warnings.yml`.
+
+
+  The `rasa data validate` command will warn if `action_unlikely_intent` is
+  included in the training stories. Accordingly, `YAMLStoryWriter` and `MarkdownStoryWriter` have been updated to not dump `action_unlikely_intent` when writing stories to a file.
+
+  :::caution
+  The introduction of a new default action **breaks backward compatibility of previously trained models**.
+  It is not possible to load models trained with previous versions of Rasa Open Source. Please re-train
+  your assistant before trying to use this version.
+
+  :::
+
+### Improvements
+- [#8127](https://github.com/rasahq/rasa/issues/8127): Added detailed json schema validation for `UserUttered`, `SlotSet`, `ActionExecuted` and `EntitiesAdded` events both sent and received from the action server, as well as covered at high-level the validation of the rest of the 20 events.
+  In case the events are invalid, a `ValidationError` will be raised.
+- [#8232](https://github.com/rasahq/rasa/issues/8232): Users don't need to specify an additional buffer size for sparse featurizers anymore during incremental training.
+
+  Space for new sparse features are created dynamically inside the downstream machine learning 
+  models - `DIETClassifier`, `ResponseSelector`. In other words, no extra buffer is created in 
+  advance for additional vocabulary items and space will be dynamically allocated for them inside the model.
+
+  This means there's no need to specify `additional_vocabulary_size` for [`CountVectorsFeaturizer`](./components.mdx#countvectorsfeaturizer) or
+  `number_additional_patterns` for [`RegexFeaturizer`](./components.mdx#regexfeaturizer). These parameters are now deprecated.
+
+  **Before**
+  ```yaml
+  pipeline:
+    - name: "WhitespaceTokenizer"
+    - name: "RegexFeaturizer"
+      number_additional_patterns: 100
+    - name: "CountVectorsFeaturizer"
+      additional_vocabulary_size: {text: 100, response: 20}
+  ```
+
+  **Now**
+  ```yaml
+  pipeline:
+    - name: "WhitespaceTokenizer"
+    - name: "RegexFeaturizer"
+    - name: "CountVectorsFeaturizer"
+  ```
+
+  Also, all custom layers specifically built for machine learning models - `RasaSequenceLayer`, `RasaFeatureCombiningLayer` 
+  and `ConcatenateSparseDenseFeatures` now inherit from `RasaCustomLayer` so that they support flexible incremental training out of the box.
+- [#8295](https://github.com/rasahq/rasa/issues/8295): Speed up the contradiction check of the [`RulePolicy`](policies.mdx#rule-policy)
+  by a factor of 3.
+- [#8801](https://github.com/rasahq/rasa/issues/8801): Change the confidence score assigned by [`FallbackClassifier`](components.mdx#fallbackclassifier) to fallback intent to be the same as the fallback threshold.
+- [#8926](https://github.com/rasahq/rasa/issues/8926): Issue a UserWarning if a specified **domain folder** contains files that look like YML files but cannot be parsed successfully. 
+  Only invoked if user specifies a folder path in `--domain` paramater. Previously those invalid files in the specified folder were silently ignored.  
+  **Does not apply** to individually specified domain YAML files, e.g. `--domain /some/path/domain.yml`, those being invalid will still raise an exception.
+
+### Bugfixes
+- [#8711](https://github.com/rasahq/rasa/issues/8711): Fix for unnecessary retrain and duplication of folders in the model
+
+### Miscellaneous internal changes
+- [#8241](https://github.com/rasahq/rasa/issues/8241), [#8525](https://github.com/rasahq/rasa/issues/8525), [#8694](https://github.com/rasahq/rasa/issues/8694), [#8704](https://github.com/rasahq/rasa/issues/8704)
+
+
+## [2.7.2] - 2021-08-09
+### Bugfixes
+- [#7695](https://github.com/rasahq/rasa/issues/7695): Ignore checking that intent is in domain for E2E story utterances when running `rasa data validate`. Previously data validation would fail on E2E stories.
+- [#8711](https://github.com/rasahq/rasa/issues/8711): Fix for unnecessary retrain and duplication of folders in the model
+
+
+## [2.7.1] - 2021-06-16
+                       
+
+### Bugfixes
+- [#7286](https://github.com/rasahq/rasa/issues/7286): Best model checkpoint allows for metrics to be equal to previous best if at least one 
+  metric improves, rather than strict improvement for each metric.
+- [#8200](https://github.com/rasahq/rasa/issues/8200): Fixes a bug where multiple plots overlap each other and are rendered incorrectly when comparing performance across multiple NLU pipelines.
+- [#8812](https://github.com/rasahq/rasa/issues/8812): Don't evaluate entities if no entities present in test data.
+
+  Also, catch exception in `plot_paired_histogram` when data is empty.
+
+
+## [2.7.0] - 2021-06-03
+                       
+
+### Improvements
+- [#7691](https://github.com/rasahq/rasa/issues/7691): Changed the default config to train the `RulePolicy` before the `TEDPolicy`.
+  This means that conflicting rule/stories will be identified before a potentially slow training of the `TEDPolicy`.
+- [#7799](https://github.com/rasahq/rasa/issues/7799): Updated validator used by `rasa data validate` to verify that actions used in stories and rules are present in the domain and that form slots match domain slots.
+- [#7912](https://github.com/rasahq/rasa/issues/7912): Rename `plot_histogram` to `plot_paired_histogram` and fix missing bars in the plot.
+- [#8225](https://github.com/rasahq/rasa/issues/8225): Changed --data option type in the ``rasa data validate``` command to allow more than one path to be passed.
+
+### Bugfixes
+- [#8152](https://github.com/rasahq/rasa/issues/8152): The file `failed_test_stories.yml` (generated by `rasa test`) now also includes the wrongly predicted entity as a comment next to the entity of a user utterance.
+  Additionally, the comment printed next to the intent of a user utterance is printed only if the intent was wrongly predicted (irrelevantly if there was a wrongly predicted entity or not in the specific user utterance).
+- [#8309](https://github.com/rasahq/rasa/issues/8309): Added check in PikaEventBroker constructor: if port cannot be cast to integer, raise RasaException
+- [#8388](https://github.com/rasahq/rasa/issues/8388): Fixed bug where missing intent warnings appear when running `rasa test`
+- [#8611](https://github.com/rasahq/rasa/issues/8611): Update `should_retrain` function to return the correct fingerprint comparison result 
+  even when there is a problem with model unpacking.
+- [#8719](https://github.com/rasahq/rasa/issues/8719): Handle correctly Telegram edited message.
+
+### Miscellaneous internal changes
+- [#8591](https://github.com/rasahq/rasa/issues/8591), [#8641](https://github.com/rasahq/rasa/issues/8641), [#8654](https://github.com/rasahq/rasa/issues/8654), [#8658](https://github.com/rasahq/rasa/issues/8658), [#8802](https://github.com/rasahq/rasa/issues/8802)
+
+
+## [2.6.3] - 2021-05-28
+                       
+
+### Bugfixes
+- [#8046](https://github.com/rasahq/rasa/issues/8046): `ResponseSelector` can now be trained with the transformer enabled (i.e. when a positive
+  `number_of_transformer_layers` is provided) even if one doesn't specify the transformer's
+  size. Previously, not specifying `transformer_size` led to an error.
+- [#8386](https://github.com/rasahq/rasa/issues/8386): Return `EntityEvaluationResult` during evaluation of test stories only if `parsed_message` is not `None`.
+- [#8546](https://github.com/rasahq/rasa/issues/8546): Ignore `OSError` in Sentry reporting.
+- [#8547](https://github.com/rasahq/rasa/issues/8547): Replaced `ValueError` with `RasaException` in TED model `_check_data` method.
+- [#8639](https://github.com/rasahq/rasa/issues/8639): Changed import to fix agent creation in Jupyter.
+
+### Miscellaneous internal changes
+- [#7906](https://github.com/rasahq/rasa/issues/7906), [#8544](https://github.com/rasahq/rasa/issues/8544), [#8725](https://github.com/rasahq/rasa/issues/8725), [#8726](https://github.com/rasahq/rasa/issues/8726), [#8727](https://github.com/rasahq/rasa/issues/8727), [#8728](https://github.com/rasahq/rasa/issues/8728)
+
+
+## [2.6.2] - 2021-05-18
+                       
+
+### Bugfixes
+- [#8364](https://github.com/rasahq/rasa/issues/8364): Fixed a bug where [`ListSlot`](domain.mdx#list-slot)s were filled with single items
+  in case only one matching entity was extracted for this slot.
+
+  Values applied to [`ListSlot`](domain.mdx#list-slot)s will be converted to a `List`
+  in case they aren't one.
+- [#8581](https://github.com/rasahq/rasa/issues/8581): Fix bug with false rule conflicts
+
+  This essentially reverts [PR 8446](https://github.com/RasaHQ/rasa/pull/8446/files), except for the tests. 
+  The PR is redundant due to [PR 8646](https://github.com/RasaHQ/rasa/pull/8646/files).
+- [#8590](https://github.com/rasahq/rasa/issues/8590): Handle `AttributeError ` thrown by empty slot mappings in domain form through refactoring.
+- [#8631](https://github.com/rasahq/rasa/issues/8631): Fixed incorrect `The action 'utter_<response selector intent>' is used in the stories, but is not a valid utterance action`
+  error when running `rasa data validate` with response selector responses in the domain file.
+
+### Improved Documentation
+- [#8079](https://github.com/rasahq/rasa/issues/8079): Added a note to clarify best practice for resetting all slots after form deactivation.
+
+### Miscellaneous internal changes
+- [#8587](https://github.com/rasahq/rasa/issues/8587)
+
+
+## [2.6.1] - 2021-05-11
+                       
+
+### Bugfixes
+- [#7908](https://github.com/rasahq/rasa/issues/7908): Made `SchemaError` message available to validator so that the reason why reason schema validation fails during `rasa data validate` is displayed when response `text` value is `null`.
+  Added warning message when deprecated MappingPolicy format is used in the domain.
+- [#8623](https://github.com/rasahq/rasa/issues/8623): When there are multiple entities in a user message, they will get sorted when creating a
+  representation of the current dialogue state.
+
+  Previously, the ordering was random, leading to inconsistent state representations. This
+  would sometimes lead to memoization policies failing to recall a memorised action.
+
+
+## [2.6.0] - 2021-05-06
+                       
+
+### Deprecations and Removals
+- [#261](https://github.com/rasahq/rasa/issues/261): In forms, the keyword `required_slots` should always precede the definition of slot mappings and the lack of it is deprecated.
+  Please see the [migration guide](migration-guide.mdx) for more information.
+- [#8428](https://github.com/rasahq/rasa/issues/8428): `rasa.data.get_test_directory`, `rasa.data.get_core_nlu_directories`, and
+  `rasa.shared.nlu.training_data.training_data.TrainingData::get_core_nlu_directories`
+  are deprecated and will be removed in Rasa Open Source 3.0.0.
+- [#8498](https://github.com/rasahq/rasa/issues/8498): Update the minimum compatible model version to "2.6.0".
+  This means all models trained with an earlier version will have to be retrained.
+
+### Features
+- [#8103](https://github.com/rasahq/rasa/issues/8103): Feature enhancement enabling JWT authentication for the Socket.IO channel. Users can define `jwt_key` and `jwt_method` as parameters in their credentials file for authentication.
+- [#8180](https://github.com/rasahq/rasa/issues/8180): Allows a Rasa bot to be connected to a Twilio Voice channel. More details in the [Twilio Voice docs](connectors/twilio-voice.mdx)
+- [#8532](https://github.com/rasahq/rasa/issues/8532): Conditional response variations are supported in the `domain.yml` without requiring users to write custom actions code.
+
+  A condition can be a list of slot-value mapping constraints.
+
+### Improvements
+- [#261](https://github.com/rasahq/rasa/issues/261): Added an optional `ignored_intents` parameter in forms.
+
+  - To use it, add the `ignored_intents` parameter  in your `domain.yml` file after the forms name and provide a list of intents to ignore. Please see [Forms](forms.mdx) for more information.
+  - This can be used in case the user never wants to fill any slots of a form with the specified intent, e.g. chitchat.
+- [#5786](https://github.com/rasahq/rasa/issues/5786): Add function to carry `max_history` to featurizer
+- [#7589](https://github.com/rasahq/rasa/issues/7589): Improved the machine learning models' codebase by factoring out shared feature-processing
+  logic into three custom layer classes:
+  - `ConcatenateSparseDenseFeatures` combines multiple sparse and dense feature tensors
+  into one.
+  - `RasaFeatureCombiningLayer` additionally combines sequence-level and sentence-level
+  features.
+  - `RasaSequenceLayer` is used for attributes with sequence-level features; it
+  additionally embeds the combined features with a transformer and facilitates masked
+  language modeling.
+- [#7685](https://github.com/rasahq/rasa/issues/7685): Added the following usability improvements with respect to entities getting extracted multiple times:
+  * Added warnings for competing entity extractors at training time and for overlapping entities at inference time
+  * Improved docs to help users handle overlapping entity problems.
+- [#7999](https://github.com/rasahq/rasa/issues/7999): Replace `weight_sparsity` with `connection_density` in all transformer-based models and add guarantees about internal layers.
+
+  We rename `DenseWithSparseWeights` into `RandomlyConnectedDense`, and guarantee that even at density zero the output is dense and every input is connected to at least one output. The former `weight_sparsity` parameter of DIET, TED, and the ResponseSelector, is now roughly equivalent to `1 - connection_density`, except at very low densities (high sparsities). 
+
+  All layers and components that used to have a `sparsity` argument (`Ffnn`, `TransformerRasaModel`, `MultiHeadAttention`, `TransformerEncoderLayer`, `TransformerEncoder`) now have a `density` argument instead.
+- [#8074](https://github.com/rasahq/rasa/issues/8074): Rasa test now prints a warning if the test stories contain bot utterances that are not part of the domain.
+- [#8263](https://github.com/rasahq/rasa/issues/8263): Updated `asyncio.Task.all_tasks` to `asyncio.all_tasks`, with a fallback for python 3.6, which raises an AttributeError for `asyncio.all_tasks`. This removes the deprecation warning for the `Task.all_tasks` usage.
+- [#8461](https://github.com/rasahq/rasa/issues/8461): Change variable name from `i` to `array_2D`
+- [#8560](https://github.com/rasahq/rasa/issues/8560): Implement a new interface `run_inference` inside `RasaModel` which performs batch inferencing through tensorflow models.
+
+  `rasa_predict` inside `RasaModel` has been made a private method now by changing it to `_rasa_predict`.
+
+### Bugfixes
+- [#7005](https://github.com/rasahq/rasa/issues/7005): Fixed a bug for plotting trackers with non-ascii texts during interactive training by enforcing utf-8 encoding
+- [#7589](https://github.com/rasahq/rasa/issues/7589): Fix masked language modeling in DIET to only apply masking to token-level
+  (sequence-level) features. Previously, masking was applied to both token-level and
+  sentence-level features.
+- [#8300](https://github.com/rasahq/rasa/issues/8300): Make it possible to use `null` entities in stories.
+- [#8333](https://github.com/rasahq/rasa/issues/8333): Introduce a `skip_validation` flag in order to speed up reading YAML files that were already validated.
+- [#8341](https://github.com/rasahq/rasa/issues/8341): Fixed a bug in interactive training that 
+  lead to crashes for long Chinese, Japanese, 
+  or Korean user or bot utterances.
+
+
+## [2.5.2] - 2021-06-16
+                       
+
+### Features
+- [#8892](https://github.com/rasahq/rasa/issues/8892): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
+
+
+## [2.5.1] - 2021-04-28
+                       
+
+### Bugfixes
+- [#8446](https://github.com/rasahq/rasa/issues/8446): Fixed prediction for rules with multiple entities.
+- [#8545](https://github.com/rasahq/rasa/issues/8545): Mitigated Matplotlib backend issue using lazy configuration
+  and added a more explicit error message to guide users.
+
+
 ## [2.5.0] - 2021-04-12
                        
 
@@ -259,6 +584,25 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 - [#6484](https://github.com/rasahq/rasa/issues/6484), [#7737](https://github.com/rasahq/rasa/issues/7737), [#7879](https://github.com/rasahq/rasa/issues/7879), [#8016](https://github.com/rasahq/rasa/issues/8016)
 
 
+## [2.3.5] - 2021-06-16
+                       
+
+### Features
+- [#8860](https://github.com/rasahq/rasa/issues/8860): Added `sasl_mechanism` as an optional configurable parameters for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
+
+### Improvements
+- [#7955](https://github.com/rasahq/rasa/issues/7955): Drastically improved finger printing time for large story graphs
+- [#8100](https://github.com/rasahq/rasa/issues/8100): Improved the [lock store](lock-stores.mdx) debug log message when the process has to
+  queue because other messages have to be processed before this item.
+
+### Bugfixes
+- [#4612](https://github.com/rasahq/rasa/issues/4612): Fixed the bug that OR statements in stories would break the check whether a model needs to be retrained
+- [#8649](https://github.com/rasahq/rasa/issues/8649): Updated `python-engineio` dependency version for compatibility with `python-socketio`.
+
+### Improved Documentation
+- [#8080](https://github.com/rasahq/rasa/issues/8080): Update links to Sanic docs in the documentation.
+
+
 ## [2.3.4] - 2021-02-26
                        
 
@@ -483,7 +827,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Improvements
 - [#7520](https://github.com/rasahq/rasa/issues/7520): Improve the warning in case the [RulePolicy](policies.mdx#rule-policy) or the deprecated 
-  [MappingPolicy](policies.mdx#mapping-policy) are missing
+  `MappingPolicy` are missing
   from the model's `policies` configuration. Changed the info log to a warning as one
   of this policies should be added to the model configuration.
 
@@ -1021,7 +1365,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 
 ### Bugfixes
-- [#7089](https://github.com/rasahq/rasa/issues/7089): Fix [ConveRTTokenizer](components.mdx#converttokenizer) failing because of wrong model URL by making the `model_url` parameter of `ConveRTTokenizer` mandatory.
+- [#7089](https://github.com/rasahq/rasa/issues/7089): Fix `ConveRTTokenizer` failing because of wrong model URL by making the `model_url` parameter of `ConveRTTokenizer` mandatory.
 
   Since the ConveRT model was taken [offline](https://github.com/RasaHQ/rasa/issues/6806), we can no longer use
   the earlier public URL of the model. Additionally, since the licence for the model is unknown,
@@ -1130,7 +1474,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   Rasa Open Source will continue to be able to read and process old `form_validation`
   events.
 - [#6658](https://github.com/rasahq/rasa/issues/6658): `SklearnPolicy` was deprecated. `TEDPolicy` is the preferred machine-learning policy for dialogue models.
-- [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](domain.mdx#slots) of type [`unfeaturized`](domain.mdx#unfeaturized-slot) are
+- [#6809](https://github.com/rasahq/rasa/issues/6809): [Slots](domain.mdx#slots) of type `unfeaturized` are
   now deprecated and will be removed in Rasa Open Source 3.0. Instead you should use
   the property `influence_conversation: false` for every slot type as described in the
   [migration guide](migration-guide.mdx#unfeaturized-slots).
@@ -1228,10 +1572,10 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
   custom `Policy` implementation doesn't provide this parameter Rasa Open Source
   will print a warning and omit passing the `interpreter`.
 - [#6088](https://github.com/rasahq/rasa/issues/6088): Added the new dialogue policy RulePolicy which will replace the old “rule-like”
-  policies [Mapping Policy](./policies.mdx#mapping-policy),
-  [Fallback Policy](./policies.mdx#fallback-policy),
-  [Two-Stage Fallback Policy](./policies.mdx#two-stage-fallback-policy), and
-  [Form Policy](./policies.mdx#form-policy). These policies are now
+  policies Mapping Policy,
+  Fallback Policy,
+  Two-Stage Fallback Policy, and
+  Form Policy. These policies are now
   deprecated and will be removed in the future. Please see the
   [rules documentation](./rules.mdx) for more information.
 
@@ -1581,6 +1925,27 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 ### Miscellaneous internal changes
 - [#5784](https://github.com/rasahq/rasa/issues/5784), [#5788](https://github.com/rasahq/rasa/issues/5788), [#6199](https://github.com/rasahq/rasa/issues/6199), [#6403](https://github.com/rasahq/rasa/issues/6403), [#6735](https://github.com/rasahq/rasa/issues/6735)
+
+
+## [1.10.26] - 2021-06-17
+
+### Features
+- [#8876](https://github.com/rasahq/rasa/issues/8876): Added `sasl_mechanism` as an optional configurable parameter for the [Kafka Producer](event-brokers.mdx#kafka-event-broker).
+
+
+## [1.10.25] - 2021-04-14
+
+### Features
+- [#8429](https://github.com/rasahq/rasa/issues/8429): Added `partition_by_sender` flag to Kafka Producer to optionally associate events with Kafka partition based on sender_id.
+
+### Improvements
+- [#8345](https://github.com/rasahq/rasa/issues/8345): Improved the [lock store](lock-stores.mdx) debug log message when the process has to queue because other messages have to be processed before this item.
+
+
+## [1.10.24] - 2021-03-29
+
+### Bugfixes
+- [#8019](https://github.com/rasahq/rasa/issues/8019): Added `group_id` parameter back to `KafkaEventBroker` to fix error when instantiating event broker with a config containing the `group_id` parameter which is only relevant to the event consumer
 
 
 ## [1.10.23] - 2021-02-22
@@ -2041,7 +2406,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 * [#5006](https://github.com/rasahq/rasa/issues/5006): Channel `hangouts` for Rasa integration with Google Hangouts Chat is now supported out-of-the-box.
 
-* [#5389](https://github.com/rasahq/rasa/issues/5389): Add an optional path to a specific directory to download and cache the pre-trained model weights for [HFTransformersNLP](./components.mdx#hftransformersnlp).
+* [#5389](https://github.com/rasahq/rasa/issues/5389): Add an optional path to a specific directory to download and cache the pre-trained model weights for `HFTransformersNLP`.
 
 * [#5422](https://github.com/rasahq/rasa/issues/5422): Add options `tensorboard_log_directory` and `tensorboard_log_level` to `EmbeddingIntentClassifier`,
   `DIETClasifier`, `ResponseSelector`, `EmbeddingPolicy` and `TEDPolicy`.
@@ -2105,7 +2470,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 ### Bugfixes
 
 * [#5205](https://github.com/rasahq/rasa/issues/5205): Fixed the bug when FormPolicy was overwriting MappingPolicy prediction (e.g. `/restart`).
-  Priorities for [Mapping Policy](./policies.mdx#mapping-policy) and [Form Policy](./policies.mdx#form-policy) are no longer linear:
+  Priorities for Mapping Policy and Form Policy are no longer linear:
   `FormPolicy` priority is 5, but its prediction is ignored if `MappingPolicy` is used for prediction.
 
 * [#5215](https://github.com/rasahq/rasa/issues/5215): Fixed issue related to storing Python `float` values as `decimal.Decimal` objects
@@ -2208,10 +2573,10 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 
 * [#5187](https://github.com/rasahq/rasa/issues/5187): Integrate language models from HuggingFace's [Transformers](https://github.com/huggingface/transformers) Library.
 
-  Add a new NLP component [HFTransformersNLP](./components.mdx#hftransformersnlp) which tokenizes and featurizes incoming messages using a specified
+  Add a new NLP component `HFTransformersNLP` which tokenizes and featurizes incoming messages using a specified
   pre-trained model with the Transformers library as the backend.
-  Add [LanguageModelTokenizer](./components.mdx#languagemodeltokenizer) and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which use the information from
-  [HFTransformersNLP](./components.mdx#hftransformersnlp) and sets them correctly for message object.
+  Add `LanguageModelTokenizer` and [LanguageModelFeaturizer](./components.mdx#languagemodelfeaturizer) which use the information from
+  `HFTransformersNLP` and sets them correctly for message object.
   Language models currently supported: BERT, OpenAIGPT, GPT-2, XLNet, DistilBert, RoBERTa.
 
 * [#5225](https://github.com/rasahq/rasa/issues/5225): Added a new CLI command `rasa export` to publish tracker events from a persistent
@@ -2301,7 +2666,7 @@ https://github.com/RasaHQ/rasa/tree/main/changelog/ . -->
 * [#4006](https://github.com/rasahq/rasa/issues/4006): Fixed timestamp parsing warning when using DucklingHTTPExtractor
 
 * [#4601](https://github.com/rasahq/rasa/issues/4601): Fixed issue with `action_restart` getting overridden by `action_listen` when the `MappingPolicy` and the
-  [TwoStageFallbackPolicy](./policies.mdx#two-stage-fallback-policy) are used together.
+  `TwoStageFallbackPolicy` are used together.
 
 * [#5201](https://github.com/rasahq/rasa/issues/5201): Fixed incorrectly raised Error encountered in pipelines with a `ResponseSelector` and NLG.
 

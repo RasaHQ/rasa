@@ -73,13 +73,7 @@ class YAMLStoryReader(StoryReader):
         Returns:
             A new reader instance.
         """
-        return cls(
-            reader.domain,
-            reader.template_variables,
-            reader.use_e2e,
-            reader.source_name,
-            reader._is_used_for_training,
-        )
+        return cls(reader.domain, reader.source_name, reader._is_used_for_training,)
 
     def read_from_file(
         self, filename: Union[Text, Path], skip_validation: bool = False
@@ -362,7 +356,15 @@ class YAMLStoryReader(StoryReader):
     def _user_intent_from_step(
         self, step: Dict[Text, Any]
     ) -> Tuple[Text, Optional[Text]]:
-        user_intent = step.get(KEY_USER_INTENT, "").strip()
+        try:
+            user_intent = step.get(KEY_USER_INTENT, "").strip()
+        except AttributeError:
+            rasa.shared.utils.io.raise_warning(
+                f"Issue found in '{self.source_name}':\n"
+                f"Missing intent value in {self._get_item_title()} step: {step} .",
+                docs=self._get_docs_link(),
+            )
+            user_intent = ""
 
         if not user_intent and KEY_USER_MESSAGE not in step:
             rasa.shared.utils.io.raise_warning(
@@ -429,7 +431,7 @@ class YAMLStoryReader(StoryReader):
     @staticmethod
     def _parse_raw_entities(
         raw_entities: Union[List[Dict[Text, Text]], List[Text]]
-    ) -> List[Dict[Text, Text]]:
+    ) -> List[Dict[Text, Optional[Text]]]:
         final_entities = []
         for entity in raw_entities:
             if isinstance(entity, dict):

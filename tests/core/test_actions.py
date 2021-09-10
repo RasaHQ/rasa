@@ -1,8 +1,10 @@
 import textwrap
+from datetime import datetime
 from typing import List, Text
 
 import pytest
 from aioresponses import aioresponses
+from jsonschema import ValidationError
 
 import rasa.core
 from rasa.core.actions import action
@@ -22,7 +24,7 @@ from rasa.core.actions.action import (
 from rasa.core.actions.forms import FormAction
 from rasa.core.channels import CollectingOutputChannel, OutputChannel
 from rasa.core.nlg import NaturalLanguageGenerator
-from rasa.shared.constants import UTTER_PREFIX
+from rasa.shared.constants import UTTER_PREFIX, REQUIRED_SLOTS_KEY
 from rasa.shared.core.domain import (
     ActionNotFoundException,
     SessionConfig,
@@ -39,7 +41,23 @@ from rasa.shared.core.events import (
     ActionExecuted,
     Event,
     UserUttered,
+    EntitiesAdded,
+    DefinePrevUserUtteredFeaturization,
+    AllSlotsReset,
+    ReminderScheduled,
+    ReminderCancelled,
+    ActionReverted,
+    StoryExported,
+    FollowupAction,
+    ConversationPaused,
+    ConversationResumed,
+    AgentUttered,
+    LoopInterrupted,
+    ActionExecutionRejected,
+    LegacyFormValidation,
+    LegacyForm,
 )
+import rasa.shared.utils.common
 from rasa.core.nlg.response import TemplatedNaturalLanguageGenerator
 from rasa.shared.core.constants import (
     USER_INTENT_SESSION_START,
@@ -53,6 +71,7 @@ from rasa.shared.core.constants import (
     ACTION_DEFAULT_ASK_REPHRASE_NAME,
     ACTION_BACK_NAME,
     ACTION_TWO_STAGE_FALLBACK_NAME,
+    ACTION_UNLIKELY_INTENT_NAME,
     RULE_SNIPPET_ACTION_NAME,
     ACTIVE_LOOP,
     FOLLOWUP_ACTION,
@@ -105,7 +124,7 @@ def test_domain_action_instantiation():
         for action_name in domain.action_names_or_texts
     ]
 
-    assert len(instantiated_actions) == 14
+    assert len(instantiated_actions) == 15
     assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_SESSION_START_NAME
@@ -115,11 +134,12 @@ def test_domain_action_instantiation():
     assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
     assert instantiated_actions[7].name() == ACTION_DEFAULT_ASK_REPHRASE_NAME
     assert instantiated_actions[8].name() == ACTION_TWO_STAGE_FALLBACK_NAME
-    assert instantiated_actions[9].name() == ACTION_BACK_NAME
-    assert instantiated_actions[10].name() == RULE_SNIPPET_ACTION_NAME
-    assert instantiated_actions[11].name() == "my_module.ActionTest"
-    assert instantiated_actions[12].name() == "utter_test"
-    assert instantiated_actions[13].name() == "utter_chitchat"
+    assert instantiated_actions[9].name() == ACTION_UNLIKELY_INTENT_NAME
+    assert instantiated_actions[10].name() == ACTION_BACK_NAME
+    assert instantiated_actions[11].name() == RULE_SNIPPET_ACTION_NAME
+    assert instantiated_actions[12].name() == "my_module.ActionTest"
+    assert instantiated_actions[13].name() == "utter_test"
+    assert instantiated_actions[14].name() == "utter_chitchat"
 
 
 async def test_remote_action_runs(
@@ -293,55 +313,249 @@ async def test_remote_action_utterances_with_none_values(
     ]
 
 
-async def test_remote_action_with_template_param(
+@pytest.mark.parametrize(
+    "event",
+    (
+        EntitiesAdded(
+            entities=[
+                {"entity": "city", "value": "London"},
+                {"entity": "count", "value": 1},
+            ],
+            timestamp=None,
+        ),
+        EntitiesAdded(entities=[]),
+        EntitiesAdded(
+            entities=[
+                {"entity": "name", "value": "John", "role": "contact", "group": "test"}
+            ]
+        ),
+        DefinePrevUserUtteredFeaturization(
+            use_text_for_featurization=False, timestamp=None, metadata=None
+        ),
+        ReminderCancelled(timestamp=1621590172.3872123),
+        ReminderScheduled(
+            timestamp=None, trigger_date_time=datetime.now(), intent="greet"
+        ),
+        ActionExecutionRejected(action_name="my_action"),
+        LegacyFormValidation(validate=True, timestamp=None),
+        LoopInterrupted(timestamp=None, is_interrupted=False),
+        ActiveLoop(name="loop"),
+        LegacyForm(name="my_form"),
+        AllSlotsReset(),
+        SlotSet(key="my_slot", value={}),
+        SlotSet(key="my slot", value=[]),
+        SlotSet(key="test", value=1),
+        SlotSet(key="test", value="text"),
+        ConversationResumed(),
+        ConversationPaused(),
+        FollowupAction(name="test"),
+        StoryExported(),
+        Restarted(),
+        ActionReverted(),
+        UserUtteranceReverted(),
+        BotUttered(text="Test bot utterance"),
+        UserUttered(
+            parse_data={
+                "entities": [],
+                "response_selector": {
+                    "all_retrieval_intents": [],
+                    "chitchat/ask_weather": {"response": {}, "ranking": []},
+                },
+            }
+        ),
+        UserUttered(
+            text="hello",
+            parse_data={
+                "intent": {
+                    "id": -4389344335148575888,
+                    "name": "greet",
+                    "confidence": 0.9604260921478271,
+                },
+                "entities": [
+                    {"entity": "city", "value": "London"},
+                    {"entity": "count", "value": 1},
+                ],
+                "text": "hi",
+                "message_id": "3f4c04602a4947098c574b107d3ccc50",
+                "metadata": {},
+                "intent_ranking": [
+                    {
+                        "id": -4389344335148575888,
+                        "name": "greet",
+                        "confidence": 0.9604260921478271,
+                    },
+                    {
+                        "id": 7180145986630405383,
+                        "name": "goodbye",
+                        "confidence": 0.01835782080888748,
+                    },
+                    {
+                        "id": 4246019067232216572,
+                        "name": "deny",
+                        "confidence": 0.011255578137934208,
+                    },
+                    {
+                        "id": -4048707801696782560,
+                        "name": "bot_challenge",
+                        "confidence": 0.004019865766167641,
+                    },
+                    {
+                        "id": -5942619264156239037,
+                        "name": "affirm",
+                        "confidence": 0.002524246694520116,
+                    },
+                    {
+                        "id": 677880322645240870,
+                        "name": "mood_great",
+                        "confidence": 0.002214624546468258,
+                    },
+                    {
+                        "id": -5973454296286367554,
+                        "name": "chitchat",
+                        "confidence": 0.0009614597074687481,
+                    },
+                    {
+                        "id": -4598562678335233249,
+                        "name": "mood_unhappy",
+                        "confidence": 0.00024030178610701114,
+                    },
+                ],
+                "response_selector": {
+                    "all_retrieval_intents": [],
+                    "default": {
+                        "response": {
+                            "id": -226546773594344189,
+                            "responses": [{"text": "chitchat/ask_name"}],
+                            "response_templates": [{"text": "chitchat/ask_name"}],
+                            "confidence": 0.9618658423423767,
+                            "intent_response_key": "chitchat/ask_name",
+                            "utter_action": "utter_chitchat/ask_name",
+                            "template_name": "utter_chitchat/ask_name",
+                        },
+                        "ranking": [
+                            {
+                                "id": -226546773594344189,
+                                "confidence": 0.9618658423423767,
+                                "intent_response_key": "chitchat/ask_name",
+                            },
+                            {
+                                "id": 8392727822750416828,
+                                "confidence": 0.03813415765762329,
+                                "intent_response_key": "chitchat/ask_weather",
+                            },
+                        ],
+                    },
+                },
+            },
+        ),
+        SessionStarted(),
+        ActionExecuted(action_name="action_listen"),
+        AgentUttered(),
+    ),
+)
+async def test_remote_action_valid_payload_all_events(
     default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+    event: Event,
+):
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+    events = [event.as_dict()]
+    response = {"events": events, "responses": []}
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", payload=response)
+
+        events = await remote_action.run(
+            default_channel, default_nlg, default_tracker, domain
+        )
+
+    assert len(events) == 1
+
+
+@pytest.mark.parametrize(
+    "event",
+    (
+        {
+            "event": "user",
+            "timestamp": 1621590172.3872123,
+            "parse_data": {"entities": {}},
+        },
+        {"event": "entities", "timestamp": 1621604905.647361, "entities": {}},
+    ),
+)
+async def test_remote_action_invalid_entities_payload(
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
+    default_tracker: DialogueStateTracker,
+    domain: Domain,
+    event: Event,
+):
+
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+    response = {
+        "events": [event],
+        "responses": [],
+    }
+    with aioresponses() as mocked:
+        mocked.post("https://example.com/webhooks/actions", payload=response)
+
+        with pytest.raises(ValidationError) as e:
+            await remote_action.run(
+                default_channel, default_nlg, default_tracker, domain
+            )
+
+    assert "Failed to validate Action server response from API" in str(e.value)
+
+
+async def test_remote_action_multiple_events_payload(
+    default_channel: OutputChannel,
+    default_nlg: NaturalLanguageGenerator,
     default_tracker: DialogueStateTracker,
     domain: Domain,
 ):
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     remote_action = action.RemoteAction("my_action", endpoint)
-
     response = {
         "events": [
-            {"event": "form", "name": "restaurant_form", "timestamp": None},
             {
-                "event": "slot",
+                "event": "action",
+                "name": "action_listen",
+                "policy": None,
+                "confidence": None,
                 "timestamp": None,
-                "name": "requested_slot",
-                "value": "cuisine",
+            },
+            {"event": "slot", "name": "name", "value": None, "timestamp": None},
+            {
+                "event": "user",
+                "timestamp": None,
+                "text": "hello",
+                "parse_data": {
+                    "intent": {"name": "greet", "confidence": 0.99},
+                    "entities": [],
+                },
             },
         ],
-        "responses": [
-            {
-                "text": None,
-                "buttons": [],
-                "elements": [],
-                "custom": {},
-                "template": "utter_ask_cuisine",
-                "image": None,
-                "attachment": None,
-            }
-        ],
+        "responses": [],
     }
 
-    nlg = TemplatedNaturalLanguageGenerator(
-        {"utter_ask_cuisine": [{"text": "what dou want to eat?"}]}
-    )
     with aioresponses() as mocked:
         mocked.post("https://example.com/webhooks/actions", payload=response)
 
-        with pytest.warns(FutureWarning):
-            events = await remote_action.run(
-                default_channel, nlg, default_tracker, domain
-            )
+        events = await remote_action.run(
+            default_channel, default_nlg, default_tracker, domain
+        )
 
-    assert events == [
-        BotUttered(
-            "what dou want to eat?", metadata={"utter_action": "utter_ask_cuisine"}
-        ),
-        ActiveLoop("restaurant_form"),
-        SlotSet("requested_slot", "cuisine"),
-    ]
+    assert isinstance(events[0], ActionExecuted)
+    assert events[0].as_dict().get("name") == "action_listen"
+
+    assert isinstance(events[1], SlotSet)
+    assert events[1].as_dict().get("name") == "name"
+
+    assert isinstance(events[2], UserUttered)
+    assert events[2].as_dict().get("text") == "hello"
 
 
 async def test_remote_action_without_endpoint(
@@ -781,15 +995,15 @@ async def test_action_default_ask_rephrase(
 @pytest.mark.parametrize(
     "slot_mapping",
     [
-        """
-    my_slot:
-    - type:from_text
-    """,
-        "",
+        """my_slot:
+          - type: from_text
+        """,
+        "{}",
     ],
 )
 def test_get_form_action(slot_mapping: Text):
     form_action_name = "my_business_logic"
+
     domain = Domain.from_yaml(
         textwrap.dedent(
             f"""
@@ -797,31 +1011,14 @@ def test_get_form_action(slot_mapping: Text):
     - my_action
     forms:
       {form_action_name}:
-        {slot_mapping}
+        {REQUIRED_SLOTS_KEY}:
+          {slot_mapping}
     """
         )
     )
 
     actual = action.action_for_name_or_text(form_action_name, domain, None)
     assert isinstance(actual, FormAction)
-
-
-def test_get_form_action_with_rasa_open_source_1_forms():
-    form_action_name = "my_business_logic"
-    with pytest.warns(FutureWarning):
-        domain = Domain.from_yaml(
-            textwrap.dedent(
-                f"""
-        actions:
-        - my_action
-        forms:
-        - {form_action_name}
-        """
-            )
-        )
-
-    actual = action.action_for_name_or_text(form_action_name, domain, None)
-    assert isinstance(actual, RemoteAction)
 
 
 def test_overridden_form_action():
@@ -833,7 +1030,7 @@ def test_overridden_form_action():
     - my_action
     - {form_action_name}
     forms:
-        {form_action_name}:
+        {form_action_name}: {{}}
     """
         )
     )

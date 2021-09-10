@@ -2,6 +2,9 @@
 
 LABEL = "label"
 IDS = "ids"
+# LABEL_PAD_ID is used to pad multi-label training examples.
+# It should be < 0 to avoid index out of bounds errors by tf.one_hot.
+LABEL_PAD_ID = -1
 HIDDEN_LAYERS_SIZES = "hidden_layers_sizes"
 SHARE_HIDDEN_LAYERS = "share_hidden_layers"
 
@@ -40,7 +43,8 @@ DROP_RATE_DIALOGUE = "drop_rate_dialogue"
 DROP_RATE_LABEL = "drop_rate_label"
 CONSTRAIN_SIMILARITIES = "constrain_similarities"
 
-WEIGHT_SPARSITY = "weight_sparsity"
+WEIGHT_SPARSITY = "weight_sparsity"  # Deprecated and superseeded by CONNECTION_DENSITY
+CONNECTION_DENSITY = "connection_density"
 
 EVAL_NUM_EPOCHS = "evaluate_every_number_of_epochs"
 EVAL_NUM_EXAMPLES = "evaluate_on_number_of_examples"
@@ -89,3 +93,19 @@ FEATURIZERS = "featurizers"
 CHECKPOINT_MODEL = "checkpoint_model"
 
 MASK = "mask"
+
+IGNORE_INTENTS_LIST = "ignore_intents_list"
+
+TOLERANCE = "tolerance"
+
+POSITIVE_SCORES_KEY = "positive_scores"
+
+NEGATIVE_SCORES_KEY = "negative_scores"
+
+RANKING_KEY = "label_ranking"
+QUERY_INTENT_KEY = "query_intent"
+SCORE_KEY = "score"
+THRESHOLD_KEY = "threshold"
+SEVERITY_KEY = "severity"
+NAME = "name"
+EPOCH_OVERRIDE = "epoch_override"

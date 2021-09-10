@@ -18,6 +18,19 @@ def set_run_action_arguments(parser: argparse.ArgumentParser) -> None:
     sdk.add_endpoint_arguments(parser)
 
 
+def add_interface_argument(
+    parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]
+) -> None:
+    """Binds the RASA process to a network interface."""
+    parser.add_argument(
+        "-i",
+        "--interface",
+        default=constants.DEFAULT_SERVER_INTERFACE,
+        type=str,
+        help="Network interface to run the server on.",
+    )
+
+
 # noinspection PyProtectedMember
 def add_port_argument(
     parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup]
@@ -49,6 +62,8 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     server_arguments = parser.add_argument_group("Server Settings")
+
+    add_interface_argument(server_arguments)
 
     add_port_argument(server_arguments)
 
@@ -89,7 +104,8 @@ def add_server_arguments(parser: argparse.ArgumentParser) -> None:
     )
     server_arguments.add_argument(
         "--ssl-ca-file",
-        help="If your SSL certificate needs to be verified, you can specify the CA file "
+        help="If your SSL certificate needs to be verified, "
+        "you can specify the CA file "
         "using this parameter.",
     )
     server_arguments.add_argument(

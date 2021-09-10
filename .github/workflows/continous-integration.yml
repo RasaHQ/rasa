@@ -8,6 +8,10 @@ on:
     - '*'
   pull_request:
 
+concurrency:
+  group: continous-integration-${{ github.ref }}  # branch or tag name
+  cancel-in-progress: true
+
 # SECRETS
 # - GH_RELEASE_NOTES_TOKEN: personal access token of `rasabot` github account
 #                           (login for account in 1pw)
@@ -41,18 +45,30 @@ env:
 jobs:
   changes:
     name: Check for file changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      docker: ${{ steps.filter.outputs.docker }}
-      docs: ${{ steps.filter.outputs.docs }}
+      # Both of the outputs below are strings but only one exists at any given time
+      backend: ${{ steps.changed-files.outputs.backend || steps.run-all.outputs.backend }}
+      docker: ${{ steps.changed-files.outputs.docker || steps.run-all.outputs.docker }}
+      docs: ${{ steps.changed-files.outputs.docs || steps.run-all.outputs.docs }}
     steps:
       - uses: actions/checkout@v2
       - uses: RasaHQ/pr-changed-files-filter@c4f7116a04b8a4596313469429e2ad235f59d9c4
-        id: filter
+        # Run the normal filters if the all-tests-required label is not set
+        id: changed-files
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required') == false
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: .github/change_filters.yml
+      - name: Set all filters to true if all tests are required
+        # Set all filters to true if the all-tests-required label is set
+        # Bypasses all the change filters in change_filters.yml and forces all outputs to true
+        id: run-all
+        if: contains(github.event.pull_request.labels.*.name, 'status:all-tests-required')
+        run: |
+          echo "::set-output name=backend::true"
+          echo "::set-output name=docker::true"
+          echo "::set-output name=docs::true"
 
 
   wait_for_docs_tests:
@@ -92,7 +108,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -104,7 +120,7 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -197,16 +213,23 @@ jobs:
         - test-other-unit-tests
         - test-performance
         os: [ ubuntu-latest, windows-latest ]
-        python-version: [ 3.6, 3.7, 3.8 ]
+        python-version: [ 3.7, 3.8 ]
 
     steps:
+    - name: Run DataDog Agent
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      run: |
+        docker run --name dd_agent -p 8126:8126 -d -e "DD_API_KEY=${{ secrets.DD_API_KEY }}" -e "DD_INSIDE_CI=true" -e "DD_HOSTNAME=none" -e "DD_SITE=datadoghq.eu" -e GITHUB_ACTIONS=true -e CI=true datadog/agent:latest
+        docker ps --all --filter name=dd_agent --filter status=running --no-trunc --format "{{.ID}} {{.Status}}"
+        docker port dd_agent
+
     - name: Checkout git repository 🕝
       if: needs.changes.outputs.backend == 'true'
       uses: actions/checkout@v2
 
     - name: Set up Python ${{ matrix.python-version }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -218,7 +241,7 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -228,7 +251,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
     - name: Clear Poetry cache
       if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
@@ -249,7 +272,6 @@ jobs:
       # the project itself, which also makes it easier for us to determine the correct directory
       # that needs to be cached.
       run: poetry config virtualenvs.in-project true
-
 
     - name: Install Dependencies (Linux) 📦
       if: needs.changes.outputs.backend == 'true' && matrix.os == 'ubuntu-latest'
@@ -273,32 +295,53 @@ jobs:
           New-Item -Path $spacy_data_dir -Type Directory
         }
         make install-full
-        make prepare-tests-windows
+        make prepare-tests-windows-gha
 
     - name: Add github workflow problem matchers
-      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os == 'ubuntu-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os == 'ubuntu-latest'
       # only annotate based on test runs on ubuntu: otherwise
       # all errors will be duplicated for each python / os combination
       # therefore, we only enable for the one where most tests are run
       # (tests will still run in other envs, they will just not create annotations)
       run: pip install pytest-github-actions-annotate-failures
 
+    - name: Install ddtrace
+      if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
+      run: poetry run pip install -U ddtrace
+
     - name: Test Code 🔍
       if: needs.changes.outputs.backend == 'true' && !(matrix.python-version == 3.8 && matrix.os == 'windows-latest')
       env:
         JOBS: 2
         PYTHONIOENCODING: "utf-8"
+        DD_ENV: ${{ matrix.test }}
+        DD_SERVICE: rasa
+        DD_ARGS: --ddtrace
       run: |
         make ${{ matrix.test }}
 
     - name: Send Coverage Report 📊
-      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.6 && matrix.os != 'windows-latest'
+      if: needs.changes.outputs.backend == 'true' && matrix.python-version == 3.7 && matrix.os != 'windows-latest'
       continue-on-error: true
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_SERVICE_NAME: github
         COVERALLS_PARALLEL: true
       run: poetry run coveralls
+
+  complete_coverage:
+    name: Complete coverage
+    runs-on: ubuntu-20.04
+    needs: [ test, changes ]
+    if: needs.changes.outputs.backend == 'true'
+
+    steps:
+      - name: Tell coveralls we're finished reporting
+        uses: coverallsapp/github-action@master
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
 
   integration_test:
     name: Run Integration Tests
@@ -359,7 +402,7 @@ jobs:
 
     - name: Set up Python ${{ env.DEFAULT_PYTHON_VERSION }} 🐍
       if: needs.changes.outputs.backend == 'true'
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
         python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
 
@@ -371,7 +414,7 @@ jobs:
 
     - name: Install poetry 🦄
       if: needs.changes.outputs.backend == 'true'
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 
@@ -381,7 +424,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: .venv
-        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}
+        key: ${{ runner.os }}-poetry-${{ env.POETRY_VERSION }}-${{ env.DEFAULT_PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}-venv-${{ secrets.POETRY_CACHE_VERSION }}-${{ env.pythonLocation }}
 
     - name: Clear Poetry cache
       if: steps.cache-poetry.outputs.cache-hit == 'true' && needs.changes.outputs.backend == 'true' && contains(github.event.pull_request.labels.*.name, 'tools:clear-poetry-cache-unit-tests')
@@ -515,7 +558,7 @@ jobs:
         echo "::set-output name=base_poetry_exists::${BASE_IMAGE_POETRY_EXISTS}"
 
         # Base builder image
-        BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}
+        BASE_IMAGE_BUILDER_HASH=${{ hashFiles('docker/Dockerfile.base-builder') }}-poetry-${{ env.POETRY_VERSION }}
         echo "::set-output name=base_builder_image_hash::${BASE_IMAGE_BUILDER_HASH}"
 
         BASE_IMAGE_BUILDER_EXISTS=$((docker manifest inspect rasa/rasa:base-builder-${BASE_IMAGE_BUILDER_HASH} &> /dev/null && echo true || echo false) || true)
@@ -693,10 +736,10 @@ jobs:
     - name: Checkout git repository 🕝
       uses: actions/checkout@v2
 
-    - name: Set up Python 3.6 🐍
-      uses: actions/setup-python@v1
+    - name: Set up Python 3.7 🐍
+      uses: actions/setup-python@dc73133d4da04e56a135ae2246682783cc7c7cb6  # v2.2.2
       with:
-        python-version: 3.6
+        python-version: 3.7
 
     - name: Read Poetry Version 🔢
       run: |
@@ -704,7 +747,7 @@ jobs:
       shell: bash
 
     - name: Install poetry 🦄
-      uses: Gr1N/setup-poetry@v4
+      uses: Gr1N/setup-poetry@v7
       with:
         poetry-version: ${{ env.POETRY_VERSION }}
 

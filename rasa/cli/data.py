@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Dict, List, Text, TYPE_CHECKING
+from typing import Dict, Union, List, Text, TYPE_CHECKING
 
 import rasa.shared.core.domain
 from rasa import telemetry
@@ -91,32 +91,7 @@ def _add_data_convert_parsers(
         help="Converts NLU data between formats.",
     )
     convert_nlu_parser.set_defaults(func=_convert_nlu_data)
-
     arguments.set_convert_arguments(convert_nlu_parser, data_type="Rasa NLU")
-
-    convert_nlg_parser = convert_subparsers.add_parser(
-        "nlg",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        parents=parents,
-        help=(
-            "Converts NLG data between formats. If you're migrating from 1.x, "
-            "please run `rasa data convert responses` to adapt the training data "
-            "to the new response selector format."
-        ),
-    )
-    convert_nlg_parser.set_defaults(func=_convert_nlg_data)
-
-    arguments.set_convert_arguments(convert_nlg_parser, data_type="Rasa NLG")
-
-    convert_core_parser = convert_subparsers.add_parser(
-        "core",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        parents=parents,
-        help="Converts Core data between formats.",
-    )
-    convert_core_parser.set_defaults(func=_convert_core_data)
-
-    arguments.set_convert_arguments(convert_core_parser, data_type="Rasa Core")
 
     migrate_config_parser = convert_subparsers.add_parser(
         "config",
@@ -245,7 +220,7 @@ def validate_files(args: argparse.Namespace, stories_only: bool = False) -> None
         domain_path=args.domain, training_data_paths=args.data, config_file=config,
     )
 
-    validator = rasa.utils.common.run_in_loop(Validator.from_importer(file_importer))
+    validator = Validator.from_importer(file_importer)
 
     if stories_only:
         all_good = _validate_story_structure(validator, args)
@@ -273,7 +248,12 @@ def validate_stories(args: argparse.Namespace) -> None:
 
 
 def _validate_domain(validator: "Validator") -> bool:
-    return validator.verify_domain_validity()
+    return (
+        validator.verify_domain_validity()
+        and validator.verify_actions_in_stories_rules()
+        and validator.verify_forms_in_stories_rules()
+        and validator.verify_form_slots()
+    )
 
 
 def _validate_nlu(validator: "Validator", args: argparse.Namespace) -> bool:
@@ -284,7 +264,8 @@ def _validate_story_structure(validator: "Validator", args: argparse.Namespace) 
     # Check if a valid setting for `max_history` was given
     if isinstance(args.max_history, int) and args.max_history < 1:
         raise argparse.ArgumentTypeError(
-            f"The value of `--max-history {args.max_history}` is not a positive integer."
+            f"The value of `--max-history {args.max_history}` "
+            f"is not a positive integer."
         )
 
     return validator.verify_story_structure(
@@ -295,58 +276,15 @@ def _validate_story_structure(validator: "Validator", args: argparse.Namespace) 
 def _convert_nlu_data(args: argparse.Namespace) -> None:
     import rasa.nlu.convert
 
-    from rasa.nlu.training_data.converters.nlu_markdown_to_yaml_converter import (
-        NLUMarkdownToYamlConverter,
-    )
-
-    if args.format in ["json", "md"]:
+    if args.format == "json":
         rasa.nlu.convert.convert_training_data(
             args.data, args.out, args.format, args.language
         )
         telemetry.track_data_convert(args.format, "nlu")
-    elif args.format == "yaml":
-        rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args.out, args.data, NLUMarkdownToYamlConverter())
-        )
-        telemetry.track_data_convert(args.format, "nlu")
     else:
         rasa.shared.utils.cli.print_error_and_exit(
-            "Could not recognize output format. Supported output formats: 'json', "
-            "'md', 'yaml'. Specify the desired output format with '--format'."
-        )
-
-
-def _convert_core_data(args: argparse.Namespace) -> None:
-    from rasa.core.training.converters.story_markdown_to_yaml_converter import (
-        StoryMarkdownToYamlConverter,
-    )
-
-    if args.format == "yaml":
-        rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args.out, args.data, StoryMarkdownToYamlConverter())
-        )
-        telemetry.track_data_convert(args.format, "core")
-    else:
-        rasa.shared.utils.cli.print_error_and_exit(
-            "Could not recognize output format. Supported output formats: "
-            "'yaml'. Specify the desired output format with '--format'."
-        )
-
-
-def _convert_nlg_data(args: argparse.Namespace) -> None:
-    from rasa.nlu.training_data.converters.nlg_markdown_to_yaml_converter import (
-        NLGMarkdownToYamlConverter,
-    )
-
-    if args.format == "yaml":
-        rasa.utils.common.run_in_loop(
-            _convert_to_yaml(args.out, args.data, NLGMarkdownToYamlConverter())
-        )
-        telemetry.track_data_convert(args.format, "nlg")
-    else:
-        rasa.shared.utils.cli.print_error_and_exit(
-            "Could not recognize output format. Supported output formats: "
-            "'yaml'. Specify the desired output format with '--format'."
+            "Could not recognize output format. Supported output formats: 'json' "
+            "and 'yaml'. Specify the desired output format with '--format'."
         )
 
 
@@ -376,8 +314,11 @@ def _migrate_responses(args: argparse.Namespace) -> None:
 
 
 async def _convert_to_yaml(
-    out_path: Text, data_path: Text, converter: "TrainingDataConverter"
+    out_path: Text, data_path: Union[list, Text], converter: "TrainingDataConverter"
 ) -> None:
+
+    if isinstance(data_path, list):
+        data_path = data_path[0]
 
     output = Path(out_path)
     if not os.path.exists(output):

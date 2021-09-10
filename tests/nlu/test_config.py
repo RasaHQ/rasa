@@ -164,7 +164,7 @@ async def test_train_docker_and_docs_configs(
 ):
     monkeypatch.setattr(autoconfig, "_dump_config", Mock())
     importer = RasaFileImporter(config_file=config_file)
-    imported_config = await importer.get_config()
+    imported_config = importer.get_config()
 
     loaded_config = config.load(imported_config)
 
@@ -199,13 +199,15 @@ async def test_train_docker_and_docs_configs(
             "data/test_config/config_spacy_entity_extractor.yml",
             "data/test/lookup_tables/lookup_table.json",
             [
-                "add a 'DIETClassifier' or a 'CRFEntityExtractor' with the 'pattern' feature"
+                "add a 'DIETClassifier' or a 'CRFEntityExtractor' "
+                "with the 'pattern' feature"
             ],
         ),
         (
             "data/test_config/config_crf_no_pattern_feature.yml",
             "data/test/lookup_tables/lookup_table.yml",
-            "your NLU pipeline's 'CRFEntityExtractor' does not include the 'pattern' feature",
+            "your NLU pipeline's 'CRFEntityExtractor' does not include "
+            "the 'pattern' feature",
         ),
         (
             "data/test_config/config_crf_no_synonyms.yml",

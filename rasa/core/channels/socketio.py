@@ -2,7 +2,12 @@ import logging
 import uuid
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Optional, Text
 
-from rasa.core.channels.channel import InputChannel, OutputChannel, UserMessage
+import rasa.core.channels.channel
+from rasa.core.channels.channel import (
+    InputChannel,
+    OutputChannel,
+    UserMessage,
+)
 import rasa.shared.utils.io
 from sanic import Blueprint, response, Sanic
 from sanic.request import Request
@@ -130,6 +135,8 @@ class SocketIOInput(InputChannel):
             credentials.get("namespace"),
             credentials.get("session_persistence", False),
             credentials.get("socketio_path", "/socket.io"),
+            credentials.get("jwt_key"),
+            credentials.get("jwt_method", "HS256"),
         )
 
     def __init__(
@@ -139,7 +146,10 @@ class SocketIOInput(InputChannel):
         namespace: Optional[Text] = None,
         session_persistence: bool = False,
         socketio_path: Optional[Text] = "/socket.io",
+        jwt_key: Optional[Text] = None,
+        jwt_method: Optional[Text] = "HS256",
     ):
+        """Creates a ``SocketIOInput`` object."""
         self.bot_message_evt = bot_message_evt
         self.session_persistence = session_persistence
         self.user_message_evt = user_message_evt
@@ -147,7 +157,11 @@ class SocketIOInput(InputChannel):
         self.socketio_path = socketio_path
         self.sio = None
 
+        self.jwt_key = jwt_key
+        self.jwt_algorithm = jwt_method
+
     def get_output_channel(self) -> Optional["OutputChannel"]:
+        """Creates socket.io output channel object."""
         if self.sio is None:
             rasa.shared.utils.io.raise_warning(
                 "SocketIO output channel cannot be recreated. "
@@ -156,12 +170,13 @@ class SocketIOInput(InputChannel):
                 "Please use a different channel for external events in these "
                 "scenarios."
             )
-            return
+            return None
         return SocketIOOutput(self.sio, self.bot_message_evt)
 
     def blueprint(
         self, on_new_message: Callable[[UserMessage], Awaitable[Any]]
     ) -> Blueprint:
+        """Defines a Sanic blueprint."""
         # Workaround so that socketio works with requests from other origins.
         # https://github.com/miguelgrinberg/python-socketio/issues/205#issuecomment-493769183
         sio = AsyncServer(async_mode="sanic", cors_allowed_origins=[])
@@ -177,8 +192,22 @@ class SocketIOInput(InputChannel):
             return response.json({"status": "ok"})
 
         @sio.on("connect", namespace=self.namespace)
-        async def connect(sid: Text, _: Any) -> None:
-            logger.debug(f"User {sid} connected to socketIO endpoint.")
+        async def connect(sid: Text, environ: Dict, auth: Optional[Dict]) -> bool:
+            if self.jwt_key:
+                jwt_payload = None
+                if auth and auth.get("token"):
+                    jwt_payload = rasa.core.channels.channel.decode_bearer_token(
+                        auth.get("token"), self.jwt_key, self.jwt_algorithm,
+                    )
+
+                if jwt_payload:
+                    logger.debug(f"User {sid} connected to socketIO endpoint.")
+                    return True
+                else:
+                    return False
+            else:
+                logger.debug(f"User {sid} connected to socketIO endpoint.")
+                return True
 
         @sio.on("disconnect", namespace=self.namespace)
         async def disconnect(sid: Text) -> None:

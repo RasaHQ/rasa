@@ -149,8 +149,20 @@ class Slot:
             "influence_conversation": self.influence_conversation,
         }
 
+    def fingerprint(self) -> Text:
+        """Returns a unique hash for the slot which is stable across python runs.
+
+        Returns:
+            fingerprint of the slot
+        """
+        data = {"slot_name": self.name, "slot_value": self.value}
+        data.update(self.persistence_info())
+        return rasa.shared.utils.io.get_dictionary_fingerprint(data)
+
 
 class FloatSlot(Slot):
+    """A slot storing a float value."""
+
     type_name = "float"
 
     def __init__(
@@ -163,6 +175,12 @@ class FloatSlot(Slot):
         min_value: float = 0.0,
         influence_conversation: bool = True,
     ) -> None:
+        """Creates a FloatSlot.
+
+        Raises:
+            InvalidSlotConfigError, if the min-max range is invalid.
+            UserWarning, if initial_value is outside the min-max range.
+        """
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )
@@ -265,46 +283,20 @@ class ListSlot(Slot):
             # we couldn't convert the value to a list - using default value
             return [0.0]
 
+    @Slot.value.setter
+    def value(self, value: Any) -> None:
+        """Sets the slot's value."""
+        if value and not isinstance(value, list):
+            # Make sure we always store list items
+            value = [value]
 
-class UnfeaturizedSlot(Slot):
-    type_name = "unfeaturized"
-
-    def __init__(
-        self,
-        name: Text,
-        initial_value: Any = None,
-        value_reset_delay: Optional[int] = None,
-        auto_fill: bool = True,
-        influence_conversation: bool = False,
-    ) -> None:
-        if influence_conversation:
-            raise InvalidSlotConfigError(
-                f"An {UnfeaturizedSlot.__name__} cannot be featurized. "
-                f"Please use a different slot type for slot '{name}' instead. See the "
-                f"documentation for more information: {DOCS_URL_SLOTS}"
-            )
-
-        rasa.shared.utils.io.raise_warning(
-            f"{UnfeaturizedSlot.__name__} is deprecated "
-            f"and will be removed in Rasa Open Source "
-            f"3.0. Please change the type and configure the 'influence_conversation' "
-            f"flag for slot '{name}' instead.",
-            docs=DOCS_URL_SLOTS,
-            category=FutureWarning,
-        )
-
-        super().__init__(
-            name, initial_value, value_reset_delay, auto_fill, influence_conversation
-        )
-
-    def _as_feature(self) -> List[float]:
-        return []
-
-    def _feature_dimensionality(self) -> int:
-        return 0
+        # Call property setter of superclass
+        super(ListSlot, self.__class__).value.fset(self, value)
 
 
 class CategoricalSlot(Slot):
+    """Slot type which can be used to branch conversations based on its value."""
+
     type_name = "categorical"
 
     def __init__(
@@ -316,6 +308,7 @@ class CategoricalSlot(Slot):
         auto_fill: bool = True,
         influence_conversation: bool = True,
     ) -> None:
+        """Creates a `Categorical  Slot` (see parent class for detailed docstring)."""
         super().__init__(
             name, initial_value, value_reset_delay, auto_fill, influence_conversation
         )

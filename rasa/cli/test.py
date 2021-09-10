@@ -9,6 +9,11 @@ from rasa.shared.exceptions import YamlException
 import rasa.shared.utils.io
 import rasa.shared.utils.cli
 from rasa.cli.arguments import test as arguments
+from rasa.core.constants import (
+    FAILED_STORIES_FILE,
+    SUCCESSFUL_STORIES_FILE,
+    STORIES_WITH_WARNINGS_FILE,
+)
 from rasa.shared.constants import (
     CONFIG_SCHEMA_FILE,
     DEFAULT_E2E_TESTS_PATH,
@@ -16,6 +21,7 @@ from rasa.shared.constants import (
     DEFAULT_MODELS_PATH,
     DEFAULT_DATA_PATH,
     DEFAULT_RESULTS_PATH,
+    DEFAULT_DOMAIN_PATH,
 )
 import rasa.shared.utils.validation as validation_utils
 import rasa.cli.utils
@@ -67,6 +73,25 @@ def add_subparser(
     test_parser.set_defaults(func=test, stories=DEFAULT_E2E_TESTS_PATH)
 
 
+def _print_core_test_execution_info(args: argparse.Namespace) -> None:
+    output = args.out or DEFAULT_RESULTS_PATH
+
+    if args.successes:
+        rasa.shared.utils.cli.print_info(
+            f"Successful stories written to "
+            f"'{os.path.join(output, SUCCESSFUL_STORIES_FILE)}'"
+        )
+    if not args.no_errors:
+        rasa.shared.utils.cli.print_info(
+            f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
+        )
+    if not args.no_warnings:
+        rasa.shared.utils.cli.print_info(
+            f"Stories with prediction warnings written to "
+            f"'{os.path.join(output, STORIES_WITH_WARNINGS_FILE)}'"
+        )
+
+
 def run_core_test(args: argparse.Namespace) -> None:
     """Run core tests."""
     from rasa.model_testing import (
@@ -74,7 +99,6 @@ def run_core_test(args: argparse.Namespace) -> None:
         test_core,
         test_core_models,
     )
-    from rasa.core.test import FAILED_STORIES_FILE
 
     stories = rasa.cli.utils.get_validated_path(
         args.stories, "stories", DEFAULT_DATA_PATH
@@ -82,6 +106,7 @@ def run_core_test(args: argparse.Namespace) -> None:
 
     output = args.out or DEFAULT_RESULTS_PATH
     args.errors = not args.no_errors
+    args.warnings = not args.no_warnings
 
     rasa.shared.utils.io.create_directory(output)
 
@@ -90,7 +115,8 @@ def run_core_test(args: argparse.Namespace) -> None:
 
     if args.model is None:
         rasa.shared.utils.cli.print_error(
-            "No model provided. Please make sure to specify the model to test with '--model'."
+            "No model provided. Please make sure to specify "
+            "the model to test with '--model'."
         )
         return
 
@@ -117,9 +143,7 @@ def run_core_test(args: argparse.Namespace) -> None:
             args.model, stories, output, use_conversation_test_files=args.e2e
         )
 
-    rasa.shared.utils.cli.print_info(
-        f"Failed stories written to '{os.path.join(output, FAILED_STORIES_FILE)}'"
-    )
+    _print_core_test_execution_info(args)
 
 
 async def run_nlu_test_async(
@@ -158,9 +182,9 @@ async def run_nlu_test_async(
 
     data_path = rasa.cli.utils.get_validated_path(data_path, "nlu", DEFAULT_DATA_PATH)
     test_data_importer = TrainingDataImporter.load_from_dict(
-        training_data_paths=[data_path]
+        training_data_paths=[data_path], domain_path=DEFAULT_DOMAIN_PATH,
     )
-    nlu_data = await test_data_importer.get_nlu_data()
+    nlu_data = test_data_importer.get_nlu_data()
 
     output = output_dir or DEFAULT_RESULTS_PATH
     all_args["errors"] = not no_errors
@@ -200,13 +224,16 @@ async def run_nlu_test_async(
         config = rasa.cli.utils.get_validated_path(
             config, "config", DEFAULT_CONFIG_PATH
         )
-        perform_nlu_cross_validation(config, nlu_data, output, all_args)
+        config_importer = TrainingDataImporter.load_from_dict(config_path=config)
+
+        config_dict = config_importer.get_config()
+        perform_nlu_cross_validation(config_dict, nlu_data, output, all_args)
     else:
         model_path = rasa.cli.utils.get_validated_path(
             models_path, "model", DEFAULT_MODELS_PATH
         )
 
-        await test_nlu(model_path, data_path, output, all_args)
+        test_nlu(model_path, data_path, output, all_args)
 
 
 def run_nlu_test(args: argparse.Namespace) -> None:

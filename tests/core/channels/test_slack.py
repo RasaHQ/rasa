@@ -268,7 +268,8 @@ def test_slack_message_sanitization():
             "Hey {uid}, you can sit here if you want{uid}!",
             "Hey{uid} , you can sit here if you want {uid}!",
             "convert garbled url to <http://vicdb-f.net|vicdb-f.net>",
-            "convert multiple garbled url to <http://vicdb-f.net|vicdb-f.net>. Also <http://eemdb-p.net|eemdb-p.net>",
+            "convert multiple garbled url to <http://vicdb-f.net|vicdb-f.net>. "
+            "Also <http://eemdb-p.net|eemdb-p.net>",
         ]
     ]
 

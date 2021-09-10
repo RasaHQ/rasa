@@ -66,6 +66,8 @@ class StoryWriter:
         if isinstance(event, list):
             return True
 
-        return not StoryStep.is_action_listen(
-            event
-        ) and not StoryStep.is_action_session_start(event)
+        return (
+            not StoryStep.is_action_listen(event)
+            and not StoryStep.is_action_unlikely_intent(event)
+            and not StoryStep.is_action_session_start(event)
+        )

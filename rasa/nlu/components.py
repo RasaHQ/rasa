@@ -15,32 +15,12 @@ from rasa.shared.exceptions import InvalidConfigException
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
 import rasa.shared.utils.io
+import rasa.utils.common
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
-
-
-def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
-    """Tries to import all package names and returns the packages where it failed.
-
-    Args:
-        package_names: The package names to import.
-
-    Returns:
-        Package names that could not be imported.
-    """
-
-    import importlib
-
-    failed_imports = set()
-    for package in package_names:
-        try:
-            importlib.import_module(package)
-        except ImportError:
-            failed_imports.add(package)
-    return failed_imports
 
 
 def validate_requirements(component_names: List[Optional[Text]]) -> None:
@@ -68,7 +48,7 @@ def validate_requirements(component_names: List[Optional[Text]]) -> None:
                 "the component."
             )
         component_class = registry.get_component_class(component_name)
-        unavailable_packages = find_unavailable_packages(
+        unavailable_packages = rasa.utils.common.find_unavailable_packages(
             component_class.required_packages()
         )
         if unavailable_packages:
@@ -111,7 +91,8 @@ def validate_component_keys(
     for key in provided_keys:
         if key not in allowed_keys:
             rasa.shared.utils.io.raise_warning(
-                f"You have provided an invalid key `{key}` for component `{component_name}` in your pipeline. "
+                f"You have provided an invalid key `{key}` "
+                f"for component `{component_name}` in your pipeline. "
                 f"Valid options for `{component_name}` are:\n- "
                 f"{list_separator.join(allowed_keys)}"
             )
@@ -356,7 +337,8 @@ def warn_of_competing_extractors(pipeline: List["Component"]) -> None:
         rasa.shared.utils.io.raise_warning(
             f"You have defined multiple entity extractors that do the same job "
             f"in your pipeline: "
-            f"{', '.join(extractors_in_pipeline)}. This can lead to the same entity getting "
+            f"{', '.join(extractors_in_pipeline)}. "
+            f"This can lead to the same entity getting "
             f"extracted multiple times. Please read the documentation section "
             f"on entity extractors to make sure you understand the implications: "
             f"{DOCS_URL_COMPONENTS}#entity-extractors"
@@ -475,7 +457,8 @@ class Component(metaclass=ComponentMetaclass):
         will be a proper pipeline definition where `ComponentA`
         is the name of the first component of the pipeline.
         """
-        return type(self).name
+        # cast due to https://github.com/python/mypy/issues/7945
+        return typing.cast(str, type(self).name)
 
     @property
     def unique_name(self) -> Text:
@@ -533,9 +516,9 @@ class Component(metaclass=ComponentMetaclass):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = rasa.utils.train_utils.override_defaults(
-            self.defaults, component_config
-        )
+        self.component_config: Dict[
+            Text, Any
+        ] = rasa.utils.train_utils.override_defaults(self.defaults, component_config)
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
@@ -820,9 +803,6 @@ class Component(metaclass=ComponentMetaclass):
             return language not in not_supported_language_list
 
 
-C = typing.TypeVar("C", bound=Component)
-
-
 class ComponentBuilder:
     """Creates trainers and interpreters based on configurations.
 
@@ -873,7 +853,7 @@ class ComponentBuilder:
         model_dir: Text,
         model_metadata: "Metadata",
         **context: Any,
-    ) -> Component:
+    ) -> Optional[Component]:
         """Loads a component.
 
         Tries to retrieve a component from the cache, else calls
@@ -890,7 +870,6 @@ class ComponentBuilder:
         Returns:
             The loaded component.
         """
-
         from rasa.nlu import registry
 
         try:
@@ -926,7 +905,6 @@ class ComponentBuilder:
         Returns:
             The created component.
         """
-
         from rasa.nlu import registry
         from rasa.nlu.model import Metadata
 
@@ -943,12 +921,3 @@ class ComponentBuilder:
                 f"Failed to create component '{component_config['name']}'. "
                 f"Error: {e}"
             )
-
-    def create_component_from_class(self, component_class: Type[C], **cfg: Any) -> C:
-        """Create a component based on a class and a configuration.
-
-        Mainly used to make use of caching when instantiating component classes."""
-
-        component_config = {"name": component_class.name}
-
-        return self.create_component(component_config, RasaNLUModelConfig(cfg))

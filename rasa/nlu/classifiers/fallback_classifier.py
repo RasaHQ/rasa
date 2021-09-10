@@ -1,14 +1,16 @@
+from __future__ import annotations
 import copy
 import logging
-from typing import Any, List, Type, Text, Dict, Union, Tuple, Optional
+from typing import Any, List, Text, Dict, Union, Tuple, Optional
 
+from rasa.engine.graph import GraphComponent, ExecutionContext
+from rasa.engine.storage.resource import Resource
+from rasa.engine.storage.storage import ModelStorage
 from rasa.shared.constants import DEFAULT_NLU_FALLBACK_INTENT_NAME
 from rasa.core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
     DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
 )
-from rasa.nlu.classifiers.classifier import IntentClassifier
-from rasa.nlu.components import Component
 from rasa.shared.nlu.training_data.message import Message
 from rasa.shared.nlu.constants import (
     INTENT,
@@ -17,33 +19,54 @@ from rasa.shared.nlu.constants import (
     PREDICTED_CONFIDENCE_KEY,
 )
 
+from rasa.nlu.classifiers._fallback_classifier import FallbackClassifier
+
+# This is a workaround around until we have all components migrated to `GraphComponent`.
+FallbackClassifier = FallbackClassifier
+
 THRESHOLD_KEY = "threshold"
 AMBIGUITY_THRESHOLD_KEY = "ambiguity_threshold"
 
 logger = logging.getLogger(__name__)
 
 
-class FallbackClassifier(IntentClassifier):
+class FallbackClassifierGraphComponent(GraphComponent):
+    """Handles incoming messages with low NLU confidence."""
 
-    # please make sure to update the docs when changing a default parameter
-    defaults = {
-        # If all intent confidence scores are beyond this threshold, set the current
-        # intent to `FALLBACK_INTENT_NAME`
-        THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_THRESHOLD,
-        # If the confidence scores for the top two intent predictions are closer than
-        # `AMBIGUITY_THRESHOLD_KEY`, then `FALLBACK_INTENT_NAME ` is predicted.
-        AMBIGUITY_THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
-    }
+    @staticmethod
+    def get_default_config() -> Dict[Text, Any]:
+        """The component's default config (see parent class for full docstring)."""
+        # please make sure to update the docs when changing a default parameter
+        return {
+            # If all intent confidence scores are beyond this threshold, set the current
+            # intent to `FALLBACK_INTENT_NAME`
+            THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_THRESHOLD,
+            # If the confidence scores for the top two intent predictions are closer
+            # than `AMBIGUITY_THRESHOLD_KEY`,
+            # then `FALLBACK_INTENT_NAME` is predicted.
+            AMBIGUITY_THRESHOLD_KEY: DEFAULT_NLU_FALLBACK_AMBIGUITY_THRESHOLD,
+        }
+
+    def __init__(self, config: Dict[Text, Any],) -> None:
+        """Constructs a new fallback classifier."""
+        self.component_config = config
 
     @classmethod
-    def required_components(cls) -> List[Type[Component]]:
-        return [IntentClassifier]
+    def create(
+        cls,
+        config: Dict[Text, Any],
+        model_storage: ModelStorage,
+        resource: Resource,
+        execution_context: ExecutionContext,
+    ) -> FallbackClassifierGraphComponent:
+        """Creates a new component (see parent class for full docstring)."""
+        return cls(config)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
-        """Process an incoming message.
+    def process(self, messages: List[Message]) -> List[Message]:
+        """Process a list of incoming messages.
 
-        This is the components chance to process an incoming
-        message. The component can rely on
+        This is the component's chance to process incoming
+        messages. The component can rely on
         any context attribute to be present, that gets created
         by a call to :meth:`rasa.nlu.components.Component.create`
         of ANY component and
@@ -52,19 +75,21 @@ class FallbackClassifier(IntentClassifier):
         of components previous to this one.
 
         Args:
-            message: The :class:`rasa.shared.nlu.training_data.message.Message` to
-            process.
-
+            messages: List containing :class:
+            `rasa.shared.nlu.training_data.message.Message` to process.
         """
+        for message in messages:
+            if not self._should_fallback(message):
+                continue
 
-        if not self._should_fallback(message):
-            return
+            # we assume that the fallback confidence
+            # is the same as the fallback threshold
+            confidence = self.component_config[THRESHOLD_KEY]
+            message.data[INTENT] = _fallback_intent(confidence)
+            message.data.setdefault(INTENT_RANKING_KEY, [])
+            message.data[INTENT_RANKING_KEY].insert(0, _fallback_intent(confidence))
 
-        # we assume that the confidence of fallback is 1 - confidence of top intent
-        confidence = 1 - message.data[INTENT][PREDICTED_CONFIDENCE_KEY]
-        message.data[INTENT] = _fallback_intent(confidence)
-        message.data.setdefault(INTENT_RANKING_KEY, [])
-        message.data[INTENT_RANKING_KEY].insert(0, _fallback_intent(confidence))
+        return messages
 
     def _should_fallback(self, message: Message) -> bool:
         """Check if the fallback intent should be predicted.

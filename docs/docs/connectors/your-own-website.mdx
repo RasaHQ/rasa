@@ -10,7 +10,8 @@ is usually the chat interface that ships with Rasa X, where you can [invite user
 to test your bot](https://rasa.com/docs/rasa-x/user-guide/share-assistant/#share-your-bot).
 
 If you already have an existing website and want to add a Rasa assistant to it,
-you can use [Chatroom](https://github.com/scalableminds/chatroom), a widget which you can incorporate into your existing webpage by adding a HTML snippet.
+you can use the [Rasa Chat Widget](#chat-widget) a widget which you can incorporate into your existing webpage by adding a HTML snippet.
+
 Alternatively, you can also build your own chat widget.
 
 ## REST Channels
@@ -117,7 +118,7 @@ when sending or receiving messages over socket.io.
 
 Restart your Rasa X or Rasa Open Source server
 to make the new channel endpoint available to receive messages. 
-You can then send messages to `http://<host>:<port>/socketio`, replacing
+You can then send messages to `http://<host>:<port>/socket.io`, replacing
 the host and port with the appropriate values from your running Rasa X or Rasa Open Source server. 
 
 :::note session persistence
@@ -131,3 +132,42 @@ immediately after the `connect` event.
 The example [Webchat](https://github.com/botfront/rasa-webchat)
 implements this session creation mechanism (version >= 0.5.0).
 :::
+
+### JWT Authentication
+
+The SocketIO channel can be optionally configured to perform JWT authentication on connect
+by defining the `jwt_key` and optional `jwt_method` in the `credentials.yml` file. 
+
+```yaml-rasa
+socketio:
+  user_message_evt: user_uttered
+  bot_message_evt: bot_uttered
+  session_persistence: true
+  jwt_key: my_public_key
+  jwt_method: HS256
+```
+
+When initially requesting the connection, the client should pass in an encoded payload
+as a JSON object under the key `token`:
+
+```json
+{
+  "token": "jwt_encoded_payload"
+}
+```
+
+### Chat Widget
+
+Once you've set up your SocketIO channel, you can use the official Rasa Chat Widget on any webpage.
+Just paste the following into your site HTML and paste the URL of your Rasa instance into
+the `data-websocket-url` attribute
+
+```html
+<div id="rasa-chat-widget" data-websocket-url="https://your-rasa-url-here/"></div>
+<script src="https://unpkg.com/@rasahq/rasa-chat" type="application/javascript"></script>
+```
+
+For more information, including how to fully customize the widget for your website, you can check out the [full documentation](https://chat-widget-docs.rasa.com/).
+
+Alternatively, if you want to embed the widget in a React app, there is
+[a library in the NPM package repository](https://www.npmjs.com/package/@rasahq/rasa-chat).

@@ -135,57 +135,77 @@ prepare-tests-files: prepare-spacy prepare-mitie prepare-transformers
 prepare-wget-macos:
 	brew install wget || true
 
-prepare-wget-windows:
-	choco install wget
-
 prepare-tests-macos: prepare-wget-macos prepare-tests-files
 	brew install graphviz || true
 
 prepare-tests-ubuntu: prepare-tests-files
 	sudo apt-get -y install graphviz graphviz-dev python-tk
 
+prepare-wget-windows:
+	choco install wget
+
 prepare-tests-windows: prepare-wget-windows prepare-tests-files
 	choco install graphviz
 
+# GitHub Action has pre-installed a helper function for installing Chocolatey packages
+# It will retry the installation 5 times if it fails
+# See: https://github.com/actions/virtual-environments/blob/main/images/win/scripts/ImageHelpers/ChocoHelpers.ps1
+prepare-wget-windows-gha:
+	powershell -command "Choco-Install wget"
+
+prepare-tests-windows-gha: prepare-wget-windows-gha prepare-tests-files
+	powershell -command "Choco-Install graphviz"
+
 test: clean
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
+	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --cov rasa --ignore $(INTEGRATION_TEST_FOLDER)
 
 test-integration:
 	# OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
+	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
 ifeq (,$(wildcard tests_deployment/.env))
-	OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS)
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS)
 else
-	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
+	set -o allexport; source tests_deployment/.env && OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest $(INTEGRATION_TEST_FOLDER) -n $(JOBS) -m $(INTEGRATION_TEST_PYTEST_MARKERS) && set +o allexport
 endif
 
 test-cli: PYTEST_MARKER=category_cli
+test-cli: DD_ARGS := $(or $(DD_ARGS),)
 test-cli: test-marker
 
 test-core-featurizers: PYTEST_MARKER=category_core_featurizers
+test-core-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-core-featurizers: test-marker
 
 test-policies: PYTEST_MARKER=category_policies
+test-policies: DD_ARGS := $(or $(DD_ARGS),)
 test-policies: test-marker
 
 test-nlu-featurizers: PYTEST_MARKER=category_nlu_featurizers
+test-nlu-featurizers: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-featurizers: test-marker
 
 test-nlu-predictors: PYTEST_MARKER=category_nlu_predictors
+test-nlu-predictors: DD_ARGS := $(or $(DD_ARGS),)
 test-nlu-predictors: test-marker
 
 test-full-model-training: PYTEST_MARKER=category_full_model_training
+test-full-model-training: DD_ARGS := $(or $(DD_ARGS),)
 test-full-model-training: test-marker
 
 test-other-unit-tests: PYTEST_MARKER=category_other_unit_tests
+test-other-unit-tests: DD_ARGS := $(or $(DD_ARGS),)
 test-other-unit-tests: test-marker
 
 test-performance: PYTEST_MARKER=category_performance
+test-performance: DD_ARGS := $(or $(DD_ARGS),)
 test-performance: test-marker
 
 test-marker: clean
     # OMP_NUM_THREADS can improve overall performance using one thread by process (on tensorflow), avoiding overload
-	OMP_NUM_THREADS=1 poetry run pytest tests -n $(JOBS) --cov rasa -m "$(PYTEST_MARKER)" --ignore $(INTEGRATION_TEST_FOLDER)
+	# TF_CPP_MIN_LOG_LEVEL=2 sets C code log level for tensorflow to error suppressing lower log events
+	OMP_NUM_THREADS=1 TF_CPP_MIN_LOG_LEVEL=2 poetry run pytest tests -n $(JOBS) --cov rasa -m "$(PYTEST_MARKER)" --ignore $(INTEGRATION_TEST_FOLDER) $(DD_ARGS)
 
 generate-pending-changelog:
 	poetry run python -c "from scripts import release; release.generate_changelog('major.minor.patch')"

@@ -94,8 +94,9 @@ def test_data_split_help(run: Callable[..., RunResult]):
 def test_data_convert_help(run: Callable[..., RunResult]):
     output = run("data", "convert", "nlu", "--help")
 
-    help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,md,yaml}]
-                             --data DATA [--out OUT] [-l LANGUAGE]"""
+    help_text = """usage: rasa data convert nlu [-h] [-v] [-vv] [--quiet] [-f {json,yaml}]
+                             [--data DATA [DATA ...]] [--out OUT]
+                             [-l LANGUAGE]"""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -109,7 +110,9 @@ def test_data_validate_help(run: Callable[..., RunResult]):
 
     help_text = """usage: rasa data validate [-h] [-v] [-vv] [--quiet]
                           [--max-history MAX_HISTORY] [-c CONFIG]
-                          [--fail-on-warnings] [-d DOMAIN] [--data DATA]"""
+                          [--fail-on-warnings] [-d DOMAIN]
+                          [--data DATA [DATA ...]]
+                          {stories} ..."""
 
     lines = help_text.split("\n")
     # expected help text lines should appear somewhere in the output
@@ -135,13 +138,97 @@ def test_data_validate_stories_with_max_history_zero(monkeypatch: MonkeyPatch):
         ]
     )
 
-    async def mock_from_importer(importer: TrainingDataImporter) -> Validator:
+    def mock_from_importer(importer: TrainingDataImporter) -> Validator:
         return Mock()
 
     monkeypatch.setattr("rasa.validator.Validator.from_importer", mock_from_importer)
 
     with pytest.raises(argparse.ArgumentTypeError):
         data.validate_files(args)
+
+
+@pytest.mark.parametrize(
+    ("file_type", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+def test_validate_files_action_not_found_invalid_domain(
+    file_type: Text, data_type: Text, tmp_path: Path
+):
+    file_name = tmp_path / f"{file_type}.yml"
+    file_name.write_text(
+        f"""
+        version: "2.0"
+        {file_type}:
+        - {data_type}: test path
+          steps:
+          - intent: goodbye
+          - action: action_test
+        """
+    )
+    args = {
+        "domain": "data/test_moodbot/domain.yml",
+        "data": [file_name],
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
+@pytest.mark.parametrize(
+    ("file_type", "data_type"), [("stories", "story"), ("rules", "rule")]
+)
+def test_validate_files_form_not_found_invalid_domain(
+    file_type: Text, data_type: Text, tmp_path: Path
+):
+    file_name = tmp_path / f"{file_type}.yml"
+    file_name.write_text(
+        f"""
+        version: "2.0"
+        {file_type}:
+        - {data_type}: test path
+          steps:
+            - intent: request_restaurant
+            - action: restaurant_form
+            - active_loop: restaurant_form
+        """
+    )
+    args = {
+        "domain": "data/test_restaurantbot/domain.yml",
+        "data": [file_name],
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+
+
+def test_validate_files_form_slots_not_matching(tmp_path: Path):
+    domain_file_name = tmp_path / "domain.yml"
+    domain_file_name.write_text(
+        """
+        version: "2.0"
+        forms:
+          name_form:
+            required_slots:
+              first_name:
+              - type: from_text
+              last_name:
+              - type: from_text
+        slots:
+             first_name:
+                type: text
+             last_nam:
+                type: text
+        """
+    )
+    args = {
+        "domain": domain_file_name,
+        "data": None,
+        "max_history": None,
+        "config": None,
+    }
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
 
 
 def test_validate_files_exit_early():
@@ -158,180 +245,18 @@ def test_validate_files_exit_early():
     assert pytest_e.value.code == 1
 
 
-def test_rasa_data_convert_nlu_to_yaml(
-    run_in_simple_project: Callable[..., RunResult],
-):
-    converted_data_folder = "converted_data"
-    os.mkdir(converted_data_folder)
+def test_validate_files_invalid_domain():
+    args = {
+        "domain": "data/test_domains/default_with_mapping.yml",
+        "data": None,
+        "max_history": None,
+        "config": None,
+    }
 
-    converted_single_file_folder = "converted_single_file"
-    os.mkdir(converted_single_file_folder)
-
-    simple_nlu_md = """
-    ## intent:greet
-    - hey
-    - hello
-    """
-
-    os.mkdir("data/nlu")
-    with open("data/nlu/nlu.md", "w") as f:
-        f.write(simple_nlu_md)
-
-    run_in_simple_project(
-        "data",
-        "convert",
-        "nlu",
-        "-f",
-        "yaml",
-        "--data",
-        "data",
-        "--out",
-        converted_data_folder,
-    )
-
-    run_in_simple_project(
-        "data",
-        "convert",
-        "nlu",
-        "-f",
-        "yaml",
-        "--data",
-        "data/nlu/nlu.md",
-        "--out",
-        converted_single_file_folder,
-    )
-
-    assert filecmp.cmp(
-        Path(converted_data_folder) / "nlu_converted.yml",
-        Path(converted_single_file_folder) / "nlu_converted.yml",
-    )
-
-
-def test_rasa_data_convert_stories_to_yaml(
-    run_in_simple_project: Callable[..., RunResult],
-):
-    converted_data_folder = "converted_data"
-    os.mkdir(converted_data_folder)
-
-    converted_single_file_folder = "converted_single_file"
-    os.mkdir(converted_single_file_folder)
-
-    simple_story_md = """
-    ## happy path
-    * greet OR goodbye
-        - utter_greet
-        - form{"name": null}
-    """
-
-    with open("data/stories.md", "w") as f:
-        f.write(simple_story_md)
-
-    run_in_simple_project(
-        "data",
-        "convert",
-        "core",
-        "-f",
-        "yaml",
-        "--data",
-        "data",
-        "--out",
-        converted_data_folder,
-    )
-
-    run_in_simple_project(
-        "data",
-        "convert",
-        "core",
-        "-f",
-        "yaml",
-        "--data",
-        "data/stories.md",
-        "--out",
-        converted_single_file_folder,
-    )
-
-    assert filecmp.cmp(
-        Path(converted_data_folder) / "stories_converted.yml",
-        Path(converted_single_file_folder) / "stories_converted.yml",
-    )
-
-
-def test_rasa_data_convert_test_stories_to_yaml(
-    run_in_simple_project: Callable[..., RunResult]
-):
-    converted_data_folder = "converted_data"
-    os.mkdir(converted_data_folder)
-
-    simple_test_story_md = """
-    ## happy path
-    * greet: hi how are you?
-        - utter_greet
-    """
-
-    with open("tests/test_stories.md", "w") as f:
-        f.write(simple_test_story_md)
-
-    run_in_simple_project(
-        "data",
-        "convert",
-        "core",
-        "-f",
-        "yaml",
-        "--data",
-        "tests",
-        "--out",
-        converted_data_folder,
-    )
-
-    assert (Path(converted_data_folder) / "test_stories_converted.yml").exists()
-
-
-def test_rasa_data_convert_nlg_to_yaml(
-    run_in_simple_project: Callable[..., RunResult], run: Callable[..., RunResult]
-):
-    converted_data_folder = "converted_data"
-    os.mkdir(converted_data_folder)
-
-    converted_single_file_folder = "converted_single_file"
-    os.mkdir(converted_single_file_folder)
-
-    simple_nlg_md = (
-        "## ask name\n"
-        "* chitchat/ask_name\n"
-        "- my name is Sara, Rasa's documentation bot!\n"
-    )
-
-    with open("data/responses.md", "w") as f:
-        f.write(simple_nlg_md)
-
-    run_in_simple_project(
-        "data",
-        "convert",
-        "nlg",
-        "-f",
-        "yaml",
-        "--data",
-        "data",
-        "--out",
-        converted_data_folder,
-    )
-
-    run_in_simple_project(
-        "data",
-        "convert",
-        "nlg",
-        "-f",
-        "yaml",
-        "--data",
-        "data/responses.md",
-        "--out",
-        converted_single_file_folder,
-    )
-
-    assert filecmp.cmp(
-        Path(converted_data_folder) / "responses_converted.yml",
-        Path(converted_single_file_folder) / "responses_converted.yml",
-    )
+    with pytest.raises(SystemExit):
+        data.validate_files(namedtuple("Args", args.keys())(*args.values()))
+        with pytest.warns(UserWarning) as w:
+            assert "Please migrate to RulePolicy." in str(w[0].message)
 
 
 def test_rasa_data_convert_responses(
@@ -422,41 +347,6 @@ def test_rasa_data_convert_responses(
         Path(converted_data_folder) / "stories_converted.yml",
         Path(expected_data_folder) / "stories.yml",
     )
-
-
-def test_rasa_data_convert_nlu_lookup_tables_to_yaml(
-    run_in_simple_project: Callable[..., RunResult]
-):
-    converted_data_folder = "converted_data"
-    os.mkdir(converted_data_folder)
-
-    simple_nlu_md = """
-    ## lookup:products.txt
-      data/nlu/lookups/products.txt
-    """
-
-    os.mkdir("data/nlu")
-    with open("data/nlu/nlu.md", "w") as f:
-        f.write(simple_nlu_md)
-
-    simple_lookup_table_txt = "core\n nlu\n x\n"
-    os.mkdir("data/nlu/lookups")
-    with open("data/nlu/lookups/products.txt", "w") as f:
-        f.write(simple_lookup_table_txt)
-
-    run_in_simple_project(
-        "data",
-        "convert",
-        "nlu",
-        "-f",
-        "yaml",
-        "--data",
-        "data",
-        "--out",
-        converted_data_folder,
-    )
-
-    assert len(os.listdir(converted_data_folder)) == 1
 
 
 def test_convert_config(

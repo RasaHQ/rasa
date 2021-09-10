@@ -8,10 +8,11 @@ from typing import Any, Dict, List, Optional, Text
 import rasa.nlu
 from rasa.shared.exceptions import RasaException
 import rasa.shared.utils.io
+import rasa.shared.utils.common
 import rasa.utils.io
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, NLU_MODEL_NAME_PREFIX
 from rasa.shared.constants import DOCS_URL_COMPONENTS
-from rasa.nlu import components, utils
+from rasa.nlu import components
 from rasa.nlu.classifiers.classifier import IntentClassifier
 from rasa.nlu.components import Component, ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
@@ -24,6 +25,7 @@ from rasa.shared.nlu.constants import (
     INTENT,
     INTENT_NAME_KEY,
     PREDICTED_CONFIDENCE_KEY,
+    TEXT_TOKENS,
 )
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -41,8 +43,9 @@ class InvalidModelError(RasaException):
     """
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
-        super(InvalidModelError, self).__init__()
+        super(InvalidModelError, self).__init__(message)
 
     def __str__(self) -> Text:
         return self.message
@@ -56,8 +59,9 @@ class UnsupportedModelError(RasaException):
     """
 
     def __init__(self, message: Text) -> None:
+        """Initialize message attribute."""
         self.message = message
-        super(UnsupportedModelError, self).__init__()
+        super(UnsupportedModelError, self).__init__(message)
 
     def __str__(self) -> Text:
         return self.message
@@ -258,7 +262,9 @@ class Trainer:
             component_meta = component.component_config
             if update:
                 component_meta.update(update)
-            component_meta["class"] = utils.module_path_from_object(component)
+            component_meta[
+                "class"
+            ] = rasa.shared.utils.common.module_path_from_instance(component)
 
             metadata["pipeline"].append(component_meta)
 
@@ -298,7 +304,8 @@ class Interpreter:
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedModelError(
                 f"The model version is trained using Rasa Open Source {model_version} "
-                f"and is not compatible with your current installation ({rasa.__version__}). "
+                f"and is not compatible with your current installation "
+                f"({rasa.__version__}). "
                 f"This means that you either need to retrain your model "
                 f"or revert back to the Rasa version that trained the model "
                 f"to ensure that the versions match up again."
@@ -355,6 +362,7 @@ class Interpreter:
         new_config: Optional[Dict] = None,
         finetuning_epoch_fraction: float = 1.0,
     ) -> Metadata:
+        new_config = new_config or {}
         for old_component_config, new_component_config in zip(
             model_metadata.metadata["pipeline"], new_config["pipeline"]
         ):
@@ -460,7 +468,7 @@ class Interpreter:
         data = self.default_output_attributes()
         data[TEXT] = text
 
-        message = Message(data=data, time=timestamp)
+        message = Message(data=data, time=timestamp, output_properties={TEXT_TOKENS})
 
         for component in self.pipeline:
             component.process(message, **self.context)
@@ -504,7 +512,8 @@ class Interpreter:
             rasa.shared.utils.io.raise_warning(
                 f"Parsing of message: '{message_text}' lead to overlapping "
                 f"entities: {entity_1['value']} of type "
-                f"{entity_1['entity']} extracted by {entity_1['extractor']} overlaps with "
+                f"{entity_1['entity']} extracted by "
+                f"{entity_1['extractor']} overlaps with "
                 f"{entity_2['value']} of type {entity_2['entity']} extracted by "
                 f"{entity_2['extractor']}. This can lead to unintended filling of "
                 f"slots. Please refer to the documentation section on entity "

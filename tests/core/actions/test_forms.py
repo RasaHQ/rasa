@@ -1,3 +1,4 @@
+import textwrap
 from typing import Dict, Text, List, Optional, Any, Union
 from unittest.mock import Mock
 
@@ -83,7 +84,7 @@ async def test_activate_with_prefilled_slot():
             - type: from_text
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
     """
     domain = Domain.from_yaml(domain)
     events = await action.run(
@@ -260,7 +261,7 @@ async def test_activate_and_immediate_deactivate():
               entity: {slot_name}
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
     """
     domain = Domain.from_yaml(domain)
     events = await action.run(
@@ -339,7 +340,7 @@ async def test_action_rejection():
               entity: some_entity
     slots:
       {slot_to_fill}:
-        type: unfeaturized
+        type: any
     """
     domain = Domain.from_yaml(domain)
 
@@ -629,7 +630,7 @@ async def test_validate_slots_on_activation_with_other_action_after_user_utteran
     domain = f"""
     slots:
       {slot_name}:
-        type: unfeaturized
+        type: any
     forms:
       {form_name}:
         {REQUIRED_SLOTS_KEY}:
@@ -702,7 +703,7 @@ def test_temporary_tracker():
         version: "2.0"
         slots:
           {extra_slot}:
-            type: unfeaturized
+            type: any
         """
     )
 
@@ -806,6 +807,66 @@ def test_extract_requested_slot_when_mapping_applies(
     slot_values = form.extract_requested_slot(tracker, domain, "some_slot")
     # check that the value was extracted for correct intent
     assert slot_values == {"some_slot": expected_value}
+
+
+@pytest.mark.parametrize(
+    "entities, expected_slot_values",
+    [
+        # Two entities were extracted for `ListSlot`
+        (
+            [
+                {"entity": "topping", "value": "mushrooms"},
+                {"entity": "topping", "value": "kebab"},
+            ],
+            ["mushrooms", "kebab"],
+        ),
+        # Only one entity was extracted for `ListSlot`
+        ([{"entity": "topping", "value": "kebab"},], ["kebab"],),
+    ],
+)
+def test_extract_requested_slot_with_list_slot(
+    entities: List[Dict[Text, Any]], expected_slot_values: List[Text]
+):
+    form_name = "some_form"
+    slot_name = "toppings"
+    form = FormAction(form_name, None)
+
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+    version: "2.0"
+
+    slots:
+      {slot_name}:
+        type: list
+        influence_conversation: false
+
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+          {slot_name}:
+          - type: from_entity
+            entity: topping
+    """
+        )
+    )
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            ActiveLoop(form_name),
+            SlotSet(REQUESTED_SLOT, slot_name),
+            UserUttered(
+                "bla", intent={"name": "greet", "confidence": 1.0}, entities=entities,
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        slots=domain.slots,
+    )
+
+    slot_values = form.extract_requested_slot(tracker, domain, slot_name)
+
+    assert slot_values[slot_name] == expected_slot_values
 
 
 @pytest.mark.parametrize(
@@ -954,7 +1015,8 @@ async def test_trigger_slot_mapping_does_not_apply(trigger_slot_mapping: Dict):
 
 
 @pytest.mark.parametrize(
-    "mapping_not_intent, mapping_intent, mapping_role, mapping_group, entities, intent, expected_slot_values",
+    "mapping_not_intent, mapping_intent, mapping_role, "
+    "mapping_group, entities, intent, expected_slot_values",
     [
         (
             "some_intent",
@@ -1105,7 +1167,8 @@ def test_extract_requested_slot_from_entity(
 
 
 @pytest.mark.parametrize(
-    "some_other_slot_mapping, some_slot_mapping, entities, intent, expected_slot_values",
+    "some_other_slot_mapping, some_slot_mapping, entities, "
+    "intent, expected_slot_values",
     [
         (
             [
@@ -1296,6 +1359,64 @@ def test_extract_other_slots_with_entity(
     slot_values = form.extract_other_slots(tracker, domain)
     # check that the value was extracted for non requested slot
     assert slot_values == expected_slot_values
+
+
+@pytest.mark.parametrize(
+    "entities, expected_slot_values",
+    [
+        # Two entities were extracted for `ListSlot`
+        (
+            [
+                {"entity": "topping", "value": "mushrooms"},
+                {"entity": "topping", "value": "kebab"},
+            ],
+            ["mushrooms", "kebab"],
+        ),
+        # Only one entity was extracted for `ListSlot`
+        ([{"entity": "topping", "value": "kebab"},], ["kebab"],),
+    ],
+)
+def test_extract_other_list_slot_from_entity(
+    entities: List[Dict[Text, Any]], expected_slot_values: List[Text]
+):
+    form_name = "some_form"
+    slot_name = "toppings"
+    domain = Domain.from_yaml(
+        textwrap.dedent(
+            f"""
+    version: "2.0"
+
+    slots:
+      {slot_name}:
+        type: list
+        influence_conversation: false
+
+    forms:
+      {form_name}:
+        {REQUIRED_SLOTS_KEY}:
+          {slot_name}:
+          - type: from_entity
+            entity: topping
+    """
+        )
+    )
+
+    form = FormAction(form_name, None)
+
+    tracker = DialogueStateTracker.from_events(
+        "default",
+        [
+            SlotSet(REQUESTED_SLOT, "some slot"),
+            UserUttered(
+                "bla", intent={"name": "greet", "confidence": 1.0}, entities=entities
+            ),
+            ActionExecuted(ACTION_LISTEN_NAME),
+        ],
+        slots=domain.slots,
+    )
+
+    slots = form.extract_other_slots(tracker, domain)
+    assert slots[slot_name] == expected_slot_values
 
 
 @pytest.mark.parametrize(

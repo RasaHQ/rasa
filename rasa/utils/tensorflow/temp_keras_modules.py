@@ -132,8 +132,8 @@ class TmpKerasModel(tf.keras.models.Model):
                 validation_data
             )
 
-        with self.distribute_strategy.scope(), training_utils.RespectCompiledTrainableState(
-            self
+        with self.distribute_strategy.scope(), (
+            training_utils.RespectCompiledTrainableState(self)
         ):
             # Creates a `tf.data.Dataset` and handles batch and epoch iteration.
             # Use our own custom data handler to handle increasing batch size
@@ -172,7 +172,7 @@ class TmpKerasModel(tf.keras.models.Model):
             callbacks.on_train_begin()
             training_logs = None
             # Handle fault-tolerance for multi-worker.
-            data_handler._initial_epoch = self._maybe_load_initial_epoch_from_ckpt(  # pylint: disable=protected-access
+            data_handler._initial_epoch = self._maybe_load_initial_epoch_from_ckpt(  # pylint: disable=protected-access # noqa: E501
                 initial_epoch
             )
             for epoch, iterator in data_handler.enumerate_epochs():

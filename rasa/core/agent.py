@@ -4,7 +4,16 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Text, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Text,
+    Tuple,
+    Union,
+)
 import uuid
 
 import aiohttp
@@ -22,7 +31,6 @@ from rasa.shared.constants import (
     DEFAULT_SENDER_ID,
     DEFAULT_DOMAIN_PATH,
     DEFAULT_CORE_SUBDIRECTORY_NAME,
-    DOCS_URL_MIGRATION_GUIDE,
 )
 from rasa.shared.exceptions import InvalidParameterException
 from rasa.shared.nlu.interpreter import NaturalLanguageInterpreter, RegexInterpreter
@@ -51,6 +59,8 @@ import rasa.shared.utils.io
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.utils.endpoints import EndpointConfig
 import rasa.utils.io
+
+from rasa.shared.core.generator import TrackerWithCachedStates
 
 logger = logging.getLogger(__name__)
 
@@ -436,13 +446,6 @@ class Agent:
         if hasattr(self.nlg, "responses"):
             self.nlg.responses = domain.responses if domain else {}
 
-        if hasattr(self.nlg, "templates"):
-            rasa.shared.utils.io.raise_deprecation_warning(
-                "Please use the `responses` attribute instead of the `templates` attribute to manage responses.",
-                docs=f"{DOCS_URL_MIGRATION_GUIDE}#rasa-23-to-rasa-24",
-            )
-            self.nlg.templates = domain.responses if domain else {}
-
         self.model_directory = model_directory
 
     @classmethod
@@ -678,7 +681,7 @@ class Agent:
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
         def has_max_history_featurizer(policy: Policy) -> bool:
-            return (
+            return bool(
                 policy.featurizer
                 and hasattr(policy.featurizer, "max_history")
                 and policy.featurizer.max_history is not None
@@ -689,7 +692,7 @@ class Agent:
                 return False
         return True
 
-    async def load_data(
+    def load_data(
         self,
         training_resource: Union[Text, TrainingDataImporter],
         remove_duplicates: bool = True,
@@ -699,9 +702,8 @@ class Agent:
         use_story_concatenation: bool = True,
         debug_plots: bool = False,
         exclusion_percentage: Optional[int] = None,
-    ) -> List[DialogueStateTracker]:
+    ) -> List["TrackerWithCachedStates"]:
         """Load training data from a resource."""
-
         max_history = self._max_history()
 
         if unique_last_num_states is None:
@@ -722,7 +724,7 @@ class Agent:
                 f"at least maximum max_history."
             )
 
-        return await training.load_data(
+        return training.load_data(
             training_resource,
             self.domain,
             remove_duplicates,
@@ -768,7 +770,6 @@ class Agent:
         Only removes files if the directory seems to contain a previously
         persisted model. Otherwise does nothing to avoid deleting
         `/` by accident."""
-
         if not os.path.exists(model_path):
             return
 
@@ -822,7 +823,7 @@ class Agent:
         # largest value from any policy
         max_history = max_history or self._max_history()
 
-        story_steps = await loading.load_data_from_resource(resource_name, self.domain)
+        story_steps = loading.load_data_from_resource(resource_name, self.domain)
         await visualize_stories(
             story_steps,
             self.domain,

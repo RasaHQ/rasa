@@ -18,6 +18,15 @@
 
 <hr />
 
+💡 **Rasa Open Source 3.0 is coming up!** 💡
+
+[2.8](https://github.com/RasaHQ/rasa/milestone/39) will be the last minor in the 2.x series, as we need to pause releasing minors while we work on architectural changes in 3.0. You can still contribute new features and improvements which we plan to release together with 3.0. Read more
+about [our contributor guidelines](#how-to-contribute).
+
+We plan to ship alpha releases and release candidates over the next few months in order to get early feedback. Stay tuned!
+
+<hr />
+
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-2.0.png" alt="An image of Sara, the Rasa mascot bird, holding a flag that reads Open Source with one wing, and a wrench in the other" title="Rasa Open Source">
 
 Rasa is an open source machine learning framework to automate text-and voice-based conversations. With Rasa, you can build contextual assistants on:
@@ -79,6 +88,7 @@ questions.
 ### README Contents:
 - [How to contribute](#how-to-contribute)
 - [Development Internals](#development-internals)
+- [Releases](#releases)
 - [License](#license)
 
 ### How to contribute
@@ -123,9 +133,11 @@ The official [Poetry guide](https://python-poetry.org/docs/managing-environments
 This is how it can be done:
 
 ```bash
-pyenv install 3.7.6
-pyenv local 3.7.6  # Activate Python 3.7.6 for the current project
+pyenv install 3.7.9
+pyenv local 3.7.9  # Activate Python 3.7.9 for the current project
 ```
+*Note*: If you have trouble installing a specific version of python on your system
+it might be worth trying other supported versions.
 
 By default, Poetry will try to use the currently activated Python version to create the virtual environment
 for the current project automatically. You can also create and activate a virtual environment manually — in this
@@ -149,6 +161,9 @@ To install dependencies and `rasa` itself in editable mode execute
 ```bash
 make install
 ```
+
+*Note for macOS users*: under macOS Big Sur we've seen some compiler issues for 
+dependencies. Using `export SYSTEM_VERSION_COMPAT=1` before the installation helped. 
 
 ### Running and changing the documentation
 
@@ -337,31 +352,30 @@ Releasing a new version is quite simple, as the packages are build and distribut
     - Once the tag with the new Rasa SDK release is pushed and the package appears on [pypi](https://pypi.org/project/rasa-sdk/), the dependency in the rasa repository can be resolved (see below).
 2. In case of a minor release, create a new branch that corresponds to the new release, e.g. 
    ```bash
-    git checkout -b 2.4.x
+    git checkout -b 1.2.x
+    git push origin 1.2.x
     ```
 3. Switch to the branch you want to cut the release from (`main` in case of a major, the `<major>.<minor>.x` branch for minors and micros)
     - Update the `rasa-sdk` entry in `pyproject.toml` with the new release version and run `poetry update`. This creates a new `poetry.lock` file with all dependencies resolved.
     - Commit the changes with `git commit -am "bump rasa-sdk dependency"` but do not push them. They will be automatically picked up by the following step.
-3. Run `make release`
-4. Create a PR against `main` or the release branch (e.g. `1.2.x`)
-5. Once your PR is merged, tag a new release (this SHOULD always happen on `main` or release branches), e.g. using
+4. If this is a major release, update the list of actively maintained versions [in the README](#actively-maintained-versions) and in [the docs](./docs/docs/actively-maintained-versions.mdx).
+5. Run `make release`
+6. Create a PR against the release branch (e.g. `1.2.x`)
+7. Once your PR is merged, tag a new release (this SHOULD always happen on the release branch), e.g. using
     ```bash
+    git checkout 1.2.x
+    git pull origin 1.2.x
     git tag 1.2.0 -m "next release"
     git push origin 1.2.0
     ```
     GitHub will build this tag and publish the build artifacts.
-6. **If this is a minor release**, a new release branch should be created pointing to the same commit as the tag to allow for future patch releases, e.g.
-    ```bash
-    git checkout -b 1.2.x
-    git push origin 1.2.x
-    ```
-7. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
-8. If no message appears in the channel then you can do the following checks:
+8. After all the steps are completed and if everything goes well then we should see a message automatically posted in the company's Slack (`product` channel) like this [one](https://rasa-hq.slack.com/archives/C7B08Q5FX/p1614354499046600)
+9. If no message appears in the channel then you can do the following checks:
     - Check the workflows in [Github Actions](https://github.com/RasaHQ/rasa/actions) and make sure that the merged PR of the current release is completed successfully. To easily find your PR you can use the filters `event: push` and `branch: <version number>` (example on release 2.4 you can see [here](https://github.com/RasaHQ/rasa/actions/runs/643344876))
     - If the workflow is not completed, then try to re run the workflow in case that solves the problem
     - If the problem persists, check also the log files and try to find the root cause of the issue
     - If you still cannot resolve the error, contact the infrastructure team by providing any helpful information from your investigation
-9.  After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
+10.  After the message is posted correctly in the `product` channel, check also in the `product-engineering-alerts` channel if there are any alerts related to the Rasa Open Source release like this [one](https://rasa-hq.slack.com/archives/C01585AN2NP/p1615486087001000)
     
 ### Cutting a Micro release
 
@@ -376,6 +390,13 @@ need your fixes to be on the `2.0.x` release branch). All micros must come from 
 3. Once you're ready to release the Rasa Open Source micro, checkout the branch, run `make release` and follow the
 steps + get the PR merged.
 4. Once the PR is in, pull the `.x` branch again and push the tag!
+
+### Actively maintained versions
+
+We're actively maintaining _any minor on our latest major release_ and _the latest minor of the previous major release_.
+Currently, this means the following minor versions will receive bugfixes updates:
+- 1.10
+- Every minor version on 2.x
 
 ## License
 Licensed under the Apache License, Version 2.0.
