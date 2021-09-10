@@ -267,23 +267,7 @@ class MitieEntityExtractorGraphComponent(GraphComponent, EntityExtractorMixin):
                     raise FileNotFoundError(
                         f"Expected a MITIE extractor file at {ner_file}."
                     )
-
-                try:
-                    ner = mitie.named_entity_extractor(str(ner_file))
-                except Exception as e:
-                    if (
-                        len(e.args) == 1
-                        and isinstance(e.args[0], Text)
-                        and e.args.startswith("Unable to load named entity extractor")
-                    ):
-                        rasa.shared.utils.io.raise_warning(
-                            f"Mitie wasn't able to load the MITIE extractor from "
-                            f"{ner_file}."
-                        )
-                        raise ValueError from e
-                    else:
-                        raise
-
+                ner = mitie.named_entity_extractor(str(ner_file))
                 return cls(config, model_storage, resource, ner=ner)
 
         except (FileNotFoundError, ValueError) as e:
