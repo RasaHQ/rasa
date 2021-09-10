@@ -1,4 +1,4 @@
-from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
+from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapperComponent
 from rasa.shared.nlu.constants import TEXT, ENTITIES
 from rasa.shared.nlu.training_data.training_data import TrainingData
 from rasa.shared.nlu.training_data.message import Message
@@ -11,7 +11,7 @@ def test_entity_synonyms():
         {"entity": "test", "value": "china", "start": 0, "end": 6},
     ]
     ent_synonyms = {"chines": "chinese", "NYC": "New York City"}
-    EntitySynonymMapper(synonyms=ent_synonyms).replace_synonyms(entities)
+    EntitySynonymMapperComponent(synonyms=ent_synonyms).replace_synonyms(entities)
     assert len(entities) == 3
     assert entities[0]["value"] == "chinese"
     assert entities[1]["value"] == "chinese"
@@ -59,7 +59,7 @@ def test_unintentional_synonyms_capitalized(
 
 
 def test_synonym_mapper_with_ints():
-    mapper = EntitySynonymMapper()
+    mapper = EntitySynonymMapperComponent()
     entities = [
         {
             "start": 21,
