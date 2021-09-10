@@ -578,7 +578,10 @@ class ResponseSelectorGraphComponent(DIETClassifierGraphComponent):
 
             self._set_message_property(message, prediction_dict, selector_key)
 
-            if out and DIAGNOSTIC_DATA in out:
+            if (
+                self._execution_context.should_add_diagnostic_data
+                and DIAGNOSTIC_DATA in out
+            ):
                 message.add_diagnostic_data(
                     self._execution_context.node_name, out.get(DIAGNOSTIC_DATA)
                 )

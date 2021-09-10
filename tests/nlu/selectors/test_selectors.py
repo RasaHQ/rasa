@@ -400,6 +400,8 @@ async def test_process_gives_diagnostic_data(
     for component in loaded_pipeline:
         component.train(training_data)
 
+    default_execution_context.should_add_diagnostic_data = True
+
     response_selector = create_response_selector(
         config_params, default_model_storage, default_execution_context
     )
